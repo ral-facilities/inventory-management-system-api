@@ -13,5 +13,10 @@ dependencies = [
 [project.urls]
 "Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
 
+[project.optional-dependencies]
+code-analysis = [
+    "pylint==2.17.4"
+]
+
 [tool.setuptools]
 packages = ["inventory_management_system_api"]
