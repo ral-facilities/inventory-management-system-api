@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  inventory-management-system-api:
+    container_name: inventory_management_system_api_container
+    build: .
+    volumes:
+      - ./inventory_management_system_api:/inventory-management-system-api-run/inventory_management_system_api
+    ports:
+      - 8000:8000
+    restart: on-failure
