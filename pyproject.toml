@@ -5,6 +5,11 @@ readme = "README.md"
 requires-python = ">=3.10"
 version = "0.0.1"
 
+dependencies = [
+    "fastapi[all]==0.95.2",
+    "uvicorn==0.22.0"
+]
+
 [project.urls]
 "Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
 
