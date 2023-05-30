@@ -1,0 +1,12 @@
+[project]
+name = "inventory-management-system-api"
+description = ""
+readme = "README.md"
+requires-python = ">=3.10"
+version = "0.0.1"
+
+[project.urls]
+"Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
+
+[tool.setuptools]
+packages = ["inventory_management_system_api"]
