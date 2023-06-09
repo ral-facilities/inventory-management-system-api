@@ -18,5 +18,9 @@ code-analysis = [
     "pylint==2.17.4"
 ]
 
+formatting = [
+    "black==23.3.0"
+]
+
 [tool.setuptools]
 packages = ["inventory_management_system_api"]
