@@ -23,5 +23,16 @@ formatting = [
     "black==23.3.0"
 ]
 
+test = [
+    "pytest==7.3.1",
+    "pytest-cov==4.1.0"
+]
+
+dev = [
+    "inventory-management-system-api[code-analysis]",
+    "inventory-management-system-api[formatting]",
+    "inventory-management-system-api[test]"
+]
+
 [tool.setuptools]
 packages = ["inventory_management_system_api"]
