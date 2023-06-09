@@ -1,5 +1,7 @@
 .idea/
 .vscode/
+mongodb/data/*
+!mongodb/data/.keep
 
 
 # Byte-compiled / optimized / DLL files
