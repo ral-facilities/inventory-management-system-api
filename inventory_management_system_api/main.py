@@ -3,9 +3,10 @@ Main module contains the API entrypoint.
 """
 from fastapi import FastAPI
 
-API_DESCRIPTION = "This is the API for the Inventory Management System"
+from inventory_management_system_api.core.config import config
 
-app = FastAPI(title="Inventory Management System API", description=API_DESCRIPTION)
+app = FastAPI(title=config.api.title, description=config.api.description)
+
 
 @app.get("/")
 def read_root():
