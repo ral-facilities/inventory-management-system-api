@@ -9,7 +9,7 @@ services:
     ports:
       - 8000:8000
     restart: on-failure
-    depends-on:
+    depends_on:
       - mongo-db
 
   mongo-db:
