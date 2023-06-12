@@ -7,9 +7,28 @@ Docker to run the application, the `docker-compose.yml file` has already been co
 that can be accessed at `localhost:27017` using `root` as the username and `example` as the password.
 
 ### Prerequisites
+- Docker installed (if you want to run the microservice inside Docker)
+- Python 3.10 (or above) and MongoDB 6.0 installed on your machine if you are not using Docker
 
-- Python 3.10 (or above) installed on your machine.
-- Docker installed (if you want to run the microservice inside Docker).
+### Docker Setup
+
+1. Ensure that Docker is installed and running on your machine.
+2. Clone the repository and navigate to the project directory:
+    ```bash
+    git clone git@github.com:ral-facilities/inventory-management-system-api.git
+    cd inventory-management-system-api
+3. Create a `.env` file and a `logging.ini` file.
+    ```bash
+   cp .env.example .env
+   cp logging.example.ini logging.ini
+    ```
+
+4. Build and start the Docker containers:
+    ```bash
+   docker-compose up
+    ```
+   The microservice should now be running inside Docker at http://localhost:8000. The Swagger UI can be accessed
+   at http://localhost:8000/docs.
 
 ### Local Setup
 
@@ -41,23 +60,3 @@ that can be accessed at `localhost:27017` using `root` as the username and `exam
    ```bash
    DATABASE__NAME="test-ims" pytest test/e2e/
    ```
-
-### Docker Setup
-
-1. Ensure that Docker is installed and running on your machine.
-2. Clone the repository and navigate to the project directory:
-    ```bash
-    git clone git@github.com:ral-facilities/inventory-management-system-api.git
-    cd inventory-management-system-api
-3. Create a `.env` file and a `logging.ini` file.
-    ```bash
-   cp .env.example .env
-   cp logging.example.ini logging.ini
-    ```
-
-4. Build and start the Docker containers:
-    ```bash
-   docker-compose up
-    ```
-   The microservice should now be running inside Docker at http://localhost:8000. The Swagger UI can be accessed
-   at http://localhost:8000/docs.
