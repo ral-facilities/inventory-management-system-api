@@ -16,7 +16,8 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
-    "pylint==2.17.4"
+    "pylint==2.17.4",
+    "inventory-management-system-api[test]"
 ]
 
 formatting = [
