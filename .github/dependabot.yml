@@ -7,3 +7,10 @@ updates:
     schedule:
       # Check for updates every week
       interval: "weekly"
+
+  # Maintain pip dependencies
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      # Check for updates every week
+      interval: "weekly"
