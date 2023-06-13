@@ -10,17 +10,17 @@ from inventory_management_system_api.schemas.catalogue_category import Catalogue
     CatalogueCategorySchema
 
 
-# @pytest.fixture(scope="session", autouse=True)
-# def cleanup_catalogue_categories(request):
-#     """
-#     Fixture to clean up the catalogue categories collection in the test database after the session finishes.
-#
-#     :param request: The pytest request object.
-#     """
-#     def session_finish():
-#         db.catalogue_categories.delete_many({})
-#
-#     request.addfinalizer(session_finish)
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_catalogue_categories(request):
+    """
+    Fixture to clean up the catalogue categories collection in the test database after the session finishes.
+
+    :param request: The pytest request object.
+    """
+    def session_finish():
+        db.catalogue_categories.delete_many({})
+
+    request.addfinalizer(session_finish)
 
 
 def test_create_catalogue_category(test_client):
