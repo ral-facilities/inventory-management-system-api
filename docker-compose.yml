@@ -9,3 +9,17 @@ services:
     ports:
       - 8000:8000
     restart: on-failure
+    depends_on:
+      - mongo-db
+
+  mongo-db:
+    image: mongo:6.0-jammy
+    container_name: mongodb_container
+    volumes:
+      - ./mongodb/data:/data/db
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
