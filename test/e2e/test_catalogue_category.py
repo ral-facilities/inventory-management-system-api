@@ -10,17 +10,17 @@ from inventory_management_system_api.schemas.catalogue_category import Catalogue
     CatalogueCategorySchema
 
 
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_catalogue_categories(request):
-    """
-    Fixture to clean up the catalogue categories collection in the test database after the session finishes.
-
-    :param request: The pytest request object.
-    """
-    def session_finish():
-        db.catalogue_categories.delete_many({})
-
-    request.addfinalizer(session_finish)
+# @pytest.fixture(scope="session", autouse=True)
+# def cleanup_catalogue_categories(request):
+#     """
+#     Fixture to clean up the catalogue categories collection in the test database after the session finishes.
+#
+#     :param request: The pytest request object.
+#     """
+#     def session_finish():
+#         db.catalogue_categories.delete_many({})
+#
+#     request.addfinalizer(session_finish)
 
 
 def test_create_catalogue_category(test_client):
@@ -36,6 +36,26 @@ def test_create_catalogue_category(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     assert catalogue_category.name == catalogue_category_post.name
+
+
+def test_create_catalogue_category_with_valid_parent_id(test_client):
+    """
+    Test creating a catalogue category with a valid parent ID.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A")
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    parent_id = catalogue_category.id
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", parent_id=parent_id)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    assert response.status_code == 201
+
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    assert catalogue_category.name == catalogue_category_post.name
+    assert catalogue_category.parent_id == parent_id
 
 
 def test_create_catalogue_category_with_invalid_parent_id(test_client):
