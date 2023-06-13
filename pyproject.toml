@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 version = "0.0.1"
 
 dependencies = [
-    "fastapi[all]==0.95.2",
+    "fastapi[all]==0.97.0",
     "pymongo==4.3.3",
     "uvicorn==0.22.0"
 ]
