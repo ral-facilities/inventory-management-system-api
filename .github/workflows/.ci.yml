@@ -31,6 +31,7 @@ jobs:
         run: pylint inventory_management_system_api test
 
   unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -56,6 +57,8 @@ jobs:
         run: pytest test/unit/ --cov
 
   e2e-tests:
+    needs: [unit-tests]
+    name: End-to-End Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
