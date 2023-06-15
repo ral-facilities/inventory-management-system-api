@@ -4,9 +4,11 @@ Module for providing a repository for managing catalogue categories in a MongoDB
 import logging
 
 from bson import ObjectId
+from fastapi import Depends
 from pymongo.collection import Collection
+from pymongo.database import Database
 
-from inventory_management_system_api.core.database import db
+from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 
@@ -18,9 +20,14 @@ class CatalogueCategoryRepo:
     Repository for managing catalogue categories in a MongoDB database.
     """
 
-    @property
-    def _collection(self) -> Collection:
-        return db.catalogue_categories
+    def __init__(self, database: Database = Depends(get_database)) -> None:
+        """
+        Initialize the `CatalogueCategoryRepo` with a MongoDB database instance.
+
+        :param database: The database to use.
+        """
+        self._database = database
+        self._collection: Collection = self._database.catalogue_categories
 
     def create(self, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:
         """
@@ -31,8 +38,7 @@ class CatalogueCategoryRepo:
 
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
-        :raises MissingRecordError: If the parent catalogue category specified by `parent_id`
-            doesn't exist.
+        :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
         """
         logger.info("Inserting the new catalogue category into the database")
         parent_id = catalogue_category.parent_id

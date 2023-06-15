@@ -5,7 +5,7 @@ import pytest
 
 from bson import ObjectId
 
-from inventory_management_system_api.core.database import db
+from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema, \
     CatalogueCategorySchema
 
@@ -18,7 +18,7 @@ def cleanup_catalogue_categories(request):
     :param request: The pytest request object.
     """
     def session_finish():
-        db.catalogue_categories.delete_many({})
+        get_database().catalogue_categories.delete_many({})
 
     request.addfinalizer(session_finish)
 
