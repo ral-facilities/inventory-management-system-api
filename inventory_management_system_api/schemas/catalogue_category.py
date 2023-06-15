@@ -19,10 +19,10 @@ class StringObjectIdField(ObjectId):
     @classmethod
     def validate(cls, value: ObjectId) -> str:
         """
-        Convert the ObjectId value to string.
+        Convert the `ObjectId` value to string.
 
-        :param value: The ObjectId value to be converted.
-        :return: The converted ObjectId as a string.
+        :param value: The `ObjectId` value to be converted.
+        :return: The converted `ObjectId` as a string.
         """
         return str(value)
 
@@ -40,6 +40,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
     """
     Schema model for a catalogue category creation request.
     """
+
     name: str
     parent_id: Optional[StringObjectIdField] = None
 
@@ -48,4 +49,6 @@ class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
     """
     Schema model for a catalogue category response.
     """
+
     id: StringObjectIdField
+    code: str
