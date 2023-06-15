@@ -65,5 +65,6 @@ class CatalogueCategoryRepo:
         :param code: The code of the catalogue category to check for duplicates.
         :return: `True` if a duplicate catalogue category code is found, `False` otherwise.
         """
+        logger.info("Checking if catalogue category with code '%s' already exists within the category", code)
         count = self._collection.count_documents({"parent_id": parent_id, "code": code})
         return count > 0
