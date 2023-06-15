@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 from inventory_management_system_api.main import app
 
 
-@pytest.fixture()
-def test_client() -> TestClient:
+@pytest.fixture(name="test_client")
+def fixture_test_client() -> TestClient:
     """
     Fixture for creating a test client for the application.
 
