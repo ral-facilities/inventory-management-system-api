@@ -56,7 +56,11 @@ that can be accessed at `localhost:27017` using `root` as the username and `exam
     ```
    The microservice should now be running locally at http://localhost:8000. The Swagger UI can be accessed
    at http://localhost:8000/docs.
-8. To run the e2e tests, ensure that MongoDB is running locally and from the project directory, run:
+8. To run the unit tests, run :
+   ```bash
+   pytest test/unit/
+   ```
+9. To run the e2e tests, ensure that MongoDB is running locally and run:
    ```bash
    DATABASE__NAME="test-ims" pytest test/e2e/
    ```
