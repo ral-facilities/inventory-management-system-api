@@ -29,6 +29,26 @@ class CustomObjectIdField(ObjectId):
         return CustomObjectId(value)
 
 
+class StringObjectIdField(str):
+    """
+    Custom field for handling MongoDB ObjectId as string.
+    """
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: ObjectId) -> str:
+        """
+        Convert the `ObjectId` value to string.
+
+        :param value: The `ObjectId` value to be converted.
+        :return: The converted `ObjectId` as a string.
+        """
+        return str(value)
+
+
 class CatalogueCategoryIn(BaseModel):
     """
     Input database model for a catalogue category.
@@ -44,7 +64,8 @@ class CatalogueCategoryOut(CatalogueCategoryIn):
     Output database model for a catalogue category.
     """
 
-    id: ObjectId = Field(alias="_id")
+    id: StringObjectIdField = Field(alias="_id")
+    parent_id: Optional[StringObjectIdField] = None
 
     class Config:
         # pylint: disable=C0115
