@@ -43,16 +43,28 @@ class CatalogueCategoryRepo:
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
         logger.info("Inserting the new catalogue category into the database")
-        parent_id = catalogue_category.parent_id
-        if parent_id and not self._collection.find_one({"_id": parent_id}):
-            raise MissingRecordError(f"No catalogue category found with id: {str(parent_id)}")
+        parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
+        if parent_id and not self.get(parent_id):
+            raise MissingRecordError(f"No catalogue category found with id: {parent_id}")
 
-        if self._is_duplicate_catalogue_category(str(parent_id), catalogue_category.code):
+        if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
 
         result = self._collection.insert_one(catalogue_category.dict())
-        catalogue_category = self._collection.find_one({"_id": result.inserted_id})
-        return CatalogueCategoryOut(**catalogue_category)
+        catalogue_category = self.get(str(result.inserted_id))
+        return catalogue_category
+
+    def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
+        """
+        Retrieve a catalogue category by its ID from a MongoDB database.
+
+        :param catalogue_category_id: The ID of the catalogue category to retrieve.
+        :return: The retrieved catalogue category, or `None` if not found.
+        """
+        catalogue_category = self._collection.find_one({"_id": CustomObjectId(catalogue_category_id)})
+        if catalogue_category:
+            return CatalogueCategoryOut(**catalogue_category)
+        return None
 
     def _is_duplicate_catalogue_category(self, parent_id: Optional[str], code: str) -> bool:
         """
