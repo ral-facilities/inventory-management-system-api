@@ -3,6 +3,7 @@ Module for providing a service for managing catalogue categories using the `Cata
 """
 import logging
 import re
+from typing import Optional
 
 from fastapi import Depends
 
@@ -37,6 +38,15 @@ class CatalogueCategoryService:
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(name=catalogue_category.name, code=code, parent_id=catalogue_category.parent_id)
         )
+
+    def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
+        """
+        Retrieve a catalogue category by its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to retrieve.
+        :return: The retrieved catalogue category, or `None` if not found.
+        """
+        return self._catalogue_category_repository.get(catalogue_category_id)
 
     def _generate_code(self, name: str) -> str:
         """
