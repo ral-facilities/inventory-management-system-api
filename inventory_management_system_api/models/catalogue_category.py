@@ -6,10 +6,10 @@ from typing import Optional
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
 
-class ObjectIdField(ObjectId):
+class CustomObjectIdField(ObjectId):
     """
     Custom field for handling MongoDB ObjectId validation.
     """
@@ -19,18 +19,14 @@ class ObjectIdField(ObjectId):
         yield cls.validate
 
     @classmethod
-    def validate(cls, value: str) -> ObjectId:
+    def validate(cls, value: str) -> CustomObjectId:
         """
         Validate if the string value is a valid `ObjectId`.
 
         :param value: The string value to be validated.
         :return: The validated `ObjectId`.
-        :raises InvalidObjectIdError: If the value is an invalid `ObjectId`.
         """
-        if not ObjectId.is_valid(value):
-            field_name = cls.__name__
-            raise InvalidObjectIdError(f"Invalid ObjectId value for '{field_name}' field")
-        return ObjectId(value)
+        return CustomObjectId(value)
 
 
 class CatalogueCategoryIn(BaseModel):
@@ -40,7 +36,7 @@ class CatalogueCategoryIn(BaseModel):
 
     name: str
     code: str
-    parent_id: Optional[ObjectIdField] = None
+    parent_id: Optional[CustomObjectIdField] = None
 
 
 class CatalogueCategoryOut(CatalogueCategoryIn):
