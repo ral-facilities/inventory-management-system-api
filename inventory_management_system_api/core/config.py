@@ -10,6 +10,7 @@ class APIConfig(BaseModel):
     """
     Configuration model for the API.
     """
+
     title: str = "Inventory Management System API"
     description: str = "This is the API for the Inventory Management System"
 
@@ -18,6 +19,7 @@ class DatabaseConfig(BaseModel):
     """
     Configuration model for the database.
     """
+
     protocol: str
     username: str
     password: str
@@ -34,6 +36,7 @@ class Config(BaseSettings):
     automatically reads environment variables. If values are not passed in form of system environment variables at
     runtime, it will attempt to read them from the .env file.
     """
+
     api: APIConfig
     database: DatabaseConfig
 
