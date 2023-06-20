@@ -61,7 +61,9 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to retrieve.
         :return: The retrieved catalogue category, or `None` if not found.
         """
-        catalogue_category = self._collection.find_one({"_id": CustomObjectId(catalogue_category_id)})
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        logger.info("Retrieving catalogue category with id: %s", catalogue_category_id)
+        catalogue_category = self._collection.find_one({"_id": catalogue_category_id})
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
         return None

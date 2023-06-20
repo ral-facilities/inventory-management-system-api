@@ -82,4 +82,5 @@ class CatalogueCategoryService:
         :param code: The code of the catalogue category.
         :return: The generated path for the catalogue category.
         """
+        logger.info("Generating path for the catalogue category")
         return f"{parent_path}{code}/" if parent_path else "/"
