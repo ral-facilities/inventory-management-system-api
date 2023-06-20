@@ -56,6 +56,8 @@ class CatalogueCategoryIn(BaseModel):
 
     name: str
     code: str
+    path: str
+    parent_path: str
     parent_id: Optional[CustomObjectIdField] = None
 
 

@@ -22,3 +22,5 @@ class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
 
     id: str
     code: str
+    path: str
+    parent_path: str

@@ -34,9 +34,20 @@ class CatalogueCategoryService:
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
         """
+        parent_id = catalogue_category.parent_id
+        parent_catalogue_category = self.get(parent_id) if parent_id else None
+        parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
+
         code = self._generate_code(catalogue_category.name)
+        path = self._generate_path(parent_path, code)
         return self._catalogue_category_repository.create(
-            CatalogueCategoryIn(name=catalogue_category.name, code=code, parent_id=catalogue_category.parent_id)
+            CatalogueCategoryIn(
+                name=catalogue_category.name,
+                code=code,
+                path=path,
+                parent_path=parent_path,
+                parent_id=catalogue_category.parent_id,
+            )
         )
 
     def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
@@ -62,3 +73,13 @@ class CatalogueCategoryService:
         logger.info("Generating code for the catalogue category based on its name")
         name = name.lower().strip()
         return re.sub(r"\s+", "-", name)
+
+    def _generate_path(self, parent_path: Optional[str], code: str) -> str:
+        """
+        Generate a path for a catalogue category based on its code and the path from its parent.
+
+        :param parent_path: The path of the parent catalogue category.
+        :param code: The code of the catalogue category.
+        :return: The generated path for the catalogue category.
+        """
+        return f"{parent_path}{code}/" if parent_path else "/"
