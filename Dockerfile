@@ -10,5 +10,14 @@ RUN --mount=type=cache,target=/root/.cache \
     \
     python3 -m pip install .;
 
+ENV API__TITLE="Inventory Management System API"
+ENV API__DESCRIPTION="This is the API for the Inventory Management System"
+ENV DATABASE__PROTOCOL=mongodb
+ENV DATABASE__USERNAME=root
+ENV DATABASE__PASSWORD=example
+ENV DATABASE__HOSTNAME=localhost
+ENV DATABASE__PORT=27017
+ENV DATABASE__NAME=ims
+
 CMD ["uvicorn", "inventory_management_system_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 EXPOSE 8000

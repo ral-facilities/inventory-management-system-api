@@ -9,6 +9,7 @@ that can be accessed at `localhost:27017` using `root` as the username and `exam
 ### Prerequisites
 - Docker installed (if you want to run the microservice inside Docker)
 - Python 3.10 (or above) and MongoDB 6.0 installed on your machine if you are not using Docker
+- [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using a GUI)
 
 ### Docker Setup
 
@@ -17,9 +18,8 @@ that can be accessed at `localhost:27017` using `root` as the username and `exam
     ```bash
     git clone git@github.com:ral-facilities/inventory-management-system-api.git
     cd inventory-management-system-api
-3. Create a `.env` file and a `logging.ini` file.
+3. Create a `logging.ini` file.
     ```bash
-   cp .env.example .env
    cp logging.example.ini logging.ini
     ```
 
