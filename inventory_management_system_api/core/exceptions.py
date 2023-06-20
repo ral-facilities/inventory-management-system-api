@@ -9,9 +9,15 @@ class DatabaseError(Exception):
     """
 
 
+class DuplicateRecordError(DatabaseError):
+    """
+    The record being added to the database is a duplicate.
+    """
+
+
 class InvalidObjectIdError(DatabaseError):
     """
-    The provided value is not a valid ObjectId
+    The provided value is not a valid ObjectId.
     """
 
 

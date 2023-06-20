@@ -5,22 +5,21 @@ import pytest
 
 from bson import ObjectId
 
-from inventory_management_system_api.core.database import db
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema, \
-    CatalogueCategorySchema
+from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueCategoryPostRequestSchema,
+    CatalogueCategorySchema,
+)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_catalogue_categories(request):
+@pytest.fixture(name="cleanup_catalogue_categories", autouse=True)
+def fixture_cleanup_catalogue_categories():
     """
     Fixture to clean up the catalogue categories collection in the test database after the session finishes.
-
-    :param request: The pytest request object.
     """
-    def session_finish():
-        db.catalogue_categories.delete_many({})
-
-    request.addfinalizer(session_finish)
+    database = get_database()
+    yield
+    database.catalogue_categories.delete_many({})
 
 
 def test_create_catalogue_category(test_client):
@@ -36,6 +35,7 @@ def test_create_catalogue_category(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     assert catalogue_category.name == catalogue_category_post.name
+    assert catalogue_category.code == "category-a"
 
 
 def test_create_catalogue_category_with_valid_parent_id(test_client):
@@ -47,7 +47,7 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     parent_id = catalogue_category.id
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", parent_id=parent_id)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", parent_id=parent_id)
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     assert response.status_code == 201
@@ -56,6 +56,28 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
 
     assert catalogue_category.name == catalogue_category_post.name
     assert catalogue_category.parent_id == parent_id
+    assert catalogue_category.code == "category-a"
+
+
+def test_create_catalogue_category_with_duplicate_name_within_parent(test_client):
+    """
+    Test creating a catalogue category with a duplicate name within the parent catalogue category.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A")
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    parent_id = catalogue_category.id
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", parent_id=parent_id)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", parent_id=parent_id)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    assert response.status_code == 409
+    assert (
+        response.json()["detail"]
+        == "A catalogue category with the same name already exists within the parent catalogue category"
+    )
 
 
 def test_create_catalogue_category_with_invalid_parent_id(test_client):

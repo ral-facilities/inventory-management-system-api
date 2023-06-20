@@ -11,6 +11,8 @@ services:
     restart: on-failure
     depends_on:
       - mongo-db
+    environment:
+      - DATABASE__HOSTNAME=mongo-db
 
   mongo-db:
     image: mongo:6.0-jammy

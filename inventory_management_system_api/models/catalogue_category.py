@@ -21,11 +21,11 @@ class ObjectIdField(ObjectId):
     @classmethod
     def validate(cls, value: str) -> ObjectId:
         """
-        Validate if the string value is a valid ObjectId.
+        Validate if the string value is a valid `ObjectId`.
 
         :param value: The string value to be validated.
-        :return: The validated ObjectId.
-        :raises InvalidObjectIdError: If the value is an invalid ObjectId.
+        :return: The validated `ObjectId`.
+        :raises InvalidObjectIdError: If the value is an invalid `ObjectId`.
         """
         if not ObjectId.is_valid(value):
             field_name = cls.__name__
@@ -37,7 +37,9 @@ class CatalogueCategoryIn(BaseModel):
     """
     Input database model for a catalogue category.
     """
+
     name: str
+    code: str
     parent_id: Optional[ObjectIdField] = None
 
 
@@ -45,6 +47,7 @@ class CatalogueCategoryOut(CatalogueCategoryIn):
     """
     Output database model for a catalogue category.
     """
+
     id: ObjectId = Field(alias="_id")
 
     class Config:
