@@ -12,6 +12,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
     """
 
     name: str
+    is_leaf: bool
     parent_id: Optional[str] = None
 
 
