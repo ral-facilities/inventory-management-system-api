@@ -7,6 +7,7 @@ from typing import Optional
 
 from fastapi import Depends
 
+from inventory_management_system_api.core.exceptions import LeafCategoryError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema
@@ -38,12 +39,16 @@ class CatalogueCategoryService:
         parent_catalogue_category = self.get(parent_id) if parent_id else None
         parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
 
+        if parent_catalogue_category and parent_catalogue_category.is_leaf:
+            raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+
         code = self._generate_code(catalogue_category.name)
         path = self._generate_path(parent_path, code)
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
                 code=code,
+                is_leaf=catalogue_category.is_leaf,
                 path=path,
                 parent_path=parent_path,
                 parent_id=catalogue_category.parent_id,

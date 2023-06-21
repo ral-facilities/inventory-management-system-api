@@ -10,6 +10,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     InvalidObjectIdError,
     DuplicateRecordError,
+    LeafCategoryError,
 )
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategorySchema,
@@ -48,5 +49,9 @@ def post(
         raise HTTPException(status_code=422, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A catalogue category with the same name already exists within the parent catalogue category"
+        logger.exception(message)
+        raise HTTPException(status_code=409, detail=message) from exc
+    except LeafCategoryError as exc:
+        message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=409, detail=message) from exc
