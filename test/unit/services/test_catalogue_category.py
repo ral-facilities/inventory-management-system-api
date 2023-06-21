@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.exceptions import LeafCategoryError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut, CatalogueCategoryIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema
@@ -42,19 +43,26 @@ def test_create(catalogue_category_repository_mock, catalogue_category_service):
     and calls the repository's create method.
     """
     catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a/", parent_path="/", parent_id=None
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a/",
+        parent_path="/",
+        parent_id=None,
     )
 
     catalogue_category_repository_mock.create.return_value = catalogue_category
 
     created_catalogue_category = catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(name=catalogue_category.name)
+        CatalogueCategoryPostRequestSchema(name=catalogue_category.name, is_leaf=False)
     )
 
     catalogue_category_repository_mock.create.assert_called_once_with(
         CatalogueCategoryIn(
             name=catalogue_category.name,
             code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
@@ -73,23 +81,27 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
         id=str(ObjectId()),
         name="Category B",
         code="category-b",
+        is_leaf=True,
         path="/category-a/category-b/",
         parent_path="/category-a/",
         parent_id=str(ObjectId()),
     )
 
     catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
-        id=str(ObjectId()),
+        id=catalogue_category.parent_id,
         name="Category A",
         code="category-a",
+        is_leaf=False,
         path="/category-a/",
         parent_path="/",
-        parent_id=catalogue_category.parent_id,
+        parent_id=None,
     )
     catalogue_category_repository_mock.create.return_value = catalogue_category
 
     created_catalogue_category = catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(name=catalogue_category.name, parent_id=catalogue_category.parent_id)
+        CatalogueCategoryPostRequestSchema(
+            name=catalogue_category.name, is_leaf=catalogue_category.is_leaf, parent_id=catalogue_category.parent_id
+        )
     )
 
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.parent_id)
@@ -97,6 +109,7 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
         CatalogueCategoryIn(
             name=catalogue_category.name,
             code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
@@ -115,6 +128,7 @@ def test_create_with_whitespace_name(catalogue_category_repository_mock, catalog
         id=str(ObjectId()),
         name="    Category   A         ",
         code="category-a",
+        is_leaf=True,
         path="/category-a/",
         parent_path="/",
         parent_id=None,
@@ -123,16 +137,50 @@ def test_create_with_whitespace_name(catalogue_category_repository_mock, catalog
     catalogue_category_repository_mock.create.return_value = catalogue_category
 
     created_catalogue_category = catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(name=catalogue_category.name)
+        CatalogueCategoryPostRequestSchema(name=catalogue_category.name, is_leaf=catalogue_category.is_leaf)
     )
 
     catalogue_category_repository_mock.create.assert_called_once_with(
         CatalogueCategoryIn(
             name=catalogue_category.name,
             code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
         )
     )
     assert created_catalogue_category == catalogue_category
+
+
+def test_create_with_leaf_parent_catalogue_category(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test creating a catalogue category in a leaf parent catalogue category.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-a/category-b/",
+        parent_path="/category-a/",
+        parent_id=str(ObjectId()),
+    )
+
+    catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
+        id=catalogue_category.parent_id,
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        path="/category-a/",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    with pytest.raises(LeafCategoryError):
+        catalogue_category_service.create(
+            CatalogueCategoryPostRequestSchema(
+                name=catalogue_category.name, is_leaf=catalogue_category.is_leaf, parent_id=catalogue_category.parent_id
+            )
+        )
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.parent_id)

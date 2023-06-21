@@ -82,7 +82,13 @@ def test_create(database_mock, catalogue_category_repository):
     a duplicate catalogue category, and creates the catalogue category.
     """
     catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a/", parent_path="/", parent_id=None
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a/",
+        parent_path="/",
+        parent_id=None,
     )
 
     # Mock count_documents to return 0 (no duplicate catalogue category found within the parent catalogue category)
@@ -96,6 +102,7 @@ def test_create(database_mock, catalogue_category_repository):
             "_id": CustomObjectId(catalogue_category.id),
             "name": catalogue_category.name,
             "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": catalogue_category.parent_id,
@@ -106,6 +113,7 @@ def test_create(database_mock, catalogue_category_repository):
         CatalogueCategoryIn(
             name=catalogue_category.name,
             code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
@@ -116,6 +124,7 @@ def test_create(database_mock, catalogue_category_repository):
         {
             "name": catalogue_category.name,
             "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": catalogue_category.parent_id,
@@ -133,6 +142,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
+        is_leaf=True,
         name="Category B",
         code="category-b",
         path="/category-a/category-b/",
@@ -147,6 +157,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "_id": CustomObjectId(catalogue_category.parent_id),
             "name": "Category A",
             "code": "category-a",
+            "is_leaf": False,
             "path": "/category-a/",
             "parent_path": "/",
             "parent_id": None,
@@ -163,6 +174,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "_id": CustomObjectId(catalogue_category.id),
             "name": catalogue_category.name,
             "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": CustomObjectId(catalogue_category.parent_id),
@@ -173,6 +185,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         CatalogueCategoryIn(
             name=catalogue_category.name,
             code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
@@ -183,6 +196,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         {
             "name": catalogue_category.name,
             "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": CustomObjectId(catalogue_category.parent_id),
@@ -208,6 +222,7 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
         id=str(ObjectId()),
         name="Category A",
         code="category-a",
+        is_leaf=False,
         path="/category-a/",
         parent_path="/",
         parent_id=str(ObjectId()),
@@ -216,16 +231,18 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
     # Mock find_one to not return a parent catalogue category document
     mock_find_one(database_mock, None)
 
-    with pytest.raises(MissingRecordError):
+    with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
                 code=catalogue_category.code,
+                is_leaf=False,
                 path=catalogue_category.path,
                 parent_path=catalogue_category.parent_path,
                 parent_id=catalogue_category.parent_id,
             )
         )
+    assert str(exc.value) == f"No catalogue category found with id: {catalogue_category.parent_id}"
     database_mock.catalogue_categories.find_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.parent_id)}
     )
@@ -242,6 +259,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
         id=str(ObjectId()),
         name="Category B",
         code="category-b",
+        is_leaf=True,
         path="/category-a/category-b/",
         parent_path="/category-a/",
         parent_id=str(ObjectId()),
@@ -254,6 +272,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
             "_id": CustomObjectId(catalogue_category.parent_id),
             "name": "Category A",
             "code": "category-a",
+            "is_leaf": False,
             "path": "/category-a/",
             "parent_path": "/",
             "parent_id": None,
@@ -262,16 +281,18 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
     # Mock count_documents to return 1 (duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 1)
 
-    with pytest.raises(DuplicateRecordError):
+    with pytest.raises(DuplicateRecordError) as exc:
         catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
                 code=catalogue_category.code,
+                is_leaf=catalogue_category.is_leaf,
                 path=catalogue_category.path,
                 parent_path=catalogue_category.parent_path,
                 parent_id=catalogue_category.parent_id,
             )
         )
+    assert str(exc.value) == "Duplicate catalogue category found within the parent catalogue category"
     database_mock.catalogue_categories.find_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.parent_id)}
     )
