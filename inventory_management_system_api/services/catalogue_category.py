@@ -32,8 +32,13 @@ class CatalogueCategoryService:
         """
         Create a new catalogue category.
 
+        If a parent catalogue category is specified by `parent_id`, the method checks if that exists in the database
+        and raises a `MissingRecordError` if it doesn't exist. It also checks if the parent catalogue is a leaf
+        catalogue category and raises a `LeafCategoryError` if it is.
+
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
+        :raises LeafCategoryError: If the parent catalogue category is a leaf catalogue category
         """
         parent_id = catalogue_category.parent_id
         parent_catalogue_category = self.get(parent_id) if parent_id else None
