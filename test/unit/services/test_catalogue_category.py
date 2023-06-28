@@ -162,8 +162,8 @@ def test_create_with_leaf_parent_catalogue_category(catalogue_category_repositor
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
@@ -172,7 +172,7 @@ def test_create_with_leaf_parent_catalogue_category(catalogue_category_repositor
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=None,
     )
