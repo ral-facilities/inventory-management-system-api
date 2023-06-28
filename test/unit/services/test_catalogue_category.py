@@ -47,7 +47,7 @@ def test_create(catalogue_category_repository_mock, catalogue_category_service):
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=None,
     )
@@ -82,8 +82,8 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
         name="Category B",
         code="category-b",
         is_leaf=True,
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
@@ -92,7 +92,7 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=None,
     )
@@ -129,7 +129,7 @@ def test_create_with_whitespace_name(catalogue_category_repository_mock, catalog
         name="    Category   A         ",
         code="category-a",
         is_leaf=True,
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=None,
     )

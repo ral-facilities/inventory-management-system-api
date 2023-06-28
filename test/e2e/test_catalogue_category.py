@@ -37,7 +37,7 @@ def test_create_catalogue_category(test_client):
     assert catalogue_category.name == catalogue_category_post.name
     assert catalogue_category.code == "category-a"
     assert catalogue_category.is_leaf is False
-    assert catalogue_category.path == "/category-a/"
+    assert catalogue_category.path == "/category-a"
     assert catalogue_category.parent_path == "/"
     assert catalogue_category.parent_id is None
 
@@ -61,8 +61,8 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
     assert catalogue_category.name == catalogue_category_post.name
     assert catalogue_category.code == "category-a"
     assert catalogue_category.is_leaf is True
-    assert catalogue_category.path == "/category-a/category-a/"
-    assert catalogue_category.parent_path == "/category-a/"
+    assert catalogue_category.path == "/category-a/category-a"
+    assert catalogue_category.parent_path == "/category-a"
     assert catalogue_category.parent_id == parent_id
 
 

@@ -86,7 +86,7 @@ def test_create(database_mock, catalogue_category_repository):
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=None,
     )
@@ -145,8 +145,8 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         is_leaf=True,
         name="Category B",
         code="category-b",
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
@@ -158,7 +158,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "name": "Category A",
             "code": "category-a",
             "is_leaf": False,
-            "path": "/category-a/",
+            "path": "/category-a",
             "parent_path": "/",
             "parent_id": None,
         },
@@ -223,7 +223,7 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=str(ObjectId()),
     )
@@ -260,8 +260,8 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
         name="Category B",
         code="category-b",
         is_leaf=True,
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
@@ -273,7 +273,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
             "name": "Category A",
             "code": "category-a",
             "is_leaf": False,
-            "path": "/category-a/",
+            "path": "/category-a",
             "parent_path": "/",
             "parent_id": None,
         },
