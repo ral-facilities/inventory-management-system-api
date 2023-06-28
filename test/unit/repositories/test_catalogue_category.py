@@ -82,7 +82,7 @@ def test_create(database_mock, catalogue_category_repository):
     a duplicate catalogue category, and creates the catalogue category.
     """
     catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a/", parent_path="/", parent_id=None
+        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a", parent_path="/", parent_id=None
     )
 
     # Mock count_documents to return 0 (no duplicate catalogue category found within the parent catalogue category)
@@ -135,8 +135,8 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         id=str(ObjectId()),
         name="Category B",
         code="category-b",
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
@@ -147,7 +147,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "_id": CustomObjectId(catalogue_category.parent_id),
             "name": "Category A",
             "code": "category-a",
-            "path": "/category-a/",
+            "path": "/category-a",
             "parent_path": "/",
             "parent_id": None,
         },
@@ -208,7 +208,7 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
         id=str(ObjectId()),
         name="Category A",
         code="category-a",
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=str(ObjectId()),
     )
@@ -242,8 +242,8 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
         id=str(ObjectId()),
         name="Category B",
         code="category-b",
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
@@ -254,7 +254,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
             "_id": CustomObjectId(catalogue_category.parent_id),
             "name": "Category A",
             "code": "category-a",
-            "path": "/category-a/",
+            "path": "/category-a",
             "parent_path": "/",
             "parent_id": None,
         },

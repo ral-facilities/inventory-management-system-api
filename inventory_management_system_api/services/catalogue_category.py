@@ -74,7 +74,7 @@ class CatalogueCategoryService:
         name = name.lower().strip()
         return re.sub(r"\s+", "-", name)
 
-    def _generate_path(self, parent_path: Optional[str], code: str) -> str:
+    def _generate_path(self, parent_path: str, code: str) -> str:
         """
         Generate a path for a catalogue category based on its code and the path from its parent.
 
@@ -83,4 +83,4 @@ class CatalogueCategoryService:
         :return: The generated path for the catalogue category.
         """
         logger.info("Generating path for the catalogue category")
-        return f"{parent_path}{code}/" if parent_path else "/"
+        return f"{parent_path}{code}" if parent_path.endswith("/") else f"{parent_path}/{code}"

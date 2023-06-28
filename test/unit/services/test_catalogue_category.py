@@ -42,7 +42,7 @@ def test_create(catalogue_category_repository_mock, catalogue_category_service):
     and calls the repository's create method.
     """
     catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a/", parent_path="/", parent_id=None
+        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a", parent_path="/", parent_id=None
     )
 
     catalogue_category_repository_mock.create.return_value = catalogue_category
@@ -73,16 +73,16 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
         id=str(ObjectId()),
         name="Category B",
         code="category-b",
-        path="/category-a/category-b/",
-        parent_path="/category-a/",
+        path="/category-a/category-b",
+        parent_path="/category-a",
         parent_id=str(ObjectId()),
     )
 
     catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
-        id=str(ObjectId()),
+        id=catalogue_category.parent_id,
         name="Category A",
         code="category-a",
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=catalogue_category.parent_id,
     )
@@ -115,7 +115,7 @@ def test_create_with_whitespace_name(catalogue_category_repository_mock, catalog
         id=str(ObjectId()),
         name="    Category   A         ",
         code="category-a",
-        path="/category-a/",
+        path="/category-a",
         parent_path="/",
         parent_id=None,
     )
