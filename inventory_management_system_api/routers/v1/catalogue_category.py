@@ -4,7 +4,7 @@ Module for providing an API router which defines routes for managing catalogue c
 """
 import logging
 
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException, Path
 
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categorie
 
 @router.get(path="/{catalogue_category_id}")
 def get_catalogue_category(
-    catalogue_category_id: str,
+    catalogue_category_id: str = Path(description="The ID of the catalogue category to get"),
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> CatalogueCategorySchema:
     """
