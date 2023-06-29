@@ -20,7 +20,7 @@ from inventory_management_system_api.services.catalogue_category import Catalogu
 
 logger = logging.getLogger()
 
-router = APIRouter(prefix="/v1/catalogue-categories")
+router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categories"])
 
 
 @router.get(path="/{catalogue_category_id}")
