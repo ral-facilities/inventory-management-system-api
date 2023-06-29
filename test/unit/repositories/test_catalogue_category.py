@@ -1,8 +1,8 @@
+# pylint: disable=duplicate-code
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
-from typing import Any
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from bson import ObjectId
@@ -10,8 +10,9 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import MissingRecordError, DuplicateRecordError
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 
 
@@ -48,14 +49,15 @@ def mock_count_documents(database_mock: Mock, count: int) -> None:
     database_mock.catalogue_categories.count_documents.return_value = count
 
 
-def mock_insert_one(database_mock: Mock, inserted_id: Any) -> None:
+def mock_insert_one(database_mock: Mock, inserted_id: ObjectId) -> None:
     """
     Mock the `insert_one` method of the MongoDB database mock to return an `InsertOneResult` object. The passed
     `inserted_id` value is returned as the `inserted_id` attribute of the `InsertOneResult` object, enabling for the
     code that relies on the `inserted_id` value to work.
 
     :param database_mock: Mocked MongoDB database instance.
-    :param inserted_id: The ID to be assigned to the `inserted_id` attribute of the `InsertOneResult` object
+    :param inserted_id: The `ObjectId` value to be assigned to the `inserted_id` attribute of the `InsertOneResult`
+        object
     """
     database_mock.catalogue_categories.insert_one.return_value = InsertOneResult(
         inserted_id=inserted_id, acknowledged=True
@@ -79,35 +81,47 @@ def test_create(database_mock, catalogue_category_repository):
     Verify that the `create` method properly handles the catalogue category to be created, finds that there is not
     a duplicate catalogue category, and creates the catalogue category.
     """
-    catalogue_category = {"id": ObjectId(), "name": "Category A", "code": "category-a", "parent_id": None}
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()), name="Category A", code="category-a", path="/category-a", parent_path="/", parent_id=None
+    )
 
     # Mock count_documents to return 0 (no duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 0)
     # Mock insert_one to return an object for the inserted catalogue category document
-    mock_insert_one(database_mock, catalogue_category["id"])
+    mock_insert_one(database_mock, CustomObjectId(catalogue_category.id))
     # Mock find_one to return the inserted catalogue category document
     mock_find_one(
         database_mock,
         {
-            "_id": catalogue_category["id"],
-            "name": catalogue_category["name"],
-            "code": catalogue_category["code"],
-            "parent_id": catalogue_category["parent_id"],
+            "_id": CustomObjectId(catalogue_category.id),
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": catalogue_category.parent_id,
         },
     )
 
     created_catalogue_category = catalogue_category_repository.create(
-        CatalogueCategoryIn(name=catalogue_category["name"], code=catalogue_category["code"])
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+        )
     )
 
     database_mock.catalogue_categories.insert_one.assert_called_once_with(
         {
-            "name": catalogue_category["name"],
-            "code": catalogue_category["code"],
-            "parent_id": catalogue_category["parent_id"],
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": catalogue_category.parent_id,
         }
     )
-    database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": catalogue_category["id"]})
+    database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category.id)})
     assert created_catalogue_category == catalogue_category
 
 
@@ -117,42 +131,69 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
 
     Verify that the `create` method properly handles a catalogue category with a parent ID.
     """
-    catalogue_category = {"id": ObjectId(), "name": "Category B", "code": "category-b", "parent_id": ObjectId()}
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        path="/category-a/category-b",
+        parent_path="/category-a",
+        parent_id=str(ObjectId()),
+    )
 
     # Mock find_one to return the parent catalogue category document
     mock_find_one(
         database_mock,
-        {"_id": catalogue_category["parent_id"], "name": "Category A", "code": "category-a", "parent_id": None},
+        {
+            "_id": CustomObjectId(catalogue_category.parent_id),
+            "name": "Category A",
+            "code": "category-a",
+            "path": "/category-a",
+            "parent_path": "/",
+            "parent_id": None,
+        },
     )
     # Mock count_documents to return 0 (no duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 0)
     # Mock insert_one to return an object for the inserted catalogue category document
-    mock_insert_one(database_mock, catalogue_category["id"])
+    mock_insert_one(database_mock, CustomObjectId(catalogue_category.id))
     # Mock find_one to return the inserted catalogue category document
     mock_find_one(
         database_mock,
         {
-            "_id": catalogue_category["id"],
-            "name": catalogue_category["name"],
-            "code": catalogue_category["code"],
-            "parent_id": catalogue_category["parent_id"],
+            "_id": CustomObjectId(catalogue_category.id),
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": CustomObjectId(catalogue_category.parent_id),
         },
     )
 
     created_catalogue_category = catalogue_category_repository.create(
         CatalogueCategoryIn(
-            name=catalogue_category["name"], code=catalogue_category["code"], parent_id=catalogue_category["parent_id"]
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
         )
     )
 
     database_mock.catalogue_categories.insert_one.assert_called_once_with(
         {
-            "name": catalogue_category["name"],
-            "code": catalogue_category["code"],
-            "parent_id": catalogue_category["parent_id"],
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": CustomObjectId(catalogue_category.parent_id),
         }
     )
-    database_mock.catalogue_categories.find_one.assert_called_with({"_id": catalogue_category["id"]})
+    database_mock.catalogue_categories.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(catalogue_category.parent_id)}),
+            call({"_id": CustomObjectId(catalogue_category.id)}),
+        ]
+    )
     assert created_catalogue_category == catalogue_category
 
 
@@ -163,7 +204,14 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
     Verify that the `create` method properly handles a catalogue category with a nonexistent parent ID, does not find a
     parent catalogue category with an ID specified by `parent_id`, and does not create the catalogue category.
     """
-    catalogue_category = {"id": ObjectId(), "name": "Category A", "code": "category-a", "parent_id": ObjectId()}
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        path="/category-a",
+        parent_path="/",
+        parent_id=str(ObjectId()),
+    )
 
     # Mock find_one to not return a parent catalogue category document
     mock_find_one(database_mock, None)
@@ -171,12 +219,16 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
     with pytest.raises(MissingRecordError):
         catalogue_category_repository.create(
             CatalogueCategoryIn(
-                name=catalogue_category["name"],
-                code=catalogue_category["code"],
-                parent_id=catalogue_category["parent_id"],
+                name=catalogue_category.name,
+                code=catalogue_category.code,
+                path=catalogue_category.path,
+                parent_path=catalogue_category.parent_path,
+                parent_id=catalogue_category.parent_id,
             )
         )
-    database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": catalogue_category["parent_id"]})
+    database_mock.catalogue_categories.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_category.parent_id)}
+    )
 
 
 def test_create_with_duplicate_name_within_parent(database_mock, catalogue_category_repository):
@@ -186,12 +238,26 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
     Verify that the `create` method properly handles a catalogue category with a duplicate name, find that there is a
     duplicate catalogue category, and does not create the catalogue category.
     """
-    catalogue_category = {"id": ObjectId(), "name": "Category B", "code": "category-b", "parent_id": ObjectId()}
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        path="/category-a/category-b",
+        parent_path="/category-a",
+        parent_id=str(ObjectId()),
+    )
 
     # Mock find_one to return the parent catalogue category document
     mock_find_one(
         database_mock,
-        {"_id": catalogue_category["parent_id"], "name": "Category A", "code": "category-a", "parent_id": None},
+        {
+            "_id": CustomObjectId(catalogue_category.parent_id),
+            "name": "Category A",
+            "code": "category-a",
+            "path": "/category-a",
+            "parent_path": "/",
+            "parent_id": None,
+        },
     )
     # Mock count_documents to return 1 (duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 1)
@@ -199,12 +265,16 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
     with pytest.raises(DuplicateRecordError):
         catalogue_category_repository.create(
             CatalogueCategoryIn(
-                name=catalogue_category["name"],
-                code=catalogue_category["code"],
-                parent_id=catalogue_category["parent_id"],
+                name=catalogue_category.name,
+                code=catalogue_category.code,
+                path=catalogue_category.path,
+                parent_path=catalogue_category.parent_path,
+                parent_id=catalogue_category.parent_id,
             )
         )
-    database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": catalogue_category["parent_id"]})
+    database_mock.catalogue_categories.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_category.parent_id)}
+    )
     database_mock.catalogue_categories.count_documents.assert_called_once_with(
-        {"parent_id": catalogue_category["parent_id"], "code": catalogue_category["code"]}
+        {"parent_id": CustomObjectId(catalogue_category.parent_id), "code": catalogue_category.code}
     )
