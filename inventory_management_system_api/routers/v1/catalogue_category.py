@@ -23,6 +23,34 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/catalogue-categories")
 
 
+@router.get(path="/{catalogue_category_id}")
+def get_catalogue_category(
+    catalogue_category_id: str,
+    catalogue_category_service: CatalogueCategoryService = Depends(),
+) -> CatalogueCategorySchema:
+    """
+    Get a catalogue category by its ID.
+
+    :param catalogue_category_id: The ID of the catalogue category to get.
+    :param catalogue_category_service: The catalogue category service to use.
+    :return: The catalogue category
+    :raises HTTPException: If the specified catalogue category ID is invalid or does not exist in the database.
+    """
+    logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
+    try:
+        catalogue_category = catalogue_category_service.get(catalogue_category_id)
+        if not catalogue_category:
+            raise HTTPException(
+                status_code=404, detail="The requested catalogue category was not found"
+            )
+        return CatalogueCategorySchema(**catalogue_category.dict())
+    except InvalidObjectIdError as exc:
+        logger.exception("The ID is not a valid ObjectId value")
+        raise HTTPException(
+            status_code=404, detail="The requested catalogue category was not found"
+        ) from exc
+
+
 @router.post(path="/", status_code=status.HTTP_201_CREATED)
 def post(
     catalogue_category: CatalogueCategoryPostRequestSchema,
@@ -37,6 +65,7 @@ def post(
     :raises HTTPException:
         - If the specified parent catalogue category ID is invalid or does not exist in the database.
         - If the catalogue category already exists within the parent catalogue category.
+        - If the parent catalogue category is a leaf catalogue category
     """
     logger.info("Creating a new catalogue category")
     logger.debug("Catalogue category data: %s", catalogue_category)
