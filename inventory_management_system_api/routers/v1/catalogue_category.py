@@ -23,7 +23,10 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categories"])
 
 
-@router.get(path="/{catalogue_category_id}")
+@router.get(
+    path="/{catalogue_category_id}",
+    summary="Get a catalogue category by ID",
+)
 def get_catalogue_category(
     catalogue_category_id: str = Path(description="The ID of the catalogue category to get"),
     catalogue_category_service: CatalogueCategoryService = Depends(),
@@ -51,7 +54,11 @@ def get_catalogue_category(
         ) from exc
 
 
-@router.post(path="/", status_code=status.HTTP_201_CREATED)
+@router.post(
+    path="/",
+    summary="Create a new catalogue category",
+    status_code=status.HTTP_201_CREATED,
+)
 def post(
     catalogue_category: CatalogueCategoryPostRequestSchema,
     catalogue_category_service: CatalogueCategoryService = Depends(),
