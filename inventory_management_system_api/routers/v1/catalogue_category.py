@@ -26,6 +26,7 @@ router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categorie
 @router.get(
     path="/{catalogue_category_id}",
     summary="Get a catalogue category by ID",
+    response_description="Single catalogue category",
 )
 def get_catalogue_category(
     catalogue_category_id: str = Path(description="The ID of the catalogue category to get"),
@@ -57,6 +58,7 @@ def get_catalogue_category(
 @router.post(
     path="/",
     summary="Create a new catalogue category",
+    response_description="The created catalogue category",
     status_code=status.HTTP_201_CREATED,
 )
 def post(
