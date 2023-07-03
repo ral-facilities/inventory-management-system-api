@@ -68,10 +68,20 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
-    def list(self, path: Optional[str]) -> list[CatalogueCategoryOut]:
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[CatalogueCategoryOut]:
+        """
+        Retrieve catalogue categories from a MongoDB based on the provided filters.
+
+        :param path: The path to filter catalogue categories by.
+        :param parent_path: The parent path to filter catalogue categories by.
+        :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
+            database.
+        """
         query = {}
         if path:
             query["path"] = path
+        if parent_path:
+            query["parent_path"] = parent_path
 
         catalogue_categories = self._collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
