@@ -68,8 +68,12 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
-    def list(self) -> list[CatalogueCategoryOut]:
-        catalogue_categories = self._collection.find()
+    def list(self, path: Optional[str]) -> list[CatalogueCategoryOut]:
+        query = {}
+        if path:
+            query["path"] = path
+
+        catalogue_categories = self._collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
 
     def _is_duplicate_catalogue_category(self, parent_id: Optional[str], code: str) -> bool:

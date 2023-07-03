@@ -69,8 +69,8 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
 
-    def list(self) -> list[CatalogueCategoryOut]:
-        return self._catalogue_category_repository.list()
+    def list(self, path: Optional[str]) -> list[CatalogueCategoryOut]:
+        return self._catalogue_category_repository.list(path)
 
     def _generate_code(self, name: str) -> str:
         """
