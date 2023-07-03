@@ -68,6 +68,10 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
+    def list(self) -> list[CatalogueCategoryOut]:
+        catalogue_categories = self._collection.find()
+        return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
+
     def _is_duplicate_catalogue_category(self, parent_id: Optional[str], code: str) -> bool:
         """
         Check if a catalogue category with the same code already exists within the parent category.

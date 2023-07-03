@@ -69,6 +69,9 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
 
+    def list(self) -> list[CatalogueCategoryOut]:
+        return self._catalogue_category_repository.list()
+
     def _generate_code(self, name: str) -> str:
         """
         Generate a code for a catalogue category based on its name. This is used to maintain uniqueness and prevent

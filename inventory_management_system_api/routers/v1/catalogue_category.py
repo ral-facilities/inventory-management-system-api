@@ -23,6 +23,14 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categories"])
 
 
+@router.get(path="/", summary="Get catalogue categories", response_description="List of catalogue categories")
+def get_catalogue_categories(catalogue_category_service: CatalogueCategoryService = Depends(),
+) -> list[CatalogueCategorySchema]:
+    # pylint: disable=missing-function-docstring
+    catalogue_categories = catalogue_category_service.list()
+    return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
+
+
 @router.get(
     path="/{catalogue_category_id}",
     summary="Get a catalogue category by ID",
