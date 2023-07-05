@@ -225,3 +225,140 @@ def test_get_with_nonexistent_id(catalogue_category_repository_mock, catalogue_c
 
     assert retrieved_catalogue_category is None
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
+
+
+def test_list(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting catalogue categories.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories without filters.
+    """
+    catalogue_category_a = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_b = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_repository_mock.list.return_value = [catalogue_category_a, catalogue_category_b]
+
+    retrieved_catalogue_categories = catalogue_category_service.list(None, None)
+
+    catalogue_category_repository_mock.list.assert_called_once_with(None, None)
+    assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
+
+
+def test_list_with_path_filter(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting catalogue categories based on the provided path filter.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path
+    filter.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_repository_mock.list.return_value = [catalogue_category]
+
+    retrieved_catalogue_categories = catalogue_category_service.list("/category-a", None)
+
+    catalogue_category_repository_mock.list.assert_called_once_with("/category-a", None)
+    assert retrieved_catalogue_categories == [catalogue_category]
+
+
+def test_list_with_parent_path_filter(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting catalogue categories based on the provided parent path filter.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided parent
+    path filter.
+    """
+    catalogue_category_a = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_b = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_repository_mock.list.return_value = [catalogue_category_a, catalogue_category_b]
+
+    retrieved_catalogue_categories = catalogue_category_service.list(None, "/")
+
+    catalogue_category_repository_mock.list.assert_called_once_with(None, "/")
+    assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
+
+
+def test_list_with_path_and_parent_path_filters(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting catalogue categories based on the provided path and parent path filters.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
+    parent path filters.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_repository_mock.list.return_value = [catalogue_category]
+
+    retrieved_catalogue_categories = catalogue_category_service.list("/category-b", "/")
+
+    catalogue_category_repository_mock.list.assert_called_once_with("/category-b", "/")
+    assert retrieved_catalogue_categories == [catalogue_category]
+
+
+def test_list_with_path_and_parent_path_filters_no_matching_results(
+    catalogue_category_repository_mock, catalogue_category_service
+):
+    """
+    Test getting catalogue categories based on the provided path and parent path filters when there is no matching
+    results in the database.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
+    parent path filters.
+    """
+    catalogue_category_repository_mock.list.return_value = []
+
+    retrieved_catalogue_categories = catalogue_category_service.list("/category-b", "/")
+
+    catalogue_category_repository_mock.list.assert_called_once_with("/category-b", "/")
+    assert retrieved_catalogue_categories == []

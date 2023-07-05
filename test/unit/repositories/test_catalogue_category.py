@@ -2,11 +2,13 @@
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
-from unittest.mock import Mock, call
+from typing import List
+from unittest.mock import Mock, call, MagicMock
 
 import pytest
 from bson import ObjectId
 from pymongo.collection import Collection
+from pymongo.cursor import Cursor
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
@@ -66,6 +68,18 @@ def mock_insert_one(database_mock: Mock, inserted_id: ObjectId) -> None:
     database_mock.catalogue_categories.insert_one.return_value = InsertOneResult(
         inserted_id=inserted_id, acknowledged=True
     )
+
+
+def mock_find(database_mock: Mock, documents: List[dict]) -> None:
+    """
+    Mocks the `find` method of the MongoDB database mock to return a specific list of documents.
+
+    :param database_mock: Mocked MongoDB database instance.
+    :param documents: The list of documents to be returned by the `find` method.
+    """
+    cursor_mock = MagicMock(Cursor)
+    cursor_mock.__iter__.return_value = iter(documents)
+    database_mock.catalogue_categories.find.return_value = cursor_mock
 
 
 def mock_find_one(database_mock: Mock, document: dict | None) -> None:
@@ -367,3 +381,213 @@ def test_get_with_nonexistent_id(database_mock, catalogue_category_repository):
 
     assert retrieved_catalogue_category is None
     database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category_id)})
+
+
+def test_list(database_mock, catalogue_category_repository):
+    """
+    Test getting catalogue categories.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories without filters.
+    """
+    catalogue_category_a = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_b = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    # Mock find to return a list of catalogue category documents
+    mock_find(
+        database_mock,
+        [
+            {
+                "_id": CustomObjectId(catalogue_category_a.id),
+                "name": catalogue_category_a.name,
+                "code": catalogue_category_a.code,
+                "is_leaf": catalogue_category_a.is_leaf,
+                "path": catalogue_category_a.path,
+                "parent_path": catalogue_category_a.parent_path,
+                "parent_id": catalogue_category_a.parent_id,
+            },
+            {
+                "_id": CustomObjectId(catalogue_category_b.id),
+                "name": catalogue_category_b.name,
+                "code": catalogue_category_b.code,
+                "is_leaf": catalogue_category_b.is_leaf,
+                "path": catalogue_category_b.path,
+                "parent_path": catalogue_category_b.parent_path,
+                "parent_id": catalogue_category_b.parent_id,
+            },
+        ],
+    )
+
+    retrieved_catalogue_categories = catalogue_category_repository.list(None, None)
+
+    database_mock.catalogue_categories.find.assert_called_once_with({})
+    assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
+
+
+def test_list_with_path_filter(database_mock, catalogue_category_repository):
+    """
+    Test getting catalogue categories based on the provided path filter.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path
+    filter.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    # Mock find to return a list of catalogue category documents
+    mock_find(
+        database_mock,
+        [
+            {
+                "_id": CustomObjectId(catalogue_category.id),
+                "name": catalogue_category.name,
+                "code": catalogue_category.code,
+                "is_leaf": catalogue_category.is_leaf,
+                "path": catalogue_category.path,
+                "parent_path": catalogue_category.parent_path,
+                "parent_id": catalogue_category.parent_id,
+            }
+        ],
+    )
+
+    retrieved_catalogue_categories = catalogue_category_repository.list("/category-a", None)
+
+    database_mock.catalogue_categories.find.assert_called_once_with({"path": "/category-a"})
+    assert retrieved_catalogue_categories == [catalogue_category]
+
+
+def test_list_with_parent_path_filter(database_mock, catalogue_category_repository):
+    """
+    Test getting catalogue categories based on the provided parent path filter.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided parent
+    path filter.
+    """
+    catalogue_category_a = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_b = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    # Mock find to return a list of catalogue category documents
+    mock_find(
+        database_mock,
+        [
+            {
+                "_id": CustomObjectId(catalogue_category_a.id),
+                "name": catalogue_category_a.name,
+                "code": catalogue_category_a.code,
+                "is_leaf": catalogue_category_a.is_leaf,
+                "path": catalogue_category_a.path,
+                "parent_path": catalogue_category_a.parent_path,
+                "parent_id": catalogue_category_a.parent_id,
+            },
+            {
+                "_id": CustomObjectId(catalogue_category_b.id),
+                "name": catalogue_category_b.name,
+                "code": catalogue_category_b.code,
+                "is_leaf": catalogue_category_b.is_leaf,
+                "path": catalogue_category_b.path,
+                "parent_path": catalogue_category_b.parent_path,
+                "parent_id": catalogue_category_b.parent_id,
+            },
+        ],
+    )
+
+    retrieved_catalogue_categories = catalogue_category_repository.list(None, "/")
+
+    database_mock.catalogue_categories.find.assert_called_once_with({"parent_path": "/"})
+    assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
+
+
+def test_list_with_path_and_parent_path_filters(database_mock, catalogue_category_repository):
+    """
+    Test getting catalogue categories based on the provided path and parent path filters.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
+    parent path filters.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    # Mock find to return a list of catalogue category documents
+    mock_find(
+        database_mock,
+        [
+            {
+                "_id": CustomObjectId(catalogue_category.id),
+                "name": catalogue_category.name,
+                "code": catalogue_category.code,
+                "is_leaf": catalogue_category.is_leaf,
+                "path": catalogue_category.path,
+                "parent_path": catalogue_category.parent_path,
+                "parent_id": catalogue_category.parent_id,
+            }
+        ],
+    )
+
+    retrieved_catalogue_categories = catalogue_category_repository.list("/category-b", "/")
+
+    database_mock.catalogue_categories.find.assert_called_once_with({"path": "/category-b", "parent_path": "/"})
+    assert retrieved_catalogue_categories == [catalogue_category]
+
+
+def test_list_with_path_and_parent_path_filters_no_matching_results(database_mock, catalogue_category_repository):
+    """
+    Test getting catalogue categories based on the provided path and parent path filters when there is no matching
+    results in the database.
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
+    parent path filters.
+    """
+    # Mock find to return an empty list of catalogue category documents
+    mock_find(database_mock, [])
+
+    retrieved_catalogue_categories = catalogue_category_repository.list("/category-a", "/")
+
+    database_mock.catalogue_categories.find.assert_called_once_with({"path": "/category-a", "parent_path": "/"})
+    assert retrieved_catalogue_categories == []

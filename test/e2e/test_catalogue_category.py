@@ -179,3 +179,114 @@ def test_get_catalogue_category_with_nonexistent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "The requested catalogue category was not found"
+
+
+def test_get_catalogue_categories(test_client):
+    """
+    Test getting catalogue categories.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", is_leaf=False)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    parent_id = catalogue_category.id
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category C", is_leaf=True, parent_id=parent_id)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get("/v1/catalogue-categories")
+
+    assert response.status_code == 200
+
+    catalogue_categories = [CatalogueCategorySchema(**r) for r in response.json()]
+
+    assert len(catalogue_categories) == 3
+    assert catalogue_categories[0].path == "/category-a"
+    assert catalogue_categories[0].parent_path == "/"
+    assert catalogue_categories[1].path == "/category-b"
+    assert catalogue_categories[1].parent_path == "/"
+    assert catalogue_categories[2].path == "/category-b/category-c"
+    assert catalogue_categories[2].parent_path == "/category-b"
+
+
+def test_list_with_path_filter(test_client):
+    """
+    Test getting catalogue categories based on the provided parent path filter.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-a"})
+
+    assert response.status_code == 200
+
+    catalogue_categories = [CatalogueCategorySchema(**r) for r in response.json()]
+
+    assert len(catalogue_categories) == 1
+    assert catalogue_categories[0].path == "/category-a"
+    assert catalogue_categories[0].parent_path == "/"
+
+
+def test_list_with_parent_path_filter(test_client):
+    """
+    Test getting catalogue categories based on the provided parent path filter.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", is_leaf=False)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    parent_id = catalogue_category.id
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category C", is_leaf=True, parent_id=parent_id)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get("/v1/catalogue-categories", params={"parent_path": "/"})
+
+    assert response.status_code == 200
+
+    catalogue_categories = [CatalogueCategorySchema(**r) for r in response.json()]
+
+    assert len(catalogue_categories) == 1
+    assert catalogue_categories[0].path == "/category-b"
+    assert catalogue_categories[0].parent_path == "/"
+
+
+def test_list_with_path_and_parent_path_filters(test_client):
+    """
+    Test getting catalogue categories based on the provided path and parent path filters.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-b", "parent_path": "/"})
+
+    assert response.status_code == 200
+
+    catalogue_categories = [CatalogueCategorySchema(**r) for r in response.json()]
+
+    assert len(catalogue_categories) == 1
+    assert catalogue_categories[0].path == "/category-b"
+    assert catalogue_categories[0].parent_path == "/"
+
+
+def test_list_with_path_and_parent_path_filters_no_matching_results(test_client):
+    """
+    Test getting catalogue categories based on the provided path and parent path filters when there is no matching
+    results in the database.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category B", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-c", "parent_path": "/"})
+
+    assert response.status_code == 200
+
+    catalogue_categories = [CatalogueCategorySchema(**r) for r in response.json()]
+
+    assert len(catalogue_categories) == 0

@@ -69,6 +69,16 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
 
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[CatalogueCategoryOut]:
+        """
+        Retrieve catalogue categories based on the provided filters.
+
+        :param path: The path to filter catalogue categories by.
+        :param parent_path: The parent path to filter catalogue categories by.
+        :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
+        """
+        return self._catalogue_category_repository.list(path, parent_path)
+
     def _generate_code(self, name: str) -> str:
         """
         Generate a code for a catalogue category based on its name. This is used to maintain uniqueness and prevent
