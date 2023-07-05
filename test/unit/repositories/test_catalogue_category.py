@@ -11,7 +11,11 @@ from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError, DuplicateRecordError
+from inventory_management_system_api.core.exceptions import (
+    MissingRecordError,
+    DuplicateRecordError,
+    InvalidObjectIdError,
+)
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 
@@ -242,7 +246,7 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
                 parent_id=catalogue_category.parent_id,
             )
         )
-    assert str(exc.value) == f"No catalogue category found with id: {catalogue_category.parent_id}"
+    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category.parent_id}"
     database_mock.catalogue_categories.find_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.parent_id)}
     )
@@ -299,3 +303,67 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
     database_mock.catalogue_categories.count_documents.assert_called_once_with(
         {"parent_id": CustomObjectId(catalogue_category.parent_id), "code": catalogue_category.code}
     )
+
+
+def test_get(database_mock, catalogue_category_repository):
+    """
+    Test getting a catalogue category.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue category by ID.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    # Mock find_one to return a catalogue category document
+    mock_find_one(
+        database_mock,
+        {
+            "_id": CustomObjectId(catalogue_category.id),
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": catalogue_category.parent_id,
+        },
+    )
+
+    retrieved_catalogue_category = catalogue_category_repository.get(catalogue_category.id)
+
+    database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category.id)})
+    assert retrieved_catalogue_category == catalogue_category
+
+
+def test_get_with_invalid_id(catalogue_category_repository):
+    """
+    Test getting a catalogue category with an invalid ID.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue category with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_category_repository.get("invalid")
+    assert str(exc.value) == "Invalid ObjectId value"
+
+
+def test_get_with_nonexistent_id(database_mock, catalogue_category_repository):
+    """
+    Test getting a catalogue category with a nonexistent ID.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue category with a nonexistent ID.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    # Mock find_one to not return a catalogue category document
+    mock_find_one(database_mock, None)
+
+    retrieved_catalogue_category = catalogue_category_repository.get(catalogue_category_id)
+
+    assert retrieved_catalogue_category is None
+    database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category_id)})

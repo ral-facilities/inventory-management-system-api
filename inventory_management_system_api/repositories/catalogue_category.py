@@ -45,7 +45,7 @@ class CatalogueCategoryRepo:
         logger.info("Inserting the new catalogue category into the database")
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id):
-            raise MissingRecordError(f"No catalogue category found with id: {parent_id}")
+            raise MissingRecordError(f"No catalogue category found with ID: {parent_id}")
 
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
@@ -62,7 +62,7 @@ class CatalogueCategoryRepo:
         :return: The retrieved catalogue category, or `None` if not found.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        logger.info("Retrieving catalogue category with id: %s", catalogue_category_id)
+        logger.info("Retrieving catalogue category with ID: %s", catalogue_category_id)
         catalogue_category = self._collection.find_one({"_id": catalogue_category_id})
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)

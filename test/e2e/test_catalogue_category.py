@@ -127,3 +127,55 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Adding a catalogue category to a leaf parent catalogue category is not allowed"
+
+
+def test_get_catalogue_category(test_client):
+    """
+    Test getting a catalogue category.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    parent_id = catalogue_category.id
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get(f"/v1/catalogue-categories/{response.json()['id']}")
+
+    assert response.status_code == 200
+
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    assert catalogue_category.name == catalogue_category_post.name
+    assert catalogue_category.code == "category-a"
+    assert catalogue_category.is_leaf is True
+    assert catalogue_category.path == "/category-a/category-a"
+    assert catalogue_category.parent_path == "/category-a"
+    assert catalogue_category.parent_id == parent_id
+
+
+def test_get_catalogue_category_with_invalid_id(test_client):
+    """
+    Test getting a catalogue category with an invalid ID.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get("/v1/catalogue-categories/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The requested catalogue category was not found"
+
+
+def test_get_catalogue_category_with_nonexistent_id(test_client):
+    """
+    Test getting a catalogue category with a nonexistent ID.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The requested catalogue category was not found"

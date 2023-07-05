@@ -177,10 +177,51 @@ def test_create_with_leaf_parent_catalogue_category(catalogue_category_repositor
         parent_id=None,
     )
 
-    with pytest.raises(LeafCategoryError):
+    with pytest.raises(LeafCategoryError) as exc:
         catalogue_category_service.create(
             CatalogueCategoryPostRequestSchema(
                 name=catalogue_category.name, is_leaf=catalogue_category.is_leaf, parent_id=catalogue_category.parent_id
             )
         )
+    assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.parent_id)
+
+
+def test_get(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting a catalogue category.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue category by ID.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+    )
+
+    catalogue_category_repository_mock.get.return_value = catalogue_category
+
+    retrieved_catalogue_category = catalogue_category_service.get(catalogue_category.id)
+
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
+    assert retrieved_catalogue_category == catalogue_category
+
+
+def test_get_with_nonexistent_id(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting a catalogue category with a nonexistent ID.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue category with a nonexistent ID.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    catalogue_category_repository_mock.get.return_value = None
+
+    retrieved_catalogue_category = catalogue_category_service.get(catalogue_category_id)
+
+    assert retrieved_catalogue_category is None
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
