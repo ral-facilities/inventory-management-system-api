@@ -7,7 +7,7 @@ version = "0.0.1"
 
 dependencies = [
     "fastapi[all]==0.95.2",
-    "pymongo==4.3.3",
+    "pymongo==4.4.0",
     "uvicorn==0.22.0"
 ]
 
