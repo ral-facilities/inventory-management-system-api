@@ -10,7 +10,7 @@ from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.database import Database
-from pymongo.results import InsertOneResult
+from pymongo.results import InsertOneResult, DeleteResult
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -55,6 +55,20 @@ def mock_count_documents(database_mock: Mock, count: int) -> None:
     database_mock.catalogue_categories.count_documents.return_value = count
 
 
+def mock_delete_one(database_mock: Mock, deleted_count: int) -> None:
+    """
+    Mock the `delete_one` method of the MongoDB database mock to return a `DeleteResult` object. The passed
+    `deleted_count` values is return as the `deleted_count` attribute of the `DeleteResult` object, enabling for the
+    code that relies on the `deleted_count` value to work.
+
+    :param database_mock: Mocked MongoDB database instance.
+    :param deleted_count: The value to be assigned to the `deleted_count` attribute of the `DeleteResult` object
+    """
+    delete_result_mock = Mock(DeleteResult)
+    delete_result_mock.deleted_count = deleted_count
+    database_mock.catalogue_categories.delete_one.return_value = delete_result_mock
+
+
 def mock_insert_one(database_mock: Mock, inserted_id: ObjectId) -> None:
     """
     Mock the `insert_one` method of the MongoDB database mock to return an `InsertOneResult` object. The passed
@@ -65,9 +79,10 @@ def mock_insert_one(database_mock: Mock, inserted_id: ObjectId) -> None:
     :param inserted_id: The `ObjectId` value to be assigned to the `inserted_id` attribute of the `InsertOneResult`
         object
     """
-    database_mock.catalogue_categories.insert_one.return_value = InsertOneResult(
-        inserted_id=inserted_id, acknowledged=True
-    )
+    insert_one_result_mock = Mock(InsertOneResult)
+    insert_one_result_mock.inserted_id = inserted_id
+    insert_one_result_mock.acknowledged = True
+    database_mock.catalogue_categories.insert_one.return_value = insert_one_result_mock
 
 
 def mock_find(database_mock: Mock, documents: List[dict]) -> None:
@@ -316,6 +331,54 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
     )
     database_mock.catalogue_categories.count_documents.assert_called_once_with(
         {"parent_id": CustomObjectId(catalogue_category.parent_id), "code": catalogue_category.code}
+    )
+
+
+def test_delete(database_mock, catalogue_category_repository):
+    """
+    Test deleting a catalogue category.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue category by ID.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    # Mock delete_one to return that one document has been deleted
+    mock_delete_one(database_mock, 1)
+
+    catalogue_category_repository.delete(catalogue_category_id)
+
+    database_mock.catalogue_categories.delete_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_category_id)}
+    )
+
+
+def test_delete_with_invalid_id(catalogue_category_repository):
+    """
+    Test deleting a catalogue category with an invalid ID.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue category with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_category_repository.delete("invalid")
+    assert str(exc.value) == "Invalid ObjectId value"
+
+
+def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository):
+    """
+    Test deleting a catalogue category with a nonexistent ID.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue category with a nonexistent ID.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    # Mock delete_one to return that no document has been deleted
+    mock_delete_one(database_mock, 0)
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_category_repository.delete(catalogue_category_id)
+    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
+    database_mock.catalogue_categories.delete_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_category_id)}
     )
 
 

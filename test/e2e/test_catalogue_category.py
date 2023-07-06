@@ -129,6 +129,47 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
     assert response.json()["detail"] == "Adding a catalogue category to a leaf parent catalogue category is not allowed"
 
 
+def test_delete_catalogue_category(test_client):
+    """
+    Test deleting a catalogue category.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**response.json())
+
+    response = test_client.delete(f"/v1/catalogue-categories/{catalogue_category.id}")
+
+    assert response.status_code == 204
+    response = test_client.get(f"/v1/catalogue-categories/{catalogue_category.id}")
+    assert response.status_code == 404
+
+
+def test_delete_catalogue_category_with_invalid_id(test_client):
+    """
+    Test deleting a catalogue category with an invalid ID.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.delete("/v1/catalogue-categories/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+
+
+def test_delete_catalogue_category_with_nonexistent_id(test_client):
+    """
+    Test deleting a catalogue category with a nonexistent ID.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.delete(f"/v1/catalogue-categories/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+
+
 def test_get_catalogue_category(test_client):
     """
     Test getting a catalogue category.

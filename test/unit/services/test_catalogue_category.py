@@ -187,6 +187,19 @@ def test_create_with_leaf_parent_catalogue_category(catalogue_category_repositor
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.parent_id)
 
 
+def test_delete(catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test deleting a catalogue category.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue category by ID.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    catalogue_category_service.delete(catalogue_category_id)
+
+    catalogue_category_repository_mock.delete.assert_called_once_with(catalogue_category_id)
+
+
 def test_get(catalogue_category_repository_mock, catalogue_category_service):
     """
     Test getting a catalogue category.
