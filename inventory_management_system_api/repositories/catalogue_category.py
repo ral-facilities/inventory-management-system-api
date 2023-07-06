@@ -54,6 +54,18 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(result.inserted_id))
         return catalogue_category
 
+    def delete(self, catalogue_category_id: str) -> None:
+        """
+        Delete a catalogue category by its ID from a MongoDB database.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete.
+        """
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
+        result = self._collection.delete_one({"_id": catalogue_category_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
+
     def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID from a MongoDB database.

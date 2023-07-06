@@ -66,7 +66,7 @@ def get_catalogue_category(
     response_description="The created catalogue category",
     status_code=status.HTTP_201_CREATED,
 )
-def post(
+def create_catalogue_category(
     catalogue_category: CatalogueCategoryPostRequestSchema,
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> CatalogueCategorySchema:
@@ -88,3 +88,23 @@ def post(
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.delete(
+    path="/{catalogue_category_id}",
+    summary="Delete a catalogue category by ID",
+    response_description="Catalogue category deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_catalogue_category(
+    catalogue_category_id: str = Path(description="The ID of the catalogue category to delete"),
+    catalogue_category_service: CatalogueCategoryService = Depends(),
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
+    try:
+        catalogue_category_service.delete(catalogue_category_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "A catalogue category with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
