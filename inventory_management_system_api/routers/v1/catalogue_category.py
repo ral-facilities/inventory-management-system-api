@@ -3,7 +3,7 @@ Module for providing an API router which defines routes for managing catalogue c
 `CatalogueCategoryService` service.
 """
 import logging
-from typing import Optional, Annotated
+from typing import Optional, Annotated, List
 
 from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
@@ -29,8 +29,14 @@ def get_catalogue_categories(
     path: Annotated[Optional[str], Query(description="Filter catalogue categories by path")] = None,
     parent_path: Annotated[Optional[str], Query(description="Filter catalogue categories by parent path")] = None,
     catalogue_category_service: CatalogueCategoryService = Depends(),
-) -> list[CatalogueCategorySchema]:
+) -> List[CatalogueCategorySchema]:
     # pylint: disable=missing-function-docstring
+    logger.info("Getting catalogue categories")
+    if path:
+        logger.debug("Path filter: '%s'", path)
+    if parent_path:
+        logger.debug("Parent path filter: '%s'", parent_path)
+
     catalogue_categories = catalogue_category_service.list(path, parent_path)
     return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
 
