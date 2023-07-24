@@ -9,6 +9,7 @@ from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPostRequestSchema,
     CatalogueCategorySchema,
+    CatalogueItemProperty,
 )
 
 
@@ -36,10 +37,11 @@ def test_create_catalogue_category(test_client):
 
     assert catalogue_category.name == catalogue_category_post.name
     assert catalogue_category.code == "category-a"
-    assert catalogue_category.is_leaf is False
+    assert catalogue_category.is_leaf == catalogue_category_post.is_leaf
     assert catalogue_category.path == "/category-a"
     assert catalogue_category.parent_path == "/"
     assert catalogue_category.parent_id is None
+    assert catalogue_category.catalogue_item_properties == []
 
 
 def test_create_catalogue_category_with_valid_parent_id(test_client):
@@ -51,7 +53,15 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     parent_id = catalogue_category.id
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(
+        name="Category A",
+        is_leaf=True,
+        parent_id=parent_id,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     assert response.status_code == 201
@@ -60,10 +70,11 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
 
     assert catalogue_category.name == catalogue_category_post.name
     assert catalogue_category.code == "category-a"
-    assert catalogue_category.is_leaf is True
+    assert catalogue_category.is_leaf == catalogue_category_post.is_leaf
     assert catalogue_category.path == "/category-a/category-a"
     assert catalogue_category.parent_path == "/category-a"
     assert catalogue_category.parent_id == parent_id
+    assert catalogue_category.catalogue_item_properties == catalogue_category_post.catalogue_item_properties
 
 
 def test_create_catalogue_category_with_duplicate_name_within_parent(test_client):
@@ -77,7 +88,15 @@ def test_create_catalogue_category_with_duplicate_name_within_parent(test_client
     parent_id = catalogue_category.id
     catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False, parent_id=parent_id)
     test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(
+        name="Category A",
+        is_leaf=True,
+        parent_id=parent_id,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     assert response.status_code == 409
@@ -117,7 +136,14 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
     """
     Test creating a catalogue category in a leaf parent catalogue category.
     """
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(
+        name="Category A",
+        is_leaf=True,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
     catalogue_category = CatalogueCategorySchema(**response.json())
 
@@ -179,7 +205,15 @@ def test_get_catalogue_category(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     parent_id = catalogue_category.id
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(
+        name="Category A",
+        is_leaf=True,
+        parent_id=parent_id,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     response = test_client.get(f"/v1/catalogue-categories/{response.json()['id']}")
@@ -190,10 +224,11 @@ def test_get_catalogue_category(test_client):
 
     assert catalogue_category.name == catalogue_category_post.name
     assert catalogue_category.code == "category-a"
-    assert catalogue_category.is_leaf is True
+    assert catalogue_category.is_leaf == catalogue_category_post.is_leaf
     assert catalogue_category.path == "/category-a/category-a"
     assert catalogue_category.parent_path == "/category-a"
     assert catalogue_category.parent_id == parent_id
+    assert catalogue_category.catalogue_item_properties == catalogue_category_post.catalogue_item_properties
 
 
 def test_get_catalogue_category_with_invalid_id(test_client):
@@ -233,7 +268,15 @@ def test_get_catalogue_categories(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     parent_id = catalogue_category.id
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category C", is_leaf=True, parent_id=parent_id)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(
+        name="Category C",
+        is_leaf=True,
+        parent_id=parent_id,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
     test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     response = test_client.get("/v1/catalogue-categories")
@@ -280,7 +323,15 @@ def test_list_with_parent_path_filter(test_client):
     catalogue_category = CatalogueCategorySchema(**response.json())
 
     parent_id = catalogue_category.id
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category C", is_leaf=True, parent_id=parent_id)
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(
+        name="Category C",
+        is_leaf=True,
+        parent_id=parent_id,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
     test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     response = test_client.get("/v1/catalogue-categories", params={"parent_path": "/"})
