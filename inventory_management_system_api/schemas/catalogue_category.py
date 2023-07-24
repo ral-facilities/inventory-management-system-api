@@ -4,7 +4,7 @@ Module for defining the API schema models for representing catalogue categories.
 from enum import Enum
 from typing import Optional, List, Any, Dict
 
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, validator, root_validator, Field
 
 
 class CatalogueItemPropertyType(str, Enum):
@@ -22,10 +22,10 @@ class CatalogueItemProperty(BaseModel):
     Model representing a catalogue item property.
     """
 
-    name: str
+    name: str = Field(description="The name of the catalogue item property")
     type: CatalogueItemPropertyType
-    unit: Optional[str] = None
-    mandatory: bool
+    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
+    mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
 
     @validator("unit")
     @classmethod
@@ -51,10 +51,15 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
     Schema model for a catalogue category creation request.
     """
 
-    name: str
-    is_leaf: bool
-    parent_id: Optional[str] = None
-    catalogue_item_properties: List[CatalogueItemProperty]
+    name: str = Field(description="The name of the catalogue category")
+    is_leaf: bool = Field(
+        description="Whether the category is a leaf or not. If it is then it can only have catalogue items as "
+        "children but if it is not then it can only have catalogue categories as children."
+    )
+    parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
+    catalogue_item_properties: List[CatalogueItemProperty] = Field(
+        description="The properties that the catalogue items in this category could/should have"
+    )
 
     @root_validator(pre=True)
     @classmethod
@@ -100,7 +105,7 @@ class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
     Schema model for a catalogue category response.
     """
 
-    id: str
-    code: str
-    path: str
-    parent_path: str
+    id: str = Field(description="The ID of the catalogue category")
+    code: str = Field(description="The code of the catalogue category")
+    path: str = Field(description="The path to the catalogue category")
+    parent_path: str = Field(description="The path to the parent catalogue category of the category")
