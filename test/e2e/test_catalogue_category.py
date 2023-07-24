@@ -155,6 +155,66 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
     assert response.json()["detail"] == "Adding a catalogue category to a leaf parent catalogue category is not allowed"
 
 
+def test_create_catalogue_category_with_invalid_catalogue_item_property_type(test_client):
+    """
+    Test creating a catalogue category with an invalid catalogue item property type.
+    """
+    catalogue_category = {
+        "name": "Category A",
+        "is_leaf": True,
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "invalid-type", "unit": "mm", "mandatory": False},
+        ],
+    }
+
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "value is not a valid enumeration member; permitted: 'string', 'number', 'boolean'"
+    )
+
+
+def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalogue_item_property(test_client):
+    """
+    Test creating a catalogue category when a unit is supplied for a boolean catalogue item property.
+    """
+    catalogue_category = {
+        "name": "Category A",
+        "is_leaf": True,
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "boolean", "unit": "mm", "mandatory": False},
+        ],
+    }
+
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["msg"] == "Unit not allowed for boolean catalogue item property 'Property A'"
+
+
+def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_client):
+    """
+    Test creating a non-leaf catalogue category with catalogue item properties.
+    """
+    catalogue_category = {
+        "name": "Category A",
+        "is_leaf": False,
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Property B", "type": "boolean", "mandatory": True},
+        ],
+    }
+
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"] == "Catalogue item properties not allowed for non-leaf catalogue category"
+    )
+
+
 def test_delete_catalogue_category(test_client):
     """
     Test deleting a catalogue category.
