@@ -1,7 +1,7 @@
 """
 Module for defining the database models for representing catalogue categories.
 """
-from typing import Optional
+from typing import Optional, List
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -49,6 +49,17 @@ class StringObjectIdField(str):
         return str(value)
 
 
+class CatalogueItemProperty(BaseModel):
+    """
+    Model representing a catalogue item property.
+    """
+
+    name: str
+    type: str
+    unit: Optional[str] = None
+    mandatory: bool
+
+
 class CatalogueCategoryIn(BaseModel):
     """
     Input database model for a catalogue category.
@@ -60,6 +71,7 @@ class CatalogueCategoryIn(BaseModel):
     path: str
     parent_path: str
     parent_id: Optional[CustomObjectIdField] = None
+    catalogue_item_properties: List[CatalogueItemProperty]
 
 
 class CatalogueCategoryOut(CatalogueCategoryIn):
