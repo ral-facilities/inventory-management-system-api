@@ -3,7 +3,7 @@ Module for providing a service for managing catalogue categories using the `Cata
 """
 import logging
 import re
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import Depends
 
@@ -22,7 +22,7 @@ class CatalogueCategoryService:
 
     def __init__(self, catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo)) -> None:
         """
-        Initialize the `CatalogueCategoryService` with a CatalogueCategoryRepo repository.
+        Initialise the `CatalogueCategoryService` with a `CatalogueCategoryRepo` repository.
 
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
         """
@@ -57,6 +57,7 @@ class CatalogueCategoryService:
                 path=path,
                 parent_path=parent_path,
                 parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
         )
 
@@ -77,7 +78,7 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[CatalogueCategoryOut]:
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories based on the provided filters.
 
