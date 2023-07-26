@@ -27,6 +27,12 @@ class InvalidCatalogueItemPropertyTypeError(Exception):
     """
 
 
+class MissingMandatoryCatalogueItemProperty(Exception):
+    """
+    A mandatory catalogue item property is missing when a catalogue item is attempted to be created.
+    """
+
+
 class DuplicateRecordError(DatabaseError):
     """
     The record being added to the database is a duplicate.
