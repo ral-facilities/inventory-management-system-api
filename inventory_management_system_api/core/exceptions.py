@@ -21,6 +21,12 @@ class NonLeafCategoryError(Exception):
     """
 
 
+class InvalidCatalogueItemPropertyTypeError(Exception):
+    """
+    The type of the provided value does not match the expected type of the catalogue item property.
+    """
+
+
 class DuplicateRecordError(DatabaseError):
     """
     The record being added to the database is a duplicate.
