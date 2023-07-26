@@ -15,6 +15,12 @@ class LeafCategoryError(Exception):
     """
 
 
+class NonLeafCategoryError(Exception):
+    """
+    Catalogue item is attempted to be added to a non-leaf catalogue category.
+    """
+
+
 class DuplicateRecordError(DatabaseError):
     """
     The record being added to the database is a duplicate.
