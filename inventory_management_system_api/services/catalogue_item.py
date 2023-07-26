@@ -4,7 +4,7 @@ repositories.
 """
 import logging
 from numbers import Number
-from typing import Dict
+from typing import Optional, Dict
 
 from fastapi import Depends
 
@@ -145,3 +145,12 @@ class CatalogueItemService:
                 matching_properties[supplied_property_name] = supplied_property
 
         return matching_properties
+
+    def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
+        """
+        Retrieve a catalogue item by its ID.
+
+        :param catalogue_item_id: The ID of the catalogue item to retrieve.
+        :return: The retrieved catalogue item, or `None` if not found.
+        """
+        return self._catalogue_item_repository.get(catalogue_item_id)
