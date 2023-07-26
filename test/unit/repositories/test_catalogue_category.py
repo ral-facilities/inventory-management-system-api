@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     DuplicateRecordError,
     InvalidObjectIdError,
+    ChildrenElementsExistError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
@@ -345,11 +346,33 @@ def test_delete(database_mock, catalogue_category_repository):
     # Mock delete_one to return that one document has been deleted
     mock_delete_one(database_mock, 1)
 
+    # Mock count_documents to return 1 (children elements not found)
+    mock_count_documents(database_mock, 0)
+
     catalogue_category_repository.delete(catalogue_category_id)
 
     database_mock.catalogue_categories.delete_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category_id)}
     )
+
+
+def test_delete_with_children_elements(database_mock, catalogue_category_repository):
+    """
+    Test deleting a catalogue category with children elements.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue category with children elements.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    # Mock count_documents to return 1 (children elements found)
+    mock_count_documents(database_mock, 1)
+
+    with pytest.raises(ChildrenElementsExistError) as exc:
+        catalogue_category_repository.delete(catalogue_category_id)
+    assert str(exc.value) == (
+    f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
+)
+
 
 
 def test_delete_with_invalid_id(catalogue_category_repository):
@@ -373,6 +396,9 @@ def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository
 
     # Mock delete_one to return that no document has been deleted
     mock_delete_one(database_mock, 0)
+
+    # Mock count_documents to return 1 (children elements not found)
+    mock_count_documents(database_mock, 0)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)

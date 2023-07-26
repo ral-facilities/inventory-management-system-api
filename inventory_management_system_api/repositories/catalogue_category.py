@@ -10,7 +10,11 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import MissingRecordError, DuplicateRecordError
+from inventory_management_system_api.core.exceptions import (
+    MissingRecordError,
+    DuplicateRecordError,
+    ChildrenElementsExistError
+)
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 
 logger = logging.getLogger()
@@ -62,6 +66,10 @@ class CatalogueCategoryRepo:
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
         logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
+        if self._has_children_elements(catalogue_category_id):
+            raise ChildrenElementsExistError(
+                f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
+            )
         result = self._collection.delete_one({"_id": catalogue_category_id})
         if result.deleted_count == 0:
             raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
@@ -111,4 +119,17 @@ class CatalogueCategoryRepo:
             parent_id = CustomObjectId(parent_id)
 
         count = self._collection.count_documents({"parent_id": parent_id, "code": code})
+        return count > 0
+
+    def _has_children_elements(self, catalogue_category_id: str) -> bool:
+        """
+        Check if a catalogue category has children elements based on its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to check.
+        :return: True if the catalogue category has children elements, False otherwise.
+        """
+
+        logger.info("Checking if catalogue category with id '%s' has children elements", catalogue_category_id)
+        query = {"parent_id": catalogue_category_id}
+        count = self._collection.count_documents(query)
         return count > 0
