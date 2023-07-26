@@ -2,7 +2,7 @@
 Module for providing a repository for managing catalogue items in a MongoDB database.
 """
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -61,6 +61,15 @@ class CatalogueItemRepo:
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
         return None
+
+    def list(self) -> List[CatalogueItemOut]:
+        """
+        Retrieve all catalogue items from a MongoDB.
+
+        :return: A list of catalogue items, or an empty list if no catalogue items are returned by the database.
+        """
+        catalogue_items = self._collection.find({})
+        return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
 
     def _is_duplicate_catalogue_item(self, catalogue_category_id: str, name: str) -> bool:
         """
