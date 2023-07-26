@@ -35,7 +35,8 @@ class CatalogueCategoryRepo:
         Create a new catalogue category in a MongoDB database.
 
         If a parent catalogue category is specified by `parent_id`, the method checks if that exists
-        in the database and raises a `MissingRecordError` if it doesn't exist.
+        in the database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue
+        category is found within the parent catalogue category.
 
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
