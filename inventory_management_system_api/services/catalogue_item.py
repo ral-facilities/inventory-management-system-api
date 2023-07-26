@@ -4,7 +4,7 @@ repositories.
 """
 import logging
 from numbers import Number
-from typing import Optional, Dict
+from typing import Optional, List, Dict
 
 from fastapi import Depends
 
@@ -195,3 +195,11 @@ class CatalogueItemService:
         :return: The retrieved catalogue item, or `None` if not found.
         """
         return self._catalogue_item_repository.get(catalogue_item_id)
+
+    def list(self) -> List[CatalogueItemOut]:
+        """
+        Retrieve all catalogue items.
+
+        :return: A list of catalogue items, or an empty list if no catalogue items are retrieved.
+        """
+        return self._catalogue_item_repository.list()
