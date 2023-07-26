@@ -2,6 +2,7 @@
 Module for providing a repository for managing catalogue items ina MongoDB database.
 """
 import logging
+from typing import Optional
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -47,6 +48,20 @@ class CatalogueItemRepo:
         result = self._collection.insert_one(catalogue_item.dict())
         catalogue_item = self.get(str(result.inserted_id))
         return catalogue_item
+
+    def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
+        """
+        Retrieve a catalogue item by its ID from a MongoDB database.
+
+        :param catalogue_item_id: The ID of the catalogue item to retrieve.
+        :return: The retrieved catalogue item, or `None` if not found.
+        """
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+        logger.info("Retrieving catalogue item with ID: %s", catalogue_item_id)
+        catalogue_item = self._collection.find_one({"_id": catalogue_item_id})
+        if catalogue_item:
+            return CatalogueItemOut(**catalogue_item)
+        return None
 
     def _is_duplicate_catalogue_item(self, catalogue_category_id: str, name: str) -> bool:
         """
