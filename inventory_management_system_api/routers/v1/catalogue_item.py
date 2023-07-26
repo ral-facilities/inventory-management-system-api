@@ -22,6 +22,14 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
 
 
+@router.get(path="/", summary="Get catalogue items", response_description="List of catalogue items")
+def get_catalogue_items(catalogue_item_service: CatalogueItemService = Depends()) -> List[CatalogueItemSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting catalogue items")
+    catalogue_items = catalogue_item_service.list()
+    return [CatalogueItemSchema(**catalogue_item.dict()) for catalogue_item in catalogue_items]
+
+
 @router.get(
     path="/{catalogue_item_id}", summary="Get a catalogue item by ID", response_description="Single catalogue item"
 )
