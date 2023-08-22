@@ -167,7 +167,6 @@ def test_delete_catalogue_with_children_elements(test_client):
 
     parent_id = catalogue_category.id
     catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
 
     response = test_client.delete(f"/v1/catalogue-categories/{parent_response.json()['id']}")
 
