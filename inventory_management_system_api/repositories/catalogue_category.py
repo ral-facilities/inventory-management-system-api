@@ -60,9 +60,12 @@ class CatalogueCategoryRepo:
 
     def delete(self, catalogue_category_id: str) -> None:
         """
-        Delete a catalogue category by its ID from a MongoDB database.
+        Delete a catalogue category by its ID from a MongoDB database. The method checks if the catalogue category has
+        children elements and raises a `ChildrenElementsExistError` if it does.
 
         :param catalogue_category_id: The ID of the catalogue category to delete.
+        :raises ChildrenElementsExistError: If the catalogue category has children elements.
+        :raises MissingRecordError: If the catalogue category doesn't exist.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
         logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
