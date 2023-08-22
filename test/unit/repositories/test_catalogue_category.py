@@ -370,9 +370,8 @@ def test_delete_with_children_elements(database_mock, catalogue_category_reposit
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
     assert str(exc.value) == (
-    f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
-)
-
+        f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
+    )
 
 
 def test_delete_with_invalid_id(catalogue_category_repository):

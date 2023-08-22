@@ -13,7 +13,7 @@ from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     DuplicateRecordError,
-    ChildrenElementsExistError
+    ChildrenElementsExistError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 
