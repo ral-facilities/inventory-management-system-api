@@ -397,7 +397,7 @@ def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository
     # Mock delete_one to return that no document has been deleted
     mock_delete_one(database_mock, 0)
 
-    # Mock count_documents to return 1 (children elements not found)
+    # Mock count_documents to return 0 (children elements not found)
     mock_count_documents(database_mock, 0)
 
     with pytest.raises(MissingRecordError) as exc:
