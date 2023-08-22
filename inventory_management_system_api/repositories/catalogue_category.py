@@ -66,7 +66,7 @@ class CatalogueCategoryRepo:
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
         logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
-        if self._has_children_elements(catalogue_category_id):
+        if self._has_children_elements(str(catalogue_category_id)):
             raise ChildrenElementsExistError(
                 f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
             )
