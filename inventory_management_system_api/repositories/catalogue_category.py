@@ -131,8 +131,8 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to check.
         :return: True if the catalogue category has children elements, False otherwise.
         """
-
-        logger.info("Checking if catalogue category with id '%s' has children elements", catalogue_category_id)
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
         query = {"parent_id": catalogue_category_id}
         count = self._collection.count_documents(query)
         return count > 0
