@@ -2,7 +2,7 @@
 Module for providing a repository for managing catalogue categories in a MongoDB database.
 """
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -91,7 +91,7 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[CatalogueCategoryOut]:
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories from a MongoDB based on the provided filters.
 

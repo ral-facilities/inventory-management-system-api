@@ -19,7 +19,11 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     ChildrenElementsExistError,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn,
+    CatalogueCategoryOut,
+    CatalogueItemProperty,
+)
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 
 
@@ -123,13 +127,14 @@ def test_create(database_mock, catalogue_category_repository):
         path="/category-a",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
-    # Mock count_documents to return 0 (no duplicate catalogue category found within the parent catalogue category)
+    # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 0)
-    # Mock insert_one to return an object for the inserted catalogue category document
+    # Mock `insert_one` to return an object for the inserted catalogue category document
     mock_insert_one(database_mock, CustomObjectId(catalogue_category.id))
-    # Mock find_one to return the inserted catalogue category document
+    # Mock `find_one` to return the inserted catalogue category document
     mock_find_one(
         database_mock,
         {
@@ -140,6 +145,7 @@ def test_create(database_mock, catalogue_category_repository):
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": catalogue_category.parent_id,
+            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         },
     )
 
@@ -151,6 +157,7 @@ def test_create(database_mock, catalogue_category_repository):
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
     )
 
@@ -162,6 +169,7 @@ def test_create(database_mock, catalogue_category_repository):
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": catalogue_category.parent_id,
+            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         }
     )
     database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category.id)})
@@ -182,9 +190,13 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         path="/category-a/category-b",
         parent_path="/category-a",
         parent_id=str(ObjectId()),
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
     )
 
-    # Mock find_one to return the parent catalogue category document
+    # Mock `find_one` to return the parent catalogue category document
     mock_find_one(
         database_mock,
         {
@@ -195,13 +207,14 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "path": "/category-a",
             "parent_path": "/",
             "parent_id": None,
+            "catalogue_item_properties": [],
         },
     )
-    # Mock count_documents to return 0 (no duplicate catalogue category found within the parent catalogue category)
+    # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 0)
-    # Mock insert_one to return an object for the inserted catalogue category document
+    # Mock `insert_one` to return an object for the inserted catalogue category document
     mock_insert_one(database_mock, CustomObjectId(catalogue_category.id))
-    # Mock find_one to return the inserted catalogue category document
+    # Mock `find_one` to return the inserted catalogue category document
     mock_find_one(
         database_mock,
         {
@@ -212,6 +225,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": CustomObjectId(catalogue_category.parent_id),
+            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         },
     )
 
@@ -223,6 +237,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
     )
 
@@ -234,6 +249,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": CustomObjectId(catalogue_category.parent_id),
+            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         }
     )
     database_mock.catalogue_categories.find_one.assert_has_calls(
@@ -260,9 +276,10 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
         path="/category-a",
         parent_path="/",
         parent_id=str(ObjectId()),
+        catalogue_item_properties=[],
     )
 
-    # Mock find_one to not return a parent catalogue category document
+    # Mock `find_one` to not return a parent catalogue category document
     mock_find_one(database_mock, None)
 
     with pytest.raises(MissingRecordError) as exc:
@@ -274,6 +291,7 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
                 path=catalogue_category.path,
                 parent_path=catalogue_category.parent_path,
                 parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=[],
             )
         )
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category.parent_id}"
@@ -297,9 +315,13 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
         path="/category-a/category-b",
         parent_path="/category-a",
         parent_id=str(ObjectId()),
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
     )
 
-    # Mock find_one to return the parent catalogue category document
+    # Mock `find_one` to return the parent catalogue category document
     mock_find_one(
         database_mock,
         {
@@ -310,9 +332,10 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
             "path": "/category-a",
             "parent_path": "/",
             "parent_id": None,
+            "catalogue_item_properties": [],
         },
     )
-    # Mock count_documents to return 1 (duplicate catalogue category found within the parent catalogue category)
+    # Mock `count_documents` to return 1 (duplicate catalogue category found within the parent catalogue category)
     mock_count_documents(database_mock, 1)
 
     with pytest.raises(DuplicateRecordError) as exc:
@@ -324,6 +347,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
                 path=catalogue_category.path,
                 parent_path=catalogue_category.parent_path,
                 parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
         )
     assert str(exc.value) == "Duplicate catalogue category found within the parent catalogue category"
@@ -343,7 +367,7 @@ def test_delete(database_mock, catalogue_category_repository):
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock delete_one to return that one document has been deleted
+    # Mock `delete_one` to return that one document has been deleted
     mock_delete_one(database_mock, 1)
 
     # Mock count_documents to return 1 (children elements not found)
@@ -393,7 +417,7 @@ def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock delete_one to return that no document has been deleted
+    # Mock `delete_one` to return that no document has been deleted
     mock_delete_one(database_mock, 0)
 
     # Mock count_documents to return 0 (children elements not found)
@@ -421,9 +445,10 @@ def test_get(database_mock, catalogue_category_repository):
         path="/category-a",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
-    # Mock find_one to return a catalogue category document
+    # Mock `find_one` to return a catalogue category document
     mock_find_one(
         database_mock,
         {
@@ -434,6 +459,7 @@ def test_get(database_mock, catalogue_category_repository):
             "path": catalogue_category.path,
             "parent_path": catalogue_category.parent_path,
             "parent_id": catalogue_category.parent_id,
+            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         },
     )
 
@@ -462,7 +488,7 @@ def test_get_with_nonexistent_id(database_mock, catalogue_category_repository):
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock find_one to not return a catalogue category document
+    # Mock `find_one` to not return a catalogue category document
     mock_find_one(database_mock, None)
 
     retrieved_catalogue_category = catalogue_category_repository.get(catalogue_category_id)
@@ -485,6 +511,7 @@ def test_list(database_mock, catalogue_category_repository):
         path="/category-a",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
     catalogue_category_b = CatalogueCategoryOut(
@@ -495,9 +522,10 @@ def test_list(database_mock, catalogue_category_repository):
         path="/category-b",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
-    # Mock find to return a list of catalogue category documents
+    # Mock `find` to return a list of catalogue category documents
     mock_find(
         database_mock,
         [
@@ -509,6 +537,7 @@ def test_list(database_mock, catalogue_category_repository):
                 "path": catalogue_category_a.path,
                 "parent_path": catalogue_category_a.parent_path,
                 "parent_id": catalogue_category_a.parent_id,
+                "catalogue_item_properties": catalogue_category_a.catalogue_item_properties,
             },
             {
                 "_id": CustomObjectId(catalogue_category_b.id),
@@ -518,6 +547,7 @@ def test_list(database_mock, catalogue_category_repository):
                 "path": catalogue_category_b.path,
                 "parent_path": catalogue_category_b.parent_path,
                 "parent_id": catalogue_category_b.parent_id,
+                "catalogue_item_properties": catalogue_category_b.catalogue_item_properties,
             },
         ],
     )
@@ -543,9 +573,10 @@ def test_list_with_path_filter(database_mock, catalogue_category_repository):
         path="/category-a",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
-    # Mock find to return a list of catalogue category documents
+    # Mock `find` to return a list of catalogue category documents
     mock_find(
         database_mock,
         [
@@ -557,6 +588,7 @@ def test_list_with_path_filter(database_mock, catalogue_category_repository):
                 "path": catalogue_category.path,
                 "parent_path": catalogue_category.parent_path,
                 "parent_id": catalogue_category.parent_id,
+                "catalogue_item_properties": catalogue_category.catalogue_item_properties,
             }
         ],
     )
@@ -582,6 +614,7 @@ def test_list_with_parent_path_filter(database_mock, catalogue_category_reposito
         path="/category-a",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
     catalogue_category_b = CatalogueCategoryOut(
@@ -592,9 +625,10 @@ def test_list_with_parent_path_filter(database_mock, catalogue_category_reposito
         path="/category-b",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
-    # Mock find to return a list of catalogue category documents
+    # Mock `find` to return a list of catalogue category documents
     mock_find(
         database_mock,
         [
@@ -606,6 +640,7 @@ def test_list_with_parent_path_filter(database_mock, catalogue_category_reposito
                 "path": catalogue_category_a.path,
                 "parent_path": catalogue_category_a.parent_path,
                 "parent_id": catalogue_category_a.parent_id,
+                "catalogue_item_properties": catalogue_category_a.catalogue_item_properties,
             },
             {
                 "_id": CustomObjectId(catalogue_category_b.id),
@@ -615,6 +650,7 @@ def test_list_with_parent_path_filter(database_mock, catalogue_category_reposito
                 "path": catalogue_category_b.path,
                 "parent_path": catalogue_category_b.parent_path,
                 "parent_id": catalogue_category_b.parent_id,
+                "catalogue_item_properties": catalogue_category_b.catalogue_item_properties,
             },
         ],
     )
@@ -640,9 +676,10 @@ def test_list_with_path_and_parent_path_filters(database_mock, catalogue_categor
         path="/category-b",
         parent_path="/",
         parent_id=None,
+        catalogue_item_properties=[],
     )
 
-    # Mock find to return a list of catalogue category documents
+    # Mock `find` to return a list of catalogue category documents
     mock_find(
         database_mock,
         [
@@ -654,6 +691,7 @@ def test_list_with_path_and_parent_path_filters(database_mock, catalogue_categor
                 "path": catalogue_category.path,
                 "parent_path": catalogue_category.parent_path,
                 "parent_id": catalogue_category.parent_id,
+                "catalogue_item_properties": catalogue_category.catalogue_item_properties,
             }
         ],
     )
@@ -672,7 +710,7 @@ def test_list_with_path_and_parent_path_filters_no_matching_results(database_moc
     Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
     parent path filters.
     """
-    # Mock find to return an empty list of catalogue category documents
+    # Mock `find` to return an empty list of catalogue category documents
     mock_find(database_mock, [])
 
     retrieved_catalogue_categories = catalogue_category_repository.list("/category-a", "/")
