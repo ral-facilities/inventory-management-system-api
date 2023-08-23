@@ -31,3 +31,9 @@ class MissingRecordError(DatabaseError):
     """
     A specific database record was requested but could not be found.
     """
+
+
+class ChildrenElementsExistError(DatabaseError):
+    """
+    Exception raised when attempting to delete a catalogue category that has children elements.
+    """

@@ -60,6 +60,14 @@ class CatalogueCategoryService:
             )
         )
 
+    def delete(self, catalogue_category_id: str) -> None:
+        """
+        Delete a catalogue category by its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete.
+        """
+        return self._catalogue_category_repository.delete(catalogue_category_id)
+
     def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID.
