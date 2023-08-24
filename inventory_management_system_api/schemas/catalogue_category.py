@@ -22,8 +22,8 @@ class CatalogueItemPropertySchema(BaseModel):
     Schema model representing a catalogue item property.
     """
 
-    name: str = Field(description="The name of the catalogue item property")
-    type: CatalogueItemPropertyType
+    name: str = Field(description="The name of the property")
+    type: CatalogueItemPropertyType = Field(description="The type of the property")
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
 
