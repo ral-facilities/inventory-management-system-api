@@ -6,6 +6,16 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.database import get_database
 
+CATALOGUE_CATEGORY_POST = {  # pylint: disable=duplicate-code
+    "name": "Category A",
+    "is_leaf": True,
+    "catalogue_item_properties": [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "boolean", "mandatory": True},
+        {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
+    ],
+}
+
 
 @pytest.fixture(name="cleanup_catalogue_categories", autouse=True)
 def fixture_cleanup_catalogue_categories():
@@ -31,16 +41,7 @@ def test_create_catalogue_item(test_client):
     """
     Test creating a catalogue item.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
@@ -73,16 +74,7 @@ def test_create_catalogue_item_with_duplicate_name_within_catalogue_category(tes
     """
     Test creating a catalogue item with a duplicate name within the catalogue category.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
@@ -178,16 +170,7 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     """
     Test creating a catalogue item with missing mandatory catalogue item properties.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
@@ -210,16 +193,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     """
     Test creating a catalogue item with missing non-mandatory catalogue item properties.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
@@ -250,16 +224,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_
     """
     Test creating a catalogue item with invalid value type for a string catalogue item property.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
@@ -286,16 +251,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_number_property(test_
     """
     Test creating a catalogue item with invalid value type for a number catalogue item property.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
@@ -322,16 +278,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
     """
     Test creating a catalogue item with invalid value type for a boolean catalogue item property.
     """
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-            {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-        ],
-    }
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
