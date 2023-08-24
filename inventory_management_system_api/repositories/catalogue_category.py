@@ -10,7 +10,11 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import MissingRecordError, DuplicateRecordError
+from inventory_management_system_api.core.exceptions import (
+    MissingRecordError,
+    DuplicateRecordError,
+    ChildrenElementsExistError,
+)
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 
 logger = logging.getLogger()
@@ -57,11 +61,19 @@ class CatalogueCategoryRepo:
 
     def delete(self, catalogue_category_id: str) -> None:
         """
-        Delete a catalogue category by its ID from a MongoDB database.
+        Delete a catalogue category by its ID from a MongoDB database. The method checks if the catalogue category has
+        children elements and raises a `ChildrenElementsExistError` if it does.
 
         :param catalogue_category_id: The ID of the catalogue category to delete.
+        :raises ChildrenElementsExistError: If the catalogue category has children elements.
+        :raises MissingRecordError: If the catalogue category doesn't exist.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
+        if self._has_children_elements(str(catalogue_category_id)):
+            raise ChildrenElementsExistError(
+                f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
+            )
+
         logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
         result = self._collection.delete_one({"_id": catalogue_category_id})
         if result.deleted_count == 0:
@@ -119,4 +131,17 @@ class CatalogueCategoryRepo:
             parent_id = CustomObjectId(parent_id)
 
         count = self._collection.count_documents({"parent_id": parent_id, "code": code})
+        return count > 0
+
+    def _has_children_elements(self, catalogue_category_id: str) -> bool:
+        """
+        Check if a catalogue category has children elements based on its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to check.
+        :return: True if the catalogue category has children elements, False otherwise.
+        """
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
+        query = {"parent_id": catalogue_category_id}
+        count = self._collection.count_documents(query)
         return count > 0

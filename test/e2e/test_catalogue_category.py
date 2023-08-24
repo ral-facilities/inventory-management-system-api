@@ -239,6 +239,24 @@ def test_delete_catalogue_category_with_invalid_id(test_client):
     assert response.json()["detail"] == "A catalogue category with such ID was not found"
 
 
+def test_delete_catalogue_with_children_elements(test_client):
+    """
+    Test deleting a catalogue category with children elements.
+    """
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
+    parent_response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    catalogue_category = CatalogueCategorySchema(**parent_response.json())
+
+    parent_id = catalogue_category.id
+    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+
+    response = test_client.delete(f"/v1/catalogue-categories/{parent_response.json()['id']}")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Catalogue category has children elements and cannot be deleted"
+
+
 def test_delete_catalogue_category_with_nonexistent_id(test_client):
     """
     Test deleting a catalogue category with a nonexistent ID.

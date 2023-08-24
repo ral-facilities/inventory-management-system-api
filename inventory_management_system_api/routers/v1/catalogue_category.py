@@ -12,6 +12,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     DuplicateRecordError,
     LeafCategoryError,
+    ChildrenElementsExistError,
 )
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategorySchema,
@@ -114,3 +115,7 @@ def delete_catalogue_category(
         message = "A catalogue category with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except ChildrenElementsExistError as exc:
+        message = "Catalogue category has children elements and cannot be deleted"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
