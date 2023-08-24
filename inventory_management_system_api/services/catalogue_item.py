@@ -196,10 +196,11 @@ class CatalogueItemService:
         """
         return self._catalogue_item_repository.get(catalogue_item_id)
 
-    def list(self) -> List[CatalogueItemOut]:
+    def list(self, catalogue_category_id: str) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items.
 
+        :param catalogue_category_id:  The ID of the catalogue category to filter catalogue items by.
         :return: A list of catalogue items, or an empty list if no catalogue items are retrieved.
         """
-        return self._catalogue_item_repository.list()
+        return self._catalogue_item_repository.list(catalogue_category_id)

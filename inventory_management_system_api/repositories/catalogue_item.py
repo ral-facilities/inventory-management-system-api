@@ -62,13 +62,19 @@ class CatalogueItemRepo:
             return CatalogueItemOut(**catalogue_item)
         return None
 
-    def list(self) -> List[CatalogueItemOut]:
+    def list(self, catalogue_category_id: str) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items from a MongoDB.
 
+        :param catalogue_category_id: The ID of the catalogue category to filter catalogue items by.
         :return: A list of catalogue items, or an empty list if no catalogue items are returned by the database.
         """
-        catalogue_items = self._collection.find({})
+
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        query = {"catalogue_category_id": catalogue_category_id}
+        logger.info("Retrieving catalogue items with Catalogue Category ID: %s", catalogue_category_id)
+
+        catalogue_items = self._collection.find(query)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
 
     def _is_duplicate_catalogue_item(self, catalogue_category_id: str, name: str) -> bool:

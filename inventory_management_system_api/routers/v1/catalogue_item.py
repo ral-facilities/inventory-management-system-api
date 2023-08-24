@@ -4,7 +4,7 @@ service.
 """
 import logging
 
-from fastapi import APIRouter, status, Depends, HTTPException, Path
+from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
@@ -23,10 +23,14 @@ router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
 
 
 @router.get(path="/", summary="Get catalogue items", response_description="List of catalogue items")
-def get_catalogue_items(catalogue_item_service: CatalogueItemService = Depends()) -> List[CatalogueItemSchema]:
+def get_catalogue_items(
+    catalogue_category_id: str = Query(description="Filter catalogue items by catalogue category ID"),
+    catalogue_item_service: CatalogueItemService = Depends(),
+) -> List[CatalogueItemSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue items")
-    catalogue_items = catalogue_item_service.list()
+    logger.debug("Catalogue category id filter: '%s'", catalogue_category_id)
+    catalogue_items = catalogue_item_service.list(catalogue_category_id)
     return [CatalogueItemSchema(**catalogue_item.dict()) for catalogue_item in catalogue_items]
 
 
