@@ -1,5 +1,5 @@
 """
-Module for providing a service for managing catalogue items using the `CatalogueItemRepo` and `CatalogueItemRepo`
+Module for providing a service for managing catalogue items using the `CatalogueItemRepo` and `CatalogueCategoryRepo`
 repositories.
 """
 import logging
@@ -34,7 +34,7 @@ class CatalogueItemService:
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
     ) -> None:
         """
-        Initialise the `CatalogueItemService` with a `CatalogueItemRepo` repo.
+        Initialise the `CatalogueItemService` with a `CatalogueItemRepo` and `CatalogueCategoryRepo` repos.
 
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
@@ -48,7 +48,7 @@ class CatalogueItemService:
 
         The method checks if the catalogue category exists in the database and raises a `MissingRecordError` if it does
         not. It also checks if the category is not a leaf category and raises a `NonLeafCategoryError` if it is. It
-        then proceeds to check for missing mandatory catalogue item properties, adds the propety units, and finally
+        then proceeds to check for missing mandatory catalogue item properties, adds the property units, and finally
         validates the property values.
 
         :param catalogue_item: The catalogue item to be created.
@@ -91,6 +91,17 @@ class CatalogueItemService:
         defined_properties: Dict[str, Dict],
         supplied_properties: Dict[str, Dict],
     ) -> None:
+        """
+        Add the units to the supplied properties.
+
+        The supplied properties only contain a name and value so the units from the defined properties in the database
+        are added to the supplied properties.
+
+        :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
+            database.
+        :param supplied_properties: The supplied catalogue item properties.
+        """
+        logger.info("Adding the units to the supplied properties")
         for supplied_property_name, supplied_property in supplied_properties.items():
             supplied_property["unit"] = defined_properties[supplied_property_name]["unit"]
 
@@ -99,6 +110,17 @@ class CatalogueItemService:
         defined_properties: Dict[str, Dict],
         supplied_properties: Dict[str, Dict],
     ) -> None:
+        """
+        Validate the values of the supplied properties against the expected property types. Raise an error if the type
+        of the supplied value does not match the expected type.
+
+        :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
+            database.
+        :param supplied_properties: The supplied catalogue item properties.
+        :raises InvalidCatalogueItemPropertyTypeError: If the type of the supplied value does not match the expected
+            type.
+        """
+        logger.info("Validating the values of the supplied properties against the expected property types")
         for supplied_property_name, supplied_property in supplied_properties.items():
             expected_property_type = defined_properties[supplied_property_name]["type"]
             supplied_property_value = supplied_property["value"]
@@ -128,6 +150,16 @@ class CatalogueItemService:
         defined_properties: Dict[str, Dict],
         supplied_properties: Dict[str, Dict],
     ) -> None:
+        """
+        Check for mandatory catalogue item properties that are missing/ have not been supplied. Raise an error as soon
+        as a mandatory property is found to be missing.
+
+        :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
+            database.
+        :param supplied_properties: The supplied catalogue item properties.
+        :raises MissingMandatoryCatalogueItemProperty: If a mandatory catalogue item property is missing/ not supplied.
+        """
+        logger.info("Checking for missing mandatory catalogue item properties")
         for defined_property_name, defined_property in defined_properties.items():
             if defined_property["mandatory"] and defined_property_name not in supplied_properties:
                 raise MissingMandatoryCatalogueItemProperty(
@@ -139,6 +171,15 @@ class CatalogueItemService:
         defined_properties: Dict[str, Dict],
         supplied_properties: Dict[str, Dict],
     ) -> Dict[str, Dict]:
+        """
+        Filter through the supplied properties and extract the ones matching the defined properties.
+
+        :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
+            database.
+        :param supplied_properties: The supplied catalogue item properties.
+        :return: The supplied properties that are matching the defined properties.
+        """
+        logger.info("Extracting the supplied properties that are matching the defined properties")
         matching_properties = {}
         for supplied_property_name, supplied_property in supplied_properties.items():
             if supplied_property_name in defined_properties:

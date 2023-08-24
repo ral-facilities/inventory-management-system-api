@@ -1,5 +1,5 @@
 """
-Module for providing a repository for managing catalogue items ina MongoDB database.
+Module for providing a repository for managing catalogue items in a MongoDB database.
 """
 import logging
 from typing import Optional
@@ -35,16 +35,15 @@ class CatalogueItemRepo:
         Create a new catalogue item in a MongoDB database.
 
         The method checks if a duplicate catalogue item is found within the catalogue category.
+
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
         :raises DuplicateRecordError: If a duplicate catalogue item is found within the catalogue category.
-
         """
-        logger.info("Inserting the new catalogue item into the database")
-
         if self._is_duplicate_catalogue_item(str(catalogue_item.catalogue_category_id), catalogue_item.name):
             raise DuplicateRecordError("Duplicate catalogue item found within the catalogue category")
 
+        logger.info("Inserting the new catalogue item into the database")
         result = self._collection.insert_one(catalogue_item.dict())
         catalogue_item = self.get(str(result.inserted_id))
         return catalogue_item
@@ -57,7 +56,7 @@ class CatalogueItemRepo:
         :return: The retrieved catalogue item, or `None` if not found.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        logger.info("Retrieving catalogue item with ID: %s", catalogue_item_id)
+        logger.info("Retrieving catalogue item with ID: %s from the database", catalogue_item_id)
         catalogue_item = self._collection.find_one({"_id": catalogue_item_id})
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
