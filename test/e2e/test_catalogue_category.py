@@ -247,7 +247,7 @@ def test_delete_catalogue_with_children_elements(test_client):
     parent_response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category = parent_response.json()
 
-    parent_id = catalogue_category['id']
+    parent_id = catalogue_category["id"]
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
