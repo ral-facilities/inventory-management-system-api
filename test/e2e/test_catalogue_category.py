@@ -239,7 +239,7 @@ def test_delete_catalogue_category_with_invalid_id(test_client):
     assert response.json()["detail"] == "A catalogue category with such ID was not found"
 
 
-def test_delete_catalogue_with_children_elements(test_client):
+def test_delete_catalogue_category_with_children_elements(test_client):
     """
     Test deleting a catalogue category with children elements.
     """
@@ -371,7 +371,7 @@ def test_get_catalogue_categories(test_client):
     assert catalogue_categories[2]["parent_path"] == "/category-b"
 
 
-def test_list_with_path_filter(test_client):
+def test_get_catalogue_categories_with_path_filter(test_client):
     """
     Test getting catalogue categories based on the provided parent path filter.
     """
@@ -391,7 +391,7 @@ def test_list_with_path_filter(test_client):
     assert catalogue_categories[0]["parent_path"] == "/"
 
 
-def test_list_with_parent_path_filter(test_client):
+def test_get_catalogue_categories_with_parent_path_filter(test_client):
     """
     Test getting catalogue categories based on the provided parent path filter.
     """
@@ -422,7 +422,7 @@ def test_list_with_parent_path_filter(test_client):
     assert catalogue_categories[0]["parent_path"] == "/"
 
 
-def test_list_with_path_and_parent_path_filters(test_client):
+def test_get_catalogue_categories_with_path_and_parent_path_filters(test_client):
     """
     Test getting catalogue categories based on the provided path and parent path filters.
     """
@@ -442,7 +442,7 @@ def test_list_with_path_and_parent_path_filters(test_client):
     assert catalogue_categories[0]["parent_path"] == "/"
 
 
-def test_list_with_path_and_parent_path_filters_no_matching_results(test_client):
+def test_get_catalogue_categories_with_path_and_parent_path_filters_no_matching_results(test_client):
     """
     Test getting catalogue categories based on the provided path and parent path filters when there is no matching
     results in the database.
