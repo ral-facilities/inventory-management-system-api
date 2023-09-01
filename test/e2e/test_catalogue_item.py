@@ -1,6 +1,8 @@
 """
 End-to-End tests for the catalogue item router.
 """
+from typing import Dict
+
 import pytest
 from bson import ObjectId
 
@@ -15,6 +17,25 @@ CATALOGUE_CATEGORY_POST = {  # pylint: disable=duplicate-code
         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
     ],
 }
+
+
+def get_catalogue_item_dict(catalogue_category_id: str) -> Dict:
+    """
+    Creates a dictionary representing a catalogue item.
+
+    :param catalogue_category_id: The ID of the catalogue category.
+    :return: A dictionary representing a catalogue item.
+    """
+    return {
+        "catalogue_category_id": catalogue_category_id,
+        "name": "Catalogue Item A",
+        "description": "This is Catalogue Item A",
+        "properties": [
+            {"name": "Property A", "value": 20},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10"},
+        ],
+    }
 
 
 @pytest.fixture(name="cleanup_catalogue_categories", autouse=True)
@@ -45,16 +66,7 @@ def test_create_catalogue_item(test_client):
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category_id)
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 201
@@ -77,17 +89,7 @@ def test_create_catalogue_item_with_duplicate_name_within_catalogue_category(tes
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
-    catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -102,17 +104,7 @@ def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     """
     Test creating a catalogue item with an invalid catalogue category id.
     """
-    catalogue_item_post = {
-        "catalogue_category_id": "invalid",
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
-
+    catalogue_item_post = get_catalogue_item_dict("invalid")
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -123,17 +115,7 @@ def test_create_catalogue_item_with_nonexistent_catalogue_category_id(test_clien
     """
     Test creating a catalogue item with a nonexistent catalogue category id.
     """
-    catalogue_item_post = {
-        "catalogue_category_id": str(ObjectId()),
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
-
+    catalogue_item_post = get_catalogue_item_dict(str(ObjectId()))
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -148,18 +130,7 @@ def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category = response.json()
 
-    catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
-
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 409
@@ -173,16 +144,8 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
-    catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
+    del catalogue_item_post["properties"][1]
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -197,15 +160,8 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category_id)
+    del catalogue_item_post["properties"][0]
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 201
@@ -227,17 +183,8 @@ def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
-    catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": True},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
+    catalogue_item_post["properties"][2]["value"] = True
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -254,17 +201,8 @@ def test_create_catalogue_item_with_invalid_value_type_for_number_property(test_
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
-    catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": "20"},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
+    catalogue_item_post["properties"][0]["value"] = "20"
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -281,17 +219,8 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
     catalogue_category = response.json()
 
-    catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": "False"},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
-    }
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
+    catalogue_item_post["properties"][1]["value"] = "False"
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -299,3 +228,46 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
         response.json()["detail"]
         == "Invalid value type for catalogue item property 'Property B'. Expected type: boolean."
     )
+
+
+def test_get_catalogue_item(test_client):
+    """
+    Test getting a catalogue item.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST)
+    catalogue_category = response.json()
+
+    catalogue_item_post = get_catalogue_item_dict(catalogue_category["id"])
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    response = test_client.get(f"/v1/catalogue-items/{response.json()['id']}")
+
+    assert response.status_code == 200
+
+    catalogue_item = response.json()
+
+    catalogue_item_post["id"] = catalogue_item["id"]
+    catalogue_item_post["properties"][0]["unit"] = "mm"
+    catalogue_item_post["properties"][1]["unit"] = None
+    catalogue_item_post["properties"][2]["unit"] = "cm"
+    assert catalogue_item == catalogue_item_post
+
+
+def test_get_catalogue_item_with_invalid_id(test_client):
+    """
+    Test getting a catalogue item with an invalid ID.
+    """
+    response = test_client.get("/v1/catalogue-items/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The requested catalogue item was not found"
+
+
+def test_get_catalogue_item_with_nonexistent_id(test_client):
+    """
+    Test getting a catalogue item with a nonexistent ID.
+    """
+    response = test_client.get(f"/v1/catalogue-items/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The requested catalogue item was not found"

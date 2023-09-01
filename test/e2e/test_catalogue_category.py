@@ -318,9 +318,6 @@ def test_get_catalogue_category_with_invalid_id(test_client):
     """
     Test getting a catalogue category with an invalid ID.
     """
-    catalogue_category_post = {"name": "Category A", "is_leaf": False}
-    test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
-
     response = test_client.get("/v1/catalogue-categories/invalid")
 
     assert response.status_code == 404
@@ -331,9 +328,6 @@ def test_get_catalogue_category_with_nonexistent_id(test_client):
     """
     Test getting a catalogue category with a nonexistent ID.
     """
-    catalogue_category_post = {"name": "Category A", "is_leaf": False}
-    test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
-
     response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}")
 
     assert response.status_code == 404
