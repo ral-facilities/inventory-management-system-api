@@ -3,6 +3,7 @@ Module for providing an API router which defines routes for managing catalogue i
 service.
 """
 import logging
+from typing import List
 
 from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
