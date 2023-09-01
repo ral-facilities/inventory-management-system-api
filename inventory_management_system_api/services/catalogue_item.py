@@ -196,7 +196,7 @@ class CatalogueItemService:
         """
         return self._catalogue_item_repository.get(catalogue_item_id)
 
-    def list(self, catalogue_category_id: str) -> List[CatalogueItemOut]:
+    def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items.
 

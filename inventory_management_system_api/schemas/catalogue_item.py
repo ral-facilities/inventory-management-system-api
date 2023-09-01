@@ -28,7 +28,9 @@ class CatalogueItemPostRequestSchema(BaseModel):
     Schema model for a catalogue item creation request.
     """
 
-    catalogue_category_id: str
+    catalogue_category_id: str = Field(
+        description="The ID of the catalogue category that the catalogue item belongs to"
+    )
     name: str = Field(description="The name of the catalogue item")
     description: str = Field(description="The catalogue item description")
     properties: List[PropertyPostRequestSchema] = Field(description="The catalogue item properties")

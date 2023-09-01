@@ -62,17 +62,24 @@ class CatalogueItemRepo:
             return CatalogueItemOut(**catalogue_item)
         return None
 
-    def list(self, catalogue_category_id: str) -> List[CatalogueItemOut]:
+    def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items from a MongoDB.
 
         :param catalogue_category_id: The ID of the catalogue category to filter catalogue items by.
         :return: A list of catalogue items, or an empty list if no catalogue items are returned by the database.
         """
+        query = {}
+        if catalogue_category_id:
+            catalogue_category_id = CustomObjectId(catalogue_category_id)
+            query["catalogue_category_id"] = catalogue_category_id
 
-        catalogue_category_id = CustomObjectId(catalogue_category_id)
-        query = {"catalogue_category_id": catalogue_category_id}
-        logger.info("Retrieving catalogue items with Catalogue Category ID: %s", catalogue_category_id)
+        message = "Retrieving all catalogue items from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided catalogue category ID filter", message)
+            logger.debug("Provided catalogue category ID filter: %s", catalogue_category_id)
 
         catalogue_items = self._collection.find(query)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
