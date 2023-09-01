@@ -5,7 +5,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DuplicateRecordError
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, Property, CatalogueItemIn
 
 
@@ -77,6 +77,7 @@ def test_create_with_duplicate_name_within_catalogue_category(test_helpers, data
     Verify that the `create` method properly handles a catalogue item with a duplicate name, finds that there is a
     duplicate catalogue item, and does not create the catalogue item.
     """
+    # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -88,6 +89,7 @@ def test_create_with_duplicate_name_within_catalogue_category(test_helpers, data
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `count_documents` to return 1 (duplicate catalogue item found within the catalogue category)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
@@ -105,3 +107,67 @@ def test_create_with_duplicate_name_within_catalogue_category(test_helpers, data
     database_mock.catalogue_items.count_documents.assert_called_once_with(
         {"catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id), "name": catalogue_item.name}
     )
+
+
+def test_get(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test getting a catalogue item.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue item by ID.
+    """
+    catalogue_item = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        name="Catalogue Item A",
+        description="This is Catalogue Item A",
+        properties=[
+            Property(name="Property A", value=20, unit="mm"),
+            Property(name="Property B", value=False),
+            Property(name="Property C", value="20x15x10", unit="cm"),
+        ],
+    )
+
+    # Mock `find_one` to return a catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items,
+        {
+            "_id": CustomObjectId(catalogue_item.id),
+            "catalogue_category_id": catalogue_item.catalogue_category_id,
+            "name": catalogue_item.name,
+            "description": catalogue_item.description,
+            "properties": catalogue_item.properties,
+        },
+    )
+
+    retrieved_catalogue_item = catalogue_item_repository.get(catalogue_item.id)
+
+    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item.id)})
+    assert retrieved_catalogue_item == catalogue_item
+
+
+def test_get_with_invalid_id(catalogue_item_repository):
+    """
+    Test getting a catalogue item with an invalid ID.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue item with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_item_repository.get("invalid")
+    assert str(exc.value) == "Invalid ObjectId value"
+
+
+def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test getting a catalogue item with a nonexistent ID.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue item with a nonexistent ID.
+    """
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `find_one` to not return a catalogue item document
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
+
+    retrieved_catalogue_item = catalogue_item_repository.get(catalogue_item_id)
+
+    assert retrieved_catalogue_item is None
+    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})

@@ -378,3 +378,49 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
         "Expected type: boolean."
     )
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
+
+
+def test_get(catalogue_item_repository_mock, catalogue_item_service):
+    """
+    Test getting a catalogue item.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue item by ID.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_item = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        name="Catalogue Item A",
+        description="This is Catalogue Item A",
+        properties=[
+            Property(name="Property A", value=20, unit="mm"),
+            Property(name="Property B", value=False),
+            Property(name="Property C", value="20x15x10", unit="cm"),
+        ],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return a catalogue item
+    catalogue_item_repository_mock.get.return_value = catalogue_item
+
+    retrieved_catalogue_item = catalogue_item_service.get(catalogue_item.id)
+
+    catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item.id)
+    assert retrieved_catalogue_item == catalogue_item
+
+
+def test_get_with_nonexistent_id(catalogue_item_repository_mock, catalogue_item_service):
+    """
+    Test getting a catalogue item with a nonexistent ID.
+
+    Verify that the `get` method properly handles the retrieval of a catalogue item with a nonexistent ID.
+    """
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `get` to not return a catalogue item
+    catalogue_item_repository_mock.get.return_value = None
+
+    retrieved_catalogue_item = catalogue_item_service.get(catalogue_item_id)
+
+    assert retrieved_catalogue_item is None
+    catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
