@@ -424,3 +424,90 @@ def test_get_with_nonexistent_id(catalogue_item_repository_mock, catalogue_item_
 
     assert retrieved_catalogue_item is None
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
+
+
+def test_list(catalogue_item_repository_mock, catalogue_item_service):
+    """
+    Test getting catalogue items.
+
+    Verify that the `list` method properly handles the retrieval of catalogue items without filters.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_item_a = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        name="Catalogue Item A",
+        description="This is Catalogue Item A",
+        properties=[
+            Property(name="Property A", value=20, unit="mm"),
+            Property(name="Property B", value=False),
+            Property(name="Property C", value="20x15x10", unit="cm"),
+        ],
+    )
+
+    catalogue_item_b = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        name="Catalogue Item B",
+        description="This is Catalogue Item B",
+        properties=[Property(name="Property A", value=True)],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `list` to return a list of catalogue items
+    catalogue_item_repository_mock.list.return_value = [catalogue_item_a, catalogue_item_b]
+
+    retrieved_catalogue_items = catalogue_item_service.list(None)
+
+    catalogue_item_repository_mock.list.assert_called_once_with(None)
+    assert retrieved_catalogue_items == [catalogue_item_a, catalogue_item_b]
+
+
+def test_list_with_catalogue_category_id_filter(catalogue_item_repository_mock, catalogue_item_service):
+    """
+    Test getting catalogue items based on the provided catalogue category ID filter.
+
+    Verify that the `list` method properly handles the retrieval of catalogue items based on the provided catalogue
+    category ID filter.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_item = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        name="Catalogue Item A",
+        description="This is Catalogue Item A",
+        properties=[
+            Property(name="Property A", value=20, unit="mm"),
+            Property(name="Property B", value=False),
+            Property(name="Property C", value="20x15x10", unit="cm"),
+        ],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `list` to return a list of catalogue items
+    catalogue_item_repository_mock.list.return_value = [catalogue_item]
+
+    retrieved_catalogue_items = catalogue_item_service.list(catalogue_item.catalogue_category_id)
+
+    catalogue_item_repository_mock.list.assert_called_once_with(catalogue_item.catalogue_category_id)
+    assert retrieved_catalogue_items == [catalogue_item]
+
+
+def test_list_with_catalogue_category_id_filter_no_matching_results(
+    catalogue_item_repository_mock, catalogue_item_service
+):
+    """
+    Test getting catalogue items based on the provided catalogue category ID filter when there is no matching results in
+    the database.
+
+    Verify that the `list` method properly handles the retrieval of catalogue items based on the provided catalogue
+    category ID filter.
+    """
+    # Mock `list` to return an empty list of catalogue item documents
+    catalogue_item_repository_mock.list.return_value = []
+
+    catalogue_category_id = str(ObjectId())
+    retrieved_catalogue_items = catalogue_item_service.list(catalogue_category_id)
+
+    catalogue_item_repository_mock.list.assert_called_once_with(catalogue_category_id)
+    assert retrieved_catalogue_items == []
