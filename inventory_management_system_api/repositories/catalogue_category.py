@@ -96,6 +96,46 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
+    def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn):
+        """
+        Update a catalogue category by its ID in a MongoDB database.
+
+        The method checks if the catalogue category has children elements and raises a `ChildrenElementsExistError`
+        if it does. If a parent catalogue category is specified by `parent_id`, the method checks if that exists in the
+        database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue category
+        is found within the parent catalogue category and raises a `DuplicateRecordError` if it is.
+
+        :param catalogue_category_id: The ID of the catalogue category to update.
+        :param catalogue_category: The catalogue category containing the update data.
+        :return: The updated catalogue category.
+        :raises ChildrenElementsExistError: If the catalogue category has children elements.
+        :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
+        :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
+        """
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        if self._has_children_elements(str(catalogue_category_id)):
+            raise ChildrenElementsExistError(
+                f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
+            )
+
+        parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
+        if parent_id and not self.get(parent_id):
+            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+
+        stored_catalogue_category = self.get(str(catalogue_category_id))
+        if (
+            catalogue_category.name != stored_catalogue_category.name
+            or parent_id != stored_catalogue_category.parent_id
+        ) and self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
+            raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
+
+        logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
+        self._catalogue_categories_collection.update_one(
+            {"_id": catalogue_category_id}, {"$set": catalogue_category.dict()}
+        )
+        catalogue_category = self.get(str(catalogue_category_id))
+        return catalogue_category
+
     def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories from a MongoDB database based on the provided filters.
