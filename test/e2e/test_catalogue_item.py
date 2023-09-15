@@ -3,10 +3,8 @@ End-to-End tests for the catalogue item router.
 """
 from typing import Dict
 
-import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.database import get_database
 
 CATALOGUE_CATEGORY_POST_A = {  # pylint: disable=duplicate-code
     "name": "Category A",
@@ -61,26 +59,6 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
             {"name": "Property A", "value": True},
         ],
     }
-
-
-@pytest.fixture(name="cleanup_catalogue_categories", autouse=True)
-def fixture_cleanup_catalogue_categories():
-    """
-    Fixture to clean up the catalogue categories collection in the test database after the session finishes.
-    """
-    database = get_database()
-    yield
-    database.catalogue_categories.delete_many({})
-
-
-@pytest.fixture(name="cleanup_catalogue_items", autouse=True)
-def fixture_cleanup_catalogue_items():
-    """
-    Fixture to clean up the catalogue items collection in the test database after the session finishes.
-    """
-    database = get_database()
-    yield
-    database.catalogue_items.delete_many({})
 
 
 def test_create_catalogue_item(test_client):
