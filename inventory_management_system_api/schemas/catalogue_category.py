@@ -4,7 +4,7 @@ Module for defining the API schema models for representing catalogue categories.
 from enum import Enum
 from typing import Optional, List, Any, Dict
 
-from pydantic import BaseModel, validator, root_validator, Field
+from pydantic import BaseModel, validator, Field
 
 
 class CatalogueItemPropertyType(str, Enum):
@@ -57,27 +57,9 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         "children but if it is not then it can only have catalogue categories as children."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: List[CatalogueItemPropertySchema] = Field(
+    catalogue_item_properties: Optional[List[CatalogueItemPropertySchema]] = Field(
         description="The properties that the catalogue items in this category could/should have"
     )
-
-    @root_validator(pre=True)
-    @classmethod
-    def validate_values(cls, values):
-        """
-        Root validator for the model which runs before the values are assigned to the fields.
-
-        This is needed to make the `catalogue_item_properties` field not required if the catalogue category is not a
-        leaf. It assigns an empty list if the field is not present in the body.
-
-        :param values: The values of the model fields.
-        :return: The values of the model fields.
-        """
-        # Do not require the `catalogue_item_properties` field to be present in the body if the catalogue category is
-        # not a leaf. Assign an empty list
-        if "is_leaf" in values and not values["is_leaf"] and "catalogue_item_properties" not in values:
-            values["catalogue_item_properties"] = []
-        return values
 
     @validator("catalogue_item_properties")
     @classmethod
@@ -95,7 +77,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         :return: The list of catalogue item properties.
         :raises ValueError: If catalogue item properties are provided for a non-leaf catalogue category.
         """
-        if "is_leaf" in values and not values["is_leaf"] and catalogue_item_properties:
+        if "is_leaf" in values and values["is_leaf"] is False and catalogue_item_properties:
             raise ValueError("Catalogue item properties not allowed for non-leaf catalogue category")
         return catalogue_item_properties
 

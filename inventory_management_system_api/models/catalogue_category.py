@@ -4,7 +4,7 @@ Module for defining the database models for representing catalogue categories.
 from typing import Optional, List
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
@@ -72,6 +72,24 @@ class CatalogueCategoryIn(BaseModel):
     parent_path: str
     parent_id: Optional[CustomObjectIdField] = None
     catalogue_item_properties: List[CatalogueItemProperty]
+
+    @validator("catalogue_item_properties", pre=True, always=True)
+    @classmethod
+    def validate_catalogue_item_properties(
+        cls, catalogue_item_properties: List[CatalogueItemProperty] | None
+    ) -> List[CatalogueItemProperty] | List:
+        """
+        Validator for the `catalogue_item_properties` field that runs always (even if the field is missing) and before
+        any Pydantic validation checks.
+
+        If the value is `None`, it replaces it with an empty list.
+
+        :param catalogue_item_properties: The list of catalogue item properties.
+        :return: The list of catalogue item properties or an empty list.
+        """
+        if catalogue_item_properties is None:
+            catalogue_item_properties = []
+        return catalogue_item_properties
 
 
 class CatalogueCategoryOut(CatalogueCategoryIn):
