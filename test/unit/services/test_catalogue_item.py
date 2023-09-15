@@ -184,6 +184,60 @@ def test_create_in_non_leaf_catalogue_category(catalogue_category_repository_moc
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
 
+def test_create_without_properties(
+    catalogue_item_repository_mock, catalogue_category_repository_mock, catalogue_item_service
+):
+    """
+    Test creating a catalogue item without properties.
+
+    Verify that the `create` method properly handles the catalogue item to be created without properties.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_item = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        name="Catalogue Item A",
+        description="This is Catalogue Item A",
+        properties=[],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return the catalogue category
+    catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
+        id=catalogue_item.catalogue_category_id,
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+        catalogue_item_properties=[],
+    )
+    # Mock `create` to return the created catalogue item
+    catalogue_item_repository_mock.create.return_value = catalogue_item
+
+    created_catalogue_item = catalogue_item_service.create(
+        CatalogueItemPostRequestSchema(
+            catalogue_category_id=catalogue_item.catalogue_category_id,
+            name=catalogue_item.name,
+            description=catalogue_item.description,
+        )
+    )
+
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_item.catalogue_category_id)
+    # pylint: disable=duplicate-code
+    catalogue_item_repository_mock.create.assert_called_once_with(
+        CatalogueItemIn(
+            catalogue_category_id=catalogue_item.catalogue_category_id,
+            name=catalogue_item.name,
+            description=catalogue_item.description,
+            properties=catalogue_item.properties,
+        )
+    )
+    # pylint: enable=duplicate-code
+    assert created_catalogue_item == catalogue_item
+
+
 def test_create_with_missing_mandatory_properties(catalogue_category_repository_mock, catalogue_item_service):
     """
     Test creating a catalogue item with missing mandatory catalogue item properties.

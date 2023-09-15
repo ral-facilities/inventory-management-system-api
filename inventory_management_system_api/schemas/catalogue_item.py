@@ -33,7 +33,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
     )
     name: str = Field(description="The name of the catalogue item")
     description: str = Field(description="The catalogue item description")
-    properties: List[PropertyPostRequestSchema] = Field(description="The catalogue item properties")
+    properties: Optional[List[PropertyPostRequestSchema]] = Field(description="The catalogue item properties")
 
 
 class CatalogueItemSchema(CatalogueItemPostRequestSchema):

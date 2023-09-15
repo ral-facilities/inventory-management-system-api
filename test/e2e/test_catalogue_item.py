@@ -140,6 +140,28 @@ def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
     assert response.json()["detail"] == "Adding a catalogue item to a non-leaf catalogue category is not allowed"
 
 
+def test_create_catalogue_item_without_properties(test_client):
+    """
+    Test creating a catalogue item in leaf catalogue category that does not have catalogue item properties.
+    """
+    catalogue_category_post = {"name": "Category A", "is_leaf": True}
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    catalogue_category_id = response.json()["id"]
+
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_id)
+    del catalogue_item_post["properties"]
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    assert response.status_code == 201
+
+    catalogue_item = response.json()
+
+    assert catalogue_item["catalogue_category_id"] == catalogue_category_id
+    assert catalogue_item["name"] == catalogue_item_post["name"]
+    assert catalogue_item["description"] == catalogue_item_post["description"]
+    assert catalogue_item["properties"] == []
+
+
 def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     """
     Test creating a catalogue item with missing mandatory catalogue item properties.

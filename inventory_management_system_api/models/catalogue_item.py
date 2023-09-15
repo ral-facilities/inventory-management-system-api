@@ -3,7 +3,7 @@ Module for defining the database models for representing catalogue items.
 """
 from typing import Optional, List, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from inventory_management_system_api.models.catalogue_category import CustomObjectIdField, StringObjectIdField
 
@@ -27,6 +27,22 @@ class CatalogueItemIn(BaseModel):
     name: str
     description: str
     properties: List[Property]
+
+    @validator("properties", pre=True, always=True)
+    @classmethod
+    def validate_properties(cls, properties: List[Property] | None) -> List[Property] | List:
+        """
+        Validator for the `properties` field that runs always (even if the field is missing) and before any Pydantic
+        validation checks.
+
+        If the value is `None`, it replaces it with an empty list.
+
+        :param properties: The list of properties.
+        :return: The list of properties or an empty list.
+        """
+        if properties is None:
+            properties = []
+        return properties
 
 
 class CatalogueItemOut(CatalogueItemIn):
