@@ -210,7 +210,7 @@ def test_create_with_nonexistent_parent_id(test_helpers, database_mock, catalogu
                 catalogue_item_properties=[],
             )
         )
-    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category.parent_id}"
+    assert str(exc.value) == f"No parent catalogue category found with ID: {catalogue_category.parent_id}"
     database_mock.catalogue_categories.find_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.parent_id)}
     )
@@ -290,8 +290,9 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 1)
 
-    # Mock count_documents to return 1 (children elements not found)
+    # Mock count_documents to return 0 (children elements not found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
     catalogue_category_repository.delete(catalogue_category_id)
 
@@ -308,6 +309,7 @@ def test_delete_with_children_elements(test_helpers, database_mock, catalogue_ca
     """
     catalogue_category_id = str(ObjectId())
 
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     # Mock count_documents to return 1 (children elements found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
 
@@ -326,7 +328,7 @@ def test_delete_with_invalid_id(catalogue_category_repository):
     """
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.delete("invalid")
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_category_repository):
@@ -342,6 +344,7 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_categ
 
     # Mock count_documents to return 0 (children elements not found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -399,7 +402,7 @@ def test_get_with_invalid_id(catalogue_category_repository):
     """
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.get("invalid")
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_category_repository):

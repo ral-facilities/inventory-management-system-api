@@ -155,7 +155,7 @@ def test_get_with_invalid_id(catalogue_item_repository):
     """
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_item_repository.get("invalid")
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_item_repository):
@@ -302,4 +302,4 @@ def test_list_with_invalid_catalogue_category_id_filter(catalogue_item_repositor
     """
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_item_repository.list("invalid")
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
