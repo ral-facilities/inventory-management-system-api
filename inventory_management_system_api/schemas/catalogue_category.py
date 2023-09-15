@@ -82,6 +82,19 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         return catalogue_item_properties
 
 
+class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
+    """
+    Schema model for a catalogue category update request.
+    """
+
+    name: Optional[str] = Field(description="The name of the catalogue category")
+    is_leaf: Optional[bool] = Field(
+        description="Whether the category is a leaf or not. If it is then it can only have catalogue items as "
+        "children but if it is not then it can only have catalogue categories as children."
+    )
+    parent_id: Optional[str] = Field(description="The ID of the parent catalogue category")
+
+
 class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
     """
     Schema model for a catalogue category response.
