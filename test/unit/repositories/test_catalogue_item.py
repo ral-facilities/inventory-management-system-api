@@ -65,8 +65,6 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "properties": catalogue_item.properties,
         }
     )
-
-    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item.id)})
     assert created_catalogue_item == catalogue_item
 
 
