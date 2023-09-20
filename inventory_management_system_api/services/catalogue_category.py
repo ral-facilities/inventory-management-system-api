@@ -109,7 +109,7 @@ class CatalogueCategoryService:
         """
         update_data = catalogue_category.dict(exclude_unset=True)
 
-        stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+        stored_catalogue_category = self.get(catalogue_category_id)
         if not stored_catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 

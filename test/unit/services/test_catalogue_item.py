@@ -1,7 +1,6 @@
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
-from unittest.mock import Mock
 
 import pytest
 from bson import ObjectId
@@ -14,40 +13,15 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut, CatalogueItemProperty
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, Property, CatalogueItemIn
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.schemas.catalogue_item import (
     PropertyPostRequestSchema,
     CatalogueItemPostRequestSchema,
 )
-from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 
-@pytest.fixture(name="catalogue_item_repository_mock")
-def fixture_catalogue_item_repository_mock() -> Mock:
-    """
-    Fixture to create a mock of the `CatalogueItemRepo` dependency.
-
-    :return: Mocked CatalogueItemRepo instance.
-    """
-    return Mock(CatalogueItemRepo)
-
-
-@pytest.fixture(name="catalogue_item_service")
-def fixture_catalogue_item_service(
-    catalogue_item_repository_mock: Mock, catalogue_category_repository_mock: Mock
-) -> CatalogueItemService:
-    """
-    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo` and `CatalogueCategoryRepo`
-    dependencies.
-
-    :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
-    :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
-    :return: `CatalogueItemService` instance with the mocked dependency.
-    """
-    return CatalogueItemService(catalogue_item_repository_mock, catalogue_category_repository_mock)
-
-
-def test_create(catalogue_item_repository_mock, catalogue_category_repository_mock, catalogue_item_service):
+def test_create(
+    test_helpers, catalogue_item_repository_mock, catalogue_category_repository_mock, catalogue_item_service
+):
     """
     Test creating a catalogue item.
 
@@ -69,23 +43,26 @@ def test_create(catalogue_item_repository_mock, catalogue_category_repository_mo
     )
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
-        id=catalogue_item.catalogue_category_id,
-        name="Category A",
-        code="category-a",
-        is_leaf=True,
-        path="/category-a",
-        parent_path="/",
-        parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
-            CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
-        ],
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=True,
+            path="/category-a",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[
+                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
+            ],
+        ),
     )
     # pylint: enable=duplicate-code
     # Mock `create` to return the created catalogue item
-    catalogue_item_repository_mock.create.return_value = catalogue_item
+    test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
 
     created_catalogue_item = catalogue_item_service.create(
         CatalogueItemPostRequestSchema(
@@ -114,7 +91,9 @@ def test_create(catalogue_item_repository_mock, catalogue_category_repository_mo
     assert created_catalogue_item == catalogue_item
 
 
-def test_create_with_nonexistent_catalogue_category_id(catalogue_category_repository_mock, catalogue_item_service):
+def test_create_with_nonexistent_catalogue_category_id(
+    test_helpers, catalogue_category_repository_mock, catalogue_item_service
+):
     """
     Test creating a catalogue item with a nonexistent parent ID.
 
@@ -124,7 +103,7 @@ def test_create_with_nonexistent_catalogue_category_id(catalogue_category_reposi
     catalogue_category_id = str(ObjectId())
 
     # Mock `get` to not return a catalogue category
-    catalogue_category_repository_mock.get.return_value = None
+    test_helpers.mock_get(catalogue_category_repository_mock, None)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.create(
@@ -143,7 +122,9 @@ def test_create_with_nonexistent_catalogue_category_id(catalogue_category_reposi
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
 
 
-def test_create_in_non_leaf_catalogue_category(catalogue_category_repository_mock, catalogue_item_service):
+def test_create_in_non_leaf_catalogue_category(
+    test_helpers, catalogue_category_repository_mock, catalogue_item_service
+):
     """
     Test creating a catalogue item in a non-leaf catalogue category.
 
@@ -165,7 +146,7 @@ def test_create_in_non_leaf_catalogue_category(catalogue_category_repository_moc
     # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = catalogue_category
+    test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
     with pytest.raises(NonLeafCategoryError) as exc:
         catalogue_item_service.create(
@@ -185,7 +166,7 @@ def test_create_in_non_leaf_catalogue_category(catalogue_category_repository_moc
 
 
 def test_create_without_properties(
-    catalogue_item_repository_mock, catalogue_category_repository_mock, catalogue_item_service
+    test_helpers, catalogue_item_repository_mock, catalogue_category_repository_mock, catalogue_item_service
 ):
     """
     Test creating a catalogue item without properties.
@@ -203,18 +184,23 @@ def test_create_without_properties(
     # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
-        id=catalogue_item.catalogue_category_id,
-        name="Category A",
-        code="category-a",
-        is_leaf=True,
-        path="/category-a",
-        parent_path="/",
-        parent_id=None,
-        catalogue_item_properties=[],
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=True,
+            path="/category-a",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[],
+        ),
     )
+    # pylint: enable=duplicate-code
     # Mock `create` to return the created catalogue item
-    catalogue_item_repository_mock.create.return_value = catalogue_item
+    test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
 
     created_catalogue_item = catalogue_item_service.create(
         CatalogueItemPostRequestSchema(
@@ -238,7 +224,9 @@ def test_create_without_properties(
     assert created_catalogue_item == catalogue_item
 
 
-def test_create_with_missing_mandatory_properties(catalogue_category_repository_mock, catalogue_item_service):
+def test_create_with_missing_mandatory_properties(
+    test_helpers, catalogue_category_repository_mock, catalogue_item_service
+):
     """
     Test creating a catalogue item with missing mandatory catalogue item properties.
 
@@ -264,7 +252,7 @@ def test_create_with_missing_mandatory_properties(catalogue_category_repository_
     # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = catalogue_category
+    test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
     with pytest.raises(MissingMandatoryCatalogueItemProperty) as exc:
         catalogue_item_service.create(
@@ -285,7 +273,7 @@ def test_create_with_missing_mandatory_properties(catalogue_category_repository_
 
 
 def test_create_with_with_invalid_value_type_for_string_property(
-    catalogue_category_repository_mock, catalogue_item_service
+    test_helpers, catalogue_category_repository_mock, catalogue_item_service
 ):
     """
     Test creating a catalogue item with invalid value type for a string catalogue item property.
@@ -295,6 +283,7 @@ def test_create_with_with_invalid_value_type_for_string_property(
     missing mandatory catalogue item properties, finds invalid value type for a string catalogue item property, and does
     not create the catalogue item.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -309,9 +298,10 @@ def test_create_with_with_invalid_value_type_for_string_property(
             CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
         ],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = catalogue_category
+    test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
     with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
         catalogue_item_service.create(
@@ -335,7 +325,7 @@ def test_create_with_with_invalid_value_type_for_string_property(
 
 
 def test_create_with_with_invalid_value_type_for_number_property(
-    catalogue_category_repository_mock, catalogue_item_service
+    test_helpers, catalogue_category_repository_mock, catalogue_item_service
 ):
     """
     Test creating a catalogue item with invalid value type for a number catalogue item property.
@@ -345,6 +335,7 @@ def test_create_with_with_invalid_value_type_for_number_property(
     missing mandatory catalogue item properties, finds invalid value type for a number catalogue item property, and does
     not create the catalogue item.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -359,9 +350,10 @@ def test_create_with_with_invalid_value_type_for_number_property(
             CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
         ],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = catalogue_category
+    test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
     with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
         catalogue_item_service.create(
@@ -385,7 +377,7 @@ def test_create_with_with_invalid_value_type_for_number_property(
 
 
 def test_create_with_with_invalid_value_type_for_boolean_property(
-    catalogue_category_repository_mock, catalogue_item_service
+    test_helpers, catalogue_category_repository_mock, catalogue_item_service
 ):
     """
     Test creating a catalogue item with invalid value type for a boolean catalogue item property.
@@ -395,6 +387,7 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
     missing mandatory catalogue item properties, finds invalid value type for a boolean catalogue item property, and
     does not create the catalogue item.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -409,9 +402,10 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
             CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
         ],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
-    catalogue_category_repository_mock.get.return_value = catalogue_category
+    test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
     with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
         catalogue_item_service.create(
@@ -434,7 +428,7 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
 
-def test_get(catalogue_item_repository_mock, catalogue_item_service):
+def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test getting a catalogue item.
 
@@ -455,7 +449,7 @@ def test_get(catalogue_item_repository_mock, catalogue_item_service):
     # pylint: enable=duplicate-code
 
     # Mock `get` to return a catalogue item
-    catalogue_item_repository_mock.get.return_value = catalogue_item
+    test_helpers.mock_get(catalogue_item_repository_mock, catalogue_item)
 
     retrieved_catalogue_item = catalogue_item_service.get(catalogue_item.id)
 
@@ -463,7 +457,7 @@ def test_get(catalogue_item_repository_mock, catalogue_item_service):
     assert retrieved_catalogue_item == catalogue_item
 
 
-def test_get_with_nonexistent_id(catalogue_item_repository_mock, catalogue_item_service):
+def test_get_with_nonexistent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test getting a catalogue item with a nonexistent ID.
 
@@ -472,7 +466,7 @@ def test_get_with_nonexistent_id(catalogue_item_repository_mock, catalogue_item_
     catalogue_item_id = str(ObjectId())
 
     # Mock `get` to not return a catalogue item
-    catalogue_item_repository_mock.get.return_value = None
+    test_helpers.mock_get(catalogue_item_repository_mock, None)
 
     retrieved_catalogue_item = catalogue_item_service.get(catalogue_item_id)
 
@@ -480,7 +474,7 @@ def test_get_with_nonexistent_id(catalogue_item_repository_mock, catalogue_item_
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
 
 
-def test_list(catalogue_item_repository_mock, catalogue_item_service):
+def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test getting catalogue items.
 
@@ -509,7 +503,7 @@ def test_list(catalogue_item_repository_mock, catalogue_item_service):
     # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue items
-    catalogue_item_repository_mock.list.return_value = [catalogue_item_a, catalogue_item_b]
+    test_helpers.mock_list(catalogue_item_repository_mock, [catalogue_item_a, catalogue_item_b])
 
     retrieved_catalogue_items = catalogue_item_service.list(None)
 
@@ -517,7 +511,7 @@ def test_list(catalogue_item_repository_mock, catalogue_item_service):
     assert retrieved_catalogue_items == [catalogue_item_a, catalogue_item_b]
 
 
-def test_list_with_catalogue_category_id_filter(catalogue_item_repository_mock, catalogue_item_service):
+def test_list_with_catalogue_category_id_filter(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test getting catalogue items based on the provided catalogue category ID filter.
 
@@ -539,7 +533,7 @@ def test_list_with_catalogue_category_id_filter(catalogue_item_repository_mock, 
     # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue items
-    catalogue_item_repository_mock.list.return_value = [catalogue_item]
+    test_helpers.mock_list(catalogue_item_repository_mock, [catalogue_item])
 
     retrieved_catalogue_items = catalogue_item_service.list(catalogue_item.catalogue_category_id)
 
@@ -548,7 +542,7 @@ def test_list_with_catalogue_category_id_filter(catalogue_item_repository_mock, 
 
 
 def test_list_with_catalogue_category_id_filter_no_matching_results(
-    catalogue_item_repository_mock, catalogue_item_service
+    test_helpers, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
     Test getting catalogue items based on the provided catalogue category ID filter when there is no matching results in
@@ -558,7 +552,7 @@ def test_list_with_catalogue_category_id_filter_no_matching_results(
     category ID filter.
     """
     # Mock `list` to return an empty list of catalogue item documents
-    catalogue_item_repository_mock.list.return_value = []
+    test_helpers.mock_list(catalogue_item_repository_mock, [])
 
     catalogue_category_id = str(ObjectId())
     retrieved_catalogue_items = catalogue_item_service.list(catalogue_category_id)
