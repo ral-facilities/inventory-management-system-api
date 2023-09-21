@@ -4,7 +4,7 @@ service.
 """
 import logging
 
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException, Path
 
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
@@ -20,6 +20,29 @@ from inventory_management_system_api.services.catalogue_item import CatalogueIte
 logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
+
+
+@router.get(
+    path="/{catalogue_item_id}", summary="Get a catalogue item by ID", response_description="Single catalogue item"
+)
+def get_catalogue_item(
+    catalogue_item_id: str = Path(description="The ID of the catalogue item to get"),
+    catalogue_item_service: CatalogueItemService = Depends(),
+) -> CatalogueItemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
+    try:
+        catalogue_item = catalogue_item_service.get(catalogue_item_id)
+        if not catalogue_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue item was not found"
+            )
+        return CatalogueItemSchema(**catalogue_item.dict())
+    except InvalidObjectIdError as exc:
+        logger.exception("The ID is not a valid ObjectId value")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue item was not found"
+        ) from exc
 
 
 @router.post(
