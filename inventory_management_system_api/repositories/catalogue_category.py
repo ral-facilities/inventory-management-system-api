@@ -39,14 +39,14 @@ class CatalogueCategoryRepo:
         Create a new catalogue category in a MongoDB database.
 
         If a parent catalogue category is specified by `parent_id`, the method checks if that exists
-        in the database and raises a `MissingRecordError` if it doesn't exist.
+        in the database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue
+        category is found within the parent catalogue category.
 
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
         :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
-        logger.info("Inserting the new catalogue category into the database")
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id):
             raise MissingRecordError(f"No catalogue category found with ID: {parent_id}")
@@ -54,6 +54,7 @@ class CatalogueCategoryRepo:
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
 
+        logger.info("Inserting the new catalogue category into the database")
         result = self._collection.insert_one(catalogue_category.dict())
         catalogue_category = self.get(str(result.inserted_id))
         return catalogue_category
@@ -68,11 +69,12 @@ class CatalogueCategoryRepo:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
         if self._has_children_elements(str(catalogue_category_id)):
             raise ChildrenElementsExistError(
                 f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
             )
+
+        logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
         result = self._collection.delete_one({"_id": catalogue_category_id})
         if result.deleted_count == 0:
             raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
@@ -85,7 +87,7 @@ class CatalogueCategoryRepo:
         :return: The retrieved catalogue category, or `None` if not found.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        logger.info("Retrieving catalogue category with ID: %s", catalogue_category_id)
+        logger.info("Retrieving catalogue category with ID: %s from the database", catalogue_category_id)
         catalogue_category = self._collection.find_one({"_id": catalogue_category_id})
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
@@ -93,7 +95,7 @@ class CatalogueCategoryRepo:
 
     def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
         """
-        Retrieve catalogue categories from a MongoDB based on the provided filters.
+        Retrieve catalogue categories from a MongoDB database based on the provided filters.
 
         :param path: The path to filter catalogue categories by.
         :param parent_path: The parent path to filter catalogue categories by.
@@ -105,6 +107,13 @@ class CatalogueCategoryRepo:
             query["path"] = path
         if parent_path:
             query["parent_path"] = parent_path
+
+        message = "Retrieving all catalogue categories from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided filter(s)", message)
+            logger.debug("Provided filters: %s", query)
 
         catalogue_categories = self._collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]

@@ -243,15 +243,23 @@ def test_delete_catalogue_with_children_elements(test_client):
     """
     Test deleting a catalogue category with children elements.
     """
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=False)
-    parent_response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
-    catalogue_category = CatalogueCategorySchema(**parent_response.json())
+    catalogue_category_post = {"name": "Category A", "is_leaf": False}
+    parent_response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    catalogue_category = parent_response.json()
 
-    parent_id = catalogue_category.id
-    catalogue_category_post = CatalogueCategoryPostRequestSchema(name="Category A", is_leaf=True, parent_id=parent_id)
-    test_client.post("/v1/catalogue-categories", json=catalogue_category_post.dict())
+    parent_id = catalogue_category["id"]
+    catalogue_category_post = {
+        "name": "Category A",
+        "is_leaf": True,
+        "parent_id": parent_id,
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Property B", "type": "boolean", "mandatory": True},
+        ],
+    }
+    test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    response = test_client.delete(f"/v1/catalogue-categories/{parent_response.json()['id']}")
+    response = test_client.delete(f"/v1/catalogue-categories/{parent_id}")
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Catalogue category has children elements and cannot be deleted"

@@ -17,13 +17,13 @@ class CatalogueItemPropertyType(str, Enum):
     BOOLEAN = "boolean"
 
 
-class CatalogueItemProperty(BaseModel):
+class CatalogueItemPropertySchema(BaseModel):
     """
-    Model representing a catalogue item property.
+    Schema model representing a catalogue item property.
     """
 
-    name: str = Field(description="The name of the catalogue item property")
-    type: CatalogueItemPropertyType
+    name: str = Field(description="The name of the property")
+    type: CatalogueItemPropertyType = Field(description="The type of the property")
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
 
@@ -57,7 +57,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         "children but if it is not then it can only have catalogue categories as children."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: List[CatalogueItemProperty] = Field(
+    catalogue_item_properties: List[CatalogueItemPropertySchema] = Field(
         description="The properties that the catalogue items in this category could/should have"
     )
 
@@ -82,8 +82,8 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
     @validator("catalogue_item_properties")
     @classmethod
     def validate_catalogue_item_properties(
-        cls, catalogue_item_properties: List[CatalogueItemProperty], values: Dict[str, Any]
-    ) -> List[CatalogueItemProperty]:
+        cls, catalogue_item_properties: List[CatalogueItemPropertySchema], values: Dict[str, Any]
+    ) -> List[CatalogueItemPropertySchema]:
         """
         Validator for the `catalogue_item_properties` field.
 

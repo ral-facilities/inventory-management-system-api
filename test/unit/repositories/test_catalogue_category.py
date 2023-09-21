@@ -1,16 +1,10 @@
-# pylint: disable=duplicate-code
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
-from typing import List
-from unittest.mock import Mock, call, MagicMock
+from unittest.mock import call
 
 import pytest
 from bson import ObjectId
-from pymongo.collection import Collection
-from pymongo.cursor import Cursor
-from pymongo.database import Database
-from pymongo.results import InsertOneResult, DeleteResult
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -24,101 +18,16 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryOut,
     CatalogueItemProperty,
 )
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 
 
-@pytest.fixture(name="database_mock")
-def fixture_database_mock() -> Mock:
-    """
-    Fixture to create a mock of the MongoDB database dependency and the `catalogue_categories` collection.
-
-    :return: Mocked MongoDB database instance with the mocked `catalogue_categories` collection.
-    """
-    database_mock = Mock(Database)
-    database_mock.catalogue_categories = Mock(Collection)
-    return database_mock
-
-
-@pytest.fixture(name="catalogue_category_repository")
-def fixture_catalogue_category_repository(database_mock: Mock) -> CatalogueCategoryRepo:
-    """
-    Fixture to create a `CatalogueCategoryRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `CatalogueCategoryRepo` instance with the mocked dependency.
-    """
-    return CatalogueCategoryRepo(database_mock)
-
-
-def mock_count_documents(database_mock: Mock, count: int) -> None:
-    """
-    Mock the `count_documents` method of the MongoDB database mock to return a specific count value.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :param count: The count value to be returned by the `count_documents` method.
-    """
-    database_mock.catalogue_categories.count_documents.return_value = count
-
-
-def mock_delete_one(database_mock: Mock, deleted_count: int) -> None:
-    """
-    Mock the `delete_one` method of the MongoDB database mock to return a `DeleteResult` object. The passed
-    `deleted_count` values is return as the `deleted_count` attribute of the `DeleteResult` object, enabling for the
-    code that relies on the `deleted_count` value to work.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :param deleted_count: The value to be assigned to the `deleted_count` attribute of the `DeleteResult` object
-    """
-    delete_result_mock = Mock(DeleteResult)
-    delete_result_mock.deleted_count = deleted_count
-    database_mock.catalogue_categories.delete_one.return_value = delete_result_mock
-
-
-def mock_insert_one(database_mock: Mock, inserted_id: ObjectId) -> None:
-    """
-    Mock the `insert_one` method of the MongoDB database mock to return an `InsertOneResult` object. The passed
-    `inserted_id` value is returned as the `inserted_id` attribute of the `InsertOneResult` object, enabling for the
-    code that relies on the `inserted_id` value to work.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :param inserted_id: The `ObjectId` value to be assigned to the `inserted_id` attribute of the `InsertOneResult`
-        object
-    """
-    insert_one_result_mock = Mock(InsertOneResult)
-    insert_one_result_mock.inserted_id = inserted_id
-    insert_one_result_mock.acknowledged = True
-    database_mock.catalogue_categories.insert_one.return_value = insert_one_result_mock
-
-
-def mock_find(database_mock: Mock, documents: List[dict]) -> None:
-    """
-    Mocks the `find` method of the MongoDB database mock to return a specific list of documents.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :param documents: The list of documents to be returned by the `find` method.
-    """
-    cursor_mock = MagicMock(Cursor)
-    cursor_mock.__iter__.return_value = iter(documents)
-    database_mock.catalogue_categories.find.return_value = cursor_mock
-
-
-def mock_find_one(database_mock: Mock, document: dict | None) -> None:
-    """
-    Mocks the `find_one` method of the MongoDB database mock to return a specific document.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :param document: The document to be returned by the `find_one` method.
-    """
-    database_mock.catalogue_categories.find_one.return_value = document
-
-
-def test_create(database_mock, catalogue_category_repository):
+def test_create(test_helpers, database_mock, catalogue_category_repository):
     """
     Test creating a catalogue category.
 
-    Verify that the `create` method properly handles the catalogue category to be created, finds that there is not
-    a duplicate catalogue category, and creates the catalogue category.
+    Verify that the `create` method properly handles the catalogue category to be created, checks that there is not a
+    duplicate catalogue category, and creates the catalogue category.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -129,14 +38,15 @@ def test_create(database_mock, catalogue_category_repository):
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
-    mock_count_documents(database_mock, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
     # Mock `insert_one` to return an object for the inserted catalogue category document
-    mock_insert_one(database_mock, CustomObjectId(catalogue_category.id))
+    test_helpers.mock_insert_one(database_mock.catalogue_categories, CustomObjectId(catalogue_category.id))
     # Mock `find_one` to return the inserted catalogue category document
-    mock_find_one(
-        database_mock,
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
         {
             "_id": CustomObjectId(catalogue_category.id),
             "name": catalogue_category.name,
@@ -149,6 +59,7 @@ def test_create(database_mock, catalogue_category_repository):
         },
     )
 
+    # pylint: disable=duplicate-code
     created_catalogue_category = catalogue_category_repository.create(
         CatalogueCategoryIn(
             name=catalogue_category.name,
@@ -160,6 +71,7 @@ def test_create(database_mock, catalogue_category_repository):
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
     )
+    # pylint: enable=duplicate-code
 
     database_mock.catalogue_categories.insert_one.assert_called_once_with(
         {
@@ -176,7 +88,7 @@ def test_create(database_mock, catalogue_category_repository):
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_parent_id(database_mock, catalogue_category_repository):
+def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_repository):
     """
     Test creating a catalogue category with a parent ID.
 
@@ -197,8 +109,8 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
     )
 
     # Mock `find_one` to return the parent catalogue category document
-    mock_find_one(
-        database_mock,
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
         {
             "_id": CustomObjectId(catalogue_category.parent_id),
             "name": "Category A",
@@ -211,12 +123,12 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         },
     )
     # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
-    mock_count_documents(database_mock, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
     # Mock `insert_one` to return an object for the inserted catalogue category document
-    mock_insert_one(database_mock, CustomObjectId(catalogue_category.id))
+    test_helpers.mock_insert_one(database_mock.catalogue_categories, CustomObjectId(catalogue_category.id))
     # Mock `find_one` to return the inserted catalogue category document
-    mock_find_one(
-        database_mock,
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
         {
             "_id": CustomObjectId(catalogue_category.id),
             "name": catalogue_category.name,
@@ -229,6 +141,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
         },
     )
 
+    # pylint: disable=duplicate-code
     created_catalogue_category = catalogue_category_repository.create(
         CatalogueCategoryIn(
             name=catalogue_category.name,
@@ -240,6 +153,7 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
     )
+    # pylint: enable=duplicate-code
 
     database_mock.catalogue_categories.insert_one.assert_called_once_with(
         {
@@ -261,13 +175,14 @@ def test_create_with_parent_id(database_mock, catalogue_category_repository):
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_repository):
+def test_create_with_nonexistent_parent_id(test_helpers, database_mock, catalogue_category_repository):
     """
     Test creating a catalogue category with a nonexistent parent ID.
 
     Verify that the `create` method properly handles a catalogue category with a nonexistent parent ID, does not find a
     parent catalogue category with an ID specified by `parent_id`, and does not create the catalogue category.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -278,9 +193,10 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to not return a parent catalogue category document
-    mock_find_one(database_mock, None)
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.create(
@@ -300,13 +216,14 @@ def test_create_with_nonexistent_parent_id(database_mock, catalogue_category_rep
     )
 
 
-def test_create_with_duplicate_name_within_parent(database_mock, catalogue_category_repository):
+def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, catalogue_category_repository):
     """
     Test creating a catalogue category with a duplicate name within the parent catalogue category.
 
-    Verify that the `create` method properly handles a catalogue category with a duplicate name, find that there is a
+    Verify that the `create` method properly handles a catalogue category with a duplicate name, finds that there is a
     duplicate catalogue category, and does not create the catalogue category.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category B",
@@ -320,10 +237,11 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
             CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
         ],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return the parent catalogue category document
-    mock_find_one(
-        database_mock,
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
         {
             "_id": CustomObjectId(catalogue_category.parent_id),
             "name": "Category A",
@@ -336,9 +254,10 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
         },
     )
     # Mock `count_documents` to return 1 (duplicate catalogue category found within the parent catalogue category)
-    mock_count_documents(database_mock, 1)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
 
     with pytest.raises(DuplicateRecordError) as exc:
+        # pylint: disable=duplicate-code
         catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
@@ -350,6 +269,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
                 catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
         )
+        # pylint: enable=duplicate-code
     assert str(exc.value) == "Duplicate catalogue category found within the parent catalogue category"
     database_mock.catalogue_categories.find_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.parent_id)}
@@ -359,7 +279,7 @@ def test_create_with_duplicate_name_within_parent(database_mock, catalogue_categ
     )
 
 
-def test_delete(database_mock, catalogue_category_repository):
+def test_delete(test_helpers, database_mock, catalogue_category_repository):
     """
     Test deleting a catalogue category.
 
@@ -368,10 +288,10 @@ def test_delete(database_mock, catalogue_category_repository):
     catalogue_category_id = str(ObjectId())
 
     # Mock `delete_one` to return that one document has been deleted
-    mock_delete_one(database_mock, 1)
+    test_helpers.mock_delete_one(database_mock.catalogue_categories, 1)
 
     # Mock count_documents to return 1 (children elements not found)
-    mock_count_documents(database_mock, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
 
     catalogue_category_repository.delete(catalogue_category_id)
 
@@ -380,7 +300,7 @@ def test_delete(database_mock, catalogue_category_repository):
     )
 
 
-def test_delete_with_children_elements(database_mock, catalogue_category_repository):
+def test_delete_with_children_elements(test_helpers, database_mock, catalogue_category_repository):
     """
     Test deleting a catalogue category with children elements.
 
@@ -389,7 +309,7 @@ def test_delete_with_children_elements(database_mock, catalogue_category_reposit
     catalogue_category_id = str(ObjectId())
 
     # Mock count_documents to return 1 (children elements found)
-    mock_count_documents(database_mock, 1)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -409,7 +329,7 @@ def test_delete_with_invalid_id(catalogue_category_repository):
     assert str(exc.value) == "Invalid ObjectId value"
 
 
-def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository):
+def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_category_repository):
     """
     Test deleting a catalogue category with a nonexistent ID.
 
@@ -418,10 +338,10 @@ def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository
     catalogue_category_id = str(ObjectId())
 
     # Mock `delete_one` to return that no document has been deleted
-    mock_delete_one(database_mock, 0)
+    test_helpers.mock_delete_one(database_mock.catalogue_categories, 0)
 
     # Mock count_documents to return 0 (children elements not found)
-    mock_count_documents(database_mock, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -431,12 +351,13 @@ def test_delete_with_nonexistent_id(database_mock, catalogue_category_repository
     )
 
 
-def test_get(database_mock, catalogue_category_repository):
+def test_get(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting a catalogue category.
 
     Verify that the `get` method properly handles the retrieval of a catalogue category by ID.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -447,10 +368,11 @@ def test_get(database_mock, catalogue_category_repository):
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a catalogue category document
-    mock_find_one(
-        database_mock,
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
         {
             "_id": CustomObjectId(catalogue_category.id),
             "name": catalogue_category.name,
@@ -480,7 +402,7 @@ def test_get_with_invalid_id(catalogue_category_repository):
     assert str(exc.value) == "Invalid ObjectId value"
 
 
-def test_get_with_nonexistent_id(database_mock, catalogue_category_repository):
+def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting a catalogue category with a nonexistent ID.
 
@@ -489,7 +411,7 @@ def test_get_with_nonexistent_id(database_mock, catalogue_category_repository):
     catalogue_category_id = str(ObjectId())
 
     # Mock `find_one` to not return a catalogue category document
-    mock_find_one(database_mock, None)
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     retrieved_catalogue_category = catalogue_category_repository.get(catalogue_category_id)
 
@@ -497,12 +419,13 @@ def test_get_with_nonexistent_id(database_mock, catalogue_category_repository):
     database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category_id)})
 
 
-def test_list(database_mock, catalogue_category_repository):
+def test_list(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting catalogue categories.
 
     Verify that the `list` method properly handles the retrieval of catalogue categories without filters.
     """
+    # pylint: disable=duplicate-code
     catalogue_category_a = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -524,10 +447,11 @@ def test_list(database_mock, catalogue_category_repository):
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of catalogue category documents
-    mock_find(
-        database_mock,
+    test_helpers.mock_find(
+        database_mock.catalogue_categories,
         [
             {
                 "_id": CustomObjectId(catalogue_category_a.id),
@@ -558,13 +482,14 @@ def test_list(database_mock, catalogue_category_repository):
     assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
 
 
-def test_list_with_path_filter(database_mock, catalogue_category_repository):
+def test_list_with_path_filter(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting catalogue categories based on the provided path filter.
 
     Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path
     filter.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -575,10 +500,11 @@ def test_list_with_path_filter(database_mock, catalogue_category_repository):
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of catalogue category documents
-    mock_find(
-        database_mock,
+    test_helpers.mock_find(
+        database_mock.catalogue_categories,
         [
             {
                 "_id": CustomObjectId(catalogue_category.id),
@@ -599,13 +525,14 @@ def test_list_with_path_filter(database_mock, catalogue_category_repository):
     assert retrieved_catalogue_categories == [catalogue_category]
 
 
-def test_list_with_parent_path_filter(database_mock, catalogue_category_repository):
+def test_list_with_parent_path_filter(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting catalogue categories based on the provided parent path filter.
 
     Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided parent
     path filter.
     """
+    # pylint: disable=duplicate-code
     catalogue_category_a = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -627,10 +554,11 @@ def test_list_with_parent_path_filter(database_mock, catalogue_category_reposito
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of catalogue category documents
-    mock_find(
-        database_mock,
+    test_helpers.mock_find(
+        database_mock.catalogue_categories,
         [
             {
                 "_id": CustomObjectId(catalogue_category_a.id),
@@ -661,13 +589,14 @@ def test_list_with_parent_path_filter(database_mock, catalogue_category_reposito
     assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
 
 
-def test_list_with_path_and_parent_path_filters(database_mock, catalogue_category_repository):
+def test_list_with_path_and_parent_path_filters(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting catalogue categories based on the provided path and parent path filters.
 
     Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
     parent path filters.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category B",
@@ -678,10 +607,11 @@ def test_list_with_path_and_parent_path_filters(database_mock, catalogue_categor
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of catalogue category documents
-    mock_find(
-        database_mock,
+    test_helpers.mock_find(
+        database_mock.catalogue_categories,
         [
             {
                 "_id": CustomObjectId(catalogue_category.id),
@@ -702,7 +632,9 @@ def test_list_with_path_and_parent_path_filters(database_mock, catalogue_categor
     assert retrieved_catalogue_categories == [catalogue_category]
 
 
-def test_list_with_path_and_parent_path_filters_no_matching_results(database_mock, catalogue_category_repository):
+def test_list_with_path_and_parent_path_filters_no_matching_results(
+    test_helpers, database_mock, catalogue_category_repository
+):
     """
     Test getting catalogue categories based on the provided path and parent path filters when there is no matching
     results in the database.
@@ -711,7 +643,7 @@ def test_list_with_path_and_parent_path_filters_no_matching_results(database_moc
     parent path filters.
     """
     # Mock `find` to return an empty list of catalogue category documents
-    mock_find(database_mock, [])
+    test_helpers.mock_find(database_mock.catalogue_categories, [])
 
     retrieved_catalogue_categories = catalogue_category_repository.list("/category-a", "/")
 
