@@ -3,8 +3,9 @@ Module for providing an API router which defines routes for managing catalogue i
 service.
 """
 import logging
+from typing import List, Annotated, Optional
 
-from fastapi import APIRouter, status, Depends, HTTPException, Path
+from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
@@ -20,6 +21,26 @@ from inventory_management_system_api.services.catalogue_item import CatalogueIte
 logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
+
+
+@router.get(path="/", summary="Get catalogue items", response_description="List of catalogue items")
+def get_catalogue_items(
+    catalogue_category_id: Annotated[
+        Optional[str], Query(description="Filter catalogue items by catalogue category ID")
+    ] = None,
+    catalogue_item_service: CatalogueItemService = Depends(),
+) -> List[CatalogueItemSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting catalogue items")
+    if catalogue_category_id:
+        logger.debug("Catalogue category ID filter: '%s'", catalogue_category_id)
+
+    try:
+        catalogue_items = catalogue_item_service.list(catalogue_category_id)
+        return [CatalogueItemSchema(**catalogue_item.dict()) for catalogue_item in catalogue_items]
+    except InvalidObjectIdError:
+        logger.exception("The provided catalogue category ID filter value is not a valid ObjectId value")
+        return []
 
 
 @router.get(

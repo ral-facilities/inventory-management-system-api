@@ -113,7 +113,7 @@ class CatalogueCategoryRepo:
             logger.info(message)
         else:
             logger.info("%s matching the provided filter(s)", message)
-            logger.debug("Provided filters: %s", query)
+            logger.debug("Provided filter(s): %s", query)
 
         catalogue_categories = self._collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
