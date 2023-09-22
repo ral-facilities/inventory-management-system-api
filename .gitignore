@@ -2,7 +2,7 @@
 .vscode/
 mongodb/data/*
 !mongodb/data/.keep
-
+logging.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

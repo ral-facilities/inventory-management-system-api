@@ -12,6 +12,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema
 
+
 logger = logging.getLogger()
 
 
