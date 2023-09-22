@@ -8,6 +8,16 @@ from pydantic import BaseModel, Field, validator
 from inventory_management_system_api.models.catalogue_category import CustomObjectIdField, StringObjectIdField
 
 
+class Manufacturer(BaseModel):
+    """
+    Model representing a catalogue item manufacturer.
+    """
+
+    name: str
+    address: str
+    web_url: Optional[str] = None
+
+
 class Property(BaseModel):
     """
     Model representing a catalogue item property.
@@ -27,6 +37,7 @@ class CatalogueItemIn(BaseModel):
     name: str
     description: str
     properties: List[Property]
+    manufacturer: Manufacturer
 
     @validator("properties", pre=True, always=True)
     @classmethod

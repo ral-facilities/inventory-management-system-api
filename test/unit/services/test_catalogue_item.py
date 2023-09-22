@@ -12,10 +12,16 @@ from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut, CatalogueItemProperty
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, Property, CatalogueItemIn
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemOut,
+    Property,
+    CatalogueItemIn,
+    Manufacturer,
+)
 from inventory_management_system_api.schemas.catalogue_item import (
     PropertyPostRequestSchema,
     CatalogueItemPostRequestSchema,
+    ManufacturerSchema,
 )
 
 
@@ -40,6 +46,9 @@ def test_create(
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
+        manufacturer=Manufacturer(
+            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+        ),
     )
 
     # Mock `get` to return the catalogue category
@@ -74,6 +83,7 @@ def test_create(
                 PropertyPostRequestSchema(name="Property B", value=False),
                 PropertyPostRequestSchema(name="Property C", value="20x15x10"),
             ],
+            manufacturer=catalogue_item.manufacturer,
         )
     )
 
@@ -85,6 +95,7 @@ def test_create(
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
     # pylint: enable=duplicate-code
@@ -116,6 +127,11 @@ def test_create_with_nonexistent_catalogue_category_id(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
+                manufacturer=ManufacturerSchema(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    web_url="www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
@@ -159,6 +175,11 @@ def test_create_in_non_leaf_catalogue_category(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
+                manufacturer=ManufacturerSchema(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    web_url="www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert str(exc.value) == "Cannot add catalogue item to a non-leaf catalogue category"
@@ -180,6 +201,9 @@ def test_create_without_properties(
         name="Catalogue Item A",
         description="This is Catalogue Item A",
         properties=[],
+        manufacturer=Manufacturer(
+            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -207,6 +231,7 @@ def test_create_without_properties(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             name=catalogue_item.name,
             description=catalogue_item.description,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
 
@@ -218,6 +243,7 @@ def test_create_without_properties(
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
     # pylint: enable=duplicate-code
@@ -263,6 +289,11 @@ def test_create_with_missing_mandatory_properties(
                 properties=[
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
+                manufacturer=ManufacturerSchema(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    web_url="www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert (
@@ -314,6 +345,11 @@ def test_create_with_with_invalid_value_type_for_string_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value=True),
                 ],
+                manufacturer=ManufacturerSchema(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    web_url="www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert (
@@ -366,6 +402,11 @@ def test_create_with_with_invalid_value_type_for_number_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
+                manufacturer=ManufacturerSchema(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    web_url="www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert (
@@ -418,6 +459,11 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                     PropertyPostRequestSchema(name="Property B", value="False"),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
+                manufacturer=ManufacturerSchema(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    web_url="www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert (
@@ -445,6 +491,9 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
+        manufacturer=Manufacturer(
+            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -491,6 +540,9 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
+        manufacturer=Manufacturer(
+            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+        ),
     )
 
     catalogue_item_b = CatalogueItemOut(
@@ -499,6 +551,9 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
         name="Catalogue Item B",
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
+        manufacturer=Manufacturer(
+            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -529,6 +584,9 @@ def test_list_with_catalogue_category_id_filter(test_helpers, catalogue_item_rep
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
+        manufacturer=Manufacturer(
+            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+        ),
     )
     # pylint: enable=duplicate-code
 
