@@ -3,7 +3,6 @@ End-to-End tests for the manufacturer router.
 """
 import pytest
 
-from bson import ObjectId
 
 from inventory_management_system_api.core.database import get_database
 

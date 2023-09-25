@@ -3,9 +3,8 @@ Module for providing an API router which defines routes for managing manufacture
 `Manufacturer` service.
 """
 import logging
-from typing import Optional, Annotated, List
 
-from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, status, Depends, HTTPException
 from inventory_management_system_api.core.exceptions import DuplicateRecordError
 
 from inventory_management_system_api.schemas.manufacturer import ManufacturerPostRequestSchema, ManufacturerSchema
@@ -28,6 +27,7 @@ def create_manufacturer(
     manufacturer: ManufacturerPostRequestSchema,
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
+    """Create manufacturer"""
     logger.info("Creating a new manufacturer")
     logger.debug("Manufacturer data is %s", manufacturer)
 

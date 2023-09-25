@@ -2,8 +2,6 @@
 Module for providing a service for managing manufactuer using the `ManufacturerRepo` repository.
 """
 import logging
-import re
-from typing import Optional, List
 
 from fastapi import Depends
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut

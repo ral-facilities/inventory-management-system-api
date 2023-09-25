@@ -1,18 +1,12 @@
 """
 Unit tests for the `ManufacturerRepo` repository.
 """
-from unittest.mock import call
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import (
-    MissingRecordError,
-    DuplicateRecordError,
-    InvalidObjectIdError,
-    ChildrenElementsExistError,
-)
+from inventory_management_system_api.core.exceptions import DuplicateRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut, AddressProperty
 
 

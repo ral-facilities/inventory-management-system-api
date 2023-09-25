@@ -1,10 +1,10 @@
 """
 Module for defining the API schema models for representing manufacturers.
 """
-from enum import Enum
-from typing import Optional, List, Any, Dict
 
-from pydantic import BaseModel, validator, root_validator, Field
+from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class AddressProperty(BaseModel):
