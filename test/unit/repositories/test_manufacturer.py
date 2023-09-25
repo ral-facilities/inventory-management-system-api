@@ -86,3 +86,47 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
         )
 
     assert str(exc.value) == "Duplicate manufacturer found"
+
+
+def test_get_all_manufacturers(test_helpers, database_mock, manufacturer_repository):
+    """Test getting all manufacturers"""
+    manufacturer_1 = ManufacturerOut(
+        _id=str(ObjectId()),
+        code="manufacturer-a",
+        name="Manufacturer A",
+        url="testUrl.co.uk",
+        address="1 Example street",
+    )
+
+    manufacturer_2 = ManufacturerOut(
+        _id=str(ObjectId()),
+        code="manufacturer-b",
+        name="Manufacturer B",
+        url="2ndTestUrl.co.uk",
+        address="2 Example street",
+    )
+
+    test_helpers.mock_find(
+        database_mock.manufacturer,
+        [
+            {
+                "_id": CustomObjectId(manufacturer_1.id),
+                "code": manufacturer_1.code,
+                "name": manufacturer_1.name,
+                "url": manufacturer_1.url,
+                "address": manufacturer_1.address,
+            },
+            {
+                "_id": CustomObjectId(manufacturer_2.id),
+                "code": manufacturer_2.code,
+                "name": manufacturer_2.name,
+                "url": manufacturer_2.url,
+                "address": manufacturer_2.address,
+            },
+        ],
+    )
+
+    retrieved_manufacturers = manufacturer_repository.list()
+
+    database_mock.manufacturer.find.assert_called_once_with()
+    assert retrieved_manufacturers == [manufacturer_1, manufacturer_2]

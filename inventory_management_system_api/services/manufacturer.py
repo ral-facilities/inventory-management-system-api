@@ -4,6 +4,7 @@ Module for providing a service for managing manufactuer using the `ManufacturerR
 import logging
 import re
 
+from typing import List
 from fastapi import Depends
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
@@ -45,3 +46,8 @@ class ManufacturerService:
         """
         name = name.lower().strip()
         return re.sub(r"\s", "-", name)
+
+    def list(self) -> List[ManufacturerOut]:
+        """Get manufactuers"""
+
+        return self._manufacturer_repository.list()

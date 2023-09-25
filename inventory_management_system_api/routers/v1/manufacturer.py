@@ -3,7 +3,7 @@ Module for providing an API router which defines routes for managing manufacture
 `Manufacturer` service.
 """
 import logging
-
+from typing import List
 from fastapi import APIRouter, status, Depends, HTTPException
 from inventory_management_system_api.core.exceptions import DuplicateRecordError
 
@@ -38,3 +38,16 @@ def create_manufacturer(
         message = "A manufacturer with the same name has been found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.get(
+    path="/",
+    summary="Get all manufacturers",
+    response_description="List of manufacturers",
+)
+def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends()) -> List[ManufacturerSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting manufacturers")
+
+    manufacturers = manufacturer_service.list()
+    return [ManufacturerSchema(**manufacturer.dict()) for manufacturer in manufacturers]
