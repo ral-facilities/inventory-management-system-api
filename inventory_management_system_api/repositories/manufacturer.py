@@ -28,16 +28,18 @@ class ManufacturerRepo:
 
         self._database = database
         self._collection: Collection = self._database.manufacturer
-        print(self._collection)
 
-    
     def create(self, manufacturer: ManufacturerIn) -> ManufacturerOut:
         """Create a new manufacturer in MongoDB database"""
 
+        if self._is_duplicate_manufacturer(manufacturer.url):
+            raise DuplicateRecordError("Duplicate manufacturer found")
+
         logger.info("Inserting new manufacturer into database")
+
         result = self._collection.insert_one(manufacturer.dict())
         manufacturer = self.get(str(result.inserted_id))
-        print(result.inserted_id)
+
         return manufacturer
 
     def get(self, manufacturer_id: str) -> Optional[ManufacturerOut]:
@@ -50,3 +52,13 @@ class ManufacturerRepo:
         if manufacturer:
             return ManufacturerOut(**manufacturer)
         return None
+
+    def _is_duplicate_manufacturer(self, url: str) -> bool:
+        """
+        Check if manufacturer with the same url already exists in the manufacturer collection
+
+        :param url: the url of the manufacturer to check for duplicates
+        """
+        logger.info("Checking for duplicates")
+        count = self._collection.count_documents({"url": url})
+        return count > 0

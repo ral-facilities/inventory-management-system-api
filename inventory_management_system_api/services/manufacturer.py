@@ -20,19 +20,15 @@ class ManufacturerService:
     def __init__(self, manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo)) -> None:
         """
         Initialise the manufacturer service with a ManufacturerRepo
-        
-        :param manufacturer_repository: The `ManufacturerRepo` repository to use.        
+
+        :param manufacturer_repository: The `ManufacturerRepo` repository to use.
         """
 
         self._manufacturer_repository = manufacturer_repository
 
-    def create(self, manufacturer: ManufacturerPostRequestSchema) -> None:
+    def create(self, manufacturer: ManufacturerPostRequestSchema) -> ManufacturerOut:
         """Create a new manufacturer"""
 
         return self._manufacturer_repository.create(
-            ManufacturerIn(
-                name=manufacturer.name,
-                url=manufacturer.url,
-                address=manufacturer.address,
-            )
-       )
+            ManufacturerIn(name=manufacturer.name, url=manufacturer.url, address=manufacturer.address)
+        )
