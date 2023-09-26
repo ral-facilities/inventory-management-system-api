@@ -7,18 +7,18 @@ from pydantic import BaseModel, Field
 
 
 from inventory_management_system_api.models.catalogue_category import StringObjectIdField
-from inventory_management_system_api.schemas.manufacturer import AddressProperty
 
 
 class ManufacturerIn(BaseModel):
     """Input database model for a manufacturer"""
 
     name: str
+    code: str
     url: str
-    address: AddressProperty
+    address: str
 
 
 class ManufacturerOut(ManufacturerIn):
-    """Output model form database for manufacturer"""
+    """Output database model for a manufacturer"""
 
     id: StringObjectIdField = Field(alias="_id")

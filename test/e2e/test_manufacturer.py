@@ -22,14 +22,7 @@ def test_create_manufacturer(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "example.com",
-        "address": {
-            "name": "Manufacturer A",
-            "street_name": "Street A",
-            "city": "City A",
-            "county": "County A",
-            "post_code": "AB1 2CD",
-            "country": "UK",
-        },
+        "address": "Street A",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
@@ -44,36 +37,22 @@ def test_create_manufacturer(test_client):
 
 
 def test_check_duplicate_url_within_manufacturer(test_client):
-    """Test creating a manufactuer with a duplicate url"""
+    """Test creating a manufactuer with a duplicate name"""
 
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "example.com",
-        "address": {
-            "name": "Manufacturer A",
-            "street_name": "Street A",
-            "city": "City A",
-            "county": "County A",
-            "post_code": "AB1 2CD",
-            "country": "UK",
-        },
+        "address": "Street A",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
 
     manufacturer_post = {
-        "name": "Manufacturer B",
-        "url": "example.com",
-        "address": {
-            "name": "Manufacturer B",
-            "street_name": "Street B",
-            "city": "City B",
-            "county": "County B",
-            "post_code": "AB1 2CD",
-            "country": "UK",
-        },
+        "name": "Manufacturer A",
+        "url": "test.com",
+        "address": "Street B",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "A manufacturer with the same url has been found"
+    assert response.json()["detail"] == "A manufacturer with the same name has been found"

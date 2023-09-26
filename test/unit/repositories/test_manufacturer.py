@@ -7,7 +7,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import DuplicateRecordError
-from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut, AddressProperty
+from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
 
 def test_create_manufacturer(test_helpers, database_mock, manufacturer_repository):
@@ -21,14 +21,9 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
         name="Manufacturer A",
+        code="manufacturer-a",
         url="testUrl.co.uk",
-        address=AddressProperty(
-            name="Manufacturer A",
-            street_name="1 Example street",
-            city="Oxford",
-            post_code="OX1 2AB",
-            country="United Kingdom",
-        ),
+        address="1 Example street",
     )
     # Mock 'count documents' to return 0 (no duplicates found)
     test_helpers.mock_count_documents(database_mock.manufacturer, 0)
@@ -39,6 +34,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         database_mock.manufacturer,
         {
             "_id": CustomObjectId(manufacturer.id),
+            "code": manufacturer.code,
             "name": manufacturer.name,
             "url": manufacturer.url,
             "address": manufacturer.address,
@@ -47,6 +43,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     created_manufacturer = manufacturer_repository.create(
         ManufacturerIn(
             name=manufacturer.name,
+            code=manufacturer.code,
             url=manufacturer.url,
             address=manufacturer.address,
         )
@@ -55,6 +52,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     database_mock.manufacturer.insert_one.assert_called_once_with(
         {
             "name": manufacturer.name,
+            "code": manufacturer.code,
             "url": manufacturer.url,
             "address": manufacturer.address,
         }
@@ -63,24 +61,15 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     assert created_manufacturer == manufacturer
 
 
-def test_create_manufacturer_with_duplicate_url(test_helpers, database_mock, manufacturer_repository):
+def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer_repository):
     """
-    Test creating a manufacturer with a duplicate url
+    Test creating a manufacturer with a duplicate code
 
     Verify that the `create` method properly handles a manufacturer with a duplicate name, finds that there is a
     duplicate manufacturer, and does not create the manufacturer.
     """
     manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
-        name="Manufacturer B",
-        url="duplicate.co.uk",
-        address=AddressProperty(
-            name="Manufacturer B",
-            street_name="street B",
-            city="City B",
-            post_code="Post Code B",
-            country="United Kingdom",
-        ),
+        _id=str(ObjectId()), name="Manufacturer B", code="manufacturer-b", url="duplicate.co.uk", address="street B"
     )
 
     # Mock count_documents to return 1 (duplicat manufacturer found)
@@ -90,6 +79,7 @@ def test_create_manufacturer_with_duplicate_url(test_helpers, database_mock, man
         manufacturer_repository.create(
             ManufacturerIn(
                 name=manufacturer.name,
+                code=manufacturer.code,
                 url=manufacturer.url,
                 address=manufacturer.address,
             )
