@@ -1,5 +1,5 @@
 """
-Module for providing a service for managing manufactuer using the `ManufacturerRepo` repository.
+Module for providing a service for managing manufacturers using the `ManufacturerRepo` repository.
 """
 import logging
 import re
@@ -26,8 +26,11 @@ class ManufacturerService:
         self._manufacturer_repository = manufacturer_repository
 
     def create(self, manufacturer: ManufacturerPostRequestSchema) -> ManufacturerOut:
-        """Create a new manufacturer"""
-
+        """
+        Create a new manufacturer.
+        :param manufacturer: The manufacturer to be created.
+        :return: The created manufacturer.
+        """
         code = self._generate_code(manufacturer.name)
         return self._manufacturer_repository.create(
             ManufacturerIn(name=manufacturer.name, code=code, url=manufacturer.url, address=manufacturer.address)

@@ -68,9 +68,9 @@ class ManufacturerRepo:
         """
         Check if manufacturer with the same url already exists in the manufacturer collection
 
-        :param url: the url of the manufacturer to check for duplicates
+        :param code: The code of the manufacturer to check for duplicates.
         :return `True` if duplicate manufacturer, `False` otherwise
         """
-        logger.info("Checking for duplicates")
+        logger.info("Checking if manufacturer with code '%s' already exists", code)
         count = self._collection.count_documents({"code": code})
         return count > 0
