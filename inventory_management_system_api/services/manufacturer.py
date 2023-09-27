@@ -48,6 +48,9 @@ class ManufacturerService:
         return re.sub(r"\s", "-", name)
 
     def list(self) -> List[ManufacturerOut]:
-        """Get manufactuers"""
-
+        """Get all manufactuers
+        
+        :return: list of all manufacturers
+        """
         return self._manufacturer_repository.list()
+    
