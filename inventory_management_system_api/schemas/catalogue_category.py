@@ -61,26 +61,6 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         description="The properties that the catalogue items in this category could/should have"
     )
 
-    @validator("catalogue_item_properties")
-    @classmethod
-    def validate_catalogue_item_properties(
-        cls, catalogue_item_properties: List[CatalogueItemPropertySchema], values: Dict[str, Any]
-    ) -> List[CatalogueItemPropertySchema]:
-        """
-        Validator for the `catalogue_item_properties` field.
-
-        It checks if the category is a non-leaf category and if catalogue item properties are present in the body. It
-        raises a `ValueError` if this is the case.
-
-        :param catalogue_item_properties: The list of catalogue item properties.
-        :param values: The values of the model fields.
-        :return: The list of catalogue item properties.
-        :raises ValueError: If catalogue item properties are provided for a non-leaf catalogue category.
-        """
-        if "is_leaf" in values and values["is_leaf"] is False and catalogue_item_properties:
-            raise ValueError("Catalogue item properties not allowed for non-leaf catalogue category")
-        return catalogue_item_properties
-
 
 class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     """

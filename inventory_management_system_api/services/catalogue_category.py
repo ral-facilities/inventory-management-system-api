@@ -135,8 +135,6 @@ class CatalogueCategoryService:
 
         if "is_leaf" in update_data:
             stored_catalogue_category.is_leaf = update_data["is_leaf"]
-            if stored_catalogue_category.is_leaf is False:
-                stored_catalogue_category.catalogue_item_properties = []
 
         if "catalogue_item_properties" in update_data:
             stored_catalogue_category.catalogue_item_properties = update_data["catalogue_item_properties"]

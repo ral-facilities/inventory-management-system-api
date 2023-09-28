@@ -138,7 +138,7 @@ def test_create_leaf_category_without_catalogue_item_properties(
             path=catalogue_category.path,
             parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            catalogue_item_properties=None,
         )
     )
     # pylint: enable=duplicate-code
@@ -152,6 +152,79 @@ def test_create_leaf_category_without_catalogue_item_properties(
             "parent_path": catalogue_category.parent_path,
             "parent_id": catalogue_category.parent_id,
             "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+        }
+    )
+    assert created_catalogue_category == catalogue_category
+
+
+def test_create_non_leaf_category_with_catalogue_item_properties(
+    test_helpers, database_mock, catalogue_category_repository
+):
+    """
+    Test creating a non-leaf catalogue category with catalogue item properties.
+
+    Verify that the `create` method properly handles the catalogue category to be created, checks that there is not a
+    duplicate catalogue category, and creates the catalogue category.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+        catalogue_item_properties=[],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
+    # Mock `insert_one` to return an object for the inserted catalogue category document
+    test_helpers.mock_insert_one(database_mock.catalogue_categories, CustomObjectId(catalogue_category.id))
+    # Mock `find_one` to return the inserted catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {
+            "_id": CustomObjectId(catalogue_category.id),
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": catalogue_category.parent_id,
+            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+        },
+    )
+
+    catalogue_item_properties = [
+        CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+        CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+    ]
+    # pylint: disable=duplicate-code
+    created_catalogue_category = catalogue_category_repository.create(
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_item_properties,
+        )
+    )
+    # pylint: enable=duplicate-code
+
+    database_mock.catalogue_categories.insert_one.assert_called_once_with(
+        {
+            "name": catalogue_category.name,
+            "code": catalogue_category.code,
+            "is_leaf": catalogue_category.is_leaf,
+            "path": catalogue_category.path,
+            "parent_path": catalogue_category.parent_path,
+            "parent_id": catalogue_category.parent_id,
+            "catalogue_item_properties": catalogue_item_properties,
         }
     )
     assert created_catalogue_category == catalogue_category

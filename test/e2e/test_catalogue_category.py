@@ -202,7 +202,7 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
     """
     Test creating a non-leaf catalogue category with catalogue item properties.
     """
-    catalogue_category = {
+    catalogue_category_post = {
         "name": "Category A",
         "is_leaf": False,
         "catalogue_item_properties": [
@@ -211,12 +211,19 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
         ],
     }
 
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    assert response.status_code == 422
-    assert (
-        response.json()["detail"][0]["msg"] == "Catalogue item properties not allowed for non-leaf catalogue category"
-    )
+    assert response.status_code == 201
+
+    catalogue_category = response.json()
+
+    assert catalogue_category["name"] == catalogue_category_post["name"]
+    assert catalogue_category["code"] == "category-a"
+    assert catalogue_category["is_leaf"] == catalogue_category_post["is_leaf"]
+    assert catalogue_category["path"] == "/category-a"
+    assert catalogue_category["parent_path"] == "/"
+    assert catalogue_category["parent_id"] is None
+    assert catalogue_category["catalogue_item_properties"] == []
 
 
 def test_delete_catalogue_category(test_client):
@@ -752,10 +759,17 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_cat
     }
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
-    assert response.status_code == 422
-    assert (
-        response.json()["detail"][0]["msg"] == "Catalogue item properties not allowed for non-leaf catalogue category"
-    )
+    assert response.status_code == 200
+
+    catalogue_category = response.json()
+
+    assert catalogue_category["name"] == catalogue_category_post["name"]
+    assert catalogue_category["code"] == "category-a"
+    assert catalogue_category["is_leaf"] == catalogue_category_patch["is_leaf"]
+    assert catalogue_category["path"] == "/category-a"
+    assert catalogue_category["parent_path"] == "/"
+    assert catalogue_category["parent_id"] is None
+    assert catalogue_category["catalogue_item_properties"] == []
 
 
 def test_partial_update_catalogue_category_change_parent_id(test_client):
