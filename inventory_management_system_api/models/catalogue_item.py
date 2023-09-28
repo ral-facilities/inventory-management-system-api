@@ -5,7 +5,7 @@ from typing import Optional, List, Any
 
 from pydantic import BaseModel, Field, validator
 
-from inventory_management_system_api.models.catalogue_category import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
 
 class Manufacturer(BaseModel):
