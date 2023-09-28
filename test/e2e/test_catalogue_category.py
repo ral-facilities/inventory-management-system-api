@@ -316,7 +316,7 @@ def test_delete_catalogue_category_with_children_catalogue_items(test_client):
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -599,7 +599,7 @@ def test_partial_update_catalogue_category_change_name_has_children_catalogue_it
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -730,7 +730,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -855,7 +855,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_children_catalog
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -1074,7 +1074,7 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)

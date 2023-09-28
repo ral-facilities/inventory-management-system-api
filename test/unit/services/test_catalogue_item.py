@@ -47,7 +47,9 @@ def test_create(
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            web_url="https://www.manufacturer-a.co.uk",
         ),
     )
 
@@ -130,7 +132,7 @@ def test_create_with_nonexistent_catalogue_category_id(
                 manufacturer=ManufacturerSchema(
                     name="Manufacturer A",
                     address="1 Address, City, Country, Postcode",
-                    web_url="www.manufacturer-a.co.uk",
+                    web_url="https://www.manufacturer-a.co.uk",
                 ),
             )
         )
@@ -178,7 +180,7 @@ def test_create_in_non_leaf_catalogue_category(
                 manufacturer=ManufacturerSchema(
                     name="Manufacturer A",
                     address="1 Address, City, Country, Postcode",
-                    web_url="www.manufacturer-a.co.uk",
+                    web_url="https://www.manufacturer-a.co.uk",
                 ),
             )
         )
@@ -202,7 +204,9 @@ def test_create_without_properties(
         description="This is Catalogue Item A",
         properties=[],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            web_url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code
@@ -292,7 +296,7 @@ def test_create_with_missing_mandatory_properties(
                 manufacturer=ManufacturerSchema(
                     name="Manufacturer A",
                     address="1 Address, City, Country, Postcode",
-                    web_url="www.manufacturer-a.co.uk",
+                    web_url="https://www.manufacturer-a.co.uk",
                 ),
             )
         )
@@ -348,7 +352,7 @@ def test_create_with_with_invalid_value_type_for_string_property(
                 manufacturer=ManufacturerSchema(
                     name="Manufacturer A",
                     address="1 Address, City, Country, Postcode",
-                    web_url="www.manufacturer-a.co.uk",
+                    web_url="https://www.manufacturer-a.co.uk",
                 ),
             )
         )
@@ -405,7 +409,7 @@ def test_create_with_with_invalid_value_type_for_number_property(
                 manufacturer=ManufacturerSchema(
                     name="Manufacturer A",
                     address="1 Address, City, Country, Postcode",
-                    web_url="www.manufacturer-a.co.uk",
+                    web_url="https://www.manufacturer-a.co.uk",
                 ),
             )
         )
@@ -462,7 +466,7 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                 manufacturer=ManufacturerSchema(
                     name="Manufacturer A",
                     address="1 Address, City, Country, Postcode",
-                    web_url="www.manufacturer-a.co.uk",
+                    web_url="https://www.manufacturer-a.co.uk",
                 ),
             )
         )
@@ -492,7 +496,9 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            web_url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code
@@ -541,7 +547,9 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            web_url="https://www.manufacturer-a.co.uk",
         ),
     )
 
@@ -552,7 +560,9 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            web_url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code
@@ -585,7 +595,9 @@ def test_list_with_catalogue_category_id_filter(test_helpers, catalogue_item_rep
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            web_url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code

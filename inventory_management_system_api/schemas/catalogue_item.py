@@ -3,7 +3,7 @@ Module for defining the API schema models for representing catalogue items.
 """
 from typing import List, Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class ManufacturerSchema(BaseModel):
@@ -13,7 +13,7 @@ class ManufacturerSchema(BaseModel):
 
     name: str = Field(description="The name of the manufacturer")
     address: str = Field(description="The address of the manufacturer")
-    web_url: str = Field(description="The website URL of the manufacturer")
+    web_url: HttpUrl = Field(description="The website URL of the manufacturer")
 
 
 class PropertyPostRequestSchema(BaseModel):

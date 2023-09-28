@@ -44,7 +44,7 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
 
@@ -66,7 +66,7 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "www.manufacturer-a.co.uk",
+            "web_url": "https://www.manufacturer-a.co.uk",
         },
     }
 
