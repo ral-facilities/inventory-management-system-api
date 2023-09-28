@@ -15,7 +15,7 @@ class Manufacturer(BaseModel):
 
     name: str
     address: str
-    web_url: Optional[str] = None
+    web_url: str
 
 
 class Property(BaseModel):
@@ -36,17 +36,17 @@ class CatalogueItemIn(BaseModel):
     catalogue_category_id: CustomObjectIdField
     name: str
     description: str
-    properties: List[Property]
+    properties: List[Property] = []
     manufacturer: Manufacturer
 
     @validator("properties", pre=True, always=True)
     @classmethod
     def validate_properties(cls, properties: List[Property] | None) -> List[Property] | List:
         """
-        Validator for the `properties` field that runs always (even if the field is missing) and before any Pydantic
-        validation checks.
+        Validator for the `properties` field that runs after field assignment but before type validation.
 
-        If the value is `None`, it replaces it with an empty list.
+        If the value is `None`, it replaces it with an empty list allowing for catalogue items without properties to be
+        created.
 
         :param properties: The list of properties.
         :return: The list of properties or an empty list.

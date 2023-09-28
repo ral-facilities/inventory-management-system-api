@@ -13,7 +13,7 @@ class ManufacturerSchema(BaseModel):
 
     name: str = Field(description="The name of the manufacturer")
     address: str = Field(description="The address of the manufacturer")
-    web_url: Optional[str] = Field(description="The website URL of the manufacturer")
+    web_url: str = Field(description="The website URL of the manufacturer")
 
 
 class PropertyPostRequestSchema(BaseModel):
