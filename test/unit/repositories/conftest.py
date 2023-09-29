@@ -9,7 +9,7 @@ from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.database import Database
-from pymongo.results import DeleteResult, InsertOneResult
+from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -51,11 +51,12 @@ def fixture_catalogue_item_repository(database_mock: Mock) -> CatalogueItemRepo:
     return CatalogueItemRepo(database_mock)
 
 
-class TestHelpers:
+class RepositoryTestHelpers:
     """
-    A utility class containing common helper methods for tests.
+    A utility class containing common helper methods for the repository tests.
 
-    This class provides a set of static methods that encapsulate common functionality frequently used in tests.
+    This class provides a set of static methods that encapsulate common functionality frequently used in the repository
+    tests.
     """
 
     @staticmethod
@@ -66,7 +67,12 @@ class TestHelpers:
         :param collection_mock: Mocked MongoDB database collection instance.
         :param count: The count value to be returned by the `count_documents` method.
         """
-        collection_mock.count_documents.return_value = count
+        if collection_mock.count_documents.side_effect is None:
+            collection_mock.count_documents.side_effect = [count]
+        else:
+            counts = list(collection_mock.count_documents.side_effect)
+            counts.append(count)
+            collection_mock.count_documents.side_effect = counts
 
     @staticmethod
     def mock_delete_one(collection_mock: Mock, deleted_count: int) -> None:
@@ -118,12 +124,28 @@ class TestHelpers:
         :param collection_mock: Mocked MongoDB database collection instance.
         :param document: The document to be returned by the `find_one` method.
         """
-        collection_mock.find_one.return_value = document
+        if collection_mock.find_one.side_effect is None:
+            collection_mock.find_one.side_effect = [document]
+        else:
+            documents = list(collection_mock.find_one.side_effect)
+            documents.append(document)
+            collection_mock.find_one.side_effect = documents
+
+    @staticmethod
+    def mock_update_one(collection_mock: Mock) -> None:
+        """
+        Mock the `update_one` method of the MongoDB database collection mock to return an `UpdateResult` object.
+
+        :param collection_mock: Mocked MongoDB database collection instance.
+        """
+        update_one_result_mock = Mock(UpdateResult)
+        update_one_result_mock.acknowledged = True
+        collection_mock.insert_one.return_value = update_one_result_mock
 
 
 @pytest.fixture(name="test_helpers")
-def fixture_test_helpers() -> Type[TestHelpers]:
+def fixture_test_helpers() -> Type[RepositoryTestHelpers]:
     """
     Fixture to provide a TestHelpers class.
     """
-    return TestHelpers
+    return RepositoryTestHelpers

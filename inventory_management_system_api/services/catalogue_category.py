@@ -7,10 +7,13 @@ from typing import Optional, List
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.exceptions import LeafCategoryError
+from inventory_management_system_api.core.exceptions import LeafCategoryError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueCategoryPostRequestSchema,
+    CatalogueCategoryPatchRequestSchema,
+)
 
 logger = logging.getLogger()
 
@@ -37,7 +40,7 @@ class CatalogueCategoryService:
 
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
-        :raises LeafCategoryError: If the parent catalogue category is a leaf catalogue category
+        :raises LeafCategoryError: If the parent catalogue category is a leaf catalogue category.
         """
         parent_id = catalogue_category.parent_id
         parent_catalogue_category = self.get(parent_id) if parent_id else None
@@ -86,6 +89,59 @@ class CatalogueCategoryService:
         :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
         """
         return self._catalogue_category_repository.list(path, parent_path)
+
+    def update(
+        self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchRequestSchema
+    ) -> CatalogueCategoryOut:
+        """
+        Update a catalogue category by its ID.
+
+        The method checks if a catalogue category with such ID exists and raises a `MissingRecordError` if it doesn't
+        exist. If a category is attempted to be moved to a leaf parent catalogue category then it checks if the parent
+        is a leaf catalogue category and raises a `LeafCategoryError` if it is.
+
+        :param catalogue_category_id: The ID of the catalogue category to update.
+        :param catalogue_category: The catalogue category containing the fields that need to be updated.
+        :return: The updated catalogue category.
+        :raises MissingRecordError: If the catalogue category doesn't exist.
+        :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
+            moved is a leaf catalogue category.
+        """
+        update_data = catalogue_category.dict(exclude_unset=True)
+
+        stored_catalogue_category = self.get(catalogue_category_id)
+        if not stored_catalogue_category:
+            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+
+        if "name" in update_data and update_data["name"] != stored_catalogue_category.name:
+            stored_catalogue_category.name = update_data["name"]
+            stored_catalogue_category.code = self._generate_code(stored_catalogue_category.name)
+            stored_catalogue_category.path = self._generate_path(
+                stored_catalogue_category.parent_path, stored_catalogue_category.code
+            )
+
+        if "parent_id" in update_data and update_data["parent_id"] != stored_catalogue_category.parent_id:
+            stored_catalogue_category.parent_id = update_data["parent_id"]
+            parent_catalogue_category = (
+                self.get(stored_catalogue_category.parent_id) if stored_catalogue_category.parent_id else None
+            )
+            stored_catalogue_category.parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
+            stored_catalogue_category.path = self._generate_path(
+                stored_catalogue_category.parent_path, stored_catalogue_category.code
+            )
+
+            if parent_catalogue_category and parent_catalogue_category.is_leaf:
+                raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+
+        if "is_leaf" in update_data:
+            stored_catalogue_category.is_leaf = update_data["is_leaf"]
+
+        if "catalogue_item_properties" in update_data:
+            stored_catalogue_category.catalogue_item_properties = update_data["catalogue_item_properties"]
+
+        return self._catalogue_category_repository.update(
+            catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.dict())
+        )
 
     def _generate_code(self, name: str) -> str:
         """

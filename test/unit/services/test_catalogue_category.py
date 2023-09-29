@@ -1,33 +1,22 @@
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
-from unittest.mock import Mock
-
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.exceptions import LeafCategoryError
+from inventory_management_system_api.core.exceptions import LeafCategoryError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryOut,
     CatalogueCategoryIn,
     CatalogueItemProperty,
 )
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestSchema
-from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
+from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueCategoryPatchRequestSchema,
+    CatalogueCategoryPostRequestSchema,
+)
 
 
-@pytest.fixture(name="catalogue_category_service")
-def fixture_catalogue_category_service(catalogue_category_repository_mock: Mock) -> CatalogueCategoryService:
-    """
-    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` dependency.
-
-    :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
-    :return: `CatalogueCategoryService` instance with the mocked dependency.
-    """
-    return CatalogueCategoryService(catalogue_category_repository_mock)
-
-
-def test_create(catalogue_category_repository_mock, catalogue_category_service):
+def test_create(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test creating a catalogue category.
 
@@ -48,7 +37,7 @@ def test_create(catalogue_category_repository_mock, catalogue_category_service):
     # pylint: enable=duplicate-code
 
     # Mock `create` to return the created catalogue category
-    catalogue_category_repository_mock.create.return_value = catalogue_category
+    test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
 
     created_catalogue_category = catalogue_category_service.create(
         CatalogueCategoryPostRequestSchema(
@@ -74,7 +63,7 @@ def test_create(catalogue_category_repository_mock, catalogue_category_service):
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_category_service):
+def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test creating a catalogue category with a parent ID.
 
@@ -98,19 +87,22 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
 
     # Mock `get` to return the parent catalogue category
     # pylint: disable=duplicate-code
-    catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
-        id=catalogue_category.parent_id,
-        name="Category A",
-        code="category-a",
-        is_leaf=False,
-        path="/category-a",
-        parent_path="/",
-        parent_id=None,
-        catalogue_item_properties=[],
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.parent_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=False,
+            path="/category-a",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[],
+        ),
     )
     # pylint: enable=duplicate-code
     # Mock `create` to return the created catalogue category
-    catalogue_category_repository_mock.create.return_value = catalogue_category
+    test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
 
     created_catalogue_category = catalogue_category_service.create(
         CatalogueCategoryPostRequestSchema(
@@ -121,7 +113,6 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
         )
     )
 
-    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.parent_id)
     # pylint: disable=duplicate-code
     catalogue_category_repository_mock.create.assert_called_once_with(
         CatalogueCategoryIn(
@@ -138,7 +129,7 @@ def test_create_with_parent_id(catalogue_category_repository_mock, catalogue_cat
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_whitespace_name(catalogue_category_repository_mock, catalogue_category_service):
+def test_create_with_whitespace_name(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test creating a catalogue category name containing leading/trailing/consecutive whitespaces.
 
@@ -161,7 +152,7 @@ def test_create_with_whitespace_name(catalogue_category_repository_mock, catalog
     # pylint: enable=duplicate-code
 
     # Mock `create` to return the created catalogue category
-    catalogue_category_repository_mock.create.return_value = catalogue_category
+    test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
 
     created_catalogue_category = catalogue_category_service.create(
         CatalogueCategoryPostRequestSchema(
@@ -187,10 +178,13 @@ def test_create_with_whitespace_name(catalogue_category_repository_mock, catalog
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_leaf_parent_catalogue_category(catalogue_category_repository_mock, catalogue_category_service):
+def test_create_with_leaf_parent_catalogue_category(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
     """
     Test creating a catalogue category in a leaf parent catalogue category.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category B",
@@ -201,21 +195,25 @@ def test_create_with_leaf_parent_catalogue_category(catalogue_category_repositor
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `get` to return the parent catalogue category
     # pylint: disable=duplicate-code
-    catalogue_category_repository_mock.get.return_value = CatalogueCategoryOut(
-        id=catalogue_category.parent_id,
-        name="Category A",
-        code="category-a",
-        is_leaf=True,
-        path="/category-a",
-        parent_path="/",
-        parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
-        ],
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.parent_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=True,
+            path="/category-a",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[
+                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            ],
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -229,7 +227,6 @@ def test_create_with_leaf_parent_catalogue_category(catalogue_category_repositor
             )
         )
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
-    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.parent_id)
 
 
 def test_delete(catalogue_category_repository_mock, catalogue_category_service):
@@ -245,7 +242,7 @@ def test_delete(catalogue_category_repository_mock, catalogue_category_service):
     catalogue_category_repository_mock.delete.assert_called_once_with(catalogue_category_id)
 
 
-def test_get(catalogue_category_repository_mock, catalogue_category_service):
+def test_get(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test getting a catalogue category.
 
@@ -265,7 +262,7 @@ def test_get(catalogue_category_repository_mock, catalogue_category_service):
     # pylint: enable=duplicate-code
 
     # Mock `get` to return a catalogue category
-    catalogue_category_repository_mock.get.return_value = catalogue_category
+    test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
     retrieved_catalogue_category = catalogue_category_service.get(catalogue_category.id)
 
@@ -273,7 +270,7 @@ def test_get(catalogue_category_repository_mock, catalogue_category_service):
     assert retrieved_catalogue_category == catalogue_category
 
 
-def test_get_with_nonexistent_id(catalogue_category_repository_mock, catalogue_category_service):
+def test_get_with_nonexistent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test getting a catalogue category with a nonexistent ID.
 
@@ -282,7 +279,7 @@ def test_get_with_nonexistent_id(catalogue_category_repository_mock, catalogue_c
     catalogue_category_id = str(ObjectId())
 
     # Mock `get` to not return a catalogue category
-    catalogue_category_repository_mock.get.return_value = None
+    test_helpers.mock_get(catalogue_category_repository_mock, None)
 
     retrieved_catalogue_category = catalogue_category_service.get(catalogue_category_id)
 
@@ -290,7 +287,7 @@ def test_get_with_nonexistent_id(catalogue_category_repository_mock, catalogue_c
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
 
 
-def test_list(catalogue_category_repository_mock, catalogue_category_service):
+def test_list(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test getting catalogue categories.
 
@@ -321,7 +318,7 @@ def test_list(catalogue_category_repository_mock, catalogue_category_service):
     # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue categories
-    catalogue_category_repository_mock.list.return_value = [catalogue_category_a, catalogue_category_b]
+    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category_a, catalogue_category_b])
 
     retrieved_catalogue_categories = catalogue_category_service.list(None, None)
 
@@ -329,7 +326,7 @@ def test_list(catalogue_category_repository_mock, catalogue_category_service):
     assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
 
 
-def test_list_with_path_filter(catalogue_category_repository_mock, catalogue_category_service):
+def test_list_with_path_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test getting catalogue categories based on the provided path filter.
 
@@ -350,7 +347,7 @@ def test_list_with_path_filter(catalogue_category_repository_mock, catalogue_cat
     # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue categories
-    catalogue_category_repository_mock.list.return_value = [catalogue_category]
+    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category])
 
     retrieved_catalogue_categories = catalogue_category_service.list("/category-a", None)
 
@@ -358,7 +355,7 @@ def test_list_with_path_filter(catalogue_category_repository_mock, catalogue_cat
     assert retrieved_catalogue_categories == [catalogue_category]
 
 
-def test_list_with_parent_path_filter(catalogue_category_repository_mock, catalogue_category_service):
+def test_list_with_parent_path_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test getting catalogue categories based on the provided parent path filter.
 
@@ -378,6 +375,7 @@ def test_list_with_parent_path_filter(catalogue_category_repository_mock, catalo
     )
     # pylint: enable=duplicate-code
 
+    # pylint: disable=duplicate-code
     catalogue_category_b = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category B",
@@ -388,9 +386,10 @@ def test_list_with_parent_path_filter(catalogue_category_repository_mock, catalo
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue categories
-    catalogue_category_repository_mock.list.return_value = [catalogue_category_a, catalogue_category_b]
+    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category_a, catalogue_category_b])
 
     retrieved_catalogue_categories = catalogue_category_service.list(None, "/")
 
@@ -398,7 +397,9 @@ def test_list_with_parent_path_filter(catalogue_category_repository_mock, catalo
     assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
 
 
-def test_list_with_path_and_parent_path_filters(catalogue_category_repository_mock, catalogue_category_service):
+def test_list_with_path_and_parent_path_filters(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
     """
     Test getting catalogue categories based on the provided path and parent path filters.
 
@@ -419,7 +420,7 @@ def test_list_with_path_and_parent_path_filters(catalogue_category_repository_mo
     # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue categories
-    catalogue_category_repository_mock.list.return_value = [catalogue_category]
+    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category])
 
     retrieved_catalogue_categories = catalogue_category_service.list("/category-b", "/")
 
@@ -428,7 +429,7 @@ def test_list_with_path_and_parent_path_filters(catalogue_category_repository_mo
 
 
 def test_list_with_path_and_parent_path_filters_no_matching_results(
-    catalogue_category_repository_mock, catalogue_category_service
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
 ):
     """
     Test getting catalogue categories based on the provided path and parent path filters when there is no matching
@@ -438,9 +439,317 @@ def test_list_with_path_and_parent_path_filters_no_matching_results(
     parent path filters.
     """
     # Mock `list` to return an empty list of catalogue categories
-    catalogue_category_repository_mock.list.return_value = []
+    test_helpers.mock_list(catalogue_category_repository_mock, [])
 
     retrieved_catalogue_categories = catalogue_category_service.list("/category-b", "/")
 
     catalogue_category_repository_mock.list.assert_called_once_with("/category-b", "/")
     assert retrieved_catalogue_categories == []
+
+
+def test_update(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test updating a catalogue category.
+
+    Verify that the `update` method properly handles the catalogue category to be updated.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=True,
+        path="/category-b",
+        parent_path="/",
+        parent_id=None,
+        catalogue_item_properties=[],
+    )
+
+    # Mock `get` to return a catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name="Category A",
+            code="category-a",
+            is_leaf=catalogue_category.is_leaf,
+            path="/category-a",
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    updated_catalogue_category = catalogue_category_service.update(
+        catalogue_category.id, CatalogueCategoryPatchRequestSchema(name=catalogue_category.name)
+    )
+
+    # pylint: disable=duplicate-code
+    catalogue_category_repository_mock.update.assert_called_once_with(
+        catalogue_category.id,
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    # pylint: enable=duplicate-code
+    assert updated_catalogue_category == catalogue_category
+
+
+def test_update_with_nonexistent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test updating a catalogue category with a non-existent ID.
+
+    Verify that the `update` method properly handles the catalogue category to be updated with a non-existent ID.
+    """
+    # Mock `get` to not return a catalogue category
+    test_helpers.mock_get(catalogue_category_repository_mock, None)
+
+    catalogue_category_id = str(ObjectId())
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_category_service.update(
+            catalogue_category_id, CatalogueCategoryPatchRequestSchema(catalogue_item_properties=[])
+        )
+    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
+
+
+def test_update_change_parent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test moving a catalogue category to another parent catalogue category.
+    """
+
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=False,
+        path="/category-a/category-b",
+        parent_path="/category-a",
+        parent_id=str(ObjectId()),
+        catalogue_item_properties=[],
+    )
+
+    # Mock `get` to return a catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path="/category-b",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    # Mock `get` to return a parent catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=str(ObjectId()),
+            name="Category A",
+            code="category-a",
+            is_leaf=False,
+            path="/category-a",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[],
+        ),
+    )
+    # pylint: enable=duplicate-code
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    updated_catalogue_category = catalogue_category_service.update(
+        catalogue_category.id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category.parent_id)
+    )
+
+    catalogue_category_repository_mock.update.assert_called_once_with(
+        catalogue_category.id,
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    assert updated_catalogue_category == catalogue_category
+
+
+def test_update_change_parent_id_leaf_parent_catalogue_category(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
+    """
+    Testing moving a catalogue category to a leaf parent catalogue category.
+    """
+    catalogue_category_b_id = str(ObjectId())
+    # Mock `get` to return a catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category_b_id,
+            name="Category B",
+            code="category-b",
+            is_leaf=False,
+            path="/category-b",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[],
+        ),
+    )
+    catalogue_category_a_id = str(ObjectId())
+    # Mock `get` to return a parent catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category_b_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=True,
+            path="/category-a",
+            parent_path="/",
+            parent_id=None,
+            catalogue_item_properties=[
+                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            ],
+        ),
+    )
+    # pylint: enable=duplicate-code
+
+    with pytest.raises(LeafCategoryError) as exc:
+        catalogue_category_service.update(
+            catalogue_category_b_id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category_a_id)
+        )
+    assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
+
+
+def test_update_change_from_leaf_to_non_leaf(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
+    """
+    Test changing a catalogue category from leaf to non-leaf.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=False,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+        catalogue_item_properties=[],
+    )
+
+    # Mock `get` to return a catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=True,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=[
+                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            ],
+        ),
+    )
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    updated_catalogue_category = catalogue_category_service.update(
+        catalogue_category.id, CatalogueCategoryPatchRequestSchema(is_leaf=False)
+    )
+
+    catalogue_category_repository_mock.update.assert_called_once_with(
+        catalogue_category.id,
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    assert updated_catalogue_category == catalogue_category
+
+
+def test_update_change_catalogue_item_properties(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
+    """
+    Test updating a catalogue category.
+
+    Verify that the `update` method properly handles the catalogue category to be updated.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        path="/category-a",
+        parent_path="/",
+        parent_id=None,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+        ],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return a catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+        ),
+    )
+    # pylint: enable=duplicate-code
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    updated_catalogue_category = catalogue_category_service.update(
+        catalogue_category.id,
+        CatalogueCategoryPatchRequestSchema(catalogue_item_properties=catalogue_category.catalogue_item_properties),
+    )
+
+    catalogue_category_repository_mock.update.assert_called_once_with(
+        catalogue_category.id,
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            path=catalogue_category.path,
+            parent_path=catalogue_category.parent_path,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    assert updated_catalogue_category == catalogue_category
