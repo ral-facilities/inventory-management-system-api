@@ -69,7 +69,11 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
     duplicate manufacturer, and does not create the manufacturer.
     """
     manufacturer = ManufacturerOut(
-        _id=str(ObjectId()), name="Manufacturer B", code="manufacturer-b", url="duplicate.co.uk", address="street B"
+        _id=str(ObjectId()),
+        name="Manufacturer B",
+        code="manufacturer-b",
+        url="http://duplicate.co.uk",
+        address="street B"
     )
 
     # Mock count_documents to return 1 (duplicat manufacturer found)
@@ -94,7 +98,7 @@ def test_get_all_manufacturers(test_helpers, database_mock, manufacturer_reposit
         _id=str(ObjectId()),
         code="manufacturer-a",
         name="Manufacturer A",
-        url="testUrl.co.uk",
+        url="http://testUrl.co.uk",
         address="1 Example street",
     )
 
@@ -102,7 +106,7 @@ def test_get_all_manufacturers(test_helpers, database_mock, manufacturer_reposit
         _id=str(ObjectId()),
         code="manufacturer-b",
         name="Manufacturer B",
-        url="2ndTestUrl.co.uk",
+        url="http://2ndTestUrl.co.uk",
         address="2 Example street",
     )
 

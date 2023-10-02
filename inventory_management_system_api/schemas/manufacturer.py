@@ -2,14 +2,14 @@
 Module for defining the API schema models for representing manufacturers.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class ManufacturerPostRequestSchema(BaseModel):
     """Schema model for manufactuer creation request"""
 
     name: str = Field(description="Name of manufacturer")
-    url: str = Field(description="URL of manufacturer")
+    url: HttpUrl = Field(description="URL of manufacturer")
     address: str = Field(description="Address of manufacturer")
 
 

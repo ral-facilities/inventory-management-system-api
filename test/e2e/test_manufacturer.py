@@ -21,7 +21,7 @@ def test_create_manufacturer(test_client):
     """Test creating a manufacturer"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "example.com",
+        "url": "http://example.com",
         "address": "Street A",
     }
 
@@ -41,14 +41,14 @@ def test_check_duplicate_name_within_manufacturer(test_client):
 
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "example.com",
+        "url": "http://example.com",
         "address": "Street A",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
 
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "test.com",
+        "url": "http://test.com",
         "address": "Street B",
     }
 
@@ -62,13 +62,13 @@ def test_get_manufacturers(test_client):
     """Test getting all manufacturers"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "example.com",
+        "url": "http://example.com",
         "address": "Street A",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
     manufacturer_post = {
         "name": "Manufacturer B",
-        "url": "2ndExample.com",
+        "url": "http://2ndExample.com",
         "address": "Street B",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
@@ -81,9 +81,9 @@ def test_get_manufacturers(test_client):
 
     assert len(manufacturers) == 2
     assert manufacturers[0]["name"] == "Manufacturer A"
-    assert manufacturers[0]["url"] == "example.com"
+    assert manufacturers[0]["url"] == "http://example.com"
     assert manufacturers[0]["address"] == "Street A"
 
     assert manufacturers[1]["name"] == "Manufacturer B"
-    assert manufacturers[1]["url"] == "2ndExample.com"
+    assert manufacturers[1]["url"] == "http://2ndExample.com"
     assert manufacturers[1]["address"] == "Street B"
