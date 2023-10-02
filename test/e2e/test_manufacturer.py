@@ -58,7 +58,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
     assert response.json()["detail"] == "A manufacturer with the same name has been found"
 
 
-def test_get_manufacturers(test_client):
+def test_list(test_client):
     """Test getting all manufacturers"""
     manufacturer_post = {
         "name": "Manufacturer A",
@@ -83,7 +83,18 @@ def test_get_manufacturers(test_client):
     assert manufacturers[0]["name"] == "Manufacturer A"
     assert manufacturers[0]["url"] == "http://example.com"
     assert manufacturers[0]["address"] == "Street A"
+    assert manufacturers[0]["code"] == "manufacturer-a"
 
     assert manufacturers[1]["name"] == "Manufacturer B"
     assert manufacturers[1]["url"] == "http://2ndExample.com"
     assert manufacturers[1]["address"] == "Street B"
+    assert manufacturers[1]["code"] == "manufacturer-b"
+
+def test_list_when_no_manufacturers(test_client):
+    """Test trying to get all manufacturers when there are none in the databse"""
+
+    response = test_client.get("/v1/manufacturer")
+
+    assert response.status_code == 200
+    manufacturers = list(response.json())
+    assert not manufacturers

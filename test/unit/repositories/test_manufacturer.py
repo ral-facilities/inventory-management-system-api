@@ -40,6 +40,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
             "address": manufacturer.address,
         },
     )
+    # pylint: disable=duplicate-code
     created_manufacturer = manufacturer_repository.create(
         ManufacturerIn(
             name=manufacturer.name,
@@ -57,6 +58,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
             "address": manufacturer.address,
         }
     )
+    # pylint: enable=duplicate-code
     database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
     assert created_manufacturer == manufacturer
 
@@ -81,6 +83,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
 
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.create(
+        # pylint: disable=duplicate-code
             ManufacturerIn(
                 name=manufacturer.name,
                 code=manufacturer.code,
@@ -88,11 +91,11 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
                 address=manufacturer.address,
             )
         )
-
+    # pylint: enable=duplicate-code
     assert str(exc.value) == "Duplicate manufacturer found"
 
 
-def test_get_all_manufacturers(test_helpers, database_mock, manufacturer_repository):
+def test_list(test_helpers, database_mock, manufacturer_repository):
     """Test getting all manufacturers"""
     manufacturer_1 = ManufacturerOut(
         _id=str(ObjectId()),
@@ -134,3 +137,10 @@ def test_get_all_manufacturers(test_helpers, database_mock, manufacturer_reposit
 
     database_mock.manufacturer.find.assert_called_once_with()
     assert retrieved_manufacturers == [manufacturer_1, manufacturer_2]
+
+def test_list_when_no_manufacturers(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to get all manufacturers when there are none in the databse"""
+    test_helpers.mock_find(database_mock.manufacturer, [])
+    retrieved_manufacturers = manufacturer_repository.list()
+
+    assert retrieved_manufacturers == []
