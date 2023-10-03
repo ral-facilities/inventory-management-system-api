@@ -182,7 +182,7 @@ def test_get_with_invalid_id(manufacturer_repository):
     """
     with pytest.raises(InvalidObjectIdError) as exc:
         manufacturer_repository.get("invalid")
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
