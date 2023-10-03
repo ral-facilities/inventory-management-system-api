@@ -20,9 +20,9 @@ class CustomObjectId(ObjectId):
         :raises InvalidObjectIdError: If the string value is an invalid `ObjectId`.
         """
         if not isinstance(value, str):
-            raise InvalidObjectIdError("ObjectId value must be a string")
+            raise InvalidObjectIdError(f"ObjectId value '{value}' must be a string")
 
         if not ObjectId.is_valid(value):
-            raise InvalidObjectIdError("Invalid ObjectId value")
+            raise InvalidObjectIdError(f"Invalid ObjectId value '{value}'")
 
         super().__init__(value)

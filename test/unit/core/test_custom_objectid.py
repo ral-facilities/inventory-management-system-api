@@ -24,7 +24,7 @@ def test_invalid_object_id():
     value = "invalid"
     with pytest.raises(InvalidObjectIdError) as exc:
         CustomObjectId(value)
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_non_string_input():
@@ -34,7 +34,7 @@ def test_non_string_input():
     value = 123
     with pytest.raises(InvalidObjectIdError) as exc:
         CustomObjectId(value)
-    assert str(exc.value) == "ObjectId value must be a string"
+    assert str(exc.value) == f"ObjectId value '{value}' must be a string"
 
 
 def test_empty_string_input():
@@ -44,7 +44,7 @@ def test_empty_string_input():
     value = ""
     with pytest.raises(InvalidObjectIdError) as exc:
         CustomObjectId(value)
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == f"Invalid ObjectId value '{value}'"
 
 
 def test_none_input():
@@ -54,4 +54,4 @@ def test_none_input():
     value = None
     with pytest.raises(InvalidObjectIdError) as exc:
         CustomObjectId(value)
-    assert str(exc.value) == "ObjectId value must be a string"
+    assert str(exc.value) == f"ObjectId value '{value}' must be a string"

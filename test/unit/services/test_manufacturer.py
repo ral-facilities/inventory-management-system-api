@@ -26,7 +26,7 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
     """
     Testing creating a manufacturer
     """
-     # pylint: disable=duplicate-code
+    # pylint: disable=duplicate-code
 
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
@@ -35,7 +35,7 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
         url="http://testUrl.co.uk",
         address="1 Example street",
     )
-     # pylint: enable=duplicate-code
+    # pylint: enable=duplicate-code
 
     manufacturer_repository_mock.create.return_value = manufacturer
 

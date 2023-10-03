@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategorySchema,
     CatalogueCategoryPostRequestSchema,
+    CatalogueCategoryPatchRequestSchema,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 
@@ -53,18 +54,15 @@ def get_catalogue_category(
 ) -> CatalogueCategorySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
+    message = "A catalogue category with such ID was not found"
     try:
         catalogue_category = catalogue_category_service.get(catalogue_category_id)
         if not catalogue_category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue category was not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
         return CatalogueCategorySchema(**catalogue_category.dict())
     except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue category was not found"
-        ) from exc
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
 
 @router.post(
@@ -84,9 +82,52 @@ def create_catalogue_category(
         catalogue_category = catalogue_category_service.create(catalogue_category)
         return CatalogueCategorySchema(**catalogue_category.dict())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent catalogue category ID does not exist in the database"
+        message = "The specified parent catalogue category ID does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except DuplicateRecordError as exc:
+        message = "A catalogue category with the same name already exists within the parent catalogue category"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except LeafCategoryError as exc:
+        message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.patch(
+    path="/{catalogue_category_id}",
+    summary="Update a catalogue category partially by ID",
+    response_description="Catalogue category updated successfully",
+)
+def partial_update_catalogue_category(
+    catalogue_category: CatalogueCategoryPatchRequestSchema,
+    catalogue_category_id: str = Path(description="The ID of the catalogue category to update"),
+    catalogue_category_service: CatalogueCategoryService = Depends(),
+) -> CatalogueCategorySchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating catalogue category with ID: %s", catalogue_category_id)
+    logger.debug("Catalogue category data: %s", catalogue_category)
+    try:
+        updated_catalogue_category = catalogue_category_service.update(catalogue_category_id, catalogue_category)
+        return CatalogueCategorySchema(**updated_catalogue_category.dict())
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if (
+            catalogue_category.parent_id
+            and catalogue_category.parent_id in str(exc)
+            or "parent catalogue category" in str(exc).lower()
+        ):
+            message = "The specified parent catalogue category ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+        message = "A catalogue category with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except ChildrenElementsExistError as exc:
+        message = "Catalogue category has children elements and cannot be updated"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A catalogue category with the same name already exists within the parent catalogue category"
         logger.exception(message)

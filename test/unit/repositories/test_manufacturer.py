@@ -17,7 +17,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     Verify that the `create` method properly handles the manufacturer to be created, checks that there is not a
     duplicate manufacturer, and creates the manufacturer.
     """
-     # pylint: disable=duplicate-code
+    # pylint: disable=duplicate-code
 
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
@@ -26,7 +26,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         url="http://testUrl.co.uk",
         address="1 Example street",
     )
-     # pylint: enable=duplicate-code
+    # pylint: enable=duplicate-code
 
     # Mock 'count documents' to return 0 (no duplicates found)
     test_helpers.mock_count_documents(database_mock.manufacturer, 0)
