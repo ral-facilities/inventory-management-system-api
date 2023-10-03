@@ -121,3 +121,73 @@ def test_get_manufactuer_with_nonexistent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "The requested manufacturer was not found"
+
+def test_update(test_client):
+    """Test updating a manufacturer"""
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": "Street A",
+    }
+
+    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+
+    manufacturer_patch = {
+        "name": "Manufacturer B",
+        "url": "http://test.co.uk",
+        "address": "Street B",
+    }
+    response = test_client.patch(f"/v1/manufacturer/{response.json()['id']}", json=manufacturer_patch)
+
+    assert response.status_code == 200
+    manufacturer = response.json()
+
+    assert manufacturer["name"] == manufacturer_patch["name"]
+    assert manufacturer["url"] == manufacturer_patch["url"]
+    assert manufacturer["address"] == manufacturer_patch["address"]
+
+def test_update_with_invalid_id(test_client):
+    """Test trying to update a manufacturer with an invalid ID"""
+    manufacturer_patch = {
+        "name": "Manufacturer B",
+        "url": "http://test.co.uk",
+        "address": "Street B",
+    }
+    response = test_client.patch("/v1/manufacturer/invalid", json=manufacturer_patch)
+
+    assert response.status_code == 422
+
+    assert response.json()["detail"] == "The specified manufacturer does not exist"
+
+def test_update_with_nonexistent_id(test_client):
+    """Test trying to update a manufacturer with a non-existent ID"""
+    manufacturer_patch = {
+        "name": "Manufacturer B",
+        "url": "http://test.co.uk",
+        "address": "Street B",
+    }
+    response = test_client.patch(f"/v1/manufacturer/{str(ObjectId())}", json=manufacturer_patch)
+
+    assert response.status_code == 422
+
+    assert response.json()["detail"] == "The specified manufacturer does not exist"
+
+def test_update_duplicate_name(test_client):
+    """Test updating a manufacturer with a duplicate name"""
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": "Street A",
+    }
+
+    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+
+    manufacturer_patch = {
+        "name": "Manufacturer A",
+        "url": "http://test.co.uk",
+        "address": "Street B",
+    }
+    response = test_client.patch(f"/v1/manufacturer/{response.json()['id']}", json=manufacturer_patch)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "A manufacturer with the same name has been found"
