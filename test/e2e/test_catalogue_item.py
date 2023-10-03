@@ -3,10 +3,8 @@ End-to-End tests for the catalogue item router.
 """
 from typing import Dict
 
-import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.database import get_database
 
 CATALOGUE_CATEGORY_POST_A = {  # pylint: disable=duplicate-code
     "name": "Category A",
@@ -43,6 +41,11 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10"},
         ],
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "web_url": "https://www.manufacturer-a.co.uk",
+        },
     }
 
 
@@ -60,27 +63,12 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         "properties": [
             {"name": "Property A", "value": True},
         ],
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "web_url": "https://www.manufacturer-a.co.uk",
+        },
     }
-
-
-@pytest.fixture(name="cleanup_catalogue_categories", autouse=True)
-def fixture_cleanup_catalogue_categories():
-    """
-    Fixture to clean up the catalogue categories collection in the test database after the session finishes.
-    """
-    database = get_database()
-    yield
-    database.catalogue_categories.delete_many({})
-
-
-@pytest.fixture(name="cleanup_catalogue_items", autouse=True)
-def fixture_cleanup_catalogue_items():
-    """
-    Fixture to clean up the catalogue items collection in the test database after the session finishes.
-    """
-    database = get_database()
-    yield
-    database.catalogue_items.delete_many({})
 
 
 def test_create_catalogue_item(test_client):
@@ -105,6 +93,7 @@ def test_create_catalogue_item(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
+    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
 
 
 def test_create_catalogue_item_with_duplicate_name_within_catalogue_category(test_client):
@@ -162,6 +151,29 @@ def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
     assert response.json()["detail"] == "Adding a catalogue item to a non-leaf catalogue category is not allowed"
 
 
+def test_create_catalogue_item_without_properties(test_client):
+    """
+    Test creating a catalogue item in leaf catalogue category that does not have catalogue item properties.
+    """
+    catalogue_category_post = {"name": "Category A", "is_leaf": True}
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    catalogue_category_id = response.json()["id"]
+
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_id)
+    del catalogue_item_post["properties"]
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    assert response.status_code == 201
+
+    catalogue_item = response.json()
+
+    assert catalogue_item["catalogue_category_id"] == catalogue_category_id
+    assert catalogue_item["name"] == catalogue_item_post["name"]
+    assert catalogue_item["description"] == catalogue_item_post["description"]
+    assert catalogue_item["properties"] == []
+    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+
+
 def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     """
     Test creating a catalogue item with missing mandatory catalogue item properties.
@@ -199,6 +211,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
+    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
 
 
 def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_client):
