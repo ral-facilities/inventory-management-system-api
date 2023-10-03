@@ -53,5 +53,5 @@ class MissingRecordError(DatabaseError):
 
 class ChildrenElementsExistError(DatabaseError):
     """
-    Exception raised when attempting to delete a catalogue category that has children elements.
+    Exception raised when attempting to delete or update a catalogue category that has children elements.
     """

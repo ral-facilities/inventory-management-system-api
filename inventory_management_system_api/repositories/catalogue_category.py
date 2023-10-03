@@ -32,7 +32,8 @@ class CatalogueCategoryRepo:
         :param database: The database to use.
         """
         self._database = database
-        self._collection: Collection = self._database.catalogue_categories
+        self._catalogue_categories_collection: Collection = self._database.catalogue_categories
+        self._catalogue_items_collection: Collection = self._database.catalogue_items
 
     def create(self, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:
         """
@@ -40,7 +41,7 @@ class CatalogueCategoryRepo:
 
         If a parent catalogue category is specified by `parent_id`, the method checks if that exists
         in the database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue
-        category is found within the parent catalogue category.
+        category is found within the parent catalogue category and raises a `DuplicateRecordError` if it is.
 
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
@@ -49,20 +50,22 @@ class CatalogueCategoryRepo:
         """
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id):
-            raise MissingRecordError(f"No catalogue category found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
 
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
 
         logger.info("Inserting the new catalogue category into the database")
-        result = self._collection.insert_one(catalogue_category.dict())
+        result = self._catalogue_categories_collection.insert_one(catalogue_category.dict())
         catalogue_category = self.get(str(result.inserted_id))
         return catalogue_category
 
     def delete(self, catalogue_category_id: str) -> None:
         """
-        Delete a catalogue category by its ID from a MongoDB database. The method checks if the catalogue category has
-        children elements and raises a `ChildrenElementsExistError` if it does.
+        Delete a catalogue category by its ID from a MongoDB database.
+
+        The method checks if the catalogue category has children elements and raises a `ChildrenElementsExistError`
+        if it does.
 
         :param catalogue_category_id: The ID of the catalogue category to delete.
         :raises ChildrenElementsExistError: If the catalogue category has children elements.
@@ -75,7 +78,7 @@ class CatalogueCategoryRepo:
             )
 
         logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
-        result = self._collection.delete_one({"_id": catalogue_category_id})
+        result = self._catalogue_categories_collection.delete_one({"_id": catalogue_category_id})
         if result.deleted_count == 0:
             raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
 
@@ -88,10 +91,50 @@ class CatalogueCategoryRepo:
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
         logger.info("Retrieving catalogue category with ID: %s from the database", catalogue_category_id)
-        catalogue_category = self._collection.find_one({"_id": catalogue_category_id})
+        catalogue_category = self._catalogue_categories_collection.find_one({"_id": catalogue_category_id})
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
         return None
+
+    def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn):
+        """
+        Update a catalogue category by its ID in a MongoDB database.
+
+        The method checks if the catalogue category has children elements and raises a `ChildrenElementsExistError`
+        if it does. If a parent catalogue category is specified by `parent_id`, the method checks if that exists in the
+        database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue category
+        is found within the parent catalogue category and raises a `DuplicateRecordError` if it is.
+
+        :param catalogue_category_id: The ID of the catalogue category to update.
+        :param catalogue_category: The catalogue category containing the update data.
+        :return: The updated catalogue category.
+        :raises ChildrenElementsExistError: If the catalogue category has children elements.
+        :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
+        :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
+        """
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        if self._has_children_elements(str(catalogue_category_id)):
+            raise ChildrenElementsExistError(
+                f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
+            )
+
+        parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
+        if parent_id and not self.get(parent_id):
+            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+
+        stored_catalogue_category = self.get(str(catalogue_category_id))
+        if (
+            catalogue_category.name != stored_catalogue_category.name
+            or parent_id != stored_catalogue_category.parent_id
+        ) and self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
+            raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
+
+        logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
+        self._catalogue_categories_collection.update_one(
+            {"_id": catalogue_category_id}, {"$set": catalogue_category.dict()}
+        )
+        catalogue_category = self.get(str(catalogue_category_id))
+        return catalogue_category
 
     def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
         """
@@ -115,7 +158,7 @@ class CatalogueCategoryRepo:
             logger.info("%s matching the provided filter(s)", message)
             logger.debug("Provided filter(s): %s", query)
 
-        catalogue_categories = self._collection.find(query)
+        catalogue_categories = self._catalogue_categories_collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
 
     def _is_duplicate_catalogue_category(self, parent_id: Optional[str], code: str) -> bool:
@@ -126,22 +169,29 @@ class CatalogueCategoryRepo:
         :param code: The code of the catalogue category to check for duplicates.
         :return: `True` if a duplicate catalogue category code is found, `False` otherwise.
         """
-        logger.info("Checking if catalogue category with code '%s' already exists within the category", code)
+        logger.info("Checking if catalogue category with code '%s' already exists within the parent category", code)
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        count = self._collection.count_documents({"parent_id": parent_id, "code": code})
+        count = self._catalogue_categories_collection.count_documents({"parent_id": parent_id, "code": code})
         return count > 0
 
     def _has_children_elements(self, catalogue_category_id: str) -> bool:
         """
         Check if a catalogue category has children elements based on its ID.
 
+        Children elements in this case means whether or not a catalogue category has children catalogue categories or
+        children catalogue items.
+
         :param catalogue_category_id: The ID of the catalogue category to check.
         :return: True if the catalogue category has children elements, False otherwise.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
         logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
+        # Check if it has catalogue categories
         query = {"parent_id": catalogue_category_id}
-        count = self._collection.count_documents(query)
+        count = self._catalogue_categories_collection.count_documents(query)
+        # Check if it has catalogue items
+        query = {"catalogue_category_id": catalogue_category_id}
+        count = count + self._catalogue_items_collection.count_documents(query)
         return count > 0
