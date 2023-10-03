@@ -61,7 +61,7 @@ class CatalogueItemService:
         if not catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
-        if not catalogue_category.is_leaf:
+        if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
         defined_properties = {
@@ -69,7 +69,8 @@ class CatalogueItemService:
             for defined_property in catalogue_category.catalogue_item_properties
         }
         supplied_properties = {
-            supplied_property.name: supplied_property.dict() for supplied_property in catalogue_item.properties
+            supplied_property.name: supplied_property.dict()
+            for supplied_property in (catalogue_item.properties if catalogue_item.properties else [])
         }
 
         self._check_missing_mandatory_catalogue_item_properties(defined_properties, supplied_properties)
@@ -83,6 +84,7 @@ class CatalogueItemService:
                 name=catalogue_item.name,
                 description=catalogue_item.description,
                 properties=list(supplied_properties.values()),
+                manufacturer=catalogue_item.manufacturer,
             )
         )
 

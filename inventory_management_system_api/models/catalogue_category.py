@@ -1,52 +1,11 @@
 """
 Module for defining the database models for representing catalogue categories.
 """
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
-from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
-
-
-class CustomObjectIdField(ObjectId):
-    """
-    Custom field for handling MongoDB ObjectId validation.
-    """
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: str) -> CustomObjectId:
-        """
-        Validate if the string value is a valid `ObjectId`.
-
-        :param value: The string value to be validated.
-        :return: The validated `ObjectId`.
-        """
-        return CustomObjectId(value)
-
-
-class StringObjectIdField(str):
-    """
-    Custom field for handling MongoDB ObjectId as string.
-    """
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: ObjectId) -> str:
-        """
-        Convert the `ObjectId` value to string.
-
-        :param value: The `ObjectId` value to be converted.
-        :return: The converted `ObjectId` as a string.
-        """
-        return str(value)
+from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
 
 class CatalogueItemProperty(BaseModel):
@@ -71,7 +30,30 @@ class CatalogueCategoryIn(BaseModel):
     path: str
     parent_path: str
     parent_id: Optional[CustomObjectIdField] = None
-    catalogue_item_properties: List[CatalogueItemProperty]
+    catalogue_item_properties: List[CatalogueItemProperty] = []
+
+    @validator("catalogue_item_properties", pre=True, always=True)
+    @classmethod
+    def validate_catalogue_item_properties(
+        cls, catalogue_item_properties: List[CatalogueItemProperty] | None, values: Dict[str, Any]
+    ) -> List[CatalogueItemProperty] | List:
+        """
+        Validator for the `catalogue_item_properties` field that runs after field assignment but before type validation.
+
+        If the value is `None`, it replaces it with an empty list allowing for catalogue categories without catalogue
+        item properties to be created. If the category is a non-leaf category and if catalogue item properties are
+        supplied, it replaces it with an empty list because they cannot have properties.
+
+        :param catalogue_item_properties: The list of catalogue item properties.
+        :param values: The values of the model fields.
+        :return: The list of catalogue item properties or an empty list.
+        """
+        if catalogue_item_properties is None or (
+            "is_leaf" in values and values["is_leaf"] is False and catalogue_item_properties
+        ):
+            catalogue_item_properties = []
+
+        return catalogue_item_properties
 
 
 class CatalogueCategoryOut(CatalogueCategoryIn):

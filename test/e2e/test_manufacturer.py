@@ -90,6 +90,7 @@ def test_list(test_client):
     assert manufacturers[1]["address"] == "Street B"
     assert manufacturers[1]["code"] == "manufacturer-b"
 
+
 def test_list_when_no_manufacturers(test_client):
     """Test trying to get all manufacturers when there are none in the databse"""
 

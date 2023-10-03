@@ -52,8 +52,7 @@ class ManufacturerService:
 
     def list(self) -> List[ManufacturerOut]:
         """Get all manufactuers
-        
+
         :return: list of all manufacturers
         """
         return self._manufacturer_repository.list()
-    

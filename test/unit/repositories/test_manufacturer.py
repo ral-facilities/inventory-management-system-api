@@ -75,7 +75,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
         name="Manufacturer B",
         code="manufacturer-b",
         url="http://duplicate.co.uk",
-        address="street B"
+        address="street B",
     )
 
     # Mock count_documents to return 1 (duplicat manufacturer found)
@@ -83,7 +83,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
 
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.create(
-        # pylint: disable=duplicate-code
+            # pylint: disable=duplicate-code
             ManufacturerIn(
                 name=manufacturer.name,
                 code=manufacturer.code,
@@ -137,6 +137,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
 
     database_mock.manufacturer.find.assert_called_once_with()
     assert retrieved_manufacturers == [manufacturer_1, manufacturer_2]
+
 
 def test_list_when_no_manufacturers(test_helpers, database_mock, manufacturer_repository):
     """Test trying to get all manufacturers when there are none in the databse"""
