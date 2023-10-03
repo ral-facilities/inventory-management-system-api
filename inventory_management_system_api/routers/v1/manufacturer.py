@@ -110,4 +110,3 @@ def edit_manufacturer(
         message = "A manufacturer with the same name has been found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    

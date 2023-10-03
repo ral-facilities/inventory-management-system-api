@@ -157,13 +157,14 @@ class RepositoryTestHelpers:
     def mock_update_one(collection_mock: Mock) -> None:
         """
         Mocks the `update_one` method of the MongoDB database collection mock to return an updated document
-        
+
         :param collection_mock: Mocked MongoDB database collection instance
-        :param document: The document to be returned by the method 
+        :param document: The document to be returned by the method
         """
         update_one_result_mock = Mock(UpdateResult)
         update_one_result_mock.acknowledged = True
         collection_mock.insert_one.return_value = update_one_result_mock
+
 
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[RepositoryTestHelpers]:

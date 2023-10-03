@@ -134,6 +134,7 @@ def test_get_manufactuer_with_nonexistent_id(test_client):
     assert response.status_code == 404
     assert response.json()["detail"] == "The requested manufacturer was not found"
 
+
 def test_update(test_client):
     """Test updating a manufacturer"""
     manufacturer_post = {
@@ -158,6 +159,7 @@ def test_update(test_client):
     assert manufacturer["url"] == manufacturer_patch["url"]
     assert manufacturer["address"] == manufacturer_patch["address"]
 
+
 def test_update_with_invalid_id(test_client):
     """Test trying to update a manufacturer with an invalid ID"""
     manufacturer_patch = {
@@ -171,6 +173,7 @@ def test_update_with_invalid_id(test_client):
 
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
+
 def test_update_with_nonexistent_id(test_client):
     """Test trying to update a manufacturer with a non-existent ID"""
     manufacturer_patch = {
@@ -183,6 +186,7 @@ def test_update_with_nonexistent_id(test_client):
     assert response.status_code == 422
 
     assert response.json()["detail"] == "The specified manufacturer does not exist"
+
 
 def test_update_duplicate_name(test_client):
     """Test updating a manufacturer with a duplicate name"""
