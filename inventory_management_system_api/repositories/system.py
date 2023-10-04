@@ -69,6 +69,30 @@ class SystemRepo:
             return SystemOut(**system)
         return None
 
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
+        """
+        Retrieve Systems from a MongoDB database based on the provided filters
+
+        :param path: Path to filter Systems by
+        :param parent_path: Parent path to filter Systems by
+        :return: List of System's or an empty list if no Systems are retrieved
+        """
+        query = {}
+        if path:
+            query["path"] = path
+        if parent_path:
+            query["parent_path"] = parent_path
+
+        message = "Retrieving all Systems from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided filter(s)", message)
+            logger.debug("Provided filter(s): %s", query)
+
+        systems = self._systems_collection.find(query)
+        return [SystemOut(**system) for system in systems]
+
     def _is_duplicate_system(self, parent_id: Optional[str], code: str) -> bool:
         """
         Check if a System with the same code already exists within the parent System

@@ -59,6 +59,16 @@ class SystemService:
         """
         return self._system_repository.get(system_id)
 
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
+        """
+        Retrieve Systems based on the provided filters
+
+        :param path: Path to filter Systems by
+        :param parent_path: Parent path to filter Systems by
+        :return: List of System's or an empty list if no Systems are retrieved
+        """
+        return self._system_repository.list(path, parent_path)
+
     # TODO: Move these to a common place as duplicated from catalogue_category
     def _generate_code(self, name: str) -> str:
         """
