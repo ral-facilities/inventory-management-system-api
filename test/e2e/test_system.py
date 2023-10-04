@@ -79,7 +79,7 @@ def test_create_system_with_duplicate_name_within_parent(test_client):
     response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "A System with the same name already exists within the catalogue category"
+    assert response.json()["detail"] == "A System with the same name already exists within the same parent System"
 
 
 def test_create_system_with_invalid_parent_id(test_client):
@@ -219,7 +219,7 @@ def test_get_systems_with_path_and_parent_path_filter(test_client):
     _, system_b, _ = _post_systems(test_client)
 
     # Get only those with the given path and parent path
-    response = test_client.get("/v1/systems", params={"path": "/", "parent_path": "/system-a"})
+    response = test_client.get("/v1/systems", params={"path": "/system-a/system-b", "parent_path": "/system-a"})
 
     assert response.status_code == 200
     assert response.json() == [system_b]

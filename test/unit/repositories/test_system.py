@@ -25,6 +25,7 @@ def test_create(test_helpers, database_mock, system_repository):
     Verify that the `create` method properly handles the System to be created, checks that there is not
     a duplicate System, and creates the System
     """
+    # pylint: disable=duplicate-code
     system_info = {
         "name": "Test name",
         "location": "Test location",
@@ -36,6 +37,7 @@ def test_create(test_helpers, database_mock, system_repository):
         "parent_id": None,
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
+    # pylint: enable=duplicate-code
 
     # Mock `count_documents` to return 0 (no duplicate system found within the parent system)
     test_helpers.mock_count_documents(database_mock.systems, 0)
@@ -61,6 +63,7 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
 
     Verify that the `create` method properly handles the creation of a System with a parent ID
     """
+    # pylint: disable=duplicate-code
     system_info = {
         "name": "Test name b",
         "location": "Test location",
@@ -88,6 +91,7 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
             "parent_id": None,
         },
     )
+    # pylint: enable=duplicate-code
     # Mock `count_documents` to return 0 (no duplicate system found within the parent system)
     test_helpers.mock_count_documents(database_mock.systems, 0)
     # Mock `insert_one` to return an object for the inserted system document
@@ -116,6 +120,7 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_
     Verify that the `create` method properly handles a System with a non-existent parent ID
     and does not create it
     """
+    # pylint: disable=duplicate-code
     system_info = {
         "name": "Test name b",
         "location": "Test location",
@@ -127,6 +132,7 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to not return a parent system document
     test_helpers.mock_find_one(database_mock.systems, None)
@@ -145,6 +151,7 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
     Verify that the `create` method properly handles a System with a duplicate name
     and does not create it
     """
+    # pylint: disable=duplicate-code
     system_info = {
         "name": "Test name b",
         "location": "Test location",
@@ -156,6 +163,7 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return the parent system document
     test_helpers.mock_find_one(
@@ -188,6 +196,7 @@ def test_get(test_helpers, database_mock, system_repository):
 
     Verify that the `get` method properly handles the retrieval of a System by ID
     """
+    # pylint: disable=duplicate-code
     system_info = {
         "name": "Test name a",
         "location": "Test location",
@@ -199,6 +208,7 @@ def test_get(test_helpers, database_mock, system_repository):
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a system
     test_helpers.mock_find_one(
@@ -212,7 +222,7 @@ def test_get(test_helpers, database_mock, system_repository):
     assert retrieved_system == system
 
 
-def test_get_with_invalid_id(test_helpers, database_mock, system_repository):
+def test_get_with_invalid_id(database_mock, system_repository):
     """
     Test getting a System with an invalid ID
 
@@ -248,6 +258,7 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
 
     Verifies that the `list` method properly handles the retrieval of catalogue categories with the given filters
     """
+    # pylint: disable=duplicate-code
     system_a_info = {
         "name": "Test name a",
         "location": "Test location",
@@ -270,6 +281,7 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
         "parent_id": str(ObjectId()),
     }
     system_b = SystemOut(id=str(ObjectId()), **system_b_info)
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of System documents
     test_helpers.mock_find(

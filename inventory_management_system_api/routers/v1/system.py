@@ -1,3 +1,8 @@
+"""
+Module for providing an API router which defines routes for managing Systems using the `SystemService`
+service.
+"""
+
 import logging
 from typing import Annotated, Optional
 

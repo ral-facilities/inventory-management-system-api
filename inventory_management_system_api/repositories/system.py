@@ -7,11 +7,12 @@ from typing import Optional
 from fastapi import Depends
 from pymongo.collection import Collection
 from pymongo.database import Database
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.repositories import utils
 
 logger = logging.getLogger()
 
@@ -77,18 +78,7 @@ class SystemRepo:
         :param parent_path: Parent path to filter Systems by
         :return: List of System's or an empty list if no Systems are retrieved
         """
-        query = {}
-        if path:
-            query["path"] = path
-        if parent_path:
-            query["parent_path"] = parent_path
-
-        message = "Retrieving all Systems from the database"
-        if not query:
-            logger.info(message)
-        else:
-            logger.info("%s matching the provided filter(s)", message)
-            logger.debug("Provided filter(s): %s", query)
+        query = utils.path_query(path, parent_path, "systems")
 
         systems = self._systems_collection.find(query)
         return [SystemOut(**system) for system in systems]

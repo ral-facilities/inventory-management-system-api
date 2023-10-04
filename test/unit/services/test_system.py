@@ -18,6 +18,7 @@ def test_create(test_helpers, system_repository_mock, system_service):
     Verify that the `create` method properly handles the System to be created, generates the code and paths,
     and calls the repository's create method
     """
+    # pylint: disable=duplicate-code
     system_info = {
         "name": "Test name",
         "location": "Test location",
@@ -32,6 +33,7 @@ def test_create(test_helpers, system_repository_mock, system_service):
         "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
+    # pylint: enable=duplicate-code
 
     # Mock `create` to return the created System
     test_helpers.mock_create(system_repository_mock, system)
@@ -172,6 +174,7 @@ def _test_list(test_helpers, system_repository_mock, system_service, path: Optio
 
     Verifies that the `list` method properly handles the retrieval of catalogue categories with the given filters
     """
+    # pylint: disable=duplicate-code
     system_a_info = {
         "name": "Test name a",
         "location": "Test location",
@@ -194,6 +197,7 @@ def _test_list(test_helpers, system_repository_mock, system_service, path: Optio
         "parent_id": str(ObjectId()),
     }
     system_b = SystemOut(id=str(ObjectId()), **system_b_info)
+    # pylint: enable=duplicate-code
 
     # Mock `list` to return a list of catalogue categories
     test_helpers.mock_list(

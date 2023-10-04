@@ -2,7 +2,7 @@
 Module for providing a repository for managing catalogue categories in a MongoDB database.
 """
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -11,11 +11,12 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
-    MissingRecordError,
-    DuplicateRecordError,
     ChildrenElementsExistError,
+    DuplicateRecordError,
+    MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.repositories import utils
 
 logger = logging.getLogger()
 
@@ -145,18 +146,7 @@ class CatalogueCategoryRepo:
         :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
             database.
         """
-        query = {}
-        if path:
-            query["path"] = path
-        if parent_path:
-            query["parent_path"] = parent_path
-
-        message = "Retrieving all catalogue categories from the database"
-        if not query:
-            logger.info(message)
-        else:
-            logger.info("%s matching the provided filter(s)", message)
-            logger.debug("Provided filter(s): %s", query)
+        query = utils.path_query(path, parent_path, "catalogue categories")
 
         catalogue_categories = self._catalogue_categories_collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
