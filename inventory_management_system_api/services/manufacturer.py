@@ -6,8 +6,9 @@ import re
 
 from typing import List, Optional
 from fastapi import Depends
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import MissingRecordError, PartOfCatalogueItemError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.manufacturer import (
@@ -21,14 +22,20 @@ logger = logging.getLogger()
 class ManufacturerService:
     """Service for managing manufacturers"""
 
-    def __init__(self, manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo)) -> None:
+    def __init__(
+        self,
+        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
+        catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
+    ) -> None:
         """
         Initialise the manufacturer service with a ManufacturerRepo
 
         :param manufacturer_repository: The `ManufacturerRepo` repository to use.
+        :param catalogue_item_repository: The `CatalogueItemRepo` to use.
         """
 
         self._manufacturer_repository = manufacturer_repository
+        self._catalogue_item_repository = catalogue_item_repository
 
     def create(self, manufacturer: ManufacturerPostRequestSchema) -> ManufacturerOut:
         """
@@ -91,3 +98,26 @@ class ManufacturerService:
 
         logger.info(stored_manufacturer.address)
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
+
+    def delete(self, manufacturer_id: str) -> None:
+        """
+        Delete a manufacturer by its ID
+
+        :param manufacturer_id: The ID of the manufacturer to delete
+
+        """
+        if self.is_part_of_catalogue_item(manufacturer_id):
+            raise PartOfCatalogueItemError("The specified manufactuerer is a part of a Catalogue Item")
+
+        return self._manufacturer_repository.delete(manufacturer_id)
+
+    def is_part_of_catalogue_item(self, manufacturer_id: str) -> bool:
+        """Checks to see if any of the documents in the database have a specific manufactuer id
+
+        :param manufacturer_id: The ID of the manufacturer that is looked for
+        :return Returns True if manufacturer is part of an item, false if not
+        """
+
+        logger.info("Checking to see if manufactuer with ID %s is a part of an item {manufacturer_id}")
+
+        return self._catalogue_item_repository.is_manufacturer_in_catalogue_item(manufacturer_id)

@@ -104,6 +104,21 @@ class ManufacturerRepo:
         manufacturer = self.get(str(manufacturer_id))
         return manufacturer
 
+    def delete(self, manufacturer_id: str) -> None:
+        """
+        Delete a manufacturer by its ID from MongoDB database.
+        Checks if manufactuer is a part of an item, and does not delete if it is
+
+        :param manufacturer_id: The ID of the manufacturer to delete
+        :raises ExistIn
+        """
+        manufacturer_id = CustomObjectId(manufacturer_id)
+
+        logger.info("Deleting manufacturer with ID %s from the database", manufacturer_id)
+        result = self._collection.delete_one({"_id": manufacturer_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No manufacturer founs with ID: {str(manufacturer_id)}")
+
     def _is_duplicate_manufacturer(self, code: str) -> bool:
         """
         Check if manufacturer with the same url already exists in the manufacturer collection

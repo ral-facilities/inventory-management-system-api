@@ -55,3 +55,9 @@ class ChildrenElementsExistError(DatabaseError):
     """
     Exception raised when attempting to delete or update a catalogue category that has children elements.
     """
+
+
+class PartOfCatalogueItemError(DatabaseError):
+    """
+    Exception raised when attempting to delete a manufacturer that is a part of a catalogue item
+    """
