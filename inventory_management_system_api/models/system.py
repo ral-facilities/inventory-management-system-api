@@ -18,6 +18,11 @@ class SystemIn(BaseModel):
     location: str
     owner: str
     importance: str
+
+    # These two are purely for front end navigation
+    path: str
+    parent_path: str
+
     parent_id: Optional[CustomObjectIdField] = None
 
 
