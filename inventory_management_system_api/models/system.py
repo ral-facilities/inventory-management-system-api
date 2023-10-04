@@ -19,6 +19,8 @@ class SystemIn(BaseModel):
     owner: str
     importance: str
 
+    # Used for uniqueness checks (sanitised name)
+    code: str
     # These two are purely for front end navigation
     path: str
     parent_path: str
