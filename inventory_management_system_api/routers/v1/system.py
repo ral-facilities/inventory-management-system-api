@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -31,6 +31,24 @@ def get_systems(
 
     systems = system_service.list(path, parent_path)
     return [SystemGetRequestSchema(**system.dict()) for system in systems]
+
+
+@router.get(path="/{system_id}", summary="Get a System by ID", response_description="Single System")
+def get_system(
+    system_id: Annotated[str, Path(description="ID of the System to get")], system_service: SystemService = Depends()
+):
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting System with ID: %s", system_service)
+    try:
+        system = system_service.get(system_id)
+        if not system:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The requested System was not found")
+        return SystemGetRequestSchema(**system.dict())
+    except InvalidObjectIdError as exc:
+        logger.exception("The ID is not a valid ObjectId value")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue item was not found"
+        ) from exc
 
 
 @router.post(
