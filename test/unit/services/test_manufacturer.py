@@ -8,18 +8,6 @@ from bson import ObjectId
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.schemas.manufacturer import ManufacturerPostRequestSchema
-from inventory_management_system_api.services.manufacturer import ManufacturerService
-
-
-@pytest.fixture(name="manufacturer_service")
-def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> ManufacturerService:
-    """
-    Fixture to create a `ManufacturerService` instance with a mocked `ManufacturerRepo`
-
-    :param: manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
-    :return: `ManufacturerService` instance with mocked dependency
-    """
-    return ManufacturerService(manufacturer_repository_mock)
 
 
 def test_create(manufacturer_repository_mock, manufacturer_service):
