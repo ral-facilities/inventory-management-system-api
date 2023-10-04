@@ -42,12 +42,12 @@ def get_system(
     try:
         system = system_service.get(system_id)
         if not system:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The requested System was not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found")
         return SystemGetRequestSchema(**system.dict())
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue item was not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found"
         ) from exc
 
 
@@ -65,10 +65,10 @@ def create_system(system: SystemPostRequestSchema, system_service: SystemService
         system = system_service.create(system)
         return SystemGetRequestSchema(**system.dict())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified catalogue category ID does not exist in the database"
+        message = "The specified parent System ID does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
-        message = "A System with the same name already exists within the catalogue category"
+        message = "A System with the same name already exists within the same parent System"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
