@@ -35,3 +35,8 @@ class SystemOut(SystemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
+
+    # Required just for unit tests
+    class Config:
+        # pylint: disable=C0115
+        allow_population_by_field_name = True
