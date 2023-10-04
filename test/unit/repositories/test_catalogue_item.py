@@ -9,8 +9,7 @@ from inventory_management_system_api.core.exceptions import DuplicateRecordError
 from inventory_management_system_api.models.catalogue_item import (
     CatalogueItemOut,
     Property,
-    CatalogueItemIn,
-    Manufacturer,
+    CatalogueItemIn
 )
 
 
@@ -32,9 +31,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
-        ),
+         manufacturer_id=str(ObjectId())
     )
     # pylint: enable=duplicate-code
 
@@ -51,7 +48,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": catalogue_item.properties,
-            "manufacturer": catalogue_item.manufacturer,
+            "manufacturer_id": catalogue_item.manufacturer_id,
         },
     )
 
@@ -62,7 +59,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
-            manufacturer=catalogue_item.manufacturer,
+            manufacturer_id=catalogue_item.manufacturer_id,
         )
     )
     # pylint: enable=duplicate-code
@@ -73,7 +70,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": catalogue_item.properties,
-            "manufacturer": catalogue_item.manufacturer,
+            "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
         }
     )
     assert created_catalogue_item == catalogue_item
@@ -97,9 +94,7 @@ def test_create_with_duplicate_name_within_catalogue_category(test_helpers, data
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
-        ),
+        manufacturer_id=str(ObjectId())
     )
     # pylint: enable=duplicate-code
 
@@ -113,7 +108,7 @@ def test_create_with_duplicate_name_within_catalogue_category(test_helpers, data
                 name=catalogue_item.name,
                 description=catalogue_item.description,
                 properties=catalogue_item.properties,
-                manufacturer=catalogue_item.manufacturer,
+                manufacturer_id=catalogue_item.manufacturer_id,
             )
         )
     assert str(exc.value) == "Duplicate catalogue item found within the catalogue category"
@@ -139,9 +134,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
-        ),
+        manufacturer_id=str(ObjectId())
     )
     # pylint: enable=duplicate-code
 
@@ -154,7 +147,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": catalogue_item.properties,
-            "manufacturer": catalogue_item.manufacturer,
+            "manufacturer_id": catalogue_item.manufacturer_id,
         },
     )
 
@@ -209,9 +202,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
-        ),
+        manufacturer_id=str(ObjectId())
     )
 
     catalogue_item_b = CatalogueItemOut(
@@ -220,9 +211,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         name="Catalogue Item B",
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
-        manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
-        ),
+        manufacturer_id=str(ObjectId())
     )
     # pylint: enable=duplicate-code
 
@@ -236,7 +225,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
                 "name": catalogue_item_a.name,
                 "description": catalogue_item_a.description,
                 "properties": catalogue_item_a.properties,
-                "manufacturer": catalogue_item_a.manufacturer,
+                "manufacturer_id": catalogue_item_a.manufacturer_id,
             },
             {
                 "_id": CustomObjectId(catalogue_item_b.id),
@@ -244,7 +233,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
                 "name": catalogue_item_b.name,
                 "description": catalogue_item_b.description,
                 "properties": catalogue_item_b.properties,
-                "manufacturer": catalogue_item_b.manufacturer,
+                "manufacturer_id": catalogue_item_b.manufacturer_id,
             },
         ],
     )
@@ -272,9 +261,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
-        ),
+        manufacturer_id=str(ObjectId())
     )
 
     # Mock `find` to return a list of catalogue item documents
@@ -287,7 +274,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
                 "name": catalogue_item.name,
                 "description": catalogue_item.description,
                 "properties": catalogue_item.properties,
-                "manufacturer": catalogue_item.manufacturer,
+                "manufacturer_id": catalogue_item.manufacturer_id,
             }
         ],
     )

@@ -84,7 +84,7 @@ class CatalogueItemService:
                 name=catalogue_item.name,
                 description=catalogue_item.description,
                 properties=list(supplied_properties.values()),
-                manufacturer=catalogue_item.manufacturer,
+                manufacturer_id=catalogue_item.manufacturer_id,
             )
         )
 
