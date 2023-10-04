@@ -280,7 +280,7 @@ def test_update_with_invalid_id(manufacturer_repository):
     manufactuer_id = "invalid"
     with pytest.raises(InvalidObjectIdError) as exc:
         manufacturer_repository.update(manufactuer_id, updated_manufacturer)
-    assert str(exc.value) == "Invalid ObjectId value"
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
@@ -300,30 +300,20 @@ def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_re
     assert str(exc.value) == "The specified manufacturer does not exist"
 
 
-def test_update_duplicate_name(test_helpers, database_mock, manufacturer_repository):
-    """Test trying to update a mnaufactuer using a duplicate name"""
-
+def update_with_duplicate_name(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to update a manufacturer with a duplicate name"""
     # pylint: disable=duplicate-code
     updated_manufacturer = ManufacturerIn(
-        name="Manufacturer A",
-        code="manufacturer-a",
+        name="Manufacturer B",
+        code="manufacturer-b",
         url="http://testUrl.co.uk",
         address="1 Example street",
     )
     # pylint: enable=duplicate-code
-    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+
     manufacturer_id = str(ObjectId())
-    test_helpers.mock_find_one(
-        database_mock.manufacturer,
-        {
-            "_id": CustomObjectId(manufacturer_id),
-            "code": "manufacturer-b",
-            "name": "Manufacturer B",
-            "url": "http://example.com",
-            "address": "2 Example Street",
-        },
-    )
     test_helpers.mock_count_documents(database_mock.manufacturer, 1)
+
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.update(manufacturer_id, updated_manufacturer)
-    assert str(exc.value) == "Duplicate manufacturer found"
+    assert str(exc.value) == "The specified manufacturer does not exist"

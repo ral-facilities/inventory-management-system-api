@@ -54,6 +54,7 @@ class CatalogueItemOut(CatalogueItemIn):
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
     manufacturer_id: StringObjectIdField
+
     class Config:
         # pylint: disable=C0115
         allow_population_by_field_name = True

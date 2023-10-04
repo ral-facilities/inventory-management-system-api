@@ -4,7 +4,6 @@ Unit tests for the `CatalogueCategoryService` service.
 
 import pytest
 from bson import ObjectId
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
@@ -20,7 +19,7 @@ from inventory_management_system_api.models.catalogue_item import (
 )
 from inventory_management_system_api.schemas.catalogue_item import (
     PropertyPostRequestSchema,
-    CatalogueItemPostRequestSchema
+    CatalogueItemPostRequestSchema,
 )
 
 
@@ -92,7 +91,7 @@ def test_create(
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
-            manufacturer_id= catalogue_item.manufacturer_id,
+            manufacturer_id=catalogue_item.manufacturer_id,
         )
     )
     # pylint: enable=duplicate-code
@@ -124,10 +123,10 @@ def test_create_with_nonexistent_catalogue_category_id(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId())
-                ),
-            )
-        
+                manufacturer_id=str(ObjectId()),
+            ),
+        )
+
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
 
@@ -169,10 +168,10 @@ def test_create_in_non_leaf_catalogue_category(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                 manufacturer_id=str(ObjectId())
-                ),
-            )
-        
+                manufacturer_id=str(ObjectId()),
+            ),
+        )
+
     assert str(exc.value) == "Cannot add catalogue item to a non-leaf catalogue category"
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
@@ -192,9 +191,9 @@ def test_create_without_properties(
         name="Catalogue Item A",
         description="This is Catalogue Item A",
         properties=[],
-        manufacturer_id=str(ObjectId())
-        )
-    
+        manufacturer_id=str(ObjectId()),
+    )
+
     # pylint: enable=duplicate-code
 
     # Mock `get` to return the catalogue category
@@ -279,10 +278,10 @@ def test_create_with_missing_mandatory_properties(
                 properties=[
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                 manufacturer_id=str(ObjectId())
-                ),
-            )
-        
+                manufacturer_id=str(ObjectId()),
+            ),
+        )
+
     assert (
         str(exc.value)
         == f"Missing mandatory catalogue item property: '{catalogue_category.catalogue_item_properties[1].name}'"
@@ -332,10 +331,10 @@ def test_create_with_with_invalid_value_type_for_string_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value=True),
                 ],
-                 manufacturer_id=str(ObjectId())
-                ),
-            )
-        
+                manufacturer_id=str(ObjectId()),
+            ),
+        )
+
     assert (
         str(exc.value)
         == f"Invalid value type for catalogue item property '{catalogue_category.catalogue_item_properties[2].name}'. "
@@ -386,7 +385,7 @@ def test_create_with_with_invalid_value_type_for_number_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             )
         )
     assert (
@@ -439,7 +438,7 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                     PropertyPostRequestSchema(name="Property B", value="False"),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                 manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             )
         )
     assert (
@@ -467,7 +466,7 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-         manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -514,7 +513,7 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-         manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
 
     catalogue_item_b = CatalogueItemOut(
@@ -523,7 +522,7 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
         name="Catalogue Item B",
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -554,7 +553,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, catalogue_item_rep
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-         manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
