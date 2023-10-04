@@ -41,11 +41,7 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10"},
         ],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
-        },
+        "manufacturer_id": str(ObjectId()),
     }
 
 
@@ -63,11 +59,7 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         "properties": [
             {"name": "Property A", "value": True},
         ],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
-        },
+        "manufacturer_id": str(ObjectId()),
     }
 
 
@@ -93,7 +85,7 @@ def test_create_catalogue_item(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_create_catalogue_item_with_duplicate_name_within_catalogue_category(test_client):
@@ -171,7 +163,7 @@ def test_create_catalogue_item_without_properties(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == []
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
@@ -211,7 +203,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_client):
