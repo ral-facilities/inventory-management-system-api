@@ -18,7 +18,10 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyType
-from inventory_management_system_api.schemas.catalogue_item import CatalogueItemPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_item import (
+    CatalogueItemPostRequestSchema,
+    CatalogueItemPatchRequestSchema,
+)
 
 logger = logging.getLogger()
 
@@ -206,3 +209,71 @@ class CatalogueItemService:
         :return: A list of catalogue items, or an empty list if no catalogue items are retrieved.
         """
         return self._catalogue_item_repository.list(catalogue_category_id)
+
+    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchRequestSchema) -> CatalogueItemOut:
+        """
+        Update a catalogue item by its ID.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item: The catalogue item containing the fields that need to be updated.
+        :return: The updated catalogue item.
+        """
+        update_data = catalogue_item.dict(exclude_unset=True)
+
+        stored_catalogue_item = self.get(catalogue_item_id)
+        if not stored_catalogue_item:
+            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+
+        if "name" in update_data:
+            stored_catalogue_item.name = update_data["name"]
+        if "description" in update_data:
+            stored_catalogue_item.description = update_data["description"]
+        if "manufacturer" in update_data:
+            stored_catalogue_item.manufacturer = update_data["manufacturer"]
+
+        catalogue_category = None
+        if (
+            "catalogue_category_id" in update_data
+            and update_data["catalogue_category_id"] != stored_catalogue_item.catalogue_category_id
+        ):
+            stored_catalogue_item.catalogue_category_id = update_data["catalogue_category_id"]
+            catalogue_category = self._catalogue_category_repository.get(stored_catalogue_item.catalogue_category_id)
+            if not catalogue_category:
+                raise MissingRecordError(
+                    f"No catalogue category found with ID: {stored_catalogue_item.catalogue_category_id}"
+                )
+
+            if catalogue_category.is_leaf is False:
+                raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+
+            # TODO - Refactor this
+            if "properties" not in update_data:
+                update_data["properties"] = stored_catalogue_item.properties
+
+        if "properties" in update_data:
+            if not catalogue_category:
+                catalogue_category = self._catalogue_category_repository.get(
+                    stored_catalogue_item.catalogue_category_id
+                )
+
+            defined_properties = {
+                defined_property.name: defined_property.dict()
+                for defined_property in catalogue_category.catalogue_item_properties
+            }
+            supplied_properties = {
+                supplied_property.name: supplied_property.dict()
+                for supplied_property in (catalogue_item.properties if catalogue_item.properties else [])
+            }
+
+            self._check_missing_mandatory_catalogue_item_properties(defined_properties, supplied_properties)
+            supplied_properties = self._filter_matching_catalogue_item_properties(
+                defined_properties, supplied_properties
+            )
+            self._add_catalogue_item_property_units(defined_properties, supplied_properties)
+            self._validate_catalogue_item_property_values(defined_properties, supplied_properties)
+
+            stored_catalogue_item.properties = list(supplied_properties.values())
+
+        return self._catalogue_item_repository.update(
+            catalogue_item_id, CatalogueItemIn(**stored_catalogue_item.dict())
+        )
