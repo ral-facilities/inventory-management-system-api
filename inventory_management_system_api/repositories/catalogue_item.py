@@ -55,6 +55,22 @@ class CatalogueItemRepo:
             return CatalogueItemOut(**catalogue_item)
         return None
 
+    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemIn) -> CatalogueItemOut:
+        """
+        Update a catalogue item by its ID in a MongoDB database.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item: The catalogue item containing the update data.
+        :return: The updated catalogue item.
+        """
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+        # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements if the
+        #  `catalogue_category_id` is being updated.
+        logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
+        self._collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.dict()})
+        catalogue_item = self.get(str(catalogue_item_id))
+        return catalogue_item
+
     def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items from a MongoDB.
