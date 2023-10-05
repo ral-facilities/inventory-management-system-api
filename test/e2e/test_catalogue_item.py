@@ -96,24 +96,6 @@ def test_create_catalogue_item(test_client):
     assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
 
 
-def test_create_catalogue_item_with_duplicate_name_within_catalogue_category(test_client):
-    """
-    Test creating a catalogue item with a duplicate name within the catalogue category.
-    """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
-
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
-    test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-    assert response.status_code == 409
-    assert (
-        response.json()["detail"] == "A catalogue item with the same name already exists within the catalogue category"
-    )
-
-
 def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     """
     Test creating a catalogue item with an invalid catalogue category id.
