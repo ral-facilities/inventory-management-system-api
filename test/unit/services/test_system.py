@@ -2,8 +2,8 @@
 Unit tests for the `SystemService` service
 """
 
-
 from typing import Optional
+from unittest.mock import MagicMock
 
 from bson import ObjectId
 
@@ -65,7 +65,7 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
-    # Mock `get` to return the parent catalogue category
+    # Mock `get` to return the parent system
     test_helpers.mock_get(
         system_repository_mock,
         SystemOut(
@@ -127,27 +127,16 @@ def test_get(test_helpers, system_repository_mock, system_service):
 
     Verify that the `get` method properly handles the retrieval of a System
     """
-    system_info = {
-        "name": "Test name",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "parent_id": None,
-    }
-    full_system_info = {
-        **system_info,
-        "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
-    }
-    system = SystemOut(id=str(ObjectId()), **full_system_info)
+
+    system_id = str(ObjectId())
+    system = MagicMock()
 
     # Mock `get` to return a System
     test_helpers.mock_get(system_repository_mock, system)
 
-    retrieved_system = system_service.get(system.id)
+    retrieved_system = system_service.get(system_id)
 
-    system_repository_mock.get.assert_called_once_with(system.id)
+    system_repository_mock.get.assert_called_once_with(system_id)
     assert retrieved_system == system
 
 
@@ -172,43 +161,20 @@ def _test_list(test_helpers, system_repository_mock, system_service, path: Optio
     """
     Utility method that tests getting Systems
 
-    Verifies that the `list` method properly handles the retrieval of catalogue categories with the given filters
+    Verifies that the `list` method properly handles the retrieval of systems with the given filters
     """
-    # pylint: disable=duplicate-code
-    system_a_info = {
-        "name": "Test name a",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
-        "path": "/test-name-a",
-        "parent_path": "/",
-        "parent_id": str(ObjectId()),
-    }
-    system_a = SystemOut(id=str(ObjectId()), **system_a_info)
-    system_b_info = {
-        "name": "Test name b",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
-        "path": "/test-name-b",
-        "parent_path": "/",
-        "parent_id": str(ObjectId()),
-    }
-    system_b = SystemOut(id=str(ObjectId()), **system_b_info)
-    # pylint: enable=duplicate-code
+    systems = [MagicMock(), MagicMock()]
 
-    # Mock `list` to return a list of catalogue categories
+    # Mock `list` to return a list of systems
     test_helpers.mock_list(
         system_repository_mock,
-        [system_a, system_b],
+        systems,
     )
 
     retrieved_systems = system_service.list(path, parent_path)
 
     system_repository_mock.list.assert_called_once_with(path, parent_path)
-    assert retrieved_systems == [system_a, system_b]
+    assert retrieved_systems == systems
 
 
 def test_list(test_helpers, system_repository_mock, system_service):

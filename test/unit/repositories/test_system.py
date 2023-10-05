@@ -239,7 +239,7 @@ def test_get_with_non_existent_id(test_helpers, database_mock, system_repository
     """
     Test getting a System with a non-existent ID
 
-    Verify that the `get` method properly handles the retrieval of a catalogue category with a non-existent ID
+    Verify that the `get` method properly handles the retrieval of a System with a non-existent ID
     """
     system_id = str(ObjectId())
 
@@ -256,7 +256,7 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
     """
     Utility method that tests getting Systems
 
-    Verifies that the `list` method properly handles the retrieval of catalogue categories with the given filters
+    Verifies that the `list` method properly handles the retrieval of systems with the given filters
     """
     # pylint: disable=duplicate-code
     system_a_info = {
@@ -305,7 +305,7 @@ def test_list(test_helpers, database_mock, system_repository):
     """
     Test getting Systems
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories without filters
+    Verify that the `list` method properly handles the retrieval of systems without filters
     """
     _test_list(test_helpers, database_mock, system_repository, None, None)
 
@@ -314,7 +314,7 @@ def test_list_with_path_filter(test_helpers, database_mock, system_repository):
     """
     Test getting Systems based on the provided path filter
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided
+    Verify that the `list` method properly handles the retrieval of systems based on the provided
     path filter
     """
     _test_list(test_helpers, database_mock, system_repository, "/test-name-a", None)
@@ -324,7 +324,7 @@ def test_list_with_parent_path_filter(test_helpers, database_mock, system_reposi
     """
     Test getting Systems based on the provided parent path filter
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided parent
+    Verify that the `list` method properly handles the retrieval of systems based on the provided parent
     path filter
     """
     _test_list(test_helpers, database_mock, system_repository, None, "/")
@@ -334,7 +334,7 @@ def test_list_with_path_and_parent_path_filter(test_helpers, database_mock, syst
     """
     Test getting Systems based on the provided path and parent path filters
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path
+    Verify that the `list` method properly handles the retrieval of systems based on the provided path
     and parent path filters
     """
     _test_list(test_helpers, database_mock, system_repository, "/test-name-a", "/")
@@ -345,7 +345,7 @@ def test_list_with_path_and_parent_path_filters_no_matching_results(test_helpers
     Test getting Systems based on the provided path and parent path filters when there are no matching results
     int he database
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path
+    Verify that the `list` method properly handles the retrieval of systems based on the provided path
     and parent path filters when there are no matching results in the database
     """
     # Mock `find` to return a list of System documents

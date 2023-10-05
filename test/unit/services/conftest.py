@@ -73,7 +73,7 @@ def fixture_catalogue_item_service(
 
 
 @pytest.fixture(name="system_service")
-def fixture_system_service(system_repository_mock: Mock) -> CatalogueItemService:
+def fixture_system_service(system_repository_mock: Mock) -> SystemService:
     """
     Fixture to create a `SystemService` instance with a mocked `SystemRepo`
     dependencies.
