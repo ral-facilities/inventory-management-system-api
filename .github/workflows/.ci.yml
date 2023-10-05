@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3.5.3
 
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@d26215f71b2ce60420a2a3776a25893d11a65f85 #v1.9.0
+        uses: supercharge/mongodb-github-action@b0a1493307c4e9b82ed61f3858d606c5ff190c64 #v1.10.0
         with:
           mongodb-version: "6.0"
           mongodb-username: root
