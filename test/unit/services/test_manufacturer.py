@@ -2,8 +2,6 @@
 Unit tests for the `ManufacturerService` service.
 """
 
-from unittest.mock import Mock
-import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
@@ -99,3 +97,11 @@ def test_get_with_nonexistent_id(manufacturer_repository_mock, manufacturer_serv
     assert retrieved_manufacturer is None
 
     manufacturer_repository_mock.get.assert_called_once_with(manufactuer_id)
+
+
+def test_delete(manufacturer_repository_mock, manufacturer_service):
+    """Test deleting a manufacturer"""
+    manufacturer_id = str(ObjectId())
+    manufacturer_service.delete(manufacturer_id)
+
+    manufacturer_repository_mock.delete.assert_called_once_with(manufacturer_id)

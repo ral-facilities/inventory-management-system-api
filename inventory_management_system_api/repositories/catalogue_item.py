@@ -95,13 +95,3 @@ class CatalogueItemRepo:
         catalogue_category_id = CustomObjectId(catalogue_category_id)
         count = self._collection.count_documents({"catalogue_category_id": catalogue_category_id, "name": name})
         return count > 0
-
-    def is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
-        """Checks to see if any of the documents in the database have a specific manufactuer id
-
-        :param manufacturer_id: The ID of the manufacturer that is looked for
-        :return Returns True if 1 or more documents have the manufacturer ID, false if none do
-        """
-        manufacturer_id = CustomObjectId(manufacturer_id)
-        count = self._collection.count_documents({"manufacturer_id": manufacturer_id})
-        return count > 0

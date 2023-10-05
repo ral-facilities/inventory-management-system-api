@@ -82,6 +82,7 @@ def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> Manufact
     """
     return ManufacturerService(manufacturer_repository_mock)
 
+
 class ServiceTestHelpers:
     """
     A utility class containing common helper methods for the service tests.

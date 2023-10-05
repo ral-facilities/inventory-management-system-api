@@ -10,7 +10,11 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    MissingRecordError,
+    PartOfCatalogueItemError,
+)
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
@@ -28,6 +32,7 @@ class ManufacturerRepo:
 
         self._database = database
         self._collection: Collection = self._database.manufacturer
+        self._catalogue_item_collection: Collection = self._database.catalogue_items
 
     def create(self, manufacturer: ManufacturerIn) -> ManufacturerOut:
         """
@@ -113,11 +118,13 @@ class ManufacturerRepo:
         :raises ExistIn
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
+        if self.is_manufacturer_in_catalogue_item(str(manufacturer_id)):
+            raise PartOfCatalogueItemError("The specified manufacturer is a part of a Catalogue Item")
 
         logger.info("Deleting manufacturer with ID %s from the database", manufacturer_id)
         result = self._collection.delete_one({"_id": manufacturer_id})
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No manufacturer founs with ID: {str(manufacturer_id)}")
+            raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
 
     def _is_duplicate_manufacturer(self, code: str) -> bool:
         """
@@ -128,4 +135,14 @@ class ManufacturerRepo:
         """
         logger.info("Checking if manufacturer with code '%s' already exists", code)
         count = self._collection.count_documents({"code": code})
+        return count > 0
+
+    def is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
+        """Checks to see if any of the documents in the database have a specific manufactuer id
+
+        :param manufacturer_id: The ID of the manufacturer that is looked for
+        :return Returns True if 1 or more documents have the manufacturer ID, false if none do
+        """
+        manufacturer_id = CustomObjectId(manufacturer_id)
+        count = self._catalogue_item_collection.count_documents({"manufacturer_id": manufacturer_id})
         return count > 0

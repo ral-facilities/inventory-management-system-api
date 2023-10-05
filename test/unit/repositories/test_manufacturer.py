@@ -10,6 +10,7 @@ from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
+    PartOfCatalogueItemError,
 )
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
@@ -310,10 +311,53 @@ def update_with_duplicate_name(test_helpers, database_mock, manufacturer_reposit
         address="1 Example street",
     )
     # pylint: enable=duplicate-code
-
     manufacturer_id = str(ObjectId())
     test_helpers.mock_count_documents(database_mock.manufacturer, 1)
 
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.update(manufacturer_id, updated_manufacturer)
     assert str(exc.value) == "The specified manufacturer does not exist"
+
+
+def test_delete(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to delete a manufacturer"""
+    manufacturer_id = str(ObjectId())
+
+    test_helpers.mock_delete_one(database_mock.manufacturer, 1)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+    manufacturer_repository.delete(manufacturer_id)
+
+    database_mock.manufacturer.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
+
+
+def test_delete_with_an_invalid_id(manufacturer_repository):
+    """Test trying to delete a manufacturer with an invalid ID"""
+    manufacturer_id = "invalid"
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        manufacturer_repository.delete(manufacturer_id)
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_delete_with_a_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to delete a manufacturer with a non-existent ID"""
+    manufacturer_id = str(ObjectId())
+
+    test_helpers.mock_delete_one(database_mock.manufacturer, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+
+    with pytest.raises(MissingRecordError) as exc:
+        manufacturer_repository.delete(manufacturer_id)
+    assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
+    database_mock.manufacturer.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
+
+
+def test_delete_manufacturer_that_is_part_of_an_catalogue_item(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to delete a manufacturer that is part of a Catalogue Items"""
+    manufacturer_id = str(ObjectId())
+
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
+
+    with pytest.raises(PartOfCatalogueItemError) as exc:
+        manufacturer_repository.delete(manufacturer_id)
+    assert str(exc.value) == "The specified manufacturer is a part of a Catalogue Item"
