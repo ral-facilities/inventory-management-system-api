@@ -130,7 +130,7 @@ def delete_manufacturer(manufacturer_id: str, manufacturer_service: Manufacturer
             status_code=status.HTTP_404_NOT_FOUND, detail="The specified manufacturer does not exist"
         ) from exc
     except PartOfCatalogueItemError as exc:
-        logger.exception("The specified manufactuerer is a part of a Catalogue Item")
+        logger.exception("The specified manufacturer is a part of a Catalogue Item")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The specified manufactuerer is a part of a Catalogue Item"
+            status_code=status.HTTP_409_CONFLICT, detail="The specified manufacturer is a part of a Catalogue Item"
         ) from exc
