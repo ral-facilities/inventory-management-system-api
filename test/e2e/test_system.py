@@ -115,6 +115,47 @@ def test_create_system_with_invalid_importance(test_client):
     )
 
 
+def test_delete_system(test_client):
+    """
+    Test deleting a System
+    """
+
+    # Create one to delete
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system = response.json()
+
+    # Delete
+    response = test_client.delete(f"/v1/systems/{system['id']}")
+
+    assert response.status_code == 204
+    response = test_client.get(f"/v1/systems/{system['id']}")
+    assert response.status_code == 404
+
+
+def test_delete_system_with_invalid_id(test_client):
+    """
+    Test deleting a System with an invalid ID
+    """
+
+    # Delete
+    response = test_client.delete("/v1/systems/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "System with such ID was not found"
+
+
+def test_delete_system_with_non_existent_id(test_client):
+    """
+    Test deleting a System with a non existent ID
+    """
+
+    # Delete
+    response = test_client.delete(f"/v1/systems/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "System with such ID was not found"
+
+
 def test_get_system(test_client):
     """
     Test getting a System
@@ -130,6 +171,26 @@ def test_get_system(test_client):
 
     assert response.status_code == 200
     assert response.json() == SYSTEM_POST_A_EXPECTED
+
+
+def test_delete_system_with_child_system(test_client):
+    """
+    Test deleting a System
+    """
+
+    # Create one to delete
+    # Parent
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    parent_system = response.json()
+
+    # Child
+    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+
+    # Delete
+    response = test_client.delete(f"/v1/systems/{parent_system['id']}")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "System has child elements and cannot be deleted"
 
 
 def test_get_system_with_invalid_id(test_client):
