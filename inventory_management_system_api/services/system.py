@@ -54,6 +54,14 @@ class SystemService:
             )
         )
 
+    def delete(self, system_id: str) -> None:
+        """
+        Delete a System by its ID
+
+        :param system_id: ID of the System to delete
+        """
+        return self._system_repository.delete(system_id)
+
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
         Retrieve a System by its ID
