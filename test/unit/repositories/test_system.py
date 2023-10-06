@@ -398,7 +398,7 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
     assert str(exc.value) == f"System with ID {system_id} has child elements and cannot be deleted"
 
 
-def test_delete_with_invalid_id(test_helpers, database_mock, system_repository):
+def test_delete_with_invalid_id(database_mock, system_repository):
     """
     Test deleting a System with an invalid ID
 
