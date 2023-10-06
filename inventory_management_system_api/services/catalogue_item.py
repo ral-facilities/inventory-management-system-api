@@ -91,6 +91,14 @@ class CatalogueItemService:
             )
         )
 
+    def delete(self, catalogue_item_id: str) -> None:
+        """
+        Delete a catalogue item by its ID.
+
+        :param catalogue_item_id: The ID of the catalogue item to delete.
+        """
+        return self._catalogue_item_repository.delete(catalogue_item_id)
+
     def _add_catalogue_item_property_units(
         self,
         defined_properties: Dict[str, Dict],
