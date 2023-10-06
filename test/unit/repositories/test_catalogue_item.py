@@ -5,7 +5,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import (
     CatalogueItemOut,
     Property,
@@ -77,6 +77,63 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         }
     )
     assert created_catalogue_item == catalogue_item
+
+
+def test_delete(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test deleting a catalogue item.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
+    """
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `delete_one` to return that one document has been deleted
+    test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
+
+    # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
+
+    catalogue_item_repository.delete(catalogue_item_id)
+
+    database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
+
+
+def test_delete_with_children_items():
+    """
+    Test deleting a catalogue item with children items.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item with children items.
+    """
+    # TODO - Implement this test when the relevant item logic is implemented
+
+
+def test_delete_with_invalid_id(catalogue_item_repository):
+    """
+    Test deleting a catalogue item with an invalid ID.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_item_repository.delete("invalid")
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test deleting a catalogue item with a nonexistent ID.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item with a nonexistent ID.
+    """
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `delete_one` to return that no document has been deleted
+    test_helpers.mock_delete_one(database_mock.catalogue_items, 0)
+
+    # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_item_repository.delete(catalogue_item_id)
+    assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
+    database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
 
 
 def test_get(test_helpers, database_mock, catalogue_item_repository):
