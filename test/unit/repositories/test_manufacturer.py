@@ -38,12 +38,12 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     # pylint: enable=duplicate-code
 
     # Mock 'count documents' to return 0 (no duplicates found)
-    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
     # Mock 'insert one' to return object for inserted manufacturer
-    test_helpers.mock_insert_one(database_mock.manufacturer, CustomObjectId(manufacturer.id))
+    test_helpers.mock_insert_one(database_mock.manufacturers, CustomObjectId(manufacturer.id))
     # Mock 'find_one' to return the inserted manufacturer document
     test_helpers.mock_find_one(
-        database_mock.manufacturer,
+        database_mock.manufacturers,
         {
             "_id": CustomObjectId(manufacturer.id),
             "code": manufacturer.code,
@@ -64,7 +64,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         )
     )
 
-    database_mock.manufacturer.insert_one.assert_called_once_with(
+    database_mock.manufacturers.insert_one.assert_called_once_with(
         {
             "name": manufacturer.name,
             "code": manufacturer.code,
@@ -74,7 +74,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         }
     )
     # pylint: enable=duplicate-code
-    database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
+    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
     assert created_manufacturer == manufacturer
 
 
@@ -97,7 +97,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
     )
 
     # Mock count_documents to return 1 (duplicate manufacturer found)
-    test_helpers.mock_count_documents(database_mock.manufacturer, 1)
+    test_helpers.mock_count_documents(database_mock.manufacturers, 1)
 
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.create(
@@ -139,7 +139,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
     )
 
     test_helpers.mock_find(
-        database_mock.manufacturer,
+        database_mock.manufacturers,
         [
             {
                 "_id": CustomObjectId(manufacturer_1.id),
@@ -162,13 +162,13 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
 
     retrieved_manufacturers = manufacturer_repository.list()
 
-    database_mock.manufacturer.find.assert_called_once_with()
+    database_mock.manufacturers.find.assert_called_once()
     assert retrieved_manufacturers == [manufacturer_1, manufacturer_2]
 
 
 def test_list_when_no_manufacturers(test_helpers, database_mock, manufacturer_repository):
     """Test trying to get all manufacturers when there are none in the databse"""
-    test_helpers.mock_find(database_mock.manufacturer, [])
+    test_helpers.mock_find(database_mock.manufacturers, [])
     retrieved_manufacturers = manufacturer_repository.list()
 
     assert retrieved_manufacturers == []
@@ -189,7 +189,7 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
         telephone="0932348348",
     )
     test_helpers.mock_find_one(
-        database_mock.manufacturer,
+        database_mock.manufacturers,
         {
             "_id": CustomObjectId(manufacturer.id),
             "code": manufacturer.code,
@@ -200,7 +200,7 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
         },
     )
     retrieved_manufacturer = manufacturer_repository.get(manufacturer.id)
-    database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
+    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
     assert retrieved_manufacturer == manufacturer
 
 
@@ -218,11 +218,11 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repos
     Test getting a manufacturer with an ID that does not exist
     """
     manufacturer_id = str(ObjectId())
-    test_helpers.mock_find_one(database_mock.manufacturer, None)
+    test_helpers.mock_find_one(database_mock.manufacturers, None)
     retrieved_manufacturer = manufacturer_repository.get(manufacturer_id)
 
     assert retrieved_manufacturer is None
-    database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
+    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
 def test_update(test_helpers, database_mock, manufacturer_repository):
@@ -239,11 +239,11 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         telephone="0932348348",
     )
     # pylint: enable=duplicate-code
-    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
 
     # Mock 'find_one' to return the inserted manufacturer document
     test_helpers.mock_find_one(
-        database_mock.manufacturer,
+        database_mock.manufacturers,
         {
             "_id": CustomObjectId(manufacturer.id),
             "code": "manufacturer-b",
@@ -259,12 +259,12 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             "telephone": "0348343897",
         },
     )
-    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
 
-    test_helpers.mock_update_one(database_mock.manufacturer)
+    test_helpers.mock_update_one(database_mock.manufacturers)
     # Mock 'find_one' to return the inserted manufacturer document
     test_helpers.mock_find_one(
-        database_mock.manufacturer,
+        database_mock.manufacturers,
         {
             "_id": CustomObjectId(manufacturer.id),
             "code": manufacturer.code,
@@ -289,7 +289,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     )
     # pylint: enable=duplicate-code
 
-    database_mock.manufacturer.update_one.assert_called_once_with(
+    database_mock.manufacturers.update_one.assert_called_once_with(
         {"_id": CustomObjectId(manufacturer.id)},
         {
             "$set": {
@@ -336,8 +336,8 @@ def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_re
         ),
         telephone="0932348348",
     )
-    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
-    test_helpers.mock_find_one(database_mock.manufacturer, None)
+    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
+    test_helpers.mock_find_one(database_mock.manufacturers, None)
     manufacturer_id = str(ObjectId())
 
     with pytest.raises(MissingRecordError) as exc:
@@ -360,7 +360,7 @@ def update_with_duplicate_name(test_helpers, database_mock, manufacturer_reposit
     )
     # pylint: enable=duplicate-code
     manufacturer_id = str(ObjectId())
-    test_helpers.mock_count_documents(database_mock.manufacturer, 1)
+    test_helpers.mock_count_documents(database_mock.manufacturers, 1)
 
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.update(manufacturer_id, updated_manufacturer)
@@ -371,11 +371,11 @@ def test_delete(test_helpers, database_mock, manufacturer_repository):
     """Test trying to delete a manufacturer"""
     manufacturer_id = str(ObjectId())
 
-    test_helpers.mock_delete_one(database_mock.manufacturer, 1)
+    test_helpers.mock_delete_one(database_mock.manufacturers, 1)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     manufacturer_repository.delete(manufacturer_id)
 
-    database_mock.manufacturer.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
+    database_mock.manufacturers.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
 def test_delete_with_an_invalid_id(manufacturer_repository):
@@ -391,13 +391,13 @@ def test_delete_with_a_nonexistent_id(test_helpers, database_mock, manufacturer_
     """Test trying to delete a manufacturer with a non-existent ID"""
     manufacturer_id = str(ObjectId())
 
-    test_helpers.mock_delete_one(database_mock.manufacturer, 0)
+    test_helpers.mock_delete_one(database_mock.manufacturers, 0)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
     with pytest.raises(MissingRecordError) as exc:
         manufacturer_repository.delete(manufacturer_id)
     assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
-    database_mock.manufacturer.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
+    database_mock.manufacturers.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
 def test_delete_manufacturer_that_is_part_of_an_catalogue_item(test_helpers, database_mock, manufacturer_repository):

@@ -2,20 +2,6 @@
 End-to-End tests for the manufacturer router.
 """
 from bson import ObjectId
-import pytest
-
-
-from inventory_management_system_api.core.database import get_database
-
-
-@pytest.fixture(name="cleanup_manufacturer", autouse=True)
-def fixture_cleanup_manufacturer():
-    """
-    Fixture to clean up the manufacturer collection in test database
-    """
-    database = get_database()
-    yield
-    database.manufacturer.delete_many({})
 
 
 def test_create_manufacturer(test_client):
@@ -33,7 +19,7 @@ def test_create_manufacturer(test_client):
         "telephone": "0932348348",
     }
 
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
     assert response.status_code == 201
 
@@ -61,7 +47,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
         "telephone": "0932348348",
     }
 
-    test_client.post("/v1/manufacturer", json=manufacturer_post)
+    test_client.post("/v1/manufacturers", json=manufacturer_post)
 
     manufacturer_post = {
         "name": "Manufacturer A",
@@ -76,7 +62,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
         "telephone": "0932348348",
     }
 
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
     assert response.status_code == 409
     assert response.json()["detail"] == "A manufacturer with the same name has been found"
@@ -96,7 +82,7 @@ def test_list(test_client):
         },
         "telephone": "0932348348",
     }
-    test_client.post("/v1/manufacturer", json=manufacturer_post)
+    test_client.post("/v1/manufacturers", json=manufacturer_post)
     manufacturer_post = {
         "name": "Manufacturer B",
         "url": "http://test.com",
@@ -109,9 +95,9 @@ def test_list(test_client):
         },
         "telephone": "05940545",
     }
-    test_client.post("/v1/manufacturer", json=manufacturer_post)
+    test_client.post("/v1/manufacturers", json=manufacturer_post)
 
-    response = test_client.get("/v1/manufacturer")
+    response = test_client.get("/v1/manufacturers")
 
     assert response.status_code == 200
 
@@ -146,7 +132,7 @@ def test_list(test_client):
 def test_list_when_no_manufacturers(test_client):
     """Test trying to get all manufacturers when there are none in the databse"""
 
-    response = test_client.get("/v1/manufacturer")
+    response = test_client.get("/v1/manufacturers")
 
     assert response.status_code == 200
     manufacturers = list(response.json())
@@ -167,8 +153,8 @@ def test_get_manufacturer_with_id(test_client):
         },
         "telephone": "0932348348",
     }
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
-    response = test_client.get(f"/v1/manufacturer/{response.json()['id']}")
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+    response = test_client.get(f"/v1/manufacturers/{response.json()['id']}")
     assert response.status_code == 200
     manufacturer = response.json()
 
@@ -181,14 +167,14 @@ def test_get_manufacturer_with_id(test_client):
 def test_get_manufacturer_with_invalid_id(test_client):
     """Test getting a manufacturer with an invalid id"""
 
-    response = test_client.get("/v1/manufacturer/invalid")
+    response = test_client.get("/v1/manufacturers/invalid")
     assert response.status_code == 404
     assert response.json()["detail"] == "The requested manufacturer was not found"
 
 
 def test_get_manufactuer_with_nonexistent_id(test_client):
     """Test getting a manufacturer with an nonexistent id"""
-    response = test_client.get(f"/v1/manufacturer/{str(ObjectId())}")
+    response = test_client.get(f"/v1/manufacturers/{str(ObjectId())}")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "The requested manufacturer was not found"
@@ -209,7 +195,7 @@ def test_update(test_client):
         "telephone": "0932348348",
     }
 
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
     manufacturer_patch = {
         "name": "Manufacturer B",
@@ -223,7 +209,7 @@ def test_update(test_client):
         },
         "telephone": "07569585584",
     }
-    response = test_client.patch(f"/v1/manufacturer/{response.json()['id']}", json=manufacturer_patch)
+    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
 
     assert response.status_code == 200
     manufacturer = response.json()
@@ -248,7 +234,7 @@ def test_update_with_invalid_id(test_client):
         },
         "telephone": "0932348348",
     }
-    response = test_client.patch("/v1/manufacturer/invalid", json=manufacturer_patch)
+    response = test_client.patch("/v1/manufacturers/invalid", json=manufacturer_patch)
 
     assert response.status_code == 422
 
@@ -269,7 +255,7 @@ def test_update_with_nonexistent_id(test_client):
         },
         "telephone": "0932348348",
     }
-    response = test_client.patch(f"/v1/manufacturer/{str(ObjectId())}", json=manufacturer_patch)
+    response = test_client.patch(f"/v1/manufacturers/{str(ObjectId())}", json=manufacturer_patch)
 
     assert response.status_code == 422
 
@@ -291,7 +277,7 @@ def test_update_duplicate_name(test_client):
         "telephone": "0932348348",
     }
 
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
     manufacturer_patch = {
         "name": "Manufacturer A",
@@ -305,7 +291,7 @@ def test_update_duplicate_name(test_client):
         },
         "telephone": "0748347374",
     }
-    response = test_client.patch(f"/v1/manufacturer/{response.json()['id']}", json=manufacturer_patch)
+    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
 
     assert response.status_code == 409
     assert response.json()["detail"] == "A manufacturer with the same name has been found"
@@ -326,10 +312,10 @@ def test_delete(test_client):
         "telephone": "0932348348",
     }
 
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
     manufacturer = response.json()
 
-    response = test_client.delete(f"/v1/manufacturer/{manufacturer['id']}")
+    response = test_client.delete(f"/v1/manufacturers/{manufacturer['id']}")
     assert response.status_code == 204
 
 
@@ -347,9 +333,9 @@ def test_delete_with_an_invalid_id(test_client):
         },
         "telephone": "0932348348",
     }
-    test_client.post("/v1/manufacturer", json=manufacturer_post)
+    test_client.post("/v1/manufacturers", json=manufacturer_post)
 
-    response = test_client.delete("/v1/manufacturer/invalid")
+    response = test_client.delete("/v1/manufacturers/invalid")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "The specified manufacturer does not exist"
@@ -369,9 +355,9 @@ def test_delete_with_a_nonexistent_id(test_client):
         },
         "telephone": "0932348348",
     }
-    test_client.post("/v1/manufacturer", json=manufacturer_post)
+    test_client.post("/v1/manufacturers", json=manufacturer_post)
 
-    response = test_client.delete(f"/v1/manufacturer/{str(ObjectId())}")
+    response = test_client.delete(f"/v1/manufacturers/{str(ObjectId())}")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "The specified manufacturer does not exist"
@@ -391,7 +377,7 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
         },
         "telephone": "0932348348",
     }
-    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
     manufacturer_id = response.json()["id"]
     # pylint: disable=duplicate-code
     catalogue_category_post = {
@@ -418,7 +404,7 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    response = test_client.delete(f"/v1/manufacturer/{manufacturer_id}")
+    response = test_client.delete(f"/v1/manufacturers/{manufacturer_id}")
 
     assert response.status_code == 409
     assert response.json()["detail"] == "The specified manufacturer is a part of a Catalogue Item"

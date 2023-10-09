@@ -27,7 +27,7 @@ def fixture_database_mock() -> Mock:
     database_mock = Mock(Database)
     database_mock.catalogue_categories = Mock(Collection)
     database_mock.catalogue_items = Mock(Collection)
-    database_mock.manufacturer = Mock(Collection)
+    database_mock.manufacturers = Mock(Collection)
     return database_mock
 
 

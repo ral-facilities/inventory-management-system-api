@@ -31,7 +31,7 @@ class ManufacturerRepo:
         """
 
         self._database = database
-        self._collection: Collection = self._database.manufacturer
+        self._collection: Collection = self._database.manufacturers
         self._catalogue_item_collection: Collection = self._database.catalogue_items
 
     def create(self, manufacturer: ManufacturerIn) -> ManufacturerOut:

@@ -22,7 +22,7 @@ from inventory_management_system_api.services.manufacturer import ManufacturerSe
 
 logger = logging.getLogger()
 
-router = APIRouter(prefix="/v1/manufacturer", tags=["manufacturer"])
+router = APIRouter(prefix="/v1/manufacturers", tags=["manufacturers"])
 
 
 @router.post(
