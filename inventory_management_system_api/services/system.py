@@ -47,6 +47,7 @@ class SystemService:
                 location=system.location,
                 owner=system.owner,
                 importance=system.importance,
+                description=system.description,
                 code=code,
                 path=path,
                 parent_path=parent_path,

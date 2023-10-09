@@ -18,6 +18,7 @@ class SystemIn(BaseModel):
     location: str
     owner: str
     importance: str
+    description: str
 
     # Used for uniqueness checks (sanitised name)
     code: str

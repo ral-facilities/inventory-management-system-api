@@ -24,6 +24,7 @@ def test_create(test_helpers, system_repository_mock, system_service):
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
+        "description": "Test description",
         "parent_id": None,
     }
     full_system_info = {
@@ -55,6 +56,7 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
+        "description": "Test description",
         "parent_id": str(ObjectId()),
     }
     full_system_info = {
@@ -74,6 +76,7 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
             location="Test location",
             owner="Test owner",
             importance="low",
+            description="Test description",
             parent_id=None,
             code="test-name-a",
             path="/test-name-a",
@@ -102,6 +105,7 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
+        "description": "Test description",
         "parent_id": None,
     }
     full_system_info = {
