@@ -40,7 +40,13 @@ class ManufacturerService:
         """
         code = self._generate_code(manufacturer.name)
         return self._manufacturer_repository.create(
-            ManufacturerIn(name=manufacturer.name, code=code, url=manufacturer.url, address=manufacturer.address)
+            ManufacturerIn(
+                name=manufacturer.name,
+                code=code,
+                url=manufacturer.url,
+                address=manufacturer.address,
+                telephone=manufacturer.telephone,
+            )
         )
 
     def _generate_code(self, name: str) -> str:
@@ -90,8 +96,8 @@ class ManufacturerService:
         stored_manufacturer.code = self._generate_code(stored_manufacturer.name)
         stored_manufacturer.url = updated_data["url"]
         stored_manufacturer.address = updated_data["address"]
+        stored_manufacturer.telephone = updated_data["telephone"]
 
-        logger.info(stored_manufacturer.address)
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
 
     def delete(self, manufacturer_id: str) -> None:

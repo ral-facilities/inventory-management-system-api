@@ -13,6 +13,7 @@ from inventory_management_system_api.core.exceptions import (
     PartOfCatalogueItemError,
 )
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
+from inventory_management_system_api.schemas.manufacturer import Address
 
 
 def test_create_manufacturer(test_helpers, database_mock, manufacturer_repository):
@@ -29,7 +30,10 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     # pylint: enable=duplicate-code
 
@@ -46,6 +50,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
             "name": manufacturer.name,
             "url": manufacturer.url,
             "address": manufacturer.address,
+            "telephone": manufacturer.telephone,
         },
     )
     # pylint: disable=duplicate-code
@@ -55,6 +60,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
             code=manufacturer.code,
             url=manufacturer.url,
             address=manufacturer.address,
+            telephone=manufacturer.telephone,
         )
     )
 
@@ -64,6 +70,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
             "code": manufacturer.code,
             "url": manufacturer.url,
             "address": manufacturer.address,
+            "telephone": manufacturer.telephone,
         }
     )
     # pylint: enable=duplicate-code
@@ -80,13 +87,16 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
     """
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
-        name="Manufacturer B",
-        code="manufacturer-b",
-        url="http://duplicate.co.uk",
-        address="street B",
+        name="Manufacturer A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
 
-    # Mock count_documents to return 1 (duplicat manufacturer found)
+    # Mock count_documents to return 1 (duplicate manufacturer found)
     test_helpers.mock_count_documents(database_mock.manufacturer, 1)
 
     with pytest.raises(DuplicateRecordError) as exc:
@@ -97,6 +107,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
                 code=manufacturer.code,
                 url=manufacturer.url,
                 address=manufacturer.address,
+                telephone=manufacturer.telephone,
             )
         )
     # pylint: enable=duplicate-code
@@ -107,18 +118,24 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
     """Test getting all manufacturers"""
     manufacturer_1 = ManufacturerOut(
         _id=str(ObjectId()),
-        code="manufacturer-a",
         name="Manufacturer A",
+        code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
 
     manufacturer_2 = ManufacturerOut(
         _id=str(ObjectId()),
-        code="manufacturer-b",
         name="Manufacturer B",
-        url="http://2ndTestUrl.co.uk",
-        address="2 Example street",
+        code="manufacturer-b",
+        url="http://example.co.uk",
+        address=Address(
+            building_number=2, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 3AB"
+        ),
+        telephone="073434394",
     )
 
     test_helpers.mock_find(
@@ -130,6 +147,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
                 "name": manufacturer_1.name,
                 "url": manufacturer_1.url,
                 "address": manufacturer_1.address,
+                "telephone": manufacturer_1.telephone,
             },
             {
                 "_id": CustomObjectId(manufacturer_2.id),
@@ -137,6 +155,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
                 "name": manufacturer_2.name,
                 "url": manufacturer_2.url,
                 "address": manufacturer_2.address,
+                "telephone": manufacturer_2.telephone,
             },
         ],
     )
@@ -164,7 +183,10 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     test_helpers.mock_find_one(
         database_mock.manufacturer,
@@ -174,6 +196,7 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
             "name": manufacturer.name,
             "url": manufacturer.url,
             "address": manufacturer.address,
+            "telephone": manufacturer.telephone,
         },
     )
     retrieved_manufacturer = manufacturer_repository.get(manufacturer.id)
@@ -210,7 +233,10 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     # pylint: enable=duplicate-code
     test_helpers.mock_count_documents(database_mock.manufacturer, 0)
@@ -223,7 +249,14 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             "code": "manufacturer-b",
             "name": "Manufacturer B",
             "url": "http://example.com",
-            "address": "2 Example Street",
+            "address": {
+                "building_number": 2,
+                "street_name": "Test street",
+                "town": "Newbury",
+                "county": "Berkshire",
+                "postCode": "QW2 4DF",
+            },
+            "telephone": "0348343897",
         },
     )
     test_helpers.mock_count_documents(database_mock.manufacturer, 0)
@@ -238,6 +271,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             "name": manufacturer.name,
             "url": manufacturer.url,
             "address": manufacturer.address,
+            "telephone": manufacturer.telephone,
         },
     )
 
@@ -250,6 +284,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             code=manufacturer.code,
             url=manufacturer.url,
             address=manufacturer.address,
+            telephone=manufacturer.telephone,
         ),
     )
     # pylint: enable=duplicate-code
@@ -262,6 +297,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
                 "code": manufacturer.code,
                 "url": manufacturer.url,
                 "address": manufacturer.address,
+                "telephone": manufacturer.telephone,
             }
         },
     )
@@ -271,11 +307,15 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
 
 def test_update_with_invalid_id(manufacturer_repository):
     """Test trying to update with an invalid ID"""
-    updated_manufacturer = ManufacturerIn(
+    updated_manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
 
     manufactuer_id = "invalid"
@@ -286,11 +326,15 @@ def test_update_with_invalid_id(manufacturer_repository):
 
 def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
     """Test trying to update with a non-existent ID"""
-    updated_manufacturer = ManufacturerIn(
-        name="Manufacturer B",
-        code="manufacturer-b",
+    updated_manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        name="Manufacturer A",
+        code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     test_helpers.mock_count_documents(database_mock.manufacturer, 0)
     test_helpers.mock_find_one(database_mock.manufacturer, None)
@@ -304,11 +348,15 @@ def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_re
 def update_with_duplicate_name(test_helpers, database_mock, manufacturer_repository):
     """Test trying to update a manufacturer with a duplicate name"""
     # pylint: disable=duplicate-code
-    updated_manufacturer = ManufacturerIn(
-        name="Manufacturer B",
-        code="manufacturer-b",
+    updated_manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        name="Manufacturer A",
+        code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     # pylint: enable=duplicate-code
     manufacturer_id = str(ObjectId())

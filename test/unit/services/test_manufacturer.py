@@ -5,7 +5,7 @@ Unit tests for the `ManufacturerService` service.
 from bson import ObjectId
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
-from inventory_management_system_api.schemas.manufacturer import ManufacturerPostRequestSchema
+from inventory_management_system_api.schemas.manufacturer import Address, ManufacturerPostRequestSchema
 
 
 def test_create(manufacturer_repository_mock, manufacturer_service):
@@ -19,7 +19,10 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     # pylint: enable=duplicate-code
 
@@ -30,6 +33,7 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
             name=manufacturer.name,
             url=manufacturer.url,
             address=manufacturer.address,
+            telephone=manufacturer.telephone,
         )
     )
     manufacturer_repository_mock.create.assert_called_once_with(
@@ -38,6 +42,7 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
             code=manufacturer.code,
             url=manufacturer.url,
             address=manufacturer.address,
+            telephone=manufacturer.telephone,
         )
     )
     assert created_manufacturer == manufacturer
@@ -48,18 +53,24 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
     # pylint: disable=duplicate-code
     manufacturer_1 = ManufacturerOut(
         _id=str(ObjectId()),
-        code="manufacturer-a",
         name="Manufacturer A",
+        code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
 
     manufacturer_2 = ManufacturerOut(
         _id=str(ObjectId()),
-        code="manufacturer-b",
         name="Manufacturer B",
-        url="http://2ndTestUrl.co.uk",
-        address="2 Example street",
+        code="manufacturer-b",
+        url="http://example.co.uk",
+        address=Address(
+            building_number=2, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 3AB"
+        ),
+        telephone="073434394",
     )
     # pylint: enable=duplicate-code
     manufacturer_repository_mock.list.return_value = [manufacturer_1, manufacturer_2]
@@ -73,10 +84,13 @@ def test_get(manufacturer_repository_mock, manufacturer_service):
     # pylint: disable=duplicate-code
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
-        code="manufacturer-a",
         name="Manufacturer A",
+        code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address="1 Example street",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
     )
     # pylint: enable=duplicate-code
 

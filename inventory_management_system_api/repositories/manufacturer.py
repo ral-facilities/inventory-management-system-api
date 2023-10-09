@@ -100,8 +100,9 @@ class ManufacturerRepo:
                 "$set": {
                     "name": manufacturer.name,
                     "url": manufacturer.url,
-                    "address": manufacturer.address,
+                    "address": manufacturer.address.dict(),
                     "code": manufacturer.code,
+                    "telephone": manufacturer.telephone,
                 }
             },
         )

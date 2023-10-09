@@ -23,7 +23,14 @@ def test_create_manufacturer(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
@@ -35,6 +42,7 @@ def test_create_manufacturer(test_client):
     assert manufacturer["name"] == manufacturer_post["name"]
     assert manufacturer["url"] == manufacturer_post["url"]
     assert manufacturer["address"] == manufacturer_post["address"]
+    assert manufacturer["telephone"] == manufacturer_post["telephone"]
 
 
 def test_check_duplicate_name_within_manufacturer(test_client):
@@ -43,14 +51,29 @@ def test_check_duplicate_name_within_manufacturer(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
+
     test_client.post("/v1/manufacturer", json=manufacturer_post)
 
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://test.com",
-        "address": "Street B",
+        "url": "http://example.com",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
@@ -64,13 +87,27 @@ def test_list(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
     manufacturer_post = {
         "name": "Manufacturer B",
-        "url": "http://2ndExample.com",
-        "address": "Street B",
+        "url": "http://test.com",
+        "address": {
+            "building_number": 2,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "05940545",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
 
@@ -83,13 +120,27 @@ def test_list(test_client):
     assert len(manufacturers) == 2
     assert manufacturers[0]["name"] == "Manufacturer A"
     assert manufacturers[0]["url"] == "http://example.com"
-    assert manufacturers[0]["address"] == "Street A"
+    assert manufacturers[0]["address"] == {
+        "building_number": 1,
+        "street_name": "Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "postCode": "OX1 2AB",
+    }
     assert manufacturers[0]["code"] == "manufacturer-a"
+    assert manufacturers[0]["telephone"] == "0932348348"
 
     assert manufacturers[1]["name"] == "Manufacturer B"
-    assert manufacturers[1]["url"] == "http://2ndExample.com"
-    assert manufacturers[1]["address"] == "Street B"
+    assert manufacturers[1]["url"] == "http://test.com"
+    assert manufacturers[1]["address"] == {
+        "building_number": 2,
+        "street_name": "Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "postCode": "OX1 2AB",
+    }
     assert manufacturers[1]["code"] == "manufacturer-b"
+    assert manufacturers[1]["telephone"] == "05940545"
 
 
 def test_list_when_no_manufacturers(test_client):
@@ -107,7 +158,14 @@ def test_get_manufacturer_with_id(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
     response = test_client.get(f"/v1/manufacturer/{response.json()['id']}")
@@ -117,6 +175,7 @@ def test_get_manufacturer_with_id(test_client):
     assert manufacturer["name"] == manufacturer_post["name"]
     assert manufacturer["url"] == manufacturer_post["url"]
     assert manufacturer["address"] == manufacturer_post["address"]
+    assert manufacturer["telephone"] == manufacturer_post["telephone"]
 
 
 def test_get_manufacturer_with_invalid_id(test_client):
@@ -140,7 +199,14 @@ def test_update(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
@@ -148,7 +214,14 @@ def test_update(test_client):
     manufacturer_patch = {
         "name": "Manufacturer B",
         "url": "http://test.co.uk",
-        "address": "Street B",
+        "address": {
+            "building_number": 2,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "07569585584",
     }
     response = test_client.patch(f"/v1/manufacturer/{response.json()['id']}", json=manufacturer_patch)
 
@@ -158,14 +231,22 @@ def test_update(test_client):
     assert manufacturer["name"] == manufacturer_patch["name"]
     assert manufacturer["url"] == manufacturer_patch["url"]
     assert manufacturer["address"] == manufacturer_patch["address"]
+    assert manufacturer["telephone"] == manufacturer_patch["telephone"]
 
 
 def test_update_with_invalid_id(test_client):
     """Test trying to update a manufacturer with an invalid ID"""
     manufacturer_patch = {
-        "name": "Manufacturer B",
-        "url": "http://test.co.uk",
-        "address": "Street B",
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     response = test_client.patch("/v1/manufacturer/invalid", json=manufacturer_patch)
 
@@ -177,9 +258,16 @@ def test_update_with_invalid_id(test_client):
 def test_update_with_nonexistent_id(test_client):
     """Test trying to update a manufacturer with a non-existent ID"""
     manufacturer_patch = {
-        "name": "Manufacturer B",
-        "url": "http://test.co.uk",
-        "address": "Street B",
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     response = test_client.patch(f"/v1/manufacturer/{str(ObjectId())}", json=manufacturer_patch)
 
@@ -193,15 +281,29 @@ def test_update_duplicate_name(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
 
     manufacturer_patch = {
         "name": "Manufacturer A",
-        "url": "http://test.co.uk",
-        "address": "Street B",
+        "url": "http://example.com",
+        "address": {
+            "building_number": 2,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0748347374",
     }
     response = test_client.patch(f"/v1/manufacturer/{response.json()['id']}", json=manufacturer_patch)
 
@@ -214,7 +316,14 @@ def test_delete(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
 
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
@@ -229,7 +338,14 @@ def test_delete_with_an_invalid_id(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
 
@@ -244,7 +360,14 @@ def test_delete_with_a_nonexistent_id(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     test_client.post("/v1/manufacturer", json=manufacturer_post)
 
@@ -259,7 +382,14 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com",
-        "address": "Street A",
+        "address": {
+            "building_number": 1,
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "postCode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
     }
     response = test_client.post("/v1/manufacturer", json=manufacturer_post)
     manufacturer_id = response.json()["id"]

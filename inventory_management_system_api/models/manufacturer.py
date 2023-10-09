@@ -3,10 +3,12 @@ Module for defining the database models for representing manufacturer.
 """
 
 
+from typing import Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 
 from inventory_management_system_api.models.catalogue_category import StringObjectIdField
+from inventory_management_system_api.schemas.manufacturer import Address
 
 
 class ManufacturerIn(BaseModel):
@@ -14,8 +16,9 @@ class ManufacturerIn(BaseModel):
 
     name: str
     code: str
-    url: HttpUrl
-    address: str
+    url: Optional[HttpUrl] = None
+    address: Address
+    telephone: Optional[str] = None
 
 
 class ManufacturerOut(ManufacturerIn):
