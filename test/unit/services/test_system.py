@@ -11,6 +11,26 @@ from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPostRequestSchema
 
 
+def _test_list(test_helpers, system_repository_mock, system_service, path: Optional[str], parent_path: Optional[str]):
+    """
+    Utility method that tests getting Systems
+
+    Verifies that the `list` method properly handles the retrieval of systems with the given filters
+    """
+    systems = [MagicMock(), MagicMock()]
+
+    # Mock `list` to return a list of systems
+    test_helpers.mock_list(
+        system_repository_mock,
+        systems,
+    )
+
+    retrieved_systems = system_service.list(path, parent_path)
+
+    system_repository_mock.list.assert_called_once_with(path, parent_path)
+    assert retrieved_systems == systems
+
+
 def test_create(test_helpers, system_repository_mock, system_service):
     """
     Test creating a System
@@ -159,26 +179,6 @@ def test_get_with_non_existent_id(test_helpers, system_repository_mock, system_s
 
     system_repository_mock.get.assert_called_once_with(system_id)
     assert retrieved_system is None
-
-
-def _test_list(test_helpers, system_repository_mock, system_service, path: Optional[str], parent_path: Optional[str]):
-    """
-    Utility method that tests getting Systems
-
-    Verifies that the `list` method properly handles the retrieval of systems with the given filters
-    """
-    systems = [MagicMock(), MagicMock()]
-
-    # Mock `list` to return a list of systems
-    test_helpers.mock_list(
-        system_repository_mock,
-        systems,
-    )
-
-    retrieved_systems = system_service.list(path, parent_path)
-
-    system_repository_mock.list.assert_called_once_with(path, parent_path)
-    assert retrieved_systems == systems
 
 
 def test_list(test_helpers, system_repository_mock, system_service):

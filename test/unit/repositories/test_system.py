@@ -18,6 +18,57 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 
 
+def _test_list(test_helpers, database_mock, system_repository, path: Optional[str], parent_path: Optional[str]):
+    """
+    Utility method that tests getting Systems
+
+    Verifies that the `list` method properly handles the retrieval of systems with the given filters
+    """
+    # pylint: disable=duplicate-code
+    system_a_info = {
+        "name": "Test name a",
+        "location": "Test location",
+        "owner": "Test owner",
+        "importance": "low",
+        "description": "Test description",
+        "code": "test-name",
+        "path": "/test-name-a",
+        "parent_path": "/",
+        "parent_id": str(ObjectId()),
+    }
+    system_a = SystemOut(id=str(ObjectId()), **system_a_info)
+    system_b_info = {
+        "name": "Test name b",
+        "location": "Test location",
+        "owner": "Test owner",
+        "importance": "low",
+        "description": "Test description",
+        "code": "test-name",
+        "path": "/test-name-b",
+        "parent_path": "/",
+        "parent_id": str(ObjectId()),
+    }
+    system_b = SystemOut(id=str(ObjectId()), **system_b_info)
+    # pylint: enable=duplicate-code
+
+    # Mock `find` to return a list of System documents
+    test_helpers.mock_find(
+        database_mock.systems,
+        [{"_id": CustomObjectId(system_a.id), **system_a_info}, {"_id": CustomObjectId(system_b.id), **system_b_info}],
+    )
+
+    retrieved_systems = system_repository.list(path, parent_path)
+
+    expected_filters = {}
+    if path:
+        expected_filters["path"] = path
+    if parent_path:
+        expected_filters["parent_path"] = parent_path
+
+    database_mock.systems.find.assert_called_once_with(expected_filters)
+    assert retrieved_systems == [system_a, system_b]
+
+
 def test_create(test_helpers, database_mock, system_repository):
     """
     Test creating a System
@@ -257,57 +308,6 @@ def test_get_with_non_existent_id(test_helpers, database_mock, system_repository
 
     database_mock.systems.find_one.assert_called_with({"_id": CustomObjectId(system_id)})
     assert retrieved_system is None
-
-
-def _test_list(test_helpers, database_mock, system_repository, path: Optional[str], parent_path: Optional[str]):
-    """
-    Utility method that tests getting Systems
-
-    Verifies that the `list` method properly handles the retrieval of systems with the given filters
-    """
-    # pylint: disable=duplicate-code
-    system_a_info = {
-        "name": "Test name a",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "description": "Test description",
-        "code": "test-name",
-        "path": "/test-name-a",
-        "parent_path": "/",
-        "parent_id": str(ObjectId()),
-    }
-    system_a = SystemOut(id=str(ObjectId()), **system_a_info)
-    system_b_info = {
-        "name": "Test name b",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "description": "Test description",
-        "code": "test-name",
-        "path": "/test-name-b",
-        "parent_path": "/",
-        "parent_id": str(ObjectId()),
-    }
-    system_b = SystemOut(id=str(ObjectId()), **system_b_info)
-    # pylint: enable=duplicate-code
-
-    # Mock `find` to return a list of System documents
-    test_helpers.mock_find(
-        database_mock.systems,
-        [{"_id": CustomObjectId(system_a.id), **system_a_info}, {"_id": CustomObjectId(system_b.id), **system_b_info}],
-    )
-
-    retrieved_systems = system_repository.list(path, parent_path)
-
-    expected_filters = {}
-    if path:
-        expected_filters["path"] = path
-    if parent_path:
-        expected_filters["parent_path"] = parent_path
-
-    database_mock.systems.find.assert_called_once_with(expected_filters)
-    assert retrieved_systems == [system_a, system_b]
 
 
 def test_list(test_helpers, database_mock, system_repository):

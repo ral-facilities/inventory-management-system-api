@@ -30,7 +30,7 @@ class SystemPostRequestSchema(BaseModel):
     parent_id: Optional[str] = Field(default=None, description="ID of the parent System (if applicable)")
 
 
-class SystemGetRequestSchema(SystemPostRequestSchema):
+class SystemRequestSchema(SystemPostRequestSchema):
     """
     Schema models for System get request response
     """

@@ -25,7 +25,6 @@ def path_query(path: Optional[str], parent_path: Optional[str], entity_type: str
         query["parent_path"] = parent_path
 
     message = f"Retrieving all {entity_type} from the database"
-    # pylint: disable=duplicate-code
     if not query:
         logger.info(message)
     else:
