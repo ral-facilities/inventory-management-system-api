@@ -56,6 +56,23 @@ SYSTEM_POST_C_EXPECTED = {
 }
 
 
+def _post_systems(test_client):
+    """Utility function for posting all mock systems"""
+
+    # Parent
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_a = response.json()
+
+    # Child
+    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": system_a["id"]})
+    system_b = response.json()
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_C)
+    system_c = response.json()
+
+    return system_a, system_b, system_c
+
+
 def test_create_system(test_client):
     """
     Test creating a System
@@ -168,23 +185,6 @@ def test_get_system_with_non_existent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "A System with such ID was not found"
-
-
-def _post_systems(test_client):
-    """Utility function for posting all mock systems"""
-
-    # Parent
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_a = response.json()
-
-    # Child
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": system_a["id"]})
-    system_b = response.json()
-
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_C)
-    system_c = response.json()
-
-    return system_a, system_b, system_c
 
 
 def test_get_systems(test_client):
