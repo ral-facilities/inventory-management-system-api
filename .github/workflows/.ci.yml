@@ -116,10 +116,10 @@ jobs:
       with:
         images: harbor.stfc.ac.uk/inventory-management-system/ims-api
 
-    - name: Build Docker image
+    - name: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && 'Build and push Docker image to Harbor' || 'Build Docker image' }}
       uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
       with:
         context: .
-        push: false
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
