@@ -88,7 +88,7 @@ def create_system(system: SystemPostRequestSchema, system_service: SystemService
 )
 def delete_system(
     system_id: str = Path(description="ID of the system to delete"), system_service: SystemService = Depends()
-):
+) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)
     try:
