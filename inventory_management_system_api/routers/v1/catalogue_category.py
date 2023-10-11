@@ -14,6 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     LeafCategoryError,
     ChildrenElementsExistError,
 )
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategorySchema,
     CatalogueCategoryPostRequestSchema,
@@ -63,6 +64,14 @@ def get_catalogue_category(
     except InvalidObjectIdError as exc:
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.get(path="/{catalogue_category_id}/breadcrumbs", summary="Get breadcrumbs data for a catalogue category")
+def get_catalogue_category_breadcrumbs(
+    catalogue_category_id: str = Path(description="The ID of the catalogue category to get the breadcrumbs for"),
+) -> BreadcrumbsGetSchema:
+    # pylint: disable=missing-function-docstring
+    return BreadcrumbsGetSchema(trail=[("id1", "code1"), (catalogue_category_id, "code2")], full_trail=True)
 
 
 @router.post(
