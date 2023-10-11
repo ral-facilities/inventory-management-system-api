@@ -26,10 +26,11 @@ class SystemPostRequestSchema(BaseModel):
     location: str = Field(description="Location of the system")
     owner: str = Field(description="Owner of the systems")
     importance: SystemImportanceType = Field(description="Importance of the system")
+    description: str = Field(description="Description of the system")
     parent_id: Optional[str] = Field(default=None, description="ID of the parent System (if applicable)")
 
 
-class SystemGetRequestSchema(SystemPostRequestSchema):
+class SystemRequestSchema(SystemPostRequestSchema):
     """
     Schema models for System get request response
     """

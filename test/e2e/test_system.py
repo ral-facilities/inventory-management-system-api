@@ -7,7 +7,13 @@ from unittest.mock import ANY
 from bson import ObjectId
 
 
-SYSTEM_POST_A = {"name": "System A", "location": "Test location", "owner": "Me", "importance": "low"}
+SYSTEM_POST_A = {
+    "name": "System A",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+    "description": "System description",
+}
 SYSTEM_POST_A_EXPECTED = {
     **SYSTEM_POST_A,
     "id": ANY,
@@ -18,7 +24,13 @@ SYSTEM_POST_A_EXPECTED = {
 }
 
 # To be posted as a child of the above
-SYSTEM_POST_B = {"name": "System B", "location": "Test location", "owner": "Me", "importance": "low"}
+SYSTEM_POST_B = {
+    "name": "System B",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+    "description": "System description",
+}
 SYSTEM_POST_B_EXPECTED = {
     **SYSTEM_POST_B,
     "id": ANY,
@@ -27,7 +39,13 @@ SYSTEM_POST_B_EXPECTED = {
     "parent_path": "/system-a",
 }
 
-SYSTEM_POST_C = {"name": "System C", "location": "Test location", "owner": "Me", "importance": "low"}
+SYSTEM_POST_C = {
+    "name": "System C",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+    "description": "System description",
+}
 SYSTEM_POST_C_EXPECTED = {
     **SYSTEM_POST_C,
     "id": ANY,
