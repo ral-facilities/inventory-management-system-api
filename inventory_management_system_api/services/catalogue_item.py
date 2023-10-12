@@ -52,9 +52,8 @@ class CatalogueItemService:
         Create a new catalogue item.
 
         The method checks if the catalogue category exists in the database and raises a `MissingRecordError` if it does
-        not. It also checks if the category is not a leaf category and raises a `NonLeafCategoryError` if it is. It
-        then proceeds to check for missing mandatory catalogue item properties, adds the property units, and finally
-        validates the property values.
+        not. It also checks if the category is not a leaf category and raises a `NonLeafCategoryError` if it is. It then
+        processes the catalogue item properties.
 
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
@@ -69,26 +68,16 @@ class CatalogueItemService:
         if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
-        defined_properties = {
-            defined_property.name: defined_property.dict()
-            for defined_property in catalogue_category.catalogue_item_properties
-        }
-        supplied_properties = {
-            supplied_property.name: supplied_property.dict()
-            for supplied_property in (catalogue_item.properties if catalogue_item.properties else [])
-        }
-
-        self._check_missing_mandatory_catalogue_item_properties(defined_properties, supplied_properties)
-        supplied_properties = self._filter_matching_catalogue_item_properties(defined_properties, supplied_properties)
-        self._add_catalogue_item_property_units(defined_properties, supplied_properties)
-        self._validate_catalogue_item_property_values(defined_properties, supplied_properties)
+        defined_properties = catalogue_category.catalogue_item_properties
+        supplied_properties = catalogue_item.properties if catalogue_item.properties else []
+        supplied_properties = self._process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._catalogue_item_repository.create(
             CatalogueItemIn(
                 catalogue_category_id=catalogue_item.catalogue_category_id,
                 name=catalogue_item.name,
                 description=catalogue_item.description,
-                properties=list(supplied_properties.values()),
+                properties=supplied_properties,
                 manufacturer=catalogue_item.manufacturer,
             )
         )
