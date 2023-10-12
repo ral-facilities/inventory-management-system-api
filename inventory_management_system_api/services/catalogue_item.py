@@ -82,6 +82,76 @@ class CatalogueItemService:
             )
         )
 
+    def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
+        """
+        Retrieve a catalogue item by its ID.
+
+        :param catalogue_item_id: The ID of the catalogue item to retrieve.
+        :return: The retrieved catalogue item, or `None` if not found.
+        """
+        return self._catalogue_item_repository.get(catalogue_item_id)
+
+    def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
+        """
+        Retrieve all catalogue items.
+
+        :param catalogue_category_id:  The ID of the catalogue category to filter catalogue items by.
+        :return: A list of catalogue items, or an empty list if no catalogue items are retrieved.
+        """
+        return self._catalogue_item_repository.list(catalogue_category_id)
+
+    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchRequestSchema) -> CatalogueItemOut:
+        """
+        Update a catalogue item by its ID.
+
+        The method checks if the catalogue item exists in the database and raises a `MissingRecordError` if it does
+        not. If the catalogue category ID is being updated, it checks if catalogue category with such ID exists and
+        raises a MissingRecordError` if it does not. It also checks if the category is not a leaf category and raises a
+        `NonLeafCategoryError` if it is. If the catalogue item properties are being updated, it also processes them.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item: The catalogue item containing the fields that need to be updated.
+        :return: The updated catalogue item.
+        """
+        update_data = catalogue_item.dict(exclude_unset=True)
+
+        stored_catalogue_item = self.get(catalogue_item_id)
+        if not stored_catalogue_item:
+            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+
+        catalogue_category = None
+        if (
+            "catalogue_category_id" in update_data
+            and catalogue_item.catalogue_category_id != stored_catalogue_item.catalogue_category_id
+        ):
+            catalogue_category = self._catalogue_category_repository.get(catalogue_item.catalogue_category_id)
+            if not catalogue_category:
+                raise MissingRecordError(f"No catalogue category found with ID: {catalogue_item.catalogue_category_id}")
+
+            if catalogue_category.is_leaf is False:
+                raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+
+            # If the catalogue category ID is updated but no catalogue item properties are supplied then the stored
+            # catalogue item properties should be used. They need to be processed and validated against the defined
+            # properties of the new catalogue category.
+            if "properties" not in update_data:
+                update_data["properties"] = stored_catalogue_item.properties
+
+        if "properties" in update_data:
+            if not catalogue_category:
+                catalogue_category = self._catalogue_category_repository.get(
+                    stored_catalogue_item.catalogue_category_id
+                )
+
+            defined_properties = catalogue_category.catalogue_item_properties
+            supplied_properties = catalogue_item.properties if catalogue_item.properties else []
+            update_data["properties"] = self._process_catalogue_item_properties(defined_properties, supplied_properties)
+
+        stored_catalogue_item = stored_catalogue_item.copy(update=update_data)
+        return self._catalogue_item_repository.update(
+            catalogue_item_id, CatalogueItemIn(**stored_catalogue_item.dict())
+        )
+
     def _process_catalogue_item_properties(
         self, defined_properties: List[CatalogueItemProperty], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[Dict]:
@@ -229,73 +299,3 @@ class CatalogueItemService:
                 matching_properties[supplied_property_name] = supplied_property
 
         return matching_properties
-
-    def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
-        """
-        Retrieve a catalogue item by its ID.
-
-        :param catalogue_item_id: The ID of the catalogue item to retrieve.
-        :return: The retrieved catalogue item, or `None` if not found.
-        """
-        return self._catalogue_item_repository.get(catalogue_item_id)
-
-    def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
-        """
-        Retrieve all catalogue items.
-
-        :param catalogue_category_id:  The ID of the catalogue category to filter catalogue items by.
-        :return: A list of catalogue items, or an empty list if no catalogue items are retrieved.
-        """
-        return self._catalogue_item_repository.list(catalogue_category_id)
-
-    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchRequestSchema) -> CatalogueItemOut:
-        """
-        Update a catalogue item by its ID.
-
-        The method checks if the catalogue item exists in the database and raises a `MissingRecordError` if it does
-        not. If the catalogue category ID is being updated, it checks if catalogue category with such ID exists and
-        raises a MissingRecordError` if it does not. It also checks if the category is not a leaf category and raises a
-        `NonLeafCategoryError` if it is. If the catalogue item properties are being updated, it also processes them.
-
-        :param catalogue_item_id: The ID of the catalogue item to update.
-        :param catalogue_item: The catalogue item containing the fields that need to be updated.
-        :return: The updated catalogue item.
-        """
-        update_data = catalogue_item.dict(exclude_unset=True)
-
-        stored_catalogue_item = self.get(catalogue_item_id)
-        if not stored_catalogue_item:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
-
-        catalogue_category = None
-        if (
-            "catalogue_category_id" in update_data
-            and catalogue_item.catalogue_category_id != stored_catalogue_item.catalogue_category_id
-        ):
-            catalogue_category = self._catalogue_category_repository.get(catalogue_item.catalogue_category_id)
-            if not catalogue_category:
-                raise MissingRecordError(f"No catalogue category found with ID: {catalogue_item.catalogue_category_id}")
-
-            if catalogue_category.is_leaf is False:
-                raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
-
-            # If the catalogue category ID is updated but no catalogue item properties are supplied then the stored
-            # catalogue item properties should be used. They need to be processed and validated against the defined
-            # properties of the new catalogue category.
-            if "properties" not in update_data:
-                update_data["properties"] = stored_catalogue_item.properties
-
-        if "properties" in update_data:
-            if not catalogue_category:
-                catalogue_category = self._catalogue_category_repository.get(
-                    stored_catalogue_item.catalogue_category_id
-                )
-
-            defined_properties = catalogue_category.catalogue_item_properties
-            supplied_properties = catalogue_item.properties if catalogue_item.properties else []
-            update_data["properties"] = self._process_catalogue_item_properties(defined_properties, supplied_properties)
-
-        stored_catalogue_item = stored_catalogue_item.copy(update=update_data)
-        return self._catalogue_item_repository.update(
-            catalogue_item_id, CatalogueItemIn(**stored_catalogue_item.dict())
-        )
