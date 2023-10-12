@@ -352,6 +352,7 @@ def test_create_with_nonexistent_parent_id(test_helpers, database_mock, catalogu
                 catalogue_item_properties=[],
             )
         )
+    database_mock.catalogue_categories.insert_one.assert_not_called()
     assert str(exc.value) == f"No parent catalogue category found with ID: {catalogue_category.parent_id}"
 
 
