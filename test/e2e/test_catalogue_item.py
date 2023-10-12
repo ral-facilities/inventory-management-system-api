@@ -442,6 +442,7 @@ def test_partial_update_catalogue_item_has_children_items():
     """
     Test updating a catalogue item which has children items.
     """
+    # pylint: disable=fixme
     # TODO - Implement this test when the relevant item logic is implemented. Extra test cases may be needed.
 
 
@@ -610,6 +611,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_children
     """
     Test moving a catalogue item with children items to another catalogue category.
     """
+    # pylint: disable=fixme
     # TODO - Implement this test when the relevant item logic is implemented.
 
 
@@ -768,6 +770,7 @@ def test_partial_update_catalogue_item_change_manufacturer(test_client):
     """
     Test updating the manufacturer details of a catalogue item.
     """
+    # pylint: disable=fixme
     # TODO - Modify this test to use manufacturer ID when the relevant manufacturer logic is implemented
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category = response.json()
@@ -801,6 +804,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id():
     """
     Test changing the manufacturer ID of a catalogue item to an invalid ID.
     """
+    # pylint: disable=fixme
     # TODO - Implement this test when the relevant manufacturer logic is implemented
 
 
@@ -808,4 +812,5 @@ def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id():
     """
     Test changing the manufacturer ID of a catalogue item to a nonexistent ID.
     """
+    # pylint: disable=fixme
     # TODO - Implement this test when the relevant manufacturer logic is implemented

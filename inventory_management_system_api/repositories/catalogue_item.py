@@ -64,6 +64,7 @@ class CatalogueItemRepo:
         :return: The updated catalogue item.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
+        # pylint: disable=fixme
         # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements if the
         #  `catalogue_category_id` is being updated.
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
