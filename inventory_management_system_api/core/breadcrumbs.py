@@ -18,15 +18,15 @@ logger = logging.getLogger()
 
 
 def compute_breadcrumbs(
-    entity_service: CatalogueCategoryService | SystemService, entity_id: str
+    entity_id: str, entity_service: CatalogueCategoryService | SystemService
 ) -> BreadcrumbsGetSchema:
     """
     Compute breadcrumbs for an entity given it's ID
 
+    :param entity_id: ID of the entity to look up
     :param entity_service: Service for looking up entities - It is assumed that this has a get(entity_id) function
                            that either returns the entity (complete with an id, code and parent_id field), or None if
                            it isn't found
-    :param entity_id: ID of the entity to look up
     :raises DatabaseIntegrityError: If the entity_service.get either raises an InvalidObjectIdError or returns None
                                     for any parent entity found as this should not be possible if the database
                                     integrity is maintained

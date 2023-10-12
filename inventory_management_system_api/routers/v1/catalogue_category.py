@@ -77,7 +77,7 @@ def get_catalogue_category_breadcrumbs(
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
     try:
-        return compute_breadcrumbs(entity_service=catalogue_category_service, entity_id=catalogue_category_id)
+        return compute_breadcrumbs(entity_id=catalogue_category_id, entity_service=catalogue_category_service)
     except (InvalidObjectIdError, EntityNotFoundError) as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Catalogue category with such ID was not found"

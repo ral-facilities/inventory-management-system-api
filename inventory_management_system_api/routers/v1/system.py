@@ -8,13 +8,17 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from inventory_management_system_api.core.breadcrumbs import compute_breadcrumbs
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
+    DatabaseIntegrityError,
     DuplicateRecordError,
+    EntityNotFoundError,
     InvalidObjectIdError,
     MissingRecordError,
 )
-from inventory_management_system_api.schemas.system import SystemRequestSchema, SystemPostRequestSchema
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
+from inventory_management_system_api.schemas.system import SystemPostRequestSchema, SystemRequestSchema
 from inventory_management_system_api.services.system import SystemService
 
 logger = logging.getLogger()
@@ -54,6 +58,23 @@ def get_system(
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found"
+        ) from exc
+
+
+@router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")
+def get_catalogue_category_breadcrumbs(
+    system_id: str = Path(description="The ID of the system to get the breadcrumbs for"),
+    system_service: SystemService = Depends(),
+) -> BreadcrumbsGetSchema:
+    # pylint: disable=missing-function-docstring
+    try:
+        return compute_breadcrumbs(entity_id=system_id, entity_service=system_service)
+    except (InvalidObjectIdError, EntityNotFoundError) as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System with such ID was not found") from exc
+    except DatabaseIntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to obtain breadcrumbs due to a database issue",
         ) from exc
 
 
