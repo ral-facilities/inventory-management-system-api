@@ -10,7 +10,11 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
+    DuplicateRecordError,
+    MissingRecordError,
+)
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
 
@@ -56,6 +60,27 @@ class SystemRepo:
         system = self.get(str(result.inserted_id))
         return system
 
+    def delete(self, system_id: str) -> None:
+        """
+        Delete a System by its ID from a MongoDB database
+
+        The method checks if the system has any children and raises a `ChildrenElementsExistError` if it does
+
+        :param system_id: ID of the System to delete
+        :raises ChildrenElementsExistError: If the System has child elements
+        :raises MissingRecordError: If the System doesn't exist
+        """
+        system_id = CustomObjectId(system_id)
+        if self._has_child_elements(system_id):
+            raise ChildrenElementsExistError(
+                f"System with ID {str(system_id)} has child elements and cannot be deleted"
+            )
+
+        logger.info("Deleting system with ID: %s from the database", system_id)
+        result = self._systems_collection.delete_one({"_id": system_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No System found with ID: {str(system_id)}")
+
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
         Retrieve a System by its ID from a MongoDB database
@@ -96,4 +121,17 @@ class SystemRepo:
             parent_id = CustomObjectId(parent_id)
 
         count = self._systems_collection.count_documents({"parent_id": parent_id, "code": code})
+        return count > 0
+
+    def _has_child_elements(self, system_id: CustomObjectId) -> bool:
+        """
+        Check if a System has any child System's based on its ID
+
+        :param system_id: ID of the System to check
+        :return: True if the System has child elements, False otherwise
+        """
+        logger.info("Checking if system with ID '%s' has child elements", str(system_id))
+        # Check if it has System's
+        query = {"parent_id": system_id}
+        count = self._systems_collection.count_documents(query)
         return count > 0

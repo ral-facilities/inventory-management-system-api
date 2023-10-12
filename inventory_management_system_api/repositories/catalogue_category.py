@@ -2,7 +2,7 @@
 Module for providing a repository for managing catalogue categories in a MongoDB database.
 """
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -11,11 +11,12 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
-    MissingRecordError,
-    DuplicateRecordError,
     ChildrenElementsExistError,
+    DuplicateRecordError,
+    MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.repositories import utils
 
 logger = logging.getLogger()
 
@@ -72,7 +73,7 @@ class CatalogueCategoryRepo:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self._has_children_elements(str(catalogue_category_id)):
+        if self._has_child_elements(catalogue_category_id):
             raise ChildrenElementsExistError(
                 f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
             )
@@ -113,7 +114,7 @@ class CatalogueCategoryRepo:
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self._has_children_elements(str(catalogue_category_id)):
+        if self._has_child_elements(catalogue_category_id):
             raise ChildrenElementsExistError(
                 f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
             )
@@ -145,18 +146,7 @@ class CatalogueCategoryRepo:
         :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
             database.
         """
-        query = {}
-        if path:
-            query["path"] = path
-        if parent_path:
-            query["parent_path"] = parent_path
-
-        message = "Retrieving all catalogue categories from the database"
-        if not query:
-            logger.info(message)
-        else:
-            logger.info("%s matching the provided filter(s)", message)
-            logger.debug("Provided filter(s): %s", query)
+        query = utils.path_query(path, parent_path, "catalogue categories")
 
         catalogue_categories = self._catalogue_categories_collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
@@ -176,7 +166,7 @@ class CatalogueCategoryRepo:
         count = self._catalogue_categories_collection.count_documents({"parent_id": parent_id, "code": code})
         return count > 0
 
-    def _has_children_elements(self, catalogue_category_id: str) -> bool:
+    def _has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
         """
         Check if a catalogue category has children elements based on its ID.
 
@@ -186,7 +176,6 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to check.
         :return: True if the catalogue category has children elements, False otherwise.
         """
-        catalogue_category_id = CustomObjectId(catalogue_category_id)
         logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
         # Check if it has catalogue categories
         query = {"parent_id": catalogue_category_id}
