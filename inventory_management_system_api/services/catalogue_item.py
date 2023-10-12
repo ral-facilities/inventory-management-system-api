@@ -4,7 +4,7 @@ repositories.
 """
 import logging
 from numbers import Number
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Union
 
 from fastapi import Depends
 
@@ -14,6 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
     MissingMandatoryCatalogueItemProperty,
 )
+from inventory_management_system_api.models.catalogue_category import CatalogueItemProperty
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -21,6 +22,7 @@ from inventory_management_system_api.schemas.catalogue_category import Catalogue
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
+    PropertyPostRequestSchema,
 )
 
 logger = logging.getLogger()
@@ -91,6 +93,53 @@ class CatalogueItemService:
             )
         )
 
+    def _process_catalogue_item_properties(
+        self, defined_properties: List[CatalogueItemProperty], supplied_properties: List[PropertyPostRequestSchema]
+    ) -> List[Dict]:
+        """
+        Process and validate supplied catalogue item properties based on defined catalogue item properties. It checks
+        for missing mandatory catalogue item properties, files the matching catalogue item properties, adds the property
+        units, and finally validates the property values.
+
+        The `supplied_properties_dict` dictionary may get modified as part of the processing and validation.
+
+        :param defined_properties: The list of defined catalogue item property objects.
+        :param supplied_properties: The list of supplied catalogue item property objects.
+        :return: A list of processed and validated supplied catalogue item properties.
+        """
+        # Convert properties to dictionaries for easier lookups
+        defined_properties_dict = self._create_catalogue_item_properties_dict(defined_properties)
+        supplied_properties_dict = self._create_catalogue_item_properties_dict(supplied_properties)
+
+        # Some mandatory catalogue item properties may not have been supplied
+        self._check_missing_mandatory_catalogue_item_properties(defined_properties_dict, supplied_properties_dict)
+        # Catalogue item properties that have not been defined may have been supplied
+        supplied_properties_dict = self._filter_matching_catalogue_item_properties(
+            defined_properties_dict, supplied_properties_dict
+        )
+        # Supplied catalogue item properties do not have units as we can't trust they would be correct
+        self._add_catalogue_item_property_units(defined_properties_dict, supplied_properties_dict)
+        # The values of the supplied catalogue item properties may not be of the expected types
+        self._validate_catalogue_item_property_values(defined_properties_dict, supplied_properties_dict)
+
+        return list(supplied_properties_dict.values())
+
+    def _create_catalogue_item_properties_dict(
+        self, catalogue_item_properties: Union[List[CatalogueItemProperty], List[PropertyPostRequestSchema]]
+    ) -> Dict[str, Dict]:
+        """
+        Convert a list of catalogue item property objects into a dictionary where the keys are the catalogue item
+        property names and the values are the catalogue item property dictionaries.
+
+        :param catalogue_item_properties: The list of catalogue item property objects.
+        :return: A dictionary where the keys are the catalogue item property names and the values are the catalogue item
+            property dictionaries.
+        """
+        return {
+            catalogue_item_property.name: catalogue_item_property.dict()
+            for catalogue_item_property in catalogue_item_properties
+        }
+
     def _add_catalogue_item_property_units(
         self,
         defined_properties: Dict[str, Dict],
@@ -100,7 +149,7 @@ class CatalogueItemService:
         Add the units to the supplied properties.
 
         The supplied properties only contain a name and value so the units from the defined properties in the database
-        are added to the supplied properties.
+        are added to the supplied properties. This means that this method modifies the `supplied_properties` dictionary.
 
         :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
             database.
