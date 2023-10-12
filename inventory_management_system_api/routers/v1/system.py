@@ -62,11 +62,12 @@ def get_system(
 
 
 @router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")
-def get_catalogue_category_breadcrumbs(
+def get_system_breadcrumbs(
     system_id: str = Path(description="The ID of the system to get the breadcrumbs for"),
     system_service: SystemService = Depends(),
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
+    # pylint: disable=duplicate-code
     try:
         return compute_breadcrumbs(entity_id=system_id, entity_service=system_service)
     except (InvalidObjectIdError, EntityNotFoundError) as exc:
@@ -76,6 +77,7 @@ def get_catalogue_category_breadcrumbs(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to obtain breadcrumbs due to a database issue",
         ) from exc
+    # pylint: enable=duplicate-code
 
 
 @router.post(

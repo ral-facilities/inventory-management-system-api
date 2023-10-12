@@ -8,7 +8,6 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.breadcrumbs import compute_breadcrumbs
-from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,

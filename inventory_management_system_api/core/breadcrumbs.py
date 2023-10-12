@@ -52,7 +52,7 @@ def compute_breadcrumbs(
         while len(trail) < BREADCRUMBS_TRAIL_MAX_LENGTH and next_id is not None:
             entity = entity_service.get(next_id)
             if entity is None:
-                raise EntityNotFoundError(f"{entity_type.capitalize()} with id {next_id} was not found")
+                raise EntityNotFoundError(f"{entity_type.capitalize()} with ID {next_id} was not found")
             trail.append((entity.id, entity.code))
             next_id = entity.parent_id
     except (InvalidObjectIdError, EntityNotFoundError) as exc:
@@ -61,14 +61,13 @@ def compute_breadcrumbs(
         if len(trail) == 0:
             logger.exception(str(exc))
             raise exc
-        else:
-            message = (
-                f"{entity_type.capitalize()} with ID {next_id} was "
-                f"{'invalid' if isinstance(exc, InvalidObjectIdError) else 'not found'}"
-                f"while finding breadcrumbs for {entity_id}"
-            )
-            logger.exception(message)
-            raise DatabaseIntegrityError(message) from exc
+
+        specific_error_message = (
+            f"ID {next_id} was invalid" if isinstance(exc, InvalidObjectIdError) else f"with ID {next_id} was not found"
+        )
+        message = f"{entity_type.capitalize()} {specific_error_message} while finding breadcrumbs for {entity_id}"
+        logger.exception(message)
+        raise DatabaseIntegrityError(message) from exc
 
     # Reverse trail here as should be faster than inserting to front
     return BreadcrumbsGetSchema(trail=trail[::-1], full_trail=next_id is None)
