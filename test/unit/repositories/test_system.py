@@ -11,6 +11,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -364,3 +365,78 @@ def test_list_with_path_and_parent_path_filters_no_matching_results(test_helpers
 
     database_mock.systems.find.assert_called_once_with({"path": "/test-name-a", "parent_path": "/"})
     assert retrieved_systems == []
+
+
+def test_delete(test_helpers, database_mock, system_repository):
+    """
+    Test deleting a System
+
+    Verify that the `delete` method properly handles the deletion of a System by its ID
+    """
+    system_id = str(ObjectId())
+
+    # Mock `delete_one` to return that one document has been deleted
+    test_helpers.mock_delete_one(database_mock.systems, 1)
+
+    # Mock count_documents to return 0 (children elements not found)
+    test_helpers.mock_count_documents(database_mock.systems, 0)
+
+    system_repository.delete(system_id)
+
+    database_mock.systems.delete_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
+
+
+def test_delete_with_child_systems(test_helpers, database_mock, system_repository):
+    """
+    Test deleting a System with child Systems
+
+    Verify that the `delete` method properly handles the deletion of a System with child Systems
+    """
+    system_id = str(ObjectId())
+
+    # Mock `delete_one` to return that one document has been deleted
+    test_helpers.mock_delete_one(database_mock.systems, 1)
+
+    # Mock count_documents to return 1 (children elements found)
+    test_helpers.mock_count_documents(database_mock.systems, 1)
+
+    with pytest.raises(ChildrenElementsExistError) as exc:
+        system_repository.delete(system_id)
+
+    database_mock.systems.delete_one.assert_not_called()
+    assert str(exc.value) == f"System with ID {system_id} has child elements and cannot be deleted"
+
+
+def test_delete_with_invalid_id(database_mock, system_repository):
+    """
+    Test deleting a System with an invalid ID
+
+    Verify that the `delete` method properly handles the deletion of a System with an invalid ID
+    """
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        system_repository.delete("invalid")
+
+    database_mock.systems.delete_one.assert_not_called()
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_delete_with_non_existent_id(test_helpers, database_mock, system_repository):
+    """
+    Test deleting a System with a non-existent ID
+
+    Verify that the `delete` method properly handles the deletion of a System with a non-existant ID
+    """
+    system_id = str(ObjectId())
+
+    # Mock `delete_one` to return that no document has been deleted
+    test_helpers.mock_delete_one(database_mock.systems, 0)
+
+    # Mock count_documents to return 0 (children elements not found)
+    test_helpers.mock_count_documents(database_mock.systems, 0)
+
+    with pytest.raises(MissingRecordError) as exc:
+        system_repository.delete(system_id)
+    assert str(exc.value) == f"No System found with ID: {system_id}"
+
+    database_mock.systems.delete_one.assert_called_once_with({"_id": CustomObjectId(system_id)})

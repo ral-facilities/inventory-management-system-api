@@ -65,6 +65,19 @@ def test_create(test_helpers, system_repository_mock, system_service):
     assert created_system == system
 
 
+def test_delete(system_repository_mock, system_service):
+    """
+    Test deleting a System
+
+    Verify that the `delete` method properly handles the deletion of a System by ID
+    """
+    system_id = MagicMock()
+
+    system_service.delete(system_id)
+
+    system_repository_mock.delete.assert_called_once_with(system_id)
+
+
 def test_create_with_parent_id(test_helpers, system_repository_mock, system_service):
     """
     Test creating a System with a parent ID

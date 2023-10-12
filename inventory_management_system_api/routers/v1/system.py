@@ -9,6 +9,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -75,5 +76,28 @@ def create_system(system: SystemPostRequestSchema, system_service: SystemService
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A System with the same name already exists within the same parent System"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.delete(
+    path="/{system_id}",
+    summary="Delete a system by ID",
+    response_description="System deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_system(
+    system_id: str = Path(description="ID of the system to delete"), system_service: SystemService = Depends()
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting system with ID: %s", system_id)
+    try:
+        system_service.delete(system_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "System with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except ChildrenElementsExistError as exc:
+        message = "System has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
