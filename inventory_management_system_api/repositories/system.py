@@ -1,0 +1,99 @@
+"""
+Module for providing a repository for managing System's in a MongoDB database
+"""
+import logging
+from typing import Optional
+
+from fastapi import Depends
+from pymongo.collection import Collection
+from pymongo.database import Database
+
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError
+from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.repositories import utils
+
+logger = logging.getLogger()
+
+
+class SystemRepo:
+    """
+    Repository for managing System's in a MongoDB database
+    """
+
+    def __init__(self, database: Database = Depends(get_database)) -> None:
+        """
+        Initialise the `SystemRepo` with a MongoDB database instance
+
+        :param database: Database to use
+        """
+        self._database = database
+        self._systems_collection: Collection = self._database.systems
+
+    def create(self, system: SystemIn) -> SystemOut:
+        """
+        Create a new System in a MongoDB database
+
+        If a parent system is specified by `parent_id`, then checks if that exists in the database and raises a
+        `MissingRecordError` if it doesn't exist. It also checks if a duplicate System is found within the parent
+        System and raises a `DuplicateRecordError` if it is.
+
+        :param system: System to be created
+        :return: Created System
+        :raises MissingRecordError: If the parent System specified by `parent_id` doesn't exist
+        :raises DuplicateRecordError: If a duplicate System is found within the parent System
+        """
+        parent_id = str(system.parent_id) if system.parent_id else None
+        if parent_id and not self.get(parent_id):
+            raise MissingRecordError(f"No parent System found with ID: {parent_id}")
+
+        if self._is_duplicate_system(parent_id, system.code):
+            raise DuplicateRecordError("Duplicate System found within the parent System")
+
+        logger.info("Inserting the new System into the database")
+        result = self._systems_collection.insert_one(system.dict())
+        system = self.get(str(result.inserted_id))
+        return system
+
+    def get(self, system_id: str) -> Optional[SystemOut]:
+        """
+        Retrieve a System by its ID from a MongoDB database
+
+        :param system_id: ID of the System to retrieve
+        :return: Retrieved System or `None` if not found
+        """
+        system_id = CustomObjectId(system_id)
+        logger.info("Retrieving system with ID: %s from the database", system_id)
+        system = self._systems_collection.find_one({"_id": system_id})
+        if system:
+            return SystemOut(**system)
+        return None
+
+    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
+        """
+        Retrieve Systems from a MongoDB database based on the provided filters
+
+        :param path: Path to filter Systems by
+        :param parent_path: Parent path to filter Systems by
+        :return: List of System's or an empty list if no Systems are retrieved
+        """
+        query = utils.path_query(path, parent_path, "systems")
+
+        systems = self._systems_collection.find(query)
+        return [SystemOut(**system) for system in systems]
+
+    def _is_duplicate_system(self, parent_id: Optional[str], code: str) -> bool:
+        """
+        Check if a System with the same code already exists within the parent System
+
+        :param parent_id: ID of the parent System which can also be `None`
+        :param code: Code of the System to check for duplicates
+        :return: `True` if a duplicate System code is found under the given parent, `False` otherwise
+        """
+        logger.info("Checking if System with code '%s' already exists within the parent System", code)
+        if parent_id:
+            parent_id = CustomObjectId(parent_id)
+
+        count = self._systems_collection.count_documents({"parent_id": parent_id, "code": code})
+        return count > 0
