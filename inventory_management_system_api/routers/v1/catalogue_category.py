@@ -3,22 +3,26 @@ Module for providing an API router which defines routes for managing catalogue c
 `CatalogueCategoryService` service.
 """
 import logging
-from typing import Optional, Annotated, List
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from inventory_management_system_api.core.breadcrumbs import compute_breadcrumbs
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 from inventory_management_system_api.core.exceptions import (
-    MissingRecordError,
-    InvalidObjectIdError,
-    DuplicateRecordError,
-    LeafCategoryError,
     ChildrenElementsExistError,
+    DatabaseIntegrityError,
+    DuplicateRecordError,
+    EntityNotFoundError,
+    InvalidObjectIdError,
+    LeafCategoryError,
+    MissingRecordError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueCategorySchema,
-    CatalogueCategoryPostRequestSchema,
     CatalogueCategoryPatchRequestSchema,
+    CatalogueCategoryPostRequestSchema,
+    CatalogueCategorySchema,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 
@@ -69,9 +73,20 @@ def get_catalogue_category(
 @router.get(path="/{catalogue_category_id}/breadcrumbs", summary="Get breadcrumbs data for a catalogue category")
 def get_catalogue_category_breadcrumbs(
     catalogue_category_id: str = Path(description="The ID of the catalogue category to get the breadcrumbs for"),
+    catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
-    return BreadcrumbsGetSchema(trail=[("id1", "code1"), (catalogue_category_id, "code2")], full_trail=True)
+    try:
+        return compute_breadcrumbs(entity_service=catalogue_category_service, entity_id=catalogue_category_id)
+    except (InvalidObjectIdError, EntityNotFoundError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Catalogue category with such ID was not found"
+        ) from exc
+    except DatabaseIntegrityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to obtain breadcrumbs due to a database issue",
+        ) from exc
 
 
 @router.post(
