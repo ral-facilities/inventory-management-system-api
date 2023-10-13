@@ -6,6 +6,7 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
 SYSTEM_POST_A = {
     "name": "System A",
@@ -56,21 +57,41 @@ SYSTEM_POST_C_EXPECTED = {
 }
 
 
+def _post_nested_systems(test_client, entities: list[dict]):
+    """Utility function for posting a set of mock systems where each successive entity should
+    be the parent of the next"""
+
+    systems = []
+    parent_id = None
+    for entity in entities:
+        system = test_client.post("/v1/systems", json={**entity, "parent_id": parent_id}).json()
+        parent_id = system["id"]
+        systems.append(system)
+
+    return (*systems,)
+
+
 def _post_systems(test_client):
-    """Utility function for posting all mock systems"""
+    """Utility function for posting all mock systems defined at the top of this file"""
 
-    # Parent
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_a = response.json()
-
-    # Child
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": system_a["id"]})
-    system_b = response.json()
-
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_C)
-    system_c = response.json()
+    (system_a, system_b, *_) = _post_nested_systems(test_client, [SYSTEM_POST_A, SYSTEM_POST_B])
+    (system_c, *_) = _post_nested_systems(test_client, [SYSTEM_POST_C])
 
     return system_a, system_b, system_c
+
+
+def _post_n_systems(test_client, number):
+    """Utility function to post a given number of nested systems (all based on system A)"""
+    return _post_nested_systems(
+        test_client,
+        [
+            {
+                **SYSTEM_POST_A,
+                "name": f"System {i}",
+            }
+            for i in range(0, number)
+        ],
+    )
 
 
 def test_create_system(test_client):
@@ -317,3 +338,82 @@ def test_get_systems_with_path_and_parent_path_filters_no_matching_results(test_
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_get_systems_breadcrumbs_when_no_parent(test_client):
+    """
+    Test getting the breadcrumbs for a system with no parents
+    """
+
+    (system_c, *_) = _post_nested_systems(test_client, [SYSTEM_POST_C])
+
+    response = test_client.get(f"/v1/systems/{system_c['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {"trail": [[system_c["id"], system_c["code"]]], "full_trail": True}
+
+
+def test_get_systems_breadcrumbs_when_trail_length_less_than_maximum(test_client):
+    """
+    Test getting the breadcrumbs for a system with less than the the maximum trail length
+    """
+
+    systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems], "full_trail": True}
+
+
+def test_get_systems_breadcrumbs_when_trail_length_maximum(test_client):
+    """
+    Test getting the breadcrumbs for a system with the maximum trail length
+    """
+
+    systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH)
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems], "full_trail": True}
+
+
+def test_get_systems_breadcrumbs_when_trail_length_greater_than_maximum(test_client):
+    """
+    Test getting the breadcrumbs for a system with greater than the the maximum trail length
+    """
+
+    systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems[1:]], "full_trail": False}
+
+
+def test_get_systems_breadcrumbs_with_invalid_id(test_client):
+    """
+    Test getting the breadcrumbs for a system when the given id is invalid
+    """
+
+    # Get breadcrumbs for last added
+    response = test_client.get("/v1/systems/invalid/breadcrumbs")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "System with such ID was not found"
+
+
+def test_get_systems_breadcrumbs_with_non_existent_id(test_client):
+    """
+    Test getting the breadcrumbs for a non existent system
+    """
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/systems/{str(ObjectId())}/breadcrumbs")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "System with such ID was not found"

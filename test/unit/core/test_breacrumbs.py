@@ -34,6 +34,9 @@ class TestComputeBreadcrumbsWhenValid:
     """Test compute_breadcrumbs functions correctly when it has no errors"""
 
     def _test_compute_breadcrumbs(self, mock_service, mock_entities, expected_trail_length, expected_full_trail):
+        """Utility function that tests compute_breadcrumbs and asserts a successful response
+        is as expected"""
+
         mock_service.get.side_effect = mock_entities
         result = breadcrumbs.compute_breadcrumbs(mock_entities[0].id, mock_service)
 
@@ -97,6 +100,8 @@ class TestComputeBreadcrumbsWhenValid:
         with pytest.raises(InvalidObjectIdError) as exc:
             breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
 
+        mock_service.get.assert_called_once_with("entity_id")
+
         assert str(exc.value) == str(mock_error)
 
     def test_compute_breadcrumbs_when_first_entity_not_found(self, mock_service, expected_entity_type):
@@ -108,6 +113,8 @@ class TestComputeBreadcrumbsWhenValid:
 
         with pytest.raises(EntityNotFoundError) as exc:
             breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
+
+        mock_service.get.assert_called_once_with("entity_id")
 
         assert str(exc.value) == f"{expected_entity_type.capitalize()} with ID entity_id was not found"
 
@@ -121,6 +128,8 @@ class TestComputeBreadcrumbsWhenValid:
 
         with pytest.raises(DatabaseIntegrityError) as exc:
             breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
+
+        assert mock_service.get.call_args_list == [call("entity_id"), call(MOCK_ENTITIES[1].id)]
 
         assert str(exc.value) == (
             f"{expected_entity_type.capitalize()} ID {MOCK_ENTITIES[1].id} was invalid while finding "
@@ -136,6 +145,8 @@ class TestComputeBreadcrumbsWhenValid:
 
         with pytest.raises(DatabaseIntegrityError) as exc:
             breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
+
+        assert mock_service.get.call_args_list == [call("entity_id"), call(MOCK_ENTITIES[1].id)]
 
         assert str(exc.value) == (
             f"{expected_entity_type.capitalize()} with ID {MOCK_ENTITIES[1].id} was not found while finding "
