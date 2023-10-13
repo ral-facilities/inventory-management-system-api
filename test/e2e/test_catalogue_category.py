@@ -6,6 +6,8 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
+
 CATALOGUE_CATEGORY_POST_A = {"name": "Category A", "is_leaf": False}
 CATALOGUE_CATEGORY_POST_A_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_A,
@@ -84,6 +86,20 @@ def _post_catalogue_categories(test_client):
     (system_c, *_) = _post_nested_catalogue_categories(test_client, [CATALOGUE_CATEGORY_POST_C])
 
     return system_a, system_b, system_c
+
+
+def _post_n_catalogue_categories(test_client, number):
+    """Utility function to post a given number of nested catalogue categories (all based on system A)"""
+    return _post_nested_catalogue_categories(
+        test_client,
+        [
+            {
+                **CATALOGUE_CATEGORY_POST_A,
+                "name": f"Category {i}",
+            }
+            for i in range(0, number)
+        ],
+    )
 
 
 def test_create_catalogue_category(test_client):
@@ -420,6 +436,86 @@ def test_get_catalogue_categories_with_path_and_parent_path_filters_no_matching_
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
+    """
+    Test getting the breadcrumbs for a catalogue category with no parents
+    """
+    (category_c, *_) = _post_nested_catalogue_categories(test_client, [CATALOGUE_CATEGORY_POST_C])
+
+    response = test_client.get(f"/v1/catalogue-categories/{category_c['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {"trail": [[category_c["id"], category_c["code"]]], "full_trail": True}
+
+
+def test_get_catalogue_category_when_trail_length_less_than_maximum(test_client):
+    """
+    Test getting the breadcrumbs for a catalogue category with less than the the maximum trail length
+    """
+    categories = _post_n_catalogue_categories(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/catalogue-categories/{categories[-1]['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "trail": [[category["id"], category["code"]] for category in categories],
+        "full_trail": True,
+    }
+
+
+def test_get_catalogue_category_when_trail_length_maximum(test_client):
+    """
+    Test getting the breadcrumbs for a catalogue category with the maximum trail length
+    """
+    categories = _post_n_catalogue_categories(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH)
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/catalogue-categories/{categories[-1]['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "trail": [[category["id"], category["code"]] for category in categories],
+        "full_trail": True,
+    }
+
+
+def test_get_catalogue_category_when_trail_length_greater_than_maximum(test_client):
+    """
+    Test getting the breadcrumbs for a catalogue category with greater than the the maximum trail length
+    """
+    categories = _post_n_catalogue_categories(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
+
+    # Get breadcrumbs for last added
+    response = test_client.get(f"/v1/catalogue-categories/{categories[-1]['id']}/breadcrumbs")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "trail": [[category["id"], category["code"]] for category in categories[1:]],
+        "full_trail": False,
+    }
+
+
+def test_get_catalogue_category_breadcrumbs_with_invalid_id(test_client):
+    """
+    Test getting the breadcrumbs for a catalogue category when the given id is invalid
+    """
+    response = test_client.get("/v1/catalogue-categories/invalid/breadcrumbs")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Catalogue category with such ID was not found"
+
+
+def test_get_catalogue_category_breadcrumbs_with_non_existent_id(test_client):
+    """
+    Test getting the breadcrumbs for a non existent catalogue category
+    """
+    response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}/breadcrumbs")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Catalogue category with such ID was not found"
 
 
 def test_partial_update_catalogue_category_change_name(test_client):

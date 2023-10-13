@@ -333,7 +333,7 @@ def test_get_systems_with_path_and_parent_path_filters_no_matching_results(test_
     assert response.json() == []
 
 
-def test_get_systems_breadcrumbs_when_no_parent(test_client):
+def test_get_system_breadcrumbs_when_no_parent(test_client):
     """
     Test getting the breadcrumbs for a system with no parents
     """
@@ -345,7 +345,7 @@ def test_get_systems_breadcrumbs_when_no_parent(test_client):
     assert response.json() == {"trail": [[system_c["id"], system_c["code"]]], "full_trail": True}
 
 
-def test_get_systems_breadcrumbs_when_trail_length_less_than_maximum(test_client):
+def test_get_system_breadcrumbs_when_trail_length_less_than_maximum(test_client):
     """
     Test getting the breadcrumbs for a system with less than the the maximum trail length
     """
@@ -358,7 +358,7 @@ def test_get_systems_breadcrumbs_when_trail_length_less_than_maximum(test_client
     assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems], "full_trail": True}
 
 
-def test_get_systems_breadcrumbs_when_trail_length_maximum(test_client):
+def test_get_system_breadcrumbs_when_trail_length_maximum(test_client):
     """
     Test getting the breadcrumbs for a system with the maximum trail length
     """
@@ -371,7 +371,7 @@ def test_get_systems_breadcrumbs_when_trail_length_maximum(test_client):
     assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems], "full_trail": True}
 
 
-def test_get_systems_breadcrumbs_when_trail_length_greater_than_maximum(test_client):
+def test_get_system_breadcrumbs_when_trail_length_greater_than_maximum(test_client):
     """
     Test getting the breadcrumbs for a system with greater than the the maximum trail length
     """
@@ -384,22 +384,20 @@ def test_get_systems_breadcrumbs_when_trail_length_greater_than_maximum(test_cli
     assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems[1:]], "full_trail": False}
 
 
-def test_get_systems_breadcrumbs_with_invalid_id(test_client):
+def test_get_system_breadcrumbs_with_invalid_id(test_client):
     """
     Test getting the breadcrumbs for a system when the given id is invalid
     """
-    # Get breadcrumbs for last added
     response = test_client.get("/v1/systems/invalid/breadcrumbs")
 
     assert response.status_code == 404
     assert response.json()["detail"] == "System with such ID was not found"
 
 
-def test_get_systems_breadcrumbs_with_non_existent_id(test_client):
+def test_get_system_breadcrumbs_with_non_existent_id(test_client):
     """
     Test getting the breadcrumbs for a non existent system
     """
-    # Get breadcrumbs for last added
     response = test_client.get(f"/v1/systems/{str(ObjectId())}/breadcrumbs")
 
     assert response.status_code == 404
