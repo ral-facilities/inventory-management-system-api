@@ -117,6 +117,7 @@ def test_create_system_with_valid_parent_id(test_client):
 
     # Child
     response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+
     assert response.status_code == 201
     system = response.json()
     assert system == {**SYSTEM_POST_B_EXPECTED, "parent_id": parent_system["id"]}
@@ -175,7 +176,6 @@ def test_delete_system(test_client):
     """
     Test deleting a System
     """
-
     # Create one to delete
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system = response.json()
@@ -192,7 +192,6 @@ def test_delete_system_with_invalid_id(test_client):
     """
     Test deleting a System with an invalid ID
     """
-
     # Delete
     response = test_client.delete("/v1/systems/invalid")
 
@@ -204,7 +203,6 @@ def test_delete_system_with_non_existent_id(test_client):
     """
     Test deleting a System with a non existent ID
     """
-
     # Delete
     response = test_client.delete(f"/v1/systems/{str(ObjectId())}")
 
@@ -212,28 +210,10 @@ def test_delete_system_with_non_existent_id(test_client):
     assert response.json()["detail"] == "System with such ID was not found"
 
 
-def test_get_system(test_client):
-    """
-    Test getting a System
-    """
-
-    # Post one first
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system = response.json()
-    system_id = system["id"]
-
-    # Ensure can get it again
-    response = test_client.get(f"/v1/systems/{system_id}")
-
-    assert response.status_code == 200
-    assert response.json() == SYSTEM_POST_A_EXPECTED
-
-
 def test_delete_system_with_child_system(test_client):
     """
     Test deleting a System
     """
-
     # Create one to delete
     # Parent
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
@@ -247,6 +227,22 @@ def test_delete_system_with_child_system(test_client):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "System has child elements and cannot be deleted"
+
+
+def test_get_system(test_client):
+    """
+    Test getting a System
+    """
+    # Post one first
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system = response.json()
+    system_id = system["id"]
+
+    # Ensure can get it again
+    response = test_client.get(f"/v1/systems/{system_id}")
+
+    assert response.status_code == 200
+    assert response.json() == SYSTEM_POST_A_EXPECTED
 
 
 def test_get_system_with_invalid_id(test_client):
@@ -273,7 +269,6 @@ def test_get_systems(test_client):
     """
     Test getting a list of Systems
     """
-
     system_a, system_b, system_c = _post_systems(test_client)
 
     # Get all systems (no filters)
@@ -287,7 +282,6 @@ def test_get_systems_with_path_filter(test_client):
     """
     Test getting a list of Systems with a path filter
     """
-
     _, _, system_c = _post_systems(test_client)
 
     # Get only those with the given path
@@ -330,7 +324,6 @@ def test_get_systems_with_path_and_parent_path_filters_no_matching_results(test_
     Test getting a list of Systems with a path and parent path filter when there is no
     matching results in the database
     """
-
     _, _, _ = _post_systems(test_client)
 
     # Get only those with the given path and parent path
@@ -344,7 +337,6 @@ def test_get_systems_breadcrumbs_when_no_parent(test_client):
     """
     Test getting the breadcrumbs for a system with no parents
     """
-
     (system_c, *_) = _post_nested_systems(test_client, [SYSTEM_POST_C])
 
     response = test_client.get(f"/v1/systems/{system_c['id']}/breadcrumbs")
@@ -357,7 +349,6 @@ def test_get_systems_breadcrumbs_when_trail_length_less_than_maximum(test_client
     """
     Test getting the breadcrumbs for a system with less than the the maximum trail length
     """
-
     systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
 
     # Get breadcrumbs for last added
@@ -371,7 +362,6 @@ def test_get_systems_breadcrumbs_when_trail_length_maximum(test_client):
     """
     Test getting the breadcrumbs for a system with the maximum trail length
     """
-
     systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH)
 
     # Get breadcrumbs for last added
@@ -385,7 +375,6 @@ def test_get_systems_breadcrumbs_when_trail_length_greater_than_maximum(test_cli
     """
     Test getting the breadcrumbs for a system with greater than the the maximum trail length
     """
-
     systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
 
     # Get breadcrumbs for last added
@@ -399,7 +388,6 @@ def test_get_systems_breadcrumbs_with_invalid_id(test_client):
     """
     Test getting the breadcrumbs for a system when the given id is invalid
     """
-
     # Get breadcrumbs for last added
     response = test_client.get("/v1/systems/invalid/breadcrumbs")
 
@@ -411,7 +399,6 @@ def test_get_systems_breadcrumbs_with_non_existent_id(test_client):
     """
     Test getting the breadcrumbs for a non existent system
     """
-
     # Get breadcrumbs for last added
     response = test_client.get(f"/v1/systems/{str(ObjectId())}/breadcrumbs")
 
