@@ -702,6 +702,7 @@ def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_m
     assert retrieved_catalogue_categories == []
 
 
+# pylint:disable=W0613
 def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, catalogue_category_repository):
     """
     Test getting catalogue_categories when given an invalid parent_id to filter on

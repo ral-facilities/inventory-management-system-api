@@ -338,6 +338,7 @@ def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_m
     assert retrieved_systems == []
 
 
+# pylint:disable=W0613
 def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_repository):
     """
     Test getting Systems when given an invalid parent_id to filter on

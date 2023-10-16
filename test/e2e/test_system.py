@@ -317,7 +317,7 @@ def test_systems_with_invalid_parent_id_filter(test_client):
     """
     Test getting a list of Systems when given invalid parent_id filter
     """
-    response = test_client.get("/v1/catalogue-categories", params={"parent_id": "invalid"})
+    response = test_client.get("/v1/systems", params={"parent_id": "invalid"})
 
     assert response.status_code == 422
     assert response.json()["detail"] == "Invalid parent_id given"
