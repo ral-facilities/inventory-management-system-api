@@ -356,6 +356,19 @@ def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_m
     assert retrieved_systems == []
 
 
+def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_repository):
+    """
+    Test getting Systems when given an invalid parent_id to filter on
+
+    Verify that the `list` method properly handles the retrieval of systems when given an invalid parent_id
+    filter
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        system_repository.list("invalid")
+    database_mock.systems.find.assert_not_called()
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
 def test_delete(test_helpers, database_mock, system_repository):
     """
     Test deleting a System

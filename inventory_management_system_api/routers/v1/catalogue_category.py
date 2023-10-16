@@ -40,8 +40,12 @@ def get_catalogue_categories(
     if parent_id:
         logger.debug("Parent ID filter: '%s'", parent_id)
 
-    catalogue_categories = catalogue_category_service.list(parent_id)
-    return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
+    try:
+        catalogue_categories = catalogue_category_service.list(parent_id)
+        return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
+    except InvalidObjectIdError as exc:
+        logger.exception("Invalid parent_id given '%s'", parent_id)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid parent_id given") from exc
 
 
 @router.get(

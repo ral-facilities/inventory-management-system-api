@@ -36,8 +36,12 @@ def get_systems(
     if parent_id:
         logger.debug("Parent ID filter: '%s'", parent_id)
 
-    systems = system_service.list(parent_id)
-    return [SystemRequestSchema(**system.dict()) for system in systems]
+    try:
+        systems = system_service.list(parent_id)
+        return [SystemRequestSchema(**system.dict()) for system in systems]
+    except InvalidObjectIdError as exc:
+        logger.exception("Invalid parent_id given '%s'", parent_id)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid parent_id given") from exc
 
 
 @router.get(path="/{system_id}", summary="Get a System by ID", response_description="Single System")

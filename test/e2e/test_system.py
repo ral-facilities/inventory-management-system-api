@@ -278,59 +278,55 @@ def test_get_systems(test_client):
     assert response.json() == [system_a, system_b, system_c]
 
 
-def test_get_systems_with_path_filter(test_client):
+def test_get_systems_with_parent_id_filter(test_client):
     """
-    Test getting a list of Systems with a path filter
+    Test getting a list of Systems with a parent_id filter
     """
-    _, _, system_c = _post_systems(test_client)
+    _, system_b, _ = _post_systems(test_client)
 
     # Get only those with the given path
-    response = test_client.get("/v1/systems", params={"path": "/system-c"})
+    response = test_client.get("/v1/systems", params={"parent_id": system_b["parent_id"]})
 
     assert response.status_code == 200
-    assert response.json() == [system_c]
+    assert response.json() == [system_b]
 
 
-def test_get_systems_with_parent_path_filter(test_client):
+def test_get_systems_with_null_parent_id_filter(test_client):
     """
-    Test getting a list of Systems with a parent path filter
+    Test getting a list of Systems with a parent_id filter of "null"
     """
 
-    _, system_b, _ = _post_systems(test_client)
+    system_a, _, system_c = _post_systems(test_client)
 
     # Get only those with the given parent path
-    response = test_client.get("/v1/systems", params={"parent_path": "/system-a"})
+    response = test_client.get("/v1/systems", params={"parent_id": "null"})
 
     assert response.status_code == 200
-    assert response.json() == [system_b]
+    assert response.json() == [system_a, system_c]
 
 
-def test_get_systems_with_path_and_parent_path_filter(test_client):
+def test_get_systems_with_parent_id_filter_no_matching_results(test_client):
     """
-    Test getting a list of Systems with a path and parent path filter
-    """
-
-    _, system_b, _ = _post_systems(test_client)
-
-    # Get only those with the given path and parent path
-    response = test_client.get("/v1/systems", params={"path": "/system-a/system-b", "parent_path": "/system-a"})
-
-    assert response.status_code == 200
-    assert response.json() == [system_b]
-
-
-def test_get_systems_with_path_and_parent_path_filters_no_matching_results(test_client):
-    """
-    Test getting a list of Systems with a path and parent path filter when there is no
+    Test getting a list of Systems with a parent_id filter when there is no
     matching results in the database
     """
     _, _, _ = _post_systems(test_client)
 
     # Get only those with the given path and parent path
-    response = test_client.get("/v1/systems", params={"path": "/", "parent_path": "/system-b"})
+    response = test_client.get("/v1/systems", params={"parent_id": str(ObjectId())})
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_systems_with_invalid_parent_id_filter(test_client):
+    """
+    Test getting a list of Systems when given invalid parent_id filter
+    """
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": "invalid"})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Invalid parent_id given"
 
 
 def test_get_system_breadcrumbs_when_no_parent(test_client):

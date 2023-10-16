@@ -770,6 +770,19 @@ def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_m
     assert retrieved_catalogue_categories == []
 
 
+def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test getting catalogue_categories when given an invalid parent_id to filter on
+
+    Verify that the `list` method properly handles the retrieval of catalogue categories when given an invalid
+    parent_id filter
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_category_repository.list("invalid")
+    database_mock.catalogue_categories.find.assert_not_called()
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
 def test_update(test_helpers, database_mock, catalogue_category_repository):
     """
     Test updating a catalogue category.

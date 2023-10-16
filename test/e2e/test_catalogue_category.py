@@ -387,55 +387,51 @@ def test_get_catalogue_categories(test_client):
     assert response.json() == [category_a, category_b, category_c]
 
 
-def test_get_catalogue_categories_with_path_filter(test_client):
+def test_get_catalogue_categories_with_parent_id_filter(test_client):
     """
-    Test getting catalogue categories based on the provided parent path filter.
+    Test getting catalogue categories based on the provided parent_id filter.
     """
-    category_a, _, _ = _post_catalogue_categories(test_client)
+    _, category_b, _ = _post_catalogue_categories(test_client)
 
-    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-a"})
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": category_b["parent_id"]})
 
     assert response.status_code == 200
-    assert response.json() == [category_a]
+    assert response.json() == [category_b]
 
 
-def test_get_catalogue_categories_with_parent_path_filter(test_client):
+def test_get_catalogue_categories_with_null_parent_id_filter(test_client):
     """
-    Test getting catalogue categories based on the provided parent path filter.
+    Test getting catalogue categories when given a parent_id filter of "null"
     """
     category_a, _, category_c = _post_catalogue_categories(test_client)
 
-    response = test_client.get("/v1/catalogue-categories", params={"parent_path": "/"})
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": "null"})
 
     assert response.status_code == 200
     assert response.json() == [category_a, category_c]
 
 
-def test_get_catalogue_categories_with_path_and_parent_path_filters(test_client):
+def test_get_catalogue_categories_with_parent_id_filter_no_matching_results(test_client):
     """
-    Test getting catalogue categories based on the provided path and parent path filters.
-    """
-    _, _, category_c = _post_catalogue_categories(test_client)
-
-    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-c", "parent_path": "/"})
-
-    assert response.status_code == 200
-    assert response.json() == [category_c]
-
-
-def test_get_catalogue_categories_with_path_and_parent_path_filters_no_matching_results(test_client):
-    """
-    Test getting catalogue categories based on the provided path and parent path filters when there is no matching
+    Test getting catalogue categories based on the provided parent_id filter when there is no matching
     results in the database.
     """
     _, _, _ = _post_catalogue_categories(test_client)
 
-    response = test_client.get(
-        "/v1/catalogue-categories", params={"path": "/category-a/category-b", "parent_path": "/"}
-    )
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": str(ObjectId())})
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_get_catalogue_categories_with_invalid_parent_id_filter(test_client):
+    """
+    Test getting catalogue categories when given an invalid parent_id filter
+    """
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": "invalid"})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Invalid parent_id given"
 
 
 def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
