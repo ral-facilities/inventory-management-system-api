@@ -437,7 +437,7 @@ def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
     response = test_client.get(f"/v1/catalogue-categories/{category_c['id']}/breadcrumbs")
 
     assert response.status_code == 200
-    assert response.json() == {"trail": [[category_c["id"], category_c["code"]]], "full_trail": True}
+    assert response.json() == {"trail": [[category_c["id"], category_c["name"]]], "full_trail": True}
 
 
 def test_get_catalogue_category_when_trail_length_less_than_maximum(test_client):
@@ -451,7 +451,7 @@ def test_get_catalogue_category_when_trail_length_less_than_maximum(test_client)
 
     assert response.status_code == 200
     assert response.json() == {
-        "trail": [[category["id"], category["code"]] for category in categories],
+        "trail": [[category["id"], category["name"]] for category in categories],
         "full_trail": True,
     }
 
@@ -467,7 +467,7 @@ def test_get_catalogue_category_when_trail_length_maximum(test_client):
 
     assert response.status_code == 200
     assert response.json() == {
-        "trail": [[category["id"], category["code"]] for category in categories],
+        "trail": [[category["id"], category["name"]] for category in categories],
         "full_trail": True,
     }
 
@@ -483,7 +483,7 @@ def test_get_catalogue_category_when_trail_length_greater_than_maximum(test_clie
 
     assert response.status_code == 200
     assert response.json() == {
-        "trail": [[category["id"], category["code"]] for category in categories[1:]],
+        "trail": [[category["id"], category["name"]] for category in categories[1:]],
         "full_trail": False,
     }
 

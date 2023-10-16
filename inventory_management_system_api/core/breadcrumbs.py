@@ -25,7 +25,7 @@ def compute_breadcrumbs(
 
     :param entity_id: ID of the entity to look up
     :param entity_service: Service for looking up entities - It is assumed that this has a get(entity_id) function
-                           that either returns the entity (complete with an id, code and parent_id field), or None if
+                           that either returns the entity (complete with an id, name and parent_id field), or None if
                            it isn't found
     :raises DatabaseIntegrityError: If the entity_service.get either raises an InvalidObjectIdError or returns None
                                     for any parent entity found as this should not be possible if the database
@@ -53,7 +53,7 @@ def compute_breadcrumbs(
             entity = entity_service.get(next_id)
             if entity is None:
                 raise EntityNotFoundError(f"{entity_type.capitalize()} with ID {next_id} was not found")
-            trail.append((entity.id, entity.code))
+            trail.append((entity.id, entity.name))
             next_id = entity.parent_id
     except (InvalidObjectIdError, EntityNotFoundError) as exc:
         # If occurred on first element, then it effects the given entity_id, otherwise
