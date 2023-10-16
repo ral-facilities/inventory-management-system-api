@@ -88,11 +88,15 @@ class ManufacturerRepo:
         :param: manufacturer: The manufacturer with the update data
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        if self._is_duplicate_manufacturer(manufacturer.code):
-            raise DuplicateRecordError("Duplicate manufacturer found")
 
-        if not self.get(str(manufacturer_id)):
+        stored_manufacturer = self.get(str(manufacturer_id))
+        if not stored_manufacturer:
             raise MissingRecordError("The specified manufacturer does not exist")
+
+        if stored_manufacturer.name != manufacturer.name:
+            if self._is_duplicate_manufacturer(manufacturer.code):
+                raise DuplicateRecordError("Duplicate manufacturer found")
+
         logger.info("Updating manufacturer with ID %s", manufacturer_id)
         self._collection.update_one(
             {"_id": manufacturer_id},

@@ -36,6 +36,6 @@ class ManufacturerPatchRequstSchema(BaseModel):
     """Schema model for editing a manufacturer"""
 
     name: Optional[str]
-    url: Optional[HttpUrl] = None
+    url: Optional[HttpUrl]
     address: Optional[Address]
-    telephone: Optional[str] = None
+    telephone: Optional[str]

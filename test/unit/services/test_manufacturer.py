@@ -113,6 +113,9 @@ def test_get_with_nonexistent_id(manufacturer_repository_mock, manufacturer_serv
     manufacturer_repository_mock.get.assert_called_once_with(manufactuer_id)
 
 
+# def test_update(manufacturer_repository_mock, manufacturer_service):
+
+
 def test_delete(manufacturer_repository_mock, manufacturer_service):
     """Test deleting a manufacturer"""
     manufacturer_id = str(ObjectId())

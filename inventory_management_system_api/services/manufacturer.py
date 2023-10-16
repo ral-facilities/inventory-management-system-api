@@ -86,17 +86,24 @@ class ManufacturerService:
         :return: The updates manufacturer
         :raises MissingRecordError: If manufacturer does not exist in database
         """
-        updated_data = manufacturer.dict()
+        updated_data = manufacturer.dict(exclude_none=True)
 
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:
             raise MissingRecordError(f"No manufacturer found with ID {manufacturer_id}")
 
-        stored_manufacturer.name = updated_data["name"]
-        stored_manufacturer.code = self._generate_code(stored_manufacturer.name)
-        stored_manufacturer.url = updated_data["url"]
-        stored_manufacturer.address = updated_data["address"]
-        stored_manufacturer.telephone = updated_data["telephone"]
+        if "name" in updated_data and updated_data["name"] != stored_manufacturer.name:
+            stored_manufacturer.name = updated_data["name"]
+            stored_manufacturer.code = self._generate_code(stored_manufacturer.name)
+
+        if "url" in updated_data:
+            stored_manufacturer.url = updated_data["url"]
+
+        if "address" in updated_data:
+            stored_manufacturer.address = updated_data["address"]
+
+        if "telephone" in updated_data:
+            stored_manufacturer.telephone = updated_data["telephone"]
 
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
 

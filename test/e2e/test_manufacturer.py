@@ -264,7 +264,7 @@ def test_update_with_nonexistent_id(test_client):
 
 def test_update_duplicate_name(test_client):
     """Test updating a manufacturer with a duplicate name"""
-    manufacturer_post = {
+    manufacturer_post_1 = {
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
@@ -277,11 +277,11 @@ def test_update_duplicate_name(test_client):
         "telephone": "0932348348",
     }
 
-    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+    response1 = test_client.post("/v1/manufacturers", json=manufacturer_post_1)
 
-    manufacturer_patch = {
-        "name": "Manufacturer A",
-        "url": "http://example.com",
+    manufacturer_post_2 = {
+        "name": "Manufacturer B",
+        "url": "http://test.com",
         "address": {
             "building_number": 2,
             "street_name": "Example Street",
@@ -289,9 +289,13 @@ def test_update_duplicate_name(test_client):
             "county": "Oxfordshire",
             "postCode": "OX1 2AB",
         },
-        "telephone": "0748347374",
+        "telephone": "087876775767",
     }
-    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
+
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post_2)
+
+    manufacturer_patch = {"name": "Manufacturer B"}
+    response = test_client.patch(f"/v1/manufacturers/{response1.json()['id']}", json=manufacturer_patch)
 
     assert response.status_code == 409
     assert response.json()["detail"] == "A manufacturer with the same name has been found"

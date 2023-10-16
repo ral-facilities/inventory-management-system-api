@@ -345,28 +345,6 @@ def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_re
     assert str(exc.value) == "The specified manufacturer does not exist"
 
 
-def update_with_duplicate_name(test_helpers, database_mock, manufacturer_repository):
-    """Test trying to update a manufacturer with a duplicate name"""
-    # pylint: disable=duplicate-code
-    updated_manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
-        name="Manufacturer A",
-        code="manufacturer-a",
-        url="http://testUrl.co.uk",
-        address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
-        ),
-        telephone="0932348348",
-    )
-    # pylint: enable=duplicate-code
-    manufacturer_id = str(ObjectId())
-    test_helpers.mock_count_documents(database_mock.manufacturers, 1)
-
-    with pytest.raises(DuplicateRecordError) as exc:
-        manufacturer_repository.update(manufacturer_id, updated_manufacturer)
-    assert str(exc.value) == "The specified manufacturer does not exist"
-
-
 def test_delete(test_helpers, database_mock, manufacturer_repository):
     """Test trying to delete a manufacturer"""
     manufacturer_id = str(ObjectId())

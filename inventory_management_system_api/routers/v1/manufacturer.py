@@ -68,8 +68,8 @@ def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends())
     response_description="Single manufacturer",
 )
 def get_one_manufacturer(
-    manufacturer_id: str = Path(description="The ID of the manufacturer to be retrieved"), 
-    manufacturer_service: ManufacturerService = Depends()
+    manufacturer_id: str = Path(description="The ID of the manufacturer to be retrieved"),
+    manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturer with ID %s", manufacturer_id)
@@ -95,7 +95,7 @@ def get_one_manufacturer(
 )
 def edit_manufacturer(
     manufacturer: ManufacturerPatchRequstSchema,
-    manufacturer_id: str,
+    manufacturer_id: str = Path(description="The ID of the manufacturer to be updated"),
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
