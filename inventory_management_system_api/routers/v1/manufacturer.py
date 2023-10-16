@@ -4,7 +4,7 @@ Module for providing an API router which defines routes for managing manufacture
 """
 import logging
 from typing import List
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException, Path
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -68,7 +68,8 @@ def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends())
     response_description="Single manufacturer",
 )
 def get_one_manufacturer(
-    manufacturer_id: str, manufacturer_service: ManufacturerService = Depends()
+    manufacturer_id: str = Path(description="The ID of the manufacturer to be retrieved"), 
+    manufacturer_service: ManufacturerService = Depends()
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturer with ID %s", manufacturer_id)
