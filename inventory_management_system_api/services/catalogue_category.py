@@ -80,15 +80,14 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
+    def list(self, parent_id: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories based on the provided filters.
 
-        :param path: The path to filter catalogue categories by.
-        :param parent_path: The parent path to filter catalogue categories by.
+        :param parent_id: The parent_id to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
         """
-        return self._catalogue_category_repository.list(path, parent_path)
+        return self._catalogue_category_repository.list(parent_id)
 
     def update(
         self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchRequestSchema

@@ -19,7 +19,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 
 
-def _test_list(test_helpers, database_mock, system_repository, path: Optional[str], parent_path: Optional[str]):
+def _test_list(test_helpers, database_mock, system_repository, parent_id: Optional[str]):
     """
     Utility method that tests getting Systems
 
@@ -58,13 +58,11 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
         [{"_id": CustomObjectId(system_a.id), **system_a_info}, {"_id": CustomObjectId(system_b.id), **system_b_info}],
     )
 
-    retrieved_systems = system_repository.list(path, parent_path)
+    retrieved_systems = system_repository.list(parent_id)
 
     expected_filters = {}
-    if path:
-        expected_filters["path"] = path
-    if parent_path:
-        expected_filters["parent_path"] = parent_path
+    if parent_id:
+        expected_filters["parent_id"] = None if parent_id == "null" else ObjectId(parent_id)
 
     database_mock.systems.find.assert_called_once_with(expected_filters)
     assert retrieved_systems == [system_a, system_b]
@@ -317,53 +315,44 @@ def test_list(test_helpers, database_mock, system_repository):
 
     Verify that the `list` method properly handles the retrieval of systems without filters
     """
-    _test_list(test_helpers, database_mock, system_repository, None, None)
+    _test_list(test_helpers, database_mock, system_repository, None)
 
 
-def test_list_with_path_filter(test_helpers, database_mock, system_repository):
+def test_list_with_parent_id_filter(test_helpers, database_mock, system_repository):
     """
-    Test getting Systems based on the provided path filter
-
-    Verify that the `list` method properly handles the retrieval of systems based on the provided
-    path filter
-    """
-    _test_list(test_helpers, database_mock, system_repository, "/test-name-a", None)
-
-
-def test_list_with_parent_path_filter(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems based on the provided parent path filter
+    Test getting Systems based on the provided parent_id filter
 
     Verify that the `list` method properly handles the retrieval of systems based on the provided parent
     path filter
     """
-    _test_list(test_helpers, database_mock, system_repository, None, "/")
+    _test_list(test_helpers, database_mock, system_repository, str(ObjectId()))
 
 
-def test_list_with_path_and_parent_path_filter(test_helpers, database_mock, system_repository):
+def test_list_with_null_parent_id_filter(test_helpers, database_mock, system_repository):
     """
-    Test getting Systems based on the provided path and parent path filters
+    Test getting Systems when the provided parent_id filter is "null"
 
     Verify that the `list` method properly handles the retrieval of systems based on the provided path
     and parent path filters
     """
-    _test_list(test_helpers, database_mock, system_repository, "/test-name-a", "/")
+    _test_list(test_helpers, database_mock, system_repository, "null")
 
 
-def test_list_with_path_and_parent_path_filters_no_matching_results(test_helpers, database_mock, system_repository):
+def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_mock, system_repository):
     """
-    Test getting Systems based on the provided path and parent path filters when there are no matching results
-    int he database
+    Test getting Systems based on the provided parent_id filter when there are no matching results
+    in the database
 
-    Verify that the `list` method properly handles the retrieval of systems based on the provided path
-    and parent path filters when there are no matching results in the database
+    Verify that the `list` method properly handles the retrieval of systems based on the provided
+    parent_path filter when there are no matching results in the database
     """
     # Mock `find` to return a list of System documents
     test_helpers.mock_find(database_mock.systems, [])
 
-    retrieved_systems = system_repository.list("/test-name-a", "/")
+    parent_id = ObjectId()
+    retrieved_systems = system_repository.list(str(parent_id))
 
-    database_mock.systems.find.assert_called_once_with({"path": "/test-name-a", "parent_path": "/"})
+    database_mock.systems.find.assert_called_once_with({"parent_id": parent_id})
     assert retrieved_systems == []
 
 

@@ -28,18 +28,15 @@ router = APIRouter(prefix="/v1/systems", tags=["systems"])
 
 @router.get(path="/", summary="Get Systems", response_description="List of Systems")
 def get_systems(
-    path: Annotated[Optional[str], Query(description="Filter Systems by path")] = None,
-    parent_path: Annotated[Optional[str], Query(description="Filter Systems by parent path")] = None,
+    parent_id: Annotated[Optional[str], Query(description="Filter Systems by parent ID")] = None,
     system_service: SystemService = Depends(),
 ) -> list[SystemRequestSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Systems")
-    if path:
-        logger.debug("Path filter: '%s'", path)
-    if parent_path:
-        logger.debug("Parent path filter: '%s'", parent_path)
+    if parent_id:
+        logger.debug("Parent ID filter: '%s'", parent_id)
 
-    systems = system_service.list(path, parent_path)
+    systems = system_service.list(parent_id)
     return [SystemRequestSchema(**system.dict()) for system in systems]
 
 
