@@ -342,7 +342,7 @@ def test_get_system_breadcrumbs_when_no_parent(test_client):
     response = test_client.get(f"/v1/systems/{system_c['id']}/breadcrumbs")
 
     assert response.status_code == 200
-    assert response.json() == {"trail": [[system_c["id"], system_c["code"]]], "full_trail": True}
+    assert response.json() == {"trail": [[system_c["id"], system_c["name"]]], "full_trail": True}
 
 
 def test_get_system_breadcrumbs_when_trail_length_less_than_maximum(test_client):
@@ -355,7 +355,7 @@ def test_get_system_breadcrumbs_when_trail_length_less_than_maximum(test_client)
     response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
 
     assert response.status_code == 200
-    assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems], "full_trail": True}
+    assert response.json() == {"trail": [[system["id"], system["name"]] for system in systems], "full_trail": True}
 
 
 def test_get_system_breadcrumbs_when_trail_length_maximum(test_client):
@@ -368,7 +368,7 @@ def test_get_system_breadcrumbs_when_trail_length_maximum(test_client):
     response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
 
     assert response.status_code == 200
-    assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems], "full_trail": True}
+    assert response.json() == {"trail": [[system["id"], system["name"]] for system in systems], "full_trail": True}
 
 
 def test_get_system_breadcrumbs_when_trail_length_greater_than_maximum(test_client):
@@ -381,7 +381,7 @@ def test_get_system_breadcrumbs_when_trail_length_greater_than_maximum(test_clie
     response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
 
     assert response.status_code == 200
-    assert response.json() == {"trail": [[system["id"], system["code"]] for system in systems[1:]], "full_trail": False}
+    assert response.json() == {"trail": [[system["id"], system["name"]] for system in systems[1:]], "full_trail": False}
 
 
 def test_get_system_breadcrumbs_with_invalid_id(test_client):

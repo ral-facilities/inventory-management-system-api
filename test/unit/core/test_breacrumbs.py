@@ -17,11 +17,11 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.system import SystemService
 
-MockEntity = namedtuple("MockEntity", "id parent_id code")
+MockEntity = namedtuple("MockEntity", "id parent_id name")
 
 # Reverse order here so first look up always has parents
 MOCK_ENTITIES = [
-    MockEntity(id=f"id-{i}", parent_id=None if i == 0 else f"id-{i-1}", code=f"code-{i}")
+    MockEntity(id=f"id-{i}", parent_id=None if i == 0 else f"id-{i-1}", name=f"name-{i}")
     for i in range(0, BREADCRUMBS_TRAIL_MAX_LENGTH * 2)
 ][::-1]
 
@@ -50,7 +50,7 @@ class TestComputeBreadcrumbsWhenValid:
 
         assert mock_service.get.call_args_list == [call(mock_entity.id) for mock_entity in expected_entities_looked_up]
         assert mock_service.get.call_count == expected_trail_length
-        assert result.trail == [(mock_entity.id, mock_entity.code) for mock_entity in expected_entities_looked_up[::-1]]
+        assert result.trail == [(mock_entity.id, mock_entity.name) for mock_entity in expected_entities_looked_up[::-1]]
         assert result.full_trail is expected_full_trail
 
     # pylint:disable=W0613
