@@ -13,8 +13,6 @@ CATALOGUE_CATEGORY_POST_A_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_A,
     "id": ANY,
     "code": "category-a",
-    "path": "/category-a",
-    "parent_path": "/",
     "parent_id": None,
     "catalogue_item_properties": [],
 }
@@ -32,8 +30,6 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_B,
     "id": ANY,
     "code": "category-b",
-    "path": "/category-a/category-b",
-    "parent_path": "/category-a",
     "catalogue_item_properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
@@ -53,8 +49,6 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_C,
     "id": ANY,
     "code": "category-c",
-    "path": "/category-c",
-    "parent_path": "/",
     "parent_id": None,
     "catalogue_item_properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
@@ -528,7 +522,6 @@ def test_partial_update_catalogue_category_change_name(test_client):
         **CATALOGUE_CATEGORY_POST_A_EXPECTED,
         **catalogue_category_patch,
         "code": "category-b",
-        "path": "/category-b",
     }
 
 
@@ -612,8 +605,6 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
         **catalogue_category_patch,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -635,8 +626,6 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -682,8 +671,6 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf(test_cli
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -739,8 +726,6 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_cat
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -771,8 +756,6 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
         **catalogue_category_patch,
         "id": ANY,
         "code": "category-b",
-        "path": "/category-b",
-        "parent_path": "/",
     }
 
 
@@ -932,8 +915,6 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -964,8 +945,6 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -996,8 +975,6 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 

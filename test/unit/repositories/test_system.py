@@ -33,8 +33,6 @@ def _test_list(test_helpers, database_mock, system_repository, parent_id: Option
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a",
-        "parent_path": "/",
         "parent_id": str(ObjectId()),
     }
     system_a = SystemOut(id=str(ObjectId()), **system_a_info)
@@ -45,8 +43,6 @@ def _test_list(test_helpers, database_mock, system_repository, parent_id: Option
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-b",
-        "parent_path": "/",
         "parent_id": str(ObjectId()),
     }
     system_b = SystemOut(id=str(ObjectId()), **system_b_info)
@@ -83,8 +79,6 @@ def test_create(test_helpers, database_mock, system_repository):
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
         "parent_id": None,
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -122,8 +116,6 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -139,8 +131,6 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
             "importance": "low",
             "description": "Test description",
             "code": "test-name",
-            "path": "/test-name-a",
-            "parent_path": "/",
             "parent_id": None,
         },
     )
@@ -181,8 +171,6 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -213,8 +201,6 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -231,8 +217,6 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
             "importance": "low",
             "description": "Test description",
             "code": "test-name",
-            "path": "/test-name-a",
-            "parent_path": "/",
             "parent_id": None,
         },
     )
@@ -260,8 +244,6 @@ def test_get(test_helpers, database_mock, system_repository):
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a",
-        "parent_path": "/",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -323,7 +305,7 @@ def test_list_with_parent_id_filter(test_helpers, database_mock, system_reposito
     Test getting Systems based on the provided parent_id filter
 
     Verify that the `list` method properly handles the retrieval of systems based on the provided parent
-    path filter
+    parent_id filter
     """
     _test_list(test_helpers, database_mock, system_repository, str(ObjectId()))
 
@@ -332,8 +314,8 @@ def test_list_with_null_parent_id_filter(test_helpers, database_mock, system_rep
     """
     Test getting Systems when the provided parent_id filter is "null"
 
-    Verify that the `list` method properly handles the retrieval of systems based on the provided path
-    and parent path filters
+    Verify that the `list` method properly handles the retrieval of systems based on the provided
+    parent_id filter
     """
     _test_list(test_helpers, database_mock, system_repository, "null")
 
@@ -344,7 +326,7 @@ def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_m
     in the database
 
     Verify that the `list` method properly handles the retrieval of systems based on the provided
-    parent_path filter when there are no matching results in the database
+    parent_id filter when there are no matching results in the database
     """
     # Mock `find` to return a list of System documents
     test_helpers.mock_find(database_mock.systems, [])

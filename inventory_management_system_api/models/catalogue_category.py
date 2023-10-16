@@ -27,8 +27,6 @@ class CatalogueCategoryIn(BaseModel):
     name: str
     code: str
     is_leaf: bool
-    path: str
-    parent_path: str
     parent_id: Optional[CustomObjectIdField] = None
     catalogue_item_properties: List[CatalogueItemProperty] = []
 

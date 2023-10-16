@@ -36,11 +36,8 @@ class SystemService:
         :return: Created System
         """
         parent_id = system.parent_id
-        parent_system = self.get(parent_id) if parent_id else None
-        parent_path = parent_system.path if parent_system else "/"
 
         code = utils.generate_code(system.name, "system")
-        path = utils.generate_path(parent_path, code, "system")
         return self._system_repository.create(
             SystemIn(
                 name=system.name,
@@ -49,8 +46,6 @@ class SystemService:
                 importance=system.importance,
                 description=system.description,
                 code=code,
-                path=path,
-                parent_path=parent_path,
                 parent_id=parent_id,
             )
         )

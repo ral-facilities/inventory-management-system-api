@@ -35,7 +35,7 @@ def test_create(test_helpers, system_repository_mock, system_service):
     """
     Test creating a System
 
-    Verify that the `create` method properly handles the System to be created, generates the code and paths,
+    Verify that the `create` method properly handles the System to be created, generates the code,
     and calls the repository's create method
     """
     # pylint: disable=duplicate-code
@@ -50,8 +50,6 @@ def test_create(test_helpers, system_repository_mock, system_service):
     full_system_info = {
         **system_info,
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
     # pylint: enable=duplicate-code
@@ -95,8 +93,6 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     full_system_info = {
         **system_info,
         "code": "test-name-b",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -112,8 +108,6 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
             description="Test description",
             parent_id=None,
             code="test-name-a",
-            path="/test-name-a",
-            parent_path="/",
         ),
     )
 
@@ -144,8 +138,6 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     full_system_info = {
         **system_info,
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -221,15 +213,13 @@ def test_list_with_null_parent_id_filter(test_helpers, system_repository_mock, s
     _test_list(test_helpers, system_repository_mock, system_service, "null")
 
 
-def test_list_with_path_and_parent_path_filters_no_matching_results(
-    test_helpers, system_repository_mock, system_service
-):
+def test_list_with_parent_id_filter_no_matching_results(test_helpers, system_repository_mock, system_service):
     """
-    Test getting Systems based on the provided parent path and parent path filters when there is no
-    matching results in the database
+    Test getting Systems based on the provided parent_id filter when there is no matching results in the
+    database
 
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path and
-    parent path filters when there is no matching results in the database
+    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id
+    filter when there is no matching results in the database
     """
 
     # Mock `list` to return an empty list of Systems

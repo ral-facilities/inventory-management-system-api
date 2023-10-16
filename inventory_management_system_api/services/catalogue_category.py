@@ -44,20 +44,16 @@ class CatalogueCategoryService:
         """
         parent_id = catalogue_category.parent_id
         parent_catalogue_category = self.get(parent_id) if parent_id else None
-        parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
 
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
-        path = utils.generate_path(parent_path, code, "catalogue category")
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
                 code=code,
                 is_leaf=catalogue_category.is_leaf,
-                path=path,
-                parent_path=parent_path,
                 parent_id=catalogue_category.parent_id,
                 catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
@@ -115,18 +111,11 @@ class CatalogueCategoryService:
         if "name" in update_data and update_data["name"] != stored_catalogue_category.name:
             stored_catalogue_category.name = update_data["name"]
             stored_catalogue_category.code = utils.generate_code(stored_catalogue_category.name, "catalogue category")
-            stored_catalogue_category.path = utils.generate_path(
-                stored_catalogue_category.parent_path, stored_catalogue_category.code, "catalogue category"
-            )
 
         if "parent_id" in update_data and update_data["parent_id"] != stored_catalogue_category.parent_id:
             stored_catalogue_category.parent_id = update_data["parent_id"]
             parent_catalogue_category = (
                 self.get(stored_catalogue_category.parent_id) if stored_catalogue_category.parent_id else None
-            )
-            stored_catalogue_category.parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
-            stored_catalogue_category.path = utils.generate_path(
-                stored_catalogue_category.parent_path, stored_catalogue_category.code, "catalogue category"
             )
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:

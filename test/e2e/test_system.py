@@ -19,8 +19,6 @@ SYSTEM_POST_A_EXPECTED = {
     **SYSTEM_POST_A,
     "id": ANY,
     "code": "system-a",
-    "path": "/system-a",
-    "parent_path": "/",
     "parent_id": None,
 }
 
@@ -36,8 +34,6 @@ SYSTEM_POST_B_EXPECTED = {
     **SYSTEM_POST_B,
     "id": ANY,
     "code": "system-b",
-    "path": "/system-a/system-b",
-    "parent_path": "/system-a",
 }
 
 SYSTEM_POST_C = {
@@ -51,8 +47,6 @@ SYSTEM_POST_C_EXPECTED = {
     **SYSTEM_POST_C,
     "id": ANY,
     "code": "system-c",
-    "path": "/system-c",
-    "parent_path": "/",
     "parent_id": None,
 }
 
@@ -284,7 +278,7 @@ def test_get_systems_with_parent_id_filter(test_client):
     """
     _, system_b, _ = _post_systems(test_client)
 
-    # Get only those with the given path
+    # Get only those with the given parent_id
     response = test_client.get("/v1/systems", params={"parent_id": system_b["parent_id"]})
 
     assert response.status_code == 200
@@ -298,7 +292,7 @@ def test_get_systems_with_null_parent_id_filter(test_client):
 
     system_a, _, system_c = _post_systems(test_client)
 
-    # Get only those with the given parent path
+    # Get only those with the given parent parent_id
     response = test_client.get("/v1/systems", params={"parent_id": "null"})
 
     assert response.status_code == 200
@@ -312,7 +306,7 @@ def test_get_systems_with_parent_id_filter_no_matching_results(test_client):
     """
     _, _, _ = _post_systems(test_client)
 
-    # Get only those with the given path and parent path
+    # Get only those with the given parent_id
     response = test_client.get("/v1/systems", params={"parent_id": str(ObjectId())})
 
     assert response.status_code == 200

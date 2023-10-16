@@ -101,8 +101,7 @@ class SystemRepo:
         """
         Retrieve Systems from a MongoDB database based on the provided filters
 
-        :param path: Path to filter Systems by
-        :param parent_path: Parent path to filter Systems by
+        :param parent_id: parent_id to filter Systems by
         :return: List of System's or an empty list if no Systems are retrieved
         """
         query = utils.list_query(parent_id, "systems")
