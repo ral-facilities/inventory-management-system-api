@@ -4,7 +4,7 @@ Unit tests for the `SystemRepo` repository
 
 
 from typing import Optional
-from unittest.mock import call
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bson import ObjectId
@@ -309,6 +309,27 @@ def test_get_with_non_existent_id(test_helpers, database_mock, system_repository
 
     database_mock.systems.find_one.assert_called_with({"_id": CustomObjectId(system_id)})
     assert retrieved_system is None
+
+
+@patch("inventory_management_system_api.repositories.system.query_breadcrumbs")
+def test_get_breadcrumbs(mock_query_breadcrumbs, database_mock, system_repository):
+    """
+    Test getting breadcrumbs for a specific system
+
+    Verify that the 'get_breadcrumbs' method properly handles the retrieval of breadcrumbs for a system
+    """
+    system_id = str(ObjectId())
+    mock_breadcrumbs = MagicMock()
+    mock_query_breadcrumbs.return_value = mock_breadcrumbs
+
+    retrieved_breadcrumbs = system_repository.get_breadcrumbs(system_id)
+
+    mock_query_breadcrumbs.assert_called_once_with(
+        entity_id=system_id,
+        entity_collection=database_mock.systems,
+        graph_lookup_from="systems",
+    )
+    assert retrieved_breadcrumbs == mock_breadcrumbs
 
 
 def test_list(test_helpers, database_mock, system_repository):

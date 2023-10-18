@@ -8,7 +8,6 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from inventory_management_system_api.core.breadcrumbs import compute_breadcrumbs
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,
@@ -69,7 +68,7 @@ def get_system_breadcrumbs(
     # pylint: disable=missing-function-docstring
     # pylint: disable=duplicate-code
     try:
-        return compute_breadcrumbs(entity_id=system_id, entity_service=system_service)
+        return system_service.get_breadcrumbs(system_id)
     except (InvalidObjectIdError, EntityNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System with such ID was not found") from exc
     except DatabaseIntegrityError as exc:
