@@ -492,7 +492,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_without_prop
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "Missing mandatory catalogue item property: 'Property A'"
+    assert (
+        response.json()["detail"]
+        == "Invalid value type for catalogue item property 'Property A'. Expected type: boolean."
+    )
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mandatory_properties(test_client):
