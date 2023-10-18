@@ -2,158 +2,186 @@
 Unit tests for the core/breadcrumbs.py functions
 """
 
-from collections import namedtuple
-from unittest.mock import Mock, call
+from unittest.mock import MagicMock
 
 import pytest
+from bson import ObjectId
 
 from inventory_management_system_api.core import breadcrumbs
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     EntityNotFoundError,
     InvalidObjectIdError,
 )
-from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
-from inventory_management_system_api.services.system import SystemService
 
-MockEntity = namedtuple("MockEntity", "id parent_id name")
+MOCK_AGGREGATE_RESPONSE_LESS_THAN_MAX_LENGTH = [
+    {
+        "result": [
+            {"_id": f"entity-id-{i}", "name": f"entity-name-{i}", "parent_id": None if i == 0 else f"entity-id-{i-1}"}
+            for i in range(0, BREADCRUMBS_TRAIL_MAX_LENGTH)
+        ]
+    }
+]
+MOCK_AGGREGATE_RESPONSE_GREATER_THAN_MAX_LENGTH = [
+    {
+        "result": [
+            {"_id": f"entity-id-{i}", "name": f"entity-name-{i}", "parent_id": f"entity-id-{i-1}"}
+            for i in range(10, 10 + BREADCRUMBS_TRAIL_MAX_LENGTH)
+        ]
+    }
+]
+MOCK_AGGREGATE_RESPONSE_NON_EXISTENT_ID = [{"result": []}]
+MOCK_AGGREGATE_RESPONSE_INVALID_PARENT_IN_DB = [
+    {
+        "result": [
+            {"_id": f"entity-id-{i}", "name": f"entity-name-{i}", "parent_id": f"entity-id-{i-1}"}
+            for i in range(10, 8 + BREADCRUMBS_TRAIL_MAX_LENGTH)
+        ]
+    }
+]
 
-# Reverse order here so first look up always has parents
-MOCK_ENTITIES = [
-    MockEntity(id=f"id-{i}", parent_id=None if i == 0 else f"id-{i-1}", name=f"name-{i}")
-    for i in range(0, BREADCRUMBS_TRAIL_MAX_LENGTH * 2)
-][::-1]
 
-
-@pytest.mark.parametrize(
-    "mock_service_type,expected_entity_type",
-    [(CatalogueCategoryService, "catalogue category"), (SystemService, "system")],
-)
 class TestComputeBreadcrumbsWhenValid:
-    """Test compute_breadcrumbs functions correctly when it has no errors"""
+    """Test query_breadcrumbs functions correctly when it has no errors"""
 
-    def _test_compute_breadcrumbs(self, mock_service_type, mock_entities, expected_trail_length, expected_full_trail):
-        """Utility function that tests compute_breadcrumbs and asserts a successful response
-        is as expected"""
+    def _get_expected_pipeline(self, entity_id: str, graph_lookup_from: str):
+        """Returns the aggregate pipeline expected given an entity_id and graph_lookup_from values"""
+        return [
+            # pylint: disable=duplicate-code
+            {"$match": {"_id": CustomObjectId(entity_id)}},
+            {
+                "$graphLookup": {
+                    "from": graph_lookup_from,
+                    "startWith": "$parent_id",
+                    "connectFromField": "parent_id",
+                    "connectToField": "_id",
+                    "as": "ancestors",
+                    # maxDepth 0 will do one parent look up i.e. a trail length of 2
+                    "maxDepth": BREADCRUMBS_TRAIL_MAX_LENGTH - 2,
+                    "depthField": "level",
+                }
+            },
+            {
+                "$facet": {
+                    "root": [{"$project": {"_id": 1, "name": 1, "parent_id": 1}}],
+                    "ancestors": [
+                        {"$unwind": "$ancestors"},
+                        {
+                            "$sort": {
+                                "ancestors.level": -1,
+                            },
+                        },
+                        {"$replaceRoot": {"newRoot": "$ancestors"}},
+                        {"$project": {"_id": 1, "name": 1, "parent_id": 1}},
+                    ],
+                }
+            },
+            {"$project": {"result": {"$concatArrays": ["$ancestors", "$root"]}}},
+            # pylint: enable=duplicate-code
+        ]
 
-        mock_service = Mock(mock_service_type)
-        mock_service.get.side_effect = mock_entities
-        result = breadcrumbs.compute_breadcrumbs(mock_entities[0].id, mock_service)
+    def _test_query_breadcrumbs(
+        self, mock_aggregate_response, expected_trail: list[tuple[str, str]], expected_full_trail: bool
+    ):
+        """Utility function to test query_breadcrumbs given the mock aggregate pipeline response and
+        expected breadcrumbs output"""
+        entity_id = str(ObjectId())
+        mock_entity_collection = MagicMock()
+        graph_lookup_from = MagicMock()
+        mock_entity_collection.aggregate.return_value = mock_aggregate_response
+        expected_pipeline = self._get_expected_pipeline(entity_id, graph_lookup_from)
 
-        # Maximum of BREADCRUMBS_TRAIL_MAX_LENGTH actually looked up via the service
-        expected_entities_looked_up = (
-            mock_entities
-            if len(mock_entities) <= BREADCRUMBS_TRAIL_MAX_LENGTH
-            else mock_entities[0:BREADCRUMBS_TRAIL_MAX_LENGTH]
+        result = breadcrumbs.query_breadcrumbs(
+            entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
         )
 
-        assert mock_service.get.call_args_list == [call(mock_entity.id) for mock_entity in expected_entities_looked_up]
-        assert mock_service.get.call_count == expected_trail_length
-        assert result.trail == [(mock_entity.id, mock_entity.name) for mock_entity in expected_entities_looked_up[::-1]]
+        mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
+
+        assert result.trail == expected_trail
         assert result.full_trail is expected_full_trail
 
-    # pylint:disable=W0613
-    def test_compute_breadcrumbs_with_single_breadcrumb(self, mock_service_type, expected_entity_type):
+    def test_query_breadcrumbs(self):
         """
-        Test compute_breadcrumbs functions correctly when there are no parent entities to look up
+        Test query_breadcrumbs functions correctly
         """
-        self._test_compute_breadcrumbs(
-            mock_service_type=mock_service_type,
-            mock_entities=[MOCK_ENTITIES[-1]],
-            expected_trail_length=1,
+        self._test_query_breadcrumbs(
+            mock_aggregate_response=MOCK_AGGREGATE_RESPONSE_LESS_THAN_MAX_LENGTH,
+            expected_trail=[
+                (entity["_id"], entity["name"]) for entity in MOCK_AGGREGATE_RESPONSE_LESS_THAN_MAX_LENGTH[0]["result"]
+            ],
             expected_full_trail=True,
         )
 
-    def test_compute_breadcrumbs_with_maximum_trail_length(self, mock_service_type, expected_entity_type):
+    def test_query_breadcrumbs_when_maximum_trail_length_exceeded(self):
         """
-        Test compute_breadcrumbs functions correctly when the breadcrumb trail length required is
-        equal to the maximum
+        Test query_breadcrumbs functions correctly when the maximum trail length is exceeded
         """
-        self._test_compute_breadcrumbs(
-            mock_service_type=mock_service_type,
-            # Want last BREADCRUMBS_TRAIL_MAX_LENGTH so last in trail has no parent
-            mock_entities=MOCK_ENTITIES[-BREADCRUMBS_TRAIL_MAX_LENGTH:],
-            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH,
-            expected_full_trail=True,
-        )
-
-    def test_compute_breadcrumbs_when_exceeding_maximum_trail_length(self, mock_service_type, expected_entity_type):
-        """
-        Test compute_breadcrumbs functions correctly when the breadcrumb trail length is longer than
-        the maximum i.e. the full trail is not returned
-        """
-        self._test_compute_breadcrumbs(
-            mock_service_type=mock_service_type,
-            mock_entities=MOCK_ENTITIES,
-            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH,
+        self._test_query_breadcrumbs(
+            mock_aggregate_response=MOCK_AGGREGATE_RESPONSE_GREATER_THAN_MAX_LENGTH,
+            expected_trail=[
+                (entity["_id"], entity["name"])
+                for entity in MOCK_AGGREGATE_RESPONSE_GREATER_THAN_MAX_LENGTH[0]["result"]
+            ],
             expected_full_trail=False,
         )
 
-    def test_compute_breadcrumbs_when_first_entity_id_invalid(self, mock_service_type, expected_entity_type):
+    def test_query_breadcrumbs_when_entity_not_found(self):
         """
-        Test compute_breadcrumbs raises an InvalidObjectIdError when the first entity looked
-        up has an invalid id
+        Test query_breadcrumbs functions correctly when the given entity_id is not found in the database
         """
-        mock_service = Mock(mock_service_type)
-        mock_error = InvalidObjectIdError("Some error message")
-        mock_service.get.side_effect = mock_error
+        entity_id = str(ObjectId())
+        mock_entity_collection = MagicMock()
+        graph_lookup_from = MagicMock()
+        expected_pipeline = self._get_expected_pipeline(entity_id, graph_lookup_from)
 
-        with pytest.raises(InvalidObjectIdError) as exc:
-            breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
-
-        mock_service.get.assert_called_once_with("entity_id")
-
-        assert str(exc.value) == str(mock_error)
-
-    def test_compute_breadcrumbs_when_first_entity_not_found(self, mock_service_type, expected_entity_type):
-        """
-        Test compute_breadcrumbs raises an EntityNotFoundError when the first entity looked
-        up doesn't exist
-        """
-        mock_service = Mock(mock_service_type)
-        mock_service.get.side_effect = [None]
+        mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_NON_EXISTENT_ID
 
         with pytest.raises(EntityNotFoundError) as exc:
-            breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
+            breadcrumbs.query_breadcrumbs(
+                entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+            )
 
-        mock_service.get.assert_called_once_with("entity_id")
+        mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
+        assert str(exc.value) == f"Entity with the ID {entity_id} was not found in the collection {graph_lookup_from}"
 
-        assert str(exc.value) == f"{expected_entity_type.capitalize()} with ID entity_id was not found"
-
-    def test_compute_breadcrumbs_when_second_entity_id_invalid(self, mock_service_type, expected_entity_type):
+    def test_query_breadcrumbs_when_entity_id_is_invalid(self):
         """
-        Test compute_breadcrumbs raises a DatabaseIntegrityError when the second entity looked
-        up has an invalid id
+        Test query_breadcrumbs functions correctly when the given entity_id is invalid
         """
-        mock_service = Mock(mock_service_type)
-        mock_error = InvalidObjectIdError("Some error message")
-        mock_service.get.side_effect = [MOCK_ENTITIES[0], mock_error]
+        entity_id = "invalid"
+        mock_entity_collection = MagicMock()
+        graph_lookup_from = MagicMock()
+
+        mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_NON_EXISTENT_ID
+
+        with pytest.raises(InvalidObjectIdError) as exc:
+            breadcrumbs.query_breadcrumbs(
+                entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+            )
+
+        mock_entity_collection.aggregate.assert_not_called()
+        assert str(exc.value) == f"Invalid ObjectId value '{entity_id}'"
+
+    def test_query_breadcrumbs_when_invalid_parent_in_db(self):
+        """
+        Test query_breadcrumbs functions correctly when there is an invalid parent id in the database
+        """
+        entity_id = str(ObjectId())
+        mock_entity_collection = MagicMock()
+        graph_lookup_from = MagicMock()
+        expected_pipeline = self._get_expected_pipeline(entity_id, graph_lookup_from)
+
+        mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_INVALID_PARENT_IN_DB
 
         with pytest.raises(DatabaseIntegrityError) as exc:
-            breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
+            breadcrumbs.query_breadcrumbs(
+                entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+            )
 
-        assert mock_service.get.call_args_list == [call("entity_id"), call(MOCK_ENTITIES[1].id)]
-
+        mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
         assert str(exc.value) == (
-            f"{expected_entity_type.capitalize()} ID {MOCK_ENTITIES[1].id} was invalid while finding "
-            "breadcrumbs for entity_id"
-        )
-
-    def test_compute_breadcrumbs_when_second_entity_not_found(self, mock_service_type, expected_entity_type):
-        """
-        Test compute_breadcrumbs raises a DatabaseIntegrityError when the second entity looked
-        up doesn't exist
-        """
-        mock_service = Mock(mock_service_type)
-        mock_service.get.side_effect = [MOCK_ENTITIES[0], None]
-
-        with pytest.raises(DatabaseIntegrityError) as exc:
-            breadcrumbs.compute_breadcrumbs("entity_id", mock_service)
-
-        assert mock_service.get.call_args_list == [call("entity_id"), call(MOCK_ENTITIES[1].id)]
-
-        assert str(exc.value) == (
-            f"{expected_entity_type.capitalize()} with ID {MOCK_ENTITIES[1].id} was not found while finding "
-            "breadcrumbs for entity_id"
+            f"Unable to locate full trail for entity with id '{entity_id}' from the database collection "
+            f"'{graph_lookup_from}'"
         )

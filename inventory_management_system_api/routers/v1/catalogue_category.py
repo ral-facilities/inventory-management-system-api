@@ -7,7 +7,6 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
-from inventory_management_system_api.core.breadcrumbs import compute_breadcrumbs
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,
@@ -77,7 +76,7 @@ def get_catalogue_category_breadcrumbs(
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
     try:
-        return compute_breadcrumbs(entity_id=catalogue_category_id, entity_service=catalogue_category_service)
+        return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (InvalidObjectIdError, EntityNotFoundError) as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Catalogue category with such ID was not found"

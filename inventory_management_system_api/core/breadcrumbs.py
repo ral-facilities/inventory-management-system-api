@@ -2,72 +2,81 @@
 Useful functions for computing breadcrumbs
 """
 import logging
-from typing import Optional
+
+from pymongo.collection import Collection
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
-from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    EntityNotFoundError,
-    InvalidObjectIdError,
-)
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.exceptions import DatabaseIntegrityError, EntityNotFoundError
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
-from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
-from inventory_management_system_api.services.system import SystemService
 
 logger = logging.getLogger()
 
 
-def compute_breadcrumbs(
-    entity_id: str, entity_service: CatalogueCategoryService | SystemService
-) -> BreadcrumbsGetSchema:
+def query_breadcrumbs(entity_id: str, entity_collection: Collection, graph_lookup_from: str) -> BreadcrumbsGetSchema:
     """
-    Compute breadcrumbs for an entity given it's ID
+    Query breadcrumbs for an entity given it's ID
 
     :param entity_id: ID of the entity to look up
-    :param entity_service: Service for looking up entities - It is assumed that this has a get(entity_id) function
-                           that either returns the entity (complete with an id, name and parent_id field), or None if
-                           it isn't found
-    :raises DatabaseIntegrityError: If the entity_service.get either raises an InvalidObjectIdError or returns None
-                                    for any parent entity found as this should not be possible if the database
-                                    integrity is maintained
+    :param entity_collection: Collection for looking up entities - It is assumed that the entities have
+                              an _id, _name and parent_id field
+    :param graph_lookup_from: Value of "from" to use for the $graphLookup query - Should be the name of
+                              the collection
     :raises InvalidObjectIdError: If the given entity_id is invalid
-    :raises EntityNotFoundError: If the entity with the given entity_id is not found
+    :raises DatabaseIntegrityError: If the query returns a less than the maximum allowed trail while not
+                                    giving the full trail - this indicates a parent_id is invalid or doesn't
+                                    exist in the database which shouldn't occur
     :return: See BreadcrumbsGetSchema
     """
-    # For logging
-    entity_type: str = "unknown"
-    if isinstance(entity_service, CatalogueCategoryService):
-        entity_type = "catalogue category"
-    elif isinstance(entity_service, SystemService):
-        entity_type = "system"
-
-    logger.info("Computing breadcrumbs for %s with ID %s", entity_type, entity_id)
 
     trail: list[tuple[str, str]] = []
-    next_id: Optional[str] = entity_id
 
-    try:
-        # Keep adding to the trail until either the max length is reached, or the next id to look up is None
-        # i.e. there is no parent
-        while len(trail) < BREADCRUMBS_TRAIL_MAX_LENGTH and next_id is not None:
-            entity = entity_service.get(next_id)
-            if entity is None:
-                raise EntityNotFoundError(f"{entity_type.capitalize()} with ID {next_id} was not found")
-            trail.append((entity.id, entity.name))
-            next_id = entity.parent_id
-    except (InvalidObjectIdError, EntityNotFoundError) as exc:
-        # If occurred on first element, then it effects the given entity_id, otherwise
-        # should be a database integrity issue as it effects one of the parents
-        if len(trail) == 0:
-            logger.exception(str(exc))
-            raise exc
-
-        specific_error_message = (
-            f"ID {next_id} was invalid" if isinstance(exc, InvalidObjectIdError) else f"with ID {next_id} was not found"
+    result = list(
+        entity_collection.aggregate(
+            [
+                {"$match": {"_id": CustomObjectId(entity_id)}},
+                {
+                    "$graphLookup": {
+                        "from": graph_lookup_from,
+                        "startWith": "$parent_id",
+                        "connectFromField": "parent_id",
+                        "connectToField": "_id",
+                        "as": "ancestors",
+                        # maxDepth 0 will do one parent look up i.e. a trail length of 2
+                        "maxDepth": BREADCRUMBS_TRAIL_MAX_LENGTH - 2,
+                        "depthField": "level",
+                    }
+                },
+                {
+                    "$facet": {
+                        "root": [{"$project": {"_id": 1, "name": 1, "parent_id": 1}}],
+                        "ancestors": [
+                            {"$unwind": "$ancestors"},
+                            {
+                                "$sort": {
+                                    "ancestors.level": -1,
+                                },
+                            },
+                            {"$replaceRoot": {"newRoot": "$ancestors"}},
+                            {"$project": {"_id": 1, "name": 1, "parent_id": 1}},
+                        ],
+                    }
+                },
+                {"$project": {"result": {"$concatArrays": ["$ancestors", "$root"]}}},
+            ]
         )
-        message = f"{entity_type.capitalize()} {specific_error_message} while finding breadcrumbs for {entity_id}"
-        logger.exception(message)
-        raise DatabaseIntegrityError(message) from exc
+    )[0]["result"]
+    if len(result) == 0:
+        raise EntityNotFoundError(f"Entity with the ID {entity_id} was not found in the collection {graph_lookup_from}")
+    for element in result:
+        trail.append((str(element["_id"]), element["name"]))
+    full_trail = result[0]["parent_id"] is None
 
-    # Reverse trail here as should be faster than inserting to front
-    return BreadcrumbsGetSchema(trail=trail[::-1], full_trail=next_id is None)
+    # Ensure none of the parent_id's are invalid - if they are we wont get the full trail even though we are supposed
+    # to
+    if not full_trail and len(trail) != BREADCRUMBS_TRAIL_MAX_LENGTH:
+        raise DatabaseIntegrityError(
+            f"Unable to locate full trail for entity with id '{entity_id}' from the database collection "
+            f"'{graph_lookup_from}'"
+        )
+    return BreadcrumbsGetSchema(trail=trail, full_trail=full_trail)

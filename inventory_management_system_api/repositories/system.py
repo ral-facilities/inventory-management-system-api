@@ -8,6 +8,7 @@ from fastapi import Depends
 from pymongo.collection import Collection
 from pymongo.database import Database
 
+from inventory_management_system_api.core.breadcrumbs import query_breadcrumbs
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
@@ -17,6 +18,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
 logger = logging.getLogger()
 
@@ -96,6 +98,19 @@ class SystemRepo:
         if system:
             return SystemOut(**system)
         return None
+
+    def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific system
+
+        :param system_id: ID of the system to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        return query_breadcrumbs(
+            entity_id=system_id,
+            entity_collection=self._systems_collection,
+            graph_lookup_from="systems",
+        )
 
     def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """

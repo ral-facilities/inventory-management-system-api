@@ -11,6 +11,7 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.system import SystemRepo
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.system import SystemService
@@ -116,6 +117,18 @@ class ServiceTestHelpers:
             repo_objs = list(repository_mock.get.side_effect)
             repo_objs.append(repo_obj)
             repository_mock.get.side_effect = repo_objs
+
+    @staticmethod
+    def mock_get_breadcrumbs(repository_mock: Mock, breadcrumbs_obj: Union[BreadcrumbsGetSchema, None]) -> None:
+        """
+        Mock the `get_breadcrumbs` method of the repository mock to return a specific repository
+        object
+
+        :param repository_mock: Mocked repository instance.
+        :param breadcrumbs_obj: The breadcrumbs object be returned by the `get_breadcrumbs` method.
+        """
+        if repository_mock.get_breadcrumbs.side_effect is None:
+            repository_mock.get_breadcrumbs.side_effect = [breadcrumbs_obj]
 
     @staticmethod
     def mock_list(repository_mock: Mock, repo_objs: List[Union[CatalogueCategoryOut, CatalogueItemOut]]) -> None:

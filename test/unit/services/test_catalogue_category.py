@@ -1,13 +1,15 @@
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
+from unittest.mock import MagicMock
+
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import LeafCategoryError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryOut,
     CatalogueCategoryIn,
+    CatalogueCategoryOut,
     CatalogueItemProperty,
 )
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -265,6 +267,24 @@ def test_get_with_nonexistent_id(test_helpers, catalogue_category_repository_moc
 
     assert retrieved_catalogue_category is None
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
+
+
+def test_get_breadcrumbs(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test getting breadcrumbs for a catalogue category
+
+    Verify that the `get_breadcrumbs` method properly handles the retrieval of a System
+    """
+    catalogue_category_id = str(ObjectId)
+    breadcrumbs = MagicMock()
+
+    # Mock `get` to return breadcrumbs
+    test_helpers.mock_get_breadcrumbs(catalogue_category_repository_mock, breadcrumbs)
+
+    retrieved_breadcrumbs = catalogue_category_service.get_breadcrumbs(catalogue_category_id)
+
+    catalogue_category_repository_mock.get_breadcrumbs.assert_called_once_with(catalogue_category_id)
+    assert retrieved_breadcrumbs == breadcrumbs
 
 
 def test_list(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
