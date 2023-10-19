@@ -112,7 +112,7 @@ class CatalogueCategoryRepo:
             graph_lookup_from="catalogue_categories",
         )
 
-    def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn):
+    def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:
         """
         Update a catalogue category by its ID in a MongoDB database.
 

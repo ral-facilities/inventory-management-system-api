@@ -91,3 +91,36 @@ jobs:
 
       - name: Run e2e tests
         run: DATABASE__NAME="test-ims" pytest test/e2e/ --cov
+
+  docker:
+    # This job triggers only if all the other jobs succeed and does different things depending on the context.
+    # The job builds the Docker image in all cases and also pushes the image to Harbor only if something is
+    # pushed to the develop branch.
+    needs: [linting, unit-tests, e2e-tests]
+    name: Docker
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+    - name: Login to Harbor
+      uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+      with:
+        registry: harbor.stfc.ac.uk/inventory-management-system
+        username: ${{ secrets.HARBOR_USERNAME }}
+        password: ${{ secrets.HARBOR_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      with:
+        images: harbor.stfc.ac.uk/inventory-management-system/ims-api
+
+    - name: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && 'Build and push Docker image to Harbor' || 'Build Docker image' }}
+      uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
+      with:
+        context: .
+        file: ./Dockerfile.prod
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}

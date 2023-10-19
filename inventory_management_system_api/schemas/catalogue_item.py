@@ -47,6 +47,19 @@ class CatalogueItemPostRequestSchema(BaseModel):
     manufacturer: ManufacturerSchema = Field(description="The details of the manufacturer")
 
 
+class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
+    """
+    Schema model for a catalogue item update request.
+    """
+
+    catalogue_category_id: Optional[str] = Field(
+        description="The ID of the catalogue category that the catalogue item belongs to"
+    )
+    name: Optional[str] = Field(description="The name of the catalogue item")
+    description: Optional[str] = Field(description="The catalogue item description")
+    manufacturer: Optional[ManufacturerSchema] = Field(description="The details of the manufacturer")
+
+
 class CatalogueItemSchema(CatalogueItemPostRequestSchema):
     """
     Schema model for a catalogue item response.
