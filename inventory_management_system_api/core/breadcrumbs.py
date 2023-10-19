@@ -7,7 +7,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DatabaseIntegrityError, EntityNotFoundError
+from inventory_management_system_api.core.exceptions import DatabaseIntegrityError, MissingRecordError
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
 logger = logging.getLogger()
@@ -67,7 +67,7 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, graph_looku
         )
     )[0]["result"]
     if len(result) == 0:
-        raise EntityNotFoundError(f"Entity with the ID {entity_id} was not found in the collection {graph_lookup_from}")
+        raise MissingRecordError(f"Entity with the ID {entity_id} was not found in the collection {graph_lookup_from}")
     for element in result:
         trail.append((str(element["_id"]), element["name"]))
     full_trail = result[0]["parent_id"] is None
