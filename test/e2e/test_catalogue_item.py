@@ -290,6 +290,7 @@ def test_delete_catalogue_item_with_children_items():
     """
     Test deleting a catalogue item with children items.
     """
+    # pylint: disable=fixme
     # TODO - Implement this test when the relevant item logic is implemented
 
 

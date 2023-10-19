@@ -50,6 +50,7 @@ class CatalogueItemRepo:
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
+        # pylint: disable=fixme
         # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
         result = self._collection.delete_one({"_id": catalogue_item_id})

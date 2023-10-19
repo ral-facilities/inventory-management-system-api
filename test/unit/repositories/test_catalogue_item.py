@@ -92,6 +92,7 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
 
+    # pylint: disable=fixme
     # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
 
     catalogue_item_repository.delete(catalogue_item_id)
@@ -105,6 +106,7 @@ def test_delete_with_children_items():
 
     Verify that the `delete` method properly handles the deletion of a catalogue item with children items.
     """
+    # pylint: disable=fixme
     # TODO - Implement this test when the relevant item logic is implemented
 
 
@@ -130,6 +132,7 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_items, 0)
 
+    # pylint: disable=fixme
     # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
 
     with pytest.raises(MissingRecordError) as exc:
