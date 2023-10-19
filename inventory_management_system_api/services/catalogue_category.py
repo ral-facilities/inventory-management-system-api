@@ -113,32 +113,22 @@ class CatalogueCategoryService:
         if not stored_catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
-        if "name" in update_data and update_data["name"] != stored_catalogue_category.name:
-            stored_catalogue_category.name = update_data["name"]
-            stored_catalogue_category.code = utils.generate_code(stored_catalogue_category.name, "catalogue category")
-            stored_catalogue_category.path = utils.generate_path(
-                stored_catalogue_category.parent_path, stored_catalogue_category.code, "catalogue category"
+        if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
+            update_data["code"] = utils.generate_code(catalogue_category.name, "catalogue category")
+            update_data["path"] = utils.generate_path(
+                stored_catalogue_category.parent_path, update_data["code"], "catalogue category"
             )
 
-        if "parent_id" in update_data and update_data["parent_id"] != stored_catalogue_category.parent_id:
-            stored_catalogue_category.parent_id = update_data["parent_id"]
-            parent_catalogue_category = (
-                self.get(stored_catalogue_category.parent_id) if stored_catalogue_category.parent_id else None
-            )
-            stored_catalogue_category.parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
-            stored_catalogue_category.path = utils.generate_path(
-                stored_catalogue_category.parent_path, stored_catalogue_category.code, "catalogue category"
-            )
+        if "parent_id" in update_data and catalogue_category.parent_id != stored_catalogue_category.parent_id:
+            parent_catalogue_category = self.get(catalogue_category.parent_id) if catalogue_category.parent_id else None
+            update_data["parent_path"] = parent_catalogue_category.path if parent_catalogue_category else "/"
+            code = update_data["code"] if "code" in update_data else stored_catalogue_category.code
+            update_data["path"] = utils.generate_path(update_data["parent_path"], code, "catalogue category")
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
-        if "is_leaf" in update_data:
-            stored_catalogue_category.is_leaf = update_data["is_leaf"]
-
-        if "catalogue_item_properties" in update_data:
-            stored_catalogue_category.catalogue_item_properties = update_data["catalogue_item_properties"]
-
+        stored_catalogue_category = stored_catalogue_category.copy(update=update_data)
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.dict())
         )

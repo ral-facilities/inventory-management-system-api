@@ -97,7 +97,7 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
-    def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn):
+    def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:
         """
         Update a catalogue category by its ID in a MongoDB database.
 
