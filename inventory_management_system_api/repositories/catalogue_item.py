@@ -10,7 +10,7 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import DuplicateRecordError
+from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 
 logger = logging.getLogger()
@@ -34,19 +34,28 @@ class CatalogueItemRepo:
         """
         Create a new catalogue item in a MongoDB database.
 
-        The method checks if a duplicate catalogue item is found within the catalogue category.
-
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
-        :raises DuplicateRecordError: If a duplicate catalogue item is found within the catalogue category.
         """
-        if self._is_duplicate_catalogue_item(str(catalogue_item.catalogue_category_id), catalogue_item.name):
-            raise DuplicateRecordError("Duplicate catalogue item found within the catalogue category")
-
         logger.info("Inserting the new catalogue item into the database")
         result = self._collection.insert_one(catalogue_item.dict())
         catalogue_item = self.get(str(result.inserted_id))
         return catalogue_item
+
+    def delete(self, catalogue_item_id: str) -> None:
+        """
+        Delete a catalogue item by its ID from a MongoDB database.
+
+        :param catalogue_item_id: The ID of the catalogue item to delete.
+        :raises MissingRecordError: If the catalogue item doesn't exist.
+        """
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+        # pylint: disable=fixme
+        # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements
+        logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
+        result = self._collection.delete_one({"_id": catalogue_item_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No catalogue item found with ID: {str(catalogue_item_id)}")
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """
@@ -61,6 +70,23 @@ class CatalogueItemRepo:
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
         return None
+
+    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemIn) -> CatalogueItemOut:
+        """
+        Update a catalogue item by its ID in a MongoDB database.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item: The catalogue item containing the update data.
+        :return: The updated catalogue item.
+        """
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+        # pylint: disable=fixme
+        # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements if the
+        #  `catalogue_category_id` is being updated.
+        logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
+        self._collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.dict()})
+        catalogue_item = self.get(str(catalogue_item_id))
+        return catalogue_item
 
     def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
         """
@@ -83,15 +109,3 @@ class CatalogueItemRepo:
 
         catalogue_items = self._collection.find(query)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
-
-    def _is_duplicate_catalogue_item(self, catalogue_category_id: str, name: str) -> bool:
-        """
-        Check if a catalogue item with the same name already exists within the catalogue category.
-
-        :param catalogue_category_id: The ID of the catalogue category to check for duplicates in.
-        :return: `True` if a duplicate catalogue item is found, `False` otherwise.
-        """
-        logger.info("Checking if catalogue item with name '%s' already exists within the category", name)
-        catalogue_category_id = CustomObjectId(catalogue_category_id)
-        count = self._collection.count_documents({"catalogue_category_id": catalogue_category_id, "name": name})
-        return count > 0
