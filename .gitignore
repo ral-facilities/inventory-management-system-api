@@ -2,6 +2,7 @@
 .vscode/
 mongodb/data/*
 !mongodb/data/.keep
+inventory_management_system_api/logging.ini
 
 
 # Byte-compiled / optimized / DLL files

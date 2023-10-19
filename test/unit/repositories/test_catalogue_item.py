@@ -1,6 +1,8 @@
 """
 Unit tests for the `CatalogueItemRepo` repository.
 """
+from unittest.mock import MagicMock
+
 import pytest
 from bson import ObjectId
 
@@ -346,3 +348,79 @@ def test_list_with_invalid_catalogue_category_id_filter(catalogue_item_repositor
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_item_repository.list("invalid")
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_update(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test updating a catalogue item.
+
+    Verify that the `update` method properly handles the catalogue item to be updated.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_item_info = {
+        "name": "Catalogue Item B",
+        "description": "This is Catalogue Item B",
+        "properties": [
+            {"name": "Property A", "value": 20, "unit": "mm"},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        ],
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "web_url": "https://www.manufacturer-a.co.uk",
+        },
+    }
+    # pylint: enable=duplicate-code
+    catalogue_item = CatalogueItemOut(id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **catalogue_item_info)
+
+    # Mock `update_one` to return an object for the updated catalogue item document
+    test_helpers.mock_update_one(database_mock.catalogue_items)
+    # Mock `find_one` to return the updated catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items,
+        {
+            "_id": CustomObjectId(catalogue_item.id),
+            "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+            **catalogue_item_info,
+        },
+    )
+
+    catalogue_item_in = CatalogueItemIn(
+        catalogue_category_id=catalogue_item.catalogue_category_id, **catalogue_item_info
+    )
+    updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in)
+
+    database_mock.catalogue_items.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item.id)},
+        {
+            "$set": {
+                "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+                **catalogue_item_in.dict(),
+            }
+        },
+    )
+    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item.id)})
+    assert updated_catalogue_item == catalogue_item
+
+
+def test_update_with_invalid_id(catalogue_item_repository):
+    """
+    Test updating a catalogue category with invalid ID.
+
+    Verify that the `update` method properly handles the update of a catalogue category with an invalid ID.
+    """
+    update_catalogue_item = MagicMock()
+    catalogue_item_id = "invalid"
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
+    assert str(exc.value) == f"Invalid ObjectId value '{catalogue_item_id}'"
+
+
+def test_update_has_child_items():
+    """
+    Test updating a catalogue item with child items.
+    """
+    # pylint: disable=fixme
+    # TODO - Implement this test when the relevant item logic is implemented.
