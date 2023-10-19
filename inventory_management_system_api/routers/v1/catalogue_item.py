@@ -130,3 +130,23 @@ def partial_update_catalogue_item(
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.delete(
+    path="/{catalogue_item_id}",
+    summary="Delete a catalogue item by ID",
+    response_description="Catalogue item deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_catalogue_item(
+    catalogue_item_id: str = Path(description="The ID of the catalogue item to delete"),
+    catalogue_item_service: CatalogueItemService = Depends(),
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
+    try:
+        catalogue_item_service.delete(catalogue_item_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "A catalogue item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
