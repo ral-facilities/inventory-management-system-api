@@ -586,6 +586,7 @@ def test_update_change_from_leaf_to_non_leaf(
     """
     Test changing a catalogue category from leaf to non-leaf.
     """
+    # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",
@@ -594,6 +595,7 @@ def test_update_change_from_leaf_to_non_leaf(
         parent_id=None,
         catalogue_item_properties=[],
     )
+    # pylint: enable=duplicate-code
 
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(

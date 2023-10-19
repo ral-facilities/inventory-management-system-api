@@ -826,17 +826,11 @@ def test_update_with_invalid_id(catalogue_category_repository):
     """
     Test updating a catalogue category with invalid ID.
 
-    Verify that the `update` method properly handles the update of a catalogue category with a nonexistent ID.
+    Verify that the `update` method properly handles the update of a catalogue category with an invalid ID.
     """
-    update_catalogue_category = CatalogueCategoryIn(
-        name="Category B",
-        code="category-b",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-
+    update_catalogue_category = MagicMock()
     catalogue_category_id = "invalid"
+
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.update(catalogue_category_id, update_catalogue_category)
     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_category_id}'"
