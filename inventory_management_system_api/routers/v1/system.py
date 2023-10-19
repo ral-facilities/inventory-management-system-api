@@ -12,7 +12,6 @@ from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,
     DuplicateRecordError,
-    EntityNotFoundError,
     InvalidObjectIdError,
     MissingRecordError,
 )
@@ -70,7 +69,7 @@ def get_system_breadcrumbs(
     # pylint: disable=duplicate-code
     try:
         return system_service.get_breadcrumbs(system_id)
-    except (InvalidObjectIdError, EntityNotFoundError) as exc:
+    except (MissingRecordError, InvalidObjectIdError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System with such ID was not found") from exc
     except DatabaseIntegrityError as exc:
         raise HTTPException(

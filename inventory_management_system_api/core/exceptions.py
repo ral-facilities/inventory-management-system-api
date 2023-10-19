@@ -61,9 +61,3 @@ class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been
     """
-
-
-class EntityNotFoundError(Exception):
-    """
-    An entity with a given ID was not found
-    """

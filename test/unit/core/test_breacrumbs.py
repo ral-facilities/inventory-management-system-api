@@ -12,8 +12,8 @@ from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LE
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
-    EntityNotFoundError,
     InvalidObjectIdError,
+    MissingRecordError,
 )
 
 MOCK_AGGREGATE_RESPONSE_LESS_THAN_MAX_LENGTH = [
@@ -138,7 +138,7 @@ class TestComputeBreadcrumbsWhenValid:
 
         mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_NON_EXISTENT_ID
 
-        with pytest.raises(EntityNotFoundError) as exc:
+        with pytest.raises(MissingRecordError) as exc:
             breadcrumbs.query_breadcrumbs(
                 entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
             )

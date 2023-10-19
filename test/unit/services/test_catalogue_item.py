@@ -466,6 +466,19 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
 
+def test_delete(catalogue_item_repository_mock, catalogue_item_service):
+    """
+    Test deleting a catalogue item.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
+    """
+    catalogue_item_id = str(ObjectId)
+
+    catalogue_item_service.delete(catalogue_item_id)
+
+    catalogue_item_repository_mock.delete.assert_called_once_with(catalogue_item_id)
+
+
 def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test getting a catalogue item.

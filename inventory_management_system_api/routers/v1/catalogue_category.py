@@ -11,7 +11,6 @@ from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,
     DuplicateRecordError,
-    EntityNotFoundError,
     InvalidObjectIdError,
     LeafCategoryError,
     MissingRecordError,
@@ -77,7 +76,7 @@ def get_catalogue_category_breadcrumbs(
     # pylint: disable=missing-function-docstring
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
-    except (InvalidObjectIdError, EntityNotFoundError) as exc:
+    except (MissingRecordError, InvalidObjectIdError) as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Catalogue category with such ID was not found"
         ) from exc

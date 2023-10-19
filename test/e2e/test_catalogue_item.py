@@ -250,6 +250,50 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
     )
 
 
+def test_delete_catalogue_item(test_client):
+    """
+    Test deleting a catalogue item.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_item_post = get_catalogue_item_a_dict(response.json()["id"])
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item = response.json()
+
+    response = test_client.delete(f"/v1/catalogue-items/{catalogue_item['id']}")
+
+    assert response.status_code == 204
+    response = test_client.delete(f"/v1/catalogue-items/{catalogue_item['id']}")
+    assert response.status_code == 404
+
+
+def test_delete_catalogue_item_with_invalid_id(test_client):
+    """
+    Test deleting a catalogue item with an invalid ID.
+    """
+    response = test_client.delete("/v1/catalogue-items/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+
+
+def test_delete_catalogue_item_with_nonexistent_id(test_client):
+    """
+    Test deleting a catalogue item with a nonexistent ID.
+    """
+    response = test_client.delete(f"/v1/catalogue-items/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+
+
+def test_delete_catalogue_item_with_children_items():
+    """
+    Test deleting a catalogue item with children items.
+    """
+    # pylint: disable=fixme
+    # TODO - Implement this test when the relevant item logic is implemented
+
+
 def test_get_catalogue_item(test_client):
     """
     Test getting a catalogue item.
