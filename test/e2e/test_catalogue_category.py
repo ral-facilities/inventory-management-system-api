@@ -80,12 +80,12 @@ def _post_nested_catalogue_categories(test_client, entities: list[dict]):
 def _post_catalogue_categories(test_client):
     """Utility function for posting all mock systems defined at the top of this file"""
 
-    (system_a, system_b, *_) = _post_nested_catalogue_categories(
+    (category_a, category_b, *_) = _post_nested_catalogue_categories(
         test_client, [CATALOGUE_CATEGORY_POST_A, CATALOGUE_CATEGORY_POST_B]
     )
-    (system_c, *_) = _post_nested_catalogue_categories(test_client, [CATALOGUE_CATEGORY_POST_C])
+    (category_c, *_) = _post_nested_catalogue_categories(test_client, [CATALOGUE_CATEGORY_POST_C])
 
-    return system_a, system_b, system_c
+    return category_a, category_b, category_c
 
 
 def _post_n_catalogue_categories(test_client, number):
