@@ -291,126 +291,19 @@ def test_get_breadcrumbs(test_helpers, catalogue_category_repository_mock, catal
     assert retrieved_breadcrumbs == breadcrumbs
 
 
-def test_list(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_list(catalogue_category_repository_mock, catalogue_category_service):
     """
-    Test getting catalogue categories.
+    Test listing catalogue categories.
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories without filters.
+    Verify that the `list` method properly calls the repository function with any passed filters
     """
-    # pylint: disable=duplicate-code
-    catalogue_category_a = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category A",
-        code="category-a",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
 
-    catalogue_category_b = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category B",
-        code="category-b",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-    # pylint: enable=duplicate-code
+    parent_id = MagicMock()
 
-    # Mock `list` to return a list of catalogue categories
-    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category_a, catalogue_category_b])
-
-    retrieved_catalogue_categories = catalogue_category_service.list(None)
-
-    catalogue_category_repository_mock.list.assert_called_once_with(None)
-    assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
-
-
-def test_list_with_parent_id_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
-    """
-    Test getting catalogue categories based on the provided parent_id filter.
-
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided
-    parent_id filter.
-    """
-    # pylint: disable=duplicate-code
-    catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category A",
-        code="category-a",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-    # pylint: enable=duplicate-code
-
-    # Mock `list` to return a list of catalogue categories
-    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category])
-
-    parent_id = str(ObjectId())
-    retrieved_catalogue_categories = catalogue_category_service.list(parent_id)
+    result = catalogue_category_service.list(parent_id=parent_id)
 
     catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
-    assert retrieved_catalogue_categories == [catalogue_category]
-
-
-def test_list_with_null_parent_id_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
-    """
-    Test getting catalogue categories when given a parent_id filter of "null"
-
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided
-    parent_id filter.
-    """
-    # pylint: disable=duplicate-code
-    catalogue_category_a = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category A",
-        code="category-a",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-    # pylint: enable=duplicate-code
-
-    # pylint: disable=duplicate-code
-    catalogue_category_b = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category B",
-        code="category-b",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-    # pylint: enable=duplicate-code
-
-    # Mock `list` to return a list of catalogue categories
-    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category_a, catalogue_category_b])
-
-    parent_id = str(ObjectId())
-    retrieved_catalogue_categories = catalogue_category_service.list(parent_id)
-
-    catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
-    assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
-
-
-def test_list_with_parent_id_filter_no_matching_results(
-    test_helpers, catalogue_category_repository_mock, catalogue_category_service
-):
-    """
-    Test getting catalogue categories based on the provided parent_id filter when there is no matching
-    results in the database.
-
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the parent_id
-    filter.
-    """
-    # Mock `list` to return an empty list of catalogue categories
-    test_helpers.mock_list(catalogue_category_repository_mock, [])
-
-    parent_id = str(ObjectId())
-    retrieved_catalogue_categories = catalogue_category_service.list(parent_id)
-
-    catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
-    assert retrieved_catalogue_categories == []
+    assert result == catalogue_category_repository_mock.list.return_value
 
 
 def test_update(test_helpers, catalogue_category_repository_mock, catalogue_category_service):

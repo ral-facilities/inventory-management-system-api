@@ -2,33 +2,12 @@
 Unit tests for the `SystemService` service
 """
 
-from typing import Optional
 from unittest.mock import MagicMock
 
 from bson import ObjectId
 
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPostRequestSchema
-
-
-def _test_list(test_helpers, system_repository_mock, system_service, parent_id: Optional[str]):
-    """
-    Utility method that tests getting Systems
-
-    Verifies that the `list` method properly handles the retrieval of systems with the given filters
-    """
-    systems = [MagicMock(), MagicMock()]
-
-    # Mock `list` to return a list of systems
-    test_helpers.mock_list(
-        system_repository_mock,
-        systems,
-    )
-
-    retrieved_systems = system_service.list(parent_id)
-
-    system_repository_mock.list.assert_called_once_with(parent_id)
-    assert retrieved_systems == systems
 
 
 def test_create(test_helpers, system_repository_mock, system_service):
@@ -204,47 +183,16 @@ def test_get_breadcrumbs(test_helpers, system_repository_mock, system_service):
     assert retrieved_breadcrumbs == breadcrumbs
 
 
-def test_list(test_helpers, system_repository_mock, system_service):
+def test_list(system_repository_mock, system_service):
     """
-    Test getting Systems
+    Test listing systems
 
-    Verify that the `list` method properly handles the retrieval of Systems without filters
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, None)
-
-
-def test_list_with_parent_id_filter(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting Systems based on the provided parent_id filter
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id filter
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, str(ObjectId()))
-
-
-def test_list_with_null_parent_id_filter(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting Systems based on the provided parent_id filter
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id filter
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, "null")
-
-
-def test_list_with_parent_id_filter_no_matching_results(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting Systems based on the provided parent_id filter when there is no matching results in the
-    database
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id
-    filter when there is no matching results in the database
+    Verify that the `list` method properly calls the repository function with any passed filters
     """
 
-    # Mock `list` to return an empty list of Systems
-    test_helpers.mock_list(system_repository_mock, [])
+    parent_id = MagicMock()
 
-    parent_id = str(ObjectId())
-    retrieved_systems = system_service.list(parent_id)
+    result = system_service.list(parent_id=parent_id)
 
     system_repository_mock.list.assert_called_once_with(parent_id)
-    assert retrieved_systems == []
+    assert result == system_repository_mock.list.return_value
