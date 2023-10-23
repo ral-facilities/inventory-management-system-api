@@ -1,6 +1,7 @@
 """
 End-to-End tests for the manufacturer router.
 """
+from bson import ObjectId
 import pytest
 
 
@@ -99,3 +100,36 @@ def test_list_when_no_manufacturers(test_client):
     assert response.status_code == 200
     manufacturers = list(response.json())
     assert not manufacturers
+
+
+def test_get_manufacturer_with_id(test_client):
+    """Test getting a manufacturer by ID"""
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": "Street A",
+    }
+    response = test_client.post("/v1/manufacturer", json=manufacturer_post)
+    response = test_client.get(f"/v1/manufacturer/{response.json()['id']}")
+    assert response.status_code == 200
+    manufacturer = response.json()
+
+    assert manufacturer["name"] == manufacturer_post["name"]
+    assert manufacturer["url"] == manufacturer_post["url"]
+    assert manufacturer["address"] == manufacturer_post["address"]
+
+
+def test_get_manufacturer_with_invalid_id(test_client):
+    """Test getting a manufacturer with an invalid id"""
+
+    response = test_client.get("/v1/manufacturer/invalid")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The requested manufacturer was not found"
+
+
+def test_get_manufactuer_with_nonexistent_id(test_client):
+    """Test getting a manufacturer with an nonexistent id"""
+    response = test_client.get(f"/v1/manufacturer/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The requested manufacturer was not found"

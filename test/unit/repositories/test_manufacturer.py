@@ -6,7 +6,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DuplicateRecordError
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
 
@@ -17,14 +17,17 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     Verify that the `create` method properly handles the manufacturer to be created, checks that there is not a
     duplicate manufacturer, and creates the manufacturer.
     """
+    # pylint: disable=duplicate-code
 
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
-        url="testUrl.co.uk",
+        url="http://testUrl.co.uk",
         address="1 Example street",
     )
+    # pylint: enable=duplicate-code
+
     # Mock 'count documents' to return 0 (no duplicates found)
     test_helpers.mock_count_documents(database_mock.manufacturer, 0)
     # Mock 'insert one' to return object for inserted manufacturer
@@ -145,3 +148,50 @@ def test_list_when_no_manufacturers(test_helpers, database_mock, manufacturer_re
     retrieved_manufacturers = manufacturer_repository.list()
 
     assert retrieved_manufacturers == []
+
+
+def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_repository):
+    """
+    Test getting a manufacturer by id
+    """
+    manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        name="Manufacturer A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address="1 Example street",
+    )
+    test_helpers.mock_find_one(
+        database_mock.manufacturer,
+        {
+            "_id": CustomObjectId(manufacturer.id),
+            "code": manufacturer.code,
+            "name": manufacturer.name,
+            "url": manufacturer.url,
+            "address": manufacturer.address,
+        },
+    )
+    retrieved_manufacturer = manufacturer_repository.get(manufacturer.id)
+    database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
+    assert retrieved_manufacturer == manufacturer
+
+
+def test_get_with_invalid_id(manufacturer_repository):
+    """
+    Test getting a manufacturer with an Invalid ID
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        manufacturer_repository.get("invalid")
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
+    """
+    Test getting a manufacturer with an ID that does not exist
+    """
+    manufacturer_id = str(ObjectId())
+    test_helpers.mock_find_one(database_mock.manufacturer, None)
+    retrieved_manufacturer = manufacturer_repository.get(manufacturer_id)
+
+    assert retrieved_manufacturer is None
+    database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})

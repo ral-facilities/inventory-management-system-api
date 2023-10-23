@@ -26,6 +26,8 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
     """
     Testing creating a manufacturer
     """
+    # pylint: disable=duplicate-code
+
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
         name="Manufacturer A",
@@ -33,6 +35,8 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
         url="http://testUrl.co.uk",
         address="1 Example street",
     )
+    # pylint: enable=duplicate-code
+
     manufacturer_repository_mock.create.return_value = manufacturer
 
     created_manufacturer = manufacturer_service.create(
@@ -76,3 +80,34 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
     retrieved_manufacturer = manufacturer_service.list()
     manufacturer_repository_mock.list.assert_called_once_with()
     assert retrieved_manufacturer == [manufacturer_1, manufacturer_2]
+
+
+def test_get(manufacturer_repository_mock, manufacturer_service):
+    """Test getting a manufacturer by ID"""
+    # pylint: disable=duplicate-code
+    manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        code="manufacturer-a",
+        name="Manufacturer A",
+        url="http://testUrl.co.uk",
+        address="1 Example street",
+    )
+    # pylint: enable=duplicate-code
+
+    manufacturer_repository_mock.get.return_value = manufacturer
+
+    retrieved_manufacturer = manufacturer_service.get(manufacturer.id)
+
+    manufacturer_repository_mock.get.assert_called_once_with(manufacturer.id)
+    assert retrieved_manufacturer == manufacturer
+
+
+def test_get_with_nonexistent_id(manufacturer_repository_mock, manufacturer_service):
+    """Test getting a manufacturer with an non-existent ID"""
+    manufactuer_id = str(ObjectId())
+    manufacturer_repository_mock.get.return_value = None
+    retrieved_manufacturer = manufacturer_service.get(manufactuer_id)
+
+    assert retrieved_manufacturer is None
+
+    manufacturer_repository_mock.get.assert_called_once_with(manufactuer_id)
