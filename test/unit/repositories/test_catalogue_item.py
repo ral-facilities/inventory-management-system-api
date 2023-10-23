@@ -1,12 +1,18 @@
 """
 Unit tests for the `CatalogueItemRepo` repository.
 """
+from unittest.mock import MagicMock
+
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, Property, CatalogueItemIn
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemOut,
+    Property,
+    CatalogueItemIn,
+)
 
 
 def test_create(test_helpers, database_mock, catalogue_item_repository):
@@ -72,45 +78,64 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     assert created_catalogue_item == catalogue_item
 
 
-def test_create_with_duplicate_name_within_catalogue_category(test_helpers, database_mock, catalogue_item_repository):
+def test_delete(test_helpers, database_mock, catalogue_item_repository):
     """
-    Test creating a catalogue item with a duplicate name within the catalogue category.
+    Test deleting a catalogue item.
 
-    Verify that the `create` method properly handles a catalogue item with a duplicate name, finds that there is a
-    duplicate catalogue item, and does not create the catalogue item.
+    Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
     """
-    # pylint: disable=duplicate-code
-    catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer_id=str(ObjectId()),
-    )
-    # pylint: enable=duplicate-code
+    catalogue_item_id = str(ObjectId())
 
-    # Mock `count_documents` to return 1 (duplicate catalogue item found within the catalogue category)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
+    # Mock `delete_one` to return that one document has been deleted
+    test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
 
-    with pytest.raises(DuplicateRecordError) as exc:
-        catalogue_item_repository.create(
-            CatalogueItemIn(
-                catalogue_category_id=catalogue_item.catalogue_category_id,
-                name=catalogue_item.name,
-                description=catalogue_item.description,
-                properties=catalogue_item.properties,
-                manufacturer_id=catalogue_item.manufacturer_id,
-            )
-        )
-    assert str(exc.value) == "Duplicate catalogue item found within the catalogue category"
-    database_mock.catalogue_items.count_documents.assert_called_once_with(
-        {"catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id), "name": catalogue_item.name}
-    )
+    # pylint: disable=fixme
+    # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
+
+    catalogue_item_repository.delete(catalogue_item_id)
+
+    database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
+
+
+def test_delete_with_children_items():
+    """
+    Test deleting a catalogue item with children items.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item with children items.
+    """
+    # pylint: disable=fixme
+    # TODO - Implement this test when the relevant item logic is implemented
+
+
+def test_delete_with_invalid_id(catalogue_item_repository):
+    """
+    Test deleting a catalogue item with an invalid ID.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_item_repository.delete("invalid")
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test deleting a catalogue item with a nonexistent ID.
+
+    Verify that the `delete` method properly handles the deletion of a catalogue item with a nonexistent ID.
+    """
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `delete_one` to return that no document has been deleted
+    test_helpers.mock_delete_one(database_mock.catalogue_items, 0)
+
+    # pylint: disable=fixme
+    # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_item_repository.delete(catalogue_item_id)
+    assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
+    database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
 
 
 def test_get(test_helpers, database_mock, catalogue_item_repository):
@@ -315,3 +340,79 @@ def test_list_with_invalid_catalogue_category_id_filter(catalogue_item_repositor
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_item_repository.list("invalid")
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_update(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test updating a catalogue item.
+
+    Verify that the `update` method properly handles the catalogue item to be updated.
+    """
+    # pylint: disable=duplicate-code
+    catalogue_item_info = {
+        "name": "Catalogue Item B",
+        "description": "This is Catalogue Item B",
+        "properties": [
+            {"name": "Property A", "value": 20, "unit": "mm"},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        ],
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "web_url": "https://www.manufacturer-a.co.uk",
+        },
+    }
+    # pylint: enable=duplicate-code
+    catalogue_item = CatalogueItemOut(id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **catalogue_item_info)
+
+    # Mock `update_one` to return an object for the updated catalogue item document
+    test_helpers.mock_update_one(database_mock.catalogue_items)
+    # Mock `find_one` to return the updated catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items,
+        {
+            "_id": CustomObjectId(catalogue_item.id),
+            "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+            **catalogue_item_info,
+        },
+    )
+
+    catalogue_item_in = CatalogueItemIn(
+        catalogue_category_id=catalogue_item.catalogue_category_id, **catalogue_item_info
+    )
+    updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in)
+
+    database_mock.catalogue_items.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item.id)},
+        {
+            "$set": {
+                "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+                **catalogue_item_in.dict(),
+            }
+        },
+    )
+    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item.id)})
+    assert updated_catalogue_item == catalogue_item
+
+
+def test_update_with_invalid_id(catalogue_item_repository):
+    """
+    Test updating a catalogue category with invalid ID.
+
+    Verify that the `update` method properly handles the update of a catalogue category with an invalid ID.
+    """
+    update_catalogue_item = MagicMock()
+    catalogue_item_id = "invalid"
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
+    assert str(exc.value) == f"Invalid ObjectId value '{catalogue_item_id}'"
+
+
+def test_update_has_child_items():
+    """
+    Test updating a catalogue item with child items.
+    """
+    # pylint: disable=fixme
+    # TODO - Implement this test when the relevant item logic is implemented.

@@ -14,6 +14,7 @@ from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
+from inventory_management_system_api.repositories.system import SystemRepo
 
 
 @pytest.fixture(name="database_mock")
@@ -28,6 +29,7 @@ def fixture_database_mock() -> Mock:
     database_mock.catalogue_categories = Mock(Collection)
     database_mock.catalogue_items = Mock(Collection)
     database_mock.manufacturer = Mock(Collection)
+    database_mock.systems = Mock(Collection)
     return database_mock
 
 
@@ -59,6 +61,15 @@ def fixture_manufacturer_repository(database_mock: Mock) -> ManufacturerRepo:
     Fixture to create ManufacturerRepo instance
     """
     return ManufacturerRepo(database_mock)
+@pytest.fixture(name="system_repository")
+def fixture_system_repository(database_mock: Mock) -> SystemRepo:
+    """
+    Fixture to create a `SystemRepo` instance with a mocked Database dependency.
+
+    :param database_mock: Mocked MongoDB database instance.
+    :return: `SystemRepo` instance with the mocked dependency.
+    """
+    return SystemRepo(database_mock)
 
 
 class RepositoryTestHelpers:
@@ -152,7 +163,6 @@ class RepositoryTestHelpers:
         update_one_result_mock = Mock(UpdateResult)
         update_one_result_mock.acknowledged = True
         collection_mock.insert_one.return_value = update_one_result_mock
-
 
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[RepositoryTestHelpers]:
