@@ -10,12 +10,15 @@ from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     InvalidObjectIdError,
-    DuplicateRecordError,
     NonLeafCategoryError,
     InvalidCatalogueItemPropertyTypeError,
     MissingMandatoryCatalogueItemProperty,
 )
-from inventory_management_system_api.schemas.catalogue_item import CatalogueItemSchema, CatalogueItemPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_item import (
+    CatalogueItemSchema,
+    CatalogueItemPostRequestSchema,
+    CatalogueItemPatchRequestSchema,
+)
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 logger = logging.getLogger()
@@ -52,18 +55,15 @@ def get_catalogue_item(
 ) -> CatalogueItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
+    message = "A catalogue item with such ID was not found"
     try:
         catalogue_item = catalogue_item_service.get(catalogue_item_id)
         if not catalogue_item:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue item was not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
         return CatalogueItemSchema(**catalogue_item.dict())
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The requested catalogue item was not found"
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
 
 @router.post(
@@ -85,14 +85,68 @@ def create_catalogue_item(
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified catalogue category ID does not exist in the database"
+        message = "The specified catalogue category ID does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except DuplicateRecordError as exc:
-        message = "A catalogue item with the same name already exists within the catalogue category"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except NonLeafCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.patch(
+    path="/{catalogue_item_id}",
+    summary="Update a catalogue item partially by ID",
+    response_description="Catalogue item updated successfully",
+)
+def partial_update_catalogue_item(
+    catalogue_item: CatalogueItemPatchRequestSchema,
+    catalogue_item_id: str = Path(description="The ID of the catalogue item to update"),
+    catalogue_item_service: CatalogueItemService = Depends(),
+) -> CatalogueItemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating catalogue item with ID: %s", catalogue_item_id)
+    logger.debug("Catalogue item data: %s", catalogue_item)
+    try:
+        updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
+        return CatalogueItemSchema(**updated_catalogue_item.dict())
+    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if (
+            catalogue_item.catalogue_category_id
+            and catalogue_item.catalogue_category_id in str(exc)
+            or "catalogue category" in str(exc).lower()
+        ):
+            message = "The specified catalogue category ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+        message = "A catalogue item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except NonLeafCategoryError as exc:
+        message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.delete(
+    path="/{catalogue_item_id}",
+    summary="Delete a catalogue item by ID",
+    response_description="Catalogue item deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_catalogue_item(
+    catalogue_item_id: str = Path(description="The ID of the catalogue item to delete"),
+    catalogue_item_service: CatalogueItemService = Depends(),
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
+    try:
+        catalogue_item_service.delete(catalogue_item_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "A catalogue item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
