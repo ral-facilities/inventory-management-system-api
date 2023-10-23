@@ -13,6 +13,7 @@ from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 
 
@@ -27,6 +28,7 @@ def fixture_database_mock() -> Mock:
     database_mock = Mock(Database)
     database_mock.catalogue_categories = Mock(Collection)
     database_mock.catalogue_items = Mock(Collection)
+    database_mock.manufacturer = Mock(Collection)
     database_mock.systems = Mock(Collection)
     return database_mock
 
@@ -53,6 +55,12 @@ def fixture_catalogue_item_repository(database_mock: Mock) -> CatalogueItemRepo:
     return CatalogueItemRepo(database_mock)
 
 
+@pytest.fixture(name="manufacturer_repository")
+def fixture_manufacturer_repository(database_mock: Mock) -> ManufacturerRepo:
+    """
+    Fixture to create ManufacturerRepo instance
+    """
+    return ManufacturerRepo(database_mock)
 @pytest.fixture(name="system_repository")
 def fixture_system_repository(database_mock: Mock) -> SystemRepo:
     """
@@ -65,6 +73,7 @@ def fixture_system_repository(database_mock: Mock) -> SystemRepo:
 
 
 class RepositoryTestHelpers:
+
     """
     A utility class containing common helper methods for the repository tests.
 
