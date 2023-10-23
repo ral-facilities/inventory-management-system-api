@@ -22,6 +22,7 @@ from inventory_management_system_api.schemas.catalogue_category import (
 )
 from inventory_management_system_api.services import utils
 
+
 logger = logging.getLogger()
 
 

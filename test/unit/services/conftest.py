@@ -9,6 +9,7 @@ import pytest
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -36,6 +37,15 @@ def fixture_catalogue_item_repository_mock() -> Mock:
     """
     return Mock(CatalogueItemRepo)
 
+
+@pytest.fixture(name="manufacturer_repository_mock")
+def fixture_manufacturer_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `ManufacturerRepo dependency
+
+    :return: Mocked ManufacturerRepo instance
+    """
+    return Mock(ManufacturerRepo)
 
 @pytest.fixture(name="system_repository_mock")
 def fixture_system_repository_mock() -> Mock:
