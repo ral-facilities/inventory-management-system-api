@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.logger_setup import setup_logger
-from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system
+from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system, manufacturer
 
 app = FastAPI(title=config.api.title, description=config.api.description)
 
@@ -64,6 +64,7 @@ app.add_middleware(
 
 app.include_router(catalogue_category.router)
 app.include_router(catalogue_item.router)
+app.include_router(manufacturer.router)
 app.include_router(system.router)
 
 
