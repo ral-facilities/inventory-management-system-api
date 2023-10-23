@@ -86,30 +86,20 @@ class ManufacturerRepo:
 
         :param: manufacturer_id: The id of the manufacturer to be updated
         :param: manufacturer: The manufacturer with the update data
+
+        :raises: DuplicateRecordError: if changed manufacturer name is a duplicate name
+
+        :returns: the updated manufacturer
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
 
         stored_manufacturer = self.get(str(manufacturer_id))
-        if not stored_manufacturer:
-            raise MissingRecordError("The specified manufacturer does not exist")
-
         if stored_manufacturer.name != manufacturer.name:
             if self._is_duplicate_manufacturer(manufacturer.code):
                 raise DuplicateRecordError("Duplicate manufacturer found")
 
         logger.info("Updating manufacturer with ID %s", manufacturer_id)
-        self._collection.update_one(
-            {"_id": manufacturer_id},
-            {
-                "$set": {
-                    "name": manufacturer.name,
-                    "url": manufacturer.url,
-                    "address": manufacturer.address.dict(),
-                    "code": manufacturer.code,
-                    "telephone": manufacturer.telephone,
-                }
-            },
-        )
+        self._collection.update_one({"_id": manufacturer_id}, {"$set": manufacturer.dict()})
 
         manufacturer = self.get(str(manufacturer_id))
         return manufacturer

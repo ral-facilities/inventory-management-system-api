@@ -259,7 +259,6 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             "telephone": "0348343897",
         },
     )
-    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
 
     test_helpers.mock_update_one(database_mock.manufacturers)
     # Mock 'find_one' to return the inserted manufacturer document
@@ -305,7 +304,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     assert updated_manufacturer == manufacturer
 
 
-def test_update_with_invalid_id(manufacturer_repository):
+def test_update_with_invalid_id(test_helpers, database_mock, manufacturer_repository):
     """Test trying to update with an invalid ID"""
     updated_manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
@@ -322,9 +321,6 @@ def test_update_with_invalid_id(manufacturer_repository):
     with pytest.raises(InvalidObjectIdError) as exc:
         manufacturer_repository.update(manufactuer_id, updated_manufacturer)
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-
-
-def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
     """Test trying to update with a non-existent ID"""
     updated_manufacturer = ManufacturerOut(
         _id=str(ObjectId()),

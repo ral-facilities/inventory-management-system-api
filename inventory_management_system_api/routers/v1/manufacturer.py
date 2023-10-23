@@ -95,7 +95,7 @@ def get_one_manufacturer(
 )
 def edit_manufacturer(
     manufacturer: ManufacturerPatchRequstSchema,
-    manufacturer_id: str = Path(description="The ID of the manufacturer to be updated"),
+    manufacturer_id: str = Path(description="The ID of the manufacturer that is to be updated"),
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
@@ -104,9 +104,10 @@ def edit_manufacturer(
         updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
         return ManufacturerSchema(**updated_manufacturer.dict())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        logger.exception("The specified manufacturer does not exist")
+        message = "The specified manufacturer does not exist"
+        logger.exception(message)
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="The specified manufacturer does not exist"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message
         ) from exc
     except DuplicateRecordError as exc:
         message = "A manufacturer with the same name has been found"

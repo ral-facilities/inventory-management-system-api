@@ -3,6 +3,8 @@ Unit tests for the `ManufacturerService` service.
 """
 
 from bson import ObjectId
+import pytest
+from inventory_management_system_api.core.exceptions import MissingRecordError
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.schemas.manufacturer import Address, ManufacturerPostRequestSchema
@@ -113,12 +115,31 @@ def test_get_with_nonexistent_id(manufacturer_repository_mock, manufacturer_serv
     manufacturer_repository_mock.get.assert_called_once_with(manufactuer_id)
 
 
-# def test_update(manufacturer_repository_mock, manufacturer_service):
-
-
 def test_delete(manufacturer_repository_mock, manufacturer_service):
     """Test deleting a manufacturer"""
     manufacturer_id = str(ObjectId())
     manufacturer_service.delete(manufacturer_id)
 
     manufacturer_repository_mock.delete.assert_called_once_with(manufacturer_id)
+
+def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
+    """Test updating a manufacturer with a nonexistant id"""
+    # pylint: disable=duplicate-code
+
+    manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        name="Manufacturer A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address=Address(
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+        ),
+        telephone="0932348348",
+    )
+
+    # pylint: enable=duplicate-code
+    test_helpers.mock_get(manufacturer_repository_mock, None)
+    manufacturer_id = str(ObjectId())
+    with pytest.raises(MissingRecordError) as exc:
+        manufacturer_service.update(manufacturer_id, manufacturer)
+    assert str(exc.value) == "No manufacturer found with ID " + manufacturer_id 
