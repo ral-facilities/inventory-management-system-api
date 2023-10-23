@@ -533,7 +533,7 @@ def test_get_with_non_existent_id(test_helpers, catalogue_item_repository_mock, 
 
 def test_list(catalogue_item_repository_mock, catalogue_item_service):
     """
-    Test listing systems
+    Test listing catalogue items
 
     Verify that the `list` method properly calls the repository function with any passed filters
     """
