@@ -41,7 +41,11 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10"},
         ],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
 
 
@@ -59,7 +63,11 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         "properties": [
             {"name": "Property A", "value": True},
         ],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
 
 
@@ -85,7 +93,7 @@ def test_create_catalogue_item(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
+    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
 
 
 def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
@@ -145,7 +153,7 @@ def test_create_catalogue_item_without_properties(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == []
-    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
+    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
 
 
 def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
@@ -185,7 +193,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
+    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
 
 
 def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_client):
@@ -823,7 +831,7 @@ def test_partial_update_catalogue_item_change_manufacturer(test_client):
         "manufacturer": {
             "name": "Manufacturer B",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-b.co.uk",
+            "url": "https://www.manufacturer-b.co.uk",
         }
     }
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)

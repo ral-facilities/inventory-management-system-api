@@ -307,7 +307,11 @@ def test_delete_catalogue_category_with_children_catalogue_items(test_client):
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
 
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -587,7 +591,11 @@ def test_partial_update_catalogue_category_change_name_has_children_catalogue_it
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -714,7 +722,11 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -835,7 +847,11 @@ def test_partial_update_catalogue_category_change_parent_id_has_children_catalog
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -1050,7 +1066,11 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": str(ObjectId()),
+        "manufacturer": {
+            "name": "Manufacturer A",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk",
+        },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 

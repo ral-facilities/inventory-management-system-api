@@ -12,6 +12,7 @@ from inventory_management_system_api.models.catalogue_item import (
     CatalogueItemOut,
     Property,
     CatalogueItemIn,
+    Manufacturer,
 )
 
 
@@ -33,7 +34,11 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -50,7 +55,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": catalogue_item.properties,
-            "manufacturer_id": catalogue_item.manufacturer_id,
+            "manufacturer": catalogue_item.manufacturer,
         },
     )
 
@@ -61,7 +66,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
-            manufacturer_id=catalogue_item.manufacturer_id,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
     # pylint: enable=duplicate-code
@@ -72,7 +77,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": catalogue_item.properties,
-            "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
+            "manufacturer": catalogue_item.manufacturer,
         }
     )
     assert created_catalogue_item == catalogue_item
@@ -155,7 +160,11 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -168,7 +177,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": catalogue_item.properties,
-            "manufacturer_id": catalogue_item.manufacturer_id,
+            "manufacturer": catalogue_item.manufacturer,
         },
     )
 
@@ -223,7 +232,11 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
 
     catalogue_item_b = CatalogueItemOut(
@@ -232,7 +245,11 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         name="Catalogue Item B",
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -246,7 +263,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
                 "name": catalogue_item_a.name,
                 "description": catalogue_item_a.description,
                 "properties": catalogue_item_a.properties,
-                "manufacturer_id": catalogue_item_a.manufacturer_id,
+                "manufacturer": catalogue_item_a.manufacturer,
             },
             {
                 "_id": CustomObjectId(catalogue_item_b.id),
@@ -254,7 +271,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
                 "name": catalogue_item_b.name,
                 "description": catalogue_item_b.description,
                 "properties": catalogue_item_b.properties,
-                "manufacturer_id": catalogue_item_b.manufacturer_id,
+                "manufacturer": catalogue_item_b.manufacturer,
             },
         ],
     )
@@ -282,7 +299,11 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
 
     # Mock `find` to return a list of catalogue item documents
@@ -295,7 +316,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
                 "name": catalogue_item.name,
                 "description": catalogue_item.description,
                 "properties": catalogue_item.properties,
-                "manufacturer_id": catalogue_item.manufacturer_id,
+                "manufacturer": catalogue_item.manufacturer,
             }
         ],
     )
@@ -360,7 +381,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     # pylint: enable=duplicate-code

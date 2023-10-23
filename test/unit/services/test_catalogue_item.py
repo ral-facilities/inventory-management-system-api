@@ -15,6 +15,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut, CatalogueItemProperty
 from inventory_management_system_api.models.catalogue_item import (
     CatalogueItemOut,
+    Manufacturer,
     Property,
     CatalogueItemIn,
 )
@@ -46,7 +47,11 @@ def test_create(
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
 
     # Mock `get` to return the catalogue category
@@ -81,7 +86,7 @@ def test_create(
                 PropertyPostRequestSchema(name="Property B", value=False),
                 PropertyPostRequestSchema(name="Property C", value="20x15x10"),
             ],
-            manufacturer_id=catalogue_item.manufacturer_id,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
 
@@ -93,7 +98,7 @@ def test_create(
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
-            manufacturer_id=catalogue_item.manufacturer_id,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
     # pylint: enable=duplicate-code
@@ -125,7 +130,11 @@ def test_create_with_nonexistent_catalogue_category_id(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId()),
+                manufacturer=Manufacturer(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    url="https://www.manufacturer-a.co.uk",
+                ),
             ),
         )
 
@@ -170,7 +179,11 @@ def test_create_in_non_leaf_catalogue_category(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId()),
+                manufacturer=Manufacturer(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    url="https://www.manufacturer-a.co.uk",
+                ),
             ),
         )
 
@@ -193,7 +206,11 @@ def test_create_without_properties(
         name="Catalogue Item A",
         description="This is Catalogue Item A",
         properties=[],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
 
     # pylint: enable=duplicate-code
@@ -222,7 +239,7 @@ def test_create_without_properties(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             name=catalogue_item.name,
             description=catalogue_item.description,
-            manufacturer_id=catalogue_item.manufacturer_id,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
 
@@ -234,7 +251,7 @@ def test_create_without_properties(
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=catalogue_item.properties,
-            manufacturer_id=catalogue_item.manufacturer_id,
+            manufacturer=catalogue_item.manufacturer,
         )
     )
     # pylint: enable=duplicate-code
@@ -280,7 +297,11 @@ def test_create_with_missing_mandatory_properties(
                 properties=[
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId()),
+                manufacturer=Manufacturer(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    url="https://www.manufacturer-a.co.uk",
+                ),
             ),
         )
 
@@ -333,7 +354,11 @@ def test_create_with_with_invalid_value_type_for_string_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value=True),
                 ],
-                manufacturer_id=str(ObjectId()),
+                manufacturer=Manufacturer(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    url="https://www.manufacturer-a.co.uk",
+                ),
             ),
         )
 
@@ -387,7 +412,11 @@ def test_create_with_with_invalid_value_type_for_number_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId()),
+                manufacturer=Manufacturer(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    url="https://www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert (
@@ -440,7 +469,11 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                     PropertyPostRequestSchema(name="Property B", value="False"),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId()),
+                manufacturer=Manufacturer(
+                    name="Manufacturer A",
+                    address="1 Address, City, Country, Postcode",
+                    url="https://www.manufacturer-a.co.uk",
+                ),
             )
         )
     assert (
@@ -481,7 +514,11 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -528,7 +565,11 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
 
     catalogue_item_b = CatalogueItemOut(
@@ -537,7 +578,11 @@ def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_servi
         name="Catalogue Item B",
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -568,7 +613,11 @@ def test_list_with_catalogue_category_id_filter(test_helpers, catalogue_item_rep
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId()),
+        manufacturer=Manufacturer(
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
+        ),
     )
     # pylint: enable=duplicate-code
 
@@ -619,7 +668,7 @@ def test_update(test_helpers, catalogue_item_repository_mock, catalogue_item_ser
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     # pylint: enable=duplicate-code
@@ -687,7 +736,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     full_catalogue_item_info = {
@@ -749,7 +798,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     full_catalogue_item_info = {
@@ -825,7 +874,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
@@ -882,7 +931,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     full_catalogue_item_info = {
@@ -954,7 +1003,7 @@ def test_update_with_nonexistent_catalogue_category_id(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [],
     }
@@ -987,7 +1036,7 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [],
     }
@@ -1034,7 +1083,7 @@ def test_update_add_non_mandatory_property(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property B", "value": False},
@@ -1100,7 +1149,7 @@ def test_update_remove_non_mandatory_property(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
@@ -1164,7 +1213,7 @@ def test_update_remove_mandatory_property(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
@@ -1222,7 +1271,7 @@ def test_update_change_property_value(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
@@ -1289,7 +1338,7 @@ def test_update_change_value_for_string_property_invalid_type(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
@@ -1346,7 +1395,7 @@ def test_update_change_value_for_number_property_invalid_type(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
@@ -1403,7 +1452,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},

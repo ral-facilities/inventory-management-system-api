@@ -47,6 +47,7 @@ def fixture_manufacturer_repository_mock() -> Mock:
     """
     return Mock(ManufacturerRepo)
 
+
 @pytest.fixture(name="system_repository_mock")
 def fixture_system_repository_mock() -> Mock:
     """
