@@ -75,7 +75,7 @@ class CatalogueCategoryRepo:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self._has_child_elements(catalogue_category_id):
+        if self.has_child_elements(catalogue_category_id):
             raise ChildrenElementsExistError(
                 f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
             )
@@ -124,15 +124,10 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to update.
         :param catalogue_category: The catalogue category containing the update data.
         :return: The updated catalogue category.
-        :raises ChildrenElementsExistError: If the catalogue category has children elements.
         :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self._has_child_elements(catalogue_category_id):
-            raise ChildrenElementsExistError(
-                f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
-            )
 
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id):
@@ -180,7 +175,7 @@ class CatalogueCategoryRepo:
         count = self._catalogue_categories_collection.count_documents({"parent_id": parent_id, "code": code})
         return count > 0
 
-    def _has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
+    def has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
         """
         Check if a catalogue category has children elements based on its ID.
 

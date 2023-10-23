@@ -542,26 +542,26 @@ def test_partial_update_catalogue_category_change_name_duplicate(test_client):
     )
 
 
-def test_partial_update_catalogue_category_change_name_has_child_catalogue_categories(test_client):
+def test_partial_update_catalogue_category_change_valid_parameters_when_has_child_catalogue_categories(test_client):
     """
-    Test changing the name of a catalogue category which has child catalogue categories.
+    Test changing valid parameters of a catalogue category which has child catalogue categories.
     """
-    catalogue_category_post = {"name": "Category A", "is_leaf": False}
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
-    catalogue_category_id = response.json()["id"]
-    catalogue_category_post = {"name": "Category B", "is_leaf": False, "parent_id": catalogue_category_id}
-    test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    category_a, _, _ = _post_catalogue_categories(test_client)
 
-    catalogue_category_patch = {"name": "Category A"}
-    response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_patch)
+    catalogue_category_patch = {"name": "Category D"}
+    response = test_client.patch(f"/v1/catalogue-categories/{category_a['id']}", json=catalogue_category_patch)
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Catalogue category has child elements and cannot be updated"
+    assert response.status_code == 200
+    assert response.json() == {
+        **CATALOGUE_CATEGORY_POST_A_EXPECTED,
+        **catalogue_category_patch,
+        "code": "category-d",
+    }
 
 
-def test_partial_update_catalogue_category_change_name_has_child_catalogue_items(test_client):
+def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue_items(test_client):
     """
-    Test changing the name of a catalogue category which has child catalogue items.
+    Test changing valid parameters of a catalogue category which has child catalogue items.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
@@ -579,11 +579,15 @@ def test_partial_update_catalogue_category_change_name_has_child_catalogue_items
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    catalogue_category_patch = {"name": "Category B"}
+    catalogue_category_patch = {"name": "Category D"}
     response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_patch)
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Catalogue category has child elements and cannot be updated"
+    assert response.status_code == 200
+    assert response.json() == {
+        **CATALOGUE_CATEGORY_POST_C_EXPECTED,
+        **catalogue_category_patch,
+        "code": "category-d",
+    }
 
 
 def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_client):
@@ -766,8 +770,8 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     catalogue_category_post = {"name": "Category A", "is_leaf": False}
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_a_id = response.json()["id"]
-    catalogue_category_post = {"name": "Category B", "is_leaf": False, "parent_id": catalogue_category_a_id}
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    catalogue_category_b_post = {"name": "Category B", "is_leaf": False, "parent_id": catalogue_category_a_id}
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_b_post)
     catalogue_category_b_id = response.json()["id"]
     catalogue_category_post = {"name": "Category C", "is_leaf": False, "parent_id": catalogue_category_b_id}
     test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
@@ -775,8 +779,14 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     catalogue_category_patch = {"parent_id": None}
     response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_b_id}", json=catalogue_category_patch)
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Catalogue category has child elements and cannot be updated"
+    assert response.status_code == 200
+    assert response.json() == {
+        **catalogue_category_b_post,
+        **catalogue_category_patch,
+        "catalogue_item_properties": [],
+        "id": ANY,
+        "code": "category-b",
+    }
 
 
 def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_items(test_client):
@@ -786,8 +796,8 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     catalogue_category_post = {"name": "Category A", "is_leaf": False}
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_a_id = response.json()["id"]
-    catalogue_category_post = {"name": "Category B", "is_leaf": False}
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    catalogue_category_b_post = {"name": "Category B", "is_leaf": False}
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_b_post)
     catalogue_category_b_id = response.json()["id"]
     catalogue_category_post = {
         "name": "Category C",
@@ -817,8 +827,14 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     catalogue_category_patch = {"parent_id": catalogue_category_a_id}
     response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_b_id}", json=catalogue_category_patch)
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Catalogue category has child elements and cannot be updated"
+    assert response.status_code == 200
+    assert response.json() == {
+        **catalogue_category_b_post,
+        **catalogue_category_patch,
+        "catalogue_item_properties": [],
+        "id": ANY,
+        "code": "category-b",
+    }
 
 
 def test_partial_update_catalogue_category_change_parent_id_duplicate_name(test_client):

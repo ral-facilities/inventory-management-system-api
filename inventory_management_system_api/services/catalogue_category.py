@@ -6,11 +6,17 @@ from typing import List, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.exceptions import LeafCategoryError, MissingRecordError
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
+    LeafCategoryError,
+    MissingRecordError,
+)
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
+    CATALOGUE_CATEGORY_WITH_CHILD_INVALID_POST_FIELDS,
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
 )
@@ -111,6 +117,8 @@ class CatalogueCategoryService:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
             moved is a leaf catalogue category.
+        :raises ChildrenElementsExistError: If the catalogue category has child elements and attempting to update
+                                    either any of the disallowed properties (is_leaf or catalogue_item_properties)
         """
         update_data = catalogue_category.dict(exclude_unset=True)
 
@@ -126,6 +134,13 @@ class CatalogueCategoryService:
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+
+        # If changing either of these, need to ensure the category has no children
+        if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_INVALID_POST_FIELDS):
+            if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
+                raise ChildrenElementsExistError(
+                    f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
+                )
 
         stored_catalogue_category = stored_catalogue_category.copy(update=update_data)
         return self._catalogue_category_repository.update(

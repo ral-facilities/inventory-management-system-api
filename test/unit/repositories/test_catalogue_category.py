@@ -756,9 +756,6 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     )
     # pylint: enable=duplicate-code
 
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     # Mock `find_one` to return a catalogue category document
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
@@ -836,63 +833,6 @@ def test_update_with_invalid_id(catalogue_category_repository):
     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_category_id}'"
 
 
-def test_update_has_children_catalogue_categories(test_helpers, database_mock, catalogue_category_repository):
-    """
-    Test updating a catalogue category with children catalogue categories.
-
-    Verify that the `update` method properly handles the update of a catalogue category with children catalogue
-    categories.
-    """
-    update_catalogue_category = CatalogueCategoryIn(
-        name="Category B",
-        code="category-b",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-
-    # Mock count_documents to return 1 (children catalogue categories found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
-    # Mock count_documents to return 0 (children catalogue items not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
-
-    catalogue_category_id = str(ObjectId())
-    with pytest.raises(ChildrenElementsExistError) as exc:
-        catalogue_category_repository.update(catalogue_category_id, update_catalogue_category)
-    assert (
-        str(exc.value)
-        == f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
-    )
-
-
-def test_update_has_children_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
-    """
-    Test updating a catalogue category with children catalogue items.
-
-    Verify that the `update` method properly handles the update of a catalogue category with children catalogue items.
-    """
-    update_catalogue_category = CatalogueCategoryIn(
-        name="Category B",
-        code="category-b",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-
-    # Mock count_documents to return 0 (children catalogue categories not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    # Mock count_documents to return 1 (children catalogue items found)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
-
-    catalogue_category_id = str(ObjectId())
-    with pytest.raises(ChildrenElementsExistError) as exc:
-        catalogue_category_repository.update(catalogue_category_id, update_catalogue_category)
-    assert (
-        str(exc.value)
-        == f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
-    )
-
-
 def test_update_with_nonexistent_parent_id(test_helpers, database_mock, catalogue_category_repository):
     """
     Test updating a catalogue category with non-existent parent ID.
@@ -909,9 +849,6 @@ def test_update_with_nonexistent_parent_id(test_helpers, database_mock, catalogu
     )
     # pylint: enable=duplicate-code
 
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     # Mock `find_one` to not return a parent catalogue category document
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
@@ -937,9 +874,6 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, catalo
     )
     # pylint: enable=duplicate-code
 
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     catalogue_category_id = str(ObjectId())
     # Mock `find_one` to return a catalogue category document
     test_helpers.mock_find_one(
@@ -976,9 +910,6 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
         catalogue_item_properties=[],
     )
 
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     # Mock `find_one` to return a parent catalogue category document
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
@@ -1010,3 +941,45 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
     with pytest.raises(DuplicateRecordError) as exc:
         catalogue_category_repository.update(catalogue_category_id, update_catalogue_category)
     assert str(exc.value) == "Duplicate catalogue category found within the parent catalogue category"
+
+
+def test_has_child_elements_with_no_child_categories(test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test has_child_elements returns false when there are no child categories
+    """
+
+    # Mock count_documents to return 0 (children elements not found)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+
+    result = catalogue_category_repository.has_child_elements(ObjectId())
+
+    assert result is False
+
+
+def test_has_child_elements_with_child_categories(test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test has_child_elements returns true when there are child categories
+    """
+
+    # Mock count_documents to return 1 (child element found)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+
+    result = catalogue_category_repository.has_child_elements(ObjectId())
+
+    assert result is True
+
+
+def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test has_child_elements returns true when there are child categories
+    """
+
+    # Mock count_documents to return 1 (child element found)
+    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
+    test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
+
+    result = catalogue_category_repository.has_child_elements(ObjectId())
+
+    assert result is True
