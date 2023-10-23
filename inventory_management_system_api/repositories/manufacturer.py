@@ -2,7 +2,7 @@
 Module for providing a repository for managing manufacturers in a MongoDB database.
 """
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -63,6 +63,18 @@ class ManufacturerRepo:
         if manufacturer:
             return ManufacturerOut(**manufacturer)
         return None
+
+    def list(self) -> List[ManufacturerOut]:
+        """Get all manufacturers from database
+
+        :return: List of manufacturers, or empty list if no manufacturers
+        """
+
+        logger.info("Getting all manufacturers from database")
+
+        manufacturers = self._collection.find()
+
+        return [ManufacturerOut(**manufacturer) for manufacturer in manufacturers]
 
     def _is_duplicate_manufacturer(self, code: str) -> bool:
         """
