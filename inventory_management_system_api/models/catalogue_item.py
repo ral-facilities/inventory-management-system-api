@@ -3,7 +3,7 @@ Module for defining the database models for representing catalogue items.
 """
 from typing import Optional, List, Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, HttpUrl, validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
@@ -18,6 +18,14 @@ class Property(BaseModel):
     unit: Optional[str] = None
 
 
+class Manufacturer(BaseModel):
+    """Input database model for a manufacturer"""
+
+    name: str
+    url: HttpUrl
+    address: str
+
+
 class CatalogueItemIn(BaseModel):
     """
     Input database model for a catalogue item.
@@ -27,7 +35,9 @@ class CatalogueItemIn(BaseModel):
     name: str
     description: str
     properties: List[Property] = []
-    manufacturer_id: CustomObjectIdField
+    # pylint: disable=fixme
+    # TODO - Change from manufacturer to manufacturer id
+    manufacturer: Manufacturer
 
     @validator("properties", pre=True, always=True)
     @classmethod
@@ -53,7 +63,6 @@ class CatalogueItemOut(CatalogueItemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
-    manufacturer_id: StringObjectIdField
 
     class Config:
         # pylint: disable=C0115

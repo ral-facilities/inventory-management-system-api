@@ -1,7 +1,7 @@
 """
 Module for providing common test configuration and test fixtures.
 """
-from typing import Union, List, Type
+from typing import List, Type, Union
 from unittest.mock import Mock
 
 import pytest
@@ -11,9 +11,11 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
+from inventory_management_system_api.services.system import SystemService
 
 
 @pytest.fixture(name="catalogue_category_repository_mock")
@@ -44,6 +46,16 @@ def fixture_manufacturer_repository_mock() -> Mock:
     :return: Mocked ManufacturerRepo instance
     """
     return Mock(ManufacturerRepo)
+
+
+@pytest.fixture(name="system_repository_mock")
+def fixture_system_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `SystemRepo` dependency.
+
+    :return: Mocked SystemRepo instance.
+    """
+    return Mock(SystemRepo)
 
 
 @pytest.fixture(name="catalogue_category_service")
@@ -81,6 +93,18 @@ def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> Manufact
     :return: `ManufacturerService` instance with mocked dependency
     """
     return ManufacturerService(manufacturer_repository_mock)
+
+
+@pytest.fixture(name="system_service")
+def fixture_system_service(system_repository_mock: Mock) -> SystemService:
+    """
+    Fixture to create a `SystemService` instance with a mocked `SystemRepo`
+    dependencies.
+
+    :param system_repository_mock: Mocked `SystemRepo` instance
+    :return: `SystemService` instance with the mocked dependency
+    """
+    return SystemService(system_repository_mock)
 
 
 class ServiceTestHelpers:
