@@ -74,16 +74,19 @@ def get_catalogue_category_breadcrumbs(
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
+    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Catalogue category with such ID was not found"
-        ) from exc
+        message = "Catalogue category with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
+        message = "Unable to obtain breadcrumbs"
+        logger.exception(message)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to obtain breadcrumbs due to a database issue",
+            detail=message,
         ) from exc
 
 
