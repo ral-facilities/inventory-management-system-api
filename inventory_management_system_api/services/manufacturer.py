@@ -82,7 +82,7 @@ class ManufacturerService:
         """Update a category by its ID
 
 
-        :params: manufactuer_id: The ID of the manufacturer to be updates
+        :params: manufacturer_id: The ID of the manufacturer to be updated
         :return: The updates manufacturer
         :raises MissingRecordError: If manufacturer does not exist in database
         """

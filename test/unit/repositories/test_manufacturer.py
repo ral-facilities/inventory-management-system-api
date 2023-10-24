@@ -304,7 +304,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     assert updated_manufacturer == manufacturer
 
 
-def test_update_with_invalid_id(test_helpers, database_mock, manufacturer_repository):
+def test_update_with_invalid_id(manufacturer_repository):
     """Test trying to update with an invalid ID"""
     updated_manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
@@ -321,7 +321,11 @@ def test_update_with_invalid_id(test_helpers, database_mock, manufacturer_reposi
     with pytest.raises(InvalidObjectIdError) as exc:
         manufacturer_repository.update(manufactuer_id, updated_manufacturer)
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-    """Test trying to update with a non-existent ID"""
+
+
+def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_repository):
+    """Testing trying to update a manufacturer's name to one that already exists in the database"""
+
     updated_manufacturer = ManufacturerOut(
         _id=str(ObjectId()),
         name="Manufacturer A",
@@ -332,13 +336,31 @@ def test_update_with_invalid_id(test_helpers, database_mock, manufacturer_reposi
         ),
         telephone="0932348348",
     )
-    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
-    test_helpers.mock_find_one(database_mock.manufacturers, None)
+
     manufacturer_id = str(ObjectId())
 
-    with pytest.raises(MissingRecordError) as exc:
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            "_id": CustomObjectId(manufacturer_id),
+            "code": "manufacturer-b",
+            "name": "Manufacturer B",
+            "url": "http://example.com",
+            "address": {
+                "building_number": 2,
+                "street_name": "Test street",
+                "town": "Newbury",
+                "county": "Berkshire",
+                "postCode": "QW2 4DF",
+            },
+            "telephone": "0348343897",
+        },
+    )
+    test_helpers.mock_count_documents(database_mock.manufacturers, 1)
+    with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.update(manufacturer_id, updated_manufacturer)
-    assert str(exc.value) == "The specified manufacturer does not exist"
+
+    assert str(exc.value) == "Duplicate manufacturer found"
 
 
 def test_delete(test_helpers, database_mock, manufacturer_repository):

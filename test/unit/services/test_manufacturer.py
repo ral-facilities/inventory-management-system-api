@@ -122,6 +122,7 @@ def test_delete(manufacturer_repository_mock, manufacturer_service):
 
     manufacturer_repository_mock.delete.assert_called_once_with(manufacturer_id)
 
+
 def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
     """Test updating a manufacturer with a nonexistant id"""
     # pylint: disable=duplicate-code
@@ -142,4 +143,4 @@ def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock,
     manufacturer_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
         manufacturer_service.update(manufacturer_id, manufacturer)
-    assert str(exc.value) == "No manufacturer found with ID " + manufacturer_id 
+    assert str(exc.value) == "No manufacturer found with ID " + manufacturer_id

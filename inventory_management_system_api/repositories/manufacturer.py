@@ -123,7 +123,7 @@ class ManufacturerRepo:
 
     def _is_duplicate_manufacturer(self, code: str) -> bool:
         """
-        Check if manufacturer with the same url already exists in the manufacturer collection
+        Check if manufacturer with the same name already exists in the manufacturer collection
 
         :param code: The code of the manufacturer to check for duplicates.
         :return `True` if duplicate manufacturer, `False` otherwise

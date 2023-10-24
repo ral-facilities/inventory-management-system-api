@@ -106,9 +106,7 @@ def edit_manufacturer(
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "The specified manufacturer does not exist"
         logger.exception(message)
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A manufacturer with the same name has been found"
         logger.exception(message)
