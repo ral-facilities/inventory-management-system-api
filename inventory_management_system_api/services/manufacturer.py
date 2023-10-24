@@ -88,6 +88,8 @@ class ManufacturerService:
         """
         update_data = manufacturer.dict(exclude_unset=True)
 
+        logger.info(update_data)
+
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:
             raise MissingRecordError(f"No manufacturer found with ID {manufacturer_id}")
@@ -96,8 +98,23 @@ class ManufacturerService:
             stored_manufacturer.name = update_data["name"]
             stored_manufacturer.code = self._generate_code(stored_manufacturer.name)
 
-        stored_manufacturer = stored_manufacturer.copy(update=update_data)
+        # auto populates address object with current fields for those that have not been changed. This ensures that when
+        # update_data is copied the address object has all the fields in the object so it can be inserted correctly
+        if "address" in update_data:
+            if "building_number" not in update_data["address"]:
+                update_data["address"]["building_number"] = stored_manufacturer.address.building_number
+            if "street_name" not in update_data["address"]:
+                update_data["address"]["street_name"] = stored_manufacturer.address.street_name
+            if "town" not in update_data["address"]:
+                update_data["address"]["town"] = stored_manufacturer.address.town
+            if "county" not in update_data["address"]:
+                update_data["address"]["county"] = stored_manufacturer.address.county
+            if "country" not in update_data["address"]:
+                update_data["address"]["country"] = stored_manufacturer.address.country
+            if "postcode" not in update_data["address"]:
+                update_data["address"]["postcode"] = stored_manufacturer.address.postcode
 
+        stored_manufacturer = stored_manufacturer.copy(update=update_data)
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
 
     def delete(self, manufacturer_id: str) -> None:
