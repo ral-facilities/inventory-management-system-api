@@ -25,7 +25,7 @@ formatting = [
 ]
 
 test = [
-    "pytest==7.4.0",
+    "pytest==7.4.2",
     "pytest-cov==4.1.0"
 ]
 
