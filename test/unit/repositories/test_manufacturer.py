@@ -396,12 +396,12 @@ def test_delete_with_a_nonexistent_id(test_helpers, database_mock, manufacturer_
     database_mock.manufacturers.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
-def test_delete_manufacturer_that_is_part_of_an_catalogue_item(test_helpers, database_mock, manufacturer_repository):
-    """Test trying to delete a manufacturer that is part of a Catalogue Items"""
+def test_delete_manufacturer_that_is_part_of_a_catalogue_item(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to delete a manufacturer that is part of a Catalogue Item"""
     manufacturer_id = str(ObjectId())
 
     test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
 
     with pytest.raises(PartOfCatalogueItemError) as exc:
         manufacturer_repository.delete(manufacturer_id)
-    assert str(exc.value) == "The specified manufacturer is a part of a Catalogue Item"
+    assert str(exc.value) == (f"The manufacturer with id {str(manufacturer_id)} is a part of a Catalogue Item")

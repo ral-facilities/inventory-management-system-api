@@ -110,11 +110,14 @@ class ManufacturerRepo:
         Checks if manufactuer is a part of an item, and does not delete if it is
 
         :param manufacturer_id: The ID of the manufacturer to delete
-        :raises ExistIn
+        :raises PartOfCatalogueItemError: if manufacturer is a part of a catalogue item
+        :raises MissingRecordError: if supplied manufacturer ID does not exist in the database
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        if self.is_manufacturer_in_catalogue_item(str(manufacturer_id)):
-            raise PartOfCatalogueItemError("The specified manufacturer is a part of a Catalogue Item")
+        if self._is_manufacturer_in_catalogue_item(str(manufacturer_id)):
+            raise PartOfCatalogueItemError(
+                f"The manufacturer with id {str(manufacturer_id)} is a part of a Catalogue Item"
+            )
 
         logger.info("Deleting manufacturer with ID %s from the database", manufacturer_id)
         result = self._collection.delete_one({"_id": manufacturer_id})
@@ -132,11 +135,11 @@ class ManufacturerRepo:
         count = self._collection.count_documents({"code": code})
         return count > 0
 
-    def is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
+    def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
         """Checks to see if any of the documents in the database have a specific manufactuer id
 
         :param manufacturer_id: The ID of the manufacturer that is looked for
-        :return Returns True if 1 or more documents have the manufacturer ID, false if none do
+        :return: Returns True if 1 or more documents have the manufacturer ID, false if none do
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         count = self._catalogue_item_collection.count_documents({"manufacturer_id": manufacturer_id})

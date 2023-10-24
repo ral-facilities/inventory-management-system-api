@@ -119,7 +119,10 @@ def edit_manufacturer(
     response_description="Manufacturer deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_manufacturer(manufacturer_id: str, manufacturer_service: ManufacturerService = Depends()) -> None:
+def delete_manufacturer(
+    manufacturer_id: str = Path(description="The ID of the manufacturer that is to be deleted"),
+    manufacturer_service: ManufacturerService = Depends(),
+) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting manufacturer with ID: %s", manufacturer_id)
     try:
