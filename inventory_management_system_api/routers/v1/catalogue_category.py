@@ -76,13 +76,14 @@ def get_catalogue_category_breadcrumbs(
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Catalogue category with such ID was not found"
-        ) from exc
+        message = "Catalogue category with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
+        logger.exception("Unable to obtain breadcrumbs due to a database issue")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to obtain breadcrumbs due to a database issue",
+            detail="Unable to obtain breadcrumbs",
         ) from exc
 
 

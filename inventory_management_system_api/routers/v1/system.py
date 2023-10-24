@@ -69,11 +69,14 @@ def get_system_breadcrumbs(
     try:
         return system_service.get_breadcrumbs(system_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="System with such ID was not found") from exc
+        message = "System with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
+        logger.exception("Unable to obtain breadcrumbs due to a database issue")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to obtain breadcrumbs due to a database issue",
+            detail="Unable to obtain breadcrumbs",
         ) from exc
     # pylint: enable=duplicate-code
 
