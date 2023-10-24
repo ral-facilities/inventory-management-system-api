@@ -96,14 +96,7 @@ class ManufacturerService:
             stored_manufacturer.name = update_data["name"]
             stored_manufacturer.code = self._generate_code(stored_manufacturer.name)
 
-        if "url" in update_data:
-            stored_manufacturer.url = update_data["url"]
-
-        if "address" in update_data:
-            stored_manufacturer.address = update_data["address"]
-
-        if "telephone" in update_data:
-            stored_manufacturer.telephone = update_data["telephone"]
+        stored_manufacturer = stored_manufacturer.copy(update=update_data)
 
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
 
