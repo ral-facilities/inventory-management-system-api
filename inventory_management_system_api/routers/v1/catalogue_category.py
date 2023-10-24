@@ -73,6 +73,7 @@ def get_catalogue_category_breadcrumbs(
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
+    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:

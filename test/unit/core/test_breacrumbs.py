@@ -144,7 +144,7 @@ class TestComputeBreadcrumbsWhenValid:
             )
 
         mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
-        assert str(exc.value) == f"Entity with the ID {entity_id} was not found in the collection {collection_name}"
+        assert str(exc.value) == f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'"
 
     def test_query_breadcrumbs_when_entity_id_is_invalid(self):
         """

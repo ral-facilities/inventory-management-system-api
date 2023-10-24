@@ -66,6 +66,7 @@ def get_system_breadcrumbs(
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
     # pylint: disable=duplicate-code
+    logger.info("Getting breadcrumbs for system with ID: %s", system_id)
     try:
         return system_service.get_breadcrumbs(system_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:

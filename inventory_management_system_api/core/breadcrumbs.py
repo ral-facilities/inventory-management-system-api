@@ -29,6 +29,8 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, collection_
     :return: See BreadcrumbsGetSchema
     """
 
+    logger.info("Querying breadcrumbs for entity with id '%s' in the collection '%s'", entity_id, collection_name)
+
     trail: list[tuple[str, str]] = []
 
     result = list(
@@ -67,7 +69,9 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, collection_
         )
     )[0]["result"]
     if len(result) == 0:
-        raise MissingRecordError(f"Entity with the ID {entity_id} was not found in the collection {collection_name}")
+        message = f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'"
+        logger.exception(message)
+        raise MissingRecordError(message)
     for element in result:
         trail.append((str(element["_id"]), element["name"]))
     full_trail = result[0]["parent_id"] is None
@@ -75,8 +79,10 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, collection_
     # Ensure none of the parent_id's are invalid - if they are we wont get the full trail even though we are supposed
     # to
     if not full_trail and len(trail) != BREADCRUMBS_TRAIL_MAX_LENGTH:
-        raise DatabaseIntegrityError(
+        message = (
             f"Unable to locate full trail for entity with id '{entity_id}' from the database collection "
             f"'{collection_name}'"
         )
+        logger.exception(message)
+        raise DatabaseIntegrityError(message)
     return BreadcrumbsGetSchema(trail=trail, full_trail=full_trail)
