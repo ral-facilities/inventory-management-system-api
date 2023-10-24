@@ -14,7 +14,7 @@ class Address(BaseModel):
     town: Optional[str] = Field(default=None, description="Town of manufacturer")
     county: Optional[str] = Field(default=None, description="County of manufacturer")
     country: Optional[str] = Field(default=None, description="Country of the manufacturer")
-    postCode: str = Field(description="Post Code/Zip of manufacturer")
+    postcode: str = Field(description="Post Code/Zip of manufacturer")
 
 
 class ManufacturerPostRequestSchema(BaseModel):

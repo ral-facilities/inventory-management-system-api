@@ -43,7 +43,7 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -65,7 +65,7 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -830,7 +830,7 @@ def test_partial_update_catalogue_item_change_manufacturer(test_client):
     catalogue_item_patch = {
         "manufacturer": {
             "name": "Manufacturer B",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-b.co.uk",
         }
     }

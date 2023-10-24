@@ -15,7 +15,7 @@ def test_create_manufacturer(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -44,7 +44,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -60,7 +60,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -82,7 +82,7 @@ def test_list(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -96,7 +96,7 @@ def test_list(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "05940545",
     }
@@ -117,7 +117,7 @@ def test_list(test_client):
         "town": "Oxford",
         "county": "Oxfordshire",
         "country": "United Kingdom",
-        "postCode": "OX1 2AB",
+        "postcode": "OX1 2AB",
     }
     assert manufacturers[0]["code"] == "manufacturer-a"
     assert manufacturers[0]["telephone"] == "0932348348"
@@ -130,7 +130,7 @@ def test_list(test_client):
         "town": "Oxford",
         "county": "Oxfordshire",
         "country": "United Kingdom",
-        "postCode": "OX1 2AB",
+        "postcode": "OX1 2AB",
     }
     assert manufacturers[1]["code"] == "manufacturer-b"
     assert manufacturers[1]["telephone"] == "05940545"
@@ -157,7 +157,7 @@ def test_get_manufacturer_with_id(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -199,7 +199,7 @@ def test_update(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -215,7 +215,7 @@ def test_update(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "07569585584",
     }
@@ -241,7 +241,7 @@ def test_update_with_invalid_id(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -263,7 +263,7 @@ def test_update_with_nonexistent_id(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -285,7 +285,7 @@ def test_update_duplicate_name(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -301,7 +301,7 @@ def test_update_duplicate_name(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "087876775767",
     }
@@ -326,7 +326,7 @@ def test_delete(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -349,7 +349,7 @@ def test_delete_with_an_invalid_id(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -372,7 +372,7 @@ def test_delete_with_a_nonexistent_id(test_client):
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
-            "postCode": "OX1 2AB",
+            "postcode": "OX1 2AB",
         },
         "telephone": "0932348348",
     }
@@ -397,7 +397,7 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item():
     #         "street_name": "Example Street",
     #         "town": "Oxford",
     #         "county": "Oxfordshire",
-    #         "postCode": "OX1 2AB",
+    #         "postcode": "OX1 2AB",
     #     },
     #     "telephone": "0932348348",
     # }

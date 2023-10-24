@@ -31,7 +31,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -91,7 +91,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -122,7 +122,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -133,7 +133,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         code="manufacturer-b",
         url="http://example.co.uk",
         address=Address(
-            building_number=2, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 3AB"
+            building_number=2, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 3AB"
         ),
         telephone="073434394",
     )
@@ -184,7 +184,7 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -234,7 +234,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -254,7 +254,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
                 "street_name": "Test street",
                 "town": "Newbury",
                 "county": "Berkshire",
-                "postCode": "QW2 4DF",
+                "postcode": "QW2 4DF",
             },
             "telephone": "0348343897",
         },
@@ -312,7 +312,7 @@ def test_update_with_invalid_id(manufacturer_repository):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -332,7 +332,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postCode="OX1 2AB"
+            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -351,7 +351,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
                 "street_name": "Test street",
                 "town": "Newbury",
                 "county": "Berkshire",
-                "postCode": "QW2 4DF",
+                "postcode": "QW2 4DF",
             },
             "telephone": "0348343897",
         },

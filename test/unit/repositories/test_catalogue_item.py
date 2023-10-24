@@ -36,7 +36,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         ],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -162,7 +162,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
         ],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -234,7 +234,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         ],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -247,7 +247,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         properties=[Property(name="Property A", value=True)],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -301,7 +301,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
         ],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -380,7 +380,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
