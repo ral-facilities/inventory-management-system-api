@@ -597,7 +597,7 @@ def test_get_breadcrumbs(mock_query_breadcrumbs, database_mock, catalogue_catego
     mock_query_breadcrumbs.assert_called_once_with(
         entity_id=catalogue_category_id,
         entity_collection=database_mock.catalogue_categories,
-        graph_lookup_from="catalogue_categories",
+        collection_name="catalogue_categories",
     )
     assert retrieved_breadcrumbs == mock_breadcrumbs
 

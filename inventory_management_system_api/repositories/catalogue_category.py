@@ -109,7 +109,7 @@ class CatalogueCategoryRepo:
         return query_breadcrumbs(
             entity_id=catalogue_category_id,
             entity_collection=self._catalogue_categories_collection,
-            graph_lookup_from="catalogue_categories",
+            collection_name="catalogue_categories",
         )
 
     def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:

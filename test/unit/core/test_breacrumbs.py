@@ -46,14 +46,14 @@ MOCK_AGGREGATE_RESPONSE_INVALID_PARENT_IN_DB = [
 class TestComputeBreadcrumbsWhenValid:
     """Test query_breadcrumbs functions correctly when it has no errors"""
 
-    def _get_expected_pipeline(self, entity_id: str, graph_lookup_from: str):
-        """Returns the aggregate pipeline expected given an entity_id and graph_lookup_from values"""
+    def _get_expected_pipeline(self, entity_id: str, collection_name: str):
+        """Returns the aggregate pipeline expected given an entity_id and collection_name values"""
         return [
             # pylint: disable=duplicate-code
             {"$match": {"_id": CustomObjectId(entity_id)}},
             {
                 "$graphLookup": {
-                    "from": graph_lookup_from,
+                    "from": collection_name,
                     "startWith": "$parent_id",
                     "connectFromField": "parent_id",
                     "connectToField": "_id",
@@ -89,12 +89,12 @@ class TestComputeBreadcrumbsWhenValid:
         expected breadcrumbs output"""
         entity_id = str(ObjectId())
         mock_entity_collection = MagicMock()
-        graph_lookup_from = MagicMock()
+        collection_name = MagicMock()
         mock_entity_collection.aggregate.return_value = mock_aggregate_response
-        expected_pipeline = self._get_expected_pipeline(entity_id, graph_lookup_from)
+        expected_pipeline = self._get_expected_pipeline(entity_id, collection_name)
 
         result = breadcrumbs.query_breadcrumbs(
-            entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+            entity_id=entity_id, entity_collection=mock_entity_collection, collection_name=collection_name
         )
 
         mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
@@ -133,18 +133,18 @@ class TestComputeBreadcrumbsWhenValid:
         """
         entity_id = str(ObjectId())
         mock_entity_collection = MagicMock()
-        graph_lookup_from = MagicMock()
-        expected_pipeline = self._get_expected_pipeline(entity_id, graph_lookup_from)
+        collection_name = MagicMock()
+        expected_pipeline = self._get_expected_pipeline(entity_id, collection_name)
 
         mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_NON_EXISTENT_ID
 
         with pytest.raises(MissingRecordError) as exc:
             breadcrumbs.query_breadcrumbs(
-                entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+                entity_id=entity_id, entity_collection=mock_entity_collection, collection_name=collection_name
             )
 
         mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
-        assert str(exc.value) == f"Entity with the ID {entity_id} was not found in the collection {graph_lookup_from}"
+        assert str(exc.value) == f"Entity with the ID {entity_id} was not found in the collection {collection_name}"
 
     def test_query_breadcrumbs_when_entity_id_is_invalid(self):
         """
@@ -152,13 +152,13 @@ class TestComputeBreadcrumbsWhenValid:
         """
         entity_id = "invalid"
         mock_entity_collection = MagicMock()
-        graph_lookup_from = MagicMock()
+        collection_name = MagicMock()
 
         mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_NON_EXISTENT_ID
 
         with pytest.raises(InvalidObjectIdError) as exc:
             breadcrumbs.query_breadcrumbs(
-                entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+                entity_id=entity_id, entity_collection=mock_entity_collection, collection_name=collection_name
             )
 
         mock_entity_collection.aggregate.assert_not_called()
@@ -170,18 +170,18 @@ class TestComputeBreadcrumbsWhenValid:
         """
         entity_id = str(ObjectId())
         mock_entity_collection = MagicMock()
-        graph_lookup_from = MagicMock()
-        expected_pipeline = self._get_expected_pipeline(entity_id, graph_lookup_from)
+        collection_name = MagicMock()
+        expected_pipeline = self._get_expected_pipeline(entity_id, collection_name)
 
         mock_entity_collection.aggregate.return_value = MOCK_AGGREGATE_RESPONSE_INVALID_PARENT_IN_DB
 
         with pytest.raises(DatabaseIntegrityError) as exc:
             breadcrumbs.query_breadcrumbs(
-                entity_id=entity_id, entity_collection=mock_entity_collection, graph_lookup_from=graph_lookup_from
+                entity_id=entity_id, entity_collection=mock_entity_collection, collection_name=collection_name
             )
 
         mock_entity_collection.aggregate.assert_called_once_with(expected_pipeline)
         assert str(exc.value) == (
             f"Unable to locate full trail for entity with id '{entity_id}' from the database collection "
-            f"'{graph_lookup_from}'"
+            f"'{collection_name}'"
         )

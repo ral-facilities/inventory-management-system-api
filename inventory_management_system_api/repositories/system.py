@@ -109,7 +109,7 @@ class SystemRepo:
         return query_breadcrumbs(
             entity_id=system_id,
             entity_collection=self._systems_collection,
-            graph_lookup_from="systems",
+            collection_name="systems",
         )
 
     def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:

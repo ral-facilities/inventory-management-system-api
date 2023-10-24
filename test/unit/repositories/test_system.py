@@ -327,7 +327,7 @@ def test_get_breadcrumbs(mock_query_breadcrumbs, database_mock, system_repositor
     mock_query_breadcrumbs.assert_called_once_with(
         entity_id=system_id,
         entity_collection=database_mock.systems,
-        graph_lookup_from="systems",
+        collection_name="systems",
     )
     assert retrieved_breadcrumbs == mock_breadcrumbs
 

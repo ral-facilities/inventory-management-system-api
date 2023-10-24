@@ -13,14 +13,14 @@ from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSc
 logger = logging.getLogger()
 
 
-def query_breadcrumbs(entity_id: str, entity_collection: Collection, graph_lookup_from: str) -> BreadcrumbsGetSchema:
+def query_breadcrumbs(entity_id: str, entity_collection: Collection, collection_name: str) -> BreadcrumbsGetSchema:
     """
     Query breadcrumbs for an entity given it's ID
 
     :param entity_id: ID of the entity to look up
     :param entity_collection: Collection for looking up entities - It is assumed that the entities have
                               an _id, _name and parent_id field
-    :param graph_lookup_from: Value of "from" to use for the $graphLookup query - Should be the name of
+    :param collection_name: Value of "from" to use for the $graphLookup query - Should be the name of
                               the collection
     :raises InvalidObjectIdError: If the given entity_id is invalid
     :raises DatabaseIntegrityError: If the query returns a less than the maximum allowed trail while not
@@ -37,7 +37,7 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, graph_looku
                 {"$match": {"_id": CustomObjectId(entity_id)}},
                 {
                     "$graphLookup": {
-                        "from": graph_lookup_from,
+                        "from": collection_name,
                         "startWith": "$parent_id",
                         "connectFromField": "parent_id",
                         "connectToField": "_id",
@@ -67,7 +67,7 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, graph_looku
         )
     )[0]["result"]
     if len(result) == 0:
-        raise MissingRecordError(f"Entity with the ID {entity_id} was not found in the collection {graph_lookup_from}")
+        raise MissingRecordError(f"Entity with the ID {entity_id} was not found in the collection {collection_name}")
     for element in result:
         trail.append((str(element["_id"]), element["name"]))
     full_trail = result[0]["parent_id"] is None
@@ -77,6 +77,6 @@ def query_breadcrumbs(entity_id: str, entity_collection: Collection, graph_looku
     if not full_trail and len(trail) != BREADCRUMBS_TRAIL_MAX_LENGTH:
         raise DatabaseIntegrityError(
             f"Unable to locate full trail for entity with id '{entity_id}' from the database collection "
-            f"'{graph_lookup_from}'"
+            f"'{collection_name}'"
         )
     return BreadcrumbsGetSchema(trail=trail, full_trail=full_trail)
