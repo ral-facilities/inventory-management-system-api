@@ -10,7 +10,7 @@ def test_create_manufacturer(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -39,7 +39,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -55,7 +55,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -77,7 +77,7 @@ def test_list(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -91,7 +91,7 @@ def test_list(test_client):
         "name": "Manufacturer B",
         "url": "http://test.com",
         "address": {
-            "building_number": 2,
+            "building_number": "2",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -112,7 +112,7 @@ def test_list(test_client):
     assert manufacturers[0]["name"] == "Manufacturer A"
     assert manufacturers[0]["url"] == "http://example.com"
     assert manufacturers[0]["address"] == {
-        "building_number": 1,
+        "building_number": "1",
         "street_name": "Example Street",
         "town": "Oxford",
         "county": "Oxfordshire",
@@ -125,7 +125,7 @@ def test_list(test_client):
     assert manufacturers[1]["name"] == "Manufacturer B"
     assert manufacturers[1]["url"] == "http://test.com"
     assert manufacturers[1]["address"] == {
-        "building_number": 2,
+        "building_number": "2",
         "street_name": "Example Street",
         "town": "Oxford",
         "county": "Oxfordshire",
@@ -152,7 +152,7 @@ def test_get_manufacturer_with_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -194,7 +194,7 @@ def test_update(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -210,7 +210,7 @@ def test_update(test_client):
         "name": "Manufacturer B",
         "url": "http://test.co.uk",
         "address": {
-            "building_number": 2,
+            "building_number": "2",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -236,7 +236,7 @@ def test_update_with_invalid_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -258,7 +258,7 @@ def test_update_with_nonexistent_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -280,7 +280,7 @@ def test_update_duplicate_name(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -296,7 +296,7 @@ def test_update_duplicate_name(test_client):
         "name": "Manufacturer B",
         "url": "http://test.com",
         "address": {
-            "building_number": 2,
+            "building_number": "2",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -321,7 +321,7 @@ def test_delete(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -344,7 +344,7 @@ def test_delete_with_an_invalid_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -367,7 +367,7 @@ def test_delete_with_a_nonexistent_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": 1,
+            "building_number": "1",
             "street_name": "Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
@@ -393,7 +393,7 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item():
     #     "name": "Manufacturer A",
     #     "url": "http://example.com",
     #     "address": {
-    #         "building_number": 1,
+    #         "building_number": "1",
     #         "street_name": "Example Street",
     #         "town": "Oxford",
     #         "county": "Oxfordshire",

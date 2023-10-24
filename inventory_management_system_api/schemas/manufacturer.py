@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, HttpUrl
 class Address(BaseModel):
     """Schema for address type"""
 
-    building_number: int = Field(description="House/Building number of manufacturer")
+    building_number: str = Field(description="House/Building number of manufacturer")
     street_name: str = Field(description="Street name of manufacturer")
     town: Optional[str] = Field(default=None, description="Town of manufacturer")
     county: Optional[str] = Field(default=None, description="County of manufacturer")

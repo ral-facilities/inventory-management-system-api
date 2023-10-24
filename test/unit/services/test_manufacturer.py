@@ -22,7 +22,7 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -59,7 +59,7 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -70,7 +70,7 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-b",
         url="http://example.co.uk",
         address=Address(
-            building_number=2, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 3AB"
+            building_number="2", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 3AB"
         ),
         telephone="073434394",
     )
@@ -90,7 +90,7 @@ def test_get(manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
@@ -133,7 +133,7 @@ def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock,
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=Address(
-            building_number=1, street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
