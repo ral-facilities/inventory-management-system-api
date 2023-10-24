@@ -13,6 +13,7 @@ class Address(BaseModel):
     street_name: str = Field(description="Street name of manufacturer")
     town: Optional[str] = Field(default=None, description="Town of manufacturer")
     county: Optional[str] = Field(default=None, description="County of manufacturer")
+    country: Optional[str] = Field(default=None, description="Country of the manufacturer")
     postCode: str = Field(description="Post Code/Zip of manufacturer")
 
 
