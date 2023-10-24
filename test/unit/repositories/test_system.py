@@ -3,6 +3,7 @@ Unit tests for the `SystemRepo` repository
 """
 
 
+from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 from typing import Optional
 from unittest.mock import MagicMock, call, patch
 
@@ -311,22 +312,29 @@ def test_get_with_non_existent_id(test_helpers, database_mock, system_repository
     assert retrieved_system is None
 
 
-@patch("inventory_management_system_api.repositories.system.query_breadcrumbs")
-def test_get_breadcrumbs(mock_query_breadcrumbs, database_mock, system_repository):
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
     """
     Test getting breadcrumbs for a specific system
 
     Verify that the 'get_breadcrumbs' method properly handles the retrieval of breadcrumbs for a system
     """
     system_id = str(ObjectId())
+    mock_aggregation_pipeline = MagicMock()
     mock_breadcrumbs = MagicMock()
-    mock_query_breadcrumbs.return_value = mock_breadcrumbs
+
+    mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
+    database_mock.systems.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 
     retrieved_breadcrumbs = system_repository.get_breadcrumbs(system_id)
 
-    mock_query_breadcrumbs.assert_called_once_with(
+    mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
+        entity_id=system_id, collection_name="systems"
+    )
+    mock_utils.compute_breadcrumbs.assert_called_once_with(
+        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
         entity_id=system_id,
-        entity_collection=database_mock.systems,
         collection_name="systems",
     )
     assert retrieved_breadcrumbs == mock_breadcrumbs

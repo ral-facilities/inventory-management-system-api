@@ -8,7 +8,6 @@ from fastapi import Depends
 from pymongo.collection import Collection
 from pymongo.database import Database
 
-from inventory_management_system_api.core.breadcrumbs import query_breadcrumbs
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
@@ -106,9 +105,13 @@ class SystemRepo:
         :param system_id: ID of the system to retrieve breadcrumbs for
         :return: Breadcrumbs
         """
-        return query_breadcrumbs(
+        return utils.compute_breadcrumbs(
+            list(
+                self._systems_collection.aggregate(
+                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems")
+                )
+            ),
             entity_id=system_id,
-            entity_collection=self._systems_collection,
             collection_name="systems",
         )
 

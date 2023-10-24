@@ -2,6 +2,7 @@
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
+from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -581,22 +582,30 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_category
     database_mock.catalogue_categories.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_category_id)})
 
 
-@patch("inventory_management_system_api.repositories.catalogue_category.query_breadcrumbs")
-def test_get_breadcrumbs(mock_query_breadcrumbs, database_mock, catalogue_category_repository):
+@patch("inventory_management_system_api.repositories.catalogue_category.utils")
+def test_get_breadcrumbs(mock_utils, database_mock, catalogue_category_repository):
     """
     Test getting breadcrumbs for a specific catalogue category
 
-    Verify that the 'get_breadcrumbs' method properly handles the retrieval of breadcrumbs for a system
+    Verify that the 'get_breadcrumbs' method properly handles the retrieval of breadcrumbs for a catalogue
+    category
     """
     catalogue_category_id = str(ObjectId())
+    mock_aggregation_pipeline = MagicMock()
     mock_breadcrumbs = MagicMock()
-    mock_query_breadcrumbs.return_value = mock_breadcrumbs
+
+    mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
+    database_mock.catalogue_categories.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 
     retrieved_breadcrumbs = catalogue_category_repository.get_breadcrumbs(catalogue_category_id)
 
-    mock_query_breadcrumbs.assert_called_once_with(
+    mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
+        entity_id=catalogue_category_id, collection_name="catalogue_categories"
+    )
+    mock_utils.compute_breadcrumbs.assert_called_once_with(
+        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
         entity_id=catalogue_category_id,
-        entity_collection=database_mock.catalogue_categories,
         collection_name="catalogue_categories",
     )
     assert retrieved_breadcrumbs == mock_breadcrumbs
