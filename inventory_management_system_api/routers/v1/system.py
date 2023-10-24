@@ -74,10 +74,11 @@ def get_system_breadcrumbs(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        logger.exception("Unable to obtain breadcrumbs due to a database issue")
+        message = "Unable to obtain breadcrumbs"
+        logger.exception(message)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to obtain breadcrumbs",
+            detail=message,
         ) from exc
     # pylint: enable=duplicate-code
 
