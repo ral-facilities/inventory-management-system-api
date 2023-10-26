@@ -105,6 +105,7 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: ID of the catalogue category to retrieve breadcrumbs for
         :return: Breadcrumbs
         """
+        logger.info("Querying breadcrumbs for catalogue category with id '%s'", catalogue_category_id)
         return utils.compute_breadcrumbs(
             list(
                 self._catalogue_categories_collection.aggregate(

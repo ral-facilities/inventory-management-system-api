@@ -89,18 +89,16 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
     create_breadcrumbs_aggregation_pipeline above
 
     :param entity_id: ID of the entity the breadcrumbs are for. Should be the same as was used for
-                      create_breadcrumbs_aggregation_pipeline (used for logging)
+                      create_breadcrumbs_aggregation_pipeline (used for error messages)
     :param breadcrumb_query_result: Result of the running the aggregation pipeline returned by
-                                    create_breadcrumbs_aggregation_pipeline (used for logging)
+                                    create_breadcrumbs_aggregation_pipeline
     :param collection_name: Should be the same as the value passed to create_breadcrumbs_aggregation_pipeline
-                            (used for logging)
+                            (used for error messages)
     :raises DatabaseIntegrityError: If the query returned less than the maximum allowed trail while not
                                     giving the full trail - this indicates a parent_id is invalid or doesn't
                                     exist in the database which shouldn't occur
     :return: See BreadcrumbsGetSchema
     """
-
-    logger.info("Querying breadcrumbs for entity with id '%s' in the collection '%s'", entity_id, collection_name)
 
     trail: list[tuple[str, str]] = []
 
