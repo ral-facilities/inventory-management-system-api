@@ -10,11 +10,13 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
+    DatabaseIntegrityError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
 )
-from inventory_management_system_api.schemas.system import SystemRequestSchema, SystemPostRequestSchema
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
+from inventory_management_system_api.schemas.system import SystemPostRequestSchema, SystemRequestSchema
 from inventory_management_system_api.services.system import SystemService
 
 logger = logging.getLogger()
@@ -55,6 +57,30 @@ def get_system(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found"
         ) from exc
+
+
+@router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")
+def get_system_breadcrumbs(
+    system_id: str = Path(description="The ID of the system to get the breadcrumbs for"),
+    system_service: SystemService = Depends(),
+) -> BreadcrumbsGetSchema:
+    # pylint: disable=missing-function-docstring
+    # pylint: disable=duplicate-code
+    logger.info("Getting breadcrumbs for system with ID: %s", system_id)
+    try:
+        return system_service.get_breadcrumbs(system_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "System with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to obtain breadcrumbs"
+        logger.exception(message)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=message,
+        ) from exc
+    # pylint: enable=duplicate-code
 
 
 @router.post(

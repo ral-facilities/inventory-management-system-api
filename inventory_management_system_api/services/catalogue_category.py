@@ -9,6 +9,7 @@ from fastapi import Depends
 from inventory_management_system_api.core.exceptions import LeafCategoryError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
@@ -80,6 +81,15 @@ class CatalogueCategoryService:
         :return: The retrieved catalogue category, or `None` if not found.
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
+
+    def get_breadcrumbs(self, catalogue_category_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific catalogue category
+
+        :param catalogue_category_id: ID of the system to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        return self._catalogue_category_repository.get_breadcrumbs(catalogue_category_id)
 
     def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
         """

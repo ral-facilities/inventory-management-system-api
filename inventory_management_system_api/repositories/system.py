@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
 logger = logging.getLogger()
 
@@ -71,6 +72,8 @@ class SystemRepo:
         :raises MissingRecordError: If the System doesn't exist
         """
         system_id = CustomObjectId(system_id)
+        # pylint: disable=W0511
+        # TODO: Also need a check here on items when they are implemented
         if self._has_child_elements(system_id):
             raise ChildrenElementsExistError(
                 f"System with ID {str(system_id)} has child elements and cannot be deleted"
@@ -94,6 +97,24 @@ class SystemRepo:
         if system:
             return SystemOut(**system)
         return None
+
+    def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific system
+
+        :param system_id: ID of the system to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        logger.info("Querying breadcrumbs for system with id '%s'", system_id)
+        return utils.compute_breadcrumbs(
+            list(
+                self._systems_collection.aggregate(
+                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems")
+                )
+            ),
+            entity_id=system_id,
+            collection_name="systems",
+        )
 
     def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
         """

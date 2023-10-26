@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories import utils
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
 logger = logging.getLogger()
 
@@ -96,6 +97,26 @@ class CatalogueCategoryRepo:
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
         return None
+
+    def get_breadcrumbs(self, catalogue_category_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific catalogue category
+
+        :param catalogue_category_id: ID of the catalogue category to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        logger.info("Querying breadcrumbs for catalogue category with id '%s'", catalogue_category_id)
+        return utils.compute_breadcrumbs(
+            list(
+                self._catalogue_categories_collection.aggregate(
+                    utils.create_breadcrumbs_aggregation_pipeline(
+                        entity_id=catalogue_category_id, collection_name="catalogue_categories"
+                    )
+                )
+            ),
+            entity_id=catalogue_category_id,
+            collection_name="catalogue_categories",
+        )
 
     def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:
         """

@@ -3,21 +3,23 @@ Module for providing an API router which defines routes for managing catalogue c
 `CatalogueCategoryService` service.
 """
 import logging
-from typing import Optional, Annotated, List
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
-    MissingRecordError,
-    InvalidObjectIdError,
-    DuplicateRecordError,
-    LeafCategoryError,
     ChildrenElementsExistError,
+    DatabaseIntegrityError,
+    DuplicateRecordError,
+    InvalidObjectIdError,
+    LeafCategoryError,
+    MissingRecordError,
 )
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueCategorySchema,
-    CatalogueCategoryPostRequestSchema,
     CatalogueCategoryPatchRequestSchema,
+    CatalogueCategoryPostRequestSchema,
+    CatalogueCategorySchema,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 
@@ -63,6 +65,28 @@ def get_catalogue_category(
     except InvalidObjectIdError as exc:
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.get(path="/{catalogue_category_id}/breadcrumbs", summary="Get breadcrumbs data for a catalogue category")
+def get_catalogue_category_breadcrumbs(
+    catalogue_category_id: str = Path(description="The ID of the catalogue category to get the breadcrumbs for"),
+    catalogue_category_service: CatalogueCategoryService = Depends(),
+) -> BreadcrumbsGetSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
+    try:
+        return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "Catalogue category with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to obtain breadcrumbs"
+        logger.exception(message)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=message,
+        ) from exc
 
 
 @router.post(
@@ -125,7 +149,7 @@ def partial_update_catalogue_category(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildrenElementsExistError as exc:
-        message = "Catalogue category has children elements and cannot be updated"
+        message = "Catalogue category has child elements and cannot be updated"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except DuplicateRecordError as exc:
@@ -157,6 +181,6 @@ def delete_catalogue_category(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildrenElementsExistError as exc:
-        message = "Catalogue category has children elements and cannot be deleted"
+        message = "Catalogue category has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
