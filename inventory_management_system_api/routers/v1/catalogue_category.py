@@ -41,9 +41,10 @@ def get_catalogue_categories(
     try:
         catalogue_categories = catalogue_category_service.list(parent_id)
         return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
-    except InvalidObjectIdError as exc:
-        logger.exception("Invalid parent_id given '%s'", parent_id)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid parent_id given") from exc
+    except InvalidObjectIdError:
+        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
+        # the same as a valid one that doesn't exist i.e. return an empty list
+        return []
 
 
 @router.get(

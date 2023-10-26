@@ -424,8 +424,8 @@ def test_get_catalogue_categories_with_invalid_parent_id_filter(test_client):
     """
     response = test_client.get("/v1/catalogue-categories", params={"parent_id": "invalid"})
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "Invalid parent_id given"
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
