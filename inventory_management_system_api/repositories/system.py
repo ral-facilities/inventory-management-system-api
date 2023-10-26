@@ -105,6 +105,7 @@ class SystemRepo:
         :param system_id: ID of the system to retrieve breadcrumbs for
         :return: Breadcrumbs
         """
+        logger.info("Querying breadcrumbs for system with id '%s'", system_id)
         return utils.compute_breadcrumbs(
             list(
                 self._systems_collection.aggregate(
