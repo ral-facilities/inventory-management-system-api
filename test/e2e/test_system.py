@@ -126,9 +126,6 @@ def test_create_system_with_only_required_values_given(test_client):
 
     system = response.json()
 
-    print(system)
-    print(SYSTEM_POST_REQUIRED_ONLY)
-
     assert system == SYSTEM_POST_REQUIRED_ONLY_EXPECTED
 
 
