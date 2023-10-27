@@ -84,10 +84,10 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     """
     system_info = {
         "name": "Test name b",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "parent_id": str(ObjectId()),
     }
     full_system_info = {
@@ -101,12 +101,12 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
         system_repository_mock,
         SystemOut(
             id=system.parent_id,
+            parent_id=None,
             name="Test name a",
+            description="Test description",
             location="Test location",
             owner="Test owner",
             importance="low",
-            description="Test description",
-            parent_id=None,
             code="test-name-a",
         ),
     )
@@ -128,12 +128,12 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     it correctly
     """
     system_info = {
+        "parent_id": None,
+        "description": "Test description",
         "name": "      Test    name         ",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
-        "parent_id": None,
     }
     full_system_info = {
         **system_info,

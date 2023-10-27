@@ -8,6 +8,21 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
+SYSTEM_POST_REQUIRED_ONLY = {
+    "name": "System Test",
+    "importance": "low",
+}
+
+SYSTEM_POST_REQUIRED_ONLY_EXPECTED = {
+    **SYSTEM_POST_REQUIRED_ONLY,
+    "id": ANY,
+    "parent_id": None,
+    "description": None,
+    "location": None,
+    "owner": None,
+    "code": "system-test",
+}
+
 SYSTEM_POST_A = {
     "name": "System A",
     "location": "Test location",
@@ -99,6 +114,22 @@ def test_create_system(test_client):
     system = response.json()
 
     assert system == SYSTEM_POST_A_EXPECTED
+
+
+def test_create_system_with_only_required_values_given(test_client):
+    """
+    Test creating a System when only the required values are given
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_REQUIRED_ONLY)
+
+    assert response.status_code == 201
+
+    system = response.json()
+
+    print(system)
+    print(SYSTEM_POST_REQUIRED_ONLY)
+
+    assert system == SYSTEM_POST_REQUIRED_ONLY_EXPECTED
 
 
 def test_create_system_with_valid_parent_id(test_client):
