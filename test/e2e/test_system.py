@@ -25,25 +25,25 @@ SYSTEM_POST_REQUIRED_ONLY_EXPECTED = {
 
 SYSTEM_POST_A = {
     "name": "System A",
+    "description": "System description",
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-    "description": "System description",
 }
 SYSTEM_POST_A_EXPECTED = {
     **SYSTEM_POST_A,
     "id": ANY,
-    "code": "system-a",
     "parent_id": None,
+    "code": "system-a",
 }
 
 # To be posted as a child of the above
 SYSTEM_POST_B = {
     "name": "System B",
+    "description": "System description",
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-    "description": "System description",
 }
 SYSTEM_POST_B_EXPECTED = {
     **SYSTEM_POST_B,
@@ -53,16 +53,16 @@ SYSTEM_POST_B_EXPECTED = {
 
 SYSTEM_POST_C = {
     "name": "System C",
+    "description": "System description",
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-    "description": "System description",
 }
 SYSTEM_POST_C_EXPECTED = {
     **SYSTEM_POST_C,
     "id": ANY,
-    "code": "system-c",
     "parent_id": None,
+    "code": "system-c",
 }
 
 
