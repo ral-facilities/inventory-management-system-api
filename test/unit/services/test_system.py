@@ -11,7 +11,7 @@ from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPostRequestSchema
 
 
-def _test_list(test_helpers, system_repository_mock, system_service, path: Optional[str], parent_path: Optional[str]):
+def _test_list(test_helpers, system_repository_mock, system_service, parent_id: Optional[str]):
     """
     Utility method that tests getting Systems
 
@@ -25,9 +25,9 @@ def _test_list(test_helpers, system_repository_mock, system_service, path: Optio
         systems,
     )
 
-    retrieved_systems = system_service.list(path, parent_path)
+    retrieved_systems = system_service.list(parent_id)
 
-    system_repository_mock.list.assert_called_once_with(path, parent_path)
+    system_repository_mock.list.assert_called_once_with(parent_id)
     assert retrieved_systems == systems
 
 
@@ -35,7 +35,7 @@ def test_create(test_helpers, system_repository_mock, system_service):
     """
     Test creating a System
 
-    Verify that the `create` method properly handles the System to be created, generates the code and paths,
+    Verify that the `create` method properly handles the System to be created, generates the code,
     and calls the repository's create method
     """
     # pylint: disable=duplicate-code
@@ -50,8 +50,6 @@ def test_create(test_helpers, system_repository_mock, system_service):
     full_system_info = {
         **system_info,
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
     # pylint: enable=duplicate-code
@@ -95,8 +93,6 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     full_system_info = {
         **system_info,
         "code": "test-name-b",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -112,8 +108,6 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
             description="Test description",
             parent_id=None,
             code="test-name-a",
-            path="/test-name-a",
-            parent_path="/",
         ),
     )
 
@@ -144,8 +138,6 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     full_system_info = {
         **system_info,
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -218,52 +210,41 @@ def test_list(test_helpers, system_repository_mock, system_service):
 
     Verify that the `list` method properly handles the retrieval of Systems without filters
     """
-    _test_list(test_helpers, system_repository_mock, system_service, None, None)
+    _test_list(test_helpers, system_repository_mock, system_service, None)
 
 
-def test_list_with_path_filter(test_helpers, system_repository_mock, system_service):
+def test_list_with_parent_id_filter(test_helpers, system_repository_mock, system_service):
     """
-    Test getting Systems based on the provided path filter
+    Test getting Systems based on the provided parent_id filter
 
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path filter
+    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id filter
     """
-    _test_list(test_helpers, system_repository_mock, system_service, "/test-name-a", None)
+    _test_list(test_helpers, system_repository_mock, system_service, str(ObjectId()))
 
 
-def test_list_with_parent_path_filter(test_helpers, system_repository_mock, system_service):
+def test_list_with_null_parent_id_filter(test_helpers, system_repository_mock, system_service):
     """
-    Test getting Systems based on the provided parent path filter
+    Test getting Systems based on the provided parent_id filter
 
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent path filter
+    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id filter
     """
-    _test_list(test_helpers, system_repository_mock, system_service, None, "/")
+    _test_list(test_helpers, system_repository_mock, system_service, "null")
 
 
-def test_list_with_path_and_parent_path_filter(test_helpers, system_repository_mock, system_service):
+def test_list_with_parent_id_filter_no_matching_results(test_helpers, system_repository_mock, system_service):
     """
-    Test getting Systems based on the provided parent path and parent path filters
+    Test getting Systems based on the provided parent_id filter when there is no matching results in the
+    database
 
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path and
-    parent path filters
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, "/test-name-a", "/")
-
-
-def test_list_with_path_and_parent_path_filters_no_matching_results(
-    test_helpers, system_repository_mock, system_service
-):
-    """
-    Test getting Systems based on the provided parent path and parent path filters when there is no
-    matching results in the database
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path and
-    parent path filters when there is no matching results in the database
+    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent_id
+    filter when there is no matching results in the database
     """
 
     # Mock `list` to return an empty list of Systems
     test_helpers.mock_list(system_repository_mock, [])
 
-    retrieved_systems = system_service.list("/test-name-a", "/")
+    parent_id = str(ObjectId())
+    retrieved_systems = system_service.list(parent_id)
 
-    system_repository_mock.list.assert_called_once_with("/test-name-a", "/")
+    system_repository_mock.list.assert_called_once_with(parent_id)
     assert retrieved_systems == []

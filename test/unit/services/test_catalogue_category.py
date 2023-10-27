@@ -22,7 +22,7 @@ def test_create(test_helpers, catalogue_category_repository_mock, catalogue_cate
     """
     Test creating a catalogue category.
 
-    Verify that the `create` method properly handles the catalogue category to be created, generates the code and paths,
+    Verify that the `create` method properly handles the catalogue category to be created, generates the code,
     and calls the repository's create method.
     """
     # pylint: disable=duplicate-code
@@ -31,8 +31,6 @@ def test_create(test_helpers, catalogue_category_repository_mock, catalogue_cate
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -55,8 +53,6 @@ def test_create(test_helpers, catalogue_category_repository_mock, catalogue_cate
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
@@ -77,8 +73,6 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
         name="Category B",
         code="category-b",
         is_leaf=True,
-        path="/category-a/category-b",
-        parent_path="/category-a",
         parent_id=str(ObjectId()),
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -96,8 +90,6 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
             name="Category A",
             code="category-a",
             is_leaf=False,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[],
         ),
@@ -121,8 +113,6 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
@@ -143,8 +133,6 @@ def test_create_with_whitespace_name(test_helpers, catalogue_category_repository
         name="    Category   A         ",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -170,8 +158,6 @@ def test_create_with_whitespace_name(test_helpers, catalogue_category_repository
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         )
@@ -192,8 +178,6 @@ def test_create_with_leaf_parent_catalogue_category(
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-a/category-b",
-        parent_path="/category-a",
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
     )
@@ -208,8 +192,6 @@ def test_create_with_leaf_parent_catalogue_category(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -256,8 +238,6 @@ def test_get(test_helpers, catalogue_category_repository_mock, catalogue_categor
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -319,8 +299,6 @@ def test_list(test_helpers, catalogue_category_repository_mock, catalogue_catego
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -330,8 +308,6 @@ def test_list(test_helpers, catalogue_category_repository_mock, catalogue_catego
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-b",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -340,18 +316,18 @@ def test_list(test_helpers, catalogue_category_repository_mock, catalogue_catego
     # Mock `list` to return a list of catalogue categories
     test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category_a, catalogue_category_b])
 
-    retrieved_catalogue_categories = catalogue_category_service.list(None, None)
+    retrieved_catalogue_categories = catalogue_category_service.list(None)
 
-    catalogue_category_repository_mock.list.assert_called_once_with(None, None)
+    catalogue_category_repository_mock.list.assert_called_once_with(None)
     assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
 
 
-def test_list_with_path_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_list_with_parent_id_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
-    Test getting catalogue categories based on the provided path filter.
+    Test getting catalogue categories based on the provided parent_id filter.
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path
-    filter.
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided
+    parent_id filter.
     """
     # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
@@ -359,8 +335,6 @@ def test_list_with_path_filter(test_helpers, catalogue_category_repository_mock,
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -369,18 +343,19 @@ def test_list_with_path_filter(test_helpers, catalogue_category_repository_mock,
     # Mock `list` to return a list of catalogue categories
     test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category])
 
-    retrieved_catalogue_categories = catalogue_category_service.list("/category-a", None)
+    parent_id = str(ObjectId())
+    retrieved_catalogue_categories = catalogue_category_service.list(parent_id)
 
-    catalogue_category_repository_mock.list.assert_called_once_with("/category-a", None)
+    catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
     assert retrieved_catalogue_categories == [catalogue_category]
 
 
-def test_list_with_parent_path_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_list_with_null_parent_id_filter(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
-    Test getting catalogue categories based on the provided parent path filter.
+    Test getting catalogue categories when given a parent_id filter of "null"
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided parent
-    path filter.
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided
+    parent_id filter.
     """
     # pylint: disable=duplicate-code
     catalogue_category_a = CatalogueCategoryOut(
@@ -388,8 +363,6 @@ def test_list_with_parent_path_filter(test_helpers, catalogue_category_repositor
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -401,8 +374,6 @@ def test_list_with_parent_path_filter(test_helpers, catalogue_category_repositor
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-b",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -411,59 +382,30 @@ def test_list_with_parent_path_filter(test_helpers, catalogue_category_repositor
     # Mock `list` to return a list of catalogue categories
     test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category_a, catalogue_category_b])
 
-    retrieved_catalogue_categories = catalogue_category_service.list(None, "/")
+    parent_id = str(ObjectId())
+    retrieved_catalogue_categories = catalogue_category_service.list(parent_id)
 
-    catalogue_category_repository_mock.list.assert_called_once_with(None, "/")
+    catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
     assert retrieved_catalogue_categories == [catalogue_category_a, catalogue_category_b]
 
 
-def test_list_with_path_and_parent_path_filters(
+def test_list_with_parent_id_filter_no_matching_results(
     test_helpers, catalogue_category_repository_mock, catalogue_category_service
 ):
     """
-    Test getting catalogue categories based on the provided path and parent path filters.
-
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
-    parent path filters.
-    """
-    # pylint: disable=duplicate-code
-    catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category B",
-        code="category-b",
-        is_leaf=False,
-        path="/category-b",
-        parent_path="/",
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-    # pylint: enable=duplicate-code
-
-    # Mock `list` to return a list of catalogue categories
-    test_helpers.mock_list(catalogue_category_repository_mock, [catalogue_category])
-
-    retrieved_catalogue_categories = catalogue_category_service.list("/category-b", "/")
-
-    catalogue_category_repository_mock.list.assert_called_once_with("/category-b", "/")
-    assert retrieved_catalogue_categories == [catalogue_category]
-
-
-def test_list_with_path_and_parent_path_filters_no_matching_results(
-    test_helpers, catalogue_category_repository_mock, catalogue_category_service
-):
-    """
-    Test getting catalogue categories based on the provided path and parent path filters when there is no matching
+    Test getting catalogue categories based on the provided parent_id filter when there is no matching
     results in the database.
 
-    Verify that the `list` method properly handles the retrieval of catalogue categories based on the provided path and
-    parent path filters.
+    Verify that the `list` method properly handles the retrieval of catalogue categories based on the parent_id
+    filter.
     """
     # Mock `list` to return an empty list of catalogue categories
     test_helpers.mock_list(catalogue_category_repository_mock, [])
 
-    retrieved_catalogue_categories = catalogue_category_service.list("/category-b", "/")
+    parent_id = str(ObjectId())
+    retrieved_catalogue_categories = catalogue_category_service.list(parent_id)
 
-    catalogue_category_repository_mock.list.assert_called_once_with("/category-b", "/")
+    catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
     assert retrieved_catalogue_categories == []
 
 
@@ -478,8 +420,6 @@ def test_update(test_helpers, catalogue_category_repository_mock, catalogue_cate
         name="Category B",
         code="category-b",
         is_leaf=True,
-        path="/category-b",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -492,8 +432,6 @@ def test_update(test_helpers, catalogue_category_repository_mock, catalogue_cate
             name="Category A",
             code="category-a",
             is_leaf=catalogue_category.is_leaf,
-            path="/category-a",
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
@@ -512,8 +450,6 @@ def test_update(test_helpers, catalogue_category_repository_mock, catalogue_cate
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
@@ -549,8 +485,6 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-a/category-b",
-        parent_path="/category-a",
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
     )
@@ -563,8 +497,6 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path="/category-b",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
@@ -578,8 +510,6 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             name="Category A",
             code="category-a",
             is_leaf=False,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[],
         ),
@@ -598,8 +528,6 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
@@ -623,8 +551,6 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             name="Category B",
             code="category-b",
             is_leaf=False,
-            path="/category-b",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[],
         ),
@@ -638,8 +564,6 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -668,8 +592,6 @@ def test_update_change_from_leaf_to_non_leaf(
         name="Category A",
         code="category-a",
         is_leaf=False,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -683,8 +605,6 @@ def test_update_change_from_leaf_to_non_leaf(
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=True,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -705,8 +625,6 @@ def test_update_change_from_leaf_to_non_leaf(
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
@@ -728,8 +646,6 @@ def test_update_change_catalogue_item_properties(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -747,8 +663,6 @@ def test_update_change_catalogue_item_properties(
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
         ),
@@ -768,8 +682,6 @@ def test_update_change_catalogue_item_properties(
             name=catalogue_category.name,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
-            path=catalogue_category.path,
-            parent_path=catalogue_category.parent_path,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),

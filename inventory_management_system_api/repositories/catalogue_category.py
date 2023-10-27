@@ -158,16 +158,15 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(catalogue_category_id))
         return catalogue_category
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
+    def list(self, parent_id: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories from a MongoDB database based on the provided filters.
 
-        :param path: The path to filter catalogue categories by.
-        :param parent_path: The parent path to filter catalogue categories by.
+        :param parent_id: The parent_id to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
-            database.
+                 database.
         """
-        query = utils.path_query(path, parent_path, "catalogue categories")
+        query = utils.list_query(parent_id, "catalogue categories")
 
         catalogue_categories = self._catalogue_categories_collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]

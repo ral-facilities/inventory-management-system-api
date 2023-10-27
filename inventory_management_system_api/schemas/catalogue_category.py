@@ -82,5 +82,3 @@ class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
 
     id: str = Field(description="The ID of the catalogue category")
     code: str = Field(description="The code of the catalogue category")
-    path: str = Field(description="The path to the catalogue category")
-    parent_path: str = Field(description="The path to the parent catalogue category of the category")

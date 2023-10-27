@@ -116,15 +116,14 @@ class SystemRepo:
             collection_name="systems",
         )
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
+    def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """
         Retrieve Systems from a MongoDB database based on the provided filters
 
-        :param path: Path to filter Systems by
-        :param parent_path: Parent path to filter Systems by
+        :param parent_id: parent_id to filter Systems by
         :return: List of System's or an empty list if no Systems are retrieved
         """
-        query = utils.path_query(path, parent_path, "systems")
+        query = utils.list_query(parent_id, "systems")
 
         systems = self._systems_collection.find(query)
         return [SystemOut(**system) for system in systems]

@@ -63,8 +63,6 @@ def test_create(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -158,8 +156,6 @@ def test_create_in_non_leaf_catalogue_category(
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-b",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -222,8 +218,6 @@ def test_create_without_properties(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[],
         ),
@@ -272,8 +266,6 @@ def test_create_with_missing_mandatory_properties(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -326,8 +318,6 @@ def test_create_with_with_invalid_value_type_for_string_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -383,8 +373,6 @@ def test_create_with_with_invalid_value_type_for_number_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -440,8 +428,6 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),

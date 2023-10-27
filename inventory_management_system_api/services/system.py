@@ -37,11 +37,8 @@ class SystemService:
         :return: Created System
         """
         parent_id = system.parent_id
-        parent_system = self.get(parent_id) if parent_id else None
-        parent_path = parent_system.path if parent_system else "/"
 
         code = utils.generate_code(system.name, "system")
-        path = utils.generate_path(parent_path, code, "system")
         return self._system_repository.create(
             SystemIn(
                 name=system.name,
@@ -50,8 +47,6 @@ class SystemService:
                 importance=system.importance,
                 description=system.description,
                 code=code,
-                path=path,
-                parent_path=parent_path,
                 parent_id=parent_id,
             )
         )
@@ -82,12 +77,11 @@ class SystemService:
         """
         return self._system_repository.get_breadcrumbs(system_id)
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
+    def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """
         Retrieve Systems based on the provided filters
 
-        :param path: Path to filter Systems by
-        :param parent_path: Parent path to filter Systems by
+        :param parent_id: parent_id to filter Systems by
         :return: List of System's or an empty list if no Systems are retrieved
         """
-        return self._system_repository.list(path, parent_path)
+        return self._system_repository.list(parent_id)

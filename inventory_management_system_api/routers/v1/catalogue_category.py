@@ -30,19 +30,21 @@ router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categorie
 
 @router.get(path="/", summary="Get catalogue categories", response_description="List of catalogue categories")
 def get_catalogue_categories(
-    path: Annotated[Optional[str], Query(description="Filter catalogue categories by path")] = None,
-    parent_path: Annotated[Optional[str], Query(description="Filter catalogue categories by parent path")] = None,
+    parent_id: Annotated[Optional[str], Query(description="Filter catalogue categories by parent ID")] = None,
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> List[CatalogueCategorySchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue categories")
-    if path:
-        logger.debug("Path filter: '%s'", path)
-    if parent_path:
-        logger.debug("Parent path filter: '%s'", parent_path)
+    if parent_id:
+        logger.debug("Parent ID filter: '%s'", parent_id)
 
-    catalogue_categories = catalogue_category_service.list(path, parent_path)
-    return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
+    try:
+        catalogue_categories = catalogue_category_service.list(parent_id)
+        return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
+    except InvalidObjectIdError:
+        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
+        # the same as a valid one that doesn't exist i.e. return an empty list
+        return []
 
 
 @router.get(

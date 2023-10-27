@@ -13,21 +13,19 @@ from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSc
 logger = logging.getLogger()
 
 
-def path_query(path: Optional[str], parent_path: Optional[str], entity_type: str) -> dict:
+def list_query(parent_id: Optional[str], entity_type: str) -> dict:
     """
-    Constructs filters for a pymongo collection based on a given path and parent path while
+    Constructs filters for a pymongo collection based on a given parent_id
     also logging the action
 
-    :param path: Path to filter the `entity_type` by
-    :param parent_path: Parent path to filter `entity_type` by
+    :param parent_id: parent_id to filter `entity_type` by (Converted to a uuid here - a string value of "null"
+                      indicates that the parent_id should be null, not that there shouldn't be a query)
     :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging)
     :return: Dictionary representing the query to pass to a pymongo's Collection `find` function
     """
     query = {}
-    if path:
-        query["path"] = path
-    if parent_path:
-        query["parent_path"] = parent_path
+    if parent_id:
+        query["parent_id"] = None if parent_id == "null" else CustomObjectId(parent_id)
 
     message = f"Retrieving all {entity_type} from the database"
     if not query:

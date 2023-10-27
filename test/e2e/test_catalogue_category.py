@@ -13,8 +13,6 @@ CATALOGUE_CATEGORY_POST_A_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_A,
     "id": ANY,
     "code": "category-a",
-    "path": "/category-a",
-    "parent_path": "/",
     "parent_id": None,
     "catalogue_item_properties": [],
 }
@@ -32,8 +30,6 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_B,
     "id": ANY,
     "code": "category-b",
-    "path": "/category-a/category-b",
-    "parent_path": "/category-a",
     "catalogue_item_properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
@@ -53,8 +49,6 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_C,
     "id": ANY,
     "code": "category-c",
-    "path": "/category-c",
-    "parent_path": "/",
     "parent_id": None,
     "catalogue_item_properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
@@ -387,52 +381,48 @@ def test_get_catalogue_categories(test_client):
     assert response.json() == [category_a, category_b, category_c]
 
 
-def test_get_catalogue_categories_with_path_filter(test_client):
+def test_get_catalogue_categories_with_parent_id_filter(test_client):
     """
-    Test getting catalogue categories based on the provided parent path filter.
+    Test getting catalogue categories based on the provided parent_id filter.
     """
-    category_a, _, _ = _post_catalogue_categories(test_client)
+    _, category_b, _ = _post_catalogue_categories(test_client)
 
-    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-a"})
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": category_b["parent_id"]})
 
     assert response.status_code == 200
-    assert response.json() == [category_a]
+    assert response.json() == [category_b]
 
 
-def test_get_catalogue_categories_with_parent_path_filter(test_client):
+def test_get_catalogue_categories_with_null_parent_id_filter(test_client):
     """
-    Test getting catalogue categories based on the provided parent path filter.
+    Test getting catalogue categories when given a parent_id filter of "null"
     """
     category_a, _, category_c = _post_catalogue_categories(test_client)
 
-    response = test_client.get("/v1/catalogue-categories", params={"parent_path": "/"})
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": "null"})
 
     assert response.status_code == 200
     assert response.json() == [category_a, category_c]
 
 
-def test_get_catalogue_categories_with_path_and_parent_path_filters(test_client):
+def test_get_catalogue_categories_with_parent_id_filter_no_matching_results(test_client):
     """
-    Test getting catalogue categories based on the provided path and parent path filters.
-    """
-    _, _, category_c = _post_catalogue_categories(test_client)
-
-    response = test_client.get("/v1/catalogue-categories", params={"path": "/category-c", "parent_path": "/"})
-
-    assert response.status_code == 200
-    assert response.json() == [category_c]
-
-
-def test_get_catalogue_categories_with_path_and_parent_path_filters_no_matching_results(test_client):
-    """
-    Test getting catalogue categories based on the provided path and parent path filters when there is no matching
+    Test getting catalogue categories based on the provided parent_id filter when there is no matching
     results in the database.
     """
     _, _, _ = _post_catalogue_categories(test_client)
 
-    response = test_client.get(
-        "/v1/catalogue-categories", params={"path": "/category-a/category-b", "parent_path": "/"}
-    )
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": str(ObjectId())})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_get_catalogue_categories_with_invalid_parent_id_filter(test_client):
+    """
+    Test getting catalogue categories when given an invalid parent_id filter
+    """
+    response = test_client.get("/v1/catalogue-categories", params={"parent_id": "invalid"})
 
     assert response.status_code == 200
     assert response.json() == []
@@ -532,7 +522,6 @@ def test_partial_update_catalogue_category_change_name(test_client):
         **CATALOGUE_CATEGORY_POST_A_EXPECTED,
         **catalogue_category_patch,
         "code": "category-b",
-        "path": "/category-b",
     }
 
 
@@ -616,8 +605,6 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
         **catalogue_category_patch,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -639,8 +626,6 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -686,8 +671,6 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf(test_cli
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -743,8 +726,6 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_cat
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -775,8 +756,6 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
         **catalogue_category_patch,
         "id": ANY,
         "code": "category-b",
-        "path": "/category-b",
-        "parent_path": "/",
     }
 
 
@@ -936,8 +915,6 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -968,8 +945,6 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 
@@ -1000,8 +975,6 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
-        "path": "/category-a",
-        "parent_path": "/",
         "parent_id": None,
     }
 

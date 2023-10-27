@@ -46,20 +46,16 @@ class CatalogueCategoryService:
         """
         parent_id = catalogue_category.parent_id
         parent_catalogue_category = self.get(parent_id) if parent_id else None
-        parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
 
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
-        path = utils.generate_path(parent_path, code, "catalogue category")
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
                 code=code,
                 is_leaf=catalogue_category.is_leaf,
-                path=path,
-                parent_path=parent_path,
                 parent_id=catalogue_category.parent_id,
                 catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
@@ -91,15 +87,14 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get_breadcrumbs(catalogue_category_id)
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
+    def list(self, parent_id: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories based on the provided filters.
 
-        :param path: The path to filter catalogue categories by.
-        :param parent_path: The parent path to filter catalogue categories by.
+        :param parent_id: The parent_id to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
         """
-        return self._catalogue_category_repository.list(path, parent_path)
+        return self._catalogue_category_repository.list(parent_id)
 
     def update(
         self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchRequestSchema
@@ -126,15 +121,9 @@ class CatalogueCategoryService:
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
             update_data["code"] = utils.generate_code(catalogue_category.name, "catalogue category")
-            update_data["path"] = utils.generate_path(
-                stored_catalogue_category.parent_path, update_data["code"], "catalogue category"
-            )
 
         if "parent_id" in update_data and catalogue_category.parent_id != stored_catalogue_category.parent_id:
             parent_catalogue_category = self.get(catalogue_category.parent_id) if catalogue_category.parent_id else None
-            update_data["parent_path"] = parent_catalogue_category.path if parent_catalogue_category else "/"
-            code = update_data["code"] if "code" in update_data else stored_catalogue_category.code
-            update_data["path"] = utils.generate_path(update_data["parent_path"], code, "catalogue category")
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
