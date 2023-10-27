@@ -63,7 +63,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
 
 
 # Special fields that are not allowed to be changed in a post request while the category has child elements
-CATALOGUE_CATEGORY_WITH_CHILD_INVALID_POST_FIELDS = ["is_leaf", "catalogue_item_properties"]
+CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS = ["is_leaf", "catalogue_item_properties"]
 
 
 class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
