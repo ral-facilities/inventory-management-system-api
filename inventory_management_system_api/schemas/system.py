@@ -37,5 +37,3 @@ class SystemRequestSchema(SystemPostRequestSchema):
 
     id: str = Field(description="ID of the System")
     code: str = Field(description="Code of the System")
-    path: str = Field(description="Path to the System")
-    parent_path: str = Field(description="Path to the parent System")

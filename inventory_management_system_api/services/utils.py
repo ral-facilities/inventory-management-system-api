@@ -23,16 +23,3 @@ def generate_code(name: str, entity_type: str) -> str:
     logger.info("Generating code for the %s based on its name", entity_type)
     name = name.lower().strip()
     return re.sub(r"\s+", "-", name)
-
-
-def generate_path(parent_path: str, code: str, entity_type: str) -> str:
-    """
-    Generate a path for a catalogue category based on its code and the path from its parent
-
-    :param parent_path: The path of the parent catalogue category
-    :param code: The code of the catalogue category
-    :param entity_type: Name of the entity type e.g. catalogue category/system (Used for logging)
-    :return: The generated path for the catalogue category
-    """
-    logger.info("Generating path for the %s", entity_type)
-    return f"{parent_path}{code}" if parent_path.endswith("/") else f"{parent_path}/{code}"

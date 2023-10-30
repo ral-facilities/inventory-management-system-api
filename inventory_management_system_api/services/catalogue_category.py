@@ -6,10 +6,17 @@ from typing import List, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.exceptions import LeafCategoryError, MissingRecordError
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
+    LeafCategoryError,
+    MissingRecordError,
+)
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
+    CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
 )
@@ -45,20 +52,16 @@ class CatalogueCategoryService:
         """
         parent_id = catalogue_category.parent_id
         parent_catalogue_category = self.get(parent_id) if parent_id else None
-        parent_path = parent_catalogue_category.path if parent_catalogue_category else "/"
 
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
-        path = utils.generate_path(parent_path, code, "catalogue category")
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(
                 name=catalogue_category.name,
                 code=code,
                 is_leaf=catalogue_category.is_leaf,
-                path=path,
-                parent_path=parent_path,
                 parent_id=catalogue_category.parent_id,
                 catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
@@ -81,15 +84,23 @@ class CatalogueCategoryService:
         """
         return self._catalogue_category_repository.get(catalogue_category_id)
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
+    def get_breadcrumbs(self, catalogue_category_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific catalogue category
+
+        :param catalogue_category_id: ID of the system to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        return self._catalogue_category_repository.get_breadcrumbs(catalogue_category_id)
+
+    def list(self, parent_id: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories based on the provided filters.
 
-        :param path: The path to filter catalogue categories by.
-        :param parent_path: The parent path to filter catalogue categories by.
+        :param parent_id: The parent_id to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
         """
-        return self._catalogue_category_repository.list(path, parent_path)
+        return self._catalogue_category_repository.list(parent_id)
 
     def update(
         self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchRequestSchema
@@ -107,6 +118,8 @@ class CatalogueCategoryService:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
             moved is a leaf catalogue category.
+        :raises ChildrenElementsExistError: If the catalogue category has child elements and attempting to update
+                                    either any of the disallowed properties (is_leaf or catalogue_item_properties)
         """
         update_data = catalogue_category.dict(exclude_unset=True)
 
@@ -116,18 +129,19 @@ class CatalogueCategoryService:
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
             update_data["code"] = utils.generate_code(catalogue_category.name, "catalogue category")
-            update_data["path"] = utils.generate_path(
-                stored_catalogue_category.parent_path, update_data["code"], "catalogue category"
-            )
 
         if "parent_id" in update_data and catalogue_category.parent_id != stored_catalogue_category.parent_id:
             parent_catalogue_category = self.get(catalogue_category.parent_id) if catalogue_category.parent_id else None
-            update_data["parent_path"] = parent_catalogue_category.path if parent_catalogue_category else "/"
-            code = update_data["code"] if "code" in update_data else stored_catalogue_category.code
-            update_data["path"] = utils.generate_path(update_data["parent_path"], code, "catalogue category")
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+
+        # If any of these, need to ensure the category has no children
+        if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS):
+            if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
+                raise ChildrenElementsExistError(
+                    f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
+                )
 
         stored_catalogue_category = stored_catalogue_category.copy(update=update_data)
         return self._catalogue_category_repository.update(

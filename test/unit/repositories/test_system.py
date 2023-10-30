@@ -3,8 +3,9 @@ Unit tests for the `SystemRepo` repository
 """
 
 
+from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 from typing import Optional
-from unittest.mock import call
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bson import ObjectId
@@ -19,7 +20,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 
 
-def _test_list(test_helpers, database_mock, system_repository, path: Optional[str], parent_path: Optional[str]):
+def _test_list(test_helpers, database_mock, system_repository, parent_id: Optional[str]):
     """
     Utility method that tests getting Systems
 
@@ -33,8 +34,6 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a",
-        "parent_path": "/",
         "parent_id": str(ObjectId()),
     }
     system_a = SystemOut(id=str(ObjectId()), **system_a_info)
@@ -45,8 +44,6 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-b",
-        "parent_path": "/",
         "parent_id": str(ObjectId()),
     }
     system_b = SystemOut(id=str(ObjectId()), **system_b_info)
@@ -58,13 +55,11 @@ def _test_list(test_helpers, database_mock, system_repository, path: Optional[st
         [{"_id": CustomObjectId(system_a.id), **system_a_info}, {"_id": CustomObjectId(system_b.id), **system_b_info}],
     )
 
-    retrieved_systems = system_repository.list(path, parent_path)
+    retrieved_systems = system_repository.list(parent_id)
 
     expected_filters = {}
-    if path:
-        expected_filters["path"] = path
-    if parent_path:
-        expected_filters["parent_path"] = parent_path
+    if parent_id:
+        expected_filters["parent_id"] = None if parent_id == "null" else ObjectId(parent_id)
 
     database_mock.systems.find.assert_called_once_with(expected_filters)
     assert retrieved_systems == [system_a, system_b]
@@ -85,8 +80,6 @@ def test_create(test_helpers, database_mock, system_repository):
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
         "parent_id": None,
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -124,8 +117,6 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -141,8 +132,6 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
             "importance": "low",
             "description": "Test description",
             "code": "test-name",
-            "path": "/test-name-a",
-            "parent_path": "/",
             "parent_id": None,
         },
     )
@@ -183,8 +172,6 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -215,8 +202,6 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -233,8 +218,6 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
             "importance": "low",
             "description": "Test description",
             "code": "test-name",
-            "path": "/test-name-a",
-            "parent_path": "/",
             "parent_id": None,
         },
     )
@@ -262,8 +245,6 @@ def test_get(test_helpers, database_mock, system_repository):
         "importance": "low",
         "description": "Test description",
         "code": "test-name",
-        "path": "/test-name-a",
-        "parent_path": "/",
         "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
@@ -311,60 +292,93 @@ def test_get_with_non_existent_id(test_helpers, database_mock, system_repository
     assert retrieved_system is None
 
 
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
+    """
+    Test getting breadcrumbs for a specific system
+
+    Verify that the 'get_breadcrumbs' method properly handles the retrieval of breadcrumbs for a system
+    """
+    system_id = str(ObjectId())
+    mock_aggregation_pipeline = MagicMock()
+    mock_breadcrumbs = MagicMock()
+
+    mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
+    database_mock.systems.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+
+    retrieved_breadcrumbs = system_repository.get_breadcrumbs(system_id)
+
+    mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
+        entity_id=system_id, collection_name="systems"
+    )
+    mock_utils.compute_breadcrumbs.assert_called_once_with(
+        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
+        entity_id=system_id,
+        collection_name="systems",
+    )
+    assert retrieved_breadcrumbs == mock_breadcrumbs
+
+
 def test_list(test_helpers, database_mock, system_repository):
     """
     Test getting Systems
 
     Verify that the `list` method properly handles the retrieval of systems without filters
     """
-    _test_list(test_helpers, database_mock, system_repository, None, None)
+    _test_list(test_helpers, database_mock, system_repository, None)
 
 
-def test_list_with_path_filter(test_helpers, database_mock, system_repository):
+def test_list_with_parent_id_filter(test_helpers, database_mock, system_repository):
     """
-    Test getting Systems based on the provided path filter
-
-    Verify that the `list` method properly handles the retrieval of systems based on the provided
-    path filter
-    """
-    _test_list(test_helpers, database_mock, system_repository, "/test-name-a", None)
-
-
-def test_list_with_parent_path_filter(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems based on the provided parent path filter
+    Test getting Systems based on the provided parent_id filter
 
     Verify that the `list` method properly handles the retrieval of systems based on the provided parent
-    path filter
+    parent_id filter
     """
-    _test_list(test_helpers, database_mock, system_repository, None, "/")
+    _test_list(test_helpers, database_mock, system_repository, str(ObjectId()))
 
 
-def test_list_with_path_and_parent_path_filter(test_helpers, database_mock, system_repository):
+def test_list_with_null_parent_id_filter(test_helpers, database_mock, system_repository):
     """
-    Test getting Systems based on the provided path and parent path filters
+    Test getting Systems when the provided parent_id filter is "null"
 
-    Verify that the `list` method properly handles the retrieval of systems based on the provided path
-    and parent path filters
+    Verify that the `list` method properly handles the retrieval of systems based on the provided
+    parent_id filter
     """
-    _test_list(test_helpers, database_mock, system_repository, "/test-name-a", "/")
+    _test_list(test_helpers, database_mock, system_repository, "null")
 
 
-def test_list_with_path_and_parent_path_filters_no_matching_results(test_helpers, database_mock, system_repository):
+def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_mock, system_repository):
     """
-    Test getting Systems based on the provided path and parent path filters when there are no matching results
-    int he database
+    Test getting Systems based on the provided parent_id filter when there are no matching results
+    in the database
 
-    Verify that the `list` method properly handles the retrieval of systems based on the provided path
-    and parent path filters when there are no matching results in the database
+    Verify that the `list` method properly handles the retrieval of systems based on the provided
+    parent_id filter when there are no matching results in the database
     """
     # Mock `find` to return a list of System documents
     test_helpers.mock_find(database_mock.systems, [])
 
-    retrieved_systems = system_repository.list("/test-name-a", "/")
+    parent_id = ObjectId()
+    retrieved_systems = system_repository.list(str(parent_id))
 
-    database_mock.systems.find.assert_called_once_with({"path": "/test-name-a", "parent_path": "/"})
+    database_mock.systems.find.assert_called_once_with({"parent_id": parent_id})
     assert retrieved_systems == []
+
+
+# pylint:disable=W0613
+def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_repository):
+    """
+    Test getting Systems when given an invalid parent_id to filter on
+
+    Verify that the `list` method properly handles the retrieval of systems when given an invalid parent_id
+    filter
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        system_repository.list("invalid")
+    database_mock.systems.find.assert_not_called()
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
 def test_delete(test_helpers, database_mock, system_repository):

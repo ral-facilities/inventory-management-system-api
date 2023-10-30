@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories import utils
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
 logger = logging.getLogger()
 
@@ -73,7 +74,7 @@ class CatalogueCategoryRepo:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self._has_child_elements(catalogue_category_id):
+        if self.has_child_elements(catalogue_category_id):
             raise ChildrenElementsExistError(
                 f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be deleted"
             )
@@ -97,6 +98,26 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
+    def get_breadcrumbs(self, catalogue_category_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific catalogue category
+
+        :param catalogue_category_id: ID of the catalogue category to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        logger.info("Querying breadcrumbs for catalogue category with id '%s'", catalogue_category_id)
+        return utils.compute_breadcrumbs(
+            list(
+                self._catalogue_categories_collection.aggregate(
+                    utils.create_breadcrumbs_aggregation_pipeline(
+                        entity_id=catalogue_category_id, collection_name="catalogue_categories"
+                    )
+                )
+            ),
+            entity_id=catalogue_category_id,
+            collection_name="catalogue_categories",
+        )
+
     def update(self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn) -> CatalogueCategoryOut:
         """
         Update a catalogue category by its ID in a MongoDB database.
@@ -109,15 +130,10 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to update.
         :param catalogue_category: The catalogue category containing the update data.
         :return: The updated catalogue category.
-        :raises ChildrenElementsExistError: If the catalogue category has children elements.
         :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self._has_child_elements(catalogue_category_id):
-            raise ChildrenElementsExistError(
-                f"Catalogue category with ID {str(catalogue_category_id)} has children elements and cannot be updated"
-            )
 
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id):
@@ -137,16 +153,15 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(catalogue_category_id))
         return catalogue_category
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> List[CatalogueCategoryOut]:
+    def list(self, parent_id: Optional[str]) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories from a MongoDB database based on the provided filters.
 
-        :param path: The path to filter catalogue categories by.
-        :param parent_path: The parent path to filter catalogue categories by.
+        :param parent_id: The parent_id to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
-            database.
+                 database.
         """
-        query = utils.path_query(path, parent_path, "catalogue categories")
+        query = utils.list_query(parent_id, "catalogue categories")
 
         catalogue_categories = self._catalogue_categories_collection.find(query)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
@@ -166,7 +181,7 @@ class CatalogueCategoryRepo:
         count = self._catalogue_categories_collection.count_documents({"parent_id": parent_id, "code": code})
         return count > 0
 
-    def _has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
+    def has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
         """
         Check if a catalogue category has children elements based on its ID.
 
