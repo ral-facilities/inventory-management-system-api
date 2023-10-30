@@ -62,6 +62,10 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
     )
 
 
+# Special fields that are not allowed to be changed in a post request while the category has child elements
+CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS = ["is_leaf", "catalogue_item_properties"]
+
+
 class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     """
     Schema model for a catalogue category update request.
@@ -82,5 +86,3 @@ class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
 
     id: str = Field(description="The ID of the catalogue category")
     code: str = Field(description="The code of the catalogue category")
-    path: str = Field(description="The path to the catalogue category")
-    parent_path: str = Field(description="The path to the parent catalogue category of the category")

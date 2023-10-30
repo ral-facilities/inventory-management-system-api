@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
+from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
 logger = logging.getLogger()
 
@@ -71,6 +72,8 @@ class SystemRepo:
         :raises MissingRecordError: If the System doesn't exist
         """
         system_id = CustomObjectId(system_id)
+        # pylint: disable=W0511
+        # TODO: Also need a check here on items when they are implemented
         if self._has_child_elements(system_id):
             raise ChildrenElementsExistError(
                 f"System with ID {str(system_id)} has child elements and cannot be deleted"
@@ -95,15 +98,32 @@ class SystemRepo:
             return SystemOut(**system)
         return None
 
-    def list(self, path: Optional[str], parent_path: Optional[str]) -> list[SystemOut]:
+    def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
+        """
+        Retrieve the breadcrumbs for a specific system
+
+        :param system_id: ID of the system to retrieve breadcrumbs for
+        :return: Breadcrumbs
+        """
+        logger.info("Querying breadcrumbs for system with id '%s'", system_id)
+        return utils.compute_breadcrumbs(
+            list(
+                self._systems_collection.aggregate(
+                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems")
+                )
+            ),
+            entity_id=system_id,
+            collection_name="systems",
+        )
+
+    def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """
         Retrieve Systems from a MongoDB database based on the provided filters
 
-        :param path: Path to filter Systems by
-        :param parent_path: Parent path to filter Systems by
+        :param parent_id: parent_id to filter Systems by
         :return: List of System's or an empty list if no Systems are retrieved
         """
-        query = utils.path_query(path, parent_path, "systems")
+        query = utils.list_query(parent_id, "systems")
 
         systems = self._systems_collection.find(query)
         return [SystemOut(**system) for system in systems]

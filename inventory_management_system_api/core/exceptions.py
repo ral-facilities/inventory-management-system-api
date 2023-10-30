@@ -55,3 +55,9 @@ class ChildrenElementsExistError(DatabaseError):
     """
     Exception raised when attempting to delete or update a catalogue category that has children elements.
     """
+
+
+class DatabaseIntegrityError(DatabaseError):
+    """
+    Exception raised when something is found in the database that shouldn't have been
+    """

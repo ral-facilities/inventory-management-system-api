@@ -3,6 +3,7 @@
 Unit tests for the `CatalogueCategoryService` service.
 """
 
+from unittest.mock import MagicMock
 import pytest
 from bson import ObjectId
 
@@ -63,8 +64,6 @@ def test_create(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -158,8 +157,6 @@ def test_create_in_non_leaf_catalogue_category(
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-b",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -222,8 +219,6 @@ def test_create_without_properties(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[],
         ),
@@ -272,8 +267,6 @@ def test_create_with_missing_mandatory_properties(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -326,8 +319,6 @@ def test_create_with_with_invalid_value_type_for_string_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -383,8 +374,6 @@ def test_create_with_with_invalid_value_type_for_number_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -440,8 +429,6 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -527,11 +514,11 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
     assert retrieved_catalogue_item == catalogue_item
 
 
-def test_get_with_nonexistent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
+def test_get_with_non_existent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
-    Test getting a catalogue item with a nonexistent ID.
+    Test getting a catalogue item with a non-existent ID.
 
-    Verify that the `get` method properly handles the retrieval of a catalogue item with a nonexistent ID.
+    Verify that the `get` method properly handles the retrieval of a catalogue item with a non-existent ID.
     """
     catalogue_item_id = str(ObjectId())
 
@@ -544,106 +531,19 @@ def test_get_with_nonexistent_id(test_helpers, catalogue_item_repository_mock, c
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
 
 
-def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
+def test_list(catalogue_item_repository_mock, catalogue_item_service):
     """
-    Test getting catalogue items.
+    Test listing catalogue items
 
-    Verify that the `list` method properly handles the retrieval of catalogue items without filters.
+    Verify that the `list` method properly calls the repository function with any passed filters
     """
-    # pylint: disable=duplicate-code
-    catalogue_item_a = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
-            web_url="https://www.manufacturer-a.co.uk",
-        ),
-    )
 
-    catalogue_item_b = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item B",
-        description="This is Catalogue Item B",
-        properties=[Property(name="Property A", value=True)],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
-            web_url="https://www.manufacturer-a.co.uk",
-        ),
-    )
-    # pylint: enable=duplicate-code
+    catalogue_category_id = MagicMock()
 
-    # Mock `list` to return a list of catalogue items
-    test_helpers.mock_list(catalogue_item_repository_mock, [catalogue_item_a, catalogue_item_b])
-
-    retrieved_catalogue_items = catalogue_item_service.list(None)
-
-    catalogue_item_repository_mock.list.assert_called_once_with(None)
-    assert retrieved_catalogue_items == [catalogue_item_a, catalogue_item_b]
-
-
-def test_list_with_catalogue_category_id_filter(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
-    """
-    Test getting catalogue items based on the provided catalogue category ID filter.
-
-    Verify that the `list` method properly handles the retrieval of catalogue items based on the provided catalogue
-    category ID filter.
-    """
-    # pylint: disable=duplicate-code
-    catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
-            web_url="https://www.manufacturer-a.co.uk",
-        ),
-    )
-    # pylint: enable=duplicate-code
-
-    # Mock `list` to return a list of catalogue items
-    test_helpers.mock_list(catalogue_item_repository_mock, [catalogue_item])
-
-    retrieved_catalogue_items = catalogue_item_service.list(catalogue_item.catalogue_category_id)
-
-    catalogue_item_repository_mock.list.assert_called_once_with(catalogue_item.catalogue_category_id)
-    assert retrieved_catalogue_items == [catalogue_item]
-
-
-def test_list_with_catalogue_category_id_filter_no_matching_results(
-    test_helpers, catalogue_item_repository_mock, catalogue_item_service
-):
-    """
-    Test getting catalogue items based on the provided catalogue category ID filter when there is no matching results in
-    the database.
-
-    Verify that the `list` method properly handles the retrieval of catalogue items based on the provided catalogue
-    category ID filter.
-    """
-    # Mock `list` to return an empty list of catalogue item documents
-    test_helpers.mock_list(catalogue_item_repository_mock, [])
-
-    catalogue_category_id = str(ObjectId())
-    retrieved_catalogue_items = catalogue_item_service.list(catalogue_category_id)
+    result = catalogue_item_service.list(catalogue_category_id=catalogue_category_id)
 
     catalogue_item_repository_mock.list.assert_called_once_with(catalogue_category_id)
-    assert retrieved_catalogue_items == []
+    assert result == catalogue_item_repository_mock.list.return_value
 
 
 def test_update(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
