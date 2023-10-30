@@ -3,6 +3,7 @@
 Unit tests for the `CatalogueCategoryService` service.
 """
 
+from unittest.mock import MagicMock
 import pytest
 from bson import ObjectId
 
@@ -62,8 +63,6 @@ def test_create(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -158,8 +157,6 @@ def test_create_in_non_leaf_catalogue_category(
         name="Category B",
         code="category-b",
         is_leaf=False,
-        path="/category-b",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[],
     )
@@ -224,8 +221,6 @@ def test_create_without_properties(
             name="Category A",
             code="category-a",
             is_leaf=True,
-            path="/category-a",
-            parent_path="/",
             parent_id=None,
             catalogue_item_properties=[],
         ),
@@ -274,8 +269,6 @@ def test_create_with_missing_mandatory_properties(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -329,8 +322,6 @@ def test_create_with_with_invalid_value_type_for_string_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -387,8 +378,6 @@ def test_create_with_with_invalid_value_type_for_number_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -444,8 +433,6 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
         name="Category A",
         code="category-a",
         is_leaf=True,
-        path="/category-a",
-        parent_path="/",
         parent_id=None,
         catalogue_item_properties=[
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
@@ -531,11 +518,11 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
     assert retrieved_catalogue_item == catalogue_item
 
 
-def test_get_with_nonexistent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
+def test_get_with_non_existent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
-    Test getting a catalogue item with a nonexistent ID.
+    Test getting a catalogue item with a non-existent ID.
 
-    Verify that the `get` method properly handles the retrieval of a catalogue item with a nonexistent ID.
+    Verify that the `get` method properly handles the retrieval of a catalogue item with a non-existent ID.
     """
     catalogue_item_id = str(ObjectId())
 
@@ -548,11 +535,11 @@ def test_get_with_nonexistent_id(test_helpers, catalogue_item_repository_mock, c
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
 
 
-def test_list(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
+def test_list(catalogue_item_repository_mock, catalogue_item_service, test_helpers):
     """
-    Test getting catalogue items.
+    Test listing catalogue items
 
-    Verify that the `list` method properly handles the retrieval of catalogue items without filters.
+    Verify that the `list` method properly calls the repository function with any passed filters
     """
     # pylint: disable=duplicate-code
     catalogue_item_a = CatalogueItemOut(
@@ -646,8 +633,12 @@ def test_list_with_catalogue_category_id_filter_no_matching_results(
     catalogue_category_id = str(ObjectId())
     retrieved_catalogue_items = catalogue_item_service.list(catalogue_category_id)
 
+    catalogue_category_id = MagicMock()
+
+    result = catalogue_item_service.list(catalogue_category_id=catalogue_category_id)
+
     catalogue_item_repository_mock.list.assert_called_once_with(catalogue_category_id)
-    assert retrieved_catalogue_items == []
+    assert result == catalogue_item_repository_mock.list.return_value
 
 
 def test_update(test_helpers, catalogue_item_repository_mock, catalogue_item_service):

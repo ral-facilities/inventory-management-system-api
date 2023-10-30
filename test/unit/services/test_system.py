@@ -2,7 +2,6 @@
 Unit tests for the `SystemService` service
 """
 
-from typing import Optional
 from unittest.mock import MagicMock
 
 from bson import ObjectId
@@ -11,31 +10,11 @@ from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPostRequestSchema
 
 
-def _test_list(test_helpers, system_repository_mock, system_service, path: Optional[str], parent_path: Optional[str]):
-    """
-    Utility method that tests getting Systems
-
-    Verifies that the `list` method properly handles the retrieval of systems with the given filters
-    """
-    systems = [MagicMock(), MagicMock()]
-
-    # Mock `list` to return a list of systems
-    test_helpers.mock_list(
-        system_repository_mock,
-        systems,
-    )
-
-    retrieved_systems = system_service.list(path, parent_path)
-
-    system_repository_mock.list.assert_called_once_with(path, parent_path)
-    assert retrieved_systems == systems
-
-
 def test_create(test_helpers, system_repository_mock, system_service):
     """
     Test creating a System
 
-    Verify that the `create` method properly handles the System to be created, generates the code and paths,
+    Verify that the `create` method properly handles the System to be created, generates the code,
     and calls the repository's create method
     """
     # pylint: disable=duplicate-code
@@ -50,8 +29,6 @@ def test_create(test_helpers, system_repository_mock, system_service):
     full_system_info = {
         **system_info,
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
     # pylint: enable=duplicate-code
@@ -95,8 +72,6 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     full_system_info = {
         **system_info,
         "code": "test-name-b",
-        "path": "/test-name-a/test-name-b",
-        "parent_path": "/test-name-a",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -112,8 +87,6 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
             description="Test description",
             parent_id=None,
             code="test-name-a",
-            path="/test-name-a",
-            parent_path="/",
         ),
     )
 
@@ -144,8 +117,6 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     full_system_info = {
         **system_info,
         "code": "test-name",
-        "path": "/test-name",
-        "parent_path": "/",
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -194,58 +165,34 @@ def test_get_with_non_existent_id(test_helpers, system_repository_mock, system_s
     assert retrieved_system is None
 
 
-def test_list(test_helpers, system_repository_mock, system_service):
+def test_get_breadcrumbs(test_helpers, system_repository_mock, system_service):
     """
-    Test getting Systems
+    Test getting breadcrumbs for a system
 
-    Verify that the `list` method properly handles the retrieval of Systems without filters
+    Verify that the `get_breadcrumbs` method properly handles the retrieval of a System
     """
-    _test_list(test_helpers, system_repository_mock, system_service, None, None)
+    system_id = str(ObjectId)
+    breadcrumbs = MagicMock()
+
+    # Mock `get` to return breadcrumbs
+    test_helpers.mock_get_breadcrumbs(system_repository_mock, breadcrumbs)
+
+    retrieved_breadcrumbs = system_service.get_breadcrumbs(system_id)
+
+    system_repository_mock.get_breadcrumbs.assert_called_once_with(system_id)
+    assert retrieved_breadcrumbs == breadcrumbs
 
 
-def test_list_with_path_filter(test_helpers, system_repository_mock, system_service):
+def test_list(system_repository_mock, system_service):
     """
-    Test getting Systems based on the provided path filter
+    Test listing systems
 
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path filter
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, "/test-name-a", None)
-
-
-def test_list_with_parent_path_filter(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting Systems based on the provided parent path filter
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided parent path filter
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, None, "/")
-
-
-def test_list_with_path_and_parent_path_filter(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting Systems based on the provided parent path and parent path filters
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path and
-    parent path filters
-    """
-    _test_list(test_helpers, system_repository_mock, system_service, "/test-name-a", "/")
-
-
-def test_list_with_path_and_parent_path_filters_no_matching_results(
-    test_helpers, system_repository_mock, system_service
-):
-    """
-    Test getting Systems based on the provided parent path and parent path filters when there is no
-    matching results in the database
-
-    Verify that the `list` method properly handles the retrieval of Systems based on the provided path and
-    parent path filters when there is no matching results in the database
+    Verify that the `list` method properly calls the repository function with any passed filters
     """
 
-    # Mock `list` to return an empty list of Systems
-    test_helpers.mock_list(system_repository_mock, [])
+    parent_id = MagicMock()
 
-    retrieved_systems = system_service.list("/test-name-a", "/")
+    result = system_service.list(parent_id=parent_id)
 
-    system_repository_mock.list.assert_called_once_with("/test-name-a", "/")
-    assert retrieved_systems == []
+    system_repository_mock.list.assert_called_once_with(parent_id)
+    assert result == system_repository_mock.list.return_value
