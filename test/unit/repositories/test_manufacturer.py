@@ -404,4 +404,4 @@ def test_delete_manufacturer_that_is_part_of_a_catalogue_item(test_helpers, data
 
     with pytest.raises(PartOfCatalogueItemError) as exc:
         manufacturer_repository.delete(manufacturer_id)
-    assert str(exc.value) == (f"The manufacturer with id {str(manufacturer_id)} is a part of a Catalogue Item")
+    assert str(exc.value) == f"The manufacturer with id {str(manufacturer_id)} is a part of a Catalogue Item"

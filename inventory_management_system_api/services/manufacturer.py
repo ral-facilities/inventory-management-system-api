@@ -79,16 +79,14 @@ class ManufacturerService:
         return self._manufacturer_repository.list()
 
     def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchRequstSchema) -> ManufacturerOut:
-        """Update a category by its ID
+        """Update a manufacturer by its ID
 
 
         :params: manufacturer_id: The ID of the manufacturer to be updated
-        :return: The updates manufacturer
+        :return: The updated manufacturer
         :raises MissingRecordError: If manufacturer does not exist in database
         """
         update_data = manufacturer.dict(exclude_unset=True)
-
-        logger.info(update_data)
 
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:

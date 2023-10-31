@@ -549,6 +549,7 @@ def test_list(catalogue_item_repository_mock, catalogue_item_service):
     catalogue_item_repository_mock.list.assert_called_once_with(catalogue_category_id)
     assert result == catalogue_item_repository_mock.list.return_value
 
+
 def test_update(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test updating a catalogue item.

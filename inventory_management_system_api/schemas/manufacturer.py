@@ -17,15 +17,12 @@ class Address(BaseModel):
     postcode: str = Field(description="Post Code/Zip of manufacturer")
 
 
-class PatchAddress(BaseModel):
+class AddressPatch(Address):
     """Schema used for editting address, so that it allows to edit individual fields"""
 
-    building_number: Optional[str] = Field(description="House/Building number of manufacturer")
-    street_name: Optional[str] = Field(description="Street name of manufacturer")
-    town: Optional[str] = Field(default=None, description="Town of manufacturer")
-    county: Optional[str] = Field(default=None, description="County of manufacturer")
-    country: Optional[str] = Field(default=None, description="Country of the manufacturer")
-    postcode: Optional[str] = Field(description="Post Code/Zip of manufacturer")
+    building_number: Optional[str]
+    street_name: Optional[str]
+    postcode: Optional[str]
 
 
 class ManufacturerPostRequestSchema(BaseModel):
@@ -44,10 +41,8 @@ class ManufacturerSchema(ManufacturerPostRequestSchema):
     code: str = Field(description="The code of the manufacturer")
 
 
-class ManufacturerPatchRequstSchema(BaseModel):
+class ManufacturerPatchRequstSchema(ManufacturerPostRequestSchema):
     """Schema model for editing a manufacturer"""
 
     name: Optional[str]
-    url: Optional[HttpUrl]
-    address: Optional[PatchAddress]
-    telephone: Optional[str]
+    address: Optional[AddressPatch]
