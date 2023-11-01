@@ -5,9 +5,17 @@ Module for providing an API router which defines routes for managing manufacture
 import logging
 from typing import List
 from fastapi import APIRouter, status, Depends, HTTPException
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidObjectIdError,
+    MissingRecordError,
+)
 
-from inventory_management_system_api.schemas.manufacturer import ManufacturerPostRequestSchema, ManufacturerSchema
+from inventory_management_system_api.schemas.manufacturer import (
+    ManufacturerPatchRequstSchema,
+    ManufacturerPostRequestSchema,
+    ManufacturerSchema,
+)
 from inventory_management_system_api.services.manufacturer import ManufacturerService
 
 
@@ -76,3 +84,29 @@ def get_one_manufacturer(
         ) from exc
 
     return ManufacturerSchema(**manufacturer.dict())
+
+
+@router.patch(
+    path="/{manufacturer_id}",
+    summary="Update a manufacturer by its ID",
+    response_description="Manufacturer updated successfully",
+)
+def edit_manufacturer(
+    manufacturer: ManufacturerPatchRequstSchema,
+    manufacturer_id: str,
+    manufacturer_service: ManufacturerService = Depends(),
+) -> ManufacturerSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Updating manufacturer with ID %s", manufacturer_id)
+    try:
+        updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
+        return ManufacturerSchema(**updated_manufacturer.dict())
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        logger.exception("The specified manufacturer does not exist")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="The specified manufacturer does not exist"
+        ) from exc
+    except DuplicateRecordError as exc:
+        message = "A manufacturer with the same name has been found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

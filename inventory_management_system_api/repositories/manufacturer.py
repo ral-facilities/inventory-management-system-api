@@ -10,7 +10,7 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import DuplicateRecordError
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
@@ -75,6 +75,34 @@ class ManufacturerRepo:
         manufacturers = self._collection.find()
 
         return [ManufacturerOut(**manufacturer) for manufacturer in manufacturers]
+
+    def update(self, manufacturer_id: str, manufacturer: ManufacturerIn) -> ManufacturerOut:
+        """Update manufacturer by its ID in database
+
+        :param: manufacturer_id: The id of the manufacturer to be updated
+        :param: manufacturer: The manufacturer with the update data
+        """
+        manufacturer_id = CustomObjectId(manufacturer_id)
+        if self._is_duplicate_manufacturer(manufacturer.code):
+            raise DuplicateRecordError("Duplicate manufacturer found")
+
+        if not self.get(str(manufacturer_id)):
+            raise MissingRecordError("The specified manufacturer does not exist")
+        logger.info("Updating manufacturer with ID %s", manufacturer_id)
+        self._collection.update_one(
+            {"_id": manufacturer_id},
+            {
+                "$set": {
+                    "name": manufacturer.name,
+                    "url": manufacturer.url,
+                    "address": manufacturer.address,
+                    "code": manufacturer.code,
+                }
+            },
+        )
+
+        manufacturer = self.get(str(manufacturer_id))
+        return manufacturer
 
     def _is_duplicate_manufacturer(self, code: str) -> bool:
         """

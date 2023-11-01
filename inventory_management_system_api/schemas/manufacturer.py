@@ -18,3 +18,11 @@ class ManufacturerSchema(ManufacturerPostRequestSchema):
 
     id: str = Field(description="The ID of manufacturer")
     code: str = Field(description="The code of the manufacturer")
+
+
+class ManufacturerPatchRequstSchema(BaseModel):
+    """Schema model for editing a manufacturer"""
+
+    name: str
+    url: HttpUrl
+    address: str

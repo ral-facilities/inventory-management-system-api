@@ -164,7 +164,6 @@ class RepositoryTestHelpers:
         update_one_result_mock.acknowledged = True
         collection_mock.insert_one.return_value = update_one_result_mock
 
-
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[RepositoryTestHelpers]:
     """

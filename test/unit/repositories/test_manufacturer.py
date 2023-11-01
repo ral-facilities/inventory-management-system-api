@@ -6,7 +6,11 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidObjectIdError,
+    MissingRecordError,
+)
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 
 
@@ -195,3 +199,102 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repos
 
     assert retrieved_manufacturer is None
     database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
+
+
+def test_update(test_helpers, database_mock, manufacturer_repository):
+    """Test updating a manufacturer"""
+    # pylint: disable=duplicate-code
+    manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        name="Manufacturer A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address="1 Example street",
+    )
+    # pylint: enable=duplicate-code
+    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+
+    # Mock 'find_one' to return the inserted manufacturer document
+    test_helpers.mock_find_one(
+        database_mock.manufacturer,
+        {
+            "_id": CustomObjectId(manufacturer.id),
+            "code": "manufacturer-b",
+            "name": "Manufacturer B",
+            "url": "http://example.com",
+            "address": "2 Example Street",
+        },
+    )
+    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+
+    test_helpers.mock_update_one(database_mock.manufacturer)
+    # Mock 'find_one' to return the inserted manufacturer document
+    test_helpers.mock_find_one(
+        database_mock.manufacturer,
+        {
+            "_id": CustomObjectId(manufacturer.id),
+            "code": manufacturer.code,
+            "name": manufacturer.name,
+            "url": manufacturer.url,
+            "address": manufacturer.address,
+        },
+    )
+
+    # pylint: disable=duplicate-code
+
+    updated_manufacturer = manufacturer_repository.update(
+        manufacturer.id,
+        ManufacturerIn(
+            name=manufacturer.name,
+            code=manufacturer.code,
+            url=manufacturer.url,
+            address=manufacturer.address,
+        ),
+    )
+    # pylint: enable=duplicate-code
+
+    database_mock.manufacturer.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(manufacturer.id)},
+        {
+            "$set": {
+                "name": manufacturer.name,
+                "code": manufacturer.code,
+                "url": manufacturer.url,
+                "address": manufacturer.address,
+            }
+        },
+    )
+
+    assert updated_manufacturer == manufacturer
+
+
+def test_update_with_invalid_id(manufacturer_repository):
+    """Test trying to update with an invalid ID"""
+    updated_manufacturer = ManufacturerIn(
+        name="Manufacturer A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address="1 Example street",
+    )
+
+    manufactuer_id = "invalid"
+    with pytest.raises(InvalidObjectIdError) as exc:
+        manufacturer_repository.update(manufactuer_id, updated_manufacturer)
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_update_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
+    """Test trying to update with a non-existent ID"""
+    updated_manufacturer = ManufacturerIn(
+        name="Manufacturer B",
+        code="manufacturer-b",
+        url="http://testUrl.co.uk",
+        address="1 Example street",
+    )
+    test_helpers.mock_count_documents(database_mock.manufacturer, 0)
+    test_helpers.mock_find_one(database_mock.manufacturer, None)
+    manufacturer_id = str(ObjectId())
+
+    with pytest.raises(MissingRecordError) as exc:
+        manufacturer_repository.update(manufacturer_id, updated_manufacturer)
+    assert str(exc.value) == "The specified manufacturer does not exist"
