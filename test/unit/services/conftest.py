@@ -15,6 +15,7 @@ from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
+from inventory_management_system_api.services.manufacturer import ManufacturerService
 from inventory_management_system_api.services.system import SystemService
 
 
@@ -46,6 +47,7 @@ def fixture_manufacturer_repository_mock() -> Mock:
     :return: Mocked ManufacturerRepo instance
     """
     return Mock(ManufacturerRepo)
+
 
 @pytest.fixture(name="system_repository_mock")
 def fixture_system_repository_mock() -> Mock:
@@ -81,6 +83,17 @@ def fixture_catalogue_item_service(
     :return: `CatalogueItemService` instance with the mocked dependency.
     """
     return CatalogueItemService(catalogue_item_repository_mock, catalogue_category_repository_mock)
+
+
+@pytest.fixture(name="manufacturer_service")
+def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> ManufacturerService:
+    """
+    Fixture to create a `ManufacturerService` instance with a mocked `ManufacturerRepo`
+
+    :param: manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
+    :return: `ManufacturerService` instance with mocked dependency
+    """
+    return ManufacturerService(manufacturer_repository_mock)
 
 
 @pytest.fixture(name="system_service")

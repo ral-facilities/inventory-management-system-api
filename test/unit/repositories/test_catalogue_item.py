@@ -35,7 +35,9 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code
@@ -159,7 +161,9 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code
@@ -229,7 +233,9 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
         ),
     )
 
@@ -240,7 +246,9 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
         ),
     )
     # pylint: enable=duplicate-code
@@ -292,7 +300,9 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
         manufacturer=Manufacturer(
-            name="Manufacturer A", address="1 Address, City, Country, Postcode", web_url="www.manufacturer-a.co.uk"
+            name="Manufacturer A",
+            address="1 Address, City, Country, Postcode",
+            url="https://www.manufacturer-a.co.uk",
         ),
     )
 
@@ -371,7 +381,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     # pylint: enable=duplicate-code

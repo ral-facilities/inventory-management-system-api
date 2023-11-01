@@ -9,6 +9,7 @@ from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
+    PartOfCatalogueItemError,
 )
 
 from inventory_management_system_api.schemas.manufacturer import (
@@ -110,3 +111,26 @@ def edit_manufacturer(
         message = "A manufacturer with the same name has been found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.delete(
+    path="/{manufacturer_id}",
+    summary="Delete a manufacturer by its ID",
+    response_description="Manufacturer deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_manufacturer(manufacturer_id: str, manufacturer_service: ManufacturerService = Depends()) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting manufacturer with ID: %s", manufacturer_id)
+    try:
+        manufacturer_service.delete(manufacturer_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        logger.exception("The specified manufacturer does not exist")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="The specified manufacturer does not exist"
+        ) from exc
+    except PartOfCatalogueItemError as exc:
+        logger.exception("The specified manufacturer is a part of a Catalogue Item")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="The specified manufacturer is a part of a Catalogue Item"
+        ) from exc

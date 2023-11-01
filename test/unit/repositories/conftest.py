@@ -61,6 +61,8 @@ def fixture_manufacturer_repository(database_mock: Mock) -> ManufacturerRepo:
     Fixture to create ManufacturerRepo instance
     """
     return ManufacturerRepo(database_mock)
+
+
 @pytest.fixture(name="system_repository")
 def fixture_system_repository(database_mock: Mock) -> SystemRepo:
     """
@@ -163,6 +165,7 @@ class RepositoryTestHelpers:
         update_one_result_mock = Mock(UpdateResult)
         update_one_result_mock.acknowledged = True
         collection_mock.insert_one.return_value = update_one_result_mock
+
 
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[RepositoryTestHelpers]:

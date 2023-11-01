@@ -8,7 +8,6 @@ from typing import List, Optional
 from fastapi import Depends
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
-
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.manufacturer import (
     ManufacturerPatchRequstSchema,
@@ -21,7 +20,10 @@ logger = logging.getLogger()
 class ManufacturerService:
     """Service for managing manufacturers"""
 
-    def __init__(self, manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo)) -> None:
+    def __init__(
+        self,
+        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
+    ) -> None:
         """
         Initialise the manufacturer service with a ManufacturerRepo
 
@@ -91,3 +93,12 @@ class ManufacturerService:
 
         logger.info(stored_manufacturer.address)
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
+
+    def delete(self, manufacturer_id: str) -> None:
+        """
+        Delete a manufacturer by its ID
+
+        :param manufacturer_id: The ID of the manufacturer to delete
+
+        """
+        return self._manufacturer_repository.delete(manufacturer_id)

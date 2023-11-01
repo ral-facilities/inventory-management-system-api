@@ -319,9 +319,10 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
+
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     response = test_client.delete(f"/v1/catalogue-categories/{catalogue_category_id}")
@@ -574,7 +575,7 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -694,7 +695,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -819,7 +820,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -1010,7 +1011,7 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
         "manufacturer": {
             "name": "Manufacturer A",
             "address": "1 Address, City, Country, Postcode",
-            "web_url": "https://www.manufacturer-a.co.uk",
+            "url": "https://www.manufacturer-a.co.uk",
         },
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)

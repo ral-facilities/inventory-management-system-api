@@ -3,19 +3,9 @@ Module for defining the database models for representing catalogue items.
 """
 from typing import Optional, List, Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, HttpUrl, validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-
-
-class Manufacturer(BaseModel):
-    """
-    Model representing a catalogue item manufacturer.
-    """
-
-    name: str
-    address: str
-    web_url: str
 
 
 class Property(BaseModel):
@@ -28,6 +18,14 @@ class Property(BaseModel):
     unit: Optional[str] = None
 
 
+class Manufacturer(BaseModel):
+    """Input database model for a manufacturer"""
+
+    name: str
+    url: HttpUrl
+    address: str
+
+
 class CatalogueItemIn(BaseModel):
     """
     Input database model for a catalogue item.
@@ -37,6 +35,8 @@ class CatalogueItemIn(BaseModel):
     name: str
     description: str
     properties: List[Property] = []
+    # pylint: disable=fixme
+    # TODO - Change from manufacturer to manufacturer id
     manufacturer: Manufacturer
 
     @validator("properties", pre=True, always=True)
