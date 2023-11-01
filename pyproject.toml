@@ -21,7 +21,7 @@ code-analysis = [
 ]
 
 formatting = [
-    "black==23.9.1"
+    "black==23.10.1"
 ]
 
 test = [
