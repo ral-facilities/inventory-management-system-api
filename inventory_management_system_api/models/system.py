@@ -14,16 +14,15 @@ class SystemIn(BaseModel):
     Input database model for a System
     """
 
+    parent_id: Optional[CustomObjectIdField] = None
     name: str
-    location: str
-    owner: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    owner: Optional[str] = None
     importance: str
-    description: str
 
     # Used for uniqueness checks (sanitised name)
     code: str
-
-    parent_id: Optional[CustomObjectIdField] = None
 
 
 class SystemOut(SystemIn):

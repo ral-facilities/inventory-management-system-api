@@ -8,27 +8,42 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
+SYSTEM_POST_REQUIRED_ONLY = {
+    "name": "System Test",
+    "importance": "low",
+}
+
+SYSTEM_POST_REQUIRED_ONLY_EXPECTED = {
+    **SYSTEM_POST_REQUIRED_ONLY,
+    "id": ANY,
+    "parent_id": None,
+    "description": None,
+    "location": None,
+    "owner": None,
+    "code": "system-test",
+}
+
 SYSTEM_POST_A = {
     "name": "System A",
+    "description": "System description",
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-    "description": "System description",
 }
 SYSTEM_POST_A_EXPECTED = {
     **SYSTEM_POST_A,
     "id": ANY,
-    "code": "system-a",
     "parent_id": None,
+    "code": "system-a",
 }
 
 # To be posted as a child of the above
 SYSTEM_POST_B = {
     "name": "System B",
+    "description": "System description",
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-    "description": "System description",
 }
 SYSTEM_POST_B_EXPECTED = {
     **SYSTEM_POST_B,
@@ -38,16 +53,16 @@ SYSTEM_POST_B_EXPECTED = {
 
 SYSTEM_POST_C = {
     "name": "System C",
+    "description": "System description",
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-    "description": "System description",
 }
 SYSTEM_POST_C_EXPECTED = {
     **SYSTEM_POST_C,
     "id": ANY,
-    "code": "system-c",
     "parent_id": None,
+    "code": "system-c",
 }
 
 
@@ -99,6 +114,19 @@ def test_create_system(test_client):
     system = response.json()
 
     assert system == SYSTEM_POST_A_EXPECTED
+
+
+def test_create_system_with_only_required_values_given(test_client):
+    """
+    Test creating a System when only the required values are given
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_REQUIRED_ONLY)
+
+    assert response.status_code == 201
+
+    system = response.json()
+
+    assert system == SYSTEM_POST_REQUIRED_ONLY_EXPECTED
 
 
 def test_create_system_with_valid_parent_id(test_client):

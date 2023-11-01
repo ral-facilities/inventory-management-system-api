@@ -94,7 +94,7 @@ def get_system_breadcrumbs(
 def create_system(system: SystemPostRequestSchema, system_service: SystemService = Depends()) -> SystemRequestSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new System")
-    logger.debug("System data : %s", system)
+    logger.debug("System data: %s", system)
     try:
         system = system_service.create(system)
         return SystemRequestSchema(**system.dict())
