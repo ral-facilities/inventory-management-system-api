@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 
-class Address(BaseModel):
+class AddressSchema(BaseModel):
     """Schema for address type"""
 
     building_number: str = Field(description="House/Building number of manufacturer")
@@ -17,12 +17,12 @@ class Address(BaseModel):
     postcode: str = Field(description="Post Code/Zip of manufacturer")
 
 
-class AddressPatch(Address):
+class AddressPatchRequestSchema(AddressSchema):
     """Schema used for editting address, so that it allows to edit individual fields"""
 
-    building_number: Optional[str]
-    street_name: Optional[str]
-    postcode: Optional[str]
+    building_number: Optional[str] = Field(default=None, description="House/Building number of manufacturer")
+    street_name: Optional[str] = Field(default=None, description="Street name of manufacturer")
+    postcode: Optional[str] = Field(default=None, description="Post Code/Zip of manufacturer")
 
 
 class ManufacturerPostRequestSchema(BaseModel):
@@ -30,7 +30,7 @@ class ManufacturerPostRequestSchema(BaseModel):
 
     name: str = Field(description="Name of manufacturer")
     url: Optional[HttpUrl] = Field(default=None, description="URL of manufacturer")
-    address: Address = Field(description="Address of manufacturer")
+    address: AddressSchema = Field(description="Address of manufacturer")
     telephone: Optional[str] = Field(default=None, description="Phone number of manufacturer")
 
 
@@ -41,8 +41,8 @@ class ManufacturerSchema(ManufacturerPostRequestSchema):
     code: str = Field(description="The code of the manufacturer")
 
 
-class ManufacturerPatchRequstSchema(ManufacturerPostRequestSchema):
+class ManufacturerPatchRequestSchema(ManufacturerPostRequestSchema):
     """Schema model for editing a manufacturer"""
 
     name: Optional[str]
-    address: Optional[AddressPatch]
+    address: Optional[AddressPatchRequestSchema]

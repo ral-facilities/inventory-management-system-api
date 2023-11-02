@@ -13,7 +13,7 @@ from inventory_management_system_api.core.exceptions import (
     PartOfCatalogueItemError,
 )
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
-from inventory_management_system_api.schemas.manufacturer import Address
+from inventory_management_system_api.schemas.manufacturer import AddressSchema
 
 
 def test_create_manufacturer(test_helpers, database_mock, manufacturer_repository):
@@ -30,7 +30,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -90,7 +90,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -121,7 +121,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -132,7 +132,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         name="Manufacturer B",
         code="manufacturer-b",
         url="http://example.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="2", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 3AB"
         ),
         telephone="073434394",
@@ -183,7 +183,7 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -233,7 +233,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -311,7 +311,7 @@ def test_update_with_invalid_id(manufacturer_repository):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -331,7 +331,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -361,6 +361,83 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
         manufacturer_repository.update(manufacturer_id, updated_manufacturer)
 
     assert str(exc.value) == "Duplicate manufacturer found"
+
+
+def test_partial_update_address(test_helpers, database_mock, manufacturer_repository):
+    """Test partially updating a manufacturer address"""
+    # pylint: disable=duplicate-code
+    manufacturer = ManufacturerOut(
+        _id=str(ObjectId()),
+        name="Manufacturer A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address=AddressSchema(
+            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+        ),
+        telephone="0932348348",
+    )
+    # pylint: enable=duplicate-code
+
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            "_id": CustomObjectId(manufacturer.id),
+            "name": "Manufacturer A",
+            "code": "manufacturer-a",
+            "url": "http://testUrl.co.uk",
+            "address": {"building_number": "100", "street_name": "test", "postcode": "test"},
+            "telephone": "0932348348",
+        },
+    )
+
+    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
+
+    test_helpers.mock_update_one(database_mock.manufacturers)
+
+    # Mock 'find_one' to return the inserted manufacturer document
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            "_id": CustomObjectId(manufacturer.id),
+            "code": manufacturer.code,
+            "name": manufacturer.name,
+            "url": manufacturer.url,
+            "address": manufacturer.address,
+            "telephone": manufacturer.telephone,
+        },
+    )
+
+    updated_manufacturer = manufacturer_repository.update(
+        manufacturer.id,
+        ManufacturerIn(
+            name=manufacturer.name,
+            code=manufacturer.code,
+            url=manufacturer.url,
+            address=AddressSchema(building_number="100", street_name="test", postcode="test"),
+            telephone=manufacturer.telephone,
+        ),
+    )
+
+    database_mock.manufacturers.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(manufacturer.id)},
+        {
+            "$set": {
+                "name": "Manufacturer A",
+                "code": "manufacturer-a",
+                "url": "http://testUrl.co.uk",
+                "address": {
+                    "building_number": "100",
+                    "street_name": "test",
+                    "town": None,
+                    "county": None,
+                    "country": None,
+                    "postcode": "test",
+                },
+                "telephone": "0932348348",
+            },
+        },
+    )
+    assert updated_manufacturer == manufacturer
 
 
 def test_delete(test_helpers, database_mock, manufacturer_repository):

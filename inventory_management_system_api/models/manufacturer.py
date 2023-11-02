@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, HttpUrl
 
 
 from inventory_management_system_api.models.catalogue_category import StringObjectIdField
-from inventory_management_system_api.schemas.manufacturer import Address
+from inventory_management_system_api.schemas.manufacturer import AddressSchema
 
 
 class ManufacturerIn(BaseModel):
@@ -17,7 +17,7 @@ class ManufacturerIn(BaseModel):
     name: str
     code: str
     url: Optional[HttpUrl] = None
-    address: Address
+    address: AddressSchema
     telephone: Optional[str] = None
 
 

@@ -7,10 +7,14 @@ import pytest
 from inventory_management_system_api.core.exceptions import MissingRecordError
 
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
-from inventory_management_system_api.schemas.manufacturer import Address, ManufacturerPostRequestSchema
+from inventory_management_system_api.schemas.manufacturer import (
+    AddressSchema,
+    ManufacturerPatchRequestSchema,
+    ManufacturerPostRequestSchema,
+)
 
 
-def test_create(manufacturer_repository_mock, manufacturer_service):
+def test_create(test_helpers, manufacturer_repository_mock, manufacturer_service):
     """
     Testing creating a manufacturer
     """
@@ -21,14 +25,14 @@ def test_create(manufacturer_repository_mock, manufacturer_service):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
     # pylint: enable=duplicate-code
 
-    manufacturer_repository_mock.create.return_value = manufacturer
+    test_helpers.mock_create(manufacturer_repository_mock, manufacturer)
 
     created_manufacturer = manufacturer_service.create(
         ManufacturerPostRequestSchema(
@@ -58,7 +62,7 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -69,7 +73,7 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
         name="Manufacturer B",
         code="manufacturer-b",
         url="http://example.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="2", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 3AB"
         ),
         telephone="073434394",
@@ -81,7 +85,7 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
     assert retrieved_manufacturer == [manufacturer_1, manufacturer_2]
 
 
-def test_get(manufacturer_repository_mock, manufacturer_service):
+def test_get(test_helpers, manufacturer_repository_mock, manufacturer_service):
     """Test getting a manufacturer by ID"""
     # pylint: disable=duplicate-code
     manufacturer = ManufacturerOut(
@@ -89,14 +93,14 @@ def test_get(manufacturer_repository_mock, manufacturer_service):
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
     )
     # pylint: enable=duplicate-code
 
-    manufacturer_repository_mock.get.return_value = manufacturer
+    test_helpers.mock_get(manufacturer_repository_mock, manufacturer)
 
     retrieved_manufacturer = manufacturer_service.get(manufacturer.id)
 
@@ -104,10 +108,10 @@ def test_get(manufacturer_repository_mock, manufacturer_service):
     assert retrieved_manufacturer == manufacturer
 
 
-def test_get_with_nonexistent_id(manufacturer_repository_mock, manufacturer_service):
+def test_get_with_nonexistent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
     """Test getting a manufacturer with an non-existent ID"""
     manufactuer_id = str(ObjectId())
-    manufacturer_repository_mock.get.return_value = None
+    test_helpers.mock_get(manufacturer_repository_mock, None)
     retrieved_manufacturer = manufacturer_service.get(manufactuer_id)
 
     assert retrieved_manufacturer is None
@@ -132,7 +136,7 @@ def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock,
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
-        address=Address(
+        address=AddressSchema(
             building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
         ),
         telephone="0932348348",
@@ -144,3 +148,69 @@ def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock,
     with pytest.raises(MissingRecordError) as exc:
         manufacturer_service.update(manufacturer_id, manufacturer)
     assert str(exc.value) == "No manufacturer found with ID " + manufacturer_id
+
+
+def test_partial_update_of_address(test_helpers, manufacturer_repository_mock, manufacturer_service):
+    """Test the partial update of a manufacturer's address"""
+    manufacturer_info = {
+        "_id": str(ObjectId()),
+        "name": "Manufacturer A",
+        "code": "manufacturer-a",
+        "url": "http://testUrl.co.uk",
+        "address": {"building_number": "1", "street_name": "Example Street", "postcode": "AB1 2CD"},
+    }
+
+    full_manufacturer_info = {
+        **manufacturer_info,
+        "address": {"building_number": "1", "street_name": "test", "postcode": "AB1 2CD"},
+    }
+
+    manufacturer = ManufacturerOut(**full_manufacturer_info)
+
+    test_helpers.mock_get(
+        manufacturer_repository_mock,
+        ManufacturerOut(**manufacturer_info),
+    )
+
+    test_helpers.mock_update(manufacturer_repository_mock, manufacturer)
+
+    updated_manufacturer = manufacturer_service.update(
+        manufacturer.id,
+        ManufacturerPatchRequestSchema(address={"building_number": "1", "street_name": "test", "postcode": "AB1 2CD"}),
+    )
+
+    manufacturer_repository_mock.update.assert_called_once_with(
+        manufacturer.id, ManufacturerIn(**full_manufacturer_info)
+    )
+
+    assert updated_manufacturer == manufacturer
+
+
+def test_partial_update_of_manufacturer(test_helpers, manufacturer_repository_mock, manufacturer_service):
+    """Test the partial update of a manufacturer's name"""
+    manufacturer_info = {
+        "_id": str(ObjectId()),
+        "name": "Manufacturer A",
+        "code": "manufacturer-a",
+        "url": "http://testUrl.co.uk",
+        "address": {"building_number": "1", "street_name": "Example Street", "postcode": "AB1 2CD"},
+    }
+
+    full_manufacturer_info = {**manufacturer_info, "name": "test", "code": "test"}
+
+    manufacturer = ManufacturerOut(**full_manufacturer_info)
+
+    test_helpers.mock_get(
+        manufacturer_repository_mock,
+        ManufacturerOut(**manufacturer_info),
+    )
+
+    test_helpers.mock_update(manufacturer_repository_mock, manufacturer)
+
+    updated_manufacturer = manufacturer_service.update(manufacturer.id, ManufacturerPatchRequestSchema(name="test"))
+
+    manufacturer_repository_mock.update.assert_called_once_with(
+        manufacturer.id, ManufacturerIn(**full_manufacturer_info)
+    )
+
+    assert updated_manufacturer == manufacturer

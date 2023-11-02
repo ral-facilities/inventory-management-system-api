@@ -13,7 +13,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 
 from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchRequstSchema,
+    ManufacturerPatchRequestSchema,
     ManufacturerPostRequestSchema,
     ManufacturerSchema,
 )
@@ -94,7 +94,7 @@ def get_one_manufacturer(
     response_description="Manufacturer updated successfully",
 )
 def edit_manufacturer(
-    manufacturer: ManufacturerPatchRequstSchema,
+    manufacturer: ManufacturerPatchRequestSchema,
     manufacturer_id: str = Path(description="The ID of the manufacturer that is to be updated"),
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
@@ -106,7 +106,7 @@ def edit_manufacturer(
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "The specified manufacturer does not exist"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A manufacturer with the same name has been found"
         logger.exception(message)

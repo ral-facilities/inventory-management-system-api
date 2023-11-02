@@ -73,7 +73,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
 
 def test_list(test_client):
     """Test getting all manufacturers"""
-    manufacturer_post = {
+    manufacturer_post_a = {
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
@@ -86,8 +86,8 @@ def test_list(test_client):
         },
         "telephone": "0932348348",
     }
-    test_client.post("/v1/manufacturers", json=manufacturer_post)
-    manufacturer_post = {
+    test_client.post("/v1/manufacturers", json=manufacturer_post_a)
+    manufacturer_post_b = {
         "name": "Manufacturer B",
         "url": "http://test.com",
         "address": {
@@ -100,7 +100,7 @@ def test_list(test_client):
         },
         "telephone": "05940545",
     }
-    test_client.post("/v1/manufacturers", json=manufacturer_post)
+    test_client.post("/v1/manufacturers", json=manufacturer_post_b)
 
     response = test_client.get("/v1/manufacturers")
 
@@ -111,27 +111,13 @@ def test_list(test_client):
     assert len(manufacturers) == 2
     assert manufacturers[0]["name"] == "Manufacturer A"
     assert manufacturers[0]["url"] == "http://example.com"
-    assert manufacturers[0]["address"] == {
-        "building_number": "1",
-        "street_name": "Example Street",
-        "town": "Oxford",
-        "county": "Oxfordshire",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    }
+    assert manufacturers[0]["address"] == manufacturer_post_a["address"]
     assert manufacturers[0]["code"] == "manufacturer-a"
     assert manufacturers[0]["telephone"] == "0932348348"
 
     assert manufacturers[1]["name"] == "Manufacturer B"
     assert manufacturers[1]["url"] == "http://test.com"
-    assert manufacturers[1]["address"] == {
-        "building_number": "2",
-        "street_name": "Example Street",
-        "town": "Oxford",
-        "county": "Oxfordshire",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    }
+    assert manufacturers[1]["address"] == manufacturer_post_b["address"]
     assert manufacturers[1]["code"] == "manufacturer-b"
     assert manufacturers[1]["telephone"] == "05940545"
 
@@ -230,6 +216,48 @@ def test_update(test_client):
     assert manufacturer["telephone"] == manufacturer_patch["telephone"]
 
 
+def test_partial_update(test_client):
+    """Test updating a manufacturer's address"""
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": {
+            "building_number": "1",
+            "street_name": "Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "country": "United Kingdom",
+            "postcode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
+    }
+
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+
+    manufacturer_patch = manufacturer_post = {
+        "name": "Manufacturer A",
+        "url": "http://example.com",
+        "address": {
+            "building_number": "1",
+            "street_name": "test",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "country": "United Kingdom",
+            "postcode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
+    }
+    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
+
+    assert response.status_code == 200
+    manufacturer = response.json()
+
+    assert manufacturer["name"] == manufacturer_patch["name"]
+    assert manufacturer["url"] == manufacturer_patch["url"]
+    assert manufacturer["address"] == manufacturer_patch["address"]
+    assert manufacturer["telephone"] == manufacturer_patch["telephone"]
+
+
 def test_update_with_invalid_id(test_client):
     """Test trying to update a manufacturer with an invalid ID"""
     manufacturer_patch = {
@@ -247,7 +275,7 @@ def test_update_with_invalid_id(test_client):
     }
     response = test_client.patch("/v1/manufacturers/invalid", json=manufacturer_patch)
 
-    assert response.status_code == 422
+    assert response.status_code == 404
 
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
@@ -269,7 +297,7 @@ def test_update_with_nonexistent_id(test_client):
     }
     response = test_client.patch(f"/v1/manufacturers/{str(ObjectId())}", json=manufacturer_patch)
 
-    assert response.status_code == 422
+    assert response.status_code == 404
 
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
@@ -306,7 +334,7 @@ def test_update_duplicate_name(test_client):
         "telephone": "087876775767",
     }
 
-    response = test_client.post("/v1/manufacturers", json=manufacturer_post_2)
+    test_client.post("/v1/manufacturers", json=manufacturer_post_2)
 
     manufacturer_patch = {"name": "Manufacturer B"}
     response = test_client.patch(f"/v1/manufacturers/{response1.json()['id']}", json=manufacturer_patch)
