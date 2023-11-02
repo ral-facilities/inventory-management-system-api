@@ -26,7 +26,11 @@ def test_create(test_helpers, manufacturer_repository_mock, manufacturer_service
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=AddressSchema(
-            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            address_line="1 Example Street",
+            town="Oxford",
+            county="Oxfordshire",
+            postcode="OX1 2AB",
+            country="United Kingdom",
         ),
         telephone="0932348348",
     )
@@ -63,7 +67,11 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=AddressSchema(
-            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            address_line="1 Example Street",
+            town="Oxford",
+            county="Oxfordshire",
+            postcode="OX1 2AB",
+            country="United Kingdom",
         ),
         telephone="0932348348",
     )
@@ -74,7 +82,11 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-b",
         url="http://example.co.uk",
         address=AddressSchema(
-            building_number="2", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 3AB"
+            address_line="2 Example Street",
+            town="Oxford",
+            county="Oxfordshire",
+            postcode="OX1 2AB",
+            country="United Kingdom",
         ),
         telephone="073434394",
     )
@@ -94,7 +106,11 @@ def test_get(test_helpers, manufacturer_repository_mock, manufacturer_service):
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=AddressSchema(
-            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            address_line="1 Example Street",
+            town="Oxford",
+            county="Oxfordshire",
+            postcode="OX1 2AB",
+            country="United Kingdom",
         ),
         telephone="0932348348",
     )
@@ -137,7 +153,11 @@ def test_updated_with_nonexistent_id(test_helpers, manufacturer_repository_mock,
         code="manufacturer-a",
         url="http://testUrl.co.uk",
         address=AddressSchema(
-            building_number="1", street_name="Example Street", town="Oxford", county="Oxfordshire", postcode="OX1 2AB"
+            address_line="1 Example Street",
+            town="Oxford",
+            county="Oxfordshire",
+            postcode="OX1 2AB",
+            country="United Kingdom",
         ),
         telephone="0932348348",
     )
@@ -157,12 +177,12 @@ def test_partial_update_of_address(test_helpers, manufacturer_repository_mock, m
         "name": "Manufacturer A",
         "code": "manufacturer-a",
         "url": "http://testUrl.co.uk",
-        "address": {"building_number": "1", "street_name": "Example Street", "postcode": "AB1 2CD"},
+        "address": {"address_line": "1 Example Street", "postcode": "AB1 2CD", "country": "United Kingdom"},
     }
 
     full_manufacturer_info = {
         **manufacturer_info,
-        "address": {"building_number": "1", "street_name": "test", "postcode": "AB1 2CD"},
+        "address": {"address_line": "test", "postcode": "AB1 2CD", "country": "United Kingdom"},
     }
 
     manufacturer = ManufacturerOut(**full_manufacturer_info)
@@ -176,7 +196,9 @@ def test_partial_update_of_address(test_helpers, manufacturer_repository_mock, m
 
     updated_manufacturer = manufacturer_service.update(
         manufacturer.id,
-        ManufacturerPatchRequestSchema(address={"building_number": "1", "street_name": "test", "postcode": "AB1 2CD"}),
+        ManufacturerPatchRequestSchema(
+            address={"address_line": "test", "postcode": "AB1 2CD", "country": "United Kingdom"}
+        ),
     )
 
     manufacturer_repository_mock.update.assert_called_once_with(
@@ -193,7 +215,7 @@ def test_partial_update_of_manufacturer(test_helpers, manufacturer_repository_mo
         "name": "Manufacturer A",
         "code": "manufacturer-a",
         "url": "http://testUrl.co.uk",
-        "address": {"building_number": "1", "street_name": "Example Street", "postcode": "AB1 2CD"},
+        "address": {"address_line": "1 Example Street", "postcode": "AB1 2CD", "country": "United Kingdom"},
     }
 
     full_manufacturer_info = {**manufacturer_info, "name": "test", "code": "test"}

@@ -10,8 +10,7 @@ def test_create_manufacturer(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -39,8 +38,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -55,8 +53,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -77,8 +74,7 @@ def test_list(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -91,8 +87,7 @@ def test_list(test_client):
         "name": "Manufacturer B",
         "url": "http://test.com",
         "address": {
-            "building_number": "2",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -138,8 +133,7 @@ def test_get_manufacturer_with_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -180,8 +174,7 @@ def test_update(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -196,8 +189,7 @@ def test_update(test_client):
         "name": "Manufacturer B",
         "url": "http://test.co.uk",
         "address": {
-            "building_number": "2",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -222,8 +214,7 @@ def test_partial_update(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -238,8 +229,7 @@ def test_partial_update(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "test",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -264,8 +254,7 @@ def test_update_with_invalid_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -286,8 +275,7 @@ def test_update_with_nonexistent_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -308,8 +296,7 @@ def test_update_duplicate_name(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -324,8 +311,7 @@ def test_update_duplicate_name(test_client):
         "name": "Manufacturer B",
         "url": "http://test.com",
         "address": {
-            "building_number": "2",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -349,8 +335,7 @@ def test_delete(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -372,8 +357,7 @@ def test_delete_with_an_invalid_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
@@ -395,8 +379,7 @@ def test_delete_with_a_nonexistent_id(test_client):
         "name": "Manufacturer A",
         "url": "http://example.com",
         "address": {
-            "building_number": "1",
-            "street_name": "Example Street",
+            "address_line": "1 Example Street",
             "town": "Oxford",
             "county": "Oxfordshire",
             "country": "United Kingdom",
