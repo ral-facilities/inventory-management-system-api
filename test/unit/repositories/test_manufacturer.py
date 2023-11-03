@@ -48,24 +48,12 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
             "address": manufacturer.address,
         },
     )
-    # pylint: disable=duplicate-code
-    created_manufacturer = manufacturer_repository.create(
-        ManufacturerIn(
-            name=manufacturer.name,
-            code=manufacturer.code,
-            url=manufacturer.url,
-            address=manufacturer.address,
-        )
-    )
 
-    database_mock.manufacturer.insert_one.assert_called_once_with(
-        {
-            "name": manufacturer.name,
-            "code": manufacturer.code,
-            "url": manufacturer.url,
-            "address": manufacturer.address,
-        }
-    )
+    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
+    # pylint: disable=duplicate-code
+    created_manufacturer = manufacturer_repository.create(manufacturer_in)
+
+    database_mock.manufacturer.insert_one.assert_called_once_with(manufacturer_in.model_dump())
     # pylint: enable=duplicate-code
     database_mock.manufacturer.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
     assert created_manufacturer == manufacturer
@@ -241,29 +229,17 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         },
     )
 
+    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
     # pylint: disable=duplicate-code
-
     updated_manufacturer = manufacturer_repository.update(
         manufacturer.id,
-        ManufacturerIn(
-            name=manufacturer.name,
-            code=manufacturer.code,
-            url=manufacturer.url,
-            address=manufacturer.address,
-        ),
+        ManufacturerIn(**manufacturer_in.model_dump()),
     )
     # pylint: enable=duplicate-code
 
     database_mock.manufacturer.update_one.assert_called_once_with(
         {"_id": CustomObjectId(manufacturer.id)},
-        {
-            "$set": {
-                "name": manufacturer.name,
-                "code": manufacturer.code,
-                "url": manufacturer.url,
-                "address": manufacturer.address,
-            }
-        },
+        {"$set": manufacturer_in.model_dump()},
     )
 
     assert updated_manufacturer == manufacturer

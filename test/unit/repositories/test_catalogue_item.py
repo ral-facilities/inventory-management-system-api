@@ -76,8 +76,8 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
             "name": catalogue_item.name,
             "description": catalogue_item.description,
-            "properties": catalogue_item.properties,
-            "manufacturer": catalogue_item.manufacturer,
+            "properties": [prop.model_dump() for prop in catalogue_item.properties],
+            "manufacturer": catalogue_item.manufacturer.model_dump(),
         }
     )
     assert created_catalogue_item == catalogue_item
