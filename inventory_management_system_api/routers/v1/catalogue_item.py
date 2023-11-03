@@ -40,7 +40,7 @@ def get_catalogue_items(
 
     try:
         catalogue_items = catalogue_item_service.list(catalogue_category_id)
-        return [CatalogueItemSchema(**catalogue_item.dict()) for catalogue_item in catalogue_items]
+        return [CatalogueItemSchema(**catalogue_item.model_dump()) for catalogue_item in catalogue_items]
     except InvalidObjectIdError:
         logger.exception("The provided catalogue category ID filter value is not a valid ObjectId value")
         return []
@@ -60,7 +60,7 @@ def get_catalogue_item(
         catalogue_item = catalogue_item_service.get(catalogue_item_id)
         if not catalogue_item:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return CatalogueItemSchema(**catalogue_item.dict())
+        return CatalogueItemSchema(**catalogue_item.model_dump())
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
@@ -80,7 +80,7 @@ def create_catalogue_item(
     logger.debug("Catalogue item data: %s", catalogue_item)
     try:
         catalogue_item = catalogue_item_service.create(catalogue_item)
-        return CatalogueItemSchema(**catalogue_item.dict())
+        return CatalogueItemSchema(**catalogue_item.model_dump())
     except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
@@ -109,7 +109,7 @@ def partial_update_catalogue_item(
     logger.debug("Catalogue item data: %s", catalogue_item)
     try:
         updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
-        return CatalogueItemSchema(**updated_catalogue_item.dict())
+        return CatalogueItemSchema(**updated_catalogue_item.model_dump())
     except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc

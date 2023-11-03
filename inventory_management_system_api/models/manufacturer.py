@@ -4,8 +4,8 @@ Module for defining the database models for representing manufacturer.
 
 
 from typing import Optional
-from pydantic import BaseModel, Field, HttpUrl
 
+from pydantic import BaseModel, Field, HttpUrl, field_serializer
 
 from inventory_management_system_api.models.catalogue_category import StringObjectIdField
 from inventory_management_system_api.schemas.manufacturer import AddressSchema
@@ -19,6 +19,15 @@ class ManufacturerIn(BaseModel):
     url: Optional[HttpUrl] = None
     address: AddressSchema
     telephone: Optional[str] = None
+
+    @field_serializer("url")
+    def serialize_url(self, url: HttpUrl):
+        """
+        Convert `url` to string when the model is dumped.
+        :param url: The `HttpUrl` object.
+        :return: The URL as a string.
+        """
+        return str(url)
 
 
 class ManufacturerOut(ManufacturerIn):

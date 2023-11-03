@@ -85,7 +85,7 @@ def test_create(
                 PropertyPostRequestSchema(name="Property B", value=False),
                 PropertyPostRequestSchema(name="Property C", value="20x15x10"),
             ],
-            manufacturer=catalogue_item.manufacturer,
+            manufacturer=catalogue_item.manufacturer.model_dump(),
         )
     )
 
@@ -96,8 +96,8 @@ def test_create(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             name=catalogue_item.name,
             description=catalogue_item.description,
-            properties=catalogue_item.properties,
-            manufacturer=catalogue_item.manufacturer,
+            properties=[prop.model_dump() for prop in catalogue_item.properties],
+            manufacturer=catalogue_item.manufacturer.model_dump(),
         )
     )
     # pylint: enable=duplicate-code
@@ -129,11 +129,11 @@ def test_create_with_nonexistent_catalogue_category_id(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer=Manufacturer(
-                    name="Manufacturer A",
-                    address="1 Address, City, Country, postcode",
-                    url="https://www.manufacturer-a.co.uk",
-                ),
+                manufacturer={
+                    "name": "Manufacturer A",
+                    "address": "1 Address, City, Country, Postcode",
+                    "url": "https://www.manufacturer-a.co.uk",
+                },
             ),
         )
 
@@ -176,11 +176,11 @@ def test_create_in_non_leaf_catalogue_category(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer=Manufacturer(
-                    name="Manufacturer A",
-                    address="1 Address, City, Country, postcode",
-                    url="https://www.manufacturer-a.co.uk",
-                ),
+                manufacturer={
+                    "name": "Manufacturer A",
+                    "address": "1 Address, City, Country, Postcode",
+                    "url": "https://www.manufacturer-a.co.uk",
+                },
             ),
         )
 
@@ -234,7 +234,7 @@ def test_create_without_properties(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             name=catalogue_item.name,
             description=catalogue_item.description,
-            manufacturer=catalogue_item.manufacturer,
+            manufacturer=catalogue_item.manufacturer.model_dump(),
         )
     )
 
@@ -290,11 +290,11 @@ def test_create_with_missing_mandatory_properties(
                 properties=[
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer=Manufacturer(
-                    name="Manufacturer A",
-                    address="1 Address, City, Country, postcode",
-                    url="https://www.manufacturer-a.co.uk",
-                ),
+                manufacturer={
+                    "name": "Manufacturer A",
+                    "address": "1 Address, City, Country, Postcode",
+                    "url": "https://www.manufacturer-a.co.uk",
+                },
             ),
         )
 
@@ -345,11 +345,11 @@ def test_create_with_with_invalid_value_type_for_string_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value=True),
                 ],
-                manufacturer=Manufacturer(
-                    name="Manufacturer A",
-                    address="1 Address, City, Country, postcode",
-                    url="https://www.manufacturer-a.co.uk",
-                ),
+                manufacturer={
+                    "name": "Manufacturer A",
+                    "address": "1 Address, City, Country, Postcode",
+                    "url": "https://www.manufacturer-a.co.uk",
+                },
             ),
         )
 
@@ -401,11 +401,11 @@ def test_create_with_with_invalid_value_type_for_number_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer=Manufacturer(
-                    name="Manufacturer A",
-                    address="1 Address, City, Country, postcode",
-                    url="https://www.manufacturer-a.co.uk",
-                ),
+                manufacturer={
+                    "name": "Manufacturer A",
+                    "address": "1 Address, City, Country, Postcode",
+                    "url": "https://www.manufacturer-a.co.uk",
+                },
             )
         )
     assert (
@@ -456,11 +456,11 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                     PropertyPostRequestSchema(name="Property B", value="False"),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer=Manufacturer(
-                    name="Manufacturer A",
-                    address="1 Address, City, Country, postcode",
-                    url="https://www.manufacturer-a.co.uk",
-                ),
+                manufacturer={
+                    "name": "Manufacturer A",
+                    "address": "1 Address, City, Country, Postcode",
+                    "url": "https://www.manufacturer-a.co.uk",
+                },
             )
         )
     assert (

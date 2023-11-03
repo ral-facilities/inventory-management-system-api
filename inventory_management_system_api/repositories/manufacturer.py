@@ -48,7 +48,7 @@ class ManufacturerRepo:
 
         logger.info("Inserting new manufacturer into database")
 
-        result = self._manufacturers_collection.insert_one(manufacturer.dict())
+        result = self._manufacturers_collection.insert_one(manufacturer.model_dump())
         manufacturer = self.get(str(result.inserted_id))
 
         return manufacturer
@@ -99,7 +99,7 @@ class ManufacturerRepo:
                 raise DuplicateRecordError("Duplicate manufacturer found")
 
         logger.info("Updating manufacturer with ID %s", manufacturer_id)
-        self._manufacturers_collection.update_one({"_id": manufacturer_id}, {"$set": manufacturer.dict()})
+        self._manufacturers_collection.update_one({"_id": manufacturer_id}, {"$set": manufacturer.model_dump()})
 
         manufacturer = self.get(str(manufacturer_id))
         return manufacturer

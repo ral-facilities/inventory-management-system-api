@@ -43,8 +43,8 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, postcode",
-            "url": "https://www.manufacturer-a.co.uk",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk/",
         },
     }
 
@@ -65,8 +65,8 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, postcode",
-            "url": "https://www.manufacturer-a.co.uk",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-a.co.uk/",
         },
     }
 
@@ -830,8 +830,8 @@ def test_partial_update_catalogue_item_change_manufacturer(test_client):
     catalogue_item_patch = {
         "manufacturer": {
             "name": "Manufacturer B",
-            "address": "1 Address, City, Country, postcode",
-            "url": "https://www.manufacturer-b.co.uk",
+            "address": "1 Address, City, Country, Postcode",
+            "url": "https://www.manufacturer-b.co.uk/",
         }
     }
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)

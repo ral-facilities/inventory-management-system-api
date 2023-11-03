@@ -20,7 +20,7 @@ class PropertyPostRequestSchema(BaseModel):
     """
 
     name: str = Field(description="The name of the catalogue item property")
-    value: Any = Field(description="The value of the catalogue item property")
+    value: Any = Field(default=None, description="The value of the catalogue item property")
 
 
 class PropertySchema(PropertyPostRequestSchema):
@@ -41,7 +41,9 @@ class CatalogueItemPostRequestSchema(BaseModel):
     )
     name: str = Field(description="The name of the catalogue item")
     description: str = Field(description="The catalogue item description")
-    properties: Optional[List[PropertyPostRequestSchema]] = Field(description="The catalogue item properties")
+    properties: Optional[List[PropertyPostRequestSchema]] = Field(
+        default=None, description="The catalogue item properties"
+    )
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
     manufacturer: ManufacturerPostRequestSchema = Field(description="The details of the manufacturer")
@@ -53,13 +55,15 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     """
 
     catalogue_category_id: Optional[str] = Field(
-        description="The ID of the catalogue category that the catalogue item belongs to"
+        default=None, description="The ID of the catalogue category that the catalogue item belongs to"
     )
-    name: Optional[str] = Field(description="The name of the catalogue item")
-    description: Optional[str] = Field(description="The catalogue item description")
+    name: Optional[str] = Field(default=None, description="The name of the catalogue item")
+    description: Optional[str] = Field(default=None, description="The catalogue item description")
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
-    manufacturer: Optional[ManufacturerPostRequestSchema] = Field(description="The details of the manufacturer")
+    manufacturer: Optional[ManufacturerPostRequestSchema] = Field(
+        default=None, description="The details of the manufacturer"
+    )
 
 
 class CatalogueItemSchema(CatalogueItemPostRequestSchema):
