@@ -1,9 +1,9 @@
 """
 Module for defining the database models for representing catalogue items.
 """
-from typing import Optional, List, Any
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl, field_serializer
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
@@ -25,6 +25,15 @@ class Manufacturer(BaseModel):
     url: HttpUrl
     address: str
 
+    @field_serializer("url")
+    def serialize_url(self, url: HttpUrl):
+        """
+        Convert `url` to string when the model is dumped.
+        :param url: The `HttpUrl` object.
+        :return: The URL as a string.
+        """
+        return str(url)
+
 
 class CatalogueItemIn(BaseModel):
     """
@@ -39,9 +48,9 @@ class CatalogueItemIn(BaseModel):
     # TODO - Change from manufacturer to manufacturer id
     manufacturer: Manufacturer
 
-    @validator("properties", pre=True, always=True)
+    @field_validator("properties", mode="before")
     @classmethod
-    def validate_properties(cls, properties: List[Property] | None) -> List[Property] | List:
+    def validate_properties(cls, properties: Any) -> Any:
         """
         Validator for the `properties` field that runs after field assignment but before type validation.
 
@@ -63,8 +72,4 @@ class CatalogueItemOut(CatalogueItemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
-
-    class Config:
-        # pylint: disable=C0115
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

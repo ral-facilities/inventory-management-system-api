@@ -43,5 +43,5 @@ class ManufacturerSchema(ManufacturerPostRequestSchema):
 class ManufacturerPatchRequestSchema(ManufacturerPostRequestSchema):
     """Schema model for editing a manufacturer"""
 
-    name: Optional[str]
-    address: Optional[AddressPatchRequestSchema]
+    name: Optional[str] = None
+    address: Optional[AddressPatchRequestSchema] = None

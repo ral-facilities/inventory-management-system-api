@@ -74,11 +74,10 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.create(
             CatalogueItemIn(
-                catalogue_category_id=catalogue_item.catalogue_category_id,
-                name=catalogue_item.name,
-                description=catalogue_item.description,
-                properties=supplied_properties,
-                manufacturer=catalogue_item.manufacturer,
+                **{
+                    **catalogue_item.model_dump(),
+                    "properties": supplied_properties,
+                }
             )
         )
 
@@ -121,7 +120,7 @@ class CatalogueItemService:
         :param catalogue_item: The catalogue item containing the fields that need to be updated.
         :return: The updated catalogue item.
         """
-        update_data = catalogue_item.dict(exclude_unset=True)
+        update_data = catalogue_item.model_dump(exclude_unset=True)
 
         stored_catalogue_item = self.get(catalogue_item_id)
         if not stored_catalogue_item:
@@ -146,10 +145,10 @@ class CatalogueItemService:
                 # Create `PropertyPostRequestSchema` objects from the stored catalogue item properties and assign them
                 # to the `properties` field of `catalogue_item` before proceeding with processing and validation.
                 catalogue_item.properties = [
-                    PropertyPostRequestSchema(**prop.dict()) for prop in stored_catalogue_item.properties
+                    PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_catalogue_item.properties
                 ]
                 # Get the new `catalogue_item` state
-                update_data = catalogue_item.dict(exclude_unset=True)
+                update_data = catalogue_item.model_dump(exclude_unset=True)
 
         if "properties" in update_data:
             if not catalogue_category:
@@ -161,10 +160,9 @@ class CatalogueItemService:
             supplied_properties = catalogue_item.properties
             update_data["properties"] = self._process_catalogue_item_properties(defined_properties, supplied_properties)
 
-        # Create a copy of `stored_catalogue_item`, updating its field values with the received partial updates
-        stored_catalogue_item = stored_catalogue_item.copy(update=update_data)
         return self._catalogue_item_repository.update(
-            catalogue_item_id, CatalogueItemIn(**stored_catalogue_item.dict())
+            catalogue_item_id,
+            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
         )
 
     def _process_catalogue_item_properties(
@@ -210,7 +208,7 @@ class CatalogueItemService:
             property dictionaries.
         """
         return {
-            catalogue_item_property.name: catalogue_item_property.dict()
+            catalogue_item_property.name: catalogue_item_property.model_dump()
             for catalogue_item_property in catalogue_item_properties
         }
 

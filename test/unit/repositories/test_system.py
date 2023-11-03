@@ -28,23 +28,23 @@ def _test_list(test_helpers, database_mock, system_repository, parent_id: Option
     """
     # pylint: disable=duplicate-code
     system_a_info = {
+        "parent_id": str(ObjectId()),
         "name": "Test name a",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": str(ObjectId()),
     }
     system_a = SystemOut(id=str(ObjectId()), **system_a_info)
     system_b_info = {
+        "parent_id": str(ObjectId()),
         "name": "Test name b",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": str(ObjectId()),
     }
     system_b = SystemOut(id=str(ObjectId()), **system_b_info)
     # pylint: enable=duplicate-code
@@ -74,13 +74,13 @@ def test_create(test_helpers, database_mock, system_repository):
     """
     # pylint: disable=duplicate-code
     system_info = {
+        "parent_id": None,
         "name": "Test name",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": None,
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
@@ -111,13 +111,13 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
     """
     # pylint: disable=duplicate-code
     system_info = {
+        "parent_id": str(ObjectId()),
         "name": "Test name b",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
 
@@ -126,13 +126,13 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
         database_mock.systems,
         {
             "_id": CustomObjectId(system.parent_id),
+            "parent_id": None,
             "name": "Test name a",
+            "description": "Test description",
             "location": "Test location",
             "owner": "Test owner",
             "importance": "low",
-            "description": "Test description",
             "code": "test-name",
-            "parent_id": None,
         },
     )
     # pylint: enable=duplicate-code
@@ -166,13 +166,13 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_
     """
     # pylint: disable=duplicate-code
     system_info = {
+        "parent_id": str(ObjectId()),
         "name": "Test name b",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
@@ -196,13 +196,13 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
     """
     # pylint: disable=duplicate-code
     system_info = {
+        "parent_id": str(ObjectId()),
         "name": "Test name b",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
@@ -212,13 +212,13 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         database_mock.systems,
         {
             "_id": CustomObjectId(system.parent_id),
+            "parent_id": None,
+            "description": "Test description",
             "name": "Test name a",
             "location": "Test location",
             "owner": "Test owner",
             "importance": "low",
-            "description": "Test description",
             "code": "test-name",
-            "parent_id": None,
         },
     )
     # Mock `count_documents` to return 1 (duplicate system found within the parent system)
@@ -239,13 +239,13 @@ def test_get(test_helpers, database_mock, system_repository):
     """
     # pylint: disable=duplicate-code
     system_info = {
+        "parent_id": str(ObjectId()),
         "name": "Test name a",
+        "description": "Test description",
         "location": "Test location",
         "owner": "Test owner",
         "importance": "low",
-        "description": "Test description",
         "code": "test-name",
-        "parent_id": str(ObjectId()),
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code

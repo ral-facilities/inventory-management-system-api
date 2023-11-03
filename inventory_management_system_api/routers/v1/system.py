@@ -36,7 +36,7 @@ def get_systems(
 
     try:
         systems = system_service.list(parent_id)
-        return [SystemRequestSchema(**system.dict()) for system in systems]
+        return [SystemRequestSchema(**system.model_dump()) for system in systems]
     except InvalidObjectIdError:
         # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
         # the same as a valid one that doesn't exist i.e. return an empty list
@@ -53,7 +53,7 @@ def get_system(
         system = system_service.get(system_id)
         if not system:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found")
-        return SystemRequestSchema(**system.dict())
+        return SystemRequestSchema(**system.model_dump())
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(
@@ -94,10 +94,10 @@ def get_system_breadcrumbs(
 def create_system(system: SystemPostRequestSchema, system_service: SystemService = Depends()) -> SystemRequestSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new System")
-    logger.debug("System data : %s", system)
+    logger.debug("System data: %s", system)
     try:
         system = system_service.create(system)
-        return SystemRequestSchema(**system.dict())
+        return SystemRequestSchema(**system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "The specified parent System ID does not exist"
         logger.exception(message)

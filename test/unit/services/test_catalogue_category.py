@@ -107,7 +107,7 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
         )
     )
 
@@ -118,7 +118,7 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
         )
     )
     # pylint: enable=duplicate-code
@@ -152,7 +152,7 @@ def test_create_with_whitespace_name(test_helpers, catalogue_category_repository
         CatalogueCategoryPostRequestSchema(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
         )
     )
 
@@ -163,7 +163,7 @@ def test_create_with_whitespace_name(test_helpers, catalogue_category_repository
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
         )
     )
     # pylint: enable=duplicate-code
@@ -576,7 +576,9 @@ def test_update_change_catalogue_item_properties_when_no_children(
 
     updated_catalogue_category = catalogue_category_service.update(
         catalogue_category.id,
-        CatalogueCategoryPatchRequestSchema(catalogue_item_properties=catalogue_category.catalogue_item_properties),
+        CatalogueCategoryPatchRequestSchema(
+            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+        ),
     )
 
     catalogue_category_repository_mock.update.assert_called_once_with(
@@ -586,7 +588,7 @@ def test_update_change_catalogue_item_properties_when_no_children(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
         ),
     )
     assert updated_catalogue_category == catalogue_category
@@ -685,7 +687,9 @@ def test_update_change_catalogue_item_properties_when_has_children(
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
-            CatalogueCategoryPatchRequestSchema(catalogue_item_properties=catalogue_category.catalogue_item_properties),
+            CatalogueCategoryPatchRequestSchema(
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+            ),
         )
 
     catalogue_category_repository_mock.update.assert_not_called()

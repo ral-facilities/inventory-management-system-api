@@ -58,7 +58,7 @@ class CatalogueCategoryRepo:
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
 
         logger.info("Inserting the new catalogue category into the database")
-        result = self._catalogue_categories_collection.insert_one(catalogue_category.dict())
+        result = self._catalogue_categories_collection.insert_one(catalogue_category.model_dump())
         catalogue_category = self.get(str(result.inserted_id))
         return catalogue_category
 
@@ -148,7 +148,7 @@ class CatalogueCategoryRepo:
 
         logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
         self._catalogue_categories_collection.update_one(
-            {"_id": catalogue_category_id}, {"$set": catalogue_category.dict()}
+            {"_id": catalogue_category_id}, {"$set": catalogue_category.model_dump()}
         )
         catalogue_category = self.get(str(catalogue_category_id))
         return catalogue_category

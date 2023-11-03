@@ -57,7 +57,7 @@ class SystemRepo:
             raise DuplicateRecordError("Duplicate System found within the parent System")
 
         logger.info("Inserting the new System into the database")
-        result = self._systems_collection.insert_one(system.dict())
+        result = self._systems_collection.insert_one(system.model_dump())
         system = self.get(str(result.inserted_id))
         return system
 
