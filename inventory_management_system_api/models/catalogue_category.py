@@ -32,9 +32,7 @@ class CatalogueCategoryIn(BaseModel):
 
     @field_validator("catalogue_item_properties", mode="before")
     @classmethod
-    def validate_catalogue_item_properties(
-        cls, catalogue_item_properties: List[dict[str, Any]] | None, info: ValidationInfo
-    ) -> List[dict[str, Any]] | List:
+    def validate_catalogue_item_properties(cls, catalogue_item_properties: Any, info: ValidationInfo) -> Any:
         """
         Validator for the `catalogue_item_properties` field that runs after field assignment but before type validation.
 
