@@ -50,7 +50,7 @@ class CatalogueItemIn(BaseModel):
 
     @field_validator("properties", mode="before")
     @classmethod
-    def validate_properties(cls, properties: List[Property] | None) -> List[Property] | List:
+    def validate_properties(cls, properties: Any) -> Any:
         """
         Validator for the `properties` field that runs after field assignment but before type validation.
 
