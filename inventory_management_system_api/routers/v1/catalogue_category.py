@@ -40,7 +40,9 @@ def get_catalogue_categories(
 
     try:
         catalogue_categories = catalogue_category_service.list(parent_id)
-        return [CatalogueCategorySchema(**catalogue_category.dict()) for catalogue_category in catalogue_categories]
+        return [
+            CatalogueCategorySchema(**catalogue_category.model_dump()) for catalogue_category in catalogue_categories
+        ]
     except InvalidObjectIdError:
         # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
         # the same as a valid one that doesn't exist i.e. return an empty list
@@ -63,7 +65,7 @@ def get_catalogue_category(
         catalogue_category = catalogue_category_service.get(catalogue_category_id)
         if not catalogue_category:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return CatalogueCategorySchema(**catalogue_category.dict())
+        return CatalogueCategorySchema(**catalogue_category.model_dump())
     except InvalidObjectIdError as exc:
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
@@ -106,7 +108,7 @@ def create_catalogue_category(
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
         catalogue_category = catalogue_category_service.create(catalogue_category)
-        return CatalogueCategorySchema(**catalogue_category.dict())
+        return CatalogueCategorySchema(**catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "The specified parent catalogue category ID does not exist"
         logger.exception(message)
@@ -136,7 +138,7 @@ def partial_update_catalogue_category(
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
         updated_catalogue_category = catalogue_category_service.update(catalogue_category_id, catalogue_category)
-        return CatalogueCategorySchema(**updated_catalogue_category.dict())
+        return CatalogueCategorySchema(**updated_catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
             catalogue_category.parent_id

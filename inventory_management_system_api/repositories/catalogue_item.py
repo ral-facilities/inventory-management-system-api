@@ -38,7 +38,7 @@ class CatalogueItemRepo:
         :return: The created catalogue item.
         """
         logger.info("Inserting the new catalogue item into the database")
-        result = self._collection.insert_one(catalogue_item.dict())
+        result = self._collection.insert_one(catalogue_item.model_dump())
         catalogue_item = self.get(str(result.inserted_id))
         return catalogue_item
 
@@ -84,7 +84,7 @@ class CatalogueItemRepo:
         # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements if the
         #  `catalogue_category_id` is being updated.
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
-        self._collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.dict()})
+        self._collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump()})
         catalogue_item = self.get(str(catalogue_item_id))
         return catalogue_item
 

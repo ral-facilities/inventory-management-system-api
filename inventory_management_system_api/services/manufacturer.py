@@ -73,7 +73,7 @@ class ManufacturerService:
         :return: The updated manufacturer
         :raises MissingRecordError: If manufacturer does not exist in database
         """
-        update_data = manufacturer.dict(exclude_unset=True)
+        update_data = manufacturer.model_dump(exclude_unset=True)
 
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:
@@ -86,7 +86,7 @@ class ManufacturerService:
             update={**update_data, "address": stored_manufacturer.address.copy(update=update_data.get("address"))}
         )
 
-        return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.dict()))
+        return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump()))
 
     def delete(self, manufacturer_id: str) -> None:
         """

@@ -58,13 +58,7 @@ class CatalogueCategoryService:
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
         return self._catalogue_category_repository.create(
-            CatalogueCategoryIn(
-                name=catalogue_category.name,
-                code=code,
-                is_leaf=catalogue_category.is_leaf,
-                parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=catalogue_category.catalogue_item_properties,
-            )
+            CatalogueCategoryIn(**catalogue_category.model_dump(), code=code)
         )
 
     def delete(self, catalogue_category_id: str) -> None:
@@ -121,7 +115,7 @@ class CatalogueCategoryService:
         :raises ChildrenElementsExistError: If the catalogue category has child elements and attempting to update
                                     either any of the disallowed properties (is_leaf or catalogue_item_properties)
         """
-        update_data = catalogue_category.dict(exclude_unset=True)
+        update_data = catalogue_category.model_dump(exclude_unset=True)
 
         stored_catalogue_category = self.get(catalogue_category_id)
         if not stored_catalogue_category:
@@ -143,7 +137,6 @@ class CatalogueCategoryService:
                     f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
                 )
 
-        stored_catalogue_category = stored_catalogue_category.copy(update=update_data)
         return self._catalogue_category_repository.update(
-            catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.dict())
+            catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )

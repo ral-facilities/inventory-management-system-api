@@ -22,12 +22,12 @@ class SystemPostRequestSchema(BaseModel):
     Schema model for a System creation request
     """
 
-    name: str = Field(description="Name of the system")
-    location: str = Field(description="Location of the system")
-    owner: str = Field(description="Owner of the systems")
-    importance: SystemImportanceType = Field(description="Importance of the system")
-    description: str = Field(description="Description of the system")
     parent_id: Optional[str] = Field(default=None, description="ID of the parent System (if applicable)")
+    name: str = Field(description="Name of the system")
+    description: Optional[str] = Field(default=None, description="Description of the system")
+    location: Optional[str] = Field(default=None, description="Location of the system")
+    owner: Optional[str] = Field(default=None, description="Owner of the systems")
+    importance: SystemImportanceType = Field(description="Importance of the system")
 
 
 class SystemRequestSchema(SystemPostRequestSchema):

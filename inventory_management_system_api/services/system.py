@@ -41,13 +41,13 @@ class SystemService:
         code = utils.generate_code(system.name, "system")
         return self._system_repository.create(
             SystemIn(
+                parent_id=parent_id,
+                description=system.description,
                 name=system.name,
                 location=system.location,
                 owner=system.owner,
                 importance=system.importance,
-                description=system.description,
                 code=code,
-                parent_id=parent_id,
             )
         )
 
