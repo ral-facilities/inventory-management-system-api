@@ -27,6 +27,11 @@ class Manufacturer(BaseModel):
 
     @field_serializer("url")
     def serialize_url(self, url: HttpUrl):
+        """
+        Convert `url` to string when the model is dumped.
+        :param url: The `HttpUrl` object.
+        :return: The URL as a string.
+        """
         return str(url)
 
 

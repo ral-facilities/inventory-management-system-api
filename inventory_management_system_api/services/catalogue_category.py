@@ -115,7 +115,7 @@ class CatalogueCategoryService:
         :raises ChildrenElementsExistError: If the catalogue category has child elements and attempting to update
                                     either any of the disallowed properties (is_leaf or catalogue_item_properties)
         """
-        update_data = catalogue_category.dict(exclude_unset=True)
+        update_data = catalogue_category.model_dump(exclude_unset=True)
 
         stored_catalogue_category = self.get(catalogue_category_id)
         if not stored_catalogue_category:
@@ -137,7 +137,7 @@ class CatalogueCategoryService:
                     f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
                 )
 
-        stored_catalogue_category = stored_catalogue_category.copy(update=update_data)
+        stored_catalogue_category = stored_catalogue_category.model_copy(update=update_data)
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.model_dump())
         )

@@ -1,9 +1,9 @@
 """
 Module for defining the API schema models for representing catalogue items.
 """
-from typing import Annotated, List, Any, Optional
+from typing import List, Any, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, AfterValidator
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class ManufacturerPostRequestSchema(BaseModel):

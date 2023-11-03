@@ -2,9 +2,9 @@
 Module for defining the API schema models for representing catalogue categories.
 """
 from enum import Enum
-from typing import Optional, List, Any, Dict
+from typing import Optional, List
 
-from pydantic import BaseModel, validator, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 

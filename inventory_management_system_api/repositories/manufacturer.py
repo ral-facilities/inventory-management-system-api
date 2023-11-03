@@ -48,7 +48,7 @@ class ManufacturerRepo:
 
         logger.info("Inserting new manufacturer into database")
 
-        result = self._collection.insert_one(manufacturer.dict())
+        result = self._collection.insert_one(manufacturer.model_dump())
         manufacturer = self.get(str(result.inserted_id))
 
         return manufacturer

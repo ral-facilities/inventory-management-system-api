@@ -25,6 +25,7 @@ class CustomObjectIdField(ObjectId):
         Validate if the string value is a valid `ObjectId`.
 
         :param value: The string value to be validated.
+        :param _: Unused
         :return: The validated `ObjectId`.
         """
         return CustomObjectId(value)
@@ -45,6 +46,7 @@ class StringObjectIdField(str):
         Convert the `ObjectId` value to string.
 
         :param value: The `ObjectId` value to be converted.
+        :param _: Unused
         :return: The converted `ObjectId` as a string.
         """
         return str(value)

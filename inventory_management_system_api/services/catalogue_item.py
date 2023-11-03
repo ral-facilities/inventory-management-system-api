@@ -15,7 +15,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryCatalogueItemProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueItemProperty
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn, Manufacturer
+from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyType
@@ -145,10 +145,10 @@ class CatalogueItemService:
                 # Create `PropertyPostRequestSchema` objects from the stored catalogue item properties and assign them
                 # to the `properties` field of `catalogue_item` before proceeding with processing and validation.
                 catalogue_item.properties = [
-                    PropertyPostRequestSchema(**prop.dict()) for prop in stored_catalogue_item.properties
+                    PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_catalogue_item.properties
                 ]
                 # Get the new `catalogue_item` state
-                update_data = catalogue_item.dict(exclude_unset=True)
+                update_data = catalogue_item.model_dump(exclude_unset=True)
 
         if "properties" in update_data:
             if not catalogue_category:
@@ -216,7 +216,7 @@ class CatalogueItemService:
             property dictionaries.
         """
         return {
-            catalogue_item_property.name: catalogue_item_property.dict()
+            catalogue_item_property.name: catalogue_item_property.model_dump()
             for catalogue_item_property in catalogue_item_properties
         }
 

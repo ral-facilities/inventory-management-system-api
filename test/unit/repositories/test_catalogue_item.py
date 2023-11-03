@@ -409,7 +409,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         {
             "$set": {
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-                **catalogue_item_in.dict(),
+                **catalogue_item_in.model_dump(),
             }
         },
     )
