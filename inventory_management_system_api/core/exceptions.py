@@ -61,6 +61,8 @@ class PartOfCatalogueItemError(DatabaseError):
     """
     Exception raised when attempting to delete a manufacturer that is a part of a catalogue item
     """
+
+
 class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been

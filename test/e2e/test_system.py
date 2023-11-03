@@ -188,10 +188,7 @@ def test_create_system_with_invalid_importance(test_client):
     response = test_client.post("/v1/systems", json={**SYSTEM_POST_A, "importance": "invalid"})
 
     assert response.status_code == 422
-    assert (
-        response.json()["detail"][0]["msg"]
-        == "value is not a valid enumeration member; permitted: 'low', 'medium', 'high'"
-    )
+    assert response.json()["detail"][0]["msg"] == "Input should be 'low', 'medium' or 'high'"
 
 
 def test_delete_system(test_client):

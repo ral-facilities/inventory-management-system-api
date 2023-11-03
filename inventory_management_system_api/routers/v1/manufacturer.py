@@ -41,7 +41,7 @@ def create_manufacturer(
 
     try:
         manufacturer = manufacturer_service.create(manufacturer)
-        return ManufacturerSchema(**manufacturer.dict())
+        return ManufacturerSchema(**manufacturer.model_dump())
 
     except DuplicateRecordError as exc:
         message = "A manufacturer with the same name has been found"
@@ -59,7 +59,7 @@ def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends())
     logger.info("Getting manufacturers")
 
     manufacturers = manufacturer_service.list()
-    return [ManufacturerSchema(**manufacturer.dict()) for manufacturer in manufacturers]
+    return [ManufacturerSchema(**manufacturer.model_dump()) for manufacturer in manufacturers]
 
 
 @router.get(
@@ -84,7 +84,7 @@ def get_one_manufacturer(
             status_code=status.HTTP_404_NOT_FOUND, detail="The requested manufacturer was not found"
         ) from exc
 
-    return ManufacturerSchema(**manufacturer.dict())
+    return ManufacturerSchema(**manufacturer.model_dump())
 
 
 @router.patch(
@@ -101,7 +101,7 @@ def edit_manufacturer(
     logger.info("Updating manufacturer with ID %s", manufacturer_id)
     try:
         updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
-        return ManufacturerSchema(**updated_manufacturer.dict())
+        return ManufacturerSchema(**updated_manufacturer.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         logger.exception("The specified manufacturer does not exist")
         raise HTTPException(

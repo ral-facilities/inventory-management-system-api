@@ -204,10 +204,7 @@ def test_create_catalogue_category_with_invalid_catalogue_item_property_type(tes
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
     assert response.status_code == 422
-    assert (
-        response.json()["detail"][0]["msg"]
-        == "value is not a valid enumeration member; permitted: 'string', 'number', 'boolean'"
-    )
+    assert response.json()["detail"][0]["msg"] == "Input should be 'string', 'number' or 'boolean'"
 
 
 def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalogue_item_property(test_client):
@@ -224,7 +221,10 @@ def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalo
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
     assert response.status_code == 422
-    assert response.json()["detail"][0]["msg"] == "Unit not allowed for boolean catalogue item property 'Property A'"
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, Unit not allowed for boolean catalogue item property 'Property A'"
+    )
 
 
 def test_create_leaf_catalogue_category_without_catalogue_item_properties(test_client):
