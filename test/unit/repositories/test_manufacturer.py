@@ -58,25 +58,12 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         },
     )
     # pylint: disable=duplicate-code
-    created_manufacturer = manufacturer_repository.create(
-        ManufacturerIn(
-            name=manufacturer.name,
-            code=manufacturer.code,
-            url=manufacturer.url,
-            address=manufacturer.address,
-            telephone=manufacturer.telephone,
-        )
-    )
 
-    database_mock.manufacturers.insert_one.assert_called_once_with(
-        {
-            "name": manufacturer.name,
-            "code": manufacturer.code,
-            "url": manufacturer.url,
-            "address": manufacturer.address,
-            "telephone": manufacturer.telephone,
-        }
-    )
+    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
+    # pylint: disable=duplicate-code
+    created_manufacturer = manufacturer_repository.create(manufacturer_in)
+
+    database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump())
     # pylint: enable=duplicate-code
     database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
     assert created_manufacturer == manufacturer
@@ -298,31 +285,17 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         },
     )
 
+    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
     # pylint: disable=duplicate-code
-
     updated_manufacturer = manufacturer_repository.update(
         manufacturer.id,
-        ManufacturerIn(
-            name=manufacturer.name,
-            code=manufacturer.code,
-            url=manufacturer.url,
-            address=manufacturer.address,
-            telephone=manufacturer.telephone,
-        ),
+        ManufacturerIn(**manufacturer_in.model_dump()),
     )
     # pylint: enable=duplicate-code
 
     database_mock.manufacturers.update_one.assert_called_once_with(
         {"_id": CustomObjectId(manufacturer.id)},
-        {
-            "$set": {
-                "name": manufacturer.name,
-                "code": manufacturer.code,
-                "url": manufacturer.url,
-                "address": manufacturer.address,
-                "telephone": manufacturer.telephone,
-            }
-        },
+        {"$set": manufacturer_in.model_dump()},
     )
 
     assert updated_manufacturer == manufacturer
@@ -402,7 +375,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
         _id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
-        url="http://testUrl.co.uk",
+        url="http://testurl.co.uk/",
         address=AddressSchema(
             address_line="1 Example Street",
             town="Oxford",
@@ -420,7 +393,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
             "_id": CustomObjectId(manufacturer.id),
             "name": "Manufacturer A",
             "code": "manufacturer-a",
-            "url": "http://testUrl.co.uk",
+            "url": "http://testurl.co.uk/",
             "address": {"address_line": "100 Test Street", "postcode": "test", "country": "test"},
             "telephone": "0932348348",
         },
@@ -460,7 +433,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
             "$set": {
                 "name": "Manufacturer A",
                 "code": "manufacturer-a",
-                "url": "http://testUrl.co.uk",
+                "url": "http://testurl.co.uk/",
                 "address": {
                     "address_line": "100 Test Street",
                     "town": None,

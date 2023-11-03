@@ -8,7 +8,7 @@ def test_create_manufacturer(test_client):
     """Test creating a manufacturer"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -36,7 +36,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
 
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -51,7 +51,7 @@ def test_check_duplicate_name_within_manufacturer(test_client):
 
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -72,7 +72,7 @@ def test_list(test_client):
     """Test getting all manufacturers"""
     manufacturer_post_a = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -85,7 +85,7 @@ def test_list(test_client):
     test_client.post("/v1/manufacturers", json=manufacturer_post_a)
     manufacturer_post_b = {
         "name": "Manufacturer B",
-        "url": "http://test.com",
+        "url": "http://test.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -105,13 +105,13 @@ def test_list(test_client):
 
     assert len(manufacturers) == 2
     assert manufacturers[0]["name"] == "Manufacturer A"
-    assert manufacturers[0]["url"] == "http://example.com"
+    assert manufacturers[0]["url"] == "http://example.com/"
     assert manufacturers[0]["address"] == manufacturer_post_a["address"]
     assert manufacturers[0]["code"] == "manufacturer-a"
     assert manufacturers[0]["telephone"] == "0932348348"
 
     assert manufacturers[1]["name"] == "Manufacturer B"
-    assert manufacturers[1]["url"] == "http://test.com"
+    assert manufacturers[1]["url"] == "http://test.com/"
     assert manufacturers[1]["address"] == manufacturer_post_b["address"]
     assert manufacturers[1]["code"] == "manufacturer-b"
     assert manufacturers[1]["telephone"] == "05940545"
@@ -131,7 +131,7 @@ def test_get_manufacturer_with_id(test_client):
     """Test getting a manufacturer by ID"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -172,7 +172,7 @@ def test_update(test_client):
     """Test updating a manufacturer"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -187,7 +187,7 @@ def test_update(test_client):
 
     manufacturer_patch = {
         "name": "Manufacturer B",
-        "url": "http://test.co.uk",
+        "url": "http://test.co.uk/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -212,7 +212,7 @@ def test_partial_update(test_client):
     """Test updating a manufacturer's address"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -227,7 +227,7 @@ def test_partial_update(test_client):
 
     manufacturer_patch = manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -252,7 +252,7 @@ def test_update_with_invalid_id(test_client):
     """Test trying to update a manufacturer with an invalid ID"""
     manufacturer_patch = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -273,7 +273,7 @@ def test_update_with_nonexistent_id(test_client):
     """Test trying to update a manufacturer with a non-existent ID"""
     manufacturer_patch = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -294,7 +294,7 @@ def test_update_duplicate_name(test_client):
     """Test updating a manufacturer with a duplicate name"""
     manufacturer_post_1 = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -309,7 +309,7 @@ def test_update_duplicate_name(test_client):
 
     manufacturer_post_2 = {
         "name": "Manufacturer B",
-        "url": "http://test.com",
+        "url": "http://test.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -333,7 +333,7 @@ def test_delete(test_client):
     """Test deleting a manufacturer"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -355,7 +355,7 @@ def test_delete_with_an_invalid_id(test_client):
     """Test trying to delete a manufacturer with an invalid ID"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -377,7 +377,7 @@ def test_delete_with_a_nonexistent_id(test_client):
     """Test trying to delete a manufacturer with a non-existent ID"""
     manufacturer_post = {
         "name": "Manufacturer A",
-        "url": "http://example.com",
+        "url": "http://example.com/",
         "address": {
             "address_line": "1 Example Street",
             "town": "Oxford",
@@ -402,7 +402,7 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item():
 
     # manufacturer_post = {
     #     "name": "Manufacturer A",
-    #     "url": "http://example.com",
+    #     "url": "http://example.com/",
     #     "address": {
     #         "building_number": "1",
     #         "street_name": "Example Street",

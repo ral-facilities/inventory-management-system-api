@@ -21,7 +21,7 @@ class AddressPatchRequestSchema(AddressSchema):
 
     address_line: Optional[str] = Field(default=None, description="The address line of the manufacturer")
     postcode: Optional[str] = Field(default=None, description="Post Code/Zip of manufacturer")
-    country: Optional[str] = Field(description="Country of the manufacturer")
+    country: Optional[str] = Field(default=None, description="Country of the manufacturer")
 
 
 class ManufacturerPostRequestSchema(BaseModel):
@@ -43,5 +43,5 @@ class ManufacturerSchema(ManufacturerPostRequestSchema):
 class ManufacturerPatchRequestSchema(ManufacturerPostRequestSchema):
     """Schema model for editing a manufacturer"""
 
-    name: Optional[str]
-    address: Optional[AddressPatchRequestSchema]
+    name: Optional[str] = None
+    address: Optional[AddressPatchRequestSchema] = None

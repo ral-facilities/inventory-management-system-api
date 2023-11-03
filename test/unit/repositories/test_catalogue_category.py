@@ -201,7 +201,7 @@ def test_create_non_leaf_category_with_catalogue_item_properties(
             "code": catalogue_category.code,
             "is_leaf": catalogue_category.is_leaf,
             "parent_id": catalogue_category.parent_id,
-            "catalogue_item_properties": catalogue_item_properties,
+            "catalogue_item_properties": [prop.model_dump() for prop in catalogue_item_properties],
         }
     )
     assert created_catalogue_category == catalogue_category
@@ -272,7 +272,7 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
             "code": catalogue_category.code,
             "is_leaf": catalogue_category.is_leaf,
             "parent_id": CustomObjectId(catalogue_category.parent_id),
-            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+            "catalogue_item_properties": [prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
         }
     )
     database_mock.catalogue_categories.find_one.assert_has_calls(
@@ -937,7 +937,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
         database_mock.catalogue_categories,
         {
             "_id": CustomObjectId(catalogue_category_id),
-            "name": update_catalogue_category.is_leaf,
+            "name": update_catalogue_category.name,
             "code": update_catalogue_category.code,
             "is_leaf": update_catalogue_category.is_leaf,
             "parent_id": None,
