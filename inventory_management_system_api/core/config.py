@@ -3,7 +3,8 @@ Module for the overall configuration for the application.
 """
 from pathlib import Path
 
-from pydantic import BaseSettings, BaseModel
+from pydantic import BaseModel
+from pydantic_settings import SettingsConfigDict, BaseSettings
 
 
 class APIConfig(BaseModel):
@@ -39,12 +40,9 @@ class Config(BaseSettings):
 
     api: APIConfig
     database: DatabaseConfig
-
-    class Config:
-        # pylint: disable=C0115
-        env_file = Path(__file__).parent.parent / ".env"
-        env_file_encoding = "utf-8"
-        env_nested_delimiter = "__"
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).parent.parent / ".env", env_file_encoding="utf-8", env_nested_delimiter="__"
+    )
 
 
 config = Config()

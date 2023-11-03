@@ -1,9 +1,9 @@
 """
 Module for defining the API schema models for representing catalogue items.
 """
-from typing import List, Any, Optional
+from typing import Annotated, List, Any, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, AfterValidator
 
 
 class ManufacturerPostRequestSchema(BaseModel):
@@ -20,7 +20,7 @@ class PropertyPostRequestSchema(BaseModel):
     """
 
     name: str = Field(description="The name of the catalogue item property")
-    value: Any = Field(description="The value of the catalogue item property")
+    value: Any = Field(None, description="The value of the catalogue item property")
 
 
 class PropertySchema(PropertyPostRequestSchema):
@@ -41,7 +41,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
     )
     name: str = Field(description="The name of the catalogue item")
     description: str = Field(description="The catalogue item description")
-    properties: Optional[List[PropertyPostRequestSchema]] = Field(description="The catalogue item properties")
+    properties: Optional[List[PropertyPostRequestSchema]] = Field(None, description="The catalogue item properties")
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
     manufacturer: ManufacturerPostRequestSchema = Field(description="The details of the manufacturer")
@@ -53,13 +53,13 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     """
 
     catalogue_category_id: Optional[str] = Field(
-        description="The ID of the catalogue category that the catalogue item belongs to"
+        None, description="The ID of the catalogue category that the catalogue item belongs to"
     )
-    name: Optional[str] = Field(description="The name of the catalogue item")
-    description: Optional[str] = Field(description="The catalogue item description")
+    name: Optional[str] = Field(None, description="The name of the catalogue item")
+    description: Optional[str] = Field(None, description="The catalogue item description")
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
-    manufacturer: Optional[ManufacturerPostRequestSchema] = Field(description="The details of the manufacturer")
+    manufacturer: Optional[ManufacturerPostRequestSchema] = Field(None, description="The details of the manufacturer")
 
 
 class CatalogueItemSchema(CatalogueItemPostRequestSchema):

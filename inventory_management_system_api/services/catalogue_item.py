@@ -15,7 +15,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryCatalogueItemProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueItemProperty
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
+from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn, Manufacturer
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyType
@@ -74,11 +74,10 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.create(
             CatalogueItemIn(
-                catalogue_category_id=catalogue_item.catalogue_category_id,
-                name=catalogue_item.name,
-                description=catalogue_item.description,
-                properties=supplied_properties,
-                manufacturer=catalogue_item.manufacturer,
+                **{
+                    **catalogue_item.model_dump(),
+                    "properties": supplied_properties,
+                }
             )
         )
 
@@ -121,7 +120,7 @@ class CatalogueItemService:
         :param catalogue_item: The catalogue item containing the fields that need to be updated.
         :return: The updated catalogue item.
         """
-        update_data = catalogue_item.dict(exclude_unset=True)
+        update_data = catalogue_item.model_dump(exclude_unset=True)
 
         stored_catalogue_item = self.get(catalogue_item_id)
         if not stored_catalogue_item:
@@ -162,9 +161,16 @@ class CatalogueItemService:
             update_data["properties"] = self._process_catalogue_item_properties(defined_properties, supplied_properties)
 
         # Create a copy of `stored_catalogue_item`, updating its field values with the received partial updates
-        stored_catalogue_item = stored_catalogue_item.copy(update=update_data)
+        if "manufacturer" in update_data:
+            stored_catalogue_item = stored_catalogue_item.model_copy(
+                update={**update_data, "manufacturer": update_data["manufacturer"]}
+            )
+        else:
+            stored_catalogue_item = stored_catalogue_item.model_copy(update=update_data)
+
         return self._catalogue_item_repository.update(
-            catalogue_item_id, CatalogueItemIn(**stored_catalogue_item.dict())
+            catalogue_item_id,
+            CatalogueItemIn(**stored_catalogue_item.model_dump()),
         )
 
     def _process_catalogue_item_properties(

@@ -4,7 +4,8 @@ Module for defining the API schema models for representing catalogue categories.
 from enum import Enum
 from typing import Optional, List, Any, Dict
 
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, validator, Field, field_validator
+from pydantic_core.core_schema import ValidationInfo
 
 
 class CatalogueItemPropertyType(str, Enum):
@@ -27,9 +28,9 @@ class CatalogueItemPropertySchema(BaseModel):
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
 
-    @validator("unit")
+    @field_validator("unit")
     @classmethod
-    def validate_unit(cls, unit_value: str, values: Dict[str, Any]) -> Optional[str]:
+    def validate_unit(cls, unit_value: str, info: ValidationInfo) -> Optional[str]:
         """
         Validator for the `unit` field.
 
@@ -37,12 +38,12 @@ class CatalogueItemPropertySchema(BaseModel):
         raises a `ValueError` if this is the case.
 
         :param unit_value: The value of the `unit` field.
-        :param values: The values of the model fields.
+        :param info: Validation info from pydantic.
         :return: The value of the `unit` field.
         :raises ValueError: If `unit` is provided when `type` is set to `boolean`.
         """
-        if "type" in values and values["type"] == CatalogueItemPropertyType.BOOLEAN and unit_value is not None:
-            raise ValueError(f"Unit not allowed for boolean catalogue item property '{values['name']}'")
+        if "type" in info.data and info.data["type"] == CatalogueItemPropertyType.BOOLEAN and unit_value is not None:
+            raise ValueError(f"Unit not allowed for boolean catalogue item property '{info.data['name']}'")
         return unit_value
 
 
@@ -58,7 +59,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
     catalogue_item_properties: Optional[List[CatalogueItemPropertySchema]] = Field(
-        description="The properties that the catalogue items in this category could/should have"
+        None, description="The properties that the catalogue items in this category could/should have"
     )
 
 
@@ -71,12 +72,13 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     Schema model for a catalogue category update request.
     """
 
-    name: Optional[str] = Field(description="The name of the catalogue category")
+    name: Optional[str] = Field(None, description="The name of the catalogue category")
     is_leaf: Optional[bool] = Field(
+        None,
         description="Whether the category is a leaf or not. If it is then it can only have catalogue items as "
-        "children but if it is not then it can only have catalogue categories as children."
+        "children but if it is not then it can only have catalogue categories as children.",
     )
-    parent_id: Optional[str] = Field(description="The ID of the parent catalogue category")
+    parent_id: Optional[str] = Field(None, description="The ID of the parent catalogue category")
 
 
 class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):

@@ -94,17 +94,7 @@ class ManufacturerRepo:
         if not self.get(str(manufacturer_id)):
             raise MissingRecordError("The specified manufacturer does not exist")
         logger.info("Updating manufacturer with ID %s", manufacturer_id)
-        self._collection.update_one(
-            {"_id": manufacturer_id},
-            {
-                "$set": {
-                    "name": manufacturer.name,
-                    "url": manufacturer.url,
-                    "address": manufacturer.address,
-                    "code": manufacturer.code,
-                }
-            },
-        )
+        self._collection.update_one({"_id": manufacturer_id}, {"$set": manufacturer.model_dump()})
 
         manufacturer = self.get(str(manufacturer_id))
         return manufacturer

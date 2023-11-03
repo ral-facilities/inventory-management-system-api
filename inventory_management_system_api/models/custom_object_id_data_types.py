@@ -1,7 +1,11 @@
 """
 Module for defining custom `ObjectId` data type classes used by Pydantic models.
 """
+from typing import Any
+
 from bson import ObjectId
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
@@ -12,11 +16,11 @@ class CustomObjectIdField(ObjectId):
     """
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.with_info_plain_validator_function(cls.validate)
 
     @classmethod
-    def validate(cls, value: str) -> CustomObjectId:
+    def validate(cls, value: str, _: core_schema.ValidationInfo) -> CustomObjectId:
         """
         Validate if the string value is a valid `ObjectId`.
 
@@ -32,11 +36,11 @@ class StringObjectIdField(str):
     """
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> CoreSchema:
+        return core_schema.with_info_plain_validator_function(cls.validate)
 
     @classmethod
-    def validate(cls, value: ObjectId) -> str:
+    def validate(cls, value: ObjectId, _: core_schema.ValidationInfo) -> str:
         """
         Convert the `ObjectId` value to string.
 

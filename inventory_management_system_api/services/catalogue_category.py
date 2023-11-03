@@ -58,13 +58,7 @@ class CatalogueCategoryService:
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
         return self._catalogue_category_repository.create(
-            CatalogueCategoryIn(
-                name=catalogue_category.name,
-                code=code,
-                is_leaf=catalogue_category.is_leaf,
-                parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=catalogue_category.catalogue_item_properties,
-            )
+            CatalogueCategoryIn(**catalogue_category.model_dump(), code=code)
         )
 
     def delete(self, catalogue_category_id: str) -> None:
@@ -145,5 +139,5 @@ class CatalogueCategoryService:
 
         stored_catalogue_category = stored_catalogue_category.copy(update=update_data)
         return self._catalogue_category_repository.update(
-            catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.dict())
+            catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.model_dump())
         )
