@@ -1,7 +1,7 @@
 """
 Module for defining the database models for representing catalogue categories.
 """
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
@@ -33,8 +33,8 @@ class CatalogueCategoryIn(BaseModel):
     @field_validator("catalogue_item_properties", mode="before")
     @classmethod
     def validate_catalogue_item_properties(
-        cls, catalogue_item_properties: List[CatalogueItemProperty] | None, info: ValidationInfo
-    ) -> List[CatalogueItemProperty] | List:
+        cls, catalogue_item_properties: List[dict[str, Any]] | None, info: ValidationInfo
+    ) -> List[dict[str, Any]] | List:
         """
         Validator for the `catalogue_item_properties` field that runs after field assignment but before type validation.
 

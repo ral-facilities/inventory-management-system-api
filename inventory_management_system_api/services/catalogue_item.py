@@ -160,17 +160,9 @@ class CatalogueItemService:
             supplied_properties = catalogue_item.properties
             update_data["properties"] = self._process_catalogue_item_properties(defined_properties, supplied_properties)
 
-        # Create a copy of `stored_catalogue_item`, updating its field values with the received partial updates
-        if "manufacturer" in update_data:
-            stored_catalogue_item = stored_catalogue_item.model_copy(
-                update={**update_data, "manufacturer": update_data["manufacturer"]}
-            )
-        else:
-            stored_catalogue_item = stored_catalogue_item.model_copy(update=update_data)
-
         return self._catalogue_item_repository.update(
             catalogue_item_id,
-            CatalogueItemIn(**stored_catalogue_item.model_dump()),
+            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
         )
 
     def _process_catalogue_item_properties(

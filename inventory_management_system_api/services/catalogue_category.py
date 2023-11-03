@@ -137,7 +137,6 @@ class CatalogueCategoryService:
                     f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
                 )
 
-        stored_catalogue_category = stored_catalogue_category.model_copy(update=update_data)
         return self._catalogue_category_repository.update(
-            catalogue_category_id, CatalogueCategoryIn(**stored_catalogue_category.model_dump())
+            catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
