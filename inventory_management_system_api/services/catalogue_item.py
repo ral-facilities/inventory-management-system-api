@@ -69,13 +69,14 @@ class CatalogueItemService:
         if not catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
         
+        if catalogue_category.is_leaf is False:
+            raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+
         manufacturer_id = catalogue_item.manufacturer_id
         manufacturer = self._manufacturer_repository.get(manufacturer_id)
         if not manufacturer:
             raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
-        if catalogue_category.is_leaf is False:
-            raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
         defined_properties = catalogue_category.catalogue_item_properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
