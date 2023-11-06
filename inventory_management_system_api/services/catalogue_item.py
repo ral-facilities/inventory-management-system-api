@@ -159,6 +159,15 @@ class CatalogueItemService:
                 # Get the new `catalogue_item` state
                 update_data = catalogue_item.model_dump(exclude_unset=True)
 
+        manufacturer = None
+        if (
+            "manufacturer_id" in update_data
+            and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id
+        ):
+            manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
+            if not manufacturer:
+                raise MissingRecordError(f"No manufacturer found with ID: {catalogue_item.manufacturer_id}")
+            
         if "properties" in update_data:
             if not catalogue_category:
                 catalogue_category = self._catalogue_category_repository.get(
