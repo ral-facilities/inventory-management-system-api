@@ -24,8 +24,14 @@ CATALOGUE_CATEGORY_POST_B = {
     ],
 }
 
+MANUFACTURER = {
+    "name": "Manufacturer D",
+    "url": "https://example.com",
+    "address": "1 Example Street"
+}
 
-def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
+
+def get_catalogue_item_a_dict(catalogue_category_id: str, manufacturer_id: str) -> Dict:
     """
     Creates a dictionary representing catalogue item A.
 
@@ -41,15 +47,11 @@ def get_catalogue_item_a_dict(catalogue_category_id: str) -> Dict:
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10"},
         ],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk/",
-        },
+        "manufacturer_id":manufacturer_id
     }
 
 
-def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
+def get_catalogue_item_b_dict(catalogue_category_id: str, manufacturer_id: str) -> Dict:
     """
     Creates a dictionary representing catalogue item B.
 
@@ -63,11 +65,7 @@ def get_catalogue_item_b_dict(catalogue_category_id: str) -> Dict:
         "properties": [
             {"name": "Property A", "value": True},
         ],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk/",
-        },
+        "manufacturer_id":manufacturer_id
     }
 
 
@@ -78,8 +76,13 @@ def test_create_catalogue_item(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
 
+    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
+    manufacturer = response.json()
+    
+
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    manufacturer_id = manufacturer["id"]
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer_id)
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 201
@@ -93,14 +96,14 @@ def test_create_catalogue_item(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     """
     Test creating a catalogue item with an invalid catalogue category id.
     """
-    catalogue_item_post = get_catalogue_item_a_dict("invalid")
+    catalogue_item_post = get_catalogue_item_a_dict("invalid", str(ObjectId()))
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -111,7 +114,7 @@ def test_create_catalogue_item_with_nonexistent_catalogue_category_id(test_clien
     """
     Test creating a catalogue item with a nonexistent catalogue category id.
     """
-    catalogue_item_post = get_catalogue_item_a_dict(str(ObjectId()))
+    catalogue_item_post = get_catalogue_item_a_dict(str(ObjectId()), str(ObjectId()))
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -126,7 +129,7 @@ def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], str(ObjectId()))
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 409
@@ -141,7 +144,11 @@ def test_create_catalogue_item_without_properties(test_client):
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_id = response.json()["id"]
 
-    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_id)
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    manufacturer_id = manufacturer["id"]
+
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_id, manufacturer_id)
     del catalogue_item_post["properties"]
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -153,7 +160,7 @@ def test_create_catalogue_item_without_properties(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == []
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
@@ -162,8 +169,11 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    manufacturer_id = manufacturer["id"]
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], manufacturer_id)
     del catalogue_item_post["properties"][1]
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -179,7 +189,12 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     catalogue_category = response.json()
 
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    manufacturer_id = manufacturer["id"]
+
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer_id)
     del catalogue_item_post["properties"][0]
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -193,7 +208,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_client):
@@ -203,7 +218,11 @@ def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    manufacturer_id = manufacturer["id"]
+
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"],manufacturer_id)
     catalogue_item_post["properties"][2]["value"] = True
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -220,8 +239,11 @@ def test_create_catalogue_item_with_invalid_value_type_for_number_property(test_
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    manufacturer_id = manufacturer["id"]
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], manufacturer_id)
     catalogue_item_post["properties"][0]["value"] = "20"
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -239,7 +261,10 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], manufacturer["id"])
     catalogue_item_post["properties"][1]["value"] = "False"
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -255,7 +280,11 @@ def test_delete_catalogue_item(test_client):
     Test deleting a catalogue item.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_item_post = get_catalogue_item_a_dict(response.json()["id"])
+    catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item = response.json()
 
@@ -300,8 +329,10 @@ def test_get_catalogue_item(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"])
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"],  manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     response = test_client.get(f"/v1/catalogue-items/{response.json()['id']}")
@@ -345,11 +376,13 @@ def test_get_catalogue_items(test_client):
     catalogue_category_a = response.json()
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post_a = get_catalogue_item_a_dict(catalogue_category_a["id"])
+    catalogue_item_post_a = get_catalogue_item_a_dict(catalogue_category_a["id"],manufacturer["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
 
-    catalogue_item_post_b = get_catalogue_item_b_dict(catalogue_category_b["id"])
+    catalogue_item_post_b = get_catalogue_item_b_dict(catalogue_category_b["id"], manufacturer["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
 
     response = test_client.get("/v1/catalogue-items")
@@ -375,11 +408,13 @@ def test_get_catalogue_items_with_catalogue_category_id_filter(test_client):
     catalogue_category_a = response.json()
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post_a = get_catalogue_item_a_dict(catalogue_category_a["id"])
+    catalogue_item_post_a = get_catalogue_item_a_dict(catalogue_category_a["id"], manufacturer["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
 
-    catalogue_item_post_b = get_catalogue_item_b_dict(catalogue_category_b["id"])
+    catalogue_item_post_b = get_catalogue_item_b_dict(catalogue_category_b["id"], manufacturer["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
 
     response = test_client.get("/v1/catalogue-items", params={"catalogue_category_id": catalogue_category_b["id"]})
@@ -402,10 +437,13 @@ def test_get_catalogue_items_with_catalogue_category_id_filter_no_matching_resul
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
-    catalogue_item_post_a = get_catalogue_item_a_dict(catalogue_category_a["id"])
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+
+    catalogue_item_post_a = get_catalogue_item_a_dict(catalogue_category_a["id"], manufacturer["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
 
-    catalogue_item_post_b = get_catalogue_item_b_dict(catalogue_category_b["id"])
+    catalogue_item_post_b = get_catalogue_item_b_dict(catalogue_category_b["id"], manufacturer["id"])
     test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
 
     response = test_client.get("/v1/catalogue-items", params={"catalogue_category_id": str(ObjectId())})
@@ -437,8 +475,11 @@ def test_partial_update_catalogue_item(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
 
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
@@ -455,7 +496,7 @@ def test_partial_update_catalogue_item(test_client):
     assert catalogue_item["name"] == catalogue_item_patch["name"]
     assert catalogue_item["description"] == catalogue_item_patch["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_partial_update_catalogue_item_invalid_id(test_client):
@@ -498,8 +539,11 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
     catalogue_category_a = response.json()
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_a["id"])
+
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_a["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
@@ -517,7 +561,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_patch["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_without_properties(test_client):
@@ -529,7 +573,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_without_prop
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_a["id"])
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_a["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {"catalogue_category_id": catalogue_category_b["id"]}
@@ -550,8 +597,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mand
     catalogue_category_a = response.json()
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_b["id"])
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_b["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
@@ -572,8 +621,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
     catalogue_category_a = response.json()
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_b["id"])
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_b["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
@@ -593,7 +644,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_patch["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(test_client):
@@ -601,8 +652,11 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
     Test changing the catalogue category ID of a catalogue item to an invalid ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(response.json()["id"])
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
@@ -620,8 +674,11 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_nonexistent_
     Test changing the catalogue category ID of a catalogue item to a nonexistent ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_a_dict(response.json()["id"])
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
@@ -643,8 +700,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_non_leaf_cat
     catalogue_category_a = response.json()
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
-    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_b["id"])
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_b["id"], manufacturer["id"])
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {"catalogue_category_id": catalogue_category_a["id"]}
@@ -668,9 +727,11 @@ def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
     catalogue_item_properties = catalogue_item_post["properties"].copy()
 
     # Delete the non-mandatory property so that the catalogue item is created without it
@@ -691,7 +752,7 @@ def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_patch["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client):
@@ -700,9 +761,11 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -721,7 +784,7 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_patch["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_post["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_post["manufacturer_id"]
 
 
 def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
@@ -730,9 +793,10 @@ def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
-
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -750,9 +814,10 @@ def test_partial_update_catalogue_item_change_value_for_string_property_invalid_
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
-
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -773,9 +838,11 @@ def test_partial_update_catalogue_item_change_value_for_number_property_invalid_
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
 
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -796,9 +863,10 @@ def test_partial_update_catalogue_item_change_value_for_boolean_property_invalid
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
-
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category_id, manufacturer["id"])
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -815,25 +883,30 @@ def test_partial_update_catalogue_item_change_value_for_boolean_property_invalid
 
 def test_partial_update_catalogue_item_change_manufacturer(test_client):
     """
-    Test updating the manufacturer details of a catalogue item.
+    Test updating the manufacturer ID of a catalogue item.
     """
     # pylint: disable=fixme
-    # TODO - Modify this test to use manufacturer ID when the relevant manufacturer logic is implemented
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category = response.json()
-
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
     catalogue_category_id = catalogue_category["id"]
-    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_id)
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category_id, manufacturer["id"])
 
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    
+    
 
-    catalogue_item_patch = {
-        "manufacturer": {
-            "name": "Manufacturer B",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-b.co.uk/",
-        }
+    other_manufacturer = {
+        "name": "Manufacturer E",
+    "url": "https://example.com",
+    "address": "1 Example Street"
     }
+    response = test_client.post("/v1/manufacturer", json = other_manufacturer)
+    other_manufacturer = response.json()
+    catalogue_item_patch = {
+        "manufacturer_id":other_manufacturer["id"],
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
     assert response.status_code == 200
@@ -844,20 +917,53 @@ def test_partial_update_catalogue_item_change_manufacturer(test_client):
     assert catalogue_item["name"] == catalogue_item_post["name"]
     assert catalogue_item["description"] == catalogue_item_post["description"]
     assert catalogue_item["properties"] == catalogue_item_post["properties"]
-    assert catalogue_item["manufacturer"] == catalogue_item_patch["manufacturer"]
+    assert catalogue_item["manufacturer_id"] == catalogue_item_patch["manufacturer_id"]
 
 
-def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id():
+def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_client):
     """
     Test changing the manufacturer ID of a catalogue item to an invalid ID.
     """
     # pylint: disable=fixme
-    # TODO - Implement this test when the relevant manufacturer logic is implemented
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
+    catalogue_category = response.json()
+
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category["id"], manufacturer["id"])
+
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    catalogue_item_patch = {
+        "manufacturer_id":"invalid",
+    }
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
 
 
-def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id():
+def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id(test_client):
     """
     Test changing the manufacturer ID of a catalogue item to a nonexistent ID.
     """
     # pylint: disable=fixme
-    # TODO - Implement this test when the relevant manufacturer logic is implemented
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
+    catalogue_category = response.json()
+
+    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    manufacturer = response.json()
+    
+    catalogue_item_post = get_catalogue_item_b_dict(catalogue_category["id"], manufacturer["id"])
+
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    catalogue_item_patch = {
+        "manufacturer_id":str(ObjectId()),
+    }
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
+    
