@@ -86,17 +86,23 @@ def create_catalogue_item(
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified catalogue category ID does not exist"
+        if (
+            catalogue_item.catalogue_category_id
+            and catalogue_item.catalogue_category_id in str(exc)
+            or "catalogue category" in str(exc).lower()
+        ):
+            message = "The specified catalogue category ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+        message = "The specified manufacturer ID does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except NonLeafCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except (MissingManufacturerRecordError, InvalidObjectIdError) as exc:
-        message = "The specified manufacturer ID does not exist"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
     
 
 

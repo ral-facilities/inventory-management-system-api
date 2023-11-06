@@ -72,7 +72,7 @@ class CatalogueItemService:
         manufacturer_id = catalogue_item.manufacturer_id
         manufacturer = self._manufacturer_repository.get(manufacturer_id)
         if not manufacturer:
-            raise MissingManufacturerRecordError(f"No manufacturer found with ID: {manufacturer_id}")
+            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
         if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
