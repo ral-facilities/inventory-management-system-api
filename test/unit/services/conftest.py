@@ -82,7 +82,9 @@ def fixture_catalogue_item_service(
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :return: `CatalogueItemService` instance with the mocked dependency.
     """
-    return CatalogueItemService(catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock)
+    return CatalogueItemService(
+        catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock
+    )
 
 
 @pytest.fixture(name="manufacturer_service")

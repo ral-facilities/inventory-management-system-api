@@ -33,7 +33,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -72,7 +72,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
             "name": catalogue_item.name,
             "description": catalogue_item.description,
             "properties": [prop.model_dump() for prop in catalogue_item.properties],
-            "manufacturer_id": catalogue_item.manufacturer_id
+            "manufacturer_id": catalogue_item.manufacturer_id,
         }
     )
     assert created_catalogue_item == catalogue_item
@@ -155,7 +155,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -223,7 +223,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
 
     catalogue_item_b = CatalogueItemOut(
@@ -232,7 +232,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         name="Catalogue Item B",
         description="This is Catalogue Item B",
         properties=[Property(name="Property A", value=True)],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -282,7 +282,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
 
     # Mock `find` to return a list of catalogue item documents
@@ -357,7 +357,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10", "unit": "cm"},
         ],
-        "manufacturer_id":str(ObjectId())
+        "manufacturer_id": str(ObjectId()),
     }
     # pylint: enable=duplicate-code
     catalogue_item = CatalogueItemOut(id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **catalogue_item_info)

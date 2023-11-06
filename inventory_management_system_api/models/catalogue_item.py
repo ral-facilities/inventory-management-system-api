@@ -3,7 +3,7 @@ Module for defining the database models for representing catalogue items.
 """
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
@@ -16,6 +16,7 @@ class Property(BaseModel):
     name: str
     value: Any
     unit: Optional[str] = None
+
 
 class CatalogueItemIn(BaseModel):
     """

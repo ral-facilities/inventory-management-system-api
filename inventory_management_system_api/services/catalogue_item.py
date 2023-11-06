@@ -9,7 +9,6 @@ from typing import Optional, List, Dict, Union
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import (
-    MissingManufacturerRecordError,
     MissingRecordError,
     NonLeafCategoryError,
     InvalidCatalogueItemPropertyTypeError,
@@ -39,7 +38,7 @@ class CatalogueItemService:
         self,
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
-        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo)
+        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
     ) -> None:
         """
         Initialise the `CatalogueItemService` with a `CatalogueItemRepo` and `CatalogueCategoryRepo` repos.
@@ -68,7 +67,7 @@ class CatalogueItemService:
         catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
         if not catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
-        
+
         if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
@@ -76,7 +75,6 @@ class CatalogueItemService:
         manufacturer = self._manufacturer_repository.get(manufacturer_id)
         if not manufacturer:
             raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
-
 
         defined_properties = catalogue_category.catalogue_item_properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
@@ -161,14 +159,11 @@ class CatalogueItemService:
                 update_data = catalogue_item.model_dump(exclude_unset=True)
 
         manufacturer = None
-        if (
-            "manufacturer_id" in update_data
-            and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id
-        ):
+        if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
             manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
             if not manufacturer:
                 raise MissingRecordError(f"No manufacturer found with ID: {catalogue_item.manufacturer_id}")
-            
+
         if "properties" in update_data:
             if not catalogue_category:
                 catalogue_category = self._catalogue_category_repository.get(

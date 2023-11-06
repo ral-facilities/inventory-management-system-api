@@ -28,7 +28,11 @@ from inventory_management_system_api.schemas.catalogue_item import (
 
 
 def test_create(
-    test_helpers, catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock, catalogue_item_service
+    test_helpers,
+    catalogue_item_repository_mock,
+    catalogue_category_repository_mock,
+    manufacturer_repository_mock,
+    catalogue_item_service,
 ):
     """
     Test creating a catalogue item.
@@ -48,7 +52,7 @@ def test_create(
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
 
     # Mock `get` to return the catalogue category
@@ -74,8 +78,8 @@ def test_create(
             name="Manufacturer A",
             code="manufacturer-a",
             url="https://test.co.uk",
-            address="1 Example Street"
-        )
+            address="1 Example Street",
+        ),
     )
     # pylint: enable=duplicate-code
     # Mock `create` to return the created catalogue item
@@ -91,7 +95,7 @@ def test_create(
                 PropertyPostRequestSchema(name="Property B", value=False),
                 PropertyPostRequestSchema(name="Property C", value="20x15x10"),
             ],
-            manufacturer_id=catalogue_item.manufacturer_id
+            manufacturer_id=catalogue_item.manufacturer_id,
         )
     )
 
@@ -103,7 +107,7 @@ def test_create(
             name=catalogue_item.name,
             description=catalogue_item.description,
             properties=[prop.model_dump() for prop in catalogue_item.properties],
-            manufacturer_id=catalogue_item.manufacturer_id
+            manufacturer_id=catalogue_item.manufacturer_id,
         )
     )
     # pylint: enable=duplicate-code
@@ -135,7 +139,7 @@ def test_create_with_nonexistent_catalogue_category_id(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             ),
         )
 
@@ -178,7 +182,7 @@ def test_create_in_non_leaf_catalogue_category(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-               manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             ),
         )
 
@@ -201,7 +205,7 @@ def test_create_without_properties(
         name="Catalogue Item A",
         description="This is Catalogue Item A",
         properties=[],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
 
     # pylint: enable=duplicate-code
@@ -228,7 +232,7 @@ def test_create_without_properties(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             name=catalogue_item.name,
             description=catalogue_item.description,
-            manufacturer_id=catalogue_item.manufacturer_id
+            manufacturer_id=catalogue_item.manufacturer_id,
         )
     )
 
@@ -284,7 +288,7 @@ def test_create_with_missing_mandatory_properties(
                 properties=[
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             ),
         )
 
@@ -335,7 +339,7 @@ def test_create_with_with_invalid_value_type_for_string_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value=True),
                 ],
-                manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             ),
         )
 
@@ -387,7 +391,7 @@ def test_create_with_with_invalid_value_type_for_number_property(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             )
         )
     assert (
@@ -438,7 +442,7 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                     PropertyPostRequestSchema(name="Property B", value="False"),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=str(ObjectId())
+                manufacturer_id=str(ObjectId()),
             )
         )
     assert (
@@ -479,7 +483,7 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
             Property(name="Property B", value=False),
             Property(name="Property C", value="20x15x10", unit="cm"),
         ],
-        manufacturer_id=str(ObjectId())
+        manufacturer_id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -539,7 +543,7 @@ def test_update(test_helpers, catalogue_item_repository_mock, catalogue_item_ser
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10", "unit": "cm"},
         ],
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
     }
     # pylint: enable=duplicate-code
     full_catalogue_item_info = {
@@ -603,7 +607,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10", "unit": "cm"},
         ],
-        "manufacturer_id":str(ObjectId())
+        "manufacturer_id": str(ObjectId()),
     }
     full_catalogue_item_info = {
         **catalogue_item_info,
@@ -661,7 +665,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
         "id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId())
+        "manufacturer_id": str(ObjectId()),
     }
     full_catalogue_item_info = {
         **catalogue_item_info,
@@ -733,7 +737,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
         "id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
@@ -786,7 +790,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
         "id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId())
+        "manufacturer_id": str(ObjectId()),
     }
     full_catalogue_item_info = {
         **catalogue_item_info,
@@ -854,7 +858,7 @@ def test_update_with_nonexistent_catalogue_category_id(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [],
     }
 
@@ -883,7 +887,7 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [],
     }
 
@@ -926,7 +930,7 @@ def test_update_add_non_mandatory_property(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10", "unit": "cm"},
@@ -988,7 +992,7 @@ def test_update_remove_non_mandatory_property(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-       "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
@@ -1048,7 +1052,7 @@ def test_update_remove_mandatory_property(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
@@ -1102,7 +1106,7 @@ def test_update_change_property_value(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-       "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
@@ -1165,7 +1169,7 @@ def test_update_change_value_for_string_property_invalid_type(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
@@ -1218,7 +1222,7 @@ def test_update_change_value_for_number_property_invalid_type(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-        "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
@@ -1271,7 +1275,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
         "catalogue_category_id": str(ObjectId()),
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
-       "manufacturer_id":str(ObjectId()),
+        "manufacturer_id": str(ObjectId()),
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},

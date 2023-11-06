@@ -3,11 +3,10 @@
 End-to-End tests for the catalogue category router.
 """
 from unittest.mock import ANY
-
+from test.e2e.test_catalogue_item import MANUFACTURER
 from bson import ObjectId
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
-from test.e2e.test_catalogue_item import MANUFACTURER
 
 CATALOGUE_CATEGORY_POST_A = {"name": "Category A", "is_leaf": False}
 CATALOGUE_CATEGORY_POST_A_EXPECTED = {
@@ -312,14 +311,14 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
     manufacturer = response.json()
     catalogue_item_post = {
         "catalogue_category_id": catalogue_category_id,
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": manufacturer["id"]
+        "manufacturer_id": manufacturer["id"],
     }
 
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -686,14 +685,14 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
     manufacturer = response.json()
     catalogue_item_post = {
         "catalogue_category_id": catalogue_category_id,
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": manufacturer["id"]
+        "manufacturer_id": manufacturer["id"],
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -999,14 +998,14 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturer", json = MANUFACTURER)
+    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
     manufacturer = response.json()
     catalogue_item_post = {
         "catalogue_category_id": catalogue_category_id,
         "name": "Catalogue Item A",
         "description": "This is Catalogue Item A",
         "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": manufacturer["id"]
+        "manufacturer_id": manufacturer["id"],
     }
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 

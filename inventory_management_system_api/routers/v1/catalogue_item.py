@@ -8,7 +8,6 @@ from typing import List, Annotated, Optional
 from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
 from inventory_management_system_api.core.exceptions import (
-    MissingManufacturerRecordError,
     MissingRecordError,
     InvalidObjectIdError,
     NonLeafCategoryError,
@@ -103,8 +102,6 @@ def create_catalogue_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
-    
-
 
 @router.patch(
     path="/{catalogue_item_id}",
@@ -134,7 +131,7 @@ def partial_update_catalogue_item(
             message = "The specified catalogue category ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        if(
+        if (
             catalogue_item.manufacturer_id
             and catalogue_item.manufacturer_id in str(exc)
             or "manufacturer" in str(exc).lower()
@@ -142,7 +139,7 @@ def partial_update_catalogue_item(
             message = "The specified manufacturer ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-            
+
         message = "A catalogue item with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
