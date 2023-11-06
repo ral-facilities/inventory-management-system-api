@@ -5,15 +5,6 @@ from typing import List, Any, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-
-class ManufacturerPostRequestSchema(BaseModel):
-    """Schema model for a manufacturer creation request"""
-
-    name: str
-    url: HttpUrl
-    address: str
-
-
 class PropertyPostRequestSchema(BaseModel):
     """
     Schema model for a catalogue item property creation request.
@@ -46,8 +37,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
     )
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
-    manufacturer: ManufacturerPostRequestSchema = Field(description="The details of the manufacturer")
-
+    manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer")
 
 class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     """
@@ -61,8 +51,7 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     description: Optional[str] = Field(default=None, description="The catalogue item description")
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
-    manufacturer: Optional[ManufacturerPostRequestSchema] = Field(
-        default=None, description="The details of the manufacturer"
+    manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer"
     )
 
 

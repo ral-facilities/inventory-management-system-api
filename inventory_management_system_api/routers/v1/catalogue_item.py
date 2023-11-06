@@ -8,6 +8,7 @@ from typing import List, Annotated, Optional
 from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
 from inventory_management_system_api.core.exceptions import (
+    MissingManufacturerRecordError,
     MissingRecordError,
     InvalidObjectIdError,
     NonLeafCategoryError,
@@ -92,6 +93,11 @@ def create_catalogue_item(
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except (MissingManufacturerRecordError, InvalidObjectIdError) as exc:
+        message = "The specified manufacturer ID does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    
 
 
 @router.patch(

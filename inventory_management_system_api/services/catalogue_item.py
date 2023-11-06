@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Union
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import (
+    MissingManufacturerRecordError,
     MissingRecordError,
     NonLeafCategoryError,
     InvalidCatalogueItemPropertyTypeError,
@@ -18,6 +19,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueI
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyType
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostRequestSchema,
@@ -37,6 +39,7 @@ class CatalogueItemService:
         self,
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
+        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo)
     ) -> None:
         """
         Initialise the `CatalogueItemService` with a `CatalogueItemRepo` and `CatalogueCategoryRepo` repos.
@@ -46,6 +49,7 @@ class CatalogueItemService:
         """
         self._catalogue_item_repository = catalogue_item_repository
         self._catalogue_category_repository = catalogue_category_repository
+        self._manufacturer_repository = manufacturer_repository
 
     def create(self, catalogue_item: CatalogueItemPostRequestSchema) -> CatalogueItemOut:
         """
@@ -64,6 +68,11 @@ class CatalogueItemService:
         catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
         if not catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+        
+        manufacturer_id = catalogue_item.manufacturer_id
+        manufacturer = self._manufacturer_repository.get(manufacturer_id)
+        if not manufacturer:
+            raise MissingManufacturerRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
         if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")

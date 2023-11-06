@@ -17,24 +17,6 @@ class Property(BaseModel):
     value: Any
     unit: Optional[str] = None
 
-
-class Manufacturer(BaseModel):
-    """Input database model for a manufacturer"""
-
-    name: str
-    url: HttpUrl
-    address: str
-
-    @field_serializer("url")
-    def serialize_url(self, url: HttpUrl):
-        """
-        Convert `url` to string when the model is dumped.
-        :param url: The `HttpUrl` object.
-        :return: The URL as a string.
-        """
-        return str(url)
-
-
 class CatalogueItemIn(BaseModel):
     """
     Input database model for a catalogue item.
@@ -46,7 +28,7 @@ class CatalogueItemIn(BaseModel):
     properties: List[Property] = []
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
-    manufacturer: Manufacturer
+    manufacturer_id: str
 
     @field_validator("properties", mode="before")
     @classmethod

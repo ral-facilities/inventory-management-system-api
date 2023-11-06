@@ -49,7 +49,10 @@ class MissingRecordError(DatabaseError):
     """
     A specific database record was requested but could not be found.
     """
-
+class MissingManufacturerRecordError(DatabaseError):
+    """
+    A manufacturer database record was requested but could not be found
+    """
 
 class ChildrenElementsExistError(DatabaseError):
     """
