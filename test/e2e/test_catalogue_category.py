@@ -3,7 +3,6 @@
 End-to-End tests for the catalogue category router.
 """
 from unittest.mock import ANY
-from test.e2e.test_catalogue_item import MANUFACTURER
 from bson import ObjectId
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
@@ -55,6 +54,8 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
     ],
 }
+
+MANUFACTURER = {"name": "Manufacturer D", "url": "https://example.com", "address": "1 Example Street"}
 
 
 def _post_nested_catalogue_categories(test_client, entities: list[dict]):

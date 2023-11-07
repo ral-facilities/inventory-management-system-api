@@ -45,6 +45,7 @@ class CatalogueItemService:
 
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
+        :param manufacturer_repository: The `ManufacturerRepo` repository to use.
         """
         self._catalogue_item_repository = catalogue_item_repository
         self._catalogue_category_repository = catalogue_category_repository
@@ -60,7 +61,7 @@ class CatalogueItemService:
 
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
-        :raises MissingRecordError: If the catalogue category does not exist.
+        :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCategoryError: If the catalogue category is not a leaf category.
         """
         catalogue_category_id = catalogue_item.catalogue_category_id

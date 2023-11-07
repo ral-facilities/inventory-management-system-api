@@ -27,8 +27,6 @@ class CatalogueItemIn(BaseModel):
     name: str
     description: str
     properties: List[Property] = []
-    # pylint: disable=fixme
-    # TODO - Change from manufacturer to manufacturer id
     manufacturer_id: str
 
     @field_validator("properties", mode="before")

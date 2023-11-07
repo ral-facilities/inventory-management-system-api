@@ -51,12 +51,6 @@ class MissingRecordError(DatabaseError):
     """
 
 
-class MissingManufacturerRecordError(DatabaseError):
-    """
-    A manufacturer database record was requested but could not be found
-    """
-
-
 class ChildrenElementsExistError(DatabaseError):
     """
     Exception raised when attempting to delete or update a catalogue category that has children elements.
