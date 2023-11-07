@@ -31,6 +31,7 @@ def test_create_manufacturer(test_client):
     assert manufacturer["address"] == manufacturer_post["address"]
     assert manufacturer["telephone"] == manufacturer_post["telephone"]
 
+
 def test_create_manufacturer_with_only_mandatory_fields(test_client):
     """Test creating a manufacturer with only mandatory fields"""
     manufacturer_post = {
@@ -49,7 +50,7 @@ def test_create_manufacturer_with_only_mandatory_fields(test_client):
     assert manufacturer["address"]["building_number"] == manufacturer_post["address"]["building_number"]
     assert manufacturer["address"]["street_name"] == manufacturer_post["address"]["street_name"]
     assert manufacturer["address"]["postcode"] == manufacturer_post["address"]["postcode"]
-    
+
 
 def test_check_duplicate_name_within_manufacturer(test_client):
     """Test creating a manufactuer with a duplicate name"""
