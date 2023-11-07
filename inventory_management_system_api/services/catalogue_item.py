@@ -68,6 +68,12 @@ class CatalogueItemService:
         if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
+        obsolete_replace_catalogue_item_id = catalogue_item.obsolete_replace_catalogue_item_id
+        if obsolete_replace_catalogue_item_id and not self._catalogue_item_repository.get(
+            obsolete_replace_catalogue_item_id
+        ):
+            raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replace_catalogue_item_id}")
+
         defined_properties = catalogue_category.catalogue_item_properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
         supplied_properties = self._process_catalogue_item_properties(defined_properties, supplied_properties)
