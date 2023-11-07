@@ -31,6 +31,25 @@ def test_create_manufacturer(test_client):
     assert manufacturer["address"] == manufacturer_post["address"]
     assert manufacturer["telephone"] == manufacturer_post["telephone"]
 
+def test_create_manufacturer_with_only_mandatory_fields(test_client):
+    """Test creating a manufacturer with only mandatory fields"""
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "address": {
+            "building_number": "1",
+            "street_name": "Example Street",
+            "postcode": "OX1 2AB",
+        },
+    }
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+    assert response.status_code == 201
+    manufacturer = response.json()
+
+    assert manufacturer["name"] == manufacturer_post["name"]
+    assert manufacturer["address"]["building_number"] == manufacturer_post["address"]["building_number"]
+    assert manufacturer["address"]["street_name"] == manufacturer_post["address"]["street_name"]
+    assert manufacturer["address"]["postcode"] == manufacturer_post["address"]["postcode"]
+    
 
 def test_check_duplicate_name_within_manufacturer(test_client):
     """Test creating a manufactuer with a duplicate name"""
