@@ -156,6 +156,15 @@ class CatalogueItemService:
                 # Get the new `catalogue_item` state
                 update_data = catalogue_item.model_dump(exclude_unset=True)
 
+        if "obsolete_replace_catalogue_item_id" in update_data:
+            obsolete_replace_catalogue_item_id = catalogue_item.obsolete_replace_catalogue_item_id
+            if (
+                obsolete_replace_catalogue_item_id
+                and obsolete_replace_catalogue_item_id != stored_catalogue_item.obsolete_replace_catalogue_item_id
+                and not self._catalogue_item_repository.get(obsolete_replace_catalogue_item_id)
+            ):
+                raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replace_catalogue_item_id}")
+
         if "properties" in update_data:
             if not catalogue_category:
                 catalogue_category = self._catalogue_category_repository.get(

@@ -128,6 +128,14 @@ def partial_update_catalogue_item(
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
+        if (
+            catalogue_item.obsolete_replace_catalogue_item_id
+            and catalogue_item.obsolete_replace_catalogue_item_id in str(exc)
+        ):
+            message = "The specified replacement catalogue item ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
         message = "A catalogue item with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
