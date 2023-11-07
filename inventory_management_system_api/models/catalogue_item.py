@@ -53,7 +53,7 @@ class CatalogueItemIn(BaseModel):
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
-    obsolete_replace_catalogue_item_id: Optional[CustomObjectIdField] = None
+    obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
     properties: List[Property] = []
 
     @field_validator("properties", mode="before")
@@ -89,5 +89,5 @@ class CatalogueItemOut(CatalogueItemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
-    obsolete_replace_catalogue_item_id: Optional[StringObjectIdField] = None
+    obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

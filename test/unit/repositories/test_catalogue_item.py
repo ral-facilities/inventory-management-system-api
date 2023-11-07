@@ -28,7 +28,7 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "item_model_number": "abc123",
     "is_obsolete": False,
     "obsolete_reason": None,
-    "obsolete_replace_catalogue_item_id": None,
+    "obsolete_replacement_catalogue_item_id": None,
     "properties": [
         {"name": "Property A", "value": 20, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
@@ -53,7 +53,7 @@ FULL_CATALOGUE_ITEM_B_INFO = {
     "item_model_number": None,
     "is_obsolete": False,
     "obsolete_reason": None,
-    "obsolete_replace_catalogue_item_id": None,
+    "obsolete_replacement_catalogue_item_id": None,
     "properties": [{"name": "Property A", "value": True, "unit": None}],
 }
 # pylint: enable=duplicate-code

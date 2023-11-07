@@ -48,7 +48,7 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "days_to_rework": None,
     "drawing_number": None,
     "obsolete_reason": None,
-    "obsolete_replace_catalogue_item_id": None,
+    "obsolete_replacement_catalogue_item_id": None,
     "properties": [
         {"name": "Property A", "value": 20, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
@@ -161,20 +161,20 @@ def test_create_in_non_leaf_catalogue_category(
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
 
-def test_create_with_obsolete_replace_catalogue_item_id(
+def test_create_with_obsolete_replacement_catalogue_item_id(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
     Test creating a catalogue item with an obsolete replac catalogue item ID.
     """
-    obsolete_replace_catalogue_item_id = str(ObjectId())
+    obsolete_replacement_catalogue_item_id = str(ObjectId())
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "is_obsolete": True,
-            "obsolete_replace_catalogue_item_id": obsolete_replace_catalogue_item_id,
+            "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
         },
     )
 
@@ -187,7 +187,7 @@ def test_create_with_obsolete_replace_catalogue_item_id(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=obsolete_replace_catalogue_item_id,
+            id=obsolete_replacement_catalogue_item_id,
             catalogue_category_id=catalogue_item.catalogue_category_id,
             **{**FULL_CATALOGUE_ITEM_A_INFO, "name": "Catalogue Item B", "description": "This is Catalogue Item B"},
         ),
@@ -201,33 +201,33 @@ def test_create_with_obsolete_replace_catalogue_item_id(
             **{
                 **CATALOGUE_ITEM_A_INFO,
                 "is_obsolete": True,
-                "obsolete_replace_catalogue_item_id": obsolete_replace_catalogue_item_id,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
             },
         )
     )
 
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_item.catalogue_category_id)
-    catalogue_item_repository_mock.get.assert_called_once_with(obsolete_replace_catalogue_item_id)
+    catalogue_item_repository_mock.get.assert_called_once_with(obsolete_replacement_catalogue_item_id)
     catalogue_item_repository_mock.create.assert_called_once_with(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "is_obsolete": True,
-                "obsolete_replace_catalogue_item_id": obsolete_replace_catalogue_item_id,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
             },
         )
     )
     assert created_catalogue_item == catalogue_item
 
 
-def test_create_with_non_existent_obsolete_replace_catalogue_item_id(
+def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test creating a catalogue item with a nonexistent obsolete replace catalogue item ID.
+    Test creating a catalogue item with a nonexistent obsolete replacement catalogue item ID.
 
-    Verify that the `create` method properly handles a catalogue item with a nonexistent obsolete replace catalogue
+    Verify that the `create` method properly handles a catalogue item with a nonexistent obsolete replacement catalogue
     item ID, does not find a catalogue item with such ID, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_A_INFO)
@@ -238,7 +238,7 @@ def test_create_with_non_existent_obsolete_replace_catalogue_item_id(
     # Mock `get` to not return a catalogue item
     test_helpers.mock_get(catalogue_item_repository_mock, None)
 
-    obsolete_replace_catalogue_item_id = str(ObjectId())
+    obsolete_replacement_catalogue_item_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.create(
             CatalogueItemPostRequestSchema(
@@ -246,13 +246,13 @@ def test_create_with_non_existent_obsolete_replace_catalogue_item_id(
                 **{
                     **FULL_CATALOGUE_ITEM_A_INFO,
                     "is_obsolete": True,
-                    "obsolete_replace_catalogue_item_id": obsolete_replace_catalogue_item_id,
+                    "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
                 },
             ),
         )
-    assert str(exc.value) == f"No catalogue item found with ID: {obsolete_replace_catalogue_item_id}"
+    assert str(exc.value) == f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
-    catalogue_item_repository_mock.get.assert_called_once_with(obsolete_replace_catalogue_item_id)
+    catalogue_item_repository_mock.get.assert_called_once_with(obsolete_replacement_catalogue_item_id)
 
 
 def test_create_without_properties(
@@ -772,20 +772,20 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
     assert str(exc.value) == "Cannot add catalogue item to a non-leaf catalogue category"
 
 
-def test_update_with_obsolete_replace_catalogue_item_id(
+def test_update_with_obsolete_replacement_catalogue_item_id(
     test_helpers, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test updating a catalogue item with an obsolete replace catalogue item ID.
+    Test updating a catalogue item with an obsolete replacement catalogue item ID.
     """
-    obsolete_replace_catalogue_item_id = str(ObjectId())
+    obsolete_replacement_catalogue_item_id = str(ObjectId())
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "is_obsolete": True,
-            "obsolete_replace_catalogue_item_id": obsolete_replace_catalogue_item_id,
+            "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
         },
     )
 
@@ -800,7 +800,7 @@ def test_update_with_obsolete_replace_catalogue_item_id(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=obsolete_replace_catalogue_item_id,
+            id=obsolete_replacement_catalogue_item_id,
             catalogue_category_id=catalogue_item.catalogue_category_id,
             **{**FULL_CATALOGUE_ITEM_A_INFO, "name": "Catalogue Item B", "description": "This is Catalogue Item B"},
         ),
@@ -811,7 +811,7 @@ def test_update_with_obsolete_replace_catalogue_item_id(
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
         CatalogueItemPatchRequestSchema(
-            is_obsolete=True, obsolete_replace_catalogue_item_id=obsolete_replace_catalogue_item_id
+            is_obsolete=True, obsolete_replacement_catalogue_item_id=obsolete_replacement_catalogue_item_id
         ),
     )
 
@@ -822,18 +822,18 @@ def test_update_with_obsolete_replace_catalogue_item_id(
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "is_obsolete": True,
-                "obsolete_replace_catalogue_item_id": obsolete_replace_catalogue_item_id,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
             },
         ),
     )
     assert updated_catalogue_item == catalogue_item
 
 
-def test_update_with_non_existent_obsolete_replace_catalogue_item_id(
+def test_update_with_non_existent_obsolete_replacement_catalogue_item_id(
     test_helpers, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test updating a catalogue item with a non-existent obsolete replace catalogue item ID.
+    Test updating a catalogue item with a non-existent obsolete replacement catalogue item ID.
     """
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
@@ -844,17 +844,17 @@ def test_update_with_non_existent_obsolete_replace_catalogue_item_id(
     # Mock `get` to not return a replacement catalogue item
     test_helpers.mock_get(catalogue_item_repository_mock, None)
 
-    obsolete_replace_catalogue_item_id = str(ObjectId())
+    obsolete_replacement_catalogue_item_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
             CatalogueItemPatchRequestSchema(
-                is_obsolete=True, obsolete_replace_catalogue_item_id=obsolete_replace_catalogue_item_id
+                is_obsolete=True, obsolete_replacement_catalogue_item_id=obsolete_replacement_catalogue_item_id
             ),
         )
-    assert str(exc.value) == f"No catalogue item found with ID: {obsolete_replace_catalogue_item_id}"
+    assert str(exc.value) == f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
     catalogue_item_repository_mock.get.assert_has_calls(
-        [call(catalogue_item.id), call(obsolete_replace_catalogue_item_id)]
+        [call(catalogue_item.id), call(obsolete_replacement_catalogue_item_id)]
     )
 
 

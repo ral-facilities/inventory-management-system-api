@@ -52,7 +52,7 @@ CATALOGUE_ITEM_POST_A_EXPECTED = {
     "days_to_rework": None,
     "drawing_number": None,
     "obsolete_reason": None,
-    "obsolete_replace_catalogue_item_id": None,
+    "obsolete_replacement_catalogue_item_id": None,
     "properties": [
         {"name": "Property A", "value": 20, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
@@ -84,7 +84,7 @@ CATALOGUE_ITEM_POST_B_EXPECTED = {
     "drawing_link": None,
     "item_model_number": None,
     "obsolete_reason": None,
-    "obsolete_replace_catalogue_item_id": None,
+    "obsolete_replacement_catalogue_item_id": None,
     "properties": [{"name": "Property A", "value": True, "unit": None}],
 }
 
@@ -142,9 +142,9 @@ def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
     assert response.json()["detail"] == "Adding a catalogue item to a non-leaf catalogue category is not allowed"
 
 
-def test_create_catalogue_item_with_obsolete_replace_catalogue_item_id(test_client):
+def test_create_catalogue_item_with_obsolete_replacement_catalogue_item_id(test_client):
     """
-    Test creating a catalogue item with an obsolete replace catalogue item ID.
+    Test creating a catalogue item with an obsolete replacement catalogue item ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_a_id = response.json()["id"]
@@ -159,7 +159,7 @@ def test_create_catalogue_item_with_obsolete_replace_catalogue_item_id(test_clie
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b_id,
         "is_obsolete": True,
-        "obsolete_replace_catalogue_item_id": catalogue_item_a_id,
+        "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
 
@@ -171,13 +171,13 @@ def test_create_catalogue_item_with_obsolete_replace_catalogue_item_id(test_clie
         **CATALOGUE_ITEM_POST_B_EXPECTED,
         "catalogue_category_id": catalogue_category_b_id,
         "is_obsolete": True,
-        "obsolete_replace_catalogue_item_id": catalogue_item_a_id,
+        "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
     }
 
 
-def test_create_catalogue_item_with_invalid_obsolete_replace_catalogue_item_id(test_client):
+def test_create_catalogue_item_with_invalid_obsolete_replacement_catalogue_item_id(test_client):
     """
-    Test creating a catalogue item with an non-existent obsolete replace catalogue item ID.
+    Test creating a catalogue item with an non-existent obsolete replacement catalogue item ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 
@@ -185,7 +185,7 @@ def test_create_catalogue_item_with_invalid_obsolete_replace_catalogue_item_id(t
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": response.json()["id"],
         "is_obsolete": True,
-        "obsolete_replace_catalogue_item_id": "invalid",
+        "obsolete_replacement_catalogue_item_id": "invalid",
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -193,9 +193,9 @@ def test_create_catalogue_item_with_invalid_obsolete_replace_catalogue_item_id(t
     assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
 
 
-def test_create_catalogue_item_with_non_existent_obsolete_replace_catalogue_item_id(test_client):
+def test_create_catalogue_item_with_non_existent_obsolete_replacement_catalogue_item_id(test_client):
     """
-    Test creating a catalogue item with an non-existent obsolete replace catalogue item ID.
+    Test creating a catalogue item with an non-existent obsolete replacement catalogue item ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 
@@ -203,7 +203,7 @@ def test_create_catalogue_item_with_non_existent_obsolete_replace_catalogue_item
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": response.json()["id"],
         "is_obsolete": True,
-        "obsolete_replace_catalogue_item_id": str(ObjectId()),
+        "obsolete_replacement_catalogue_item_id": str(ObjectId()),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -742,9 +742,9 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_children
     # TODO - Implement this test when the relevant item logic is implemented.
 
 
-def test_partial_update_catalogue_item_change_obsolete_replace_catalogue_item_id(test_client):
+def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id(test_client):
     """
-    Test updating a catalogue item with an obsolete replace catalogue item ID.
+    Test updating a catalogue item with an obsolete replacement catalogue item ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_a_id = response.json()["id"]
@@ -758,7 +758,7 @@ def test_partial_update_catalogue_item_change_obsolete_replace_catalogue_item_id
     catalogue_item_post_b = {**CATALOGUE_ITEM_POST_B, "catalogue_category_id": catalogue_category_b_id}
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
 
-    catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replace_catalogue_item_id": catalogue_item_a_id}
+    catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": catalogue_item_a_id}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
 
     assert response.status_code == 200
@@ -769,36 +769,36 @@ def test_partial_update_catalogue_item_change_obsolete_replace_catalogue_item_id
         **CATALOGUE_ITEM_POST_B_EXPECTED,
         "catalogue_category_id": catalogue_category_b_id,
         "is_obsolete": True,
-        "obsolete_replace_catalogue_item_id": catalogue_item_a_id,
+        "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
     }
 
 
-def test_partial_update_catalogue_item_change_obsolete_replace_catalogue_item_id_invalid_id(test_client):
+def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id_invalid_id(test_client):
     """
-    Test updating a catalogue item with an invalid obsolete replace catalogue item ID.
+    Test updating a catalogue item with an invalid obsolete replacement catalogue item ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 
     catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"]}
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replace_catalogue_item_id": "invalid"}
+    catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": "invalid"}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
 
     assert response.status_code == 422
     assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
 
 
-def test_partial_update_catalogue_item_change_obsolete_replace_catalogue_item_id_non_existent_id(test_client):
+def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id_non_existent_id(test_client):
     """
-    Test updating a catalogue item with aa non-existent obsolete replace catalogue item ID.
+    Test updating a catalogue item with aa non-existent obsolete replacement catalogue item ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 
     catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"]}
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replace_catalogue_item_id": str(ObjectId())}
+    catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": str(ObjectId())}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
 
     assert response.status_code == 422
