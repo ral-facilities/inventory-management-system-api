@@ -32,7 +32,7 @@ class Manufacturer(BaseModel):
         :param url: The `HttpUrl` object.
         :return: The URL as a string.
         """
-        return str(url)
+        return url if url is None else str(url)
 
 
 class CatalogueItemIn(BaseModel):
@@ -79,7 +79,7 @@ class CatalogueItemIn(BaseModel):
         :param url: The `HttpUrl` object.
         :return: The URL as a string.
         """
-        return str(url)
+        return url if url is None else str(url)
 
 
 class CatalogueItemOut(CatalogueItemIn):

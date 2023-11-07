@@ -21,7 +21,7 @@ class ManufacturerIn(BaseModel):
         :param url: The `HttpUrl` object.
         :return: The URL as a string.
         """
-        return str(url)
+        return url if url is None else str(url)
 
 
 class ManufacturerOut(ManufacturerIn):
