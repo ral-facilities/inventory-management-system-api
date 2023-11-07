@@ -195,9 +195,7 @@ def test_update(test_client):
     manufacturer_patch = {
         "name": "Manufacturer B",
         "url": "http://test.co.uk/",
-        "address": {
-            "building_number": "2"
-        },
+        "address": {"building_number": "2"},
         "telephone": "07569585584",
     }
     response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
@@ -238,9 +236,8 @@ def test_partial_address_update(test_client):
 
     assert response.status_code == 200
     manufacturer = response.json()
-    
+
     assert manufacturer["address"]["street_name"] == manufacturer_patch["address"]["street_name"]
-   
 
 
 def test_update_with_invalid_id(test_client):
