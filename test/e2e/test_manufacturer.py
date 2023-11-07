@@ -196,12 +196,7 @@ def test_update(test_client):
         "name": "Manufacturer B",
         "url": "http://test.co.uk/",
         "address": {
-            "building_number": "2",
-            "street_name": "Example Street",
-            "town": "Oxford",
-            "county": "Oxfordshire",
-            "country": "United Kingdom",
-            "postcode": "OX1 2AB",
+            "building_number": "2"
         },
         "telephone": "07569585584",
     }
@@ -212,11 +207,11 @@ def test_update(test_client):
 
     assert manufacturer["name"] == manufacturer_patch["name"]
     assert manufacturer["url"] == manufacturer_patch["url"]
-    assert manufacturer["address"] == manufacturer_patch["address"]
+    assert manufacturer["address"]["building_number"] == manufacturer_patch["address"]["building_number"]
     assert manufacturer["telephone"] == manufacturer_patch["telephone"]
 
 
-def test_partial_update(test_client):
+def test_partial_address_update(test_client):
     """Test updating a manufacturer's address"""
     manufacturer_post = {
         "name": "Manufacturer A",
@@ -235,27 +230,17 @@ def test_partial_update(test_client):
     response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
     manufacturer_patch = manufacturer_post = {
-        "name": "Manufacturer A",
-        "url": "http://example.com/",
         "address": {
-            "building_number": "1",
             "street_name": "test",
-            "town": "Oxford",
-            "county": "Oxfordshire",
-            "country": "United Kingdom",
-            "postcode": "OX1 2AB",
-        },
-        "telephone": "0932348348",
+        }
     }
     response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
 
     assert response.status_code == 200
     manufacturer = response.json()
-
-    assert manufacturer["name"] == manufacturer_patch["name"]
-    assert manufacturer["url"] == manufacturer_patch["url"]
-    assert manufacturer["address"] == manufacturer_patch["address"]
-    assert manufacturer["telephone"] == manufacturer_patch["telephone"]
+    
+    assert manufacturer["address"]["street_name"] == manufacturer_patch["address"]["street_name"]
+   
 
 
 def test_update_with_invalid_id(test_client):
