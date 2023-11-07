@@ -56,6 +56,22 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     ],
 }
 
+# pylint: disable=duplicate-code
+CATALOGUE_ITEM_POST_A = {
+    "manufacturer": {
+        "name": "Manufacturer A",
+        "address": "1 Address, City, Country, Postcode",
+        "url": "https://www.manufacturer-a.co.uk/",
+    },
+    "name": "Catalogue Item A",
+    "description": "This is Catalogue Item A",
+    "cost_gbp": 129.99,
+    "days_to_replace": 2.0,
+    "is_obsolete": False,
+    "properties": [{"name": "Property B", "value": False}],
+}
+# pylint: enable=duplicate-code
+
 
 def _post_nested_catalogue_categories(test_client, entities: list[dict]):
     """Utility function for posting a set of mock catalogue categories where each successive entity should
@@ -311,17 +327,7 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_id}
 
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -567,17 +573,7 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_id}
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {"name": "Category D"}
@@ -687,17 +683,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_id}
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {"is_leaf": False}
@@ -812,17 +798,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_c_id = response.json()["id"]
 
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_c_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_c_id}
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {"parent_id": catalogue_category_a_id}
@@ -1003,17 +979,7 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
     catalogue_category_id = response.json()["id"]
 
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_id}
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {
