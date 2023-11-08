@@ -31,6 +31,26 @@ def test_create_manufacturer(test_client):
     assert manufacturer["telephone"] == manufacturer_post["telephone"]
 
 
+def test_create_manufacturer_with_only_mandatory_fields(test_client):
+    """Test creating a manufacturer with only mandatory fields"""
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "address": {
+            "building_number": "1",
+            "street_name": "Example Street",
+            "postcode": "OX1 2AB",
+        },
+    }
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+    assert response.status_code == 201
+    manufacturer = response.json()
+
+    assert manufacturer["name"] == manufacturer_post["name"]
+    assert manufacturer["address"]["building_number"] == manufacturer_post["address"]["building_number"]
+    assert manufacturer["address"]["street_name"] == manufacturer_post["address"]["street_name"]
+    assert manufacturer["address"]["postcode"] == manufacturer_post["address"]["postcode"]
+
+
 def test_check_duplicate_name_within_manufacturer(test_client):
     """Test creating a manufactuer with a duplicate name"""
 
@@ -188,13 +208,7 @@ def test_update(test_client):
     manufacturer_patch = {
         "name": "Manufacturer B",
         "url": "http://test.co.uk/",
-        "address": {
-            "address_line": "1 Example Street",
-            "town": "Oxford",
-            "county": "Oxfordshire",
-            "country": "United Kingdom",
-            "postcode": "OX1 2AB",
-        },
+        "address": {"building_number": "2"},
         "telephone": "07569585584",
     }
     response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
@@ -204,11 +218,11 @@ def test_update(test_client):
 
     assert manufacturer["name"] == manufacturer_patch["name"]
     assert manufacturer["url"] == manufacturer_patch["url"]
-    assert manufacturer["address"] == manufacturer_patch["address"]
+    assert manufacturer["address"] == {**manufacturer_post["address"], **manufacturer_patch["address"]}
     assert manufacturer["telephone"] == manufacturer_patch["telephone"]
 
 
-def test_partial_update(test_client):
+def test_partial_address_update(test_client):
     """Test updating a manufacturer's address"""
     manufacturer_post = {
         "name": "Manufacturer A",
@@ -225,27 +239,17 @@ def test_partial_update(test_client):
 
     response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
-    manufacturer_patch = manufacturer_post = {
-        "name": "Manufacturer A",
-        "url": "http://example.com/",
+    manufacturer_patch = {
         "address": {
-            "address_line": "1 Example Street",
-            "town": "Oxford",
-            "county": "Oxfordshire",
-            "country": "United Kingdom",
-            "postcode": "OX1 2AB",
-        },
-        "telephone": "0932348348",
+            "street_name": "test",
+        }
     }
     response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
 
     assert response.status_code == 200
     manufacturer = response.json()
 
-    assert manufacturer["name"] == manufacturer_patch["name"]
-    assert manufacturer["url"] == manufacturer_patch["url"]
-    assert manufacturer["address"] == manufacturer_patch["address"]
-    assert manufacturer["telephone"] == manufacturer_patch["telephone"]
+    assert manufacturer["address"] == {**manufacturer_post["address"], **manufacturer_patch["address"]}
 
 
 def test_update_with_invalid_id(test_client):

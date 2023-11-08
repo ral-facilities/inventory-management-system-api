@@ -196,9 +196,7 @@ def test_partial_update_of_address(test_helpers, manufacturer_repository_mock, m
 
     updated_manufacturer = manufacturer_service.update(
         manufacturer.id,
-        ManufacturerPatchRequestSchema(
-            address={"address_line": "test", "postcode": "AB1 2CD", "country": "United Kingdom"}
-        ),
+        ManufacturerPatchRequestSchema(address={"address_line": "test"}),
     )
 
     manufacturer_repository_mock.update.assert_called_once_with(
