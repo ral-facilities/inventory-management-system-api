@@ -31,7 +31,7 @@ class ManufacturerRepo:
         """
 
         self._database = database
-        self._collection: Collection = self._database.manufacturer
+        self._manufacturers_collection: Collection = self._database.manufacturers
         self._catalogue_item_collection: Collection = self._database.catalogue_items
 
     def create(self, manufacturer: ManufacturerIn) -> ManufacturerOut:
@@ -48,7 +48,7 @@ class ManufacturerRepo:
 
         logger.info("Inserting new manufacturer into database")
 
-        result = self._collection.insert_one(manufacturer.model_dump())
+        result = self._manufacturers_collection.insert_one(manufacturer.model_dump())
         manufacturer = self.get(str(result.inserted_id))
 
         return manufacturer
@@ -64,7 +64,7 @@ class ManufacturerRepo:
         manufacturer_id = CustomObjectId(manufacturer_id)
 
         logger.info("Retrieving manufacturer with ID %s from database", manufacturer_id)
-        manufacturer = self._collection.find_one({"_id": manufacturer_id})
+        manufacturer = self._manufacturers_collection.find_one({"_id": manufacturer_id})
         if manufacturer:
             return ManufacturerOut(**manufacturer)
         return None
@@ -77,7 +77,7 @@ class ManufacturerRepo:
 
         logger.info("Getting all manufacturers from database")
 
-        manufacturers = self._collection.find()
+        manufacturers = self._manufacturers_collection.find()
 
         return [ManufacturerOut(**manufacturer) for manufacturer in manufacturers]
 
@@ -86,15 +86,20 @@ class ManufacturerRepo:
 
         :param: manufacturer_id: The id of the manufacturer to be updated
         :param: manufacturer: The manufacturer with the update data
+
+        :raises: DuplicateRecordError: if changed manufacturer name is a duplicate name
+
+        :returns: the updated manufacturer
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        if self._is_duplicate_manufacturer(manufacturer.code):
-            raise DuplicateRecordError("Duplicate manufacturer found")
 
-        if not self.get(str(manufacturer_id)):
-            raise MissingRecordError("The specified manufacturer does not exist")
+        stored_manufacturer = self.get(str(manufacturer_id))
+        if stored_manufacturer.name != manufacturer.name:
+            if self._is_duplicate_manufacturer(manufacturer.code):
+                raise DuplicateRecordError("Duplicate manufacturer found")
+
         logger.info("Updating manufacturer with ID %s", manufacturer_id)
-        self._collection.update_one({"_id": manufacturer_id}, {"$set": manufacturer.model_dump()})
+        self._manufacturers_collection.update_one({"_id": manufacturer_id}, {"$set": manufacturer.model_dump()})
 
         manufacturer = self.get(str(manufacturer_id))
         return manufacturer
@@ -105,33 +110,36 @@ class ManufacturerRepo:
         Checks if manufactuer is a part of an item, and does not delete if it is
 
         :param manufacturer_id: The ID of the manufacturer to delete
-        :raises ExistIn
+        :raises PartOfCatalogueItemError: if manufacturer is a part of a catalogue item
+        :raises MissingRecordError: if supplied manufacturer ID does not exist in the database
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        if self.is_manufacturer_in_catalogue_item(str(manufacturer_id)):
-            raise PartOfCatalogueItemError("The specified manufacturer is a part of a Catalogue Item")
+        if self._is_manufacturer_in_catalogue_item(str(manufacturer_id)):
+            raise PartOfCatalogueItemError(
+                f"The manufacturer with id {str(manufacturer_id)} is a part of a Catalogue Item"
+            )
 
         logger.info("Deleting manufacturer with ID %s from the database", manufacturer_id)
-        result = self._collection.delete_one({"_id": manufacturer_id})
+        result = self._manufacturers_collection.delete_one({"_id": manufacturer_id})
         if result.deleted_count == 0:
             raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
 
     def _is_duplicate_manufacturer(self, code: str) -> bool:
         """
-        Check if manufacturer with the same url already exists in the manufacturer collection
+        Check if manufacturer with the same name already exists in the manufacturer collection
 
         :param code: The code of the manufacturer to check for duplicates.
         :return `True` if duplicate manufacturer, `False` otherwise
         """
         logger.info("Checking if manufacturer with code '%s' already exists", code)
-        count = self._collection.count_documents({"code": code})
+        count = self._manufacturers_collection.count_documents({"code": code})
         return count > 0
 
-    def is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
+    def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
         """Checks to see if any of the documents in the database have a specific manufactuer id
 
         :param manufacturer_id: The ID of the manufacturer that is looked for
-        :return Returns True if 1 or more documents have the manufacturer ID, false if none do
+        :return: Returns True if 1 or more documents have the manufacturer ID, false if none do
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         count = self._catalogue_item_collection.count_documents({"manufacturer_id": manufacturer_id})

@@ -573,7 +573,7 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
         "properties": [{"name": "Property B", "value": False}],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -816,7 +816,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
         "properties": [{"name": "Property B", "value": False}],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
