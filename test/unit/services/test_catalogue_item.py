@@ -50,7 +50,7 @@ def test_create(
         ],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -205,7 +205,7 @@ def test_create_without_properties(
         properties=[],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -503,7 +503,7 @@ def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_servic
         ],
         manufacturer=Manufacturer(
             name="Manufacturer A",
-            address="1 Address, City, Country, Postcode",
+            address="1 Address, City, Country, postcode",
             url="https://www.manufacturer-a.co.uk",
         ),
     )
@@ -567,7 +567,7 @@ def test_update(test_helpers, catalogue_item_repository_mock, catalogue_item_ser
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -635,7 +635,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
         ],
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -697,7 +697,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -773,7 +773,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -830,7 +830,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
     }
@@ -902,7 +902,7 @@ def test_update_with_nonexistent_catalogue_category_id(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [],
@@ -935,7 +935,7 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [],
@@ -982,7 +982,7 @@ def test_update_add_non_mandatory_property(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -1048,7 +1048,7 @@ def test_update_remove_non_mandatory_property(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -1112,7 +1112,7 @@ def test_update_remove_mandatory_property(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -1170,7 +1170,7 @@ def test_update_change_property_value(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -1237,7 +1237,7 @@ def test_update_change_value_for_string_property_invalid_type(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -1294,7 +1294,7 @@ def test_update_change_value_for_number_property_invalid_type(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [
@@ -1351,7 +1351,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
         "description": "This is Catalogue Item A",
         "manufacturer": {
             "name": "Manufacturer A",
-            "address": "1 Address, City, Country, Postcode",
+            "address": "1 Address, City, Country, postcode",
             "url": "https://www.manufacturer-a.co.uk",
         },
         "properties": [

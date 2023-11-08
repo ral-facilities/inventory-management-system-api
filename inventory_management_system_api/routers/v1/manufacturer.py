@@ -4,7 +4,7 @@ Module for providing an API router which defines routes for managing manufacture
 """
 import logging
 from typing import List
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException, Path
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -13,7 +13,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 
 from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchRequstSchema,
+    ManufacturerPatchRequestSchema,
     ManufacturerPostRequestSchema,
     ManufacturerSchema,
 )
@@ -22,7 +22,7 @@ from inventory_management_system_api.services.manufacturer import ManufacturerSe
 
 logger = logging.getLogger()
 
-router = APIRouter(prefix="/v1/manufacturer", tags=["manufacturer"])
+router = APIRouter(prefix="/v1/manufacturers", tags=["manufacturers"])
 
 
 @router.post(
@@ -68,7 +68,8 @@ def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends())
     response_description="Single manufacturer",
 )
 def get_one_manufacturer(
-    manufacturer_id: str, manufacturer_service: ManufacturerService = Depends()
+    manufacturer_id: str = Path(description="The ID of the manufacturer to be retrieved"),
+    manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturer with ID %s", manufacturer_id)
@@ -93,8 +94,8 @@ def get_one_manufacturer(
     response_description="Manufacturer updated successfully",
 )
 def edit_manufacturer(
-    manufacturer: ManufacturerPatchRequstSchema,
-    manufacturer_id: str,
+    manufacturer: ManufacturerPatchRequestSchema,
+    manufacturer_id: str = Path(description="The ID of the manufacturer that is to be updated"),
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
@@ -103,10 +104,9 @@ def edit_manufacturer(
         updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
         return ManufacturerSchema(**updated_manufacturer.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        logger.exception("The specified manufacturer does not exist")
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="The specified manufacturer does not exist"
-        ) from exc
+        message = "The specified manufacturer does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A manufacturer with the same name has been found"
         logger.exception(message)
@@ -119,7 +119,10 @@ def edit_manufacturer(
     response_description="Manufacturer deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_manufacturer(manufacturer_id: str, manufacturer_service: ManufacturerService = Depends()) -> None:
+def delete_manufacturer(
+    manufacturer_id: str = Path(description="The ID of the manufacturer that is to be deleted"),
+    manufacturer_service: ManufacturerService = Depends(),
+) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting manufacturer with ID: %s", manufacturer_id)
     try:

@@ -27,4 +27,5 @@ def fixture_cleanup_database_collections():
     yield
     database.catalogue_categories.delete_many({})
     database.catalogue_items.delete_many({})
+    database.manufacturers.delete_many({})
     database.systems.delete_many({})
