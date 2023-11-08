@@ -107,6 +107,7 @@ def test_list(test_client):
         "telephone": "0932348348",
     }
     test_client.post("/v1/manufacturers", json=manufacturer_post_a)
+    # pylint: disable=duplicate-code
     manufacturer_post_b = {
         "name": "Manufacturer B",
         "url": "http://test.com/",
@@ -120,6 +121,7 @@ def test_list(test_client):
         },
         "telephone": "05940545",
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/manufacturers", json=manufacturer_post_b)
 
     response = test_client.get("/v1/manufacturers")

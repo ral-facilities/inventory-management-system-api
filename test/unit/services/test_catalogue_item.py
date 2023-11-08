@@ -25,6 +25,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
 )
+from inventory_management_system_api.schemas.manufacturer import AddressSchema
 
 
 def test_create(
@@ -78,7 +79,11 @@ def test_create(
             name="Manufacturer A",
             code="manufacturer-a",
             url="https://test.co.uk",
-            address="1 Example Street",
+            address=AddressSchema(
+                building_number="1",
+                street_name="Example Street",
+                postcode="AB1 2CD",
+            ),
         ),
     )
     # pylint: enable=duplicate-code

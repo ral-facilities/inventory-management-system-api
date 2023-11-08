@@ -29,4 +29,3 @@ def fixture_cleanup_database_collections():
     database.catalogue_items.delete_many({})
     database.manufacturers.delete_many({})
     database.systems.delete_many({})
-    database.manufacturer.delete_many({})

@@ -54,9 +54,21 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
     ],
 }
-
-MANUFACTURER = {"name": "Manufacturer D", "url": "https://example.com", "address": "1 Example Street"}
-
+# pylint: disable=duplicate-code
+MANUFACTURER = {
+    "name": "Manufacturer D",
+    "url": "http://example.com/",
+    "address": {
+        "building_number": "1",
+        "street_name": "Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "country": "United Kingdom",
+        "postcode": "OX1 2AB",
+    },
+    "telephone": "0932348348",
+}
+# pylint: enable=duplicate-code
 
 def _post_nested_catalogue_categories(test_client, entities: list[dict]):
     """Utility function for posting a set of mock catalogue categories where each successive entity should
@@ -312,7 +324,7 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer = response.json()
     catalogue_item_post = {
         "catalogue_category_id": catalogue_category_id,
@@ -686,7 +698,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer = response.json()
     catalogue_item_post = {
         "catalogue_category_id": catalogue_category_id,
@@ -999,7 +1011,7 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturer", json=MANUFACTURER)
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer = response.json()
     catalogue_item_post = {
         "catalogue_category_id": catalogue_category_id,
