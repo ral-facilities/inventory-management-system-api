@@ -39,6 +39,7 @@ MANUFACTURER = {
 }
 # pylint: enable=duplicate-code
 
+
 def get_catalogue_item_a_dict(catalogue_category_id: str, manufacturer_id: str) -> Dict:
     """
     Creates a dictionary representing catalogue item A.
@@ -126,6 +127,32 @@ def test_create_catalogue_item_with_nonexistent_catalogue_category_id(test_clien
 
     assert response.status_code == 422
     assert response.json()["detail"] == "The specified catalogue category ID does not exist"
+
+
+def test_create_catalogue_item_with_nonexistent_manufacturer_id(test_client):
+    """
+    Test creating a catalogue item with a nonexistent manufacturer id
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], str(ObjectId()))
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
+
+
+def test_create_catalogue_item_with_an_invalid_manufacturer_id(test_client):
+    """
+    Test creating a catalogue item with an invalid manufacturer id
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+    catalogue_item_post = get_catalogue_item_a_dict(catalogue_category["id"], "invalid")
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
 
 
 def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
@@ -887,11 +914,10 @@ def test_partial_update_catalogue_item_change_value_for_boolean_property_invalid
     )
 
 
-def test_partial_update_catalogue_item_change_manufacturer(test_client):
+def test_partial_update_catalogue_item_change_manufacturer_id(test_client):
     """
     Test updating the manufacturer ID of a catalogue item.
     """
-    # pylint: disable=fixme
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category = response.json()
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -936,15 +962,11 @@ def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_cl
     """/v1/manufacturers
     Test changing the manufacturer ID of a catalogue item to an invalid ID.
     """
-    # pylint: disable=fixme
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category = response.json()
-
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer = response.json()
-
     catalogue_item_post = get_catalogue_item_b_dict(catalogue_category["id"], manufacturer["id"])
-
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
@@ -960,15 +982,11 @@ def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id(tes
     """
     Test changing the manufacturer ID of a catalogue item to a nonexistent ID.
     """
-    # pylint: disable=fixme
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category = response.json()
-
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer = response.json()
-
     catalogue_item_post = get_catalogue_item_b_dict(catalogue_category["id"], manufacturer["id"])
-
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {

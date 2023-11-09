@@ -70,6 +70,7 @@ MANUFACTURER = {
 }
 # pylint: enable=duplicate-code
 
+
 def _post_nested_catalogue_categories(test_client, entities: list[dict]):
     """Utility function for posting a set of mock catalogue categories where each successive entity should
     be the parent of the next"""

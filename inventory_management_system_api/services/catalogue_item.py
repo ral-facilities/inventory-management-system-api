@@ -159,7 +159,6 @@ class CatalogueItemService:
                 # Get the new `catalogue_item` state
                 update_data = catalogue_item.model_dump(exclude_unset=True)
 
-        manufacturer = None
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
             manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
             if not manufacturer:

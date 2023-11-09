@@ -27,7 +27,7 @@ class CatalogueItemIn(BaseModel):
     name: str
     description: str
     properties: List[Property] = []
-    manufacturer_id: str
+    manufacturer_id: CustomObjectIdField
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -53,4 +53,5 @@ class CatalogueItemOut(CatalogueItemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
+    manufacturer_id: StringObjectIdField
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

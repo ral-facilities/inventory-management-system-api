@@ -37,8 +37,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
         default=None, description="The catalogue item properties"
     )
     # pylint: disable=fixme
-    # TODO - Change from manufacturer to manufacturer id
-    manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer")
+    manufacturer_id: str = Field(description="The ID of the manufacturer")
 
 
 class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
@@ -51,8 +50,6 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     )
     name: Optional[str] = Field(default=None, description="The name of the catalogue item")
     description: Optional[str] = Field(default=None, description="The catalogue item description")
-    # pylint: disable=fixme
-    # TODO - Change from manufacturer to manufacturer id
     manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer")
 
 
