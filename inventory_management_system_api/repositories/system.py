@@ -128,6 +128,32 @@ class SystemRepo:
         systems = self._systems_collection.find(query)
         return [SystemOut(**system) for system in systems]
 
+    def update(self, system_id: str, system: SystemIn) -> SystemOut:
+        """Update a system by its ID in a MongoDB database
+
+        :param system_id: ID of the System to update
+        :param system: System containing the update data
+        :return: The updated System
+        :raises MissingRecordError: If the parent System specified by `parent_id` doesn't exist
+        :raises DuplicateRecordError: If a duplicate System is found within the parent System
+        """
+        system_id = CustomObjectId(system_id)
+
+        parent_id = str(system.parent_id) if system.parent_id else None
+        if parent_id and not self.get(parent_id):
+            raise MissingRecordError(f"No parent System found with ID: {parent_id}")
+
+        stored_system = self.get(str(system_id))
+        if (system.name != stored_system.name or parent_id != stored_system.parent_id) and self._is_duplicate_system(
+            parent_id, system.code
+        ):
+            raise DuplicateRecordError("Duplicate System found within the parent System")
+
+        logger.info("Updating system with ID: %s in the database", system_id)
+        self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()})
+
+        return self.get(str(system_id))
+
     def _is_duplicate_system(self, parent_id: Optional[str], code: str) -> bool:
         """
         Check if a System with the same code already exists within the parent System

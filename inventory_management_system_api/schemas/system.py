@@ -17,7 +17,7 @@ class SystemImportanceType(str, Enum):
     HIGH = "high"
 
 
-class SystemPostRequestSchema(BaseModel):
+class SystemPostSchema(BaseModel):
     """
     Schema model for a System creation request
     """
@@ -30,9 +30,18 @@ class SystemPostRequestSchema(BaseModel):
     importance: SystemImportanceType = Field(description="Importance of the system")
 
 
-class SystemRequestSchema(SystemPostRequestSchema):
+class SystemPatchSchema(SystemPostSchema):
     """
-    Schema models for System get request response
+    Schema model for a System update request
+    """
+
+    name: Optional[str] = Field(default=None, description="Name of the system")
+    importance: Optional[SystemImportanceType] = Field(default=None, description="Importance of the system")
+
+
+class SystemSchema(SystemPostSchema):
+    """
+    Schema model for System get request response
     """
 
     id: str = Field(description="ID of the System")
