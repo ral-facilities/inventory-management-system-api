@@ -24,6 +24,31 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/systems", tags=["systems"])
 
 
+@router.post(
+    path="/",
+    summary="Create a new System",
+    response_description="The created System",
+    status_code=status.HTTP_201_CREATED,
+)
+def create_system(
+    system: SystemPostSchema, system_service: Annotated[SystemService, Depends(SystemService)]
+) -> SystemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Creating a new System")
+    logger.debug("System data: %s", system)
+    try:
+        system = system_service.create(system)
+        return SystemSchema(**system.model_dump())
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "The specified parent System ID does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except DuplicateRecordError as exc:
+        message = "A System with the same name already exists within the same parent System"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
 @router.get(path="/", summary="Get Systems", response_description="List of Systems")
 def get_systems(
     system_service: Annotated[SystemService, Depends(SystemService)],
@@ -86,31 +111,6 @@ def get_system_breadcrumbs(
     # pylint: enable=duplicate-code
 
 
-@router.post(
-    path="/",
-    summary="Create a new System",
-    response_description="The created System",
-    status_code=status.HTTP_201_CREATED,
-)
-def create_system(
-    system: SystemPostSchema, system_service: Annotated[SystemService, Depends(SystemService)]
-) -> SystemSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Creating a new System")
-    logger.debug("System data: %s", system)
-    try:
-        system = system_service.create(system)
-        return SystemSchema(**system.model_dump())
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent System ID does not exist"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except DuplicateRecordError as exc:
-        message = "A System with the same name already exists within the same parent System"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-
-
 @router.patch(path="/{system_id}", summary="Update a System by ID", response_description="System updated successfully")
 def partial_update_system(
     system_id: str, system: SystemPatchSchema, system_service: Annotated[SystemService, Depends(SystemService)]
@@ -123,9 +123,18 @@ def partial_update_system(
         updated_system = system_service.update(system_id, system)
         return SystemSchema(**updated_system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
+        if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
+            message = "The specified parent System ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
         message = "A System with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DuplicateRecordError as exc:
+        message = "A System with the same name already exists within the parent System"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.delete(

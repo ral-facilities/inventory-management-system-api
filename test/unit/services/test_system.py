@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 from bson import ObjectId
 
 from inventory_management_system_api.models.system import SystemIn, SystemOut
-from inventory_management_system_api.schemas.system import SystemPostRequestSchema
+from inventory_management_system_api.schemas.system import SystemPostSchema
 
 
 def test_create(test_helpers, system_repository_mock, system_service):
@@ -36,7 +36,7 @@ def test_create(test_helpers, system_repository_mock, system_service):
     # Mock `create` to return the created System
     test_helpers.mock_create(system_repository_mock, system)
 
-    created_system = system_service.create(SystemPostRequestSchema(**system_info))
+    created_system = system_service.create(SystemPostSchema(**system_info))
 
     system_repository_mock.create.assert_called_with(SystemIn(**full_system_info))
     assert created_system == system
@@ -93,7 +93,7 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     # Mock `create` to return the created System
     test_helpers.mock_create(system_repository_mock, system)
 
-    created_system = system_service.create(SystemPostRequestSchema(**system_info))
+    created_system = system_service.create(SystemPostSchema(**system_info))
 
     system_repository_mock.create.assert_called_with(SystemIn(**full_system_info))
     assert created_system == system
@@ -123,7 +123,7 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     # Mock `create` to return the created System
     test_helpers.mock_create(system_repository_mock, system)
 
-    created_system = system_service.create(SystemPostRequestSchema(**system_info))
+    created_system = system_service.create(SystemPostSchema(**system_info))
 
     system_repository_mock.create.assert_called_with(SystemIn(**full_system_info))
     assert created_system == system
