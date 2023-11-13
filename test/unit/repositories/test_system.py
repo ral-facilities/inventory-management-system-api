@@ -20,6 +20,27 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 
 
+SYSTEM_A_INFO = {
+    "parent_id": None,
+    "name": "Test name a",
+    "description": "Test description",
+    "location": "Test location",
+    "owner": "Test owner",
+    "importance": "low",
+    "code": "test-name-a",
+}
+
+SYSTEM_B_INFO = {
+    "parent_id": None,
+    "name": "Test name b",
+    "description": "Test description",
+    "location": "Test location",
+    "owner": "Test owner",
+    "importance": "low",
+    "code": "test-name-b",
+}
+
+
 def _test_list(test_helpers, database_mock, system_repository, parent_id: Optional[str]):
     """
     Utility method that tests getting Systems
@@ -27,32 +48,14 @@ def _test_list(test_helpers, database_mock, system_repository, parent_id: Option
     Verifies that the `list` method properly handles the retrieval of systems with the given filters
     """
     # pylint: disable=duplicate-code
-    system_a_info = {
-        "parent_id": str(ObjectId()),
-        "name": "Test name a",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
-    }
-    system_a = SystemOut(id=str(ObjectId()), **system_a_info)
-    system_b_info = {
-        "parent_id": str(ObjectId()),
-        "name": "Test name b",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
-    }
-    system_b = SystemOut(id=str(ObjectId()), **system_b_info)
+    system_a = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO)
+    system_b = SystemOut(id=str(ObjectId()), **SYSTEM_B_INFO)
     # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of System documents
     test_helpers.mock_find(
         database_mock.systems,
-        [{"_id": CustomObjectId(system_a.id), **system_a_info}, {"_id": CustomObjectId(system_b.id), **system_b_info}],
+        [{"_id": CustomObjectId(system_a.id), **SYSTEM_A_INFO}, {"_id": CustomObjectId(system_b.id), **SYSTEM_B_INFO}],
     )
 
     retrieved_systems = system_repository.list(parent_id)
@@ -74,13 +77,8 @@ def test_create(test_helpers, database_mock, system_repository):
     """
     # pylint: disable=duplicate-code
     system_info = {
+        **SYSTEM_A_INFO,
         "parent_id": None,
-        "name": "Test name",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
@@ -111,29 +109,15 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
     """
     # pylint: disable=duplicate-code
     system_info = {
+        **SYSTEM_A_INFO,
         "parent_id": str(ObjectId()),
-        "name": "Test name b",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
 
     # Mock `find_one` to return the parent system document
     test_helpers.mock_find_one(
         database_mock.systems,
-        {
-            "_id": CustomObjectId(system.parent_id),
-            "parent_id": None,
-            "name": "Test name a",
-            "description": "Test description",
-            "location": "Test location",
-            "owner": "Test owner",
-            "importance": "low",
-            "code": "test-name",
-        },
+        {"_id": CustomObjectId(system.parent_id), "parent_id": None, **SYSTEM_A_INFO},
     )
     # pylint: enable=duplicate-code
     # Mock `count_documents` to return 0 (no duplicate system found within the parent system)
@@ -166,13 +150,8 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_
     """
     # pylint: disable=duplicate-code
     system_info = {
+        **SYSTEM_A_INFO,
         "parent_id": str(ObjectId()),
-        "name": "Test name b",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
@@ -196,13 +175,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
     """
     # pylint: disable=duplicate-code
     system_info = {
+        **SYSTEM_A_INFO,
         "parent_id": str(ObjectId()),
-        "name": "Test name b",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
     }
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
@@ -212,13 +186,7 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         database_mock.systems,
         {
             "_id": CustomObjectId(system.parent_id),
-            "parent_id": None,
-            "description": "Test description",
-            "name": "Test name a",
-            "location": "Test location",
-            "owner": "Test owner",
-            "importance": "low",
-            "code": "test-name",
+            **SYSTEM_A_INFO,
         },
     )
     # Mock `count_documents` to return 1 (duplicate system found within the parent system)
@@ -237,23 +205,12 @@ def test_get(test_helpers, database_mock, system_repository):
 
     Verify that the `get` method properly handles the retrieval of a System by ID
     """
-    # pylint: disable=duplicate-code
-    system_info = {
-        "parent_id": str(ObjectId()),
-        "name": "Test name a",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "code": "test-name",
-    }
-    system = SystemOut(id=str(ObjectId()), **system_info)
-    # pylint: enable=duplicate-code
+    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO)
 
     # Mock `find_one` to return a system
     test_helpers.mock_find_one(
         database_mock.systems,
-        {"_id": CustomObjectId(system.id), **system_info},
+        {"_id": CustomObjectId(system.id), **SYSTEM_A_INFO},
     )
 
     retrieved_system = system_repository.get(system.id)
@@ -379,6 +336,104 @@ def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_
         system_repository.list("invalid")
     database_mock.systems.find.assert_not_called()
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_update(test_helpers, database_mock, system_repository):
+    """
+    Test updating a System
+
+    Verify that the `update` method properly handles the update of a System
+    """
+    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO)
+
+    # Mock `find_one` to return the updated System document
+    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system.id), **SYSTEM_A_INFO})
+    # Mock `count_documents` to return 0 (no duplicate System found within the parent System)
+    test_helpers.mock_count_documents(database_mock.systems, 0)
+    # Mock `update_one` to return an object for the updated System document
+    test_helpers.mock_update_one(database_mock.systems)
+    # Mock `find_one` to return the updated System document
+    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system.id), **SYSTEM_A_INFO})
+
+    system_in = SystemIn(**SYSTEM_A_INFO)
+    updated_system = system_repository.update(system.id, system_in)
+
+    database_mock.systems.update_one.assert_called_once_with(
+        {
+            "_id": CustomObjectId(system.id),
+        },
+        {
+            "$set": {
+                **system_in.model_dump(),
+            },
+        },
+    )
+    database_mock.systems.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(system.id)}),
+            call({"_id": CustomObjectId(system.id)}),
+        ]
+    )
+    assert updated_system == system
+
+
+def test_update_with_invalid_id(database_mock, system_repository):
+    """
+    Test updating a System with an invalid ID
+
+    Verify that the `update` method properly handles the update of a System with an invalid ID
+    """
+    system_id = "invalid"
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        system_repository.update(system_id, MagicMock())
+    assert str(exc.value) == f"Invalid ObjectId value '{system_id}'"
+
+    database_mock.systems.update_one.assert_not_called()
+    database_mock.systems.find_one.assert_not_called()
+
+
+def test_update_with_non_existent_parent_id(test_helpers, database_mock, system_repository):
+    """
+    Test updating a System with a non-existent parent ID
+
+    Verify that the `update` method properly handles the update of a System with a non-existent parent ID
+    """
+    system = SystemIn(**{**SYSTEM_A_INFO, "parent_id": str(ObjectId())})
+    system_id = str(ObjectId())
+
+    # Mock `find_one` to not return a parent System document
+    test_helpers.mock_find_one(database_mock.systems, None)
+
+    with pytest.raises(MissingRecordError) as exc:
+        system_repository.update(system_id, system)
+    assert str(exc.value) == f"No parent System found with ID: {system.parent_id}"
+
+    database_mock.systems.update_one.assert_not_called()
+    database_mock.systems.find_one.assert_called_once_with({"_id": system.parent_id})
+
+
+def test_update_duplicate_name_within_parent(test_helpers, database_mock, system_repository):
+    """
+    Test updating a System with a duplicate name within the parent System
+
+    Verify that the `update` method properly handles the update of a System with a duplicate name in the
+    parent System
+    """
+    system = SystemIn(**SYSTEM_A_INFO)
+    system_id = str(ObjectId())
+
+    # Mock `find_one` to return a parent System document
+    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
+    # Mock `count_documents` to return 1 (duplicate System found within the parent System)
+    test_helpers.mock_count_documents(database_mock.systems, 1)
+
+    with pytest.raises(DuplicateRecordError) as exc:
+        system_repository.update(system_id, system)
+    assert str(exc.value) == "Duplicate System found within the parent System"
+
+    database_mock.systems.update_one.assert_not_called()
+    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
 
 
 def test_delete(test_helpers, database_mock, system_repository):

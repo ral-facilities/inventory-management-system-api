@@ -61,29 +61,6 @@ class SystemRepo:
         system = self.get(str(result.inserted_id))
         return system
 
-    def delete(self, system_id: str) -> None:
-        """
-        Delete a System by its ID from a MongoDB database
-
-        The method checks if the system has any children and raises a `ChildrenElementsExistError` if it does
-
-        :param system_id: ID of the System to delete
-        :raises ChildrenElementsExistError: If the System has child elements
-        :raises MissingRecordError: If the System doesn't exist
-        """
-        system_id = CustomObjectId(system_id)
-        # pylint: disable=W0511
-        # TODO: Also need a check here on items when they are implemented
-        if self._has_child_elements(system_id):
-            raise ChildrenElementsExistError(
-                f"System with ID {str(system_id)} has child elements and cannot be deleted"
-            )
-
-        logger.info("Deleting system with ID: %s from the database", system_id)
-        result = self._systems_collection.delete_one({"_id": system_id})
-        if result.deleted_count == 0:
-            raise MissingRecordError(f"No System found with ID: {str(system_id)}")
-
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
         Retrieve a System by its ID from a MongoDB database
@@ -153,6 +130,29 @@ class SystemRepo:
         self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()})
 
         return self.get(str(system_id))
+
+    def delete(self, system_id: str) -> None:
+        """
+        Delete a System by its ID from a MongoDB database
+
+        The method checks if the system has any children and raises a `ChildrenElementsExistError` if it does
+
+        :param system_id: ID of the System to delete
+        :raises ChildrenElementsExistError: If the System has child elements
+        :raises MissingRecordError: If the System doesn't exist
+        """
+        system_id = CustomObjectId(system_id)
+        # pylint: disable=W0511
+        # TODO: Also need a check here on items when they are implemented
+        if self._has_child_elements(system_id):
+            raise ChildrenElementsExistError(
+                f"System with ID {str(system_id)} has child elements and cannot be deleted"
+            )
+
+        logger.info("Deleting system with ID: %s from the database", system_id)
+        result = self._systems_collection.delete_one({"_id": system_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No System found with ID: {str(system_id)}")
 
     def _is_duplicate_system(self, parent_id: Optional[str], code: str) -> bool:
         """
