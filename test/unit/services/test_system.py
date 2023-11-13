@@ -4,10 +4,40 @@ Unit tests for the `SystemService` service
 
 from unittest.mock import MagicMock
 
+import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
-from inventory_management_system_api.schemas.system import SystemPostSchema
+from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
+
+SYSTEM_A_INFO = {
+    "name": "Test name a",
+    "location": "Test location",
+    "owner": "Test owner",
+    "importance": "low",
+    "description": "Test description",
+    "parent_id": None,
+}
+
+SYSTEM_A_INFO_FULL = {
+    **SYSTEM_A_INFO,
+    "code": "test-name-a",
+}
+
+SYSTEM_B_INFO = {
+    "name": "Test name b",
+    "location": "Test location",
+    "owner": "Test owner",
+    "importance": "high",
+    "description": "Test description",
+    "parent_id": None,
+}
+
+SYSTEM_B_INFO_FULL = {
+    **SYSTEM_A_INFO,
+    "code": "test-name-b",
+}
 
 
 def test_create(test_helpers, system_repository_mock, system_service):
@@ -17,42 +47,15 @@ def test_create(test_helpers, system_repository_mock, system_service):
     Verify that the `create` method properly handles the System to be created, generates the code,
     and calls the repository's create method
     """
-    # pylint: disable=duplicate-code
-    system_info = {
-        "name": "Test name",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
-        "description": "Test description",
-        "parent_id": None,
-    }
-    full_system_info = {
-        **system_info,
-        "code": "test-name",
-    }
-    system = SystemOut(id=str(ObjectId()), **full_system_info)
-    # pylint: enable=duplicate-code
+    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO_FULL)
 
     # Mock `create` to return the created System
     test_helpers.mock_create(system_repository_mock, system)
 
-    created_system = system_service.create(SystemPostSchema(**system_info))
+    created_system = system_service.create(SystemPostSchema(**SYSTEM_A_INFO))
 
-    system_repository_mock.create.assert_called_with(SystemIn(**full_system_info))
+    system_repository_mock.create.assert_called_with(SystemIn(**SYSTEM_A_INFO_FULL))
     assert created_system == system
-
-
-def test_delete(system_repository_mock, system_service):
-    """
-    Test deleting a System
-
-    Verify that the `delete` method properly handles the deletion of a System by ID
-    """
-    system_id = MagicMock()
-
-    system_service.delete(system_id)
-
-    system_repository_mock.delete.assert_called_once_with(system_id)
 
 
 def test_create_with_parent_id(test_helpers, system_repository_mock, system_service):
@@ -62,32 +65,19 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     Verify that the `create` method properly handles the System to be created when it has a parent ID
     """
     system_info = {
-        "name": "Test name b",
-        "description": "Test description",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
+        **SYSTEM_B_INFO,
         "parent_id": str(ObjectId()),
     }
     full_system_info = {
         **system_info,
-        "code": "test-name-b",
+        "code": SYSTEM_B_INFO_FULL["code"],
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
     # Mock `get` to return the parent system
     test_helpers.mock_get(
         system_repository_mock,
-        SystemOut(
-            id=system.parent_id,
-            parent_id=None,
-            name="Test name a",
-            description="Test description",
-            location="Test location",
-            owner="Test owner",
-            importance="low",
-            code="test-name-a",
-        ),
+        SystemOut(id=system.parent_id, **SYSTEM_B_INFO_FULL),
     )
 
     # Mock `create` to return the created System
@@ -107,12 +97,8 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     it correctly
     """
     system_info = {
-        "parent_id": None,
-        "description": "Test description",
+        **SYSTEM_A_INFO,
         "name": "      Test    name         ",
-        "location": "Test location",
-        "owner": "Test owner",
-        "importance": "low",
     }
     full_system_info = {
         **system_info,
@@ -196,3 +182,53 @@ def test_list(system_repository_mock, system_service):
 
     system_repository_mock.list.assert_called_once_with(parent_id)
     assert result == system_repository_mock.list.return_value
+
+
+def test_update(test_helpers, system_repository_mock, system_service):
+    """
+    Test updating a System
+
+    Verify that the 'update' method properly handles the update of a System
+    """
+    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO_FULL)
+
+    # Mock `get` to return a System
+    test_helpers.mock_get(
+        system_repository_mock,
+        SystemOut(id=system.id, **{**SYSTEM_A_INFO_FULL, "name": "Different name", "code": "different-name"}),
+    )
+    # Mock 'update' to return the updated System
+    test_helpers.mock_update(system_repository_mock, system)
+
+    updated_system = system_service.update(system.id, SystemPatchSchema(name=system.name))
+
+    system_repository_mock.update.assert_called_once_with(system.id, SystemIn(**SYSTEM_A_INFO_FULL))
+    assert updated_system == system
+
+
+def test_update_with_non_existent_id(test_helpers, system_repository_mock, system_service):
+    """
+    Test updating a System with a non-existent ID
+
+    Verify that the 'update' method properly handles the update of a System with a non-existent ID
+    """
+    # Mock `get` to not return a System
+    test_helpers.mock_get(system_repository_mock, None)
+
+    system_id = str(ObjectId())
+    with pytest.raises(MissingRecordError) as exc:
+        system_service.update(system_id, MagicMock())
+    assert str(exc.value) == f"No System found with ID: {system_id}"
+
+
+def test_delete(system_repository_mock, system_service):
+    """
+    Test deleting a System
+
+    Verify that the `delete` method properly handles the deletion of a System by ID
+    """
+    system_id = MagicMock()
+
+    system_service.delete(system_id)
+
+    system_repository_mock.delete.assert_called_once_with(system_id)
