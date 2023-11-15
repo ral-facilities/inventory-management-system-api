@@ -954,7 +954,7 @@ def test_update_with_existent_manufacturer_id(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            manufacturer_id=catalogue_item.manufacturer_id,
+            manufacturer_id=str(ObjectId()),
             **catalogue_item_info,
         ),
     )
