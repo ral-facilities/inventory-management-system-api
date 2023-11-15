@@ -452,35 +452,22 @@ def test_partial_update_system_name(test_client):
     _test_partial_update_system(test_client, {"name": "Updated name"}, {"code": "updated-name"})
 
 
-def test_partial_update_system_description(test_client):
+def test_partial_update_all_other_fields(test_client):
     """
-    Test updating a System's description
+    Test updating the rest of a systems fields not tested above
     """
-    _test_partial_update_system(test_client, {"description": "Updated description"})
+    _test_partial_update_system(
+        test_client,
+        {
+            "description": "Updated description",
+            "location": "Updated location",
+            "owner": "Updated owner",
+            "importance": "high",
+        },
+    )
 
 
-def test_partial_update_system_location(test_client):
-    """
-    Test updating a System's location
-    """
-    _test_partial_update_system(test_client, {"location": "Updated location"})
-
-
-def test_partial_update_system_owner(test_client):
-    """
-    Test updating a System's owner
-    """
-    _test_partial_update_system(test_client, {"owner": "Updated owner"})
-
-
-def test_partial_update_system_importance(test_client):
-    """
-    Test updating a System's importance
-    """
-    _test_partial_update_system(test_client, {"importance": "high"})
-
-
-def test_partial_update_system_invalid(test_client):
+def test_partial_update_system_invalid_id(test_client):
     """
     Test updating a System when the ID is invalid
     """
@@ -490,7 +477,7 @@ def test_partial_update_system_invalid(test_client):
     assert response.json()["detail"] == "A System with such ID was not found"
 
 
-def test_partial_update_system_non_existent(test_client):
+def test_partial_update_system_non_existent_id(test_client):
     """
     Test updating a System when the ID is non-existent
     """

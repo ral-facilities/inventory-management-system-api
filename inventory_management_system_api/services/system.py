@@ -79,13 +79,14 @@ class SystemService:
         """
         return self._system_repository.list(parent_id)
 
-    def update(self, system_id: Optional[str], system: SystemPatchSchema) -> SystemOut:
+    def update(self, system_id: str, system: SystemPatchSchema) -> SystemOut:
         """
         Update a System by its ID
 
         :param system_id: ID of the System to updated
         :param system: System containing the fields to be updated
         :raises MissingRecordError: When the System with the given ID doesn't exist
+        :return: The updated System
         """
         stored_system = self.get(system_id)
         if not stored_system:
