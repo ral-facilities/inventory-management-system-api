@@ -36,7 +36,6 @@ class CatalogueItemPostRequestSchema(BaseModel):
     properties: Optional[List[PropertyPostRequestSchema]] = Field(
         default=None, description="The catalogue item properties"
     )
-    # pylint: disable=fixme
     manufacturer_id: str = Field(description="The ID of the manufacturer")
 
 

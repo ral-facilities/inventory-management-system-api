@@ -246,7 +246,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
                 "name": catalogue_item_a.name,
                 "description": catalogue_item_a.description,
                 "properties": catalogue_item_a.properties,
-                "manufacturer_id": catalogue_item_a.manufacturer_id,
+                "manufacturer_id": CustomObjectId(catalogue_item_a.manufacturer_id),
             },
             {
                 "_id": CustomObjectId(catalogue_item_b.id),
@@ -254,7 +254,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
                 "name": catalogue_item_b.name,
                 "description": catalogue_item_b.description,
                 "properties": catalogue_item_b.properties,
-                "manufacturer_id": catalogue_item_b.manufacturer_id,
+                "manufacturer_id": CustomObjectId(catalogue_item_b.manufacturer_id),
             },
         ],
     )
@@ -296,7 +296,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
                 "name": catalogue_item.name,
                 "description": catalogue_item.description,
                 "properties": catalogue_item.properties,
-                "manufacturer_id": catalogue_item.manufacturer_id,
+                "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
             }
         ],
     )
@@ -371,6 +371,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         {
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+            "maufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
             **catalogue_item_info,
         },
     )

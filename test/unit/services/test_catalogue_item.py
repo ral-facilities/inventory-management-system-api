@@ -158,24 +158,13 @@ def test_create_with_nonexistent_manufacturer_id(
     """
     Test creating a catalogue item with a manufacturer id that is nonexistent
     """
-    # pylint: disable=duplicate-code
-    catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer_id=str(ObjectId()),
-    )
-    # pylint: enable=duplicate-code
+
+    catalogue_category_id = str(ObjectId())
+
     test_helpers.mock_get(
         catalogue_category_repository_mock,
         CatalogueCategoryOut(
-            id=catalogue_item.catalogue_category_id,
+            id=catalogue_category_id,
             name="Category A",
             code="category-a",
             is_leaf=True,
@@ -187,13 +176,13 @@ def test_create_with_nonexistent_manufacturer_id(
             ],
         ),
     )
-    manufacturer_id=catalogue_item.manufacturer_id
+    manufacturer_id = str(ObjectId())
     test_helpers.mock_get(manufacturer_repository_mock, None)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.create(
             CatalogueItemPostRequestSchema(
-                catalogue_category_id=catalogue_item.catalogue_category_id,
+                catalogue_category_id=catalogue_category_id,
                 name="Catalogue Item A",
                 description="This is Catalogue Item A",
                 properties=[
@@ -201,7 +190,7 @@ def test_create_with_nonexistent_manufacturer_id(
                     PropertyPostRequestSchema(name="Property B", value=False),
                     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
                 ],
-                manufacturer_id=catalogue_item.manufacturer_id,
+                manufacturer_id=manufacturer_id,
             ),
         )
     assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
@@ -937,7 +926,7 @@ def test_update_with_nonexistent_catalogue_category_id(
 
 
 def test_update_with_existent_manufacturer_id(
-    test_helpers, catalogue_item_repository_mock, catalogue_item_service
+    test_helpers, catalogue_item_repository_mock, manufacturer_repository_mock, catalogue_item_service
 ):
     """
     Test updating manufacturer id to an existing id
@@ -946,18 +935,17 @@ def test_update_with_existent_manufacturer_id(
     catalogue_item_info = {
         "id": str(ObjectId()),
         "catalogue_category_id": str(ObjectId()),
+        "name": "Catalogue Item A",
+        "description": "This is Catalogue Item A",
         "properties": [
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10", "unit": "cm"},
         ],
-        "manufacturer_id": str(ObjectId()),
     }
     # pylint: enable=duplicate-code
     full_catalogue_item_info = {
         **catalogue_item_info,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
         "manufacturer_id": str(ObjectId()),
     }
     catalogue_item = CatalogueItemOut(**full_catalogue_item_info)
@@ -966,9 +954,27 @@ def test_update_with_existent_manufacturer_id(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            name="Catalogue Item A",
-            description="This is Catalogue Item A",
+            manufacturer_id=catalogue_item.manufacturer_id,
             **catalogue_item_info,
+        ),
+    )
+
+    # Mock `get` to return a manufacturer
+    test_helpers.mock_get(
+        manufacturer_repository_mock,
+        ManufacturerOut(
+            id=catalogue_item.manufacturer_id,
+            name="Manufacturer A",
+            code="manufacturer-a",
+            url="https://example.com",
+            address=AddressSchema(
+                building_number="1",
+                street_name="Example Street",
+                town="Oxford",
+                county="Oxfordshire",
+                country="United Kingdom",
+                postcode="OX1 2AB",
+            ),
         ),
     )
     # Mock `update` to return the updated catalogue item
@@ -1006,35 +1012,6 @@ def test_update_with_nonexistent_manufacturer_id(
     test_helpers.mock_get(manufacturer_repository_mock, None)
 
     manufacturer_id = str(ObjectId())
-    with pytest.raises(MissingRecordError) as exc:
-        catalogue_item_service.update(
-            catalogue_item_info["id"],
-            CatalogueItemPatchRequestSchema(manufacturer_id=manufacturer_id),
-        )
-    assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
-
-
-def test_update_with_an_invalid_manufacturer_id(
-    test_helpers, manufacturer_repository_mock, catalogue_item_repository_mock, catalogue_item_service
-):
-    """
-    Test updating a catalogue item with a non-existent manufacturer id
-    """
-    catalogue_item_info = {
-        "id": str(ObjectId()),
-        "catalogue_category_id": str(ObjectId()),
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "manufacturer_id": str(ObjectId()),
-        "properties": [],
-    }
-
-    # Mock `get` to return a catalogue item
-    test_helpers.mock_get(catalogue_item_repository_mock, CatalogueItemOut(**catalogue_item_info))
-    # Mock `get` to not return a catalogue category
-    test_helpers.mock_get(manufacturer_repository_mock, None)
-
-    manufacturer_id = "invalid"
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.update(
             catalogue_item_info["id"],
