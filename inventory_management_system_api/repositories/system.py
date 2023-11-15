@@ -61,29 +61,6 @@ class SystemRepo:
         system = self.get(str(result.inserted_id))
         return system
 
-    def delete(self, system_id: str) -> None:
-        """
-        Delete a System by its ID from a MongoDB database
-
-        The method checks if the system has any children and raises a `ChildrenElementsExistError` if it does
-
-        :param system_id: ID of the System to delete
-        :raises ChildrenElementsExistError: If the System has child elements
-        :raises MissingRecordError: If the System doesn't exist
-        """
-        system_id = CustomObjectId(system_id)
-        # pylint: disable=W0511
-        # TODO: Also need a check here on items when they are implemented
-        if self._has_child_elements(system_id):
-            raise ChildrenElementsExistError(
-                f"System with ID {str(system_id)} has child elements and cannot be deleted"
-            )
-
-        logger.info("Deleting system with ID: %s from the database", system_id)
-        result = self._systems_collection.delete_one({"_id": system_id})
-        if result.deleted_count == 0:
-            raise MissingRecordError(f"No System found with ID: {str(system_id)}")
-
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
         Retrieve a System by its ID from a MongoDB database
@@ -127,6 +104,55 @@ class SystemRepo:
 
         systems = self._systems_collection.find(query)
         return [SystemOut(**system) for system in systems]
+
+    def update(self, system_id: str, system: SystemIn) -> SystemOut:
+        """Update a system by its ID in a MongoDB database
+
+        :param system_id: ID of the System to update
+        :param system: System containing the update data
+        :return: The updated System
+        :raises MissingRecordError: If the parent System specified by `parent_id` doesn't exist
+        :raises DuplicateRecordError: If a duplicate System is found within the parent System
+        """
+        system_id = CustomObjectId(system_id)
+
+        parent_id = str(system.parent_id) if system.parent_id else None
+        if parent_id and not self.get(parent_id):
+            raise MissingRecordError(f"No parent System found with ID: {parent_id}")
+
+        stored_system = self.get(str(system_id))
+        if (system.name != stored_system.name or parent_id != stored_system.parent_id) and self._is_duplicate_system(
+            parent_id, system.code
+        ):
+            raise DuplicateRecordError("Duplicate System found within the parent System")
+
+        logger.info("Updating system with ID: %s in the database", system_id)
+        self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()})
+
+        return self.get(str(system_id))
+
+    def delete(self, system_id: str) -> None:
+        """
+        Delete a System by its ID from a MongoDB database
+
+        The method checks if the system has any children and raises a `ChildrenElementsExistError` if it does
+
+        :param system_id: ID of the System to delete
+        :raises ChildrenElementsExistError: If the System has child elements
+        :raises MissingRecordError: If the System doesn't exist
+        """
+        system_id = CustomObjectId(system_id)
+        # pylint: disable=W0511
+        # TODO: Also need a check here on items when they are implemented
+        if self._has_child_elements(system_id):
+            raise ChildrenElementsExistError(
+                f"System with ID {str(system_id)} has child elements and cannot be deleted"
+            )
+
+        logger.info("Deleting system with ID: %s from the database", system_id)
+        result = self._systems_collection.delete_one({"_id": system_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No System found with ID: {str(system_id)}")
 
     def _is_duplicate_system(self, parent_id: Optional[str], code: str) -> bool:
         """
