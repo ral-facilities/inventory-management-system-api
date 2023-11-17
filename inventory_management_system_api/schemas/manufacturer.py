@@ -9,20 +9,19 @@ from pydantic import BaseModel, Field, HttpUrl
 class AddressSchema(BaseModel):
     """Schema for address type"""
 
-    building_number: str = Field(description="House/Building number of manufacturer")
-    street_name: str = Field(description="Street name of manufacturer")
+    address_line: str = Field(description="The address line of the manufacturer")
     town: Optional[str] = Field(default=None, description="Town of manufacturer")
     county: Optional[str] = Field(default=None, description="County of manufacturer")
-    country: Optional[str] = Field(default=None, description="Country of the manufacturer")
+    country: str = Field(description="Country of the manufacturer")
     postcode: str = Field(description="Post Code/Zip of manufacturer")
 
 
 class AddressPatchRequestSchema(AddressSchema):
     """Schema used for editting address, so that it allows to edit individual fields"""
 
-    building_number: Optional[str] = Field(default=None, description="House/Building number of manufacturer")
-    street_name: Optional[str] = Field(default=None, description="Street name of manufacturer")
+    address_line: Optional[str] = Field(default=None, description="The address line of the manufacturer")
     postcode: Optional[str] = Field(default=None, description="Post Code/Zip of manufacturer")
+    country: Optional[str] = Field(default=None, description="Country of the manufacturer")
 
 
 class ManufacturerPostRequestSchema(BaseModel):
