@@ -93,9 +93,8 @@ jobs:
         run: DATABASE__NAME="test-ims" pytest test/e2e/ --cov
 
   docker:
-    # This job triggers only if all the other jobs succeed and does different things depending on the context.
-    # The job builds the Docker image in all cases and also pushes the image to Harbor only if something is
-    # pushed to the develop branch.
+    # This job triggers only if all the other jobs succeed. It builds the Docker image and if successful,
+    # it pushes it to Harbor.
     needs: [linting, unit-tests, e2e-tests]
     name: Docker
     runs-on: ubuntu-latest
@@ -116,11 +115,11 @@ jobs:
       with:
         images: harbor.stfc.ac.uk/inventory-management-system/ims-api
 
-    - name: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && 'Build and push Docker image to Harbor' || 'Build Docker image' }}
+    - name: Build and push Docker image to Harbor
       uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
       with:
         context: .
         file: ./Dockerfile.prod
-        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+        push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
