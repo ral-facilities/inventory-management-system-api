@@ -39,14 +39,28 @@ class CatalogueItemPostRequestSchema(BaseModel):
     catalogue_category_id: str = Field(
         description="The ID of the catalogue category that the catalogue item belongs to"
     )
-    name: str = Field(description="The name of the catalogue item")
-    description: str = Field(description="The catalogue item description")
-    properties: Optional[List[PropertyPostRequestSchema]] = Field(
-        default=None, description="The catalogue item properties"
-    )
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
     manufacturer: ManufacturerPostRequestSchema = Field(description="The details of the manufacturer")
+    name: str = Field(description="The name of the catalogue item")
+    description: Optional[str] = Field(default=None, description="The description of the catalogue item")
+    cost_gbp: float = Field(description="The cost of the catalogue item")
+    cost_to_rework_gbp: Optional[float] = Field(default=None, description="The cost to rework the catalogue item")
+    days_to_replace: float = Field(description="The number of days to replace the catalogue item")
+    days_to_rework: Optional[float] = Field(default=None, description="The number of days to rework the catalogue item")
+    drawing_number: Optional[str] = Field(default=None, description="The drawing number of the catalogue item")
+    drawing_link: Optional[HttpUrl] = Field(default=None, description="The link to the drawing of the catalogue item")
+    item_model_number: Optional[str] = Field(default=None, description="The model number of the catalogue item")
+    is_obsolete: bool = Field(description="Whether the catalogue item is obsolete or not")
+    obsolete_reason: Optional[str] = Field(
+        default=None, description="The reason why the catalogue item became obsolete"
+    )
+    obsolete_replacement_catalogue_item_id: Optional[str] = Field(
+        default=None, description="The ID of the catalogue item that replaces this catalogue item if obsolete"
+    )
+    properties: Optional[List[PropertyPostRequestSchema]] = Field(
+        default=None, description="The catalogue item properties"
+    )
 
 
 class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
@@ -57,13 +71,17 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     catalogue_category_id: Optional[str] = Field(
         default=None, description="The ID of the catalogue category that the catalogue item belongs to"
     )
-    name: Optional[str] = Field(default=None, description="The name of the catalogue item")
-    description: Optional[str] = Field(default=None, description="The catalogue item description")
     # pylint: disable=fixme
     # TODO - Change from manufacturer to manufacturer id
     manufacturer: Optional[ManufacturerPostRequestSchema] = Field(
         default=None, description="The details of the manufacturer"
     )
+    name: Optional[str] = Field(default=None, description="The name of the catalogue item")
+    cost_gbp: Optional[float] = Field(default=None, description="The cost of the catalogue item")
+    days_to_replace: Optional[float] = Field(
+        default=None, description="The number of days to replace the catalogue item"
+    )
+    is_obsolete: Optional[bool] = Field(default=None, description="Whether the catalogue item is obsolete or not")
 
 
 class CatalogueItemSchema(CatalogueItemPostRequestSchema):

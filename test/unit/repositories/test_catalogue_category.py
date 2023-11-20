@@ -920,6 +920,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
     )
 
     # Mock `find_one` to return a parent catalogue category document
+    # pylint: disable=duplicate-code
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
@@ -931,6 +932,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
             "catalogue_item_properties": [],
         },
     )
+    # pylint: enable=duplicate-code
     catalogue_category_id = str(ObjectId())
     # Mock `find_one` to return a catalogue category document
     test_helpers.mock_find_one(
