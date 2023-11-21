@@ -3,7 +3,7 @@ Module for defining the database models for representing catalogue items.
 """
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
@@ -24,10 +24,20 @@ class CatalogueItemIn(BaseModel):
     """
 
     catalogue_category_id: CustomObjectIdField
-    name: str
-    description: str
-    properties: List[Property] = []
     manufacturer_id: CustomObjectIdField
+    name: str
+    description: Optional[str] = None
+    cost_gbp: float
+    cost_to_rework_gbp: Optional[float] = None
+    days_to_replace: float
+    days_to_rework: Optional[float] = None
+    drawing_number: Optional[str] = None
+    drawing_link: Optional[HttpUrl] = None
+    item_model_number: Optional[str] = None
+    is_obsolete: bool
+    obsolete_reason: Optional[str] = None
+    obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
+    properties: List[Property] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -45,6 +55,15 @@ class CatalogueItemIn(BaseModel):
             properties = []
         return properties
 
+    @field_serializer("drawing_link")
+    def serialize_url(self, url: HttpUrl):
+        """
+        Convert `url` to string when the model is dumped.
+        :param url: The `HttpUrl` object.
+        :return: The URL as a string.
+        """
+        return url if url is None else str(url)
+
 
 class CatalogueItemOut(CatalogueItemIn):
     """
@@ -54,4 +73,5 @@ class CatalogueItemOut(CatalogueItemIn):
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
     manufacturer_id: StringObjectIdField
+    obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

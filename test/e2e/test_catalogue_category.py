@@ -54,13 +54,13 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
     ],
 }
+
 # pylint: disable=duplicate-code
 MANUFACTURER = {
     "name": "Manufacturer D",
     "url": "http://example.com/",
     "address": {
-        "building_number": "1",
-        "street_name": "Example Street",
+        "address_line": "1 Example Street",
         "town": "Oxford",
         "county": "Oxfordshire",
         "country": "United Kingdom",
@@ -69,6 +69,15 @@ MANUFACTURER = {
     "telephone": "0932348348",
 }
 # pylint: enable=duplicate-code
+
+CATALOGUE_ITEM_POST_A = {
+    "name": "Catalogue Item A",
+    "description": "This is Catalogue Item A",
+    "cost_gbp": 129.99,
+    "days_to_replace": 2.0,
+    "is_obsolete": False,
+    "properties": [{"name": "Property B", "value": False}],
+}
 
 
 def _post_nested_catalogue_categories(test_client, entities: list[dict]):
@@ -322,19 +331,19 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
     """
     Test deleting a catalogue category with child catalogue items.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
-
     catalogue_category_id = response.json()["id"]
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-    manufacturer = response.json()
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": manufacturer["id"],
-    }
 
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     response = test_client.delete(f"/v1/catalogue-categories/{catalogue_category_id}")
@@ -579,17 +588,7 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
 
     catalogue_category_id = response.json()["id"]
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_id}
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {"name": "Category D"}
@@ -696,18 +695,19 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
     """
     Test changing a catalogue category with child catalogue items from leaf to non-leaf.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
-
     catalogue_category_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-    manufacturer = response.json()
+    manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": manufacturer["id"],
+        "manufacturer_id": manufacturer_id,
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {"is_leaf": False}
@@ -822,17 +822,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_c_id = response.json()["id"]
 
-    catalogue_item_post = {
-        "catalogue_category_id": catalogue_category_c_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
-    }
+    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": catalogue_category_c_id}
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {"parent_id": catalogue_category_a_id}
@@ -1010,17 +1000,19 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
     """
     Test changing the catalogue item properties when a catalogue category has child catalogue items.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
     catalogue_category_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-    manufacturer = response.json()
+    manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
-        "name": "Catalogue Item A",
-        "description": "This is Catalogue Item A",
-        "properties": [{"name": "Property B", "value": False}],
-        "manufacturer_id": manufacturer["id"],
+        "manufacturer_id": manufacturer_id,
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_category_patch = {

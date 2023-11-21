@@ -7,10 +7,11 @@ from typing import Optional
 
 from fastapi import Depends
 
+from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
-from inventory_management_system_api.schemas.system import SystemPostRequestSchema
+from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -29,7 +30,7 @@ class SystemService:
         """
         self._system_repository = system_repository
 
-    def create(self, system: SystemPostRequestSchema) -> SystemOut:
+    def create(self, system: SystemPostSchema) -> SystemOut:
         """
         Create a new System
 
@@ -50,14 +51,6 @@ class SystemService:
                 code=code,
             )
         )
-
-    def delete(self, system_id: str) -> None:
-        """
-        Delete a System by its ID
-
-        :param system_id: ID of the System to delete
-        """
-        return self._system_repository.delete(system_id)
 
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
@@ -85,3 +78,31 @@ class SystemService:
         :return: List of System's or an empty list if no Systems are retrieved
         """
         return self._system_repository.list(parent_id)
+
+    def update(self, system_id: str, system: SystemPatchSchema) -> SystemOut:
+        """
+        Update a System by its ID
+
+        :param system_id: ID of the System to updated
+        :param system: System containing the fields to be updated
+        :raises MissingRecordError: When the System with the given ID doesn't exist
+        :return: The updated System
+        """
+        stored_system = self.get(system_id)
+        if not stored_system:
+            raise MissingRecordError(f"No System found with ID: {system_id}")
+
+        update_data = system.model_dump(exclude_unset=True)
+
+        if "name" in update_data and system.name != stored_system.name:
+            update_data["code"] = utils.generate_code(system.name, "system")
+
+        return self._system_repository.update(system_id, SystemIn(**{**stored_system.model_dump(), **update_data}))
+
+    def delete(self, system_id: str) -> None:
+        """
+        Delete a System by its ID
+
+        :param system_id: ID of the System to delete
+        """
+        return self._system_repository.delete(system_id)

@@ -77,6 +77,12 @@ class CatalogueItemService:
         if not manufacturer:
             raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
+        obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
+        if obsolete_replacement_catalogue_item_id and not self._catalogue_item_repository.get(
+            obsolete_replacement_catalogue_item_id
+        ):
+            raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
+
         defined_properties = catalogue_category.catalogue_item_properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
         supplied_properties = self._process_catalogue_item_properties(defined_properties, supplied_properties)
@@ -163,6 +169,16 @@ class CatalogueItemService:
             manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
             if not manufacturer:
                 raise MissingRecordError(f"No manufacturer found with ID: {catalogue_item.manufacturer_id}")
+
+        if "obsolete_replacement_catalogue_item_id" in update_data:
+            obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
+            if (
+                obsolete_replacement_catalogue_item_id
+                and obsolete_replacement_catalogue_item_id
+                != stored_catalogue_item.obsolete_replacement_catalogue_item_id
+                and not self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id)
+            ):
+                raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
 
         if "properties" in update_data:
             if not catalogue_category:
