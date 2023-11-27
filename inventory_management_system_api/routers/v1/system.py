@@ -16,7 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
-from inventory_management_system_api.schemas.system import SystemPostRequestSchema, SystemRequestSchema
+from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
 from inventory_management_system_api.services.system import SystemService
 
 logger = logging.getLogger()
@@ -24,11 +24,36 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/systems", tags=["systems"])
 
 
+@router.post(
+    path="/",
+    summary="Create a new System",
+    response_description="The created System",
+    status_code=status.HTTP_201_CREATED,
+)
+def create_system(
+    system: SystemPostSchema, system_service: Annotated[SystemService, Depends(SystemService)]
+) -> SystemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Creating a new System")
+    logger.debug("System data: %s", system)
+    try:
+        system = system_service.create(system)
+        return SystemSchema(**system.model_dump())
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "The specified parent System ID does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except DuplicateRecordError as exc:
+        message = "A System with the same name already exists within the same parent System"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
 @router.get(path="/", summary="Get Systems", response_description="List of Systems")
 def get_systems(
+    system_service: Annotated[SystemService, Depends(SystemService)],
     parent_id: Annotated[Optional[str], Query(description="Filter Systems by parent ID")] = None,
-    system_service: SystemService = Depends(),
-) -> list[SystemRequestSchema]:
+) -> list[SystemSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Systems")
     if parent_id:
@@ -36,7 +61,7 @@ def get_systems(
 
     try:
         systems = system_service.list(parent_id)
-        return [SystemRequestSchema(**system.model_dump()) for system in systems]
+        return [SystemSchema(**system.model_dump()) for system in systems]
     except InvalidObjectIdError:
         # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
         # the same as a valid one that doesn't exist i.e. return an empty list
@@ -45,15 +70,16 @@ def get_systems(
 
 @router.get(path="/{system_id}", summary="Get a System by ID", response_description="Single System")
 def get_system(
-    system_id: Annotated[str, Path(description="ID of the System to get")], system_service: SystemService = Depends()
-) -> SystemRequestSchema:
+    system_id: Annotated[str, Path(description="ID of the System to get")],
+    system_service: Annotated[SystemService, Depends(SystemService)],
+) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting System with ID: %s", system_service)
     try:
         system = system_service.get(system_id)
         if not system:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found")
-        return SystemRequestSchema(**system.model_dump())
+        return SystemSchema(**system.model_dump())
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(
@@ -63,8 +89,8 @@ def get_system(
 
 @router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")
 def get_system_breadcrumbs(
-    system_id: str = Path(description="The ID of the system to get the breadcrumbs for"),
-    system_service: SystemService = Depends(),
+    system_id: Annotated[str, Path(description="The ID of the system to get the breadcrumbs for")],
+    system_service: Annotated[SystemService, Depends(SystemService)],
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
     # pylint: disable=duplicate-code
@@ -85,25 +111,28 @@ def get_system_breadcrumbs(
     # pylint: enable=duplicate-code
 
 
-@router.post(
-    path="/",
-    summary="Create a new System",
-    response_description="The created System",
-    status_code=status.HTTP_201_CREATED,
-)
-def create_system(system: SystemPostRequestSchema, system_service: SystemService = Depends()) -> SystemRequestSchema:
+@router.patch(path="/{system_id}", summary="Update a System by ID", response_description="System updated successfully")
+def partial_update_system(
+    system_id: str, system: SystemPatchSchema, system_service: Annotated[SystemService, Depends(SystemService)]
+) -> SystemSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Creating a new System")
+    logger.info("Partially updating system with ID: %s", system_id)
     logger.debug("System data: %s", system)
+
     try:
-        system = system_service.create(system)
-        return SystemRequestSchema(**system.model_dump())
+        updated_system = system_service.update(system_id, system)
+        return SystemSchema(**updated_system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent System ID does not exist"
+        if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
+            message = "The specified parent System ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+        message = "A System with such ID was not found"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateRecordError as exc:
-        message = "A System with the same name already exists within the same parent System"
+        message = "A System with the same name already exists within the parent System"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
@@ -115,7 +144,8 @@ def create_system(system: SystemPostRequestSchema, system_service: SystemService
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_system(
-    system_id: str = Path(description="ID of the system to delete"), system_service: SystemService = Depends()
+    system_id: Annotated[str, Path(description="ID of the system to delete")],
+    system_service: Annotated[SystemService, Depends(SystemService)],
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)
