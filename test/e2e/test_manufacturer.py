@@ -434,21 +434,21 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     catalogue_category_id = response.json()["id"]
     # pylint: disable=duplicate-code
     catalogue_item_post = {
-    "name": "Catalogue Item A",
-    "catalogue_category_id": catalogue_category_id,
-    "description": "This is Catalogue Item A",
-    "cost_gbp": 129.99,
-    "days_to_replace": 2.0,
-    "drawing_link": "https://drawing-link.com/",
-    "item_model_number": "abc123",
-    "is_obsolete": False,
-    "properties": [
-        {"name": "Property A", "value": 20},
-        {"name": "Property B", "value": False},
-        {"name": "Property C", "value": "20x15x10"},
-    ],
-    "manufacturer_id": manufacturer_id
-}
+        "name": "Catalogue Item A",
+        "catalogue_category_id": catalogue_category_id,
+        "description": "This is Catalogue Item A",
+        "cost_gbp": 129.99,
+        "days_to_replace": 2.0,
+        "drawing_link": "https://drawing-link.com/",
+        "item_model_number": "abc123",
+        "is_obsolete": False,
+        "properties": [
+            {"name": "Property A", "value": 20},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10"},
+        ],
+        "manufacturer_id": manufacturer_id
+    }
     # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 

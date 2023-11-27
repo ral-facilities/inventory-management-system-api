@@ -226,8 +226,8 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
     catalogue_item_b = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_B_INFO,
         manufacturer_id=str(ObjectId()),
+        **FULL_CATALOGUE_ITEM_B_INFO,
     )
 
     # Mock `find` to return a list of catalogue item documents

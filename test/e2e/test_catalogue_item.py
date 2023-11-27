@@ -1320,7 +1320,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id(test_client):
 
 
 def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_client):
-    """/v1/manufacturers
+    """
     Test changing the manufacturer ID of a catalogue item to an invalid ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
