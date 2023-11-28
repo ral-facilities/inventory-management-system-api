@@ -4,7 +4,11 @@ Unit tests for the `ItemService` service.
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.exceptions import MissingRecordError, DatabaseIntegrityError
+from inventory_management_system_api.core.exceptions import (
+    MissingRecordError,
+    DatabaseIntegrityError,
+    InvalidObjectIdError,
+)
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemOut, ItemIn
@@ -121,6 +125,37 @@ def test_create_with_non_existent_catalogue_item_id(
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     item_repository_mock.create.assert_not_called()
     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
+
+
+def test_create_with_invalid_catalogue_item_id(
+    test_helpers, item_repository_mock, catalogue_category_repository_mock, catalogue_item_repository_mock, item_service
+):
+    """
+    Test creating an item with an invalid catalogue item ID.
+    """
+    catalogue_item_id = str(ObjectId)
+    catalogue_category_id = "invalid"
+
+    # Mock `get` to return a catalogue item
+    test_helpers.mock_get(
+        catalogue_item_repository_mock,
+        CatalogueItemOut(
+            id=catalogue_item_id, catalogue_category_id=catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
+        ),
+    )
+    # Mock `get` to return a catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock, InvalidObjectIdError(f"Invalid ObjectId value '{catalogue_category_id}'")
+    )
+
+    with pytest.raises(DatabaseIntegrityError) as exc:
+        item_service.create(
+            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId), **ITEM_INFO)
+        )
+    catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
+    item_repository_mock.create.assert_not_called()
+    assert str(exc.value) == f"Invalid ObjectId value '{catalogue_category_id}'"
 
 
 def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
