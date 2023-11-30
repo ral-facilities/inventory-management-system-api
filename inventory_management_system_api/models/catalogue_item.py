@@ -32,7 +32,7 @@ class Manufacturer(BaseModel):
         :param url: The `HttpUrl` object.
         :return: The URL as a string.
         """
-        return str(url)
+        return url if url is None else str(url)
 
 
 class CatalogueItemIn(BaseModel):
@@ -41,12 +41,20 @@ class CatalogueItemIn(BaseModel):
     """
 
     catalogue_category_id: CustomObjectIdField
+    manufacturer: Manufacturer  # TODO - Change from manufacturer to manufacturer id # pylint: disable=fixme
     name: str
-    description: str
+    description: Optional[str] = None
+    cost_gbp: float
+    cost_to_rework_gbp: Optional[float] = None
+    days_to_replace: float
+    days_to_rework: Optional[float] = None
+    drawing_number: Optional[str] = None
+    drawing_link: Optional[HttpUrl] = None
+    item_model_number: Optional[str] = None
+    is_obsolete: bool
+    obsolete_reason: Optional[str] = None
+    obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
     properties: List[Property] = []
-    # pylint: disable=fixme
-    # TODO - Change from manufacturer to manufacturer id
-    manufacturer: Manufacturer
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -64,6 +72,15 @@ class CatalogueItemIn(BaseModel):
             properties = []
         return properties
 
+    @field_serializer("drawing_link")
+    def serialize_url(self, url: HttpUrl):
+        """
+        Convert `url` to string when the model is dumped.
+        :param url: The `HttpUrl` object.
+        :return: The URL as a string.
+        """
+        return url if url is None else str(url)
+
 
 class CatalogueItemOut(CatalogueItemIn):
     """
@@ -72,4 +89,5 @@ class CatalogueItemOut(CatalogueItemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
+    obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

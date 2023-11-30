@@ -8,12 +8,55 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
-from inventory_management_system_api.models.catalogue_item import (
-    CatalogueItemOut,
-    Property,
-    CatalogueItemIn,
-    Manufacturer,
-)
+from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
+
+# pylint: disable=duplicate-code
+FULL_CATALOGUE_ITEM_A_INFO = {
+    "manufacturer": {
+        "name": "Manufacturer A",
+        "address": "1 Address, City, Country, Postcode",
+        "url": "https://www.manufacturer-a.co.uk/",
+    },
+    "name": "Catalogue Item A",
+    "description": "This is Catalogue Item A",
+    "cost_gbp": 129.99,
+    "cost_to_rework_gbp": None,
+    "days_to_replace": 2.0,
+    "days_to_rework": None,
+    "drawing_number": None,
+    "drawing_link": "https://drawing-link.com/",
+    "item_model_number": "abc123",
+    "is_obsolete": False,
+    "obsolete_reason": None,
+    "obsolete_replacement_catalogue_item_id": None,
+    "properties": [
+        {"name": "Property A", "value": 20, "unit": "mm"},
+        {"name": "Property B", "value": False, "unit": None},
+        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+    ],
+}
+
+FULL_CATALOGUE_ITEM_B_INFO = {
+    "manufacturer": {
+        "name": "Manufacturer A",
+        "address": "1 Address, City, Country, Postcode",
+        "url": "https://www.manufacturer-a.co.uk/",
+    },
+    "name": "Catalogue Item B",
+    "description": "This is Catalogue Item B",
+    "cost_gbp": 300.00,
+    "cost_to_rework_gbp": 120.99,
+    "days_to_replace": 1.5,
+    "days_to_rework": 3.0,
+    "drawing_number": "789xyz",
+    "drawing_link": None,
+    "item_model_number": None,
+    "is_obsolete": False,
+    "obsolete_reason": None,
+    "obsolete_replacement_catalogue_item_id": None,
+    "properties": [{"name": "Property A", "value": True, "unit": None}],
+}
+# pylint: enable=duplicate-code
 
 
 def test_create(test_helpers, database_mock, catalogue_item_repository):
@@ -23,24 +66,9 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     Verify that the `create` method properly handles the catalogue item to be created, checks that there is not a
     duplicate catalogue item, and creates the catalogue item.
     """
-    # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, postcode",
-            url="https://www.manufacturer-a.co.uk",
-        ),
+        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
     )
-    # pylint: enable=duplicate-code
 
     # Mock `count_documents` to return 0 (no duplicate catalogue item found within the catalogue category)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
@@ -52,34 +80,16 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         {
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-            "name": catalogue_item.name,
-            "description": catalogue_item.description,
-            "properties": catalogue_item.properties,
-            "manufacturer": catalogue_item.manufacturer,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
 
-    # pylint: disable=duplicate-code
-    created_catalogue_item = catalogue_item_repository.create(
-        CatalogueItemIn(
-            catalogue_category_id=catalogue_item.catalogue_category_id,
-            name=catalogue_item.name,
-            description=catalogue_item.description,
-            properties=catalogue_item.properties,
-            manufacturer=catalogue_item.manufacturer,
-        )
+    catalogue_item_in = CatalogueItemIn(
+        catalogue_category_id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
     )
-    # pylint: enable=duplicate-code
+    created_catalogue_item = catalogue_item_repository.create(catalogue_item_in)
 
-    database_mock.catalogue_items.insert_one.assert_called_once_with(
-        {
-            "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-            "name": catalogue_item.name,
-            "description": catalogue_item.description,
-            "properties": [prop.model_dump() for prop in catalogue_item.properties],
-            "manufacturer": catalogue_item.manufacturer.model_dump(),
-        }
-    )
+    database_mock.catalogue_items.insert_one.assert_called_once_with(catalogue_item_in.model_dump())
     assert created_catalogue_item == catalogue_item
 
 
@@ -149,24 +159,9 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
 
     Verify that the `get` method properly handles the retrieval of a catalogue item by ID.
     """
-    # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, postcode",
-            url="https://www.manufacturer-a.co.uk",
-        ),
+        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
     )
-    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a catalogue item document
     test_helpers.mock_find_one(
@@ -174,10 +169,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
         {
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-            "name": catalogue_item.name,
-            "description": catalogue_item.description,
-            "properties": catalogue_item.properties,
-            "manufacturer": catalogue_item.manufacturer,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
 
@@ -221,37 +213,12 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
 
     Verify that the `list` method properly handles the retrieval of catalogue items without filters.
     """
-    # pylint: disable=duplicate-code
     catalogue_item_a = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, postcode",
-            url="https://www.manufacturer-a.co.uk",
-        ),
+        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
     )
-
     catalogue_item_b = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item B",
-        description="This is Catalogue Item B",
-        properties=[Property(name="Property A", value=True)],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, postcode",
-            url="https://www.manufacturer-a.co.uk",
-        ),
+        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_B_INFO
     )
-    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of catalogue item documents
     test_helpers.mock_find(
@@ -260,18 +227,12 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
             {
                 "_id": CustomObjectId(catalogue_item_a.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item_a.catalogue_category_id),
-                "name": catalogue_item_a.name,
-                "description": catalogue_item_a.description,
-                "properties": catalogue_item_a.properties,
-                "manufacturer": catalogue_item_a.manufacturer,
+                **FULL_CATALOGUE_ITEM_A_INFO,
             },
             {
                 "_id": CustomObjectId(catalogue_item_b.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item_b.catalogue_category_id),
-                "name": catalogue_item_b.name,
-                "description": catalogue_item_b.description,
-                "properties": catalogue_item_b.properties,
-                "manufacturer": catalogue_item_b.manufacturer,
+                **FULL_CATALOGUE_ITEM_B_INFO,
             },
         ],
     )
@@ -290,20 +251,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
     category ID filter.
     """
     catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()),
-        catalogue_category_id=str(ObjectId()),
-        name="Catalogue Item A",
-        description="This is Catalogue Item A",
-        properties=[
-            Property(name="Property A", value=20, unit="mm"),
-            Property(name="Property B", value=False),
-            Property(name="Property C", value="20x15x10", unit="cm"),
-        ],
-        manufacturer=Manufacturer(
-            name="Manufacturer A",
-            address="1 Address, City, Country, postcode",
-            url="https://www.manufacturer-a.co.uk",
-        ),
+        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
     )
 
     # Mock `find` to return a list of catalogue item documents
@@ -313,10 +261,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
             {
                 "_id": CustomObjectId(catalogue_item.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-                "name": catalogue_item.name,
-                "description": catalogue_item.description,
-                "properties": catalogue_item.properties,
-                "manufacturer": catalogue_item.manufacturer,
+                **FULL_CATALOGUE_ITEM_A_INFO,
             }
         ],
     )
@@ -369,22 +314,11 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
 
     Verify that the `update` method properly handles the catalogue item to be updated.
     """
-    # pylint: disable=duplicate-code
     catalogue_item_info = {
+        **FULL_CATALOGUE_ITEM_A_INFO,
         "name": "Catalogue Item B",
         "description": "This is Catalogue Item B",
-        "properties": [
-            {"name": "Property A", "value": 20, "unit": "mm"},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10", "unit": "cm"},
-        ],
-        "manufacturer": {
-            "name": "Manufacturer A",
-            "address": "1 Address, City, Country, postcode",
-            "url": "https://www.manufacturer-a.co.uk",
-        },
     }
-    # pylint: enable=duplicate-code
     catalogue_item = CatalogueItemOut(id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **catalogue_item_info)
 
     # Mock `update_one` to return an object for the updated catalogue item document

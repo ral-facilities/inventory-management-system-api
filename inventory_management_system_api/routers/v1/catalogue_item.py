@@ -85,7 +85,12 @@ def create_catalogue_item(
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified catalogue category ID does not exist"
+        if catalogue_item.catalogue_category_id in str(exc) or "catalogue category" in str(exc).lower():
+            message = "The specified catalogue category ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+        message = "The specified replacement catalogue item ID does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except NonLeafCategoryError as exc:
@@ -120,6 +125,14 @@ def partial_update_catalogue_item(
             or "catalogue category" in str(exc).lower()
         ):
             message = "The specified catalogue category ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+        if (
+            catalogue_item.obsolete_replacement_catalogue_item_id
+            and catalogue_item.obsolete_replacement_catalogue_item_id in str(exc)
+        ):
+            message = "The specified replacement catalogue item ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
