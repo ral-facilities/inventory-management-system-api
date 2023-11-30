@@ -13,6 +13,7 @@ CATALOGUE_CATEGORY_POST_A = {
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "mandatory": True},
         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
+        {"name": "Property D", "type": "string", "mandatory": False},
     ],
 }
 
@@ -60,7 +61,11 @@ ITEM_POST_EXPECTED = {
     "id": ANY,
     "purchase_order_number": None,
     "asset_number": None,
-    "catalogue_item_override_properties": [{"name": "Property A", "value": 21, "unit": "mm"}],
+    "catalogue_item_override_properties": [
+        {"name": "Property A", "value": 21, "unit": "mm"},
+        {"name": "Property B", "value": False, "unit": None},
+        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+    ],
 }
 
 
@@ -160,12 +165,10 @@ def test_create_item_without_catalogue_item_override_properties(test_client):
 
     item = response.json()
 
-    assert item == {
-        **ITEM_POST_EXPECTED,
-        "catalogue_item_id": catalogue_item_id,
-        "system_id": system_id,
-        "catalogue_item_override_properties": [],
-    }
+    item_expected = {**ITEM_POST_EXPECTED, "catalogue_item_id": catalogue_item_id, "system_id": None}
+    item_expected["catalogue_item_override_properties"][0]["value"] = 20
+
+    assert item == item_expected
 
 
 def test_create_item_with_invalid_value_type_for_string_property(test_client):

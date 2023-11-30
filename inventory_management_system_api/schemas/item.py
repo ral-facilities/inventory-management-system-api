@@ -38,7 +38,9 @@ class ItemPostRequestSchema(BaseModel):
     delivered_date: Optional[AwareDatetime] = Field(default=None, description="The date the item was delivered")
     notes: Optional[str] = Field(default=None, description="Any notes about the item")
     catalogue_item_override_properties: Optional[List[PropertyPostRequestSchema]] = Field(
-        default=None, description="The overriden catalogue item properties specific to this item"
+        default=None,
+        description="The overriden catalogue item properties specific to this item. The properties from the catalogue "
+        "item are automatically used for the ones that are not overriden.",
     )
 
 
@@ -49,5 +51,6 @@ class ItemSchema(ItemPostRequestSchema):
 
     id: str = Field(description="The ID of the item")
     catalogue_item_override_properties: List[PropertySchema] = Field(
-        description="The overriden catalogue item properties specific to this item"
+        description="The overriden catalogue item properties specific to this item. The properties from the catalogue "
+        "item are automatically used for the ones that are not overriden.",
     )

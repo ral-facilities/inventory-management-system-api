@@ -23,6 +23,7 @@ FULL_CATALOGUE_CATEGORY_A_INFO = {
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
+        {"name": "Property D", "type": "string", "unit": None, "mandatory": False},
     ],
 }
 
@@ -66,7 +67,11 @@ FULL_ITEM_INFO = {
     **ITEM_INFO,
     "purchase_order_number": None,
     "asset_number": None,
-    "catalogue_item_override_properties": [{"name": "Property A", "value": 21, "unit": "mm"}],
+    "catalogue_item_override_properties": [
+        {"name": "Property A", "value": 21, "unit": "mm"},
+        {"name": "Property B", "value": False, "unit": None},
+        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+    ],
 }
 # pylint: enable=duplicate-code
 
@@ -230,7 +235,7 @@ def test_create_without_catalogue_item_override_properties(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
-            **{**FULL_ITEM_INFO, "catalogue_item_override_properties": []},
+            **{**FULL_ITEM_INFO, "catalogue_item_override_properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
         )
     )
     assert created_item == item
