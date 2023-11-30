@@ -38,7 +38,6 @@ def generate_code(name: str, entity_type: str) -> str:
 def process_catalogue_item_properties(
     defined_properties: List[CatalogueItemProperty],
     supplied_properties: List[PropertyPostRequestSchema],
-    skip_missing_mandatory_check: bool = False,
 ) -> List[Dict]:
     """
     Process and validate supplied catalogue item properties based on defined catalogue item properties. It checks
@@ -49,17 +48,14 @@ def process_catalogue_item_properties(
 
     :param defined_properties: The list of defined catalogue item property objects.
     :param supplied_properties: The list of supplied catalogue item property objects.
-    :param skip_missing_mandatory_check: Whether to skip the check for missing mandatory catalogue item properties.
-        Default is `False`.
     :return: A list of processed and validated supplied catalogue item properties.
     """
     # Convert properties to dictionaries for easier lookups
     defined_properties_dict = _create_catalogue_item_properties_dict(defined_properties)
     supplied_properties_dict = _create_catalogue_item_properties_dict(supplied_properties)
 
-    if not skip_missing_mandatory_check:
-        # Some mandatory catalogue item properties may not have been supplied
-        _check_missing_mandatory_catalogue_item_properties(defined_properties_dict, supplied_properties_dict)
+    # Some mandatory catalogue item properties may not have been supplied
+    _check_missing_mandatory_catalogue_item_properties(defined_properties_dict, supplied_properties_dict)
     # Catalogue item properties that have not been defined may have been supplied
     supplied_properties_dict = _filter_matching_catalogue_item_properties(
         defined_properties_dict, supplied_properties_dict

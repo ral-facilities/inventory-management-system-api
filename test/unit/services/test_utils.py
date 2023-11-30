@@ -50,16 +50,6 @@ class TestProcessCatalogueItemProperties:
             utils.process_catalogue_item_properties(DEFINED_PROPERTIES, [SUPPLIED_PROPERTIES[0]])
         assert str(exc.value) == f"Missing mandatory catalogue item property: '{SUPPLIED_PROPERTIES[1].name}'"
 
-    def test_process_catalogue_item_properties_with_missing_mandatory_properties_when_check_skipped(
-        self,
-    ):
-        """
-        Test `test_process_catalogue_item_properties` works correctly with missing mandatory properties when the
-        `skip_missing_mandatory_check` param is set to `True`.
-        """
-        result = utils.process_catalogue_item_properties(DEFINED_PROPERTIES, [SUPPLIED_PROPERTIES[0]], True)
-        assert result == [EXPECTED_PROCESSED_PROPERTIES[0]]
-
     def test_process_catalogue_item_properties_with_missing_non_mandatory_properties(self):
         """
         Test `process_catalogue_item_properties` works correctly with missing non-mandatory properties.
