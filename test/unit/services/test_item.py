@@ -202,7 +202,7 @@ def test_create_without_catalogue_item_override_properties(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
-        **{**FULL_ITEM_INFO, "catalogue_item_override_properties": []},
+        **{**FULL_ITEM_INFO, "catalogue_item_override_properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
     )
 
     catalogue_category_id = str(ObjectId())
@@ -221,13 +221,9 @@ def test_create_without_catalogue_item_override_properties(
     # Mock `create` to return the created item
     test_helpers.mock_create(item_repository_mock, item)
 
-    created_item = item_service.create(
-        ItemPostRequestSchema(
-            catalogue_item_id=item.catalogue_item_id,
-            system_id=item.system_id,
-            **{**ITEM_INFO, "catalogue_item_override_properties": []},
-        )
-    )
+    item_post = {**ITEM_INFO, "catalogue_item_id": item.catalogue_item_id, "system_id": item.system_id}
+    del item_post["catalogue_item_override_properties"]
+    created_item = item_service.create(ItemPostRequestSchema(**item_post))
 
     catalogue_item_repository_mock.get.assert_called_once_with(item.catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)

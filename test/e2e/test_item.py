@@ -146,19 +146,13 @@ def test_create_item_without_catalogue_item_override_properties(test_client):
     """
     Testing creating an item without catalogue item override properties.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"]}
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    item_post = {
-        **ITEM_POST,
-        "catalogue_item_id": catalogue_item_id,
-        "system_id": system_id,
-        "catalogue_item_override_properties": [],
-    }
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    del item_post["catalogue_item_override_properties"]
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 201

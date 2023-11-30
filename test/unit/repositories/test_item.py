@@ -19,20 +19,15 @@ FULL_SYSTEM_A_INFO = {
     "code": "system-a",
 }
 
-ITEM_INFO = {
+FULL_ITEM_INFO = {
+    "purchase_order_number": None,
     "is_defective": False,
     "usage_status": 0,
     "warranty_end_date": "2015-11-15T23:59:59Z",
+    "asset_number": None,
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
     "notes": "Test notes",
-    "catalogue_item_override_properties": [{"name": "Property A", "value": 21}],
-}
-
-FULL_ITEM_INFO = {
-    **ITEM_INFO,
-    "purchase_order_number": None,
-    "asset_number": None,
     "catalogue_item_override_properties": [{"name": "Property A", "value": 21, "unit": "mm"}],
 }
 # pylint: enable=duplicate-code
