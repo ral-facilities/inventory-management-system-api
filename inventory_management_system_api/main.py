@@ -13,7 +13,7 @@ from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.logger_setup import setup_logger
 from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system, manufacturer
 
-app = FastAPI(title=config.api.title, description=config.api.description)
+app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
 
 setup_logger()
 logger = logging.getLogger()
