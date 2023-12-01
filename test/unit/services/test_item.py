@@ -60,14 +60,14 @@ ITEM_INFO = {
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
     "notes": "Test notes",
-    "catalogue_item_override_properties": [{"name": "Property A", "value": 21}],
+    "properties": [{"name": "Property A", "value": 21}],
 }
 
 FULL_ITEM_INFO = {
     **ITEM_INFO,
     "purchase_order_number": None,
     "asset_number": None,
-    "catalogue_item_override_properties": [
+    "properties": [
         {"name": "Property A", "value": 21, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
@@ -192,17 +192,17 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_item_id}"
 
 
-def test_create_without_catalogue_item_override_properties(
+def test_create_without_properties(
     test_helpers, item_repository_mock, catalogue_category_repository_mock, catalogue_item_repository_mock, item_service
 ):
     """
-    Testing creating an item without catalogue item override properties.
+    Testing creating an item without properties.
     """
     item = ItemOut(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
-        **{**FULL_ITEM_INFO, "catalogue_item_override_properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
+        **{**FULL_ITEM_INFO, "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
     )
 
     catalogue_category_id = str(ObjectId())
@@ -222,7 +222,7 @@ def test_create_without_catalogue_item_override_properties(
     test_helpers.mock_create(item_repository_mock, item)
 
     item_post = {**ITEM_INFO, "catalogue_item_id": item.catalogue_item_id, "system_id": item.system_id}
-    del item_post["catalogue_item_override_properties"]
+    del item_post["properties"]
     created_item = item_service.create(ItemPostRequestSchema(**item_post))
 
     catalogue_item_repository_mock.get.assert_called_once_with(item.catalogue_item_id)
@@ -231,7 +231,7 @@ def test_create_without_catalogue_item_override_properties(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
-            **{**FULL_ITEM_INFO, "catalogue_item_override_properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
+            **{**FULL_ITEM_INFO, "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
         )
     )
     assert created_item == item

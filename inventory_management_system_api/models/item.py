@@ -24,24 +24,23 @@ class ItemIn(BaseModel):
     serial_number: Optional[str] = None
     delivered_date: Optional[AwareDatetime] = None
     notes: Optional[str] = None
-    catalogue_item_override_properties: List[Property] = []
+    properties: List[Property] = []
 
-    @field_validator("catalogue_item_override_properties", mode="before")
+    @field_validator("properties", mode="before")
     @classmethod
-    def validate_catalogue_item_override_properties(cls, catalogue_item_override_properties: Any) -> Any:
+    def validate_properties(cls, properties: Any) -> Any:
         """
-        Validator for the `catalogue_item_override_properties` field that runs after field assignment but before type
-        validation.
+        Validator for the `properties` field that runs after field assignment but before type validation.
 
-        If the value is `None`, it replaces it with an empty list allowing for items without override properties to be
-        created.
+        If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
 
-        :param catalogue_item_override_properties: The list of override properties.
-        :return: The list of override properties or an empty list.
+        :param properties: The list of properties specific to this item as defined in the corresponding catalogue
+            category.
+        :return: The list of properties specific to this item or an empty list.
         """
-        if catalogue_item_override_properties is None:
-            catalogue_item_override_properties = []
-        return catalogue_item_override_properties
+        if properties is None:
+            properties = []
+        return properties
 
 
 class ItemOut(ItemIn):

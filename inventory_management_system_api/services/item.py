@@ -51,6 +51,8 @@ class ItemService:
         """
         Create a new item.
 
+        All properties found in the catalogue item will be inherited if not explicitly provided.
+
         :param item: The item to be created.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
@@ -68,43 +70,45 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
-        supplied_properties = item.catalogue_item_override_properties if item.catalogue_item_override_properties else []
-        non_overriden_properties = self._get_non_overriden_catalogue_item_properties(
+        supplied_properties = item.properties if item.properties else []
+        missing_supplied_properties = self._find_missing_supplied_properties(
             catalogue_item.properties, supplied_properties
         )
-        # Use the properties from the catalogue item for those that have not been overriden
+        # Inherit the missing properties from the corresponding catalogue item. Create `PropertyPostRequestSchema`
+        # objects for the inherited properties and add them to the `supplied_properties` list before proceeding with
+        # processing and validation.
         supplied_properties.extend(
-            [PropertyPostRequestSchema(**prop.model_dump()) for prop in non_overriden_properties]
+            [PropertyPostRequestSchema(**prop.model_dump()) for prop in missing_supplied_properties]
         )
 
         defined_properties = catalogue_category.catalogue_item_properties
-        override_properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
+        properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._item_repository.create(
             ItemIn(
                 **{
                     **item.model_dump(),
-                    "catalogue_item_override_properties": override_properties,
+                    "properties": properties,
                 }
             )
         )
 
-    def _get_non_overriden_catalogue_item_properties(
+    def _find_missing_supplied_properties(
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[Property]:
         """
-        Get the properties from the catalogue item that have not been overriden. If a catalogue item property is not
-        part of the supplied properties it means that it has not been overriden.
+        Find the properties that have not been supplied. If a property is part of the corresponding catalogue item but
+        not part of the supplied properties, it means that it is missing.
 
         :param catalogue_item_properties: The list of property objects from the catalogue item.
-        :param supplied_properties: The list of supplied catalogue item override property objects.
-        :return: A list of non overriden catalogue item properties.
+        :param supplied_properties: The list of supplied property objects specific to the item.
+        :return: A list of properties that are have not been supplied.
         """
         supplied_property_names = [supplied_property.name for supplied_property in supplied_properties]
 
-        non_overriden_properties = []
+        missing_supplied_properties = []
         for catalogue_item_property in catalogue_item_properties:
             if catalogue_item_property.name not in supplied_property_names:
-                non_overriden_properties.append(catalogue_item_property)
+                missing_supplied_properties.append(catalogue_item_property)
 
-        return non_overriden_properties
+        return missing_supplied_properties

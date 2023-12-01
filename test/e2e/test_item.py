@@ -53,7 +53,7 @@ ITEM_POST = {
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
     "notes": "Test notes",
-    "catalogue_item_override_properties": [{"name": "Property A", "value": 21}],
+    "properties": [{"name": "Property A", "value": 21}],
 }
 
 ITEM_POST_EXPECTED = {
@@ -61,7 +61,7 @@ ITEM_POST_EXPECTED = {
     "id": ANY,
     "purchase_order_number": None,
     "asset_number": None,
-    "catalogue_item_override_properties": [
+    "properties": [
         {"name": "Property A", "value": 21, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
@@ -142,9 +142,9 @@ def test_create_item_with_non_existent_system_id(test_client):
     assert response.json()["detail"] == "The specified system ID does not exist"
 
 
-def test_create_item_without_catalogue_item_override_properties(test_client):
+def test_create_item_without_properties(test_client):
     """
-    Testing creating an item without catalogue item override properties.
+    Testing creating an item without properties.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"]}
@@ -152,7 +152,7 @@ def test_create_item_without_catalogue_item_override_properties(test_client):
     catalogue_item_id = response.json()["id"]
 
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
-    del item_post["catalogue_item_override_properties"]
+    del item_post["properties"]
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 201
@@ -160,7 +160,7 @@ def test_create_item_without_catalogue_item_override_properties(test_client):
     item = response.json()
 
     item_expected = {**ITEM_POST_EXPECTED, "catalogue_item_id": catalogue_item_id, "system_id": None}
-    item_expected["catalogue_item_override_properties"][0]["value"] = 20
+    item_expected["properties"][0]["value"] = 20
 
     assert item == item_expected
 
@@ -180,7 +180,7 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "catalogue_item_override_properties": [{"name": "Property C", "value": True}],
+        "properties": [{"name": "Property C", "value": True}],
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -206,7 +206,7 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "catalogue_item_override_properties": [{"name": "Property A", "value": "20"}],
+        "properties": [{"name": "Property A", "value": "20"}],
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -232,7 +232,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "catalogue_item_override_properties": [{"name": "Property B", "value": "False"}],
+        "properties": [{"name": "Property B", "value": "False"}],
     }
     response = test_client.post("/v1/items", json=item_post)
 
