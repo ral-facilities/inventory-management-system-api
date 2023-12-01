@@ -41,8 +41,8 @@ def process_catalogue_item_properties(
 ) -> List[Dict]:
     """
     Process and validate supplied catalogue item properties based on defined catalogue item properties. It checks
-    for missing mandatory catalogue item properties unless otherwise instructed, filters the matching catalogue item
-    properties, adds the property units, and finally validates the property values.
+    for missing mandatory catalogue item properties, filters the matching catalogue item properties, adds the property
+    units, and finally validates the property values.
 
     The `supplied_properties_dict` dictionary may get modified as part of the processing and validation.
 
