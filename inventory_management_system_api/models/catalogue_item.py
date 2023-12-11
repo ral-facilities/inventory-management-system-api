@@ -65,8 +65,9 @@ class CatalogueItemIn(BaseModel):
         If the value is `None`, it replaces it with an empty list allowing for catalogue items without properties to be
         created.
 
-        :param properties: The list of properties.
-        :return: The list of properties or an empty list.
+        :param properties: The list of properties specific to this catalogue item as defined in the corresponding
+            catalogue category.
+        :return: The list of properties specific to this catalogue item or an empty list.
         """
         if properties is None:
             properties = []

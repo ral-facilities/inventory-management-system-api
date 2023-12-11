@@ -5,7 +5,7 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
-
+# pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_A = {
     "name": "Category A",
     "is_leaf": True,
@@ -15,6 +15,7 @@ CATALOGUE_CATEGORY_POST_A = {
         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
     ],
 }
+# pylint: enable=duplicate-code
 
 CATALOGUE_CATEGORY_POST_B = {
     "name": "Category B",
