@@ -49,7 +49,9 @@ class CatalogueItemPostRequestSchema(BaseModel):
         default=None, description="The ID of the catalogue item that replaces this catalogue item if obsolete"
     )
     properties: Optional[List[PropertyPostRequestSchema]] = Field(
-        default=None, description="The catalogue item properties"
+        default=None,
+        description="The properties specific to this catalogue item as defined in the corresponding "
+        "catalogue category",
     )
 
 
@@ -76,4 +78,7 @@ class CatalogueItemSchema(CatalogueItemPostRequestSchema):
     """
 
     id: str = Field(description="The ID of the catalogue item")
-    properties: List[PropertySchema] = Field(description="The catalogue item properties")
+    properties: List[PropertySchema] = Field(
+        description="The properties specific to this catalogue item as defined "
+        "in the corresponding catalogue category"
+    )
