@@ -89,6 +89,10 @@ def create_catalogue_item(
             message = "The specified catalogue category ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        if catalogue_item.manufacturer_id in str(exc) or "manufacturer" in str(exc).lower():
+            message = "The specified manufacturer ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
         message = "The specified replacement catalogue item ID does not exist"
         logger.exception(message)
@@ -125,6 +129,14 @@ def partial_update_catalogue_item(
             or "catalogue category" in str(exc).lower()
         ):
             message = "The specified catalogue category ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        if (
+            catalogue_item.manufacturer_id
+            and catalogue_item.manufacturer_id in str(exc)
+            or "manufacturer" in str(exc).lower()
+        ):
+            message = "The specified manufacturer ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 

@@ -3,7 +3,7 @@ Module for defining the database models for representing catalogue items.
 """
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, HttpUrl, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
@@ -18,30 +18,13 @@ class Property(BaseModel):
     unit: Optional[str] = None
 
 
-class Manufacturer(BaseModel):
-    """Input database model for a manufacturer"""
-
-    name: str
-    url: HttpUrl
-    address: str
-
-    @field_serializer("url")
-    def serialize_url(self, url: HttpUrl):
-        """
-        Convert `url` to string when the model is dumped.
-        :param url: The `HttpUrl` object.
-        :return: The URL as a string.
-        """
-        return url if url is None else str(url)
-
-
 class CatalogueItemIn(BaseModel):
     """
     Input database model for a catalogue item.
     """
 
     catalogue_category_id: CustomObjectIdField
-    manufacturer: Manufacturer  # TODO - Change from manufacturer to manufacturer id # pylint: disable=fixme
+    manufacturer_id: CustomObjectIdField
     name: str
     description: Optional[str] = None
     cost_gbp: float
@@ -90,5 +73,6 @@ class CatalogueItemOut(CatalogueItemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     catalogue_category_id: StringObjectIdField
+    manufacturer_id: StringObjectIdField
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

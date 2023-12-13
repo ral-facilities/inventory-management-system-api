@@ -6,6 +6,7 @@ from bson import ObjectId
 
 def test_create_manufacturer(test_client):
     """Test creating a manufacturer"""
+    # pylint: disable=duplicate-code
     manufacturer_post = {
         "name": "Manufacturer A",
         "url": "http://example.com/",
@@ -18,6 +19,7 @@ def test_create_manufacturer(test_client):
         },
         "telephone": "0932348348",
     }
+    # pylint: enable=duplicate-code
 
     response = test_client.post("/v1/manufacturers", json=manufacturer_post)
 
@@ -103,6 +105,7 @@ def test_list(test_client):
         "telephone": "0932348348",
     }
     test_client.post("/v1/manufacturers", json=manufacturer_post_a)
+    # pylint: disable=duplicate-code
     manufacturer_post_b = {
         "name": "Manufacturer B",
         "url": "http://test.com/",
@@ -115,6 +118,7 @@ def test_list(test_client):
         },
         "telephone": "05940545",
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/manufacturers", json=manufacturer_post_b)
 
     response = test_client.get("/v1/manufacturers")
@@ -399,48 +403,56 @@ def test_delete_with_a_nonexistent_id(test_client):
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
-def test_delete_manufacturer_that_is_a_part_of_catalogue_item():
+def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     """Test trying to delete a manufacturer that is a part of a Catalogue Item"""
-    # pylint: disable=fixme
-    # TODO - Uncomment test when catalogue item logic changes back to using manufacturer Id
 
-    # manufacturer_post = {
-    #     "name": "Manufacturer A",
-    #     "url": "http://example.com/",
-    #     "address": {
-    #         "building_number": "1",
-    #         "street_name": "Example Street",
-    #         "town": "Oxford",
-    #         "county": "Oxfordshire",
-    #         "postcode": "OX1 2AB",
-    #     },
-    #     "telephone": "0932348348",
-    # }
-    # response = test_client.post("/v1/manufacturers", json=manufacturer_post)
-    # manufacturer_id = response.json()["id"]
-    # # pylint: disable=duplicate-code
-    # catalogue_category_post = {
-    #     "name": "Category A",
-    #     "is_leaf": True,
-    #     "catalogue_item_properties": [
-    #         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-    #         {"name": "Property B", "type": "boolean", "mandatory": True},
-    #     ],
-    # }
+    manufacturer_post = {
+        "name": "Manufacturer A",
+        "url": "http://example.com/",
+        "address": {
+            "address_line": "1 Example Street",
+            "town": "Oxford",
+            "county": "Oxfordshire",
+            "country": "United Kingdom",
+            "postcode": "OX1 2AB",
+        },
+        "telephone": "0932348348",
+    }
+    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+    manufacturer_id = response.json()["id"]
+    # pylint: disable=duplicate-code
+    catalogue_category_post = {
+        "name": "Category A",
+        "is_leaf": True,
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Property B", "type": "boolean", "mandatory": True},
+        ],
+    }
     # pylint: enable=duplicate-code
-    # response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    catalogue_category_id = response.json()["id"]
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        "name": "Catalogue Item A",
+        "catalogue_category_id": catalogue_category_id,
+        "description": "This is Catalogue Item A",
+        "cost_gbp": 129.99,
+        "days_to_replace": 2.0,
+        "drawing_link": "https://drawing-link.com/",
+        "item_model_number": "abc123",
+        "is_obsolete": False,
+        "properties": [
+            {"name": "Property A", "value": 20},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10"},
+        ],
+        "manufacturer_id": manufacturer_id,
+    }
+    # pylint: enable=duplicate-code
+    test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    # catalogue_item_post = {
-    #     "catalogue_category_id": catalogue_category_id,
-    #     "name": "Catalogue Item A",
-    #     "description": "This is Catalogue Item A",
-    #     "properties": [{"name": "Property B", "value": False}],
-    #     "manufacturer": manufacturer_post,
-    # }
-    # # pylint: enable=duplicate-code
-    # test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    response = test_client.delete(f"/v1/manufacturers/{manufacturer_id}")
 
-    # response = test_client.delete(f"/v1/manufacturer/{manufacturer_id}")
-
-    # assert response.status_code == 409
-    # assert response.json()["detail"] == "The specified manufacturer is a part of a Catalogue Item"
+    assert response.status_code == 409
+    assert response.json()["detail"] == "The specified manufacturer is a part of a Catalogue Item"

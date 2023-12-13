@@ -6,14 +6,6 @@ from typing import List, Any, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 
-class ManufacturerPostRequestSchema(BaseModel):
-    """Schema model for a manufacturer creation request"""
-
-    name: str
-    url: HttpUrl
-    address: str
-
-
 class PropertyPostRequestSchema(BaseModel):
     """
     Schema model for a catalogue item property creation request.
@@ -39,9 +31,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
     catalogue_category_id: str = Field(
         description="The ID of the catalogue category that the catalogue item belongs to"
     )
-    # pylint: disable=fixme
-    # TODO - Change from manufacturer to manufacturer id
-    manufacturer: ManufacturerPostRequestSchema = Field(description="The details of the manufacturer")
+    manufacturer_id: str = Field(description="The ID of the manufacturer")
     name: str = Field(description="The name of the catalogue item")
     description: Optional[str] = Field(default=None, description="The description of the catalogue item")
     cost_gbp: float = Field(description="The cost of the catalogue item")
@@ -73,11 +63,7 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     catalogue_category_id: Optional[str] = Field(
         default=None, description="The ID of the catalogue category that the catalogue item belongs to"
     )
-    # pylint: disable=fixme
-    # TODO - Change from manufacturer to manufacturer id
-    manufacturer: Optional[ManufacturerPostRequestSchema] = Field(
-        default=None, description="The details of the manufacturer"
-    )
+    manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer")
     name: Optional[str] = Field(default=None, description="The name of the catalogue item")
     cost_gbp: Optional[float] = Field(default=None, description="The cost of the catalogue item")
     days_to_replace: Optional[float] = Field(

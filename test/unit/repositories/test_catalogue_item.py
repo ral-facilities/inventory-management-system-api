@@ -10,13 +10,7 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 
-# pylint: disable=duplicate-code
 FULL_CATALOGUE_ITEM_A_INFO = {
-    "manufacturer": {
-        "name": "Manufacturer A",
-        "address": "1 Address, City, Country, Postcode",
-        "url": "https://www.manufacturer-a.co.uk/",
-    },
     "name": "Catalogue Item A",
     "description": "This is Catalogue Item A",
     "cost_gbp": 129.99,
@@ -36,12 +30,8 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     ],
 }
 
+# pylint: disable=duplicate-code
 FULL_CATALOGUE_ITEM_B_INFO = {
-    "manufacturer": {
-        "name": "Manufacturer A",
-        "address": "1 Address, City, Country, Postcode",
-        "url": "https://www.manufacturer-a.co.uk/",
-    },
     "name": "Catalogue Item B",
     "description": "This is Catalogue Item B",
     "cost_gbp": 300.00,
@@ -66,9 +56,14 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     Verify that the `create` method properly handles the catalogue item to be created, checks that there is not a
     duplicate catalogue item, and creates the catalogue item.
     """
+    # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        manufacturer_id=str(ObjectId()),
+        **FULL_CATALOGUE_ITEM_A_INFO,
     )
+    # pylint: enable=duplicate-code
 
     # Mock `count_documents` to return 0 (no duplicate catalogue item found within the catalogue category)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
@@ -80,12 +75,15 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         {
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+            "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
             **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
 
     catalogue_item_in = CatalogueItemIn(
-        catalogue_category_id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
+        catalogue_category_id=catalogue_item.catalogue_category_id,
+        manufacturer_id=catalogue_item.manufacturer_id,
+        **FULL_CATALOGUE_ITEM_A_INFO,
     )
     created_catalogue_item = catalogue_item_repository.create(catalogue_item_in)
 
@@ -159,9 +157,14 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
 
     Verify that the `get` method properly handles the retrieval of a catalogue item by ID.
     """
+    # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        manufacturer_id=str(ObjectId()),
+        **FULL_CATALOGUE_ITEM_A_INFO,
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a catalogue item document
     test_helpers.mock_find_one(
@@ -169,6 +172,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
         {
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+            "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
             **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
@@ -214,10 +218,16 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
     Verify that the `list` method properly handles the retrieval of catalogue items without filters.
     """
     catalogue_item_a = CatalogueItemOut(
-        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        manufacturer_id=str(ObjectId()),
+        **FULL_CATALOGUE_ITEM_A_INFO,
     )
     catalogue_item_b = CatalogueItemOut(
-        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_B_INFO
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        manufacturer_id=str(ObjectId()),
+        **FULL_CATALOGUE_ITEM_B_INFO,
     )
 
     # Mock `find` to return a list of catalogue item documents
@@ -227,11 +237,13 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
             {
                 "_id": CustomObjectId(catalogue_item_a.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item_a.catalogue_category_id),
+                "manufacturer_id": CustomObjectId(catalogue_item_a.manufacturer_id),
                 **FULL_CATALOGUE_ITEM_A_INFO,
             },
             {
                 "_id": CustomObjectId(catalogue_item_b.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item_b.catalogue_category_id),
+                "manufacturer_id": CustomObjectId(catalogue_item_b.manufacturer_id),
                 **FULL_CATALOGUE_ITEM_B_INFO,
             },
         ],
@@ -250,10 +262,14 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
     Verify that the `list` method properly handles the retrieval of catalogue items based on the provided catalogue
     category ID filter.
     """
+    # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
-        id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **FULL_CATALOGUE_ITEM_A_INFO
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        manufacturer_id=str(ObjectId()),
+        **FULL_CATALOGUE_ITEM_A_INFO,
     )
-
+    # pylint: enable=duplicate-code
     # Mock `find` to return a list of catalogue item documents
     test_helpers.mock_find(
         database_mock.catalogue_items,
@@ -261,6 +277,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
             {
                 "_id": CustomObjectId(catalogue_item.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+                "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
                 **FULL_CATALOGUE_ITEM_A_INFO,
             }
         ],
@@ -319,7 +336,14 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         "name": "Catalogue Item B",
         "description": "This is Catalogue Item B",
     }
-    catalogue_item = CatalogueItemOut(id=str(ObjectId()), catalogue_category_id=str(ObjectId()), **catalogue_item_info)
+    # pylint: disable=duplicate-code
+    catalogue_item = CatalogueItemOut(
+        id=str(ObjectId()),
+        catalogue_category_id=str(ObjectId()),
+        manufacturer_id=str(ObjectId()),
+        **catalogue_item_info,
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `update_one` to return an object for the updated catalogue item document
     test_helpers.mock_update_one(database_mock.catalogue_items)
@@ -329,12 +353,15 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         {
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
+            "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
             **catalogue_item_info,
         },
     )
 
     catalogue_item_in = CatalogueItemIn(
-        catalogue_category_id=catalogue_item.catalogue_category_id, **catalogue_item_info
+        catalogue_category_id=catalogue_item.catalogue_category_id,
+        manufacturer_id=catalogue_item.manufacturer_id,
+        **catalogue_item_info,
     )
     updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in)
 
