@@ -8,6 +8,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
+    DuplicatePropertyName,
     LeafCategoryError,
     MissingRecordError,
 )
@@ -19,6 +20,7 @@ from inventory_management_system_api.models.catalogue_category import (
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
+    CatalogueItemPropertySchema,
 )
 
 
@@ -215,6 +217,57 @@ def test_create_with_leaf_parent_catalogue_category(
             )
         )
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
+
+def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test trying to create a catalogue category with duplicate catalogue item property names
+    """
+    # pylint: disable=duplicate-code
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=True,
+        parent_id=str(ObjectId()),
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Property A", type="boolean", mandatory=True),
+        ],
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return the parent catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.parent_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=False,
+            parent_id=None,
+            catalogue_item_properties=[],
+        ),
+    )
+    # pylint: enable=duplicate-code
+
+    # the same catalogue item properties but mapped to the schema so that they are accepted
+    catalogue_category_catalogue_item_properties = [
+        CatalogueItemPropertySchema(name="Property A", type="number", unit="mm", mandatory=False),
+        CatalogueItemPropertySchema(name="Property A", type="boolean", mandatory=True),
+    ]
+
+    with pytest.raises(DuplicatePropertyName) as exc:
+        # pylint: disable=duplicate-code
+        catalogue_category_service.create(
+        CatalogueCategoryPostRequestSchema(
+            name=catalogue_category.name,
+            is_leaf=catalogue_category.is_leaf,
+            catalogue_item_properties=catalogue_category_catalogue_item_properties,
+        )
+    )
+        # pylint: enable=duplicate-code
+    assert str(exc.value) == "Cannot add catalogue category with duplicate catalogue item property names"
 
 
 def test_delete(catalogue_category_repository_mock, catalogue_category_service):
