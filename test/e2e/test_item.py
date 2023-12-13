@@ -86,6 +86,7 @@ def test_create_item(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
@@ -94,6 +95,7 @@ def test_create_item(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     response = test_client.post("/v1/items", json=item_post)
@@ -133,6 +135,7 @@ def test_create_item_with_invalid_system_id(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
@@ -142,6 +145,7 @@ def test_create_item_with_invalid_system_id(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": "invalid"}
     response = test_client.post("/v1/items", json=item_post)
@@ -157,6 +161,7 @@ def test_create_item_with_non_existent_system_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
@@ -165,6 +170,7 @@ def test_create_item_with_non_existent_system_id(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": str(ObjectId())}
     response = test_client.post("/v1/items", json=item_post)
@@ -179,6 +185,7 @@ def test_create_item_without_properties(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
@@ -188,6 +195,7 @@ def test_create_item_without_properties(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
     del item_post["properties"]
@@ -211,6 +219,7 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
@@ -220,6 +229,7 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {
         **ITEM_POST,
@@ -244,6 +254,7 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
@@ -253,6 +264,7 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {
         **ITEM_POST,
@@ -277,6 +289,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
     catalogue_item_post = {
@@ -286,6 +299,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     item_post = {
         **ITEM_POST,

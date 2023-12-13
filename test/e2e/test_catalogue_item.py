@@ -715,6 +715,7 @@ def test_partial_update_catalogue_item(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -724,6 +725,7 @@ def test_partial_update_catalogue_item(test_client):
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
@@ -909,6 +911,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -918,6 +921,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
         "catalogue_category_id": "invalid",
@@ -936,6 +940,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_nonexistent_
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -945,6 +950,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_nonexistent_
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
         "catalogue_category_id": str(ObjectId()),
@@ -1041,6 +1047,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -1050,6 +1057,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": "invalid"}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
@@ -1065,6 +1073,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -1074,6 +1083,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": str(ObjectId())}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
@@ -1121,6 +1131,7 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -1130,6 +1141,7 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch = {"properties": CATALOGUE_ITEM_POST_A["properties"][-2:]}
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
@@ -1153,6 +1165,7 @@ def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -1162,6 +1175,7 @@ def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
         "properties": [CATALOGUE_ITEM_POST_A["properties"][0], CATALOGUE_ITEM_POST_A["properties"][2]]
