@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,
+    DuplicatePropertyName,
     DuplicateRecordError,
     InvalidObjectIdError,
     LeafCategoryError,
@@ -119,6 +120,10 @@ def create_catalogue_category(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except LeafCategoryError as exc:
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except DuplicatePropertyName as exc:
+        message = "Duplicate property names are not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 

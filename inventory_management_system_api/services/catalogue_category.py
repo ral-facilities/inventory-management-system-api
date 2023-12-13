@@ -9,6 +9,7 @@ from fastapi import Depends
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
+    DuplicatePropertyName,
     LeafCategoryError,
     MissingRecordError,
 )
@@ -19,6 +20,7 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
+    CatalogueItemPropertySchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -55,6 +57,11 @@ class CatalogueCategoryService:
 
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+
+
+        logger.info(catalogue_category.catalogue_item_properties)
+        if self.check_duplicate_property_names(catalogue_category.catalogue_item_properties):
+            raise DuplicatePropertyName("Cannot add catalogue category with duplicate catalogue item property names")
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
         return self._catalogue_category_repository.create(
@@ -140,3 +147,29 @@ class CatalogueCategoryService:
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
+
+    def check_duplicate_property_names(self,
+        properties: List[CatalogueItemPropertySchema]
+) -> bool:
+        """
+        Go through all the properties to check for any duplicate property names
+
+        :param properties: The supplied properties when creating or editing a catalogue category
+        :return: Returns true if any duplicate property names have been found
+        """
+
+        logger.info('Checking for duplicate property names')
+        list_of_names = []
+        for dictionary in properties:
+            list_of_names.append(dictionary.name.lower())
+        
+        duplicate_names = set()
+        unique_names = set()
+
+        for name in list_of_names:
+            if name in unique_names:
+                duplicate_names.add(name)
+            else:
+                unique_names.add(name)
+
+        return len(duplicate_names) > 0

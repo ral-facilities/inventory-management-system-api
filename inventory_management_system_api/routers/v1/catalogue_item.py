@@ -8,6 +8,7 @@ from typing import List, Annotated, Optional
 from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
 from inventory_management_system_api.core.exceptions import (
+    DuplicatePropertyName,
     MissingRecordError,
     InvalidObjectIdError,
     NonLeafCategoryError,
