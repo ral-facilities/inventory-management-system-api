@@ -222,6 +222,22 @@ def test_create_catalogue_category_with_invalid_catalogue_item_property_type(tes
     assert response.status_code == 422
     assert response.json()["detail"][0]["msg"] == "Input should be 'string', 'number' or 'boolean'"
 
+def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(test_client):
+    """
+    Test creating a catalogue category with duplicate catalogue item property names.
+    """
+    catalogue_category = {
+        **CATALOGUE_CATEGORY_POST_C,
+        "catalogue_item_properties": [
+            {"name": "Duplicate", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Duplicate", "type": "boolean", "mandatory": True}
+        ],
+    }
+
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Duplicate property names are not allowed"
 
 def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalogue_item_property(test_client):
     """
