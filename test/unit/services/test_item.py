@@ -90,8 +90,10 @@ def test_create(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=item.catalogue_item_id, catalogue_category_id=catalogue_category_id,
-            manufacturer_id=manufacturer_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=item.catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to return a catalogue category
@@ -147,8 +149,10 @@ def test_create_with_invalid_catalogue_item_id(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=catalogue_item_id, catalogue_category_id=catalogue_category_id,
-            manufacturer_id=manufacturer_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to return a catalogue category
@@ -179,8 +183,10 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=catalogue_item_id, catalogue_category_id=catalogue_category_id,
-            manufacturer_id=manufacturer_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to not return a catalogue category
@@ -215,8 +221,10 @@ def test_create_without_properties(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=item.catalogue_item_id, catalogue_category_id=catalogue_category_id,
-            manufacturer_id=manufacturer_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=item.catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to return a catalogue category

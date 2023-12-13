@@ -447,7 +447,7 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
             {"name": "Property B", "value": False},
             {"name": "Property C", "value": "20x15x10"},
         ],
-        "manufacturer_id": manufacturer_id
+        "manufacturer_id": manufacturer_id,
     }
     # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)

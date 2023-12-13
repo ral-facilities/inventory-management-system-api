@@ -33,17 +33,17 @@ CATALOGUE_ITEM_POST_A = {
 }
 
 MANUFACTURER_POST = {
-        "name": "Manufacturer A",
-        "url": "http://example.com/",
-        "address": {
-            "address_line": "1 Example Street",
-            "town": "Oxford",
-            "county": "Oxfordshire",
-            "country": "United Kingdom",
-            "postcode": "OX1 2AB",
-        },
-        "telephone": "0932348348",
-    }
+    "name": "Manufacturer A",
+    "url": "http://example.com/",
+    "address": {
+        "address_line": "1 Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "country": "United Kingdom",
+        "postcode": "OX1 2AB",
+    },
+    "telephone": "0932348348",
+}
 
 SYSTEM_POST_A = {
     "name": "System A",
@@ -85,9 +85,11 @@ def test_create_item(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-        "manufacturer_id": response_manufacturer.json()["id"]
-        }
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
@@ -129,8 +131,11 @@ def test_create_item_with_invalid_system_id(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-                           "manufacturer_id": response_manufacturer.json()["id"]}
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     item_post = {**ITEM_POST, "catalogue_item_id": response.json()["id"], "system_id": "invalid"}
@@ -146,8 +151,11 @@ def test_create_item_with_non_existent_system_id(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-                           "manufacturer_id": response_manufacturer.json()["id"]}
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     item_post = {**ITEM_POST, "catalogue_item_id": response.json()["id"], "system_id": str(ObjectId())}
@@ -163,8 +171,11 @@ def test_create_item_without_properties(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-                           "manufacturer_id": response_manufacturer.json()["id"]}
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
@@ -190,8 +201,11 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-                           "manufacturer_id": response_manufacturer.json()["id"]}
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
@@ -218,8 +232,11 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-                           "manufacturer_id": response_manufacturer.json()["id"]}
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
@@ -246,8 +263,11 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     response_manufacturer = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    catalogue_item_post = {**CATALOGUE_ITEM_POST_A, "catalogue_category_id": response.json()["id"],
-                           "manufacturer_id": response_manufacturer.json()["id"]}
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": response.json()["id"],
+        "manufacturer_id": response_manufacturer.json()["id"],
+    }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
