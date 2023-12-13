@@ -60,7 +60,7 @@ class CatalogueCategoryService:
 
 
         logger.info(catalogue_category.catalogue_item_properties)
-        if self.check_duplicate_property_names(catalogue_category.catalogue_item_properties):
+        if self.check_duplicate_property_names(catalogue_category.catalogue_item_properties if catalogue_category.catalogue_item_properties else []):
             raise DuplicatePropertyName("Cannot add catalogue category with duplicate catalogue item property names")
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
