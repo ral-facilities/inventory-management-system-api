@@ -29,11 +29,6 @@ FULL_CATALOGUE_CATEGORY_A_INFO = {
 }
 
 FULL_CATALOGUE_ITEM_A_INFO = {
-    "manufacturer": {
-        "name": "Manufacturer A",
-        "address": "1 Address, City, Country, Postcode",
-        "url": "https://www.manufacturer-a.co.uk/",
-    },
     "name": "Catalogue Item A",
     "description": "This is Catalogue Item A",
     "cost_gbp": 129.99,
