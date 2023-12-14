@@ -218,7 +218,10 @@ def test_create_with_leaf_parent_catalogue_category(
         )
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
 
-def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+
+def test_create_with_duplicate_property_names(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
     """
     Test trying to create a catalogue category with duplicate catalogue item property names
     """
@@ -260,12 +263,12 @@ def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(
     with pytest.raises(DuplicatePropertyName) as exc:
         # pylint: disable=duplicate-code
         catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(
-            name=catalogue_category.name,
-            is_leaf=catalogue_category.is_leaf,
-            catalogue_item_properties=catalogue_category_catalogue_item_properties,
+            CatalogueCategoryPostRequestSchema(
+                name=catalogue_category.name,
+                is_leaf=catalogue_category.is_leaf,
+                catalogue_item_properties=catalogue_category_catalogue_item_properties,
+            )
         )
-    )
         # pylint: enable=duplicate-code
     assert str(exc.value) == "Cannot add catalogue category with duplicate catalogue item property names"
 
@@ -748,7 +751,10 @@ def test_update_change_catalogue_item_properties_when_has_children(
         == f"Catalogue category with ID {str(catalogue_category.id)} has child elements and cannot be updated"
     )
 
-def test_update_change_catalogue_item_properties_to_have_duplicate_names(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+
+def test_update_properties_to_have_duplicate_names(
+    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+):
     """
     Test that checks that trying to update catalogue item properties so that the names are duplicated is not allowed
 
@@ -767,8 +773,6 @@ def test_update_change_catalogue_item_properties_to_have_duplicate_names(test_he
         ],
     )
     # pylint: enable=duplicate-code
-
-    
 
     # Mock `get` to return a catalogue category
     # pylint: disable=duplicate-code
@@ -796,6 +800,4 @@ def test_update_change_catalogue_item_properties_to_have_duplicate_names(test_he
         )
 
     catalogue_category_repository_mock.update.assert_not_called()
-    assert (
-        str(exc.value) == "Cannot edit a catalogue category to have duplicate catalogue item property names"
-    )
+    assert str(exc.value) == "Cannot edit a catalogue category to have duplicate catalogue item property names"
