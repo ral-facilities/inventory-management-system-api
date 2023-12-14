@@ -58,10 +58,9 @@ class CatalogueCategoryService:
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
-        if self.check_duplicate_property_names(
+        self.check_duplicate_property_names(
             catalogue_category.catalogue_item_properties if catalogue_category.catalogue_item_properties else [], "post"
-        ):
-            raise DuplicatePropertyName("Cannot add catalogue category with duplicate catalogue item property names")
+        )
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
         return self._catalogue_category_repository.create(
@@ -142,10 +141,8 @@ class CatalogueCategoryService:
             "catalogue_item_properties" in update_data
             and catalogue_category.catalogue_item_properties != stored_catalogue_category.catalogue_item_properties
         ):
-            if self.check_duplicate_property_names(update_data["catalogue_item_properties"], "patch"):
-                raise DuplicatePropertyName(
-                    "Cannot edit a catalogue category to have duplicate catalogue item property names"
-                )
+            self.check_duplicate_property_names(update_data["catalogue_item_properties"], "patch")
+
         # If any of these, need to ensure the category has no children
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS):
             if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
@@ -157,7 +154,7 @@ class CatalogueCategoryService:
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
 
-    def check_duplicate_property_names(self, properties: List[CatalogueItemPropertySchema], request: str) -> bool:
+    def check_duplicate_property_names(self, properties: List[CatalogueItemPropertySchema], request: str):
         """
         Go through all the properties to check for any duplicate property names
 
@@ -173,20 +170,19 @@ class CatalogueCategoryService:
 
         if request == "post":
             for dictionary in properties:
-                list_of_names.append(dictionary.name.lower())
+                list_of_names.append(dictionary.name)
 
         if request == "patch":
             for dictionary in properties:
                 for key, value in dictionary.items():
                     if key == "name":
-                        list_of_names.append(value.lower())
-        duplicate_names = set()
+                        list_of_names.append(value)
+
         unique_names = set()
 
         for name in list_of_names:
-            if name in unique_names:
-                duplicate_names.add(name)
-            else:
-                unique_names.add(name)
-
-        return len(duplicate_names) > 0
+            if name.lower() in unique_names:
+                raise DuplicatePropertyName(
+                    f"Cannot have duplicate catalogue item property name: {name}"
+                )
+            unique_names.add(name.lower())

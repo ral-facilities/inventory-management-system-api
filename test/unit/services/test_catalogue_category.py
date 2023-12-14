@@ -270,7 +270,9 @@ def test_create_with_duplicate_property_names(
             )
         )
         # pylint: enable=duplicate-code
-    assert str(exc.value) == "Cannot add catalogue category with duplicate catalogue item property names"
+    assert str(exc.value) == (
+        f"Cannot have duplicate catalogue item property name: {catalogue_category_catalogue_item_properties[0].name}"
+    )
 
 
 def test_delete(catalogue_category_repository_mock, catalogue_category_service):
@@ -800,4 +802,6 @@ def test_update_properties_to_have_duplicate_names(
         )
 
     catalogue_category_repository_mock.update.assert_not_called()
-    assert str(exc.value) == "Cannot edit a catalogue category to have duplicate catalogue item property names"
+    assert str(exc.value) == (
+        f"Cannot have duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
+    )
