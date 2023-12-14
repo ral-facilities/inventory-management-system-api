@@ -1029,3 +1029,20 @@ def test_partial_update_catalogue_category_non_existent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "A catalogue category with such ID was not found"
+
+def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_client):
+    """
+    Test updating a catalogue category to have duplicate catalogue item property names
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
+    catalogue_category__id = response.json()["id"]
+
+    catalogue_category_patch = {"catalogue_item_properties": [
+        {"name": "Duplicate", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Duplicate", "type": "boolean", "unit": None, "mandatory": True},
+    ]}
+
+    response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category__id}", json=catalogue_category_patch)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Duplicate property names are not allowed"
