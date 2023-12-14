@@ -717,9 +717,6 @@ def test_update_change_catalogue_item_properties_when_has_children(
     )
     # pylint: enable=duplicate-code
 
-    # Mock so child elements found
-    catalogue_category_repository_mock.has_child_elements.return_value = True
-
     # Mock `get` to return a catalogue category
     # pylint: disable=duplicate-code
     test_helpers.mock_get(
@@ -749,4 +746,56 @@ def test_update_change_catalogue_item_properties_when_has_children(
     assert (
         str(exc.value)
         == f"Catalogue category with ID {str(catalogue_category.id)} has child elements and cannot be updated"
+    )
+
+def test_update_change_catalogue_item_properties_to_have_duplicate_names(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test that checks that trying to update catalogue item properties so that the names are duplicated is not allowed
+
+    Verify the `update` method properly handles the catalogue category to be updated
+    """
+    # pylint: disable=duplicate-code
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[
+            CatalogueItemProperty(name="Duplicate", type="number", unit="mm", mandatory=False),
+            CatalogueItemProperty(name="Duplicate", type="boolean", mandatory=True),
+        ],
+    )
+    # pylint: enable=duplicate-code
+
+    
+
+    # Mock `get` to return a catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+        ),
+    )
+    # pylint: enable=duplicate-code
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    with pytest.raises(DuplicatePropertyName) as exc:
+        catalogue_category_service.update(
+            catalogue_category.id,
+            CatalogueCategoryPatchRequestSchema(
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+            ),
+        )
+
+    catalogue_category_repository_mock.update.assert_not_called()
+    assert (
+        str(exc.value) == "Cannot edit a catalogue category to have duplicate catalogue item property names"
     )
