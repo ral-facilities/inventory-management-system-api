@@ -3,7 +3,7 @@ Module for providing an API router which defines routes for managing items using
 """
 import logging
 
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, status, HTTPException, Depends, Path
 
 from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
@@ -48,3 +48,24 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+
+@router.get(
+    path="/{item_id}",
+    summary="Get an item by ID",
+    response_description="Single item"
+)
+def get_item(
+    item_id: str = Path(description="The ID of the item to get"),
+    item_service: ItemService = Depends()
+) -> ItemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting item with ID %s", item_id)
+    message = "An item with such ID was not found"
+    try:
+        item = item_service.get(item_id)
+        if not item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
+        return ItemSchema(**item.model_dump())
+    except InvalidObjectIdError as exc:
+        logger.exception("The ID is not a valid ObjectId value")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
