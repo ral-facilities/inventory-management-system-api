@@ -169,6 +169,10 @@ def partial_update_catalogue_category(
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except DuplicatePropertyName as exc:
+        message = "Duplicate property names are not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.delete(
