@@ -2,11 +2,12 @@
 Module for providing a repository for managing items in a MongoDB database.
 """
 import logging
-from typing import List
+from typing import List, Optional
 
 from fastapi import Depends
 from pymongo.collection import Collection
 from pymongo.database import Database
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import MissingRecordError
@@ -47,15 +48,23 @@ class ItemRepo:
         # TODO - Use the `get` repo method when implemented to get the item
         return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
 
-    def list(self) -> List[ItemOut]:
+    def list(self, system_id: Optional[str]) -> List[ItemOut]:
         """
         Get all items from the MongoDB database
 
         :return List of items, or empty list if there are no items
         """
+        query = {}
+        if system_id:
+            system_id = CustomObjectId(system_id)
+            query["system_id"] = system_id
+        
+        message = "Retrieving all items from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided system ID filter", message)
+            logger.debug("Provided system ID filter: %s", system_id)
 
-        logger.info("Getting all items from the database")
-
-        items = self._items_collection.find()
-
+        items = self._items_collection.find(query)
         return [ItemOut(**item) for item in items]

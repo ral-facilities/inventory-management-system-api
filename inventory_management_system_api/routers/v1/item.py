@@ -2,9 +2,9 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 import logging
-from typing import List
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, Query, status, HTTPException, Depends
 
 from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
@@ -53,10 +53,17 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
 
 @router.get(path="/", summary="Get items", response_description="List of items")
 def get_items(
+    system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,
     item_service: ItemService = Depends()
 ) -> List[ItemSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting items")
-    
-    items = item_service.list()
-    return [ItemSchema(**item.model_dump()) for item in items]
+    if system_id:
+        logger.debug("System ID filter: '%s'", system_id)
+
+    try:
+        items = item_service.list(system_id)
+        return [ItemSchema(**item.model_dump()) for item in items]
+    except InvalidObjectIdError:
+        logger.exception("The provided system ID filter value is not a valid ObjectId value")
+        return []
