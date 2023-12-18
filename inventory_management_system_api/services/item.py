@@ -93,14 +93,14 @@ class ItemService:
             )
         )
 
-    def list(self, system_id: Optional[str]) -> List[ItemOut]:
+    def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
         """
         Get all items
 
         :param system_id: The ID of the system to filter items by.
         :return: list of all items
         """
-        return self._item_repository.list(system_id)
+        return self._item_repository.list(system_id, catalogue_item_id)
 
     def _find_missing_supplied_properties(
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]

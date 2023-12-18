@@ -48,7 +48,7 @@ class ItemRepo:
         # TODO - Use the `get` repo method when implemented to get the item
         return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
 
-    def list(self, system_id: Optional[str]) -> List[ItemOut]:
+    def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
         """
         Get all items from the MongoDB database
 
@@ -58,13 +58,17 @@ class ItemRepo:
         if system_id:
             system_id = CustomObjectId(system_id)
             query["system_id"] = system_id
-        
+        if catalogue_item_id:
+            catalogue_item_id = CustomObjectId(catalogue_item_id)
+            query["catalogue_item_id"] = catalogue_item_id
+
         message = "Retrieving all items from the database"
         if not query:
             logger.info(message)
         else:
-            logger.info("%s matching the provided system ID filter", message)
-            logger.debug("Provided system ID filter: %s", system_id)
+            logger.info("%s matching the provided system ID and/or catalogue item ID filter", message)
+            if system_id: logger.debug("Provided system ID filter: %s", system_id)
+            if catalogue_item_id: logger.debug("Provided catalogue item ID filter: %s", catalogue_item_id)
 
         items = self._items_collection.find(query)
         return [ItemOut(**item) for item in items]
