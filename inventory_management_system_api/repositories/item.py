@@ -44,9 +44,8 @@ class ItemRepo:
         logger.info("Inserting the new item into the database")
         result = self._items_collection.insert_one(item.model_dump())
 
-        # pylint: disable=fixme
-        # TODO - Use the `get` repo method when implemented to get the item
-        return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
+        item = self.get(str(result.inserted_id))
+        return item
 
     def get(self, item_id: str) -> Optional[ItemOut]:
         """
