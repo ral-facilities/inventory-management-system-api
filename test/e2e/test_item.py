@@ -314,3 +314,53 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         response.json()["detail"]
         == "Invalid value type for catalogue item property 'Property B'. Expected type: boolean."
     )
+
+def test_get_item(test_client):
+    """
+    Test getting an item by its ID.
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_id = response.json()["id"]
+    response = test_client.get(f"/v1/items/{item_id}")
+
+    assert response.status_code == 200
+
+    item = response.json()
+
+    assert item == {**ITEM_POST_EXPECTED, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+
+def test_get_item_with_nonexistent_id(test_client):
+    """
+    Test getting an item with a nonexistent_id
+    """
+    response = test_client.get(f"/v1/items/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "An item with such ID was not found"
+
+def test_get_item_with_invalid_id(test_client):
+    """
+    Test getting an item with a nonexistent_id
+    """
+    response = test_client.get(f"/v1/items/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "An item with such ID was not found"
