@@ -244,3 +244,16 @@ def test_create_without_properties(
         )
     )
     assert created_item == item
+
+
+def test_list(item_repository_mock, item_service):
+    """
+    Test listing items.
+
+    Verify that the `list` method properly calls the repository function
+    """
+
+    result = item_service.list()
+
+    item_repository_mock.list.assert_called_once()
+    assert result == item_repository_mock.list.return_value

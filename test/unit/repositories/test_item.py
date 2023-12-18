@@ -77,3 +77,51 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
     database_mock.items.insert_one.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
+
+def test_list(test_helpers, database_mock, item_repository):
+    """
+    Test getting items.
+
+    Verify that the `list` method properly handles the retrieval of items
+    """
+    item_a = ItemOut(
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        is_defective=False,
+        usage_status=0,
+        properties=[],
+    )
+
+    item_b = ItemOut(
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        is_defective=False,
+        usage_status=0,
+        properties=[],
+    )
+
+    # Mock `find` to return a list of catalogue category documents
+    test_helpers.mock_find(
+        database_mock.items,
+        [
+            {
+                "_id": CustomObjectId(item_a.id),
+                "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
+                "is_defective": item_a.is_defective,
+                "usage_status": item_a.usage_status,
+                "properties": item_a.properties,
+            },
+            {
+                "_id": CustomObjectId(item_b.id),
+                "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
+                "is_defective": item_b.is_defective,
+                "usage_status": item_b.usage_status,
+                "properties": item_b.properties,
+            }
+        ]
+    )
+
+    retrieved_item = item_repository.list()
+
+    database_mock.items.find.assert_called_once()
+    assert retrieved_item == [item_a, item_b]
