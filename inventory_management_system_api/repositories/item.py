@@ -2,6 +2,7 @@
 Module for providing a repository for managing items in a MongoDB database.
 """
 import logging
+from typing import List
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -45,3 +46,16 @@ class ItemRepo:
         # pylint: disable=fixme
         # TODO - Use the `get` repo method when implemented to get the item
         return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
+
+    def list(self) -> List[ItemOut]:
+        """
+        Get all items from the MongoDB database
+
+        :return List of items, or empty list if there are no items
+        """
+
+        logger.info("Getting all items from the database")
+
+        items = self._items_collection.find()
+
+        return [ItemOut(**item) for item in items]

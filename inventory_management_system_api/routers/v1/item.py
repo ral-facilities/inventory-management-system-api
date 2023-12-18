@@ -2,6 +2,7 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 import logging
+from typing import List
 
 from fastapi import APIRouter, status, HTTPException, Depends
 
@@ -48,3 +49,14 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+
+
+@router.get(path="/", summary="Get items", response_description="List of items")
+def get_items(
+    item_service: ItemService = Depends()
+) -> List[ItemSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting items")
+    
+    items = item_service.list()
+    return [ItemSchema(**item.model_dump()) for item in items]
