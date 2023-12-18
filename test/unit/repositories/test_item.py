@@ -78,6 +78,7 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
     database_mock.items.insert_one.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
 
+
 def test_get(test_helpers, database_mock, item_repository):
     """
     Test getting an item
@@ -102,6 +103,7 @@ def test_get(test_helpers, database_mock, item_repository):
     database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)})
     assert retrieved_item == item
 
+
 def test_get_with_invalid_id(item_repository):
     """
     Test getting an item with an invalid ID.
@@ -111,6 +113,7 @@ def test_get_with_invalid_id(item_repository):
     with pytest.raises(InvalidObjectIdError) as exc:
         item_repository.get("invalid")
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
 
 def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
     """
@@ -127,4 +130,3 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
 
     assert retrieved_item is None
     database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
-

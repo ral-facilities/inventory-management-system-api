@@ -49,14 +49,10 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
 
-@router.get(
-    path="/{item_id}",
-    summary="Get an item by ID",
-    response_description="Single item"
-)
+
+@router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
 def get_item(
-    item_id: str = Path(description="The ID of the item to get"),
-    item_service: ItemService = Depends()
+    item_id: str = Path(description="The ID of the item to get"), item_service: ItemService = Depends()
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)

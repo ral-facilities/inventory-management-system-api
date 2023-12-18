@@ -47,8 +47,8 @@ class ItemRepo:
         # pylint: disable=fixme
         # TODO - Use the `get` repo method when implemented to get the item
         return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
-    
-    def get(self, item_id:str) -> Optional[ItemOut]:
+
+    def get(self, item_id: str) -> Optional[ItemOut]:
         """
         Retrieve an item by its ID from a MongoDB database.
 
