@@ -153,15 +153,17 @@ class CatalogueCategoryService:
     def _check_duplicate_catalogue_item_property_names(
         self, catalogue_item_properties: List[CatalogueItemPropertySchema]
     ) -> None:
-             """
-             Go through all the catalogue item properties to check for any duplicate names.
-             :param catalogue_item_properties: The supplied catalogue item properties
-             :raises DuplicateCatalogueItemPropertyName: If a duplicate catalogue item property name is found.
-             """
-             logger.info("Checking for duplicate catalogue item property names")
-             seen_catalogue_item_property_names = set()
-             for catalogue_item_property in catalogue_item_properties:
-                 catalogue_item_property_name = catalogue_item_property.name
-                 if catalogue_item_property_name.lower() in seen_catalogue_item_property_names:
-                     raise DuplicateCatalogueItemPropertyNameError(f"Duplicate catalogue item property name: {catalogue_item_property_name}")
-                 seen_catalogue_item_property_names.add(catalogue_item_property_name.lower())
+        """
+        Go through all the catalogue item properties to check for any duplicate names.
+        :param catalogue_item_properties: The supplied catalogue item properties
+        :raises DuplicateCatalogueItemPropertyName: If a duplicate catalogue item property name is found.
+        """
+        logger.info("Checking for duplicate catalogue item property names")
+        seen_catalogue_item_property_names = set()
+        for catalogue_item_property in catalogue_item_properties:
+            catalogue_item_property_name = catalogue_item_property.name
+            if catalogue_item_property_name.lower() in seen_catalogue_item_property_names:
+                raise DuplicateCatalogueItemPropertyNameError(
+                    f"Duplicate catalogue item property name: {catalogue_item_property_name}"
+                )
+            seen_catalogue_item_property_names.add(catalogue_item_property_name.lower())

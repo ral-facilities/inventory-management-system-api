@@ -19,8 +19,7 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
-    CatalogueCategoryPostRequestSchema,
-    CatalogueItemPropertySchema,
+    CatalogueCategoryPostRequestSchema
 )
 
 
@@ -219,8 +218,7 @@ def test_create_with_leaf_parent_catalogue_category(
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
 
 
-def test_create_with_duplicate_property_names(catalogue_category_service
-):
+def test_create_with_duplicate_property_names(catalogue_category_service):
     """
     Test trying to create a catalogue category with duplicate catalogue item property names
     """
