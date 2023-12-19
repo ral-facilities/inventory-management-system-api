@@ -253,7 +253,7 @@ def test_list(item_repository_mock, item_service):
     Verify that the `list` method properly calls the repository function
     """
 
-    result = item_service.list(None)
+    result = item_service.list(None, None)
 
-    item_repository_mock.list.assert_called_once_with(None)
+    item_repository_mock.list.assert_called_once_with(None, None)
     assert result == item_repository_mock.list.return_value

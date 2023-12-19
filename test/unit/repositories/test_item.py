@@ -121,7 +121,7 @@ def test_list(test_helpers, database_mock, item_repository):
         ]
     )
 
-    retrieved_item = item_repository.list(None)
+    retrieved_item = item_repository.list(None, None)
 
     database_mock.items.find.assert_called_once_with({})
     assert retrieved_item == [item_a, item_b]
@@ -149,7 +149,7 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
         ]
     )
 
-    retrieved_item = item_repository.list(item.system_id)
+    retrieved_item = item_repository.list(item.system_id, None)
 
     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)})
     assert retrieved_item == [item]
@@ -166,10 +166,11 @@ def test_list_with_system_id_filter_no_matching_results(test_helpers, database_m
     test_helpers.mock_find(database_mock.items, [])
 
     system_id = str(ObjectId())
-    retrieved_items = item_repository.list(system_id)
+    retrieved_items = item_repository.list(system_id, None)
 
     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id)})
     assert retrieved_items == []
+
 def test_list_with_invalid_system_id_filter(item_repository):
     """
     Test getting an item with an invalid system ID filter
@@ -178,5 +179,155 @@ def test_list_with_invalid_system_id_filter(item_repository):
     ID filter
     """
     with pytest.raises(InvalidObjectIdError) as exc:
-        item_repository.list('Invalid')
+        item_repository.list('Invalid', None)
     assert str(exc.value) == "Invalid ObjectId value 'Invalid'"
+
+def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_repository):
+    """
+    Test getting items based on the provided castalogue item ID filter.
+
+    Verify that the `list` method properly handles the retrieval of items based on
+    the provided catalogue item ID filter
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `find` to return a list of item documents
+    test_helpers.mock_find(
+        database_mock.items,
+        [
+            {
+                "_id": CustomObjectId(item.id),
+                "system_id": CustomObjectId(item.system_id),
+                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                **FULL_ITEM_INFO
+            }
+        ]
+    )
+
+    retrieved_item = item_repository.list(None, item.catalogue_item_id)
+
+    database_mock.items.find.assert_called_once_with({"catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
+    assert retrieved_item == [item]
+
+def test_with_catalogue_item_id_filter_no_matching_results(test_helpers, database_mock, item_repository):
+    """
+    Test getting items based on the provided catalogue item ID filter when there are no matching results in
+    the database.
+
+    Verify the `list` method properly handles the retrieval of items based on the provided
+    catalogue item ID filter
+    """
+    # Mock `find` to return an empty list of item documents
+    test_helpers.mock_find(database_mock.items, [])
+
+    catalogue_item_id = str(ObjectId())
+    retrieved_items = item_repository.list(None, catalogue_item_id)
+
+    database_mock.items.find.assert_called_once_with({"catalogue_item_id": CustomObjectId(catalogue_item_id)})
+    assert retrieved_items == []
+
+def test_list_with_invalid_catalogue_item_id(item_repository):
+    """
+    Test getting an item with an invalid catalogue item ID filter
+
+    Verify that the `list` method properly handles the retrieval of items with the provided
+    ID filter
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        item_repository.list(None, 'Invalid')
+    assert str(exc.value) == "Invalid ObjectId value 'Invalid'"
+
+def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_mock, item_repository):
+    """
+    Test getting an item with both system and catalogue item id filters.
+
+    Verify that the `list` methof properly handles the retrieval of items with the provided ID filters
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `find` to return a list of item documents
+    test_helpers.mock_find(
+        database_mock.items,
+        [
+            {
+                "_id": CustomObjectId(item.id),
+                "system_id": CustomObjectId(item.system_id),
+                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                **FULL_ITEM_INFO
+            }
+        ]
+    )
+
+    retrieved_item = item_repository.list(item.system_id, item.catalogue_item_id)
+
+    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
+    assert retrieved_item == [item]
+
+def test_list_no_matching_result_both_filters(test_helpers, database_mock, item_repository):
+    """
+    Test getting items based on the provided system and catalogue item ID filters when there are no matching results in
+    the database.
+
+    Verify the `list` method properly handles the retrieval of items based on the provided
+    system and catalogue item ID filters
+    """
+    # Mock `find` to return an empty list of item documents
+    test_helpers.mock_find(database_mock.items, [])
+
+    system_id = str(ObjectId())
+    catalogue_item_id = str(ObjectId())
+    retrieved_items = item_repository.list(system_id, catalogue_item_id)
+
+    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id), "catalogue_item_id": CustomObjectId(catalogue_item_id)})
+    assert retrieved_items == []
+
+def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_repository):
+    """
+    Test getting items based on the provided system and catalogue item ID filters when there are no matching results for
+    one of the filters in the database.
+
+    Verify the `list` method properly handles the retrieval of items based on the provided
+    system and catalogue item ID filters
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `find` to return a list of item documents
+    test_helpers.mock_find(
+        database_mock.items,
+        [
+            {
+                "_id": CustomObjectId(item.id),
+                "system_id": CustomObjectId(item.system_id),
+                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                **FULL_ITEM_INFO
+            }
+        ]
+    )
+
+    #catalogue item id no matching results
+    rd_catalogue_item_id = str(ObjectId())
+    retrieved_item = item_repository.list(item.system_id, rd_catalogue_item_id)
+
+    database_mock.items.find.assert_called_with({"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)})
+    assert retrieved_item == [item]
+
+    # Mock `find` to return a list of item documents
+    test_helpers.mock_find(
+        database_mock.items,
+        [
+            {
+                "_id": CustomObjectId(item.id),
+                "system_id": CustomObjectId(item.system_id),
+                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                **FULL_ITEM_INFO
+            }
+        ]
+    )
+
+    #system id no matching results
+    rd_system_id = str(ObjectId())
+    retrieved_item = item_repository.list(rd_system_id, item.catalogue_item_id)
+
+    database_mock.items.find.assert_called_with({"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
+    assert retrieved_item == [item]
+
