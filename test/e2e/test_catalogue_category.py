@@ -237,8 +237,8 @@ def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(
 
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Duplicate property names are not allowed"
+    assert response.status_code == 422
+    assert response.json()["detail"] == (f"Duplicate catalogue item property name: {catalogue_category['catalogue_item_properties'][0]['name']}")
 
 
 def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalogue_item_property(test_client):
@@ -1049,5 +1049,5 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
 
     response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_patch)
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Duplicate property names are not allowed"
+    assert response.status_code == 422
+    assert response.json()["detail"] == (f"Duplicate catalogue item property name: {catalogue_category_patch['catalogue_item_properties'][0]['name']}")
