@@ -5,7 +5,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.item import ItemOut, ItemIn
 
 # pylint: disable=duplicate-code
@@ -77,3 +77,56 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
     database_mock.items.insert_one.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
+
+
+def test_get(test_helpers, database_mock, item_repository):
+    """
+    Test getting an item
+
+    Verify that the `get` method properly handles the retrieval of an item by ID.
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `find_one` to return the inserted item document
+    test_helpers.mock_find_one(
+        database_mock.items,
+        {
+            "_id": CustomObjectId(item.id),
+            "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+            "system_id": CustomObjectId(item.system_id),
+            **FULL_ITEM_INFO,
+        },
+    )
+
+    retrieved_item = item_repository.get(item.id)
+
+    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)})
+    assert retrieved_item == item
+
+
+def test_get_with_invalid_id(item_repository):
+    """
+    Test getting an item with an invalid ID.
+
+    Verify the `get` method properly handles the retrieval of an item with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        item_repository.get("invalid")
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
+    """
+    Test getting an item with a nonexistent ID.
+
+    Verify the `get` method properly handles the retrieval of an item with a nonexistent ID.
+    """
+    item_id = str(ObjectId())
+
+    # Mock `find_one` to not return a catalogue item document
+    test_helpers.mock_find_one(database_mock.items, None)
+
+    retrieved_item = item_repository.get(item_id)
+
+    assert retrieved_item is None
+    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
