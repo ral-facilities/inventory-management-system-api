@@ -21,9 +21,9 @@ class NonLeafCategoryError(Exception):
     """
 
 
-class DuplicatePropertyName(Exception):
+class DuplicateCatalogueItemPropertyNameError(Exception):
     """
-    Catalogue item is attempted to be created with duplicate property names
+    Catalogue category is attempted to be created with duplicate catalogue item property names.
     """
 
 

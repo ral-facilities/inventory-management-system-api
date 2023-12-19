@@ -9,7 +9,7 @@ from fastapi import Depends
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
-    DuplicatePropertyName,
+    DuplicateCatalogueItemPropertyNameError,
     LeafCategoryError,
     MissingRecordError,
 )
@@ -58,9 +58,8 @@ class CatalogueCategoryService:
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
-        self.check_duplicate_property_names(
-            catalogue_category.catalogue_item_properties if catalogue_category.catalogue_item_properties else [], "post"
-        )
+        if catalogue_category.catalogue_item_properties:
+            self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
         return self._catalogue_category_repository.create(
@@ -137,11 +136,8 @@ class CatalogueCategoryService:
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
-        if (
-            "catalogue_item_properties" in update_data
-            and catalogue_category.catalogue_item_properties != stored_catalogue_category.catalogue_item_properties
-        ):
-            self.check_duplicate_property_names(update_data["catalogue_item_properties"], "patch")
+        if catalogue_category.catalogue_item_properties:
+            self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
         # If any of these, need to ensure the category has no children
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS):
@@ -154,35 +150,18 @@ class CatalogueCategoryService:
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
 
-    def check_duplicate_property_names(self, properties: List[CatalogueItemPropertySchema], request: str):
-        """
-        Go through all the properties to check for any duplicate property names
-
-        :param properties: The supplied properties when creating or editing a catalogue category
-        :param request: Which request is being processed as the list of properties supplied have
-                        different types/format
-        :return: Returns true if any duplicate property names have been found
-        """
-
-        logger.info("Checking for duplicate property names")
-
-        list_of_names = []
-
-        if request == "post":
-            for dictionary in properties:
-                list_of_names.append(dictionary.name)
-
-        if request == "patch":
-            for dictionary in properties:
-                for key, value in dictionary.items():
-                    if key == "name":
-                        list_of_names.append(value)
-
-        unique_names = set()
-
-        for name in list_of_names:
-            if name.lower() in unique_names:
-                raise DuplicatePropertyName(
-                    f"Cannot have duplicate catalogue item property name: {name}"
-                )
-            unique_names.add(name.lower())
+    def _check_duplicate_catalogue_item_property_names(
+        self, catalogue_item_properties: List[CatalogueItemPropertySchema]
+    ) -> None:
+             """
+             Go through all the catalogue item properties to check for any duplicate names.
+             :param catalogue_item_properties: The supplied catalogue item properties
+             :raises DuplicateCatalogueItemPropertyName: If a duplicate catalogue item property name is found.
+             """
+             logger.info("Checking for duplicate catalogue item property names")
+             seen_catalogue_item_property_names = set()
+             for catalogue_item_property in catalogue_item_properties:
+                 catalogue_item_property_name = catalogue_item_property.name
+                 if catalogue_item_property_name.lower() in seen_catalogue_item_property_names:
+                     raise DuplicateCatalogueItemPropertyNameError(f"Duplicate catalogue item property name: {catalogue_item_property_name}")
+                 seen_catalogue_item_property_names.add(catalogue_item_property_name.lower())
