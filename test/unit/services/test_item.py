@@ -14,6 +14,7 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemOut, ItemIn
 from inventory_management_system_api.schemas.item import ItemPostRequestSchema
 
+# pylint: disable=duplicate-code
 FULL_CATALOGUE_CATEGORY_A_INFO = {
     "name": "Category A",
     "code": "category-a",
@@ -27,13 +28,7 @@ FULL_CATALOGUE_CATEGORY_A_INFO = {
     ],
 }
 
-# pylint: disable=duplicate-code
 FULL_CATALOGUE_ITEM_A_INFO = {
-    "manufacturer": {
-        "name": "Manufacturer A",
-        "address": "1 Address, City, Country, Postcode",
-        "url": "https://www.manufacturer-a.co.uk/",
-    },
     "name": "Catalogue Item A",
     "description": "This is Catalogue Item A",
     "cost_gbp": 129.99,
@@ -85,11 +80,15 @@ def test_create(
     item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
 
     catalogue_category_id = str(ObjectId())
+    manufacturer_id = str(ObjectId())
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=item.catalogue_item_id, catalogue_category_id=catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=item.catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to return a catalogue category
@@ -140,12 +139,15 @@ def test_create_with_invalid_catalogue_item_id(
     """
     catalogue_item_id = str(ObjectId)
     catalogue_category_id = "invalid"
-
+    manufacturer_id = str(ObjectId())
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=catalogue_item_id, catalogue_category_id=catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to return a catalogue category
@@ -171,12 +173,15 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
     """
     catalogue_item_id = str(ObjectId)
     catalogue_category_id = str(ObjectId)
-
+    manufacturer_id = str(ObjectId())
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=catalogue_item_id, catalogue_category_id=catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to not return a catalogue category
@@ -206,11 +211,15 @@ def test_create_without_properties(
     )
 
     catalogue_category_id = str(ObjectId())
+    manufacturer_id = str(ObjectId())
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=item.catalogue_item_id, catalogue_category_id=catalogue_category_id, **FULL_CATALOGUE_ITEM_A_INFO
+            id=item.catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+            **FULL_CATALOGUE_ITEM_A_INFO,
         ),
     )
     # Mock `get` to return a catalogue category

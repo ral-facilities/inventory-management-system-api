@@ -11,6 +11,7 @@ from inventory_management_system_api.core.exceptions import MissingRecordError, 
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
@@ -30,15 +31,18 @@ class CatalogueItemService:
         self,
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
+        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
     ) -> None:
         """
         Initialise the `CatalogueItemService` with a `CatalogueItemRepo` and `CatalogueCategoryRepo` repos.
 
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
+        :param manufacturer_repository: The `ManufacturerRepo` repository to use.
         """
         self._catalogue_item_repository = catalogue_item_repository
         self._catalogue_category_repository = catalogue_category_repository
+        self._manufacturer_repository = manufacturer_repository
 
     def create(self, catalogue_item: CatalogueItemPostRequestSchema) -> CatalogueItemOut:
         """
@@ -50,7 +54,7 @@ class CatalogueItemService:
 
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
-        :raises MissingRecordError: If the catalogue category does not exist.
+        :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCategoryError: If the catalogue category is not a leaf category.
         """
         catalogue_category_id = catalogue_item.catalogue_category_id
@@ -60,6 +64,11 @@ class CatalogueItemService:
 
         if catalogue_category.is_leaf is False:
             raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+
+        manufacturer_id = catalogue_item.manufacturer_id
+        manufacturer = self._manufacturer_repository.get(manufacturer_id)
+        if not manufacturer:
+            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
         obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
         if obsolete_replacement_catalogue_item_id and not self._catalogue_item_repository.get(
@@ -148,6 +157,11 @@ class CatalogueItemService:
                 ]
                 # Get the new `catalogue_item` state
                 update_data = catalogue_item.model_dump(exclude_unset=True)
+
+        if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
+            manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
+            if not manufacturer:
+                raise MissingRecordError(f"No manufacturer found with ID: {catalogue_item.manufacturer_id}")
 
         if "obsolete_replacement_catalogue_item_id" in update_data:
             obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id

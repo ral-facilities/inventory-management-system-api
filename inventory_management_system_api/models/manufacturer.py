@@ -5,7 +5,7 @@ Module for defining the database models for representing manufacturer.
 
 from typing import Optional
 
-from pydantic import BaseModel, Field, HttpUrl, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer
 
 from inventory_management_system_api.models.catalogue_category import StringObjectIdField
 from inventory_management_system_api.schemas.manufacturer import AddressSchema
@@ -34,3 +34,4 @@ class ManufacturerOut(ManufacturerIn):
     """Output database model for a manufacturer"""
 
     id: StringObjectIdField = Field(alias="_id")
+    model_config = ConfigDict(populate_by_name=True)
