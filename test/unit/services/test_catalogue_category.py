@@ -219,8 +219,7 @@ def test_create_with_leaf_parent_catalogue_category(
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
 
 
-def test_create_with_duplicate_property_names(
-    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+def test_create_with_duplicate_property_names(catalogue_category_service
 ):
     """
     Test trying to create a catalogue category with duplicate catalogue item property names
@@ -239,27 +238,6 @@ def test_create_with_duplicate_property_names(
     )
     # pylint: enable=duplicate-code
 
-    # # Mock `get` to return the parent catalogue category
-    # # pylint: disable=duplicate-code
-    # test_helpers.mock_get(
-    #     catalogue_category_repository_mock,
-    #     CatalogueCategoryOut(
-    #         id=catalogue_category.parent_id,
-    #         name="Category A",
-    #         code="category-a",
-    #         is_leaf=False,
-    #         parent_id=None,
-    #         catalogue_item_properties=[],
-    #     ),
-    # )
-    # # pylint: enable=duplicate-code
-
-    # the same catalogue item properties but mapped to the schema so that they are accepted
-    # catalogue_category_catalogue_item_properties = [
-    #     CatalogueItemPropertySchema(name="Property A", type="number", unit="mm", mandatory=False),
-    #     CatalogueItemPropertySchema(name="Property A", type="boolean", mandatory=True),
-    # ]
-
     with pytest.raises(DuplicateCatalogueItemPropertyNameError) as exc:
         # pylint: disable=duplicate-code
         catalogue_category_service.create(
@@ -271,7 +249,7 @@ def test_create_with_duplicate_property_names(
         )
         # pylint: enable=duplicate-code
     assert str(exc.value) == (
-        f"Cannot have duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
+        f"Duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
     )
 
 
@@ -803,5 +781,5 @@ def test_update_properties_to_have_duplicate_names(
 
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == (
-        f"Cannot have duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
+        f"Duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
     )
