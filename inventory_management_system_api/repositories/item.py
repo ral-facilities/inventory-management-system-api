@@ -67,8 +67,10 @@ class ItemRepo:
             logger.info(message)
         else:
             logger.info("%s matching the provided system ID and/or catalogue item ID filter", message)
-            if system_id: logger.debug("Provided system ID filter: %s", system_id)
-            if catalogue_item_id: logger.debug("Provided catalogue item ID filter: %s", catalogue_item_id)
+            if system_id:
+                logger.debug("Provided system ID filter: %s", system_id)
+            if catalogue_item_id:
+                logger.debug("Provided catalogue item ID filter: %s", catalogue_item_id)
 
         items = self._items_collection.find(query)
         return [ItemOut(**item) for item in items]

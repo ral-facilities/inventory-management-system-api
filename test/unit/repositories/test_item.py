@@ -78,6 +78,7 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
     database_mock.items.insert_one.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
 
+
 def test_list(test_helpers, database_mock, item_repository):
     """
     Test getting items.
@@ -117,14 +118,15 @@ def test_list(test_helpers, database_mock, item_repository):
                 "is_defective": item_b.is_defective,
                 "usage_status": item_b.usage_status,
                 "properties": item_b.properties,
-            }
-        ]
+            },
+        ],
     )
 
     retrieved_item = item_repository.list(None, None)
 
     database_mock.items.find.assert_called_once_with({})
     assert retrieved_item == [item_a, item_b]
+
 
 def test_list_with_system_id_filter(test_helpers, database_mock, item_repository):
     """
@@ -133,7 +135,7 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
     Verify that the `list` method properly handles the retrieval of items based on
     the provided system ID filter
     """
-    
+
     item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
 
     # Mock `find` to return a list of item documents
@@ -144,15 +146,16 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO
+                **FULL_ITEM_INFO,
             }
-        ]
+        ],
     )
 
     retrieved_item = item_repository.list(item.system_id, None)
 
     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)})
     assert retrieved_item == [item]
+
 
 def test_list_with_system_id_filter_no_matching_results(test_helpers, database_mock, item_repository):
     """
@@ -171,6 +174,7 @@ def test_list_with_system_id_filter_no_matching_results(test_helpers, database_m
     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id)})
     assert retrieved_items == []
 
+
 def test_list_with_invalid_system_id_filter(item_repository):
     """
     Test getting an item with an invalid system ID filter
@@ -179,8 +183,9 @@ def test_list_with_invalid_system_id_filter(item_repository):
     ID filter
     """
     with pytest.raises(InvalidObjectIdError) as exc:
-        item_repository.list('Invalid', None)
+        item_repository.list("Invalid", None)
     assert str(exc.value) == "Invalid ObjectId value 'Invalid'"
+
 
 def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_repository):
     """
@@ -199,15 +204,16 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO
+                **FULL_ITEM_INFO,
             }
-        ]
+        ],
     )
 
     retrieved_item = item_repository.list(None, item.catalogue_item_id)
 
     database_mock.items.find.assert_called_once_with({"catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
     assert retrieved_item == [item]
+
 
 def test_with_catalogue_item_id_filter_no_matching_results(test_helpers, database_mock, item_repository):
     """
@@ -226,6 +232,7 @@ def test_with_catalogue_item_id_filter_no_matching_results(test_helpers, databas
     database_mock.items.find.assert_called_once_with({"catalogue_item_id": CustomObjectId(catalogue_item_id)})
     assert retrieved_items == []
 
+
 def test_list_with_invalid_catalogue_item_id(item_repository):
     """
     Test getting an item with an invalid catalogue item ID filter
@@ -234,8 +241,9 @@ def test_list_with_invalid_catalogue_item_id(item_repository):
     ID filter
     """
     with pytest.raises(InvalidObjectIdError) as exc:
-        item_repository.list(None, 'Invalid')
+        item_repository.list(None, "Invalid")
     assert str(exc.value) == "Invalid ObjectId value 'Invalid'"
+
 
 def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_mock, item_repository):
     """
@@ -253,15 +261,18 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO
+                **FULL_ITEM_INFO,
             }
-        ]
+        ],
     )
 
     retrieved_item = item_repository.list(item.system_id, item.catalogue_item_id)
 
-    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
+    database_mock.items.find.assert_called_once_with(
+        {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)}
+    )
     assert retrieved_item == [item]
+
 
 def test_list_no_matching_result_both_filters(test_helpers, database_mock, item_repository):
     """
@@ -278,8 +289,11 @@ def test_list_no_matching_result_both_filters(test_helpers, database_mock, item_
     catalogue_item_id = str(ObjectId())
     retrieved_items = item_repository.list(system_id, catalogue_item_id)
 
-    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id), "catalogue_item_id": CustomObjectId(catalogue_item_id)})
+    database_mock.items.find.assert_called_once_with(
+        {"system_id": CustomObjectId(system_id), "catalogue_item_id": CustomObjectId(catalogue_item_id)}
+    )
     assert retrieved_items == []
+
 
 def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_repository):
     """
@@ -299,16 +313,18 @@ def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_r
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO
+                **FULL_ITEM_INFO,
             }
-        ]
+        ],
     )
 
-    #catalogue item id no matching results
+    # catalogue item id no matching results
     rd_catalogue_item_id = str(ObjectId())
     retrieved_item = item_repository.list(item.system_id, rd_catalogue_item_id)
 
-    database_mock.items.find.assert_called_with({"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)})
+    database_mock.items.find.assert_called_with(
+        {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)}
+    )
     assert retrieved_item == [item]
 
     # Mock `find` to return a list of item documents
@@ -319,15 +335,16 @@ def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_r
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO
+                **FULL_ITEM_INFO,
             }
-        ]
+        ],
     )
 
-    #system id no matching results
+    # system id no matching results
     rd_system_id = str(ObjectId())
     retrieved_item = item_repository.list(rd_system_id, item.catalogue_item_id)
 
-    database_mock.items.find.assert_called_with({"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
+    database_mock.items.find.assert_called_with(
+        {"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)}
+    )
     assert retrieved_item == [item]
-

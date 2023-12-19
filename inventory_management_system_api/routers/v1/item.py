@@ -55,7 +55,7 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
 def get_items(
     system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,
     catalogue_item_id: Annotated[Optional[str], Query(description="Filter items by catalogue item ID")] = None,
-    item_service: ItemService = Depends()
+    item_service: ItemService = Depends(),
 ) -> List[ItemSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting items")
@@ -66,11 +66,11 @@ def get_items(
     try:
         items = item_service.list(system_id, catalogue_item_id)
         return [ItemSchema(**item.model_dump()) for item in items]
-    
-    except (InvalidObjectIdError) as exc:
+
+    except InvalidObjectIdError as exc:
         if system_id in str(exc) or "system id" in str(exc).lower():
-           logger.exception("The provided system ID filter value is not a valid ObjectId value")
-            
+            logger.exception("The provided system ID filter value is not a valid ObjectId value")
+
         if catalogue_item_id in str(exc) or "catalogue item id" in str(exc).lower():
             logger.exception("The provided catalogue item ID filter value is not a valid ObjectId value")
 
