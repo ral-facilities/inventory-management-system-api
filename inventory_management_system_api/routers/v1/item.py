@@ -2,6 +2,7 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, status, HTTPException, Depends, Path
 
@@ -52,7 +53,8 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
 
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
 def get_item(
-    item_id: str = Path(description="The ID of the item to get"), item_service: ItemService = Depends()
+    item_id: Annotated[str, Path(description="The ID of the item to get")],
+    item_service: Annotated[ItemService, Depends()],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
