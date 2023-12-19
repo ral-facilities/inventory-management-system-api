@@ -205,10 +205,12 @@ def test_create_item_without_properties(test_client):
 
     item = response.json()
 
-    item_expected = {**ITEM_POST_EXPECTED, "catalogue_item_id": catalogue_item_id, "system_id": None}
-    item_expected["properties"][0]["value"] = 20
-
-    assert item == item_expected
+    assert item == {
+        **ITEM_POST_EXPECTED,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": None,
+        "properties": [{"name": "Property A", "value": 20, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+    }
 
 
 def test_create_item_with_invalid_value_type_for_string_property(test_client):
