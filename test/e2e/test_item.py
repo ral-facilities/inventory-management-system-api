@@ -316,3 +316,211 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         response.json()["detail"]
         == "Invalid value type for catalogue item property 'Property B'. Expected type: boolean."
     )
+
+def test_list(test_client):
+    """
+    Test getting items
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post_a = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': None,
+        'is_defective': False, 
+        'usage_status': 0
+        }
+    item_post_b = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': system_id, 
+        'is_defective': False, 
+        'usage_status': 0
+         }
+    
+
+    test_client.post("/v1/items", json=item_post_a)
+    test_client.post("/v1/items", json=item_post_b)
+
+    response = test_client.get("/v1/items")
+
+    assert response.status_code == 200
+
+    items = list(response.json())
+
+    assert len(items) == 2
+
+    assert items[0]["catalogue_item_id"] == item_post_a["catalogue_item_id"]
+    assert items[0]["system_id"] == item_post_a["system_id"]
+    assert items[0]["is_defective"] == item_post_a["is_defective"]
+    assert items[0]["usage_status"] == item_post_a["usage_status"]
+
+    assert items[1]["catalogue_item_id"] == item_post_b["catalogue_item_id"]
+    assert items[1]["system_id"] == item_post_b["system_id"]
+    assert items[1]["is_defective"] == item_post_b["is_defective"]
+    assert items[1]["usage_status"] == item_post_b["usage_status"]
+
+def test_list_with_system_id_filters(test_client):
+    """
+    Test getting items with system id filter
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post_a = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': None,
+        'is_defective': False, 
+        'usage_status': 0
+        }
+    item_post_b = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': system_id, 
+        'is_defective': False, 
+        'usage_status': 0
+         }
+
+    test_client.post("/v1/items", json=item_post_a)
+    test_client.post("/v1/items", json=item_post_b)
+
+    response = test_client.get("/v1/items", params={"system_id": system_id})
+
+    assert response.status_code == 200
+
+    items = list(response.json())
+
+    assert len(items) == 1
+
+    assert items[0]["catalogue_item_id"] == item_post_b["catalogue_item_id"]
+    assert items[0]["system_id"] == item_post_b["system_id"]
+    assert items[0]["is_defective"] == item_post_b["is_defective"]
+    assert items[0]["usage_status"] == item_post_b["usage_status"]
+
+def test_list_with_catalogue_id_filters(test_client):
+    """
+    Test getting items with catalogue item id filter
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post_a = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': None,
+        'is_defective': False, 
+        'usage_status': 0
+        }
+
+    test_client.post("/v1/items", json=item_post_a)
+
+    response = test_client.get("/v1/items", params={"catalogue_item_id": catalogue_item_id})
+
+    assert response.status_code == 200
+
+    items = list(response.json())
+
+    assert len(items) == 1
+
+    assert items[0]["catalogue_item_id"] == item_post_a["catalogue_item_id"]
+    assert items[0]["system_id"] == item_post_a["system_id"]
+    assert items[0]["is_defective"] == item_post_a["is_defective"]
+    assert items[0]["usage_status"] == item_post_a["usage_status"]
+
+def test_list_with_no_matching_filters(test_client):
+    """
+    Test getting items with neither filter having matching results
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post_a = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': None,
+        'is_defective': False, 
+        'usage_status': 0
+        }
+    item_post_b = {
+        'catalogue_item_id': catalogue_item_id, 
+        'system_id': system_id, 
+        'is_defective': False, 
+        'usage_status': 0
+         }
+
+    test_client.post("/v1/items", json=item_post_a)
+    test_client.post("/v1/items", json=item_post_b)
+
+    response = test_client.get("/v1/items", params={"system_id": str(ObjectId()), "catalogue_item_id": str(ObjectId())})
+
+    assert response.status_code == 200
+
+    items = list(response.json())
+
+    assert items == []
+
+def test_list_with_invalid_system_id_filter(test_client):
+    """
+    Test getting items with an invalid system id filter
+    """
+    response = test_client.get("/v1/items", params={"system_id": "Invalid"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+def test_list_with_invalid_catalogue_item_id_filter(test_client):
+    """
+    Test getting items with an invalid catalogue item id filter
+    """
+    response = test_client.get("/v1/items", params={"catalogue_item_id": "Invalid"})
+
+    assert response.status_code == 200
+    assert response.json() == []

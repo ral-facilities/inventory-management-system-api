@@ -68,10 +68,10 @@ def get_items(
         return [ItemSchema(**item.model_dump()) for item in items]
 
     except InvalidObjectIdError as exc:
-        if system_id in str(exc) or "system id" in str(exc).lower():
+        if system_id and (system_id in str(exc) or "system id" in str(exc).lower()):
             logger.exception("The provided system ID filter value is not a valid ObjectId value")
 
-        if catalogue_item_id in str(exc) or "catalogue item id" in str(exc).lower():
+        if catalogue_item_id and (catalogue_item_id in str(exc) or "catalogue item id" in str(exc).lower()):
             logger.exception("The provided catalogue item ID filter value is not a valid ObjectId value")
 
         return []
