@@ -3,7 +3,7 @@ Module for providing an API router which defines routes for managing items using
 """
 import logging
 
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, Path, status, HTTPException, Depends
 
 from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
@@ -48,3 +48,22 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+
+@router.delete(
+    path="/{item_id}",
+    summary="Delete an item by ID",
+    response_description="Item deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_item(
+    item_id: str = Path(description="The ID of the item to delete"),
+    item_service: ItemService = Depends(),
+) -> None:
+    #pylint: disable=missing-function-doctstring
+    logger.info("Deleting item with ID: %s", item_id)
+    try:
+        item_service.delete(item_id)
+    except(MissingRecordError, InvalidObjectIdError) as exc:
+        message = "An item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc

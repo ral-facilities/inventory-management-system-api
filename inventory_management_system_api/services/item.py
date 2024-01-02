@@ -93,6 +93,14 @@ class ItemService:
             )
         )
 
+    def delete(self, item_id: str) -> None:
+        """
+        Delete an item by its ID.
+
+        :param item_id: The ID of the item to delete.
+        """
+        return self._item_repository.delete(item_id)
+
     def _find_missing_supplied_properties(
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[Property]:
