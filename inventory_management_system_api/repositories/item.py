@@ -10,7 +10,6 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import MissingRecordError
-from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 
 logger = logging.getLogger()

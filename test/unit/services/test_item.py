@@ -245,6 +245,7 @@ def test_create_without_properties(
     )
     assert created_item == item
 
+
 def test_delete(item_repository_mock, item_service):
     """
     Test deleting item.

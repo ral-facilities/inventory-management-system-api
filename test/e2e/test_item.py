@@ -315,6 +315,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         == "Invalid value type for catalogue item property 'Property B'. Expected type: boolean."
     )
 
+
 def test_delete(test_client):
     """
     Test deleting an item
@@ -346,6 +347,7 @@ def test_delete(test_client):
     response = test_client.delete(f"/v1/items/{item_id}")
     assert response.status_code == 404
 
+
 def test_delete_with_invalid_id(test_client):
     """
     Test deleting an item with an invalid ID.
@@ -354,6 +356,7 @@ def test_delete_with_invalid_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "An item with such ID was not found"
+
 
 def test_delete_catalogue_item_with_nonexistent_id(test_client):
     """
