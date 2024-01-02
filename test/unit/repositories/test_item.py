@@ -144,6 +144,32 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)})
     assert retrieved_item == [item]
 
+def test_list_with_system_id_as_null(test_helpers, database_mock, item_repository):
+    """
+    Test getting items based on the provided system ID filter.
+
+    Verify that the `list` method properly handles the retrieval of items based on
+    the provided system ID filter
+    """
+
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `find` to return a list of item documents
+    test_helpers.mock_find(
+        database_mock.items,
+        [
+            {
+                "_id": CustomObjectId(item.id),
+                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                **FULL_ITEM_INFO,
+            }
+        ],
+    )
+
+    retrieved_item = item_repository.list('null', None)
+
+    database_mock.items.find.assert_called_once_with({"system_id": None})
+    assert retrieved_item == [item]
 
 def test_list_with_system_id_filter_no_matching_results(test_helpers, database_mock, item_repository):
     """
