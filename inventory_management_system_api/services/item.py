@@ -103,6 +103,16 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
+    def get(self, item_id: str) -> Optional[ItemOut]:
+        """
+        Retrieve an item by its ID
+
+        :param item_id: The ID of the item to retrieve
+        :return: The retrieved item, or `None` if not found
+        """
+
+        return self._item_repository.get(item_id)
+
     def _find_missing_supplied_properties(
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[Property]:

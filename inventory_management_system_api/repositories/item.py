@@ -44,9 +44,22 @@ class ItemRepo:
         logger.info("Inserting the new item into the database")
         result = self._items_collection.insert_one(item.model_dump())
 
-        # pylint: disable=fixme
-        # TODO - Use the `get` repo method when implemented to get the item
-        return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
+        item = self.get(str(result.inserted_id))
+        return item
+
+    def get(self, item_id: str) -> Optional[ItemOut]:
+        """
+        Retrieve an item by its ID from a MongoDB database.
+
+        :param item_id: The ID of the item to retrieve
+        :return: The retrieved item, or `None` if not found.
+        """
+        item_id = CustomObjectId(item_id)
+        logger.info("Retrieving item with ID %s from the database", item_id)
+        item = self._items_collection.find_one({"_id": item_id})
+        if item:
+            return ItemOut(**item)
+        return None
 
     def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
         """
@@ -58,9 +71,9 @@ class ItemRepo:
         """
         query = {}
         if system_id:
-            #allows users to filter by items with no system ID
+            # allows users to filter by items with no system ID
             query["system_id"] = None if system_id == "null" else CustomObjectId(system_id)
-            
+
         if catalogue_item_id:
             catalogue_item_id = CustomObjectId(catalogue_item_id)
             query["catalogue_item_id"] = catalogue_item_id
