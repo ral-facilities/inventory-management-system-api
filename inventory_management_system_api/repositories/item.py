@@ -52,6 +52,8 @@ class ItemRepo:
         """
         Get all items from the MongoDB database
 
+        :param system_id: The ID of the system to filter items by.
+        :param catalogue_item_id: The ID of the catalogue item to filter by.
         :return List of items, or empty list if there are no items
         """
         query = {}

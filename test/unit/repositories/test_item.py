@@ -88,18 +88,10 @@ def test_list(test_helpers, database_mock, item_repository):
     item_a = ItemOut(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
-        is_defective=False,
-        usage_status=0,
-        properties=[],
+        **FULL_ITEM_INFO,
     )
 
-    item_b = ItemOut(
-        id=str(ObjectId()),
-        catalogue_item_id=str(ObjectId()),
-        is_defective=False,
-        usage_status=0,
-        properties=[],
-    )
+    item_b = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), **FULL_ITEM_INFO)
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
@@ -108,16 +100,12 @@ def test_list(test_helpers, database_mock, item_repository):
             {
                 "_id": CustomObjectId(item_a.id),
                 "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
-                "is_defective": item_a.is_defective,
-                "usage_status": item_a.usage_status,
-                "properties": item_a.properties,
+                **FULL_ITEM_INFO,
             },
             {
                 "_id": CustomObjectId(item_b.id),
                 "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
-                "is_defective": item_b.is_defective,
-                "usage_status": item_b.usage_status,
-                "properties": item_b.properties,
+                **FULL_ITEM_INFO,
             },
         ],
     )
@@ -308,14 +296,7 @@ def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_r
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
-        [
-            {
-                "_id": CustomObjectId(item.id),
-                "system_id": CustomObjectId(item.system_id),
-                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO,
-            }
-        ],
+        [],
     )
 
     # catalogue item id no matching results
@@ -325,19 +306,12 @@ def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_r
     database_mock.items.find.assert_called_with(
         {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)}
     )
-    assert retrieved_item == [item]
+    assert retrieved_item == []
 
-    # Mock `find` to return a list of item documents
+    # # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
-        [
-            {
-                "_id": CustomObjectId(item.id),
-                "system_id": CustomObjectId(item.system_id),
-                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO,
-            }
-        ],
+        [],
     )
 
     # system id no matching results
@@ -347,4 +321,4 @@ def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_r
     database_mock.items.find.assert_called_with(
         {"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)}
     )
-    assert retrieved_item == [item]
+    assert retrieved_item == []

@@ -98,6 +98,7 @@ class ItemService:
         Get all items
 
         :param system_id: The ID of the system to filter items by.
+        :param catalogue_item_id: The ID of the catalogue item to filter by.
         :return: list of all items
         """
         return self._item_repository.list(system_id, catalogue_item_id)

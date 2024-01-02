@@ -318,7 +318,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     )
 
 
-def test_list(test_client):
+def test_get_items(test_client):
     """
     Test getting items
     """
@@ -338,13 +338,8 @@ def test_list(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {"catalogue_item_id": catalogue_item_id, "system_id": None, "is_defective": False, "usage_status": 0}
-    item_post_b = {
-        "catalogue_item_id": catalogue_item_id,
-        "system_id": system_id,
-        "is_defective": False,
-        "usage_status": 0,
-    }
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
+    item_post_b = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
     test_client.post("/v1/items", json=item_post_a)
     test_client.post("/v1/items", json=item_post_b)
@@ -353,22 +348,23 @@ def test_list(test_client):
 
     assert response.status_code == 200
 
-    items = list(response.json())
+    items = response.json()
 
-    assert len(items) == 2
+    assert items == [
+        {
+            **ITEM_POST_EXPECTED,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": None,
+        },
+        {
+            **ITEM_POST_EXPECTED,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+        },
+    ]
 
-    assert items[0]["catalogue_item_id"] == item_post_a["catalogue_item_id"]
-    assert items[0]["system_id"] == item_post_a["system_id"]
-    assert items[0]["is_defective"] == item_post_a["is_defective"]
-    assert items[0]["usage_status"] == item_post_a["usage_status"]
 
-    assert items[1]["catalogue_item_id"] == item_post_b["catalogue_item_id"]
-    assert items[1]["system_id"] == item_post_b["system_id"]
-    assert items[1]["is_defective"] == item_post_b["is_defective"]
-    assert items[1]["usage_status"] == item_post_b["usage_status"]
-
-
-def test_list_with_system_id_filters(test_client):
+def test_get_items_with_system_id_filters(test_client):
     """
     Test getting items with system id filter
     """
@@ -388,13 +384,8 @@ def test_list_with_system_id_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {"catalogue_item_id": catalogue_item_id, "system_id": None, "is_defective": False, "usage_status": 0}
-    item_post_b = {
-        "catalogue_item_id": catalogue_item_id,
-        "system_id": system_id,
-        "is_defective": False,
-        "usage_status": 0,
-    }
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
+    item_post_b = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
     test_client.post("/v1/items", json=item_post_a)
     test_client.post("/v1/items", json=item_post_b)
@@ -403,17 +394,18 @@ def test_list_with_system_id_filters(test_client):
 
     assert response.status_code == 200
 
-    items = list(response.json())
+    items = response.json()
 
-    assert len(items) == 1
+    assert items == [
+        {
+            **ITEM_POST_EXPECTED,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+        }
+    ]
 
-    assert items[0]["catalogue_item_id"] == item_post_b["catalogue_item_id"]
-    assert items[0]["system_id"] == item_post_b["system_id"]
-    assert items[0]["is_defective"] == item_post_b["is_defective"]
-    assert items[0]["usage_status"] == item_post_b["usage_status"]
 
-
-def test_list_with_catalogue_id_filters(test_client):
+def test_get_items_with_catalogue_id_filters(test_client):
     """
     Test getting items with catalogue item id filter
     """
@@ -432,7 +424,7 @@ def test_list_with_catalogue_id_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {"catalogue_item_id": catalogue_item_id, "system_id": None, "is_defective": False, "usage_status": 0}
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
 
     test_client.post("/v1/items", json=item_post_a)
 
@@ -440,17 +432,18 @@ def test_list_with_catalogue_id_filters(test_client):
 
     assert response.status_code == 200
 
-    items = list(response.json())
+    items = response.json()
 
-    assert len(items) == 1
+    assert items == [
+        {
+            **ITEM_POST_EXPECTED,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": None,
+        }
+    ]
 
-    assert items[0]["catalogue_item_id"] == item_post_a["catalogue_item_id"]
-    assert items[0]["system_id"] == item_post_a["system_id"]
-    assert items[0]["is_defective"] == item_post_a["is_defective"]
-    assert items[0]["usage_status"] == item_post_a["usage_status"]
 
-
-def test_list_with_no_matching_filters(test_client):
+def test_get_items_with_no_matching_filters(test_client):
     """
     Test getting items with neither filter having matching results
     """
@@ -470,13 +463,8 @@ def test_list_with_no_matching_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {"catalogue_item_id": catalogue_item_id, "system_id": None, "is_defective": False, "usage_status": 0}
-    item_post_b = {
-        "catalogue_item_id": catalogue_item_id,
-        "system_id": system_id,
-        "is_defective": False,
-        "usage_status": 0,
-    }
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
+    item_post_b = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
     test_client.post("/v1/items", json=item_post_a)
     test_client.post("/v1/items", json=item_post_b)
@@ -485,12 +473,12 @@ def test_list_with_no_matching_filters(test_client):
 
     assert response.status_code == 200
 
-    items = list(response.json())
+    items = response.json()
 
     assert not items
 
 
-def test_list_with_invalid_system_id_filter(test_client):
+def test_get_items_with_invalid_system_id_filter(test_client):
     """
     Test getting items with an invalid system id filter
     """
@@ -500,7 +488,7 @@ def test_list_with_invalid_system_id_filter(test_client):
     assert response.json() == []
 
 
-def test_list_with_invalid_catalogue_item_id_filter(test_client):
+def test_get_items_with_invalid_catalogue_item_id_filter(test_client):
     """
     Test getting items with an invalid catalogue item id filter
     """
