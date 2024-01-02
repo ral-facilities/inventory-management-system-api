@@ -5,7 +5,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.item import ItemOut, ItemIn
 
 # pylint: disable=duplicate-code
@@ -77,3 +77,44 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
     database_mock.items.insert_one.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
+
+def test_delete(test_helpers, database_mock, item_repository):
+    """
+    Test deleting an item.
+
+    Verify that the `delete` method properly handles the deletion of an item by ID.
+    """
+    item_id = str(ObjectId())
+
+    # Mock `delete_one` to return that one document has been deleted
+    test_helpers.mock_delete_one(database_mock.items, 1)
+
+    item_repository.delete(item_id)
+
+    database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
+
+def test_delete_with_invalid_id(item_repository):
+    """
+    Test deleting an item with an invalid ID.
+
+    Verify that the `delete` method properly handles the deletion of an item with an invalid ID.
+    """
+    with pytest.raises(InvalidObjectIdError) as exc:
+        item_repository.delete("invalid")
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+def test_delete_with_nonexistent_id(test_helpers, database_mock, item_repository):
+    """
+    Test deleting an item with an invalid ID.
+
+    Verify that the `delete` method properly handles the deletion of an item with a nonexistent ID.
+    """
+    item_id = str(ObjectId())
+
+    # Mock `delete_one` to return that no document has been deleted
+    test_helpers.mock_delete_one(database_mock.items, 0)
+
+    with pytest.raises(MissingRecordError) as exc:
+        item_repository.delete(item_id)
+    assert str(exc.value) == f"No item found with ID: {item_id}"
+    database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
