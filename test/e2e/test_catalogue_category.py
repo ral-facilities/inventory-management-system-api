@@ -230,6 +230,26 @@ def test_create_catalogue_category_with_invalid_catalogue_item_property_type(tes
     assert response.json()["detail"][0]["msg"] == "Input should be 'string', 'number' or 'boolean'"
 
 
+def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(test_client):
+    """
+    Test creating a catalogue category with duplicate catalogue item property names.
+    """
+    catalogue_category = {
+        **CATALOGUE_CATEGORY_POST_C,
+        "catalogue_item_properties": [
+            {"name": "Duplicate", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Duplicate", "type": "boolean", "mandatory": True},
+        ],
+    }
+
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        f"Duplicate catalogue item property name: {catalogue_category['catalogue_item_properties'][0]['name']}"
+    )
+
+
 def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalogue_item_property(test_client):
     """
     Test creating a catalogue category when a unit is supplied for a boolean catalogue item property.
@@ -1046,3 +1066,25 @@ def test_partial_update_catalogue_category_non_existent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "A catalogue category with such ID was not found"
+
+
+def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_client):
+    """
+    Test updating a catalogue category to have duplicate catalogue item property names
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_C)
+    catalogue_category_id = response.json()["id"]
+
+    catalogue_category_patch = {
+        "catalogue_item_properties": [
+            {"name": "Duplicate", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Duplicate", "type": "boolean", "unit": None, "mandatory": True},
+        ]
+    }
+
+    response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        f"Duplicate catalogue item property name: {catalogue_category_patch['catalogue_item_properties'][0]['name']}"
+    )

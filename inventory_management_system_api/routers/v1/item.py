@@ -2,6 +2,7 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 import logging
+from typing import Annotated
 
 from fastapi import APIRouter, Path, status, HTTPException, Depends
 
@@ -67,4 +68,22 @@ def delete_item(
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "An item with such ID was not found"
         logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
+def get_item(
+    item_id: Annotated[str, Path(description="The ID of the item to get")],
+    item_service: Annotated[ItemService, Depends()],
+) -> ItemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting item with ID %s", item_id)
+    message = "An item with such ID was not found"
+    try:
+        item = item_service.get(item_id)
+        if not item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
+        return ItemSchema(**item.model_dump())
+    except InvalidObjectIdError as exc:
+        logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc

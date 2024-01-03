@@ -21,6 +21,12 @@ class NonLeafCategoryError(Exception):
     """
 
 
+class DuplicateCatalogueItemPropertyNameError(Exception):
+    """
+    Catalogue category is attempted to be created with duplicate catalogue item property names.
+    """
+
+
 class InvalidCatalogueItemPropertyTypeError(Exception):
     """
     The type of the provided value does not match the expected type of the catalogue item property.

@@ -2,6 +2,7 @@
 Module for providing a repository for managing items in a MongoDB database.
 """
 import logging
+from typing import Optional
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -43,9 +44,8 @@ class ItemRepo:
         logger.info("Inserting the new item into the database")
         result = self._items_collection.insert_one(item.model_dump())
 
-        # pylint: disable=fixme
-        # TODO - Use the `get` repo method when implemented to get the item
-        return ItemOut(**self._items_collection.find_one({"_id": result.inserted_id}))
+        item = self.get(str(result.inserted_id))
+        return item
 
     def delete(self, item_id: str) -> None:
         """
@@ -59,3 +59,17 @@ class ItemRepo:
         result = self._items_collection.delete_one({"_id": item_id})
         if result.deleted_count == 0:
             raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+
+    def get(self, item_id: str) -> Optional[ItemOut]:
+        """
+        Retrieve an item by its ID from a MongoDB database.
+
+        :param item_id: The ID of the item to retrieve
+        :return: The retrieved item, or `None` if not found.
+        """
+        item_id = CustomObjectId(item_id)
+        logger.info("Retrieving item with ID %s from the database", item_id)
+        item = self._items_collection.find_one({"_id": item_id})
+        if item:
+            return ItemOut(**item)
+        return None

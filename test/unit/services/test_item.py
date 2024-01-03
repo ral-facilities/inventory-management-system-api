@@ -257,3 +257,37 @@ def test_delete(item_repository_mock, item_service):
     item_service.delete(item_id)
 
     item_repository_mock.delete.assert_called_once_with(item_id)
+
+
+def test_get(test_helpers, item_repository_mock, item_service):
+    """
+    Test getting an item.
+
+    Verify that the `get` method properly handles the retrieval of the item by ID.
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `get` to return an item
+    test_helpers.mock_get(item_repository_mock, item)
+
+    retrieved_item = item_service.get(item.id)
+
+    item_repository_mock.get.assert_called_once_with(item.id)
+    assert retrieved_item == item
+
+
+def test_get_with_nonexistent_id(test_helpers, item_repository_mock, item_service):
+    """
+    Test getting an item with a nonexsistent ID.
+
+    Verify the `get` method properly handles the retrieval of an item with a nonexistent ID.
+    """
+    item_id = str(ObjectId())
+
+    # Mock get to not return an item
+    test_helpers.mock_get(item_repository_mock, None)
+
+    retrieved_item = item_service.get(item_id)
+
+    assert retrieved_item is None
+    item_repository_mock.get.assert_called_once_with(item_id)
