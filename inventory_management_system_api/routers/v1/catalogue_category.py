@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     ChildrenElementsExistError,
     DatabaseIntegrityError,
+    DuplicateCatalogueItemPropertyNameError,
     DuplicateRecordError,
     InvalidObjectIdError,
     LeafCategoryError,
@@ -121,6 +122,9 @@ def create_catalogue_category(
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except DuplicateCatalogueItemPropertyNameError as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
 
 @router.patch(
@@ -164,6 +168,9 @@ def partial_update_catalogue_category(
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except DuplicateCatalogueItemPropertyNameError as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
 
 @router.delete(
