@@ -162,8 +162,8 @@ class CatalogueCategoryService:
         seen_catalogue_item_property_names = set()
         for catalogue_item_property in catalogue_item_properties:
             catalogue_item_property_name = catalogue_item_property.name
-            if catalogue_item_property_name.lower() in seen_catalogue_item_property_names:
+            if catalogue_item_property_name.lower().strip() in seen_catalogue_item_property_names:
                 raise DuplicateCatalogueItemPropertyNameError(
-                    f"Duplicate catalogue item property name: {catalogue_item_property_name}"
+                    f"Duplicate catalogue item property name: {catalogue_item_property_name.strip()}"
                 )
-            seen_catalogue_item_property_names.add(catalogue_item_property_name.lower())
+            seen_catalogue_item_property_names.add(catalogue_item_property_name.lower().strip())
