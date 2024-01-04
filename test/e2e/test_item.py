@@ -501,7 +501,6 @@ def test_get_items_with_invalid_catalogue_item_id_filter(test_client):
 def test_get_item(test_client):
     """
     Test getting an item by its ID.
-
     """
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]

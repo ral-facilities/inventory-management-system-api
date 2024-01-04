@@ -311,7 +311,7 @@ def test_list_no_matching_result_both_filters(test_helpers, database_mock, item_
     assert retrieved_items == []
 
 
-def test_list_one_filter_no_matching_results(test_helpers, database_mock, item_repository):
+def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_repository):
     """
     Test getting items based on the provided system and catalogue item ID filters when there are no matching results for
     one of the filters in the database.

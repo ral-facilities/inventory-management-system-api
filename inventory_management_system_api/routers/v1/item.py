@@ -26,7 +26,10 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends()) -> ItemSchema:
+def create_item(
+    item_service: Annotated[ItemService, Depends(ItemService)],
+    item: ItemPostRequestSchema,
+) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
@@ -53,9 +56,9 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
 
 @router.get(path="/", summary="Get items", response_description="List of items")
 def get_items(
+    item_service: Annotated[ItemService, Depends(ItemService)],
     system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,
     catalogue_item_id: Annotated[Optional[str], Query(description="Filter items by catalogue item ID")] = None,
-    item_service: Annotated[ItemService, None] = Depends(),
 ) -> List[ItemSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting items")
