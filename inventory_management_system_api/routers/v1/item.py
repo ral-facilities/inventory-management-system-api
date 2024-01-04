@@ -27,8 +27,8 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_item(
-    item_service: Annotated[ItemService, Depends(ItemService)],
     item: ItemPostRequestSchema,
+    item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
