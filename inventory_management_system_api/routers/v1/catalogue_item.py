@@ -8,6 +8,7 @@ from typing import List, Annotated, Optional
 from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
 
 from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
     MissingRecordError,
     InvalidObjectIdError,
     NonLeafCategoryError,
@@ -155,6 +156,10 @@ def partial_update_catalogue_item(
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except ChildrenElementsExistError as exc:
+        message = "Catalogue item has child elements and cannot be deleted"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.delete(
@@ -175,3 +180,7 @@ def delete_catalogue_item(
         message = "A catalogue item with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except ChildrenElementsExistError as exc:
+        message = "Catalogue item has child elements and cannot be deleted"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
