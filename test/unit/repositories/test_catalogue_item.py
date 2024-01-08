@@ -7,8 +7,9 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.core.exceptions import ChildrenElementsExistError, InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
+from test.unit.repositories.test_item import FULL_ITEM_INFO
 
 FULL_CATALOGUE_ITEM_A_INFO = {
     "name": "Catalogue Item A",
@@ -103,21 +104,39 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
     test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
 
     # pylint: disable=fixme
-    # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
+    # Mock `find_one` to return no child item document
+    test_helpers.mock_find_one(
+        database_mock.items, None
+    )
 
     catalogue_item_repository.delete(catalogue_item_id)
 
     database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
 
 
-def test_delete_with_children_items():
+def test_delete_with_children_items(test_helpers, database_mock, catalogue_item_repository):
     """
     Test deleting a catalogue item with children items.
 
     Verify that the `delete` method properly handles the deletion of a catalogue item with children items.
     """
-    # pylint: disable=fixme
-    # TODO - Implement this test when the relevant item logic is implemented
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `find_one` to return the child item document
+    test_helpers.mock_find_one(
+        database_mock.items,
+        {
+            "_id": CustomObjectId(str(ObjectId())),
+            "catalogue_item_id": CustomObjectId(catalogue_item_id),
+            **FULL_ITEM_INFO,
+        },
+    )
+
+    with pytest.raises(ChildrenElementsExistError) as exc:
+        catalogue_item_repository.delete(catalogue_item_id)
+    assert str(exc.value) == (
+        f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be deleted"
+    )
 
 
 def test_delete_with_invalid_id(catalogue_item_repository):
@@ -142,8 +161,10 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_items, 0)
 
-    # pylint: disable=fixme
-    # TODO - (when the relevant item logic is implemented) mock it so that no children items are returned
+    # Mock `find_one` to return no child item document
+    test_helpers.mock_find_one(
+        database_mock.items, None
+    )
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_repository.delete(catalogue_item_id)
@@ -358,6 +379,11 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         },
     )
 
+    # Mock `find_one` to return no child item document
+    test_helpers.mock_find_one(
+        database_mock.items, None
+    )
+
     catalogue_item_in = CatalogueItemIn(
         catalogue_category_id=catalogue_item.catalogue_category_id,
         manufacturer_id=catalogue_item.manufacturer_id,
@@ -392,9 +418,25 @@ def test_update_with_invalid_id(catalogue_item_repository):
     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_item_id}'"
 
 
-def test_update_has_child_items():
+def test_update_has_child_items(test_helpers, database_mock, catalogue_item_repository):
     """
     Test updating a catalogue item with child items.
     """
-    # pylint: disable=fixme
-    # TODO - Implement this test when the relevant item logic is implemented.
+    update_catalogue_item = MagicMock()
+    catalogue_item_id = str(ObjectId())
+
+    # Mock `find_one` to return the child item document
+    test_helpers.mock_find_one(
+        database_mock.items,
+        {
+            "_id": CustomObjectId(str(ObjectId())),
+            "catalogue_item_id": CustomObjectId(catalogue_item_id),
+            **FULL_ITEM_INFO,
+        },
+    )
+
+    with pytest.raises(ChildrenElementsExistError) as exc:
+        catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
+    assert str(exc.value) == (
+        f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be updated"
+    )

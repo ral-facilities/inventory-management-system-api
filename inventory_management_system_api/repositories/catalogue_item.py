@@ -86,7 +86,7 @@ class CatalogueItemRepo:
         catalogue_item_id = CustomObjectId(catalogue_item_id)
         if self.has_child_elements(catalogue_item_id):
             raise ChildrenElementsExistError(
-                f"Catalogue item with ID {str(catalogue_item_id)} has children elements and cannot be deleted"
+                f"Catalogue item with ID {str(catalogue_item_id)} has children elements and cannot be updated"
             )
         
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
