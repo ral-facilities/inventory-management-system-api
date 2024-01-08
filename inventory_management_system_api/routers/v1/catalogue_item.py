@@ -157,7 +157,7 @@ def partial_update_catalogue_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except ChildrenElementsExistError as exc:
-        message = "Catalogue item has child elements and cannot be deleted"
+        message = "Catalogue item has child elements and cannot be updated"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
