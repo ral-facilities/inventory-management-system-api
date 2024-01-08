@@ -55,7 +55,7 @@ class CatalogueItemRepo:
             raise ChildrenElementsExistError(
                 f"Catalogue item with ID {str(catalogue_item_id)} has children elements and cannot be deleted"
             )
-        
+
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
         result = self._catalogue_items_collection.delete_one({"_id": catalogue_item_id})
         if result.deleted_count == 0:
@@ -88,7 +88,7 @@ class CatalogueItemRepo:
             raise ChildrenElementsExistError(
                 f"Catalogue item with ID {str(catalogue_item_id)} has children elements and cannot be updated"
             )
-        
+
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
         self._catalogue_items_collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump()})
         catalogue_item = self.get(str(catalogue_item_id))
@@ -115,7 +115,7 @@ class CatalogueItemRepo:
 
         catalogue_items = self._catalogue_items_collection.find(query)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
-    
+
     def has_child_elements(self, catalogue_item_id: CustomObjectId) -> bool:
         """
         Check if a catalogue item has children elements based on its ID.

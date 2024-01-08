@@ -2,14 +2,19 @@
 Unit tests for the `CatalogueItemRepo` repository.
 """
 from unittest.mock import MagicMock
+from test.unit.repositories.test_item import FULL_ITEM_INFO
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import ChildrenElementsExistError, InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
+    InvalidObjectIdError,
+    MissingRecordError,
+)
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
-from test.unit.repositories.test_item import FULL_ITEM_INFO
+
 
 FULL_CATALOGUE_ITEM_A_INFO = {
     "name": "Catalogue Item A",
@@ -105,9 +110,7 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
 
     # pylint: disable=fixme
     # Mock `find_one` to return no child item document
-    test_helpers.mock_find_one(
-        database_mock.items, None
-    )
+    test_helpers.mock_find_one(database_mock.items, None)
 
     catalogue_item_repository.delete(catalogue_item_id)
 
@@ -134,9 +137,7 @@ def test_delete_with_children_items(test_helpers, database_mock, catalogue_item_
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_item_repository.delete(catalogue_item_id)
-    assert str(exc.value) == (
-        f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be deleted"
-    )
+    assert str(exc.value) == (f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be deleted")
 
 
 def test_delete_with_invalid_id(catalogue_item_repository):
@@ -162,9 +163,7 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_
     test_helpers.mock_delete_one(database_mock.catalogue_items, 0)
 
     # Mock `find_one` to return no child item document
-    test_helpers.mock_find_one(
-        database_mock.items, None
-    )
+    test_helpers.mock_find_one(database_mock.items, None)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_repository.delete(catalogue_item_id)
@@ -380,9 +379,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
     )
 
     # Mock `find_one` to return no child item document
-    test_helpers.mock_find_one(
-        database_mock.items, None
-    )
+    test_helpers.mock_find_one(database_mock.items, None)
 
     catalogue_item_in = CatalogueItemIn(
         catalogue_category_id=catalogue_item.catalogue_category_id,
@@ -437,6 +434,4 @@ def test_update_has_child_items(test_helpers, database_mock, catalogue_item_repo
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
-    assert str(exc.value) == (
-        f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be updated"
-    )
+    assert str(exc.value) == (f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be updated")

@@ -4,8 +4,9 @@ End-to-End tests for the catalogue item router.
 """
 from unittest.mock import ANY
 
-from bson import ObjectId
 from test.e2e.test_item import ITEM_POST
+from bson import ObjectId
+
 
 # pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_A = {
@@ -517,7 +518,7 @@ def test_delete_catalogue_item_with_children_items(test_client):
     Test deleting a catalogue item with children items.
     """
     # pylint: disable=duplicate-code
-    #Parent
+    # Parent
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -533,7 +534,7 @@ def test_delete_catalogue_item_with_children_items(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    #child
+    # child
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
     response = test_client.post("/v1/items", json=item_post)
 
@@ -541,6 +542,7 @@ def test_delete_catalogue_item_with_children_items(test_client):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Catalogue item has child elements and cannot be deleted"
+
 
 def test_get_catalogue_item(test_client):
     """
@@ -795,7 +797,7 @@ def test_partial_update_catalogue_item_has_children_items(test_client):
     """
     # pylint: disable=fixme
     # pylint: disable=duplicate-code
-    #Parent
+    # Parent
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -811,7 +813,7 @@ def test_partial_update_catalogue_item_has_children_items(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    #child
+    # child
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
     response = test_client.post("/v1/items", json=item_post)
 
@@ -819,6 +821,7 @@ def test_partial_update_catalogue_item_has_children_items(test_client):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
+
 
 def test_partial_update_catalogue_item_change_catalogue_category_id(test_client):
     """
@@ -1040,8 +1043,8 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_children
     Test moving a catalogue item with children items to another catalogue category.
     """
     # pylint: disable=fixme
-     # pylint: disable=duplicate-code
-    #Parent
+    # pylint: disable=duplicate-code
+    # Parent
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_a_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
@@ -1063,7 +1066,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_children
         "properties": CATALOGUE_ITEM_POST_B["properties"],
     }
 
-    #child
+    # child
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
     response = test_client.post("/v1/items", json=item_post)
 
