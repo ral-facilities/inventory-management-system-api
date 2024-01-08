@@ -2,6 +2,7 @@
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
+from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
 from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 from unittest.mock import MagicMock, call, patch
 
@@ -384,9 +385,13 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 1)
 
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+    # Mock `find_one` to return 0 (children elements not found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items, None
+    )
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories, None
+    )
 
     catalogue_category_repository.delete(catalogue_category_id)
 
@@ -404,10 +409,22 @@ def test_delete_with_children_catalogue_categories(test_helpers, database_mock, 
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock count_documents to return 1 (children catalogue categories found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
-    # Mock count_documents to return 0 (children catalogue items not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+    # Mock find_one to return 1 (children catalogue categories found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {
+            "_id": CustomObjectId(str(ObjectId())),
+            "name": "Category A",
+            "code": "category-a",
+            "is_leaf": False,
+            "parent_id": catalogue_category_id,
+            "catalogue_item_properties": [],
+        },
+    )
+    # Mock find_one to return 0 (children catalogue items not found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items, None
+    )
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -424,10 +441,19 @@ def test_delete_with_children_catalogue_items(test_helpers, database_mock, catal
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock count_documents to return 0 (children catalogue categories not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    # Mock count_documents to return 1 (children catalogue items found)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
+    # Mock `find_one` to return no child catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories, None
+    )
+    # Mock `find_one` to return the child catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items,
+        {
+            "_id": CustomObjectId(str(ObjectId())),
+            "catalogue_category_id": CustomObjectId(catalogue_category_id),
+            **FULL_CATALOGUE_ITEM_A_INFO,
+        },
+    )
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -458,9 +484,13 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_categ
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 0)
 
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+    # Mock `find_one` to return 0 (children elements not found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items, None
+    )
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories, None
+    )
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -958,14 +988,17 @@ def test_has_child_elements_with_no_child_categories(test_helpers, database_mock
     """
     Test has_child_elements returns false when there are no child categories
     """
-
-    # Mock count_documents to return 0 (children elements not found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+    # Mock `find_one` to return 0 (children elements not found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items, None
+    )
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories, None
+    )
 
     result = catalogue_category_repository.has_child_elements(ObjectId())
 
-    assert result is False
+    assert not result
 
 
 def test_has_child_elements_with_child_categories(test_helpers, database_mock, catalogue_category_repository):
@@ -973,13 +1006,28 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
     Test has_child_elements returns true when there are child categories
     """
 
-    # Mock count_documents to return 1 (child element found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
+    catalogue_category_id = str(ObjectId())
 
-    result = catalogue_category_repository.has_child_elements(ObjectId())
+    # Mock find_one to return 1 (children catalogue categories found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {
+            "_id": CustomObjectId(str(ObjectId())),
+            "name": "Category A",
+            "code": "category-a",
+            "is_leaf": False,
+            "parent_id": catalogue_category_id,
+            "catalogue_item_properties": [],
+        },
+    )
+    # Mock find_one to return 0 (children catalogue items not found)
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items, None
+    )
 
-    assert result is True
+    result = catalogue_category_repository.has_child_elements(catalogue_category_id)
+
+    assert result
 
 
 def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_category_repository):
@@ -988,9 +1036,22 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     """
 
     # Mock count_documents to return 1 (child element found)
-    test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
+    catalogue_category_id = str(ObjectId())
 
-    result = catalogue_category_repository.has_child_elements(ObjectId())
+    # Mock `find_one` to return no child catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories, None
+    )
+    # Mock `find_one` to return the child catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items,
+        {
+            "_id": CustomObjectId(str(ObjectId())),
+            "catalogue_category_id": CustomObjectId(catalogue_category_id),
+            **FULL_CATALOGUE_ITEM_A_INFO,
+        },
+    )
 
-    assert result is True
+    result = catalogue_category_repository.has_child_elements(catalogue_category_id)
+
+    assert result
