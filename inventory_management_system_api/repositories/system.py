@@ -178,6 +178,5 @@ class SystemRepo:
         """
         logger.info("Checking if system with ID '%s' has child elements", str(system_id))
         # Check if it has System's
-        query = {"parent_id": system_id}
-        count = self._systems_collection.count_documents(query)
-        return count > 0
+        system = self._systems_collection.find_one({"parent_id": system_id})
+        return system

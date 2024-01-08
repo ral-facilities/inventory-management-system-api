@@ -194,8 +194,9 @@ class CatalogueCategoryRepo:
         logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
         # Check if it has catalogue categories
         query = {"parent_id": catalogue_category_id}
-        count = self._catalogue_categories_collection.count_documents(query)
+        catalogue_category = self._catalogue_categories_collection.find_one(query)
+
         # Check if it has catalogue items
         query = {"catalogue_category_id": catalogue_category_id}
-        count = count + self._catalogue_items_collection.count_documents(query)
-        return count > 0
+        catalogue_item = self._catalogue_items_collection.find_one(query)
+        return catalogue_category or catalogue_item
