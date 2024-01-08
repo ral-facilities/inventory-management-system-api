@@ -386,12 +386,8 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 1)
 
     # Mock `find_one` to return 0 (children elements not found)
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items, None
-    )
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     catalogue_category_repository.delete(catalogue_category_id)
 
@@ -422,9 +418,7 @@ def test_delete_with_children_catalogue_categories(test_helpers, database_mock, 
         },
     )
     # Mock find_one to return 0 (children catalogue items not found)
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -442,9 +436,8 @@ def test_delete_with_children_catalogue_items(test_helpers, database_mock, catal
     catalogue_category_id = str(ObjectId())
 
     # Mock `find_one` to return no child catalogue category document
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+    # pylint: disable=duplicate-code
     # Mock `find_one` to return the child catalogue item document
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
@@ -454,7 +447,7 @@ def test_delete_with_children_catalogue_items(test_helpers, database_mock, catal
             **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
-
+    # pylint: enable=duplicate-code
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
     assert str(exc.value) == (
@@ -485,12 +478,8 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_categ
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 0)
 
     # Mock `find_one` to return 0 (children elements not found)
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items, None
-    )
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
@@ -989,12 +978,8 @@ def test_has_child_elements_with_no_child_categories(test_helpers, database_mock
     Test has_child_elements returns false when there are no child categories
     """
     # Mock `find_one` to return 0 (children elements not found)
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items, None
-    )
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     result = catalogue_category_repository.has_child_elements(ObjectId())
 
@@ -1021,9 +1006,7 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
         },
     )
     # Mock find_one to return 0 (children catalogue items not found)
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     result = catalogue_category_repository.has_child_elements(catalogue_category_id)
 
@@ -1039,9 +1022,8 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     catalogue_category_id = str(ObjectId())
 
     # Mock `find_one` to return no child catalogue category document
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories, None
-    )
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+    # pylint: disable=duplicate-code
     # Mock `find_one` to return the child catalogue item document
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
@@ -1051,7 +1033,7 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
             **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
-
+    # pylint: enable=duplicate-code
     result = catalogue_category_repository.has_child_elements(catalogue_category_id)
 
     assert result
