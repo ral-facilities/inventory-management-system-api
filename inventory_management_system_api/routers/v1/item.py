@@ -2,9 +2,9 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 import logging
-from typing import Annotated
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, status, HTTPException, Depends, Path
+from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
 
 from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
@@ -26,7 +26,10 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends()) -> ItemSchema:
+def create_item(
+    item: ItemPostRequestSchema,
+    item_service: Annotated[ItemService, Depends(ItemService)],
+) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
@@ -49,6 +52,32 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+
+
+@router.get(path="/", summary="Get items", response_description="List of items")
+def get_items(
+    item_service: Annotated[ItemService, Depends(ItemService)],
+    system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,
+    catalogue_item_id: Annotated[Optional[str], Query(description="Filter items by catalogue item ID")] = None,
+) -> List[ItemSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting items")
+    if system_id:
+        logger.debug("System ID filter: '%s'", system_id)
+    if catalogue_item_id:
+        logger.debug("Catalogue item ID filter: '%s'", catalogue_item_id)
+    try:
+        items = item_service.list(system_id, catalogue_item_id)
+        return [ItemSchema(**item.model_dump()) for item in items]
+
+    except InvalidObjectIdError:
+        if system_id:
+            logger.exception("The provided system ID filter value is not a valid ObjectId value")
+
+        if catalogue_item_id:
+            logger.exception("The provided catalogue item ID filter value is not a valid ObjectId value")
+
+        return []
 
 
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
