@@ -698,6 +698,9 @@ def test_update_change_catalogue_item_properties_when_has_children(
     )
     # pylint: enable=duplicate-code
 
+    # Mock so child elements found
+    catalogue_category_repository_mock.has_child_elements.return_value = True
+
     # Mock `get` to return a catalogue category
     # pylint: disable=duplicate-code
     test_helpers.mock_get(

@@ -58,8 +58,8 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_item(
-    item_id: str = Path(description="The ID of the item to delete"),
-    item_service: ItemService = Depends(),
+    item_id: Annotated[str, Path(description="The ID of the item to delete")],
+    item_service: Annotated[ItemService, Depends()],
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting item with ID: %s", item_id)
