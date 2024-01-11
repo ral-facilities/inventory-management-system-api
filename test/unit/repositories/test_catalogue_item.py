@@ -434,4 +434,4 @@ def test_update_has_child_items(test_helpers, database_mock, catalogue_item_repo
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
-    assert str(exc.value) == (f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be updated")
+    assert str(exc.value) == f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be updated"

@@ -127,4 +127,4 @@ class CatalogueItemRepo:
         """
         logger.info("Checking if catalogue item with ID '%s' has children elements", catalogue_item_id)
         item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id})
-        return item
+        return item is not None
