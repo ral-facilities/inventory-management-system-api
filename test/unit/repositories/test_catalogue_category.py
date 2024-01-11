@@ -441,9 +441,10 @@ def test_delete_with_children_catalogue_items(test_helpers, database_mock, catal
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
+            **FULL_CATALOGUE_ITEM_A_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "catalogue_category_id": CustomObjectId(catalogue_category_id),
-            **FULL_CATALOGUE_ITEM_A_INFO,
+            
         },
     )
     # pylint: enable=duplicate-code
@@ -1022,9 +1023,9 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
+            **FULL_CATALOGUE_ITEM_A_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "catalogue_category_id": CustomObjectId(catalogue_category_id),
-            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
     # pylint: enable=duplicate-code
