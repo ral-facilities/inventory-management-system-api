@@ -10,8 +10,7 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
-from inventory_management_system_api.core.consts import \
-    BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
 SYSTEM_POST_REQUIRED_ONLY = {
     "name": "System Test",
@@ -557,6 +556,7 @@ def test_delete_system_with_child_item(test_client):
     system_id = response.json()["id"]
 
     # Create a child item
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_id = response.json()["id"]
 
@@ -573,6 +573,7 @@ def test_delete_system_with_child_item(test_client):
 
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     response = test_client.post("/v1/items", json=item_post)
+    # pylint: enable=duplicate-code
 
     # Delete
     response = test_client.delete(f"/v1/systems/{system_id}")
