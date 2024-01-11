@@ -23,12 +23,13 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 
 CATALOGUE_CATEGORY_INFO = {
-            "name": "Category A",
-            "code": "category-a",
-            "is_leaf": False,
-            "parent_id": None,
-            "catalogue_item_properties": [],
-        }
+    "name": "Category A",
+    "code": "category-a",
+    "is_leaf": False,
+    "parent_id": None,
+    "catalogue_item_properties": [],
+}
+
 
 def test_create(test_helpers, database_mock, catalogue_category_repository):
     """

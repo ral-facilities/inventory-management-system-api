@@ -16,7 +16,6 @@ from inventory_management_system_api.models.manufacturer import ManufacturerIn, 
 from inventory_management_system_api.schemas.manufacturer import AddressSchema
 
 
-
 def test_create_manufacturer(test_helpers, database_mock, manufacturer_repository):
     """
     Test creating a manufacturer.
