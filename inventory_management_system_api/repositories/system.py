@@ -35,6 +35,7 @@ class SystemRepo:
         """
         self._database = database
         self._systems_collection: Collection = self._database.systems
+        self._items_collection: Collection = self._database.items
 
     def create(self, system: SystemIn) -> SystemOut:
         """
@@ -171,12 +172,14 @@ class SystemRepo:
 
     def _has_child_elements(self, system_id: CustomObjectId) -> bool:
         """
-        Check if a System has any child System's based on its ID
+        Check if a System has any child System's or any Item's based on its ID
 
         :param system_id: ID of the System to check
         :return: True if the System has child elements, False otherwise
         """
         logger.info("Checking if system with ID '%s' has child elements", str(system_id))
-        # Check if it has System's
-        system = self._systems_collection.find_one({"parent_id": system_id})
-        return system is not None
+
+        return (
+            self._systems_collection.find_one({"parent_id": system_id}) is not None
+            or self._items_collection.find_one({"system_id": system_id}) is not None
+        )

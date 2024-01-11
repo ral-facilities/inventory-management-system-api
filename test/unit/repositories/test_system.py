@@ -447,8 +447,10 @@ def test_delete(test_helpers, database_mock, system_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.systems, 1)
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no systems
     test_helpers.mock_find_one(database_mock.systems, None)
+    # Mock `find_one` to return no items
+    test_helpers.mock_find_one(database_mock.items, None)
 
     system_repository.delete(system_id)
 
@@ -463,19 +465,30 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
     """
     system_id = str(ObjectId())
 
-    # Mock `delete_one` to return that one document has been deleted
-    test_helpers.mock_delete_one(database_mock.systems, 1)
+    # Mock `find_one` to return a system
+    test_helpers.mock_find_one(database_mock.systems, MagicMock())
+    # Mock `find_one` to return no items
+    test_helpers.mock_find_one(database_mock.items, None)
 
-    # Mock count_documents to return 1 (children elements found)
-    # Mock `find_one` to return 0 (children elements not found)
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {
-            "id": str(ObjectId()),
-            **SYSTEM_A_INFO,
-            "parent_id": system_id,
-        },
-    )
+    with pytest.raises(ChildrenElementsExistError) as exc:
+        system_repository.delete(system_id)
+
+    database_mock.systems.delete_one.assert_not_called()
+    assert str(exc.value) == f"System with ID {system_id} has child elements and cannot be deleted"
+
+
+def test_delete_with_child_items(test_helpers, database_mock, system_repository):
+    """
+    Test deleting a System with child Items
+
+    Verify that the `delete` method properly handles the deletion of a System with child Items
+    """
+    system_id = str(ObjectId())
+
+    # Mock `find_one` to return a system
+    test_helpers.mock_find_one(database_mock.systems, None)
+    # Mock `find_one` to return an item (child elements found)
+    test_helpers.mock_find_one(database_mock.items, MagicMock())
 
     with pytest.raises(ChildrenElementsExistError) as exc:
         system_repository.delete(system_id)
@@ -509,8 +522,10 @@ def test_delete_with_non_existent_id(test_helpers, database_mock, system_reposit
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.systems, 0)
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no systems
     test_helpers.mock_find_one(database_mock.systems, None)
+    # Mock `find_one` to return no items
+    test_helpers.mock_find_one(database_mock.items, None)
 
     with pytest.raises(MissingRecordError) as exc:
         system_repository.delete(system_id)
