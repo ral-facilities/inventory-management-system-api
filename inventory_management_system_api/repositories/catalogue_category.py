@@ -199,4 +199,4 @@ class CatalogueCategoryRepo:
         # Check if it has catalogue items
         query = {"catalogue_category_id": catalogue_category_id}
         catalogue_item = self._catalogue_items_collection.find_one(query)
-        return catalogue_category or catalogue_item
+        return (catalogue_category is not None) or (catalogue_item is not None)

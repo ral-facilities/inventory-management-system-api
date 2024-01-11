@@ -179,4 +179,4 @@ class SystemRepo:
         logger.info("Checking if system with ID '%s' has child elements", str(system_id))
         # Check if it has System's
         system = self._systems_collection.find_one({"parent_id": system_id})
-        return system
+        return system is not None

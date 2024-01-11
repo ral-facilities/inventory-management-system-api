@@ -252,9 +252,6 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     )
     # pylint: enable=duplicate-code
 
-    # Mock `find_one` to return 0 (children elements not found)
-    test_helpers.mock_find_one(database_mock.catalogue_items, None)
-
     # Mock count documents to return no duplicate manufactures
     test_helpers.mock_count_documents(database_mock.manufacturers, 0)
 

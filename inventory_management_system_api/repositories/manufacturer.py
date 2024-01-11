@@ -143,4 +143,4 @@ class ManufacturerRepo:
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         catalogue_item = self._catalogue_item_collection.find_one({"manufacturer_id": manufacturer_id})
-        return catalogue_item
+        return catalogue_item is not None
