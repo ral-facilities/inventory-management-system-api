@@ -240,7 +240,6 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
         {
             **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(catalogue_category.parent_id),
-            
         },
     )
     # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
@@ -413,7 +412,6 @@ def test_delete_with_children_catalogue_categories(test_helpers, database_mock, 
             **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "parent_id": catalogue_category_id,
-            
         },
     )
     # Mock find_one to return 0 (children catalogue items not found)
@@ -444,7 +442,6 @@ def test_delete_with_children_catalogue_items(test_helpers, database_mock, catal
             **FULL_CATALOGUE_ITEM_A_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "catalogue_category_id": CustomObjectId(catalogue_category_id),
-            
         },
     )
     # pylint: enable=duplicate-code
