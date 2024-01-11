@@ -238,8 +238,9 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
-            "_id": CustomObjectId(catalogue_category.parent_id),
             **CATALOGUE_CATEGORY_INFO,
+            "_id": CustomObjectId(catalogue_category.parent_id),
+            
         },
     )
     # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
@@ -349,8 +350,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
-            "_id": CustomObjectId(catalogue_category.parent_id),
             **CATALOGUE_CATEGORY_INFO,
+            "_id": CustomObjectId(catalogue_category.parent_id),
         },
     )
     # Mock `count_documents` to return 1 (duplicate catalogue category found within the parent catalogue category)
@@ -409,9 +410,10 @@ def test_delete_with_children_catalogue_categories(test_helpers, database_mock, 
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
+            **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "parent_id": catalogue_category_id,
-            **CATALOGUE_CATEGORY_INFO,
+            
         },
     )
     # Mock find_one to return 0 (children catalogue items not found)
@@ -785,11 +787,11 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
+            **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(catalogue_category.id),
             "is_leaf": catalogue_category.is_leaf,
             "parent_id": catalogue_category.parent_id,
             "catalogue_item_properties": catalogue_category.catalogue_item_properties,
-            **CATALOGUE_CATEGORY_INFO,
         },
     )
     # Mock `count_documents` to return 0 (no duplicate catalogue category found within the parent catalogue category)
@@ -903,11 +905,11 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, catalo
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
+            **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(catalogue_category_id),
             "is_leaf": update_catalogue_category.is_leaf,
             "parent_id": update_catalogue_category.parent_id,
             "catalogue_item_properties": update_catalogue_category.catalogue_item_properties,
-            **CATALOGUE_CATEGORY_INFO,
         },
     )
     # Mock `count_documents` to return 1 (duplicate catalogue category found within the parent catalogue category)
@@ -992,9 +994,9 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
+            **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "parent_id": catalogue_category_id,
-            **CATALOGUE_CATEGORY_INFO,
         },
     )
     # Mock find_one to return 0 (children catalogue items not found)
