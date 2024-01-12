@@ -822,7 +822,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
 
 def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_items(test_client):
     """
-    Test moving a catalogue category with child items to another parent catalogue category.
+    Test moving a catalogue category with child catalogue items to another parent catalogue category.
     """
     catalogue_category_post = {"name": "Category A", "is_leaf": False}
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)

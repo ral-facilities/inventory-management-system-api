@@ -10,7 +10,7 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import ChildrenElementsExistError, MissingRecordError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 
 logger = logging.getLogger()
@@ -52,7 +52,7 @@ class CatalogueItemRepo:
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
         if self.has_child_elements(catalogue_item_id):
-            raise ChildrenElementsExistError(
+            raise ChildElementsExistError(
                 f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
             )
 
@@ -85,8 +85,8 @@ class CatalogueItemRepo:
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
         if self.has_child_elements(catalogue_item_id):
-            raise ChildrenElementsExistError(
-                f"Catalogue item with ID {str(catalogue_item_id)} has children elements and cannot be updated"
+            raise ChildElementsExistError(
+                f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
             )
 
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
@@ -118,13 +118,13 @@ class CatalogueItemRepo:
 
     def has_child_elements(self, catalogue_item_id: CustomObjectId) -> bool:
         """
-        Check if a catalogue item has children elements based on its ID.
+        Check if a catalogue item has child elements based on its ID.
 
-        Children elements in this case means whether or not a catalogue item has children items
+        Child elements in this case means whether a catalogue item has child items
 
         :param catalogue_item_id: The ID of the catalogue item to check
-        :return: True if the catalogue item has children elements, False otherwise.
+        :return: True if the catalogue item has child elements, False otherwise.
         """
-        logger.info("Checking if catalogue item with ID '%s' has children elements", catalogue_item_id)
+        logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
         item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id})
         return item is not None

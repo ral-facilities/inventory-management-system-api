@@ -9,7 +9,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     InvalidObjectIdError,
     MissingRecordError,
 )
@@ -117,11 +117,11 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
     database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
 
 
-def test_delete_with_children_items(test_helpers, database_mock, catalogue_item_repository):
+def test_delete_with_child_items(test_helpers, database_mock, catalogue_item_repository):
     """
-    Test deleting a catalogue item with children items.
+    Test deleting a catalogue item with child items.
 
-    Verify that the `delete` method properly handles the deletion of a catalogue item with children items.
+    Verify that the `delete` method properly handles the deletion of a catalogue item with child items.
     """
     catalogue_item_id = str(ObjectId())
 
@@ -135,7 +135,7 @@ def test_delete_with_children_items(test_helpers, database_mock, catalogue_item_
         },
     )
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_item_repository.delete(catalogue_item_id)
     assert str(exc.value) == f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
 
@@ -432,6 +432,6 @@ def test_update_has_child_items(test_helpers, database_mock, catalogue_item_repo
         },
     )
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
-    assert str(exc.value) == f"Catalogue item with ID {catalogue_item_id} has children elements and cannot be updated"
+    assert str(exc.value) == f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated"

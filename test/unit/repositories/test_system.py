@@ -12,7 +12,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -447,7 +447,7 @@ def test_delete(test_helpers, database_mock, system_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.systems, 1)
 
-    # Mock count_documents to return 0 (children elements not found)
+    # Mock count_documents to return 0 (child elements not found)
     test_helpers.mock_count_documents(database_mock.systems, 0)
 
     system_repository.delete(system_id)
@@ -466,10 +466,10 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.systems, 1)
 
-    # Mock count_documents to return 1 (children elements found)
+    # Mock count_documents to return 1 (child elements found)
     test_helpers.mock_count_documents(database_mock.systems, 1)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         system_repository.delete(system_id)
 
     database_mock.systems.delete_one.assert_not_called()
@@ -501,7 +501,7 @@ def test_delete_with_non_existent_id(test_helpers, database_mock, system_reposit
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.systems, 0)
 
-    # Mock count_documents to return 0 (children elements not found)
+    # Mock count_documents to return 0 (child elements not found)
     test_helpers.mock_count_documents(database_mock.systems, 0)
 
     with pytest.raises(MissingRecordError) as exc:

@@ -513,9 +513,9 @@ def test_delete_catalogue_item_with_nonexistent_id(test_client):
     assert response.json()["detail"] == "A catalogue item with such ID was not found"
 
 
-def test_delete_catalogue_item_with_children_items(test_client):
+def test_delete_catalogue_item_with_child_items(test_client):
     """
-    Test deleting a catalogue item with children items.
+    Test deleting a catalogue item with child items.
     """
     # pylint: disable=duplicate-code
     # Parent
@@ -791,9 +791,9 @@ def test_partial_update_catalogue_item_nonexistent_id(test_client):
     assert response.json()["detail"] == "A catalogue item with such ID was not found"
 
 
-def test_partial_update_catalogue_item_has_children_items(test_client):
+def test_partial_update_catalogue_item_has_child_items(test_client):
     """
-    Test updating a catalogue item which has children items.
+    Test updating a catalogue item which has child items.
     """
     # pylint: disable=fixme
     # pylint: disable=duplicate-code
@@ -1038,9 +1038,9 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_non_leaf_cat
     assert response.json()["detail"] == "Adding a catalogue item to a non-leaf catalogue category is not allowed"
 
 
-def test_partial_update_catalogue_item_change_catalogue_category_id_has_children_items(test_client):
+def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_items(test_client):
     """
-    Test moving a catalogue item with children items to another catalogue category.
+    Test moving a catalogue item with child items to another catalogue category.
     """
     # pylint: disable=fixme
     # pylint: disable=duplicate-code
