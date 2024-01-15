@@ -51,7 +51,7 @@ class CatalogueItemRepo:
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        if self.has_child_elements(catalogue_item_id):
+        if self._has_child_elements(catalogue_item_id):
             raise ChildElementsExistError(
                 f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
             )
@@ -81,10 +81,11 @@ class CatalogueItemRepo:
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the update data.
+        :raises ChildElementsExistError: If the catalogue item has child elements
         :return: The updated catalogue item.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        if self.has_child_elements(catalogue_item_id):
+        if self._has_child_elements(catalogue_item_id):
             raise ChildElementsExistError(
                 f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
             )
@@ -116,7 +117,7 @@ class CatalogueItemRepo:
         catalogue_items = self._catalogue_items_collection.find(query)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
 
-    def has_child_elements(self, catalogue_item_id: CustomObjectId) -> bool:
+    def _has_child_elements(self, catalogue_item_id: CustomObjectId) -> bool:
         """
         Check if a catalogue item has child elements based on its ID.
 

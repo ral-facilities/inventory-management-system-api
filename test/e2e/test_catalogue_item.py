@@ -536,7 +536,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
 
     # child
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
-    response = test_client.post("/v1/items", json=item_post)
+    test_client.post("/v1/items", json=item_post)
 
     response = test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
 
@@ -795,7 +795,6 @@ def test_partial_update_catalogue_item_has_child_items(test_client):
     """
     Test updating a catalogue item which has child items.
     """
-    # pylint: disable=fixme
     # pylint: disable=duplicate-code
     # Parent
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
@@ -815,7 +814,7 @@ def test_partial_update_catalogue_item_has_child_items(test_client):
 
     # child
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
-    response = test_client.post("/v1/items", json=item_post)
+    test_client.post("/v1/items", json=item_post)
 
     response = test_client.patch(f"/v1/catalogue-items/{catalogue_item_id}", json={"name": "Catalogue Item B"})
 
@@ -1042,7 +1041,6 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
     """
     Test moving a catalogue item with child items to another catalogue category.
     """
-    # pylint: disable=fixme
     # pylint: disable=duplicate-code
     # Parent
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
@@ -1068,7 +1066,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
 
     # child
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
-    response = test_client.post("/v1/items", json=item_post)
+    test_client.post("/v1/items", json=item_post)
 
     response = test_client.patch(f"/v1/catalogue-items/{catalogue_item_id}", json=catalogue_item_patch)
 

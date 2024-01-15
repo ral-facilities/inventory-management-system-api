@@ -108,7 +108,6 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
 
-    # pylint: disable=fixme
     # Mock `find_one` to return no child item document
     test_helpers.mock_find_one(database_mock.items, None)
 
