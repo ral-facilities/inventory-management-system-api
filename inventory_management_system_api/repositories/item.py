@@ -90,3 +90,18 @@ class ItemRepo:
 
         items = self._items_collection.find(query)
         return [ItemOut(**item) for item in items]
+
+
+    def update(self, item_id: str, item: ItemIn) -> ItemOut:
+        """
+        Update an item by its ID in a MongoDB database.
+
+        :param item_id: The ID of the item to update.
+        :param item: The item containing the update data.
+        :return: The updated item.
+        """
+        item_id = CustomObjectId(item_id)
+        logger.info("Updating item with ID: %s in the database", item_id)
+        self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump()})
+        item = self.get(str(item_id))
+        return item
