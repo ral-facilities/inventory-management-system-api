@@ -142,9 +142,9 @@ class ItemService:
             if not catalogue_item:
                 raise MissingRecordError(f"No catalogue item found with ID: {item.catalogue_item_id}")
             
-            # if "properties" not in update_data:
-            #     item.properties = [PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_item.properties]
-            #     update_data = item.model_dump(exclude_unset=True)
+            if "properties" not in update_data:
+                item.properties = [PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_item.properties]
+                update_data = item.model_dump(exclude_unset=True)
 
         system = None
         if (
@@ -156,25 +156,25 @@ class ItemService:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
         
 
-        # if "properties" in update_data:
-        #     if not catalogue_item:
-        #         catalogue_item = self._catalogue_item_repository.get(
-        #             stored_item.catalogue_item_id
-        #         )
+        if "properties" in update_data:
+            if not catalogue_item:
+                catalogue_item = self._catalogue_item_repository.get(
+                    stored_item.catalogue_item_id
+                )
 
-        #     try:
-        #         catalogue_category_id = catalogue_item.catalogue_category_id
-        #         catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
-        #         if not catalogue_category:
-        #             raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
-        #     except InvalidObjectIdError as exc:
-        #         raise DatabaseIntegrityError(str(exc)) from exc
+            try:
+                catalogue_category_id = catalogue_item.catalogue_category_id
+                catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+                if not catalogue_category:
+                    raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+            except InvalidObjectIdError as exc:
+                raise DatabaseIntegrityError(str(exc)) from exc
 
         
 
-        #     defined_properties = catalogue_category.catalogue_item_properties
-        #     supplied_properties = item.properties
-        #     update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
+            defined_properties = catalogue_category.catalogue_item_properties
+            supplied_properties = item.properties
+            update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._item_repository.update(
             item_id, 
