@@ -62,7 +62,7 @@ def create_item(
 )
 def delete_item(
     item_id: Annotated[str, Path(description="The ID of the item to delete")],
-    item_service: Annotated[ItemService, Depends()],
+    item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting item with ID: %s", item_id)
@@ -103,7 +103,7 @@ def get_items(
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
 def get_item(
     item_id: Annotated[str, Path(description="The ID of the item to get")],
-    item_service: Annotated[ItemService, Depends()],
+    item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
