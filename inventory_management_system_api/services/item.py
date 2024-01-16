@@ -146,7 +146,7 @@ class ItemService:
                 item.properties = [PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_item.properties]
                 update_data = item.model_dump(exclude_unset=True)
 
-        system = None
+        #system = None
         if (
             "system_id" in update_data
             and item.system_id != stored_item.system_id
@@ -174,6 +174,17 @@ class ItemService:
 
             defined_properties = catalogue_category.catalogue_item_properties
             supplied_properties = item.properties
+            missing_supplied_properties = self._find_missing_supplied_properties(
+            catalogue_item.properties, supplied_properties
+            )
+            # Inherit the missing properties from the corresponding catalogue item. Create `PropertyPostRequestSchema`
+            # objects for the inherited properties and add them to the `supplied_properties` list before proceeding with
+            # processing and validation.
+            supplied_properties.extend(
+                [PropertyPostRequestSchema(**prop.model_dump()) for prop in missing_supplied_properties]
+            )
+
+
             update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._item_repository.update(

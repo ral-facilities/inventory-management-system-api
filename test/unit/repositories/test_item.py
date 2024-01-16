@@ -1,6 +1,7 @@
 """
 Unit tests for the `ItemRepo` repository.
 """
+from unittest.mock import MagicMock
 import pytest
 from bson import ObjectId
 
@@ -403,3 +404,56 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
 
     assert retrieved_item is None
     database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
+
+def test_update(test_helpers, database_mock, item_repository):
+    """
+    Test updating an item.
+
+    Verify that the `update` method properly handles the item to be updated.
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `update_one` to return an object for the updated item document
+    test_helpers.mock_update_one(database_mock.items)
+    # Mock `find_one` to return the updated catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.items,
+        {
+            **FULL_ITEM_INFO,
+            "_id": CustomObjectId(item.id),
+            "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+            "system_id": CustomObjectId(item.system_id)
+        }
+    )
+
+    item_in = ItemIn(
+        **FULL_ITEM_INFO,
+        catalogue_item_id=item.catalogue_item_id,
+        system_id=item.system_id
+    )
+    updated_item = item_repository.update(item.id, item_in)
+
+    database_mock.items.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(item.id)},
+        {
+            "$set": {
+                "catalogue_item_id":  CustomObjectId(item.catalogue_item_id),
+                **item_in.model_dump(),
+            }
+        }
+    )
+    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)})
+    assert updated_item == item
+
+def test_update_with_invalid_id(item_repository):
+    """
+    Test updating an item with Inavlid ID.
+
+    Verify that the `update` method properly handles the update of an item with an invalid ID.
+    """
+    updated_item = MagicMock()
+    item_id = "invalid"
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        item_repository.update(item_id, updated_item)
+    assert str(exc.value) == f"Invalid ObjectId value '{item_id}'"
