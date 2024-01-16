@@ -54,6 +54,26 @@ def create_item(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
 
 
+@router.delete(
+    path="/{item_id}",
+    summary="Delete an item by ID",
+    response_description="Item deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_item(
+    item_id: Annotated[str, Path(description="The ID of the item to delete")],
+    item_service: Annotated[ItemService, Depends(ItemService)],
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting item with ID: %s", item_id)
+    try:
+        item_service.delete(item_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "An item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
 @router.get(path="/", summary="Get items", response_description="List of items")
 def get_items(
     item_service: Annotated[ItemService, Depends(ItemService)],
@@ -83,7 +103,7 @@ def get_items(
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
 def get_item(
     item_id: Annotated[str, Path(description="The ID of the item to get")],
-    item_service: Annotated[ItemService, Depends()],
+    item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
