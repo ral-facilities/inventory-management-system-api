@@ -192,11 +192,8 @@ class CatalogueCategoryRepo:
         :return: True if the catalogue category has children elements, False otherwise.
         """
         logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
-        # Check if it has catalogue categories
-        query = {"parent_id": catalogue_category_id}
-        catalogue_category = self._catalogue_categories_collection.find_one(query)
-
-        # Check if it has catalogue items
-        query = {"catalogue_category_id": catalogue_category_id}
-        catalogue_item = self._catalogue_items_collection.find_one(query)
-        return (catalogue_category is not None) or (catalogue_item is not None)
+        
+        return (
+            self._catalogue_categories_collection.find_one({"parent_id": catalogue_category_id}) is not None
+            or self._catalogue_items_collection.find_one({"parent_id": catalogue_category_id}) is not None
+        )
