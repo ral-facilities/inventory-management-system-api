@@ -13,7 +13,10 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemOut, ItemIn
+from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
+from test.unit.repositories.test_item import FULL_SYSTEM_A_INFO
+from test.unit.services.test_system import SYSTEM_A_INFO_FULL
 
 # pylint: disable=duplicate-code
 FULL_CATALOGUE_CATEGORY_A_INFO = {
@@ -386,53 +389,6 @@ def test_update_change_catalogue_item_id(
     )
     assert updated_item == item
 
-
-# def test_update_change_system_id(test_helpers, item_repository_mock, system_repository_mock, item_service):
-#     """
-#     Test updating system id to an existing id
-#     """
-#     item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
-
-#     # Mock `get` to return an item
-#     test_helpers.mock_get(
-#         item_repository_mock,
-#         ItemOut(
-#             **{
-#                 **item.model_dump(),
-#                "system_id": str(ObjectId())
-#             }
-
-#         ),
-#     )
-
-#     # Mock `get` to return a system
-#     test_helpers.mock_get(
-#         system_repository_mock,
-#         SystemOut(
-#             id=item.system_id,
-#             **FULL_SYSTEM_A_INFO
-#         ),
-#     )
-
-#     # Mock `update` to return the updated item
-#     test_helpers.mock_update(item_repository_mock, item)
-
-#     updated_item = item_service.update(
-#         item.id,
-#         ItemPatchRequestSchema(system_id=item.system_id),
-#     )
-
-#     item_repository_mock.update.assert_called_once_with(
-#         item.id,
-#         ItemIn(
-#             catalogue_item_id=item.catalogue_item_id,
-#             system_id=item.system_id,
-#             **FULL_ITEM_INFO
-#         )
-#     )
-#     assert updated_item == item
-
-
 def test_update_with_nonexistent_catalogue_item_id(
     test_helpers, catalogue_item_repository_mock, item_repository_mock, item_service
 ):
@@ -455,28 +411,72 @@ def test_update_with_nonexistent_catalogue_item_id(
         )
     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
 
+def test_update_change_system_id(test_helpers, item_repository_mock, system_repository_mock, item_service):
+    """
+    Test updating system id to an existing id
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
 
-# def test_update_with_nonexistent_system_id(
-#         test_helpers, system_repository_mock, item_repository_mock, item_service
-# ):
-#     """
-#     Test updating an item with a non-existent system ID.
-#     """
-#     item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # Mock `get` to return an item
+    test_helpers.mock_get(
+        item_repository_mock,
+        ItemOut(
+            **{
+                **item.model_dump(),
+                "system_id": str(ObjectId())
+            }
 
-#     # Mock `get` to return an item
-#     test_helpers.mock_get(item_repository_mock, item)
+        ),
+    )
+    
+    # Mock `get` to return a system
+    test_helpers.mock_get(
+        system_repository_mock,
+        SystemOut(
+            id=item.system_id,
+            **SYSTEM_A_INFO_FULL
+        ),
+    )
 
-#     # Mock `get` to not return a catalogue item
-#     test_helpers.mock_get(system_repository_mock, None)
+    # Mock `update` to return the updated item
+    test_helpers.mock_update(item_repository_mock, item)
 
-#     system_id = str(ObjectId())
-#     with pytest.raises(MissingRecordError) as exc:
-#         item_service.update(
-#             item.id,
-#             ItemPatchRequestSchema(system_id=system_id),
-#         )
-#     assert str(exc.value) == f"No system found with ID: {system_id}"
+    updated_item = item_service.update(
+        item.id,
+        ItemPatchRequestSchema(system_id=item.system_id),
+    )
+
+    item_repository_mock.update.assert_called_once_with(
+        item.id,
+        ItemIn(
+            catalogue_item_id=item.catalogue_item_id,
+            system_id=item.system_id,
+            **FULL_ITEM_INFO
+        )
+    )
+    assert updated_item == item
+
+def test_update_with_nonexistent_system_id(
+        test_helpers, system_repository_mock, item_repository_mock, item_service
+):
+    """
+    Test updating an item with a non-existent system ID.
+    """
+    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+
+    # Mock `get` to return an item
+    test_helpers.mock_get(item_repository_mock, item)
+
+    # Mock `get` to not return a catalogue item
+    test_helpers.mock_get(system_repository_mock, None)
+
+    system_id = str(ObjectId())
+    with pytest.raises(MissingRecordError) as exc:
+        item_service.update(
+            item.id,
+            ItemPatchRequestSchema(system_id=system_id),
+        )
+    assert str(exc.value) == f"No system found with ID: {system_id}"
 
 
 def test_update_change_property_value(

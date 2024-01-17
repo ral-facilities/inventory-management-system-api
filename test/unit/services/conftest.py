@@ -8,6 +8,8 @@ import pytest
 
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
+from inventory_management_system_api.models.item import ItemOut
+from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
@@ -101,7 +103,7 @@ def fixture_catalogue_item_service(
 
 @pytest.fixture(name="item_service")
 def fixture_item_service(
-    item_repository_mock: Mock, catalogue_category_repository_mock: Mock, catalogue_item_repository_mock: Mock
+    item_repository_mock: Mock, catalogue_category_repository_mock: Mock, catalogue_item_repository_mock: Mock, system_repository_mock: Mock
 ) -> ItemService:
     """
     Fixture to create an `ItemService` instance with mocked `ItemRepo`, `CatalogueItemRepo`, and
@@ -112,7 +114,7 @@ def fixture_item_service(
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :return: `ItemService` instance with the mocked dependencies.
     """
-    return ItemService(item_repository_mock, catalogue_category_repository_mock, catalogue_item_repository_mock)
+    return ItemService(item_repository_mock, catalogue_category_repository_mock, catalogue_item_repository_mock, system_repository_mock)
 
 
 @pytest.fixture(name="manufacturer_service")
@@ -147,7 +149,7 @@ class ServiceTestHelpers:
     """
 
     @staticmethod
-    def mock_create(repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut]) -> None:
+    def mock_create(repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut]) -> None:
         """
         Mock the `create` method of the repository mock to return a repository object.
 
@@ -157,7 +159,7 @@ class ServiceTestHelpers:
         repository_mock.create.return_value = repo_obj
 
     @staticmethod
-    def mock_get(repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, None]) -> None:
+    def mock_get(repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, None]) -> None:
         """
         Mock the `get` method of the repository mock to return a specific repository object.
 
@@ -184,7 +186,7 @@ class ServiceTestHelpers:
             repository_mock.get_breadcrumbs.side_effect = [breadcrumbs_obj]
 
     @staticmethod
-    def mock_list(repository_mock: Mock, repo_objs: List[Union[CatalogueCategoryOut, CatalogueItemOut]]) -> None:
+    def mock_list(repository_mock: Mock, repo_objs: List[Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut,]]) -> None:
         """
         Mock the `list` method of the repository mock to return a specific list of repository objects.
         objects.
@@ -195,7 +197,7 @@ class ServiceTestHelpers:
         repository_mock.list.return_value = repo_objs
 
     @staticmethod
-    def mock_update(repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut]) -> None:
+    def mock_update(repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut,]) -> None:
         """
         Mock the `update` method of the repository mock to return a repository object.
 

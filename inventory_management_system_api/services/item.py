@@ -143,7 +143,6 @@ class ItemService:
                 item.properties = [PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_item.properties]
                 update_data = item.model_dump(exclude_unset=True)
 
-        # system = None
         if "system_id" in update_data and item.system_id != stored_item.system_id:
             system = self._system_repository.get(item.system_id)
             if not system:
