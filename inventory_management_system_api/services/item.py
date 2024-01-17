@@ -96,6 +96,14 @@ class ItemService:
             )
         )
 
+    def delete(self, item_id: str) -> None:
+        """
+        Delete an item by its ID.
+
+        :param item_id: The ID of the item to delete.
+        """
+        return self._item_repository.delete(item_id)
+
     def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
         """
         Get all items
