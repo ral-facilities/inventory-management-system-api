@@ -43,15 +43,21 @@ class ItemPostRequestSchema(BaseModel):
         "properties found in the catalogue item will be inherited if not explicitly provided.",
     )
 
+
 class ItemPatchRequestSchema(ItemPostRequestSchema):
     """
     Schema model for an item update request.
     """
-    catalogue_item_id: Optional[str] = Field(default=None, description="The ID of the corresponding catalogue item for this item")
+
+    catalogue_item_id: Optional[str] = Field(
+        default=None, description="The ID of the corresponding catalogue item for this item"
+    )
     is_defective: Optional[bool] = Field(default=None, description="Whether the item is defective or not")
     usage_status: Optional[ItemUsageStatus] = Field(
-        default=None, description="The usage status of the item. 0 means new, 1 means in use, 2 means used, and 3 means scrapped."
+        default=None,
+        description="The usage status of the item. 0 means new, 1 means in use, 2 means used, and 3 means scrapped.",
     )
+
 
 class ItemSchema(ItemPostRequestSchema):
     """

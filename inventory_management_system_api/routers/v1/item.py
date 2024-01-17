@@ -99,7 +99,11 @@ def get_item(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
 
-@router.patch(path="/{item_id}", summary="Update an item partially by ID", response_description="Item updated successfully",)
+@router.patch(
+    path="/{item_id}",
+    summary="Update an item partially by ID",
+    response_description="Item updated successfully",
+)
 def partial_update_item(
     item: ItemPatchRequestSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
@@ -115,19 +119,15 @@ def partial_update_item(
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        if (
-            item.catalogue_item_id and item.catalogue_item_id in str(exc) or "catalogue item" in str(exc).lower()
-        ):
+        if item.catalogue_item_id and item.catalogue_item_id in str(exc) or "catalogue item" in str(exc).lower():
             message = "The specified catalogue item ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
-        if(
-            item.system_id and item.system_id in str(exc) or "system" in str(exc).lower()
-        ):
+        if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
             message = "The specified system ID does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
-        
+
         message = "An item with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc

@@ -36,7 +36,7 @@ class ItemService:
         item_repository: ItemRepo = Depends(ItemRepo),
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
-        system_repository: SystemRepo = Depends(SystemRepo)
+        system_repository: SystemRepo = Depends(SystemRepo),
     ) -> None:
         """
         Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`, and `CatalogueItemRepo` repos.
@@ -119,48 +119,39 @@ class ItemService:
         """
         Update an item by its ID.
 
-        The method checks if the item exists in the database and raises a `MissingRecordError` if it does 
-        not. If the catalogue item ID or system ID is being updated, it checks if a catalogue item  and/or system ID with such ID exists and
-        raises a `MissingRecordError` if it does not.
+        The method checks if the item exists in the database and raises a `MissingRecordError` if it does
+        not. If the catalogue item ID or system ID is being updated, it checks if a catalogue item 
+        and/or system ID with such ID exists and raises a `MissingRecordError` if it does not.
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
-        :return: The updated item. 
+        :return: The updated item.
         """
         update_data = item.model_dump(exclude_unset=True)
 
         stored_item = self.get(item_id)
         if not stored_item:
             raise MissingRecordError(f"No item found with ID: {item_id}")
-        
+
         catalogue_item = None
-        if (
-            "catalogue_item_id" in update_data
-            and item.catalogue_item_id != stored_item.catalogue_item_id
-        ):
+        if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
             catalogue_item = self._catalogue_item_repository.get(item.catalogue_item_id)
             if not catalogue_item:
                 raise MissingRecordError(f"No catalogue item found with ID: {item.catalogue_item_id}")
-            
+
             if "properties" not in update_data:
                 item.properties = [PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_item.properties]
                 update_data = item.model_dump(exclude_unset=True)
 
-        #system = None
-        if (
-            "system_id" in update_data
-            and item.system_id != stored_item.system_id
-        ):
+        # system = None
+        if "system_id" in update_data and item.system_id != stored_item.system_id:
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
-        
 
         if "properties" in update_data:
             if not catalogue_item:
-                catalogue_item = self._catalogue_item_repository.get(
-                    stored_item.catalogue_item_id
-                )
+                catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
 
             try:
                 catalogue_category_id = catalogue_item.catalogue_category_id
@@ -170,12 +161,10 @@ class ItemService:
             except InvalidObjectIdError as exc:
                 raise DatabaseIntegrityError(str(exc)) from exc
 
-        
-
             defined_properties = catalogue_category.catalogue_item_properties
             supplied_properties = item.properties
             missing_supplied_properties = self._find_missing_supplied_properties(
-            catalogue_item.properties, supplied_properties
+                catalogue_item.properties, supplied_properties
             )
             # Inherit the missing properties from the corresponding catalogue item. Create `PropertyPostRequestSchema`
             # objects for the inherited properties and add them to the `supplied_properties` list before proceeding with
@@ -184,15 +173,9 @@ class ItemService:
                 [PropertyPostRequestSchema(**prop.model_dump()) for prop in missing_supplied_properties]
             )
 
-
             update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
-        return self._item_repository.update(
-            item_id, 
-            ItemIn(**{**stored_item.model_dump(), **update_data})
-        )
-        
-        
+        return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
     def _find_missing_supplied_properties(
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]

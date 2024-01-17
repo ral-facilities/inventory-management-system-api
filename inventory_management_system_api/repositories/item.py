@@ -91,7 +91,6 @@ class ItemRepo:
         items = self._items_collection.find(query)
         return [ItemOut(**item) for item in items]
 
-
     def update(self, item_id: str, item: ItemIn) -> ItemOut:
         """
         Update an item by its ID in a MongoDB database.

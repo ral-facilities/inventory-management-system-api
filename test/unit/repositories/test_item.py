@@ -405,6 +405,7 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
     assert retrieved_item is None
     database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
 
+
 def test_update(test_helpers, database_mock, item_repository):
     """
     Test updating an item.
@@ -422,28 +423,25 @@ def test_update(test_helpers, database_mock, item_repository):
             **FULL_ITEM_INFO,
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-            "system_id": CustomObjectId(item.system_id)
-        }
+            "system_id": CustomObjectId(item.system_id),
+        },
     )
 
-    item_in = ItemIn(
-        **FULL_ITEM_INFO,
-        catalogue_item_id=item.catalogue_item_id,
-        system_id=item.system_id
-    )
+    item_in = ItemIn(**FULL_ITEM_INFO, catalogue_item_id=item.catalogue_item_id, system_id=item.system_id)
     updated_item = item_repository.update(item.id, item_in)
 
     database_mock.items.update_one.assert_called_once_with(
         {"_id": CustomObjectId(item.id)},
         {
             "$set": {
-                "catalogue_item_id":  CustomObjectId(item.catalogue_item_id),
+                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 **item_in.model_dump(),
             }
-        }
+        },
     )
     database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)})
     assert updated_item == item
+
 
 def test_update_with_invalid_id(item_repository):
     """
