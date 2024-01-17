@@ -122,11 +122,11 @@ def partial_update_item(
         if item.catalogue_item_id and item.catalogue_item_id in str(exc) or "catalogue item" in str(exc).lower():
             message = "The specified catalogue item ID does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
             message = "The specified system ID does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
         message = "An item with such ID was not found"
         logger.exception(message)

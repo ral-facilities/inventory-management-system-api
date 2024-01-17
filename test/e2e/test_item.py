@@ -6,7 +6,6 @@ from test.e2e.test_system import SYSTEM_POST_B
 from bson import ObjectId
 
 
-
 # pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_A = {
     "name": "Category A",

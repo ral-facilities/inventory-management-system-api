@@ -120,7 +120,7 @@ class ItemService:
         Update an item by its ID.
 
         The method checks if the item exists in the database and raises a `MissingRecordError` if it does
-        not. If the catalogue item ID or system ID is being updated, it checks if a catalogue item 
+        not. If the catalogue item ID or system ID is being updated, it checks if a catalogue item
         and/or system ID with such ID exists and raises a `MissingRecordError` if it does not.
 
         :param item_id: The ID of the item to update.

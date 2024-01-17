@@ -1,6 +1,8 @@
 """
 Unit tests for the `ItemService` service.
 """
+from test.unit.services.test_system import SYSTEM_A_INFO_FULL
+
 import pytest
 from bson import ObjectId
 
@@ -15,8 +17,7 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemOut, ItemIn
 from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
-from test.unit.repositories.test_item import FULL_SYSTEM_A_INFO
-from test.unit.services.test_system import SYSTEM_A_INFO_FULL
+
 
 # pylint: disable=duplicate-code
 FULL_CATALOGUE_CATEGORY_A_INFO = {
@@ -389,6 +390,7 @@ def test_update_change_catalogue_item_id(
     )
     assert updated_item == item
 
+
 def test_update_with_nonexistent_catalogue_item_id(
     test_helpers, catalogue_item_repository_mock, item_repository_mock, item_service
 ):
@@ -411,6 +413,7 @@ def test_update_with_nonexistent_catalogue_item_id(
         )
     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
 
+
 def test_update_change_system_id(test_helpers, item_repository_mock, system_repository_mock, item_service):
     """
     Test updating system id to an existing id
@@ -420,22 +423,13 @@ def test_update_change_system_id(test_helpers, item_repository_mock, system_repo
     # Mock `get` to return an item
     test_helpers.mock_get(
         item_repository_mock,
-        ItemOut(
-            **{
-                **item.model_dump(),
-                "system_id": str(ObjectId())
-            }
-
-        ),
+        ItemOut(**{**item.model_dump(), "system_id": str(ObjectId())}),
     )
-    
+
     # Mock `get` to return a system
     test_helpers.mock_get(
         system_repository_mock,
-        SystemOut(
-            id=item.system_id,
-            **SYSTEM_A_INFO_FULL
-        ),
+        SystemOut(id=item.system_id, **SYSTEM_A_INFO_FULL),
     )
 
     # Mock `update` to return the updated item
@@ -447,18 +441,12 @@ def test_update_change_system_id(test_helpers, item_repository_mock, system_repo
     )
 
     item_repository_mock.update.assert_called_once_with(
-        item.id,
-        ItemIn(
-            catalogue_item_id=item.catalogue_item_id,
-            system_id=item.system_id,
-            **FULL_ITEM_INFO
-        )
+        item.id, ItemIn(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **FULL_ITEM_INFO)
     )
     assert updated_item == item
 
-def test_update_with_nonexistent_system_id(
-        test_helpers, system_repository_mock, item_repository_mock, item_service
-):
+
+def test_update_with_nonexistent_system_id(test_helpers, system_repository_mock, item_repository_mock, item_service):
     """
     Test updating an item with a non-existent system ID.
     """
