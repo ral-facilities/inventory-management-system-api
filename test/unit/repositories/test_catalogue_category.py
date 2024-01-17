@@ -385,7 +385,7 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 1)
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue category document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
@@ -474,7 +474,7 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_categ
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 0)
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue category document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
@@ -972,7 +972,7 @@ def test_has_child_elements_with_no_child_categories(test_helpers, database_mock
     """
     Test has_child_elements returns false when there are no child categories
     """
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue category document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
@@ -1009,8 +1009,6 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     """
     Test has_child_elements returns true when there are child categories
     """
-
-    # Mock count_documents to return 1 (child element found)
     catalogue_category_id = str(ObjectId())
 
     # Mock `find_one` to return no child catalogue category document

@@ -366,7 +366,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
 
     test_helpers.mock_count_documents(database_mock.manufacturers, 1)
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue item document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     with pytest.raises(DuplicateRecordError) as exc:
@@ -406,7 +406,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
         },
     )
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue item document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     test_helpers.mock_update_one(database_mock.manufacturers)
@@ -462,7 +462,7 @@ def test_delete(test_helpers, database_mock, manufacturer_repository):
 
     test_helpers.mock_delete_one(database_mock.manufacturers, 1)
 
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue item document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     manufacturer_repository.delete(manufacturer_id)
@@ -484,7 +484,7 @@ def test_delete_with_a_nonexistent_id(test_helpers, database_mock, manufacturer_
     manufacturer_id = str(ObjectId())
 
     test_helpers.mock_delete_one(database_mock.manufacturers, 0)
-    # Mock `find_one` to return 0 (children elements not found)
+    # Mock `find_one` to return no child catalogue item document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     with pytest.raises(MissingRecordError) as exc:

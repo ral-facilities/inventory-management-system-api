@@ -142,5 +142,4 @@ class ManufacturerRepo:
         :return: Returns True if 1 or more documents have the manufacturer ID, false if none do
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        catalogue_item = self._catalogue_item_collection.find_one({"manufacturer_id": manufacturer_id})
-        return catalogue_item is not None
+        return self._catalogue_item_collection.find_one({"manufacturer_id": manufacturer_id}) is not None
