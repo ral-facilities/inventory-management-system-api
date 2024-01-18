@@ -41,8 +41,8 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     )
     # pylint: enable=duplicate-code
 
-    # Mock 'count documents' to return 0 (no duplicates found)
-    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
+    # Mock `find_one` to return no duplicate manufacturers found
+    test_helpers.mock_find_one(database_mock.manufacturers, None)
     # Mock 'insert one' to return object for inserted manufacturer
     test_helpers.mock_insert_one(database_mock.manufacturers, CustomObjectId(manufacturer.id))
     # Mock 'find_one' to return the inserted manufacturer document
@@ -65,7 +65,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
 
     database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump())
     # pylint: enable=duplicate-code
-    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
+    database_mock.manufacturers.find_one.assert_called_with({"_id": CustomObjectId(manufacturer.id)})
     assert created_manufacturer == manufacturer
 
 
@@ -91,8 +91,18 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
         telephone="0932348348",
     )
 
-    # Mock count_documents to return 1 (duplicate manufacturer found)
-    test_helpers.mock_count_documents(database_mock.manufacturers, 1)
+    # Mock `find_one` to return duplicate manufacturer found
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            "_id": CustomObjectId(manufacturer.id),
+            "code": manufacturer.code,
+            "name": manufacturer.name,
+            "url": manufacturer.url,
+            "address": manufacturer.address,
+            "telephone": manufacturer.telephone,
+        },
+    )
 
     with pytest.raises(DuplicateRecordError) as exc:
         manufacturer_repository.create(
@@ -251,9 +261,6 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     )
     # pylint: enable=duplicate-code
 
-    # Mock count documents to return no duplicate manufactures
-    test_helpers.mock_count_documents(database_mock.manufacturers, 0)
-
     # Mock 'find_one' to return the inserted manufacturer document
     test_helpers.mock_find_one(
         database_mock.manufacturers,
@@ -272,6 +279,9 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             "telephone": "0348343897",
         },
     )
+
+    # Mock `find_one` to return no duplicate manufacturers found
+    test_helpers.mock_find_one(database_mock.manufacturers, None)
 
     test_helpers.mock_update_one(database_mock.manufacturers)
     # Mock 'find_one' to return the inserted manufacturer document
@@ -364,7 +374,24 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
         },
     )
 
-    test_helpers.mock_count_documents(database_mock.manufacturers, 1)
+    # Mock `find_one` to return duplicate manufacturer found
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            "_id": CustomObjectId(manufacturer_id),
+            "code": "manufacturer-b",
+            "name": "Manufacturer B",
+            "url": "http://example.com",
+            "address": {
+                "address_line": "2 Example Street",
+                "town": "Newbury",
+                "county": "Berkshire",
+                "postcode": "QW2 4DF",
+                "country": "United Kingdom",
+            },
+            "telephone": "0348343897",
+        },
+    )
 
     # Mock `find_one` to return no child catalogue item document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)

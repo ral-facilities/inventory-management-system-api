@@ -178,8 +178,7 @@ class CatalogueCategoryRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        count = self._catalogue_categories_collection.count_documents({"parent_id": parent_id, "code": code})
-        return count > 0
+        return self._catalogue_categories_collection.find_one({"parent_id": parent_id, "code": code}) is not None
 
     def has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
         """
