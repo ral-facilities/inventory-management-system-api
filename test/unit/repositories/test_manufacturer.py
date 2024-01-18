@@ -531,9 +531,9 @@ def test_delete_manufacturer_that_is_part_of_a_catalogue_item(test_helpers, data
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
+            **FULL_CATALOGUE_ITEM_A_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "catalogue_category_id": CustomObjectId(catalogue_category_id),
-            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
     # pylint: enable=duplicate-code

@@ -197,8 +197,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
     test_helpers.mock_find_one(
         database_mock.systems,
         {
-            "_id": CustomObjectId(system.parent_id),
             **SYSTEM_A_INFO,
+            "_id": CustomObjectId(system.parent_id),
         },
     )
 
@@ -442,7 +442,13 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
     # Mock `find_one` to return a parent System document
     test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
     # Mock `find_one` to return duplicate systen found in parent system
-    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            **SYSTEM_B_INFO,
+            "_id": CustomObjectId(system_id),
+        },
+    )
 
     with pytest.raises(DuplicateRecordError) as exc:
         system_repository.update(system_id, system)
@@ -486,8 +492,8 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
     test_helpers.mock_find_one(
         database_mock.systems,
         {
-            "id": str(ObjectId()),
             **SYSTEM_A_INFO,
+            "id": str(ObjectId()),
             "parent_id": system_id,
         },
     )
