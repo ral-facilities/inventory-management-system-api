@@ -83,8 +83,8 @@ def test_create(test_helpers, database_mock, system_repository):
     system = SystemOut(id=str(ObjectId()), **system_info)
     # pylint: enable=duplicate-code
 
-    # Mock `count_documents` to return 0 (no duplicate system found within the parent system)
-    test_helpers.mock_count_documents(database_mock.systems, 0)
+    # Mock `find_one` to return no duplicate systen found in parent system
+    test_helpers.mock_find_one(database_mock.systems, None)
     # Mock `insert_one` to return an object for the inserted system document
     test_helpers.mock_insert_one(database_mock.systems, CustomObjectId(system.id))
     # Mock `find_one` to return the inserted system document
@@ -120,8 +120,8 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
         {"_id": CustomObjectId(system.parent_id), "parent_id": None, **SYSTEM_A_INFO},
     )
     # pylint: enable=duplicate-code
-    # Mock `count_documents` to return 0 (no duplicate system found within the parent system)
-    test_helpers.mock_count_documents(database_mock.systems, 0)
+    # Mock `find_one` to return no duplicate systen found in parent system
+    test_helpers.mock_find_one(database_mock.systems, None)
     # Mock `insert_one` to return an object for the inserted system document
     test_helpers.mock_insert_one(database_mock.systems, CustomObjectId(system.id))
     # Mock `find_one` to return the inserted system document
@@ -136,7 +136,11 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
         {**system_info, "parent_id": CustomObjectId(system.parent_id)},
     )
     database_mock.systems.find_one.assert_has_calls(
-        [call({"_id": CustomObjectId(system.parent_id)}), call({"_id": CustomObjectId(system.id)})]
+        [
+            call({"_id": CustomObjectId(system.parent_id)}),
+            call({"parent_id": CustomObjectId(system.parent_id), "code": system.code}),
+            call({"_id": CustomObjectId(system.id)}),
+        ]
     )
     assert created_system == system
 
@@ -189,8 +193,14 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
             **SYSTEM_A_INFO,
         },
     )
-    # Mock `count_documents` to return 1 (duplicate system found within the parent system)
-    test_helpers.mock_count_documents(database_mock.systems, 1)
+    # Mock `find_one` to return duplicate systen found in parent system
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            "_id": CustomObjectId(system.parent_id),
+            **SYSTEM_A_INFO,
+        },
+    )
 
     with pytest.raises(DuplicateRecordError) as exc:
         system_repository.create(SystemIn(**system_info))
@@ -346,14 +356,20 @@ def test_update(test_helpers, database_mock, system_repository):
     """
     system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO)
 
-    # Mock `find_one` to return the updated System document
-    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system.id), **SYSTEM_A_INFO})
-    # Mock `count_documents` to return 0 (no duplicate System found within the parent System)
-    test_helpers.mock_count_documents(database_mock.systems, 0)
+    # Mock `find_one` to return a System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            **SYSTEM_A_INFO,
+            "_id": CustomObjectId(system.id),
+        },
+    )
+
     # Mock `update_one` to return an object for the updated System document
     test_helpers.mock_update_one(database_mock.systems)
+
     # Mock `find_one` to return the updated System document
-    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system.id), **SYSTEM_A_INFO})
+    test_helpers.mock_find_one(database_mock.systems, {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id)})
 
     system_in = SystemIn(**SYSTEM_A_INFO)
     updated_system = system_repository.update(system.id, system_in)
@@ -425,15 +441,14 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
 
     # Mock `find_one` to return a parent System document
     test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
-    # Mock `count_documents` to return 1 (duplicate System found within the parent System)
-    test_helpers.mock_count_documents(database_mock.systems, 1)
+    # Mock `find_one` to return duplicate systen found in parent system
+    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
 
     with pytest.raises(DuplicateRecordError) as exc:
         system_repository.update(system_id, system)
     assert str(exc.value) == "Duplicate System found within the parent System"
 
     database_mock.systems.update_one.assert_not_called()
-    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
 
 
 def test_delete(test_helpers, database_mock, system_repository):

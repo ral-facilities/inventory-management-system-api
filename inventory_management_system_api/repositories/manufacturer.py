@@ -132,8 +132,7 @@ class ManufacturerRepo:
         :return `True` if duplicate manufacturer, `False` otherwise
         """
         logger.info("Checking if manufacturer with code '%s' already exists", code)
-        count = self._manufacturers_collection.count_documents({"code": code})
-        return count > 0
+        return self._manufacturers_collection.find_one({"code": code}) is not None
 
     def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str) -> bool:
         """Checks to see if any of the documents in the database have a specific manufactuer id

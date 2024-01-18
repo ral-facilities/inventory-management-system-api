@@ -65,8 +65,6 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     )
     # pylint: enable=duplicate-code
 
-    # Mock `count_documents` to return 0 (no duplicate catalogue item found within the catalogue category)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     # Mock `insert_one` to return an object for the inserted catalogue item document
     test_helpers.mock_insert_one(database_mock.catalogue_items, CustomObjectId(catalogue_item.id))
     # Mock `find_one` to return the inserted catalogue item document

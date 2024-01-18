@@ -166,8 +166,7 @@ class SystemRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        count = self._systems_collection.count_documents({"parent_id": parent_id, "code": code})
-        return count > 0
+        return self._systems_collection.find_one({"parent_id": parent_id, "code": code}) is not None
 
     def _has_child_elements(self, system_id: CustomObjectId) -> bool:
         """
