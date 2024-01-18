@@ -10,7 +10,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -384,7 +384,7 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 1)
 
-    # Mock count_documents to return 0 (children elements not found)
+    # Mock count_documents to return 0 (child elements not found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
@@ -395,44 +395,44 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     )
 
 
-def test_delete_with_children_catalogue_categories(test_helpers, database_mock, catalogue_category_repository):
+def test_delete_with_child_catalogue_categories(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test deleting a catalogue category with children catalogue categories.
+    Test deleting a catalogue category with child catalogue categories.
 
-    Verify that the `delete` method properly handles the deletion of a catalogue category with children catalogue
+    Verify that the `delete` method properly handles the deletion of a catalogue category with child catalogue
     categories.
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock count_documents to return 1 (children catalogue categories found)
+    # Mock count_documents to return 1 (child catalogue categories found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 1)
-    # Mock count_documents to return 0 (children catalogue items not found)
+    # Mock count_documents to return 0 (child catalogue items not found)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
     assert str(exc.value) == (
-        f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
+        f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
     )
 
 
-def test_delete_with_children_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
+def test_delete_with_child_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test deleting a catalogue category with children catalogue items.
+    Test deleting a catalogue category with child catalogue items.
 
-    Verify that the `delete` method properly handles the deletion of a catalogue category with children catalogue items.
+    Verify that the `delete` method properly handles the deletion of a catalogue category with child catalogue items.
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock count_documents to return 0 (children catalogue categories not found)
+    # Mock count_documents to return 0 (child catalogue categories not found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
-    # Mock count_documents to return 1 (children catalogue items found)
+    # Mock count_documents to return 1 (child catalogue items found)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 1)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
     assert str(exc.value) == (
-        f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
+        f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
     )
 
 
@@ -458,7 +458,7 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_categ
     # Mock `delete_one` to return that no document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_categories, 0)
 
-    # Mock count_documents to return 0 (children elements not found)
+    # Mock count_documents to return 0 (child elements not found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
@@ -751,7 +751,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     Test updating a catalogue category.
 
     Verify that the `update` method properly handles the catalogue category to be updated, checks that the catalogue
-    category does not have children elements, there is not a duplicate catalogue category, and updates the catalogue
+    category does not have child elements, there is not a duplicate catalogue category, and updates the catalogue
     category.
     """
     # pylint: disable=duplicate-code
@@ -959,7 +959,7 @@ def test_has_child_elements_with_no_child_categories(test_helpers, database_mock
     Test has_child_elements returns false when there are no child categories
     """
 
-    # Mock count_documents to return 0 (children elements not found)
+    # Mock count_documents to return 0 (child elements not found)
     test_helpers.mock_count_documents(database_mock.catalogue_categories, 0)
     test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
 
@@ -982,9 +982,9 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
     assert result is True
 
 
-def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_category_repository):
+def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test has_child_elements returns true when there are child categories
+    Test has_child_elements returns true when there are child catalogue items.
     """
 
     # Mock count_documents to return 1 (child element found)
