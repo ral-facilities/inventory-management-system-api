@@ -8,7 +8,7 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DatabaseIntegrityError,
     DuplicateCatalogueItemPropertyNameError,
     DuplicateRecordError,
@@ -156,7 +156,7 @@ def partial_update_catalogue_category(
         message = "A catalogue category with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except ChildrenElementsExistError as exc:
+    except ChildElementsExistError as exc:
         message = "Catalogue category has child elements and cannot be updated"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
@@ -191,7 +191,7 @@ def delete_catalogue_category(
         message = "A catalogue category with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except ChildrenElementsExistError as exc:
+    except ChildElementsExistError as exc:
         message = "Catalogue category has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

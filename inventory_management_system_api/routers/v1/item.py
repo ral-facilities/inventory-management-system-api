@@ -2,9 +2,9 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 import logging
-from typing import Annotated
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, status, HTTPException, Depends, Path
+from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
 
 from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
@@ -26,7 +26,10 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends()) -> ItemSchema:
+def create_item(
+    item: ItemPostRequestSchema,
+    item_service: Annotated[ItemService, Depends(ItemService)],
+) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
@@ -51,10 +54,56 @@ def create_item(item: ItemPostRequestSchema, item_service: ItemService = Depends
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
 
 
+@router.delete(
+    path="/{item_id}",
+    summary="Delete an item by ID",
+    response_description="Item deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_item(
+    item_id: Annotated[str, Path(description="The ID of the item to delete")],
+    item_service: Annotated[ItemService, Depends(ItemService)],
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting item with ID: %s", item_id)
+    try:
+        item_service.delete(item_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "An item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.get(path="/", summary="Get items", response_description="List of items")
+def get_items(
+    item_service: Annotated[ItemService, Depends(ItemService)],
+    system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,
+    catalogue_item_id: Annotated[Optional[str], Query(description="Filter items by catalogue item ID")] = None,
+) -> List[ItemSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting items")
+    if system_id:
+        logger.debug("System ID filter: '%s'", system_id)
+    if catalogue_item_id:
+        logger.debug("Catalogue item ID filter: '%s'", catalogue_item_id)
+    try:
+        items = item_service.list(system_id, catalogue_item_id)
+        return [ItemSchema(**item.model_dump()) for item in items]
+
+    except InvalidObjectIdError:
+        if system_id:
+            logger.exception("The provided system ID filter value is not a valid ObjectId value")
+
+        if catalogue_item_id:
+            logger.exception("The provided catalogue item ID filter value is not a valid ObjectId value")
+
+        return []
+
+
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
 def get_item(
     item_id: Annotated[str, Path(description="The ID of the item to get")],
-    item_service: Annotated[ItemService, Depends()],
+    item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)

@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -407,16 +407,16 @@ def test_delete(test_helpers, database_mock, catalogue_category_repository):
     )
 
 
-def test_delete_with_children_catalogue_categories(test_helpers, database_mock, catalogue_category_repository):
+def test_delete_with_child_catalogue_categories(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test deleting a catalogue category with children catalogue categories.
+    Test deleting a catalogue category with child catalogue categories.
 
-    Verify that the `delete` method properly handles the deletion of a catalogue category with children catalogue
+    Verify that the `delete` method properly handles the deletion of a catalogue category with child catalogue
     categories.
     """
     catalogue_category_id = str(ObjectId())
 
-    # Mock find_one to return 1 (children catalogue categories found)
+    # Mock find_one to return children catalogue category found
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
@@ -425,21 +425,21 @@ def test_delete_with_children_catalogue_categories(test_helpers, database_mock, 
             "parent_id": catalogue_category_id,
         },
     )
-    # Mock find_one to return 0 (children catalogue items not found)
+    # Mock find_one to return no children catalogue items found
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
     assert str(exc.value) == (
-        f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
+        f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
     )
 
 
-def test_delete_with_children_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
+def test_delete_with_child_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test deleting a catalogue category with children catalogue items.
+    Test deleting a catalogue category with child catalogue items.
 
-    Verify that the `delete` method properly handles the deletion of a catalogue category with children catalogue items.
+    Verify that the `delete` method properly handles the deletion of a catalogue category with child catalogue items.
     """
     catalogue_category_id = str(ObjectId())
 
@@ -456,10 +456,10 @@ def test_delete_with_children_catalogue_items(test_helpers, database_mock, catal
         },
     )
     # pylint: enable=duplicate-code
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_repository.delete(catalogue_category_id)
     assert str(exc.value) == (
-        f"Catalogue category with ID {catalogue_category_id} has children elements and cannot be deleted"
+        f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
     )
 
 
@@ -778,7 +778,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     Test updating a catalogue category.
 
     Verify that the `update` method properly handles the catalogue category to be updated, checks that the catalogue
-    category does not have children elements, there is not a duplicate catalogue category, and updates the catalogue
+    category does not have child elements, there is not a duplicate catalogue category, and updates the catalogue
     category.
     """
     # pylint: disable=duplicate-code
@@ -1029,9 +1029,9 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
     assert result
 
 
-def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_category_repository):
+def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test has_child_elements returns true when there are child categories
+    Test has_child_elements returns true when there are child catalogue items.
     """
     catalogue_category_id = str(ObjectId())
 

@@ -12,7 +12,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -487,8 +487,7 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.systems, 1)
 
-    # Mock count_documents to return 1 (children elements found)
-    # Mock `find_one` to return no child system document
+    # Mock `find_one` to return child system document
     test_helpers.mock_find_one(
         database_mock.systems,
         {
@@ -498,7 +497,7 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
         },
     )
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         system_repository.delete(system_id)
 
     database_mock.systems.delete_one.assert_not_called()

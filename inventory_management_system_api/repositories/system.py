@@ -11,7 +11,7 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateRecordError,
     MissingRecordError,
 )
@@ -135,19 +135,17 @@ class SystemRepo:
         """
         Delete a System by its ID from a MongoDB database
 
-        The method checks if the system has any children and raises a `ChildrenElementsExistError` if it does
+        The method checks if the system has any child and raises a `ChildElementsExistError` if it does
 
         :param system_id: ID of the System to delete
-        :raises ChildrenElementsExistError: If the System has child elements
+        :raises ChildElementsExistError: If the System has child elements
         :raises MissingRecordError: If the System doesn't exist
         """
         system_id = CustomObjectId(system_id)
         # pylint: disable=W0511
         # TODO: Also need a check here on items when they are implemented
         if self._has_child_elements(system_id):
-            raise ChildrenElementsExistError(
-                f"System with ID {str(system_id)} has child elements and cannot be deleted"
-            )
+            raise ChildElementsExistError(f"System with ID {str(system_id)} has child elements and cannot be deleted")
 
         logger.info("Deleting system with ID: %s from the database", system_id)
         result = self._systems_collection.delete_one({"_id": system_id})

@@ -57,9 +57,10 @@ class MissingRecordError(DatabaseError):
     """
 
 
-class ChildrenElementsExistError(DatabaseError):
+class ChildElementsExistError(DatabaseError):
     """
-    Exception raised when attempting to delete or update a catalogue category that has children elements.
+    Exception raised when attempting to delete or update a catalogue category, catalogue item, or system that has child
+    elements.
     """
 
 
