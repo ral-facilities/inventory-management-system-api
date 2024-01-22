@@ -127,7 +127,7 @@ def get_item(
 def partial_update_item(
     item: ItemPatchRequestSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
-    item_service: Annotated[ItemService, Depends()],
+    item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating item with ID: %s", item_id)
@@ -151,3 +151,7 @@ def partial_update_item(
         message = "An item with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to update item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc

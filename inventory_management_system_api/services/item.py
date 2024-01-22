@@ -130,6 +130,8 @@ class ItemService:
         The method checks if the item exists in the database and raises a `MissingRecordError` if it does
         not. If the catalogue item ID or system ID is being updated, it checks if a catalogue item
         and/or system ID with such ID exists and raises a `MissingRecordError` if it does not.
+        When updatimg properties, existing properties must all be supplied, or they will be overwritten
+        by the catalogue item properties.
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
@@ -155,6 +157,10 @@ class ItemService:
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
+
+        # If catalogue item ID not supplied then it will be fetched, and its parent catalogue category.
+        # the defined (at a catalogue category level) and supplied properties will be used to find
+        # missing supplied properties. They will then be processed and validated.
 
         if "properties" in update_data:
             if not catalogue_item:

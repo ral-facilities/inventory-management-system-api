@@ -57,6 +57,11 @@ class ItemPatchRequestSchema(ItemPostRequestSchema):
         default=None,
         description="The usage status of the item. 0 means new, 1 means in use, 2 means used, and 3 means scrapped.",
     )
+    properties: Optional[List[PropertyPostRequestSchema]] = Field(
+        default=None,
+        description="The properties specific to this item. Any properties not declared will be overwritten by " 
+                    "the inherited catalogue item properties",
+    )
 
 
 class ItemSchema(ItemPostRequestSchema):
