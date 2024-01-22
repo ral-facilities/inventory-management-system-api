@@ -198,7 +198,7 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         database_mock.systems,
         {
             **SYSTEM_A_INFO,
-            "_id": CustomObjectId(system.parent_id),
+            "_id": ObjectId(),
         },
     )
 
@@ -370,6 +370,9 @@ def test_update(test_helpers, database_mock, system_repository):
 
     # Mock `find_one` to return the updated System document
     test_helpers.mock_find_one(database_mock.systems, {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id)})
+
+    # Mock `find_one` to not return a parent System document
+    test_helpers.mock_find_one(database_mock.systems, None)
 
     system_in = SystemIn(**SYSTEM_A_INFO)
     updated_system = system_repository.update(system.id, system_in)

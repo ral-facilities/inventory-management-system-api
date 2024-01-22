@@ -363,7 +363,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
         database_mock.catalogue_categories,
         {
             **CATALOGUE_CATEGORY_INFO,
-            "_id": CustomObjectId(catalogue_category.parent_id),
+            "_id": ObjectId(),
+            "parent_id": CustomObjectId(catalogue_category.parent_id),
         },
     )
 
@@ -927,7 +928,7 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, catalo
         database_mock.catalogue_categories,
         {
             **CATALOGUE_CATEGORY_INFO,
-            "_id": CustomObjectId(catalogue_category_id),
+            "_id": ObjectId(),
         },
     )
 
@@ -983,7 +984,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
         database_mock.catalogue_categories,
         {
             **CATALOGUE_CATEGORY_INFO,
-            "_id": CustomObjectId(catalogue_category_id),
+            "_id": ObjectId(),
         },
     )
 
