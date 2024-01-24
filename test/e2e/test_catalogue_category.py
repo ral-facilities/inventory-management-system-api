@@ -55,6 +55,50 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     ],
 }
 
+# Leaf with allowed values in properties
+CATALOGUE_CATEGORY_POST_D = {
+    "name": "Category D",
+    "is_leaf": True,
+    "catalogue_item_properties": [
+        {
+            "name": "Property A",
+            "type": "number",
+            "unit": "mm",
+            "mandatory": False,
+            "allowed_values": {"type": "list", "values": [2, 4, 6]},
+        },
+        {
+            "name": "Property B",
+            "type": "string",
+            "unit": None,
+            "mandatory": True,
+            "allowed_values": {"type": "list", "values": ["red", "green"]},
+        },
+    ],
+}
+CATALOGUE_CATEGORY_POST_D_EXPECTED = {
+    **CATALOGUE_CATEGORY_POST_D,
+    "id": ANY,
+    "code": "category-d",
+    "parent_id": None,
+    "catalogue_item_properties": [
+        {
+            "name": "Property A",
+            "type": "number",
+            "unit": "mm",
+            "mandatory": False,
+            "allowed_values": {"type": "list", "values": [2, 4, 6]},
+        },
+        {
+            "name": "Property B",
+            "type": "string",
+            "unit": None,
+            "mandatory": True,
+            "allowed_values": {"type": "list", "values": ["red", "green"]},
+        },
+    ],
+}
+
 # pylint: disable=duplicate-code
 MANUFACTURER = {
     "name": "Manufacturer D",
@@ -292,6 +336,123 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
     assert response.status_code == 201
     catalogue_category = response.json()
     assert catalogue_category == CATALOGUE_CATEGORY_POST_A_EXPECTED
+
+
+def test_create_catalogue_category_with_properties_with_allowed_values(test_client):
+    """
+    Test creating a catalogue category with specific allowed values given
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+
+    assert response.status_code == 201
+    catalogue_category = response.json()
+    assert catalogue_category == CATALOGUE_CATEGORY_POST_D_EXPECTED
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_number(test_client):
+    """
+    Test creating a catalogue category with a number property containing an allowed_values list with an invalid
+    number
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_D,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "number",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": [2, "4", 6]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_string(test_client):
+    """
+    Test creating a catalogue category with a string property containing an allowed_values list with an invalid
+    string
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_D,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "string",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": ["red", "green", 6]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_boolean(test_client):
+    """
+    Test creating a catalogue category with a boolean property containing an allowed_values list
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_D,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "boolean",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": ["red", "green"]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values not allowed for a boolean catalogue item property 'Property A'"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_type(test_client):
+    """
+    Test creating a catalogue category with a property containing allowed_values with an invalid type
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_D,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "string",
+                    "mandatory": False,
+                    "allowed_values": {"type": "string"},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Input tag 'string' found using 'type' does not match any of the expected tags: 'list'"
+    )
 
 
 def test_delete_catalogue_category(test_client):

@@ -99,7 +99,7 @@ class CatalogueItemPropertySchema(BaseModel):
             # Ensure the type is not boolean
             if info.data["type"] == CatalogueItemPropertyType.BOOLEAN:
                 raise ValueError(
-                    f"allowed_values not allowed for boolean catalogue item property '{info.data['name']}'"
+                    f"allowed_values not allowed for a boolean catalogue item property '{info.data['name']}'"
                 )
             # Ensure the allowed values have the correct type
             if isinstance(allowed_values, AllowedValuesListSchema):
