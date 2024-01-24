@@ -4,7 +4,7 @@ Collection of some utility functions used by services
 
 import logging
 import re
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
 
 from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
@@ -113,6 +113,8 @@ def _validate_catalogue_item_property_value(
     :param defined_property: Definition of the property from the catalogue category
     :param supplied_property_name: Name of the supplied property
     :param supplied_property_value: Value of the supplied property
+    :raises InvalidCatalogueItemPropertyTypeError: If the suppplied property value is found to either be an
+                                                   invalid type, or not an allowed value
     """
 
     defined_type = defined_property["type"]
@@ -129,7 +131,8 @@ def _validate_catalogue_item_property_value(
             values = defined_allowed_values["values"]
             if supplied_property_value not in values:
                 raise InvalidCatalogueItemPropertyTypeError(
-                    f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of {', '.join(values)}"
+                    f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of "
+                    f"{', '.join([str(value) for value in values])}."
                 )
 
 
@@ -144,8 +147,8 @@ def _validate_catalogue_item_property_values(
     :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
                                database.
     :param supplied_properties: The supplied catalogue item properties.
-    :raises InvalidCatalogueItemPropertyTypeError: If the any of the types of the supplied values does not match the expected
-                                                   type.
+    :raises InvalidCatalogueItemPropertyTypeError: If the any of the types of the supplied values does not match the
+                                                   expected type.
     """
     logger.info("Validating the values of the supplied properties against the expected property types")
     for supplied_property_name, supplied_property in supplied_properties.items():

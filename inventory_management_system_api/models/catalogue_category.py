@@ -9,6 +9,10 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 
 
 class AllowedValuesList(BaseModel):
+    """
+    Model representing a list of allowed values for a catalogue item property
+    """
+
     type: Literal["list"]
     values: List[Any]
 

@@ -20,6 +20,10 @@ class CatalogueItemPropertyType(str, Enum):
 
 
 class AllowedValuesListSchema(BaseModel):
+    """
+    Schema model representing a list of allowed values for a catalogue item property
+    """
+
     type: Literal["list"]
     values: List[Any]
 
@@ -39,7 +43,8 @@ class CatalogueItemPropertySchema(BaseModel):
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
     allowed_values: Optional[AllowedValuesSchema] = Field(
         default=None,
-        description="Definition of the allowed values this property can take. 'null' indicates any value matching the type is allowed.",
+        description="Definition of the allowed values this property can take. 'null' indicates any value matching the "
+        "type is allowed.",
     )
 
     @classmethod
