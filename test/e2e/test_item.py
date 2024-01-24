@@ -610,11 +610,14 @@ def test_partial_update_item(test_client):
     """
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
+
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -622,15 +625,13 @@ def test_partial_update_item(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
+
     # pylint: enable=duplicate-code
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     response = test_client.post("/v1/items", json=item_post)
 
-    item_id = response.json()["id"]
-
     item_patch = {"usage_status": 1, "is_defective": True}
-
-    response = test_client.patch(f"/v1/items/{item_id}", json=item_patch)
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
     assert response.status_code == 200
 
@@ -663,47 +664,38 @@ def test_partial_update_item_nonexistent_id(test_client):
     assert response.json()["detail"] == "An item with such ID was not found"
 
 
-def test_partial_update_change_catalogue_item_id(test_client):
+def test_partial_update_try_change_catalogue_item_id(test_client):
     """
     Test moving an item to another catalogue item
     """
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
+
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-    catalogue_item_id_a = response.json()["id"]
+    catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-    catalogue_item_id_b = response.json()["id"]
     # pylint: enable=duplicate-code
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id_a, "system_id": system_id}
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     response = test_client.post("/v1/items", json=item_post)
 
-    item_id = response.json()["id"]
+    item_patch = {"catalogue_item_id": str(ObjectId())}
 
-    item_patch = {"catalogue_item_id": catalogue_item_id_b}
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
-    response = test_client.patch(f"/v1/items/{item_id}", json=item_patch)
-
-    assert response.status_code == 200
-
-    item = response.json()
-
-    assert item == {
-        **ITEM_POST_EXPECTED,
-        **item_patch,
-        "catalogue_item_id": catalogue_item_id_b,
-        "system_id": system_id,
-    }
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Cannot change the catalogue item of an item"
 
 
 def test_partial_update_change_system_id(test_client):
@@ -747,6 +739,120 @@ def test_partial_update_change_system_id(test_client):
         **item_patch,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id_b,
+    }
+
+
+def test_partial_update_change_nonexistent_system_id(test_client):
+    """Test updating system ID which is nonexistent"""
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_id = response.json()["id"]
+
+    item_patch = {"system_id": str(ObjectId())}
+
+    response = test_client.patch(f"/v1/items/{item_id}", json=item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified system ID does not exist"
+
+
+def test_partial_update_property_values(test_client):
+    """Test updating property values"""
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {
+        "properties": [
+            {"name": "Property A", "value": 12, "unit": "mm"},
+            {"name": "Property B", "value": True, "unit": None},
+            {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        ],
+    }
+
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 200
+
+    item = response.json()
+
+    assert item == {**ITEM_POST_EXPECTED, **item_patch, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+
+
+def test_partial_update_not_all_supplied_properties(test_client):
+    """Test updating a property when they are not all supplied"""
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {
+        "properties": [{"name": "Property A", "value": 15, "unit": "mm"}],
+    }
+
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 200
+
+    item = response.json()
+
+    assert item == {
+        **ITEM_POST_EXPECTED,
+        "properties": [{"name": "Property A", "value": 15, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
     }
 
 

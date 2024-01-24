@@ -9,6 +9,7 @@ from typing import List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import (
+    ChildrenElementsExistError,
     MissingRecordError,
     DatabaseIntegrityError,
     InvalidObjectIdError,
@@ -128,10 +129,10 @@ class ItemService:
         Update an item by its ID.
 
         The method checks if the item exists in the database and raises a `MissingRecordError` if it does
-        not. If the catalogue item ID or system ID is being updated, it checks if a catalogue item
-        and/or system ID with such ID exists and raises a `MissingRecordError` if it does not.
-        When updatimg properties, existing properties must all be supplied, or they will be overwritten
-        by the catalogue item properties.
+        not. If the system ID is being updated, it checks if the system ID with such ID exists and raises
+        a `MissingRecordError` if it does not. It raises a `ChildElementsExistError` if a catalogue item
+        ID is supplied. When updatimg properties, existing properties must all be supplied, or they will
+        be overwritten by the catalogue item properties.
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
@@ -143,15 +144,8 @@ class ItemService:
         if not stored_item:
             raise MissingRecordError(f"No item found with ID: {item_id}")
 
-        catalogue_item = None
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
-            catalogue_item = self._catalogue_item_repository.get(item.catalogue_item_id)
-            if not catalogue_item:
-                raise MissingRecordError(f"No catalogue item found with ID: {item.catalogue_item_id}")
-
-            if "properties" not in update_data:
-                item.properties = [PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_item.properties]
-                update_data = item.model_dump(exclude_unset=True)
+            raise ChildrenElementsExistError("Cannot change the catalogue item the item belongs to")
 
         if "system_id" in update_data and item.system_id != stored_item.system_id:
             system = self._system_repository.get(item.system_id)
@@ -163,8 +157,7 @@ class ItemService:
         # missing supplied properties. They will then be processed and validated.
 
         if "properties" in update_data:
-            if not catalogue_item:
-                catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
+            catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
 
             try:
                 catalogue_category_id = catalogue_item.catalogue_category_id

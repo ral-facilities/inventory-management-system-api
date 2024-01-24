@@ -38,24 +38,41 @@ def test_create(test_helpers, database_mock, item_repository):
     """
     Test creating an item.
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a system
-    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(item.system_id), **FULL_SYSTEM_A_INFO})
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            **FULL_SYSTEM_A_INFO,
+            "_id": CustomObjectId(item.system_id),
+        },
+    )
     # Mock `insert_one` to return an object for the inserted item document
     test_helpers.mock_insert_one(database_mock.items, CustomObjectId(item.id))
     # Mock `find_one` to return the inserted item document
     test_helpers.mock_find_one(
         database_mock.items,
         {
+            **FULL_ITEM_INFO,
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
             "system_id": CustomObjectId(item.system_id),
-            **FULL_ITEM_INFO,
         },
     )
 
-    item_in = ItemIn(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **FULL_ITEM_INFO)
+    item_in = ItemIn(
+        **FULL_ITEM_INFO,
+        catalogue_item_id=item.catalogue_item_id,
+        system_id=item.system_id,
+    )
     created_item = item_repository.create(item_in)
 
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item.system_id)})
@@ -73,7 +90,13 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
     test_helpers.mock_find_one(database_mock.systems, None)
 
     with pytest.raises(MissingRecordError) as exc:
-        item_repository.create(ItemIn(catalogue_item_id=str(ObjectId()), system_id=system_id, **FULL_ITEM_INFO))
+        item_repository.create(
+            ItemIn(
+                **FULL_ITEM_INFO,
+                catalogue_item_id=str(ObjectId()),
+                system_id=system_id,
+            )
+        )
 
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
     database_mock.items.insert_one.assert_not_called()
@@ -131,26 +154,30 @@ def test_list(test_helpers, database_mock, item_repository):
     Verify that the `list` method properly handles the retrieval of items
     """
     item_a = ItemOut(
+        **FULL_ITEM_INFO,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
-        **FULL_ITEM_INFO,
     )
 
-    item_b = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), **FULL_ITEM_INFO)
+    item_b = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+    )
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
         [
             {
+                **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item_a.id),
                 "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
-                **FULL_ITEM_INFO,
             },
             {
+                **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item_b.id),
                 "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
-                **FULL_ITEM_INFO,
             },
         ],
     )
@@ -168,18 +195,24 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
     Verify that the `list` method properly handles the retrieval of items based on
     the provided system ID filter
     """
-
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
         [
             {
+                **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO,
             }
         ],
     )
@@ -198,16 +231,20 @@ def test_list_with_system_id_as_null(test_helpers, database_mock, item_repositor
     the provided system ID filter
     """
 
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), **FULL_ITEM_INFO)
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+    )
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
         [
             {
+                **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO,
             }
         ],
     )
@@ -255,17 +292,24 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
     Verify that the `list` method properly handles the retrieval of items based on
     the provided catalogue item ID filter
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
         [
             {
+                **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO,
             }
         ],
     )
@@ -312,17 +356,24 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
 
     Verify that the `list` methof properly handles the retrieval of items with the provided ID filters
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
         database_mock.items,
         [
             {
+                **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
                 "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **FULL_ITEM_INFO,
             }
         ],
     )
@@ -364,7 +415,14 @@ def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_
     Verify the `list` method properly handles the retrieval of items based on the provided
     system and catalogue item ID filters
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
@@ -403,16 +461,23 @@ def test_get(test_helpers, database_mock, item_repository):
 
     Verify that the `get` method properly handles the retrieval of an item by ID.
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `find_one` to return the inserted item document
     test_helpers.mock_find_one(
         database_mock.items,
         {
+            **FULL_ITEM_INFO,
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
             "system_id": CustomObjectId(item.system_id),
-            **FULL_ITEM_INFO,
         },
     )
 
@@ -456,7 +521,14 @@ def test_update(test_helpers, database_mock, item_repository):
 
     Verify that the `update` method properly handles the item to be updated.
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    # pylint: disable=duplicate-code
+    item = ItemOut(
+        **FULL_ITEM_INFO,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+    # pylint: enable=duplicate-code
 
     # Mock `update_one` to return an object for the updated item document
     test_helpers.mock_update_one(database_mock.items)

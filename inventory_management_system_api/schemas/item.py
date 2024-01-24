@@ -60,7 +60,7 @@ class ItemPatchRequestSchema(ItemPostRequestSchema):
     properties: Optional[List[PropertyPostRequestSchema]] = Field(
         default=None,
         description="The properties specific to this item. Any properties not declared will be overwritten by "
-                    "the inherited catalogue item properties",
+        "the inherited catalogue item properties",
     )
 
 
