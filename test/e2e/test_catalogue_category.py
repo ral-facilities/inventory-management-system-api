@@ -30,8 +30,8 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     "id": ANY,
     "code": "category-b",
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
 }
 
@@ -50,8 +50,8 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     "code": "category-c",
     "parent_id": None,
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
 }
 
@@ -631,7 +631,9 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
 
     catalogue_category_patch = {
         "is_leaf": True,
-        "catalogue_item_properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None}
+        ],
     }
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
@@ -777,7 +779,9 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
         "name": "Category B",
         "is_leaf": True,
         "parent_id": catalogue_category_a_id,
-        "catalogue_item_properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None}
+        ],
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_b_id = response.json()["id"]
@@ -933,7 +937,9 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     """
     Test adding a catalogue item property.
     """
-    catalogue_item_properties = [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}]
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None}
+    ]
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
@@ -941,7 +947,9 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties.append({"name": "Property B", "type": "boolean", "mandatory": True})
+    catalogue_item_properties.append(
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None}
+    )
     catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
@@ -961,8 +969,8 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     Test removing a catalogue item property.
     """
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None},
     ]
     catalogue_category_post = {
         "name": "Category A",
@@ -991,8 +999,8 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     Test modifying a catalogue item property.
     """
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None},
     ]
     catalogue_category_post = {
         "name": "Category A",
