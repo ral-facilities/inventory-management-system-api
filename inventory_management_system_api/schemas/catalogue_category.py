@@ -2,7 +2,7 @@
 Module for defining the API schema models for representing catalogue categories.
 """
 from enum import Enum
-from typing import Optional, List
+from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -18,6 +18,15 @@ class CatalogueItemPropertyType(str, Enum):
     BOOLEAN = "boolean"
 
 
+class AllowedValuesListSchema(BaseModel):
+    type: Literal["list"]
+    values: List[Any]
+
+
+# Use discriminated union for any additional types of allowed values (so can use Pydantic's validation)
+AllowedValuesSchema = Annotated[AllowedValuesListSchema, Field(discriminator="type")]
+
+
 class CatalogueItemPropertySchema(BaseModel):
     """
     Schema model representing a catalogue item property.
@@ -27,10 +36,14 @@ class CatalogueItemPropertySchema(BaseModel):
     type: CatalogueItemPropertyType = Field(description="The type of the property")
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
+    allowed_values: Optional[AllowedValuesSchema] = Field(
+        default=None,
+        description="Definition of the allowed values this property can take. 'null' indicates any value matching the type is allowed.",
+    )
 
     @field_validator("unit")
     @classmethod
-    def validate_unit(cls, unit_value: str, info: ValidationInfo) -> Optional[str]:
+    def validate_unit(cls, unit_value: Optional[str], info: ValidationInfo) -> Optional[str]:
         """
         Validator for the `unit` field.
 
@@ -45,6 +58,29 @@ class CatalogueItemPropertySchema(BaseModel):
         if "type" in info.data and info.data["type"] == CatalogueItemPropertyType.BOOLEAN and unit_value is not None:
             raise ValueError(f"Unit not allowed for boolean catalogue item property '{info.data['name']}'")
         return unit_value
+
+    @field_validator("allowed_values")
+    @classmethod
+    def validate_allowed_values(
+        cls, allowed_values: Optional[AllowedValuesSchema], info: ValidationInfo
+    ) -> Optional[AllowedValuesSchema]:
+        """
+        Validator for the `allowed_values` field.
+
+        It checks if the `type` of the catalogue item property is a `boolean` and if `allowed_values` has been specified
+        and raises a `ValueError` if this is the case.
+
+        :param allowed_values: The value of the `allowed_values` field.
+        :param info: Validation info from pydantic.
+        :return: The value of the `allowed_values` field.
+        """
+        if (
+            "type" in info.data
+            and info.data["type"] == CatalogueItemPropertyType.BOOLEAN
+            and allowed_values is not None
+        ):
+            raise ValueError(f"allowed_values not allowed for boolean catalogue item property '{info.data['name']}'")
+        return allowed_values
 
 
 class CatalogueCategoryPostRequestSchema(BaseModel):
