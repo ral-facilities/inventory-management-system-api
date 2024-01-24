@@ -7,7 +7,7 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
 
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     InvalidObjectIdError,
     MissingMandatoryCatalogueItemProperty,
     MissingRecordError,
@@ -151,7 +151,7 @@ def partial_update_item(
         message = "Unable to update item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    except ChildrenElementsExistError as exc:
+    except ChildElementsExistError as exc:
         message = "Cannot change the catalogue item of an item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc

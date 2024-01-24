@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     InvalidCatalogueItemPropertyTypeError,
     MissingRecordError,
     DatabaseIntegrityError,
@@ -391,7 +391,7 @@ def test_try_to_update_catalogue_item_id(
     test_helpers.mock_get(item_repository_mock, item)
 
     catalogue_item_id = str(ObjectId())
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         item_service.update(
             item.id,
             ItemPatchRequestSchema(catalogue_item_id=catalogue_item_id),
