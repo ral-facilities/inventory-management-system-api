@@ -4,15 +4,14 @@ Collection of some utility functions used by services
 
 import logging
 import re
-from numbers import Number
-from typing import Dict, Union, List
+from typing import Dict, List, Union
 
 from inventory_management_system_api.core.exceptions import (
-    MissingMandatoryCatalogueItemProperty,
     InvalidCatalogueItemPropertyTypeError,
+    MissingMandatoryCatalogueItemProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueItemProperty
-from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyType
+from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 
 logger = logging.getLogger()
@@ -113,33 +112,20 @@ def _validate_catalogue_item_property_values(
     of the supplied value does not match the expected type.
 
     :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
-        database.
+                               database.
     :param supplied_properties: The supplied catalogue item properties.
-    :raises InvalidCatalogueItemPropertyTypeError: If the type of the supplied value does not match the expected
-        type.
+    :raises InvalidCatalogueItemPropertyTypeError: If the any of the types of the supplied values does not match the expected
+                                                   type.
     """
     logger.info("Validating the values of the supplied properties against the expected property types")
     for supplied_property_name, supplied_property in supplied_properties.items():
         expected_property_type = defined_properties[supplied_property_name]["type"]
         supplied_property_value = supplied_property["value"]
 
-        if expected_property_type == CatalogueItemPropertyType.STRING and not isinstance(supplied_property_value, str):
-            raise InvalidCatalogueItemPropertyTypeError(
-                f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: string."
-            )
-        if expected_property_type == CatalogueItemPropertyType.NUMBER and not isinstance(
-            supplied_property_value, Number
-        ):
-            raise InvalidCatalogueItemPropertyTypeError(
-                f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: number."
-            )
-        if expected_property_type == CatalogueItemPropertyType.BOOLEAN and not isinstance(
-            supplied_property_value, bool
-        ):
-            raise InvalidCatalogueItemPropertyTypeError(
-                f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: "
-                f"boolean."
-            )
+    if not CatalogueItemPropertySchema.validate_property_type(expected_property_type, supplied_property_value):
+        raise InvalidCatalogueItemPropertyTypeError(
+            f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: {expected_property_type}."
+        )
 
 
 def _check_missing_mandatory_catalogue_item_properties(

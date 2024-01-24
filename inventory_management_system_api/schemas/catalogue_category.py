@@ -2,6 +2,7 @@
 Module for defining the API schema models for representing catalogue categories.
 """
 from enum import Enum
+from numbers import Number
 from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -41,6 +42,21 @@ class CatalogueItemPropertySchema(BaseModel):
         description="Definition of the allowed values this property can take. 'null' indicates any value matching the type is allowed.",
     )
 
+    @classmethod
+    def validate_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> None:
+        """
+        Validates a given value has a type matching a CatalogueItemPropertyType and returns false if they don't
+
+        :param expected_property_type: Catalogue item property type
+        :param property_value: Value of the property being checked
+        :returns: Whether the value is valid or not
+        """
+        return not (
+            (expected_property_type == CatalogueItemPropertyType.STRING and not isinstance(property_value, str))
+            or (expected_property_type == CatalogueItemPropertyType.NUMBER and not isinstance(property_value, Number))
+            or (expected_property_type == CatalogueItemPropertyType.BOOLEAN and not isinstance(property_value, bool))
+        )
+
     @field_validator("unit")
     @classmethod
     def validate_unit(cls, unit_value: Optional[str], info: ValidationInfo) -> Optional[str]:
@@ -74,12 +90,22 @@ class CatalogueItemPropertySchema(BaseModel):
         :param info: Validation info from pydantic.
         :return: The value of the `allowed_values` field.
         """
-        if (
-            "type" in info.data
-            and info.data["type"] == CatalogueItemPropertyType.BOOLEAN
-            and allowed_values is not None
-        ):
-            raise ValueError(f"allowed_values not allowed for boolean catalogue item property '{info.data['name']}'")
+        if allowed_values is not None and "type" in info.data:
+            # Ensure the type is not boolean
+            if info.data["type"] == CatalogueItemPropertyType.BOOLEAN:
+                raise ValueError(
+                    f"allowed_values not allowed for boolean catalogue item property '{info.data['name']}'"
+                )
+            # Ensure the allowed values have the correct type
+            if isinstance(allowed_values, AllowedValuesListSchema):
+                for allowed_value in allowed_values.values:
+                    if not CatalogueItemPropertySchema.validate_property_type(
+                        expected_property_type=info.data["type"], property_value=allowed_value
+                    ):
+                        raise ValueError(
+                            "allowed_values must only contain values of the same type as the property itself"
+                        )
+
         return allowed_values
 
 
