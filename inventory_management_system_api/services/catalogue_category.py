@@ -8,7 +8,7 @@ from fastapi import Depends
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateCatalogueItemPropertyNameError,
     LeafCategoryError,
     MissingRecordError,
@@ -17,7 +17,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
-    CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS,
+    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
     CatalogueItemPropertySchema,
@@ -117,7 +117,7 @@ class CatalogueCategoryService:
         :raises MissingRecordError: If the catalogue category doesn't exist.
         :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
             moved is a leaf catalogue category.
-        :raises ChildrenElementsExistError: If the catalogue category has child elements and attempting to update
+        :raises ChildElementsExistError: If the catalogue category has child elements and attempting to update
                                     either any of the disallowed properties (is_leaf or catalogue_item_properties)
         """
         update_data = catalogue_category.model_dump(exclude_unset=True)
@@ -139,10 +139,10 @@ class CatalogueCategoryService:
         if catalogue_category.catalogue_item_properties:
             self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
-        # If any of these, need to ensure the category has no children
-        if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS):
+        # If any of these, need to ensure the category has no child elements
+        if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
             if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
-                raise ChildrenElementsExistError(
+                raise ChildElementsExistError(
                     f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
                 )
 

@@ -9,7 +9,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DatabaseIntegrityError,
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -155,7 +155,7 @@ def delete_system(
         message = "System with such ID was not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except ChildrenElementsExistError as exc:
+    except ChildElementsExistError as exc:
         message = "System has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
