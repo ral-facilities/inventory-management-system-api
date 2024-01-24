@@ -4,7 +4,7 @@ Collection of some utility functions used by services
 
 import logging
 import re
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
@@ -103,6 +103,36 @@ def _add_catalogue_item_property_units(
         supplied_property["unit"] = defined_properties[supplied_property_name]["unit"]
 
 
+def _validate_catalogue_item_property_value(
+    defined_property: Dict, supplied_property_name: str, supplied_property_value: Any
+) -> None:
+    """
+    Validates that a given property value a valid type and is within the defined allowed_values (if specified) and
+    raises and error if it is not.
+
+    :param defined_property: Definition of the property from the catalogue category
+    :param supplied_property_name: Name of the supplied property
+    :param supplied_property_value: Value of the supplied property
+    """
+
+    defined_type = defined_property["type"]
+    defined_allowed_values = defined_property["allowed_values"]
+
+    if not CatalogueItemPropertySchema.validate_property_type(defined_type, supplied_property_value):
+        raise InvalidCatalogueItemPropertyTypeError(
+            f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: {defined_type}."
+        )
+
+    if defined_allowed_values is not None:
+        # Verify the given property is one of the allowed
+        if defined_allowed_values["type"] == "list":
+            values = defined_allowed_values["values"]
+            if supplied_property_value not in values:
+                raise InvalidCatalogueItemPropertyTypeError(
+                    f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of {', '.join(values)}"
+                )
+
+
 def _validate_catalogue_item_property_values(
     defined_properties: Dict[str, Dict],
     supplied_properties: Dict[str, Dict],
@@ -119,12 +149,8 @@ def _validate_catalogue_item_property_values(
     """
     logger.info("Validating the values of the supplied properties against the expected property types")
     for supplied_property_name, supplied_property in supplied_properties.items():
-        expected_property_type = defined_properties[supplied_property_name]["type"]
-        supplied_property_value = supplied_property["value"]
-
-    if not CatalogueItemPropertySchema.validate_property_type(expected_property_type, supplied_property_value):
-        raise InvalidCatalogueItemPropertyTypeError(
-            f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: {expected_property_type}."
+        _validate_catalogue_item_property_value(
+            defined_properties[supplied_property_name], supplied_property_name, supplied_property["value"]
         )
 
 
