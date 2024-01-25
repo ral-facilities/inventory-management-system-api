@@ -3,34 +3,33 @@ End-to-End tests for the manufacturer router.
 """
 from bson import ObjectId
 
+MANUFACTURER_POST = {
+    "name": "Manufacturer A",
+    "url": "http://example.com/",
+    "address": {
+        "address_line": "1 Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "country": "United Kingdom",
+        "postcode": "OX1 2AB",
+    },
+    "telephone": "0932348348",
+}
+
 
 def test_create_manufacturer(test_client):
     """Test creating a manufacturer"""
-    # pylint: disable=duplicate-code
-    manufacturer_post = {
-        "name": "Manufacturer A",
-        "url": "http://example.com/",
-        "address": {
-            "address_line": "1 Example Street",
-            "town": "Oxford",
-            "county": "Oxfordshire",
-            "country": "United Kingdom",
-            "postcode": "OX1 2AB",
-        },
-        "telephone": "0932348348",
-    }
-    # pylint: enable=duplicate-code
 
-    response = test_client.post("/v1/manufacturers", json=manufacturer_post)
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
 
     assert response.status_code == 201
 
     manufacturer = response.json()
 
-    assert manufacturer["name"] == manufacturer_post["name"]
-    assert manufacturer["url"] == manufacturer_post["url"]
-    assert manufacturer["address"] == manufacturer_post["address"]
-    assert manufacturer["telephone"] == manufacturer_post["telephone"]
+    assert manufacturer["name"] == MANUFACTURER_POST["name"]
+    assert manufacturer["url"] == MANUFACTURER_POST["url"]
+    assert manufacturer["address"] == MANUFACTURER_POST["address"]
+    assert manufacturer["telephone"] == MANUFACTURER_POST["telephone"]
 
 
 def test_create_manufacturer_with_only_mandatory_fields(test_client):
