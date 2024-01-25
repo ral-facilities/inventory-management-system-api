@@ -50,6 +50,7 @@ FULL_CATALOGUE_ITEM_B_INFO = {
     "is_obsolete": False,
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
+    "notes": "Some extra information",
     "properties": [{"name": "Property A", "value": True, "unit": None}],
 }
 # pylint: enable=duplicate-code
