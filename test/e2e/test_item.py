@@ -2,7 +2,6 @@
 End-to-End tests for the catalogue item router.
 """
 from unittest.mock import ANY
-from test.e2e.test_system import SYSTEM_POST_B
 from bson import ObjectId
 
 
@@ -48,6 +47,14 @@ MANUFACTURER_POST = {
 
 SYSTEM_POST_A = {
     "name": "System A",
+    "description": "System description",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+}
+
+SYSTEM_POST_B = {
+    "name": "System B",
     "description": "System description",
     "location": "Test location",
     "owner": "Me",
