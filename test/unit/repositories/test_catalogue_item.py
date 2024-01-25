@@ -29,6 +29,7 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "is_obsolete": False,
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
+    "notes": None,
     "properties": [
         {"name": "Property A", "value": 20, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
