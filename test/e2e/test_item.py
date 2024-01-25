@@ -1,6 +1,12 @@
 """
 End-to-End tests for the catalogue item router.
 """
+from test.e2e.mock_schemas import (
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+    CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+    ITEM_POST_ALLOWED_VALUES,
+    ITEM_POST_ALLOWED_VALUES_EXPECTED,
+)
 from unittest.mock import ANY
 
 from bson import ObjectId
@@ -317,6 +323,105 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         == "Invalid value type for catalogue item property 'Property B'. Expected type: boolean."
     )
 
+
+def test_create_item_with_allowed_values(test_client):
+    """
+    Test creating an item when using allowed_values in the properties.
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post = {**ITEM_POST_ALLOWED_VALUES, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 201
+
+    item = response.json()
+
+    assert item == {**ITEM_POST_ALLOWED_VALUES_EXPECTED, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+
+
+def test_create_item_with_allowed_values_invalid_list_string(test_client):
+    """
+    Test creating an item when giving a string property a value that is not within the defined allowed_values
+    list
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post = {
+        **ITEM_POST_ALLOWED_VALUES,
+        "properties": [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "blue"}],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]
+        == "Invalid value for catalogue item property 'Property B'. Expected one of red, green."
+    )
+
+def test_create_item_with_allowed_values_invalid_list_number(test_client):
+    """
+    Test creating an item when giving a number property a value that is not within the defined allowed_values
+    list
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
+    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    # pylint: disable=duplicate-code
+    manufacturer_id = response.json()["id"]
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post = {
+        **ITEM_POST_ALLOWED_VALUES,
+        "properties": [{"name": "Property A", "value": 10}, {"name": "Property B", "value": "red"}],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"] == "Invalid value for catalogue item property 'Property A'. Expected one of 2, 4, 6."
+    )
 
 def test_delete(test_client):
     """

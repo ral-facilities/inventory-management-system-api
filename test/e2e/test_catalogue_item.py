@@ -2,12 +2,15 @@
 """
 End-to-End tests for the catalogue item router.
 """
-from unittest.mock import ANY
-from test.e2e.test_catalogue_category import CATALOGUE_CATEGORY_POST_D
-
+from test.e2e.mock_schemas import (
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+    CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+    CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
+)
 from test.e2e.test_item import ITEM_POST
-from bson import ObjectId
+from unittest.mock import ANY
 
+from bson import ObjectId
 
 # pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_A = {
@@ -94,32 +97,6 @@ CATALOGUE_ITEM_POST_B_EXPECTED = {
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
     "properties": [{"name": "Property A", "value": True, "unit": None}],
-}
-
-# To be posted on CATALOGUE_CATEGORY_D
-CATALOGUE_ITEM_POST_D = {
-    "name": "Catalogue Item D",
-    "description": "This is Catalogue Item D",
-    "cost_gbp": 300.00,
-    "cost_to_rework_gbp": 120.99,
-    "days_to_replace": 1.5,
-    "days_to_rework": 3.0,
-    "drawing_number": "789xyz",
-    "is_obsolete": False,
-    "properties": [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "red"}],
-}
-
-CATALOGUE_ITEM_POST_D_EXPECTED = {
-    **CATALOGUE_ITEM_POST_D,
-    "id": ANY,
-    "drawing_link": None,
-    "item_model_number": None,
-    "obsolete_reason": None,
-    "obsolete_replacement_catalogue_item_id": None,
-    "properties": [
-        {"name": "Property A", "unit": "mm", "value": 4},
-        {"name": "Property B", "value": "red", "unit": None},
-    ],
 }
 
 
@@ -498,14 +475,14 @@ def test_create_catalogue_item_with_allowed_values(test_client):
     Test creating a catalogue item when using allowed_values in the properties.
     """
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_D,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }
@@ -517,7 +494,7 @@ def test_create_catalogue_item_with_allowed_values(test_client):
     catalogue_item = response.json()
 
     assert catalogue_item == {
-        **CATALOGUE_ITEM_POST_D_EXPECTED,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }
@@ -529,14 +506,14 @@ def test_create_catalogue_item_with_allowed_values_invalid_list_string(test_clie
     the defined allowed_values list
     """
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_D,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "properties": [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "blue"}],
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
@@ -557,14 +534,14 @@ def test_create_catalogue_item_with_allowed_values_invalid_list_number(test_clie
     the defined allowed_values list
     """
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_D,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "properties": [{"name": "Property A", "value": 10}, {"name": "Property B", "value": "red"}],
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
@@ -1478,14 +1455,14 @@ def test_partial_update_catalogue_item_change_values_with_allowed_values(test_cl
     """
     Test changing the value of properties with allowed_values defined
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_D,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }
@@ -1504,7 +1481,7 @@ def test_partial_update_catalogue_item_change_values_with_allowed_values(test_cl
     catalogue_item = response.json()
 
     assert catalogue_item == {
-        **CATALOGUE_ITEM_POST_D_EXPECTED,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
         "properties": [
@@ -1519,14 +1496,14 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
     Test updating a catalogue item when giving a string property a value that is not within
     the defined allowed_values list
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_D,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }
@@ -1552,14 +1529,14 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
     Test updating a catalogue item when giving a number property a value that is not within
     the defined allowed_values list
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_D,
+        **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }

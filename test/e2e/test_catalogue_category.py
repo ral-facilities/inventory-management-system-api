@@ -2,10 +2,15 @@
 """
 End-to-End tests for the catalogue category router.
 """
+from test.e2e.mock_schemas import (
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED)
 from unittest.mock import ANY
+
 from bson import ObjectId
 
-from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.consts import \
+    BREADCRUMBS_TRAIL_MAX_LENGTH
 
 CATALOGUE_CATEGORY_POST_A = {"name": "Category A", "is_leaf": False}
 CATALOGUE_CATEGORY_POST_A_EXPECTED = {
@@ -52,50 +57,6 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     "catalogue_item_properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
-    ],
-}
-
-# Leaf with allowed values in properties
-CATALOGUE_CATEGORY_POST_D = {
-    "name": "Category D",
-    "is_leaf": True,
-    "catalogue_item_properties": [
-        {
-            "name": "Property A",
-            "type": "number",
-            "unit": "mm",
-            "mandatory": False,
-            "allowed_values": {"type": "list", "values": [2, 4, 6]},
-        },
-        {
-            "name": "Property B",
-            "type": "string",
-            "unit": None,
-            "mandatory": True,
-            "allowed_values": {"type": "list", "values": ["red", "green"]},
-        },
-    ],
-}
-CATALOGUE_CATEGORY_POST_D_EXPECTED = {
-    **CATALOGUE_CATEGORY_POST_D,
-    "id": ANY,
-    "code": "category-d",
-    "parent_id": None,
-    "catalogue_item_properties": [
-        {
-            "name": "Property A",
-            "type": "number",
-            "unit": "mm",
-            "mandatory": False,
-            "allowed_values": {"type": "list", "values": [2, 4, 6]},
-        },
-        {
-            "name": "Property B",
-            "type": "string",
-            "unit": None,
-            "mandatory": True,
-            "allowed_values": {"type": "list", "values": ["red", "green"]},
-        },
     ],
 }
 
@@ -342,11 +303,11 @@ def test_create_catalogue_category_with_properties_with_allowed_values(test_clie
     """
     Test creating a catalogue category with specific allowed values given
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_D)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     assert response.status_code == 201
     catalogue_category = response.json()
-    assert catalogue_category == CATALOGUE_CATEGORY_POST_D_EXPECTED
+    assert catalogue_category == CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED
 
 
 def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_number(test_client):
@@ -357,7 +318,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     response = test_client.post(
         "/v1/catalogue-categories",
         json={
-            **CATALOGUE_CATEGORY_POST_D,
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
             "catalogue_item_properties": [
                 {
                     "name": "Property A",
@@ -384,7 +345,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     response = test_client.post(
         "/v1/catalogue-categories",
         json={
-            **CATALOGUE_CATEGORY_POST_D,
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
             "catalogue_item_properties": [
                 {
                     "name": "Property A",
@@ -410,7 +371,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     response = test_client.post(
         "/v1/catalogue-categories",
         json={
-            **CATALOGUE_CATEGORY_POST_D,
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
             "catalogue_item_properties": [
                 {
                     "name": "Property A",
@@ -436,7 +397,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_t
     response = test_client.post(
         "/v1/catalogue-categories",
         json={
-            **CATALOGUE_CATEGORY_POST_D,
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
             "catalogue_item_properties": [
                 {
                     "name": "Property A",
