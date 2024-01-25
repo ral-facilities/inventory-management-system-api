@@ -97,21 +97,6 @@ class RepositoryTestHelpers:
     """
 
     @staticmethod
-    def mock_count_documents(collection_mock: Mock, count: int) -> None:
-        """
-        Mock the `count_documents` method of the MongoDB database collection mock to return a specific count value.
-
-        :param collection_mock: Mocked MongoDB database collection instance.
-        :param count: The count value to be returned by the `count_documents` method.
-        """
-        if collection_mock.count_documents.side_effect is None:
-            collection_mock.count_documents.side_effect = [count]
-        else:
-            counts = list(collection_mock.count_documents.side_effect)
-            counts.append(count)
-            collection_mock.count_documents.side_effect = counts
-
-    @staticmethod
     def mock_delete_one(collection_mock: Mock, deleted_count: int) -> None:
         """
         Mock the `delete_one` method of the MongoDB database collection mock to return a `DeleteResult` object. The
