@@ -664,7 +664,7 @@ def test_partial_update_item_nonexistent_id(test_client):
     assert response.json()["detail"] == "An item with such ID was not found"
 
 
-def test_partial_update_try_change_catalogue_item_id(test_client):
+def test_partial_update_change_catalogue_item_id(test_client):
     """
     Test moving an item to another catalogue item
     """
@@ -798,9 +798,9 @@ def test_partial_update_property_values(test_client):
 
     item_patch = {
         "properties": [
-            {"name": "Property A", "value": 12, "unit": "mm"},
-            {"name": "Property B", "value": True, "unit": None},
-            {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+            {"name": "Property A", "value": 12},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10"},
         ],
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
@@ -809,10 +809,15 @@ def test_partial_update_property_values(test_client):
 
     item = response.json()
 
-    assert item == {**ITEM_POST_EXPECTED, **item_patch, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    assert item == {
+        **ITEM_POST_EXPECTED,
+        "properties": [{"name": "Property A", "value": 12, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+    }
 
 
-def test_partial_update_not_all_supplied_properties(test_client):
+def test_partial_update_with_missing_existing_properties(test_client):
     """Test updating a property when they are not all supplied"""
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
@@ -837,7 +842,10 @@ def test_partial_update_not_all_supplied_properties(test_client):
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
-        "properties": [{"name": "Property A", "value": 15, "unit": "mm"}],
+        "properties": [
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "25x10x5"},
+        ],
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
@@ -847,7 +855,11 @@ def test_partial_update_not_all_supplied_properties(test_client):
 
     assert item == {
         **ITEM_POST_EXPECTED,
-        "properties": [{"name": "Property A", "value": 15, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+        "properties": [
+            {"name": "Property B", "unit": None, "value": False},
+            {"name": "Property C", "unit": "cm", "value": "25x10x5"},
+            {"name": "Property A", "value": 20, "unit": "mm"},
+        ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
     }

@@ -9,7 +9,7 @@ from typing import List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
+    InvalidActionError,
     MissingRecordError,
     DatabaseIntegrityError,
     InvalidObjectIdError,
@@ -145,7 +145,7 @@ class ItemService:
             raise MissingRecordError(f"No item found with ID: {item_id}")
 
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
-            raise ChildElementsExistError("Cannot change the catalogue item the item belongs to")
+            raise InvalidActionError("Cannot change the catalogue item the item belongs to")
 
         if "system_id" in update_data and item.system_id != stored_item.system_id:
             system = self._system_repository.get(item.system_id)

@@ -74,3 +74,9 @@ class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been
     """
+
+
+class InvalidActionError(DatabaseError):
+    """
+    Exception raised when trying to update an item's catalogue item ID
+    """

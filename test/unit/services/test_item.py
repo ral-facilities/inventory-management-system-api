@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
+    InvalidActionError,
     InvalidCatalogueItemPropertyTypeError,
     MissingRecordError,
     DatabaseIntegrityError,
@@ -372,7 +372,7 @@ def test_update_with_nonexistent_id(test_helpers, item_repository_mock, item_ser
     assert str(exc.value) == f"No item found with ID: {item_id}"
 
 
-def test_try_to_update_catalogue_item_id(test_helpers, item_repository_mock, item_service):
+def test_update_change_catalogue_item_id(test_helpers, item_repository_mock, item_service):
     """
     Test updating an item with a catalogue item ID.
     """
@@ -386,10 +386,10 @@ def test_try_to_update_catalogue_item_id(test_helpers, item_repository_mock, ite
     # pylint: enable=duplicate-code
 
     # Mock `get` to return an item
-    test_helpers.mock_get(item_repository_mock, item)
+    test_helpers.mock_get(item_repository_mock, ItemOut(**{**item.model_dump(), "catalogue_item_id": str(ObjectId())}))
 
     catalogue_item_id = str(ObjectId())
-    with pytest.raises(ChildElementsExistError) as exc:
+    with pytest.raises(InvalidActionError) as exc:
         item_service.update(
             item.id,
             ItemPatchRequestSchema(catalogue_item_id=catalogue_item_id),
@@ -458,7 +458,7 @@ def test_update_with_nonexistent_system_id(test_helpers, system_repository_mock,
     # pylint: enable=duplicate-code
 
     # Mock `get` to return an item
-    test_helpers.mock_get(item_repository_mock, item)
+    test_helpers.mock_get(item_repository_mock, ItemOut(**{**item.model_dump(), "system_id": str(ObjectId())}))
 
     # Mock `get` to not return a catalogue item
     test_helpers.mock_get(system_repository_mock, None)
@@ -493,12 +493,7 @@ def test_update_change_property_value(
     # Mock `get` to return an item
     test_helpers.mock_get(
         item_repository_mock,
-        ItemOut(
-            **{
-                **FULL_ITEM_INFO,
-                **item.model_dump(),
-            }
-        ),
+        ItemOut(**{**FULL_ITEM_INFO, **item.model_dump(), "properties": FULL_ITEM_INFO["properties"]}),
     )
 
     catalogue_category_id = str(ObjectId())
@@ -533,6 +528,73 @@ def test_update_change_property_value(
 
     item_repository_mock.update.assert_called_once_with(
         item.id, ItemIn(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **item_info)
+    )
+    assert updated_item == item
+
+
+def test_update_with_missing_existing_properties(
+    test_helpers, catalogue_item_repository_mock, catalogue_category_repository_mock, item_repository_mock, item_service
+):
+    """
+    Test updating properties with missing properties
+    """
+    item_info = {
+        **FULL_ITEM_INFO,
+        "properties": FULL_ITEM_INFO["properties"][-2:] + [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]],
+    }
+
+    item = ItemOut(
+        **item_info,
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+    )
+
+    # Mock `get` to return an item
+    test_helpers.mock_get(
+        item_repository_mock,
+        ItemOut(**{**FULL_ITEM_INFO, **item.model_dump(), "properties": FULL_ITEM_INFO["properties"]}),
+    )
+
+    catalogue_category_id = str(ObjectId())
+    manufacturer_id = str(ObjectId())
+
+    # Mock `get` to return a catalogue item
+    test_helpers.mock_get(
+        catalogue_item_repository_mock,
+        CatalogueItemOut(
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            id=item.catalogue_item_id,
+            catalogue_category_id=catalogue_category_id,
+            manufacturer_id=manufacturer_id,
+        ),
+    )
+    # Mock `get` to return a catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            id=catalogue_category_id,
+        ),
+    )
+
+    # Mock `update` to return the updated item
+    test_helpers.mock_update(item_repository_mock, item)
+
+    updated_item = item_service.update(
+        item.id,
+        ItemPatchRequestSchema(
+            properties=[{"name": prop["name"], "value": prop["value"]} for prop in FULL_ITEM_INFO["properties"][-2:]]
+        ),
+    )
+
+    item_repository_mock.update.assert_called_once_with(
+        item.id,
+        ItemIn(
+            catalogue_item_id=item.catalogue_item_id,
+            system_id=item.system_id,
+            **item_info,
+        ),
     )
     assert updated_item == item
 
@@ -637,7 +699,7 @@ def test_update_change_value_for_number_property_invalid_type(
     assert str(exc.value) == "Invalid value type for catalogue item property 'Property A'. Expected type: number."
 
 
-def test_update_change_valuie_for_boolean_property_invalid_type(
+def test_update_change_value_for_boolean_property_invalid_type(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, item_repository_mock, item_service
 ):
     """
