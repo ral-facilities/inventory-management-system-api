@@ -246,6 +246,32 @@ def test_create_without_properties(
     assert created_item == item
 
 
+def test_delete(item_repository_mock, item_service):
+    """
+    Test deleting item.
+
+    Verify that the `delete` method properly handles the deletion of item by ID.
+    """
+    item_id = str(ObjectId)
+
+    item_service.delete(item_id)
+
+    item_repository_mock.delete.assert_called_once_with(item_id)
+
+
+def test_list(item_repository_mock, item_service):
+    """
+    Test listing items.
+
+    Verify that the `list` method properly calls the repository function
+    """
+
+    result = item_service.list(None, None)
+
+    item_repository_mock.list.assert_called_once_with(None, None)
+    assert result == item_repository_mock.list.return_value
+
+
 def test_get(test_helpers, item_repository_mock, item_service):
     """
     Test getting an item.

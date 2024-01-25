@@ -10,7 +10,7 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 
 logger = logging.getLogger()
@@ -28,7 +28,8 @@ class CatalogueItemRepo:
         :param database: The database to use.
         """
         self._database = database
-        self._collection: Collection = self._database.catalogue_items
+        self._catalogue_items_collection: Collection = self._database.catalogue_items
+        self._items_collection: Collection = self._database.items
 
     def create(self, catalogue_item: CatalogueItemIn) -> CatalogueItemOut:
         """
@@ -38,7 +39,7 @@ class CatalogueItemRepo:
         :return: The created catalogue item.
         """
         logger.info("Inserting the new catalogue item into the database")
-        result = self._collection.insert_one(catalogue_item.model_dump())
+        result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump())
         catalogue_item = self.get(str(result.inserted_id))
         return catalogue_item
 
@@ -50,10 +51,13 @@ class CatalogueItemRepo:
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        # pylint: disable=fixme
-        # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements
+        if self._has_child_elements(catalogue_item_id):
+            raise ChildElementsExistError(
+                f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
+            )
+
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
-        result = self._collection.delete_one({"_id": catalogue_item_id})
+        result = self._catalogue_items_collection.delete_one({"_id": catalogue_item_id})
         if result.deleted_count == 0:
             raise MissingRecordError(f"No catalogue item found with ID: {str(catalogue_item_id)}")
 
@@ -66,7 +70,7 @@ class CatalogueItemRepo:
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
         logger.info("Retrieving catalogue item with ID: %s from the database", catalogue_item_id)
-        catalogue_item = self._collection.find_one({"_id": catalogue_item_id})
+        catalogue_item = self._catalogue_items_collection.find_one({"_id": catalogue_item_id})
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
         return None
@@ -77,14 +81,17 @@ class CatalogueItemRepo:
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the update data.
+        :raises ChildElementsExistError: If the catalogue item has child elements
         :return: The updated catalogue item.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        # pylint: disable=fixme
-        # TODO - (when the relevant item logic is implemented) check if catalogue item has children elements if the
-        #  `catalogue_category_id` is being updated.
+        if self._has_child_elements(catalogue_item_id):
+            raise ChildElementsExistError(
+                f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+            )
+
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
-        self._collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump()})
+        self._catalogue_items_collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump()})
         catalogue_item = self.get(str(catalogue_item_id))
         return catalogue_item
 
@@ -107,5 +114,18 @@ class CatalogueItemRepo:
             logger.info("%s matching the provided catalogue category ID filter", message)
             logger.debug("Provided catalogue category ID filter: %s", catalogue_category_id)
 
-        catalogue_items = self._collection.find(query)
+        catalogue_items = self._catalogue_items_collection.find(query)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
+
+    def _has_child_elements(self, catalogue_item_id: CustomObjectId) -> bool:
+        """
+        Check if a catalogue item has child elements based on its ID.
+
+        Child elements in this case means whether a catalogue item has child items
+
+        :param catalogue_item_id: The ID of the catalogue item to check
+        :return: True if the catalogue item has child elements, False otherwise.
+        """
+        logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
+        item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id})
+        return item is not None

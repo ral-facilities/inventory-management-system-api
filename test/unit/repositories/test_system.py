@@ -12,7 +12,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
@@ -197,8 +197,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
     test_helpers.mock_find_one(
         database_mock.systems,
         {
-            "_id": CustomObjectId(system.parent_id),
             **SYSTEM_A_INFO,
+            "_id": ObjectId(),
         },
     )
 
@@ -220,7 +220,7 @@ def test_get(test_helpers, database_mock, system_repository):
     # Mock `find_one` to return a system
     test_helpers.mock_find_one(
         database_mock.systems,
-        {"_id": CustomObjectId(system.id), **SYSTEM_A_INFO},
+        {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id)},
     )
 
     retrieved_system = system_repository.get(system.id)
@@ -371,6 +371,9 @@ def test_update(test_helpers, database_mock, system_repository):
     # Mock `find_one` to return the updated System document
     test_helpers.mock_find_one(database_mock.systems, {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id)})
 
+    # Mock `find_one` to not return a parent System document
+    test_helpers.mock_find_one(database_mock.systems, None)
+
     system_in = SystemIn(**SYSTEM_A_INFO)
     updated_system = system_repository.update(system.id, system_in)
 
@@ -440,9 +443,15 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
     system_id = str(ObjectId())
 
     # Mock `find_one` to return a parent System document
-    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
+    test_helpers.mock_find_one(database_mock.systems, {**SYSTEM_B_INFO, "_id": CustomObjectId(system_id)})
     # Mock `find_one` to return duplicate systen found in parent system
-    test_helpers.mock_find_one(database_mock.systems, {"_id": CustomObjectId(system_id), **SYSTEM_B_INFO})
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            **SYSTEM_B_INFO,
+            "_id": CustomObjectId(system_id),
+        },
+    )
 
     with pytest.raises(DuplicateRecordError) as exc:
         system_repository.update(system_id, system)
@@ -485,7 +494,7 @@ def test_delete_with_child_systems(test_helpers, database_mock, system_repositor
     # Mock `find_one` to return no items
     test_helpers.mock_find_one(database_mock.items, None)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         system_repository.delete(system_id)
 
     database_mock.systems.delete_one.assert_not_called()
@@ -505,7 +514,7 @@ def test_delete_with_child_items(test_helpers, database_mock, system_repository)
     # Mock `find_one` to return an item (child elements found)
     test_helpers.mock_find_one(database_mock.items, MagicMock())
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         system_repository.delete(system_id)
 
     database_mock.systems.delete_one.assert_not_called()

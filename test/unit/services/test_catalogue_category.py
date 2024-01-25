@@ -7,7 +7,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    ChildrenElementsExistError,
+    ChildElementsExistError,
     DuplicateCatalogueItemPropertyNameError,
     LeafCategoryError,
     MissingRecordError,
@@ -511,11 +511,11 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
 
 
-def test_update_change_from_leaf_to_non_leaf_when_no_children(
+def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
     test_helpers, catalogue_category_repository_mock, catalogue_category_service
 ):
     """
-    Test changing a catalogue category from leaf to non-leaf when the category doesn't have any children
+    Test changing a catalogue category from leaf to non-leaf when the category doesn't have any child elements.
     """
     # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
@@ -566,11 +566,11 @@ def test_update_change_from_leaf_to_non_leaf_when_no_children(
     assert updated_catalogue_category == catalogue_category
 
 
-def test_update_change_catalogue_item_properties_when_no_children(
+def test_update_change_catalogue_item_properties_when_no_child_elements(
     test_helpers, catalogue_category_repository_mock, catalogue_category_service
 ):
     """
-    Test updating a catalogue category's item properties when it has no children
+    Test updating a catalogue category's item properties when it has no child elements.
 
     Verify that the `update` method properly handles the catalogue category to be updated.
     """
@@ -628,11 +628,11 @@ def test_update_change_catalogue_item_properties_when_no_children(
     assert updated_catalogue_category == catalogue_category
 
 
-def test_update_change_from_leaf_to_non_leaf_when_has_children(
+def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
     test_helpers, catalogue_category_repository_mock, catalogue_category_service
 ):
     """
-    Test changing a catalogue category from leaf to non-leaf when the category has children
+    Test changing a catalogue category from leaf to non-leaf when the category has child elements.
     """
     # pylint: disable=duplicate-code
     catalogue_category = CatalogueCategoryOut(
@@ -666,7 +666,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_children(
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_service.update(catalogue_category.id, CatalogueCategoryPatchRequestSchema(is_leaf=False))
 
     catalogue_category_repository_mock.update.assert_not_called()
@@ -676,11 +676,11 @@ def test_update_change_from_leaf_to_non_leaf_when_has_children(
     )
 
 
-def test_update_change_catalogue_item_properties_when_has_children(
+def test_update_change_catalogue_item_properties_when_has_child_elements(
     test_helpers, catalogue_category_repository_mock, catalogue_category_service
 ):
     """
-    Test updating a catalogue category's item properties when it has children
+    Test updating a catalogue category's item properties when it has child elements.
 
     Verify that the `update` method properly handles the catalogue category to be updated.
     """
@@ -697,6 +697,9 @@ def test_update_change_catalogue_item_properties_when_has_children(
         ],
     )
     # pylint: enable=duplicate-code
+
+    # Mock so child elements found
+    catalogue_category_repository_mock.has_child_elements.return_value = True
 
     # Mock `get` to return a catalogue category
     # pylint: disable=duplicate-code
@@ -715,7 +718,7 @@ def test_update_change_catalogue_item_properties_when_has_children(
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
-    with pytest.raises(ChildrenElementsExistError) as exc:
+    with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
             CatalogueCategoryPatchRequestSchema(

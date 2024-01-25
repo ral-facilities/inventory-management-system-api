@@ -1,6 +1,7 @@
 """
 Unit tests for the `ManufacturerRepo` repository.
 """
+from unittest.mock import call
 from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
 import pytest
 from bson import ObjectId
@@ -65,7 +66,12 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
 
     database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump())
     # pylint: enable=duplicate-code
-    database_mock.manufacturers.find_one.assert_called_with({"_id": CustomObjectId(manufacturer.id)})
+    database_mock.manufacturers.find_one.assert_has_calls(
+        [
+            call({"code": manufacturer.code}),
+            call({"_id": CustomObjectId(manufacturer.id)}),
+        ]
+    )
     assert created_manufacturer == manufacturer
 
 
@@ -95,7 +101,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
-            "_id": CustomObjectId(manufacturer.id),
+            "_id": ObjectId(),
             "code": manufacturer.code,
             "name": manufacturer.name,
             "url": manufacturer.url,
@@ -359,7 +365,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
-            "_id": CustomObjectId(manufacturer_id),
+            "_id": ObjectId(),
             "code": "manufacturer-b",
             "name": "Manufacturer B",
             "url": "http://example.com",
@@ -531,9 +537,9 @@ def test_delete_manufacturer_that_is_part_of_a_catalogue_item(test_helpers, data
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
+            **FULL_CATALOGUE_ITEM_A_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "catalogue_category_id": CustomObjectId(catalogue_category_id),
-            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
     # pylint: enable=duplicate-code

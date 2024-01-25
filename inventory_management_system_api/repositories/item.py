@@ -2,7 +2,7 @@
 Module for providing a repository for managing items in a MongoDB database.
 """
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import Depends
 from pymongo.collection import Collection
@@ -47,6 +47,19 @@ class ItemRepo:
         item = self.get(str(result.inserted_id))
         return item
 
+    def delete(self, item_id: str) -> None:
+        """
+        Delete an item by its ID from a MongoDB database.
+
+        :param item_id: The ID of the item to delete.
+        :raises MissingRecordError: If the item doesn't exist
+        """
+        item_id = CustomObjectId(item_id)
+        logger.info("Deleting item with ID: %s from the database", item_id)
+        result = self._items_collection.delete_one({"_id": item_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+
     def get(self, item_id: str) -> Optional[ItemOut]:
         """
         Retrieve an item by its ID from a MongoDB database.
@@ -60,3 +73,33 @@ class ItemRepo:
         if item:
             return ItemOut(**item)
         return None
+
+    def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
+        """
+        Get all items from the MongoDB database
+
+        :param system_id: The ID of the system to filter items by.
+        :param catalogue_item_id: The ID of the catalogue item to filter by.
+        :return List of items, or empty list if there are no items
+        """
+        query = {}
+        if system_id:
+            # allows users to filter by items with no system ID
+            query["system_id"] = None if system_id == "null" else CustomObjectId(system_id)
+
+        if catalogue_item_id:
+            catalogue_item_id = CustomObjectId(catalogue_item_id)
+            query["catalogue_item_id"] = catalogue_item_id
+
+        message = "Retrieving all items from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided system ID and/or catalogue item ID filter", message)
+            if system_id:
+                logger.debug("Provided system ID filter: %s", system_id)
+            if catalogue_item_id:
+                logger.debug("Provided catalogue item ID filter: %s", catalogue_item_id)
+
+        items = self._items_collection.find(query)
+        return [ItemOut(**item) for item in items]

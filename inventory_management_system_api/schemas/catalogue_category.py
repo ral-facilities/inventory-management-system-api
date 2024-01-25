@@ -54,8 +54,8 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
 
     name: str = Field(description="The name of the catalogue category")
     is_leaf: bool = Field(
-        description="Whether the category is a leaf or not. If it is then it can only have catalogue items as "
-        "children but if it is not then it can only have catalogue categories as children."
+        description="Whether the category is a leaf or not. If it is then it can only have catalogue items as child "
+        "elements but if it is not then it can only have catalogue categories as child elements."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
     catalogue_item_properties: Optional[List[CatalogueItemPropertySchema]] = Field(
@@ -64,7 +64,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
 
 
 # Special fields that are not allowed to be changed in a post request while the category has child elements
-CATALOGUE_CATEGORY_WITH_CHILDREN_NON_EDITABLE_FIELDS = ["is_leaf", "catalogue_item_properties"]
+CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS = ["is_leaf", "catalogue_item_properties"]
 
 
 class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
@@ -75,8 +75,8 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     name: Optional[str] = Field(default=None, description="The name of the catalogue category")
     is_leaf: Optional[bool] = Field(
         default=None,
-        description="Whether the category is a leaf or not. If it is then it can only have catalogue items as "
-        "children but if it is not then it can only have catalogue categories as children.",
+        description="Whether the category is a leaf or not. If it is then it can only have catalogue items as child "
+        "elements but if it is not then it can only have catalogue categories as child elements.",
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
 
