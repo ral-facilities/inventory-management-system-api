@@ -372,9 +372,7 @@ def test_update_with_nonexistent_id(test_helpers, item_repository_mock, item_ser
     assert str(exc.value) == f"No item found with ID: {item_id}"
 
 
-def test_try_to_update_catalogue_item_id(
-    test_helpers, item_repository_mock, item_service
-):
+def test_try_to_update_catalogue_item_id(test_helpers, item_repository_mock, item_service):
     """
     Test updating an item with a catalogue item ID.
     """
