@@ -178,8 +178,7 @@ class CatalogueCategoryRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        count = self._catalogue_categories_collection.count_documents({"parent_id": parent_id, "code": code})
-        return count > 0
+        return self._catalogue_categories_collection.find_one({"parent_id": parent_id, "code": code}) is not None
 
     def has_child_elements(self, catalogue_category_id: CustomObjectId) -> bool:
         """
@@ -191,11 +190,9 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to check.
         :return: True if the catalogue category has child elements, False otherwise.
         """
-        logger.info("Checking if catalogue category with ID '%s' has child elements", catalogue_category_id)
-        # Check if it has catalogue categories
-        query = {"parent_id": catalogue_category_id}
-        count = self._catalogue_categories_collection.count_documents(query)
-        # Check if it has catalogue items
-        query = {"catalogue_category_id": catalogue_category_id}
-        count = count + self._catalogue_items_collection.count_documents(query)
-        return count > 0
+        logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
+
+        return (
+            self._catalogue_categories_collection.find_one({"parent_id": catalogue_category_id}) is not None
+            or self._catalogue_items_collection.find_one({"catalogue_category_id": catalogue_category_id}) is not None
+        )

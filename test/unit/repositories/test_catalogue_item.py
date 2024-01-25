@@ -65,32 +65,34 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     """
     # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
+        **FULL_CATALOGUE_ITEM_A_INFO,
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
     )
     # pylint: enable=duplicate-code
 
-    # Mock `count_documents` to return 0 (no duplicate catalogue item found within the catalogue category)
-    test_helpers.mock_count_documents(database_mock.catalogue_items, 0)
     # Mock `insert_one` to return an object for the inserted catalogue item document
     test_helpers.mock_insert_one(database_mock.catalogue_items, CustomObjectId(catalogue_item.id))
+
     # Mock `find_one` to return the inserted catalogue item document
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
+            **FULL_CATALOGUE_ITEM_A_INFO,
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
             "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
-            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
 
+    # Mock `find_one` to return no duplicate catalogue items found
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
+
     catalogue_item_in = CatalogueItemIn(
+        **FULL_CATALOGUE_ITEM_A_INFO,
         catalogue_category_id=catalogue_item.catalogue_category_id,
         manufacturer_id=catalogue_item.manufacturer_id,
-        **FULL_CATALOGUE_ITEM_A_INFO,
     )
     created_catalogue_item = catalogue_item_repository.create(catalogue_item_in)
 
