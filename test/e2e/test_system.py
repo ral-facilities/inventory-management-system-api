@@ -2,6 +2,9 @@
 End-to-End tests for the System router
 """
 
+from test.e2e.test_catalogue_category import CATALOGUE_CATEGORY_POST_B
+from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A
+from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
 from typing import Any, Optional
 from unittest.mock import ANY
 
@@ -527,7 +530,7 @@ def test_delete_system_with_non_existent_id(test_client):
 
 def test_delete_system_with_child_system(test_client):
     """
-    Test deleting a System
+    Test deleting a System that has subsystem
     """
     # Create one to delete
     # Parent
@@ -539,6 +542,41 @@ def test_delete_system_with_child_system(test_client):
 
     # Delete
     response = test_client.delete(f"/v1/systems/{parent_system['id']}")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "System has child elements and cannot be deleted"
+
+
+def test_delete_system_with_child_item(test_client):
+    """
+    Test deleting a System that contains an item
+    """
+    # Create one to delete
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    # Create a child item
+    # pylint: disable=duplicate-code
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+    # pylint: enable=duplicate-code
+
+    # Delete
+    response = test_client.delete(f"/v1/systems/{system_id}")
 
     assert response.status_code == 409
     assert response.json()["detail"] == "System has child elements and cannot be deleted"
