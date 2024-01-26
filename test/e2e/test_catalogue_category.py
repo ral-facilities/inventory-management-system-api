@@ -4,13 +4,13 @@ End-to-End tests for the catalogue category router.
 """
 from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED)
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED,
+)
 from unittest.mock import ANY
 
 from bson import ObjectId
 
-from inventory_management_system_api.core.consts import \
-    BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
 CATALOGUE_CATEGORY_POST_A = {"name": "Category A", "is_leaf": False}
 CATALOGUE_CATEGORY_POST_A_EXPECTED = {
@@ -297,6 +297,32 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
     assert response.status_code == 201
     catalogue_category = response.json()
     assert catalogue_category == CATALOGUE_CATEGORY_POST_A_EXPECTED
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_length(test_client):
+    """
+    Test creating a catalogue category with a number property containing an allowed_values list that is empty
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "number",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": []},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "List should have at least 1 item after validation, not 0"
+    )
 
 
 def test_create_catalogue_category_with_properties_with_allowed_values(test_client):

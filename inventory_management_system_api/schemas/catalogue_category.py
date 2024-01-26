@@ -5,7 +5,7 @@ from enum import Enum
 from numbers import Number
 from typing import Annotated, Any, List, Literal, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, conlist, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 
@@ -25,7 +25,7 @@ class AllowedValuesListSchema(BaseModel):
     """
 
     type: Literal["list"]
-    values: List[Any]
+    values: conlist(Any, min_length=1)
 
 
 # Use discriminated union for any additional types of allowed values (so can use Pydantic's validation)
