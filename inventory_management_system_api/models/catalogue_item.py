@@ -37,6 +37,7 @@ class CatalogueItemIn(BaseModel):
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
     obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
+    notes: Optional[str] = None
     properties: List[Property] = []
 
     @field_validator("properties", mode="before")
