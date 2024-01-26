@@ -7,12 +7,14 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
 
 from inventory_management_system_api.core.exceptions import (
+    InvalidActionError,
     InvalidObjectIdError,
+    MissingMandatoryCatalogueItemProperty,
     MissingRecordError,
     DatabaseIntegrityError,
     InvalidCatalogueItemPropertyTypeError,
 )
-from inventory_management_system_api.schemas.item import ItemPostRequestSchema, ItemSchema
+from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
 
 logger = logging.getLogger()
@@ -116,3 +118,40 @@ def get_item(
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.patch(
+    path="/{item_id}",
+    summary="Update an item partially by ID",
+    response_description="Item updated successfully",
+)
+def partial_update_item(
+    item: ItemPatchRequestSchema,
+    item_id: Annotated[str, Path(description="The ID of the item to update")],
+    item_service: Annotated[ItemService, Depends(ItemService)],
+) -> ItemSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating item with ID: %s", item_id)
+    logger.debug("Item data: %s", item)
+    try:
+        updated_item = item_service.update(item_id, item)
+        return ItemSchema(**updated_item.model_dump())
+    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
+            message = "The specified system ID does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        message = "An item with such ID was not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to update item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    except InvalidActionError as exc:
+        message = "Cannot change the catalogue item of an item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
