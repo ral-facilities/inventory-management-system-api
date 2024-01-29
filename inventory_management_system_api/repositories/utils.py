@@ -95,6 +95,7 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
                                     create_breadcrumbs_aggregation_pipeline
     :param collection_name: Should be the same as the value passed to create_breadcrumbs_aggregation_pipeline
                             (used for error messages)
+    :raises MissingRecordError: If the entity with id 'entity_id' isn't found in the database
     :raises DatabaseIntegrityError: If the query returned less than the maximum allowed trail while not
                                     giving the full trail - this indicates a parent_id is invalid or doesn't
                                     exist in the database which shouldn't occur

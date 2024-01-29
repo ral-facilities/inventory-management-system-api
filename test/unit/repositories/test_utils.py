@@ -15,7 +15,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.repositories import utils
 
-MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH = [
+MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH = [
     {
         "result": [
             {"_id": f"entity-id-{i}", "name": f"entity-name-{i}", "parent_id": None if i == 0 else f"entity-id-{i-1}"}
@@ -23,7 +23,7 @@ MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH = [
         ]
     }
 ]
-MOCK_QUERY_RESULT_GREATER_THAN_MAX_LENGTH = [
+MOCK_BREADCRUMBS_QUERY_RESULT_GREATER_THAN_MAX_LENGTH = [
     {
         "result": [
             {"_id": f"entity-id-{i}", "name": f"entity-name-{i}", "parent_id": f"entity-id-{i-1}"}
@@ -31,8 +31,8 @@ MOCK_QUERY_RESULT_GREATER_THAN_MAX_LENGTH = [
         ]
     }
 ]
-MOCK_QUERY_RESULT_NON_EXISTENT_ID = [{"result": []}]
-MOCK_QUERY_RESULT_INVALID_PARENT_IN_DB = [
+MOCK_BREADCRUMBS_QUERY_RESULT_NON_EXISTENT_ID = [{"result": []}]
+MOCK_BREADCRUMBS_QUERY_RESULT_INVALID_PARENT_IN_DB = [
     {
         "result": [
             {"_id": f"entity-id-{i}", "name": f"entity-name-{i}", "parent_id": f"entity-id-{i-1}"}
@@ -41,13 +41,23 @@ MOCK_QUERY_RESULT_INVALID_PARENT_IN_DB = [
     }
 ]
 
+MOCK_MOVE_QUERY_RESULT_VALID = [
+    {"result": [{"_id": f"entity-id-{i}", "parent_id": None if i == 0 else f"entity-id-{i-1}"} for i in range(0, 5)]}
+]
+
+MOCK_MOVE_QUERY_RESULT_INVALID = [
+    {"result": [{"_id": f"entity-id-{i}", "parent_id": f"entity-id-{i-1}"} for i in range(10, 15)]}
+]
+
+MOCK_MOVE_QUERY_RESULT_NON_EXISTENT_ID = [{"result": []}]
+
 
 class TestCreateBreadcrumbsAggregationPipeline:
     """Test create_breadcrumbs_aggregation_pipeline functions correctly"""
 
     # Only test error here - exact query tested in e2e test
     def test_create_breadcrumbs_aggregation_pipeline_when_entity_id_is_invalid(self):
-        """Tests that create_breadcrumbs_aggregation_pipeline raises an error when the given id is invalid"""
+        """Tests that create_breadcrumbs_aggregation_pipeline raises an error when the given entity id is invalid"""
         entity_id = "invalid"
         collection_name = MagicMock()
 
@@ -80,9 +90,10 @@ class TestComputeBreadcrumbs:
         Test compute_breadcrumbs functions correctly
         """
         self._test_compute_breadcrumbs(
-            breadcrumb_query_result=MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
+            breadcrumb_query_result=MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
             expected_trail=[
-                (entity["_id"], entity["name"]) for entity in MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH[0]["result"]
+                (entity["_id"], entity["name"])
+                for entity in MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH[0]["result"]
             ],
             expected_full_trail=True,
         )
@@ -92,9 +103,10 @@ class TestComputeBreadcrumbs:
         Test compute_breadcrumbs functions correctly when the maximum trail length is exceeded
         """
         self._test_compute_breadcrumbs(
-            breadcrumb_query_result=MOCK_QUERY_RESULT_GREATER_THAN_MAX_LENGTH,
+            breadcrumb_query_result=MOCK_BREADCRUMBS_QUERY_RESULT_GREATER_THAN_MAX_LENGTH,
             expected_trail=[
-                (entity["_id"], entity["name"]) for entity in MOCK_QUERY_RESULT_GREATER_THAN_MAX_LENGTH[0]["result"]
+                (entity["_id"], entity["name"])
+                for entity in MOCK_BREADCRUMBS_QUERY_RESULT_GREATER_THAN_MAX_LENGTH[0]["result"]
             ],
             expected_full_trail=False,
         )
@@ -109,7 +121,7 @@ class TestComputeBreadcrumbs:
         with pytest.raises(MissingRecordError) as exc:
             utils.compute_breadcrumbs(
                 entity_id=entity_id,
-                breadcrumb_query_result=MOCK_QUERY_RESULT_NON_EXISTENT_ID,
+                breadcrumb_query_result=MOCK_BREADCRUMBS_QUERY_RESULT_NON_EXISTENT_ID,
                 collection_name=collection_name,
             )
 
@@ -125,7 +137,7 @@ class TestComputeBreadcrumbs:
         with pytest.raises(DatabaseIntegrityError) as exc:
             utils.compute_breadcrumbs(
                 entity_id=entity_id,
-                breadcrumb_query_result=MOCK_QUERY_RESULT_INVALID_PARENT_IN_DB,
+                breadcrumb_query_result=MOCK_BREADCRUMBS_QUERY_RESULT_INVALID_PARENT_IN_DB,
                 collection_name=collection_name,
             )
 
@@ -133,3 +145,51 @@ class TestComputeBreadcrumbs:
             f"Unable to locate full trail for entity with id '{entity_id}' from the database collection "
             f"'{collection_name}'"
         )
+
+
+class TestCreateMoveCheckAggregationPipeline:
+    """Test create_move_check_aggregation_pipeline functions correctly"""
+
+    # Only test errors here - exact query tested in e2e test
+    def test_create_move_check_aggregation_pipeline_when_entity_id_is_invalid(self):
+        """Tests that create_move_check_aggregation_pipeline raises an error when the given entity id is invalid"""
+        entity_id = "invalid"
+        destination_id = str(ObjectId())
+        collection_name = MagicMock()
+
+        with pytest.raises(InvalidObjectIdError) as exc:
+            utils.create_move_check_aggregation_pipeline(
+                entity_id=entity_id, destination_id=destination_id, collection_name=collection_name
+            )
+
+        assert str(exc.value) == f"Invalid ObjectId value '{entity_id}'"
+
+    def test_create_move_check_aggregation_pipeline_when_destination_id_is_invalid(self):
+        """Tests that create_move_check_aggregation_pipeline raises an error when the given destination id is
+        invalid"""
+        entity_id = str(ObjectId())
+        destination_id = "invalid"
+        collection_name = MagicMock()
+
+        with pytest.raises(InvalidObjectIdError) as exc:
+            utils.create_move_check_aggregation_pipeline(
+                entity_id=entity_id, destination_id=destination_id, collection_name=collection_name
+            )
+
+        assert str(exc.value) == f"Invalid ObjectId value '{destination_id}'"
+
+
+class TestCheckMoveResult:
+    """Test check_move_result functions correctly"""
+
+    def test_check_move_result_when_valid(self):
+        """Test compute_breadcrumbs functions correctly when the result is valid"""
+        assert utils.check_move_result(MOCK_MOVE_QUERY_RESULT_VALID) is True
+
+    def test_check_move_result_when_invalid(self):
+        """Test compute_breadcrumbs functions correctly when the result is invalid"""
+        assert utils.check_move_result(MOCK_MOVE_QUERY_RESULT_INVALID) is False
+
+    def test_check_when_entity_not_found(self):
+        """Test compute_breadcrumbs functions correctly when the entity ID doesnt exist in the database to begin with"""
+        assert utils.check_move_result(MOCK_MOVE_QUERY_RESULT_NON_EXISTENT_ID) is False
