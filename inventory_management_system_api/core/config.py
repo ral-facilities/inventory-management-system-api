@@ -17,6 +17,15 @@ class APIConfig(BaseModel):
     root_path: str = ""  # (If using a proxy) The path prefix handled by a proxy that is not seen by the app.
 
 
+class AuthenticationConfig(BaseModel):
+    """
+    Configuration model for the JWT access token authentication/authorization.
+    """
+
+    public_key_path: str
+    jwt_algorithm: str
+
+
 class DatabaseConfig(BaseModel):
     """
     Configuration model for the database.
@@ -40,6 +49,7 @@ class Config(BaseSettings):
     """
 
     api: APIConfig
+    authentication: AuthenticationConfig
     database: DatabaseConfig
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env", env_file_encoding="utf-8", env_nested_delimiter="__"
