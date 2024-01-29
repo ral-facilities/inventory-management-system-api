@@ -794,6 +794,21 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
     }
 
 
+def test_partial_update_catalogue_category_change_parent_id_to_child_id(test_client):
+    """
+    Test updating a System's parent_id to be the id of one of its children
+    """
+    nested_categories = _post_n_catalogue_categories(test_client, 4)
+
+    # Attempt to move first into one of its children
+    response = test_client.patch(
+        f"/v1/catalogue-categories/{nested_categories[0]['id']}", json={"parent_id": nested_categories[3]["id"]}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Cannot move a catalogue category to one of its own children"
+
+
 def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_categories(test_client):
     """
     Test moving a catalogue category with child categories to another parent catalogue category.
