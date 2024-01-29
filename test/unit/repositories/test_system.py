@@ -353,7 +353,8 @@ def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_update(test_helpers, database_mock, system_repository, utils_mock):
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update(utils_mock, test_helpers, database_mock, system_repository):
     """
     Test updating a System
 
@@ -398,7 +399,8 @@ def test_update(test_helpers, database_mock, system_repository, utils_mock):
     assert updated_system == system
 
 
-def test_update_parent_id(test_helpers, database_mock, system_repository, utils_mock):
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update_parent_id(utils_mock, test_helpers, database_mock, system_repository):
     """
     Test updating a System's parent_id
 
@@ -407,7 +409,7 @@ def test_update_parent_id(test_helpers, database_mock, system_repository, utils_
     parent_system_id = str(ObjectId())
     system = SystemOut(id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id})
     new_parent_id = str(ObjectId())
-    expected_system = SystemOut(id=system.id, **{**SYSTEM_A_INFO, "parent_id": new_parent_id})
+    expected_system = SystemOut(**{**system.model_dump(), "parent_id": new_parent_id})
 
     # Mock `find_one` to return a parent System document
     test_helpers.mock_find_one(
@@ -423,17 +425,14 @@ def test_update_parent_id(test_helpers, database_mock, system_repository, utils_
         database_mock.systems,
         system.model_dump(),
     )
-
-    # Mock `find_one` to return no duplicates found
+    # Mock `find_one` to return no duplicate systems found
     test_helpers.mock_find_one(database_mock.systems, None)
-
     # Mock `update_one` to return an object for the updated System document
     test_helpers.mock_update_one(database_mock.systems)
-
     # Mock `find_one` to return the updated System document
     test_helpers.mock_find_one(
         database_mock.systems,
-        {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id), "parent_id": CustomObjectId(new_parent_id)},
+        {**system.model_dump(), "parent_id": CustomObjectId(new_parent_id)},
     )
 
     # Mock utils so not moving to a child of itself
@@ -471,11 +470,12 @@ def test_update_parent_id(test_helpers, database_mock, system_repository, utils_
     assert updated_system == expected_system
 
 
-def test_update_parent_id_moving_to_child(test_helpers, database_mock, system_repository, utils_mock):
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_mock, system_repository):
     """
     Test updating a System's parent_id when moving to a child of itself
 
-    Verify that the `update` method properly handles the update of a System when new parent id
+    Verify that the `update` method properly handles the update of a System when the new parent_id
     is a child of itself
     """
     parent_system_id = str(ObjectId())
@@ -496,13 +496,10 @@ def test_update_parent_id_moving_to_child(test_helpers, database_mock, system_re
         database_mock.systems,
         system.model_dump(),
     )
-
     # Mock `find_one` to return no duplicates found
     test_helpers.mock_find_one(database_mock.systems, None)
-
     # Mock `update_one` to return an object for the updated System document
     test_helpers.mock_update_one(database_mock.systems)
-
     # Mock `find_one` to return the updated System document
     test_helpers.mock_find_one(
         database_mock.systems,

@@ -2,7 +2,7 @@
 Module for providing common test configuration, test fixtures, and helper functions.
 """
 from typing import List, Type
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
@@ -85,12 +85,6 @@ def fixture_system_repository(database_mock: Mock) -> SystemRepo:
     :return: `SystemRepo` instance with the mocked dependency.
     """
     return SystemRepo(database_mock)
-
-
-@pytest.fixture(autouse=True, scope="function", name="utils_mock")
-def fixture_utils_mock():
-    with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
-        yield mock_utils
 
 
 class RepositoryTestHelpers:
