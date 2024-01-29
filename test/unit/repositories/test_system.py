@@ -3,7 +3,7 @@ Unit tests for the `SystemRepo` repository
 """
 
 
-from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+from test.unit.repositories.test_utils import MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 from typing import Optional
 from unittest.mock import MagicMock, call, patch
 
@@ -272,7 +272,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
 
     mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
     mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
-    database_mock.systems.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+    database_mock.systems.aggregate.return_value = MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 
     retrieved_breadcrumbs = system_repository.get_breadcrumbs(system_id)
 
@@ -280,7 +280,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
         entity_id=system_id, collection_name="systems"
     )
     mock_utils.compute_breadcrumbs.assert_called_once_with(
-        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
+        list(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
         entity_id=system_id,
         collection_name="systems",
     )

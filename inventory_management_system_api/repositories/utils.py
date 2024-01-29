@@ -179,4 +179,4 @@ def check_move_result(move_parent_check_result: list) -> bool:
     :return: True if the move is valid, False when the move destination is a child of the entity being moved
     """
     result = move_parent_check_result[0]["result"]
-    return len(result) > 0 and result[0]["parent_id"] == None
+    return len(result) > 0 and result[0]["parent_id"] is None

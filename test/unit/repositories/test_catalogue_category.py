@@ -3,7 +3,7 @@
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
 from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
-from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+from test.unit.repositories.test_utils import MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -576,7 +576,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, catalogue_category_repositor
 
     mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
     mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
-    database_mock.catalogue_categories.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+    database_mock.catalogue_categories.aggregate.return_value = MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 
     retrieved_breadcrumbs = catalogue_category_repository.get_breadcrumbs(catalogue_category_id)
 
@@ -584,7 +584,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, catalogue_category_repositor
         entity_id=catalogue_category_id, collection_name="catalogue_categories"
     )
     mock_utils.compute_breadcrumbs.assert_called_once_with(
-        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
+        list(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
         entity_id=catalogue_category_id,
         collection_name="catalogue_categories",
     )

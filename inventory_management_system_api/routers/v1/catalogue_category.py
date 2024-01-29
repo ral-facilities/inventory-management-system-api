@@ -175,7 +175,7 @@ def partial_update_catalogue_category(
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
 
 @router.delete(
