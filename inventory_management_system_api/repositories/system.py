@@ -13,6 +13,7 @@ from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateRecordError,
+    InvalidActionError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
@@ -122,10 +123,22 @@ class SystemRepo:
             raise MissingRecordError(f"No parent System found with ID: {parent_id}")
 
         stored_system = self.get(str(system_id))
-        if (system.name != stored_system.name or parent_id != stored_system.parent_id) and self._is_duplicate_system(
-            parent_id, system.code
-        ):
+        moving_system = parent_id != stored_system.parent_id
+        if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(parent_id, system.code):
             raise DuplicateRecordError("Duplicate System found within the parent System")
+
+        # Prevent a system from being moved to one of its own children
+        if moving_system:
+            if parent_id is not None and not utils.check_move_result(
+                list(
+                    self._systems_collection.aggregate(
+                        utils.create_move_check_aggregation_pipeline(
+                            entity_id=str(system_id), destination_id=parent_id, collection_name="systems"
+                        )
+                    )
+                )
+            ):
+                raise InvalidActionError("Cannot move a system to one of its own children")
 
         logger.info("Updating system with ID: %s in the database", system_id)
         self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()})

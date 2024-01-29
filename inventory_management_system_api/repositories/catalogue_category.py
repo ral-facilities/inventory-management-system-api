@@ -13,6 +13,7 @@ from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateRecordError,
+    InvalidActionError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
@@ -140,11 +141,26 @@ class CatalogueCategoryRepo:
             raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
 
         stored_catalogue_category = self.get(str(catalogue_category_id))
+        moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
         if (
-            catalogue_category.name != stored_catalogue_category.name
-            or parent_id != stored_catalogue_category.parent_id
+            catalogue_category.name != stored_catalogue_category.name or moving_catalogue_category
         ) and self._is_duplicate_catalogue_category(parent_id, catalogue_category.code):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
+
+        # Prevent a catalogue category from being moved to one of its own children
+        if moving_catalogue_category:
+            if parent_id is not None and not utils.check_move_result(
+                list(
+                    self._catalogue_categories_collection.aggregate(
+                        utils.create_move_check_aggregation_pipeline(
+                            entity_id=str(catalogue_category_id),
+                            destination_id=parent_id,
+                            collection_name="catalogue_categories",
+                        )
+                    )
+                )
+            ):
+                raise InvalidActionError("Cannot move a catalogue category to one of its own children")
 
         logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
         self._catalogue_categories_collection.update_one(

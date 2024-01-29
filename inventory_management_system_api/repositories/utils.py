@@ -62,8 +62,11 @@ def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str
                 "depthField": "level",
             }
         },
+        # The following ensures that just a list of the full breadcrumbs results are returned with only the
+        # necessary information in order from the top level down
         {
             "$facet": {
+                # Keep only these parameters
                 "root": [{"$project": {"_id": 1, "name": 1, "parent_id": 1}}],
                 "ancestors": [
                     {"$unwind": "$ancestors"},
@@ -83,12 +86,12 @@ def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str
 
 def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collection_name: str) -> BreadcrumbsGetSchema:
     """
-    Process the result of running breadcrumb query using the pipeline returned by
+    Processes the result of running breadcrumb query using the pipeline returned by
     create_breadcrumbs_aggregation_pipeline above
 
     :param entity_id: ID of the entity the breadcrumbs are for. Should be the same as was used for
                       create_breadcrumbs_aggregation_pipeline (used for error messages)
-    :param breadcrumb_query_result: Result of the running the aggregation pipeline returned by
+    :param breadcrumb_query_result: Result of running the aggregation pipeline returned by
                                     create_breadcrumbs_aggregation_pipeline
     :param collection_name: Should be the same as the value passed to create_breadcrumbs_aggregation_pipeline
                             (used for error messages)
@@ -117,3 +120,62 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
             f"collection '{collection_name}'"
         )
     return BreadcrumbsGetSchema(trail=trail, full_trail=full_trail)
+
+
+def create_move_check_aggregation_pipeline(entity_id: str, destination_id: str, collection_name: str) -> list:
+    """
+    Returns an aggregate query for checking whether an entity has been requested to move to one of its own children
+
+    :param entity_id: ID of the entity being moved
+    :param destination_id: ID of the entity it is being moved to (i.e. the new parent_id)
+
+    :raises InvalidObjectIdError: If the given entity_id or destination_id is invalid
+    :return: The query to feed to the collection's aggregate method. The value of list(result) should
+             be passed to check_move_result below.
+    """
+    return [
+        {"$match": {"_id": CustomObjectId(destination_id)}},
+        {
+            "$graphLookup": {
+                "from": collection_name,
+                "startWith": "$parent_id",
+                "connectFromField": "parent_id",
+                "connectToField": "_id",
+                "as": "ancestors",
+                "depthField": "level",
+                # Stop if hit the entity itself, no need to check further
+                "restrictSearchWithMatch": {"_id": {"$ne": CustomObjectId(entity_id)}},
+            }
+        },
+        # The following ensures that just a list of the parents containing only the parent_id's are returned
+        # in order from the top level down
+        {
+            "$facet": {
+                # Keep only these parameters
+                "root": [{"$project": {"parent_id": 1}}],
+                "ancestors": [
+                    {"$unwind": "$ancestors"},
+                    {
+                        "$sort": {
+                            "ancestors.level": -1,
+                        },
+                    },
+                    {"$replaceRoot": {"newRoot": "$ancestors"}},
+                    {"$project": {"parent_id": 1}},
+                ],
+            }
+        },
+        {"$project": {"result": {"$concatArrays": ["$ancestors", "$root"]}}},
+    ]
+
+
+def check_move_result(move_parent_check_result: list) -> bool:
+    """
+    Processes the result of running the query returned by create_move_check_aggregation_pipeline above
+
+    :param move_parent_check_result: Result of running the aggregation pipeline returned by
+                                     create_move_check_aggregation_pipeline
+    :return: True if the move is valid, False when the move destination is a child of the entity being moved
+    """
+    result = move_parent_check_result[0]["result"]
+    return len(result) > 0 and result[0]["parent_id"] == None

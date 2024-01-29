@@ -12,6 +12,7 @@ from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
     DuplicateRecordError,
+    InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
 )
@@ -135,6 +136,10 @@ def partial_update_system(
         message = "A System with the same name already exists within the parent System"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message)
 
 
 @router.delete(
