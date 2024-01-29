@@ -48,6 +48,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
     obsolete_replacement_catalogue_item_id: Optional[str] = Field(
         default=None, description="The ID of the catalogue item that replaces this catalogue item if obsolete"
     )
+    notes: Optional[str] = Field(default=None, description="Any notes about the catalogue item")
     properties: Optional[List[PropertyPostRequestSchema]] = Field(
         default=None,
         description="The properties specific to this catalogue item as defined in the corresponding "

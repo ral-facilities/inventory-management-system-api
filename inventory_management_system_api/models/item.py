@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator, AwareDatetim
 from inventory_management_system_api.models.catalogue_item import Property
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
+# pylint: disable=duplicate-code
+
 
 class ItemIn(BaseModel):
     """
@@ -41,6 +43,9 @@ class ItemIn(BaseModel):
         if properties is None:
             properties = []
         return properties
+
+
+# pylint: enable=duplicate-code
 
 
 class ItemOut(ItemIn):

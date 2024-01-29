@@ -65,6 +65,7 @@ CATALOGUE_ITEM_POST_A_EXPECTED = {
     "drawing_number": None,
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
+    "notes": None,
     "properties": [
         {"name": "Property A", "value": 20, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
@@ -81,6 +82,7 @@ CATALOGUE_ITEM_POST_B = {
     "days_to_rework": 3.0,
     "drawing_number": "789xyz",
     "is_obsolete": False,
+    "notes": "Some extra information",
     "properties": [{"name": "Property A", "value": True}],
 }
 # pylint: enable=duplicate-code
