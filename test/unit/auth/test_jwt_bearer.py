@@ -2,7 +2,7 @@
 Unit test for the `JWTBearer` class.
 """
 from unittest.mock import Mock, patch
-from test.conftest import VALID_ACCESS_TOKEN, EXPIRED_ACCESS_TOKEN
+from test.conftest import VALID_ACCESS_TOKEN, EXPIRED_ACCESS_TOKEN, INVALID_ACCESS_TOKEN
 
 import pytest
 from fastapi import Request, HTTPException
@@ -40,7 +40,7 @@ async def test_jwt_bearer_authorization_request_invalid_bearer_token(jwt_decode_
     Test `JWTBearer` with invalid access token.
     """
     jwt_decode_mock.side_effect = InvalidTokenError()
-    request_mock.headers = {"Authorization": "Bearer invalid"}
+    request_mock.headers = {"Authorization": f"Bearer {INVALID_ACCESS_TOKEN}"}
 
     jwt_bearer = JWTBearer()
 
