@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 End-to-End tests for the catalogue item router.
 """
@@ -185,6 +186,54 @@ def test_create_item_with_non_existent_system_id(test_client):
 
     assert response.status_code == 422
     assert response.json()["detail"] == "The specified system ID does not exist"
+
+
+def test_create_with_missing_existing_properties(test_client):
+    """Test creating an item when not all properties defined in the catalogue item are supplied"""
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "properties": [
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "25x10x5"},
+        ],
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 201
+
+    item = response.json()
+
+    assert item == {
+        **ITEM_POST_EXPECTED,
+        "properties": [
+            {"name": "Property A", "value": 20, "unit": "mm"},
+            {"name": "Property B", "unit": None, "value": False},
+            {"name": "Property C", "unit": "cm", "value": "25x10x5"},
+        ],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+    }
 
 
 def test_create_item_without_properties(test_client):
@@ -825,7 +874,7 @@ def test_partial_update_property_values(test_client):
 
 
 def test_partial_update_with_missing_existing_properties(test_client):
-    """Test updating a property when they are not all supplied"""
+    """Test updating an item when not all properties defined in the catalogue item are supplied"""
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
 
@@ -863,9 +912,9 @@ def test_partial_update_with_missing_existing_properties(test_client):
     assert item == {
         **ITEM_POST_EXPECTED,
         "properties": [
+            {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "unit": None, "value": False},
             {"name": "Property C", "unit": "cm", "value": "25x10x5"},
-            {"name": "Property A", "value": 20, "unit": "mm"},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
