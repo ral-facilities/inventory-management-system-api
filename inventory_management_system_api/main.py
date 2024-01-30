@@ -3,12 +3,13 @@ Main module contains the API entrypoint.
 """
 import logging
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.logger_setup import setup_logger
 from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system, manufacturer, item
@@ -62,11 +63,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(catalogue_category.router)
-app.include_router(catalogue_item.router)
-app.include_router(item.router)
-app.include_router(manufacturer.router)
-app.include_router(system.router)
+app.include_router(catalogue_category.router, dependencies=[Depends(JWTBearer())])
+app.include_router(catalogue_item.router, dependencies=[Depends(JWTBearer())])
+app.include_router(item.router, dependencies=[Depends(JWTBearer())])
+app.include_router(manufacturer.router, dependencies=[Depends(JWTBearer())])
+app.include_router(system.router, dependencies=[Depends(JWTBearer())])
 
 
 @app.get("/")
