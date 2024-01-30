@@ -113,7 +113,7 @@ def _validate_catalogue_item_property_value(
     :param defined_property: Definition of the property from the catalogue category
     :param supplied_property_name: Name of the supplied property
     :param supplied_property_value: Value of the supplied property
-    :raises InvalidCatalogueItemPropertyTypeError: If the suppplied property value is found to either be an
+    :raises InvalidCatalogueItemPropertyTypeError: If the supplied property value is found to either be an
                                                    invalid type, or not an allowed value
     """
 
