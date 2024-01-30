@@ -8,7 +8,7 @@ version = "0.0.1"
 dependencies = [
     "fastapi[all]==0.109.0",
     "pymongo==4.6.1",
-    "uvicorn==0.25.0"
+    "uvicorn==0.27.0"
 ]
 
 [project.urls]
