@@ -26,27 +26,12 @@ CATALOGUE_CATEGORY_POST_ALLOWED_VALUES = {
         },
     ],
 }
+
 CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     "id": ANY,
     "code": "category-allowed-values",
     "parent_id": None,
-    "catalogue_item_properties": [
-        {
-            "name": "Property A",
-            "type": "number",
-            "unit": "mm",
-            "mandatory": False,
-            "allowed_values": {"type": "list", "values": [2, 4, 6]},
-        },
-        {
-            "name": "Property B",
-            "type": "string",
-            "unit": None,
-            "mandatory": True,
-            "allowed_values": {"type": "list", "values": ["red", "green"]},
-        },
-    ],
 }
 
 # To be posted on CATALOGUE_CATEGORY_POST_ALLOWED_VALUES

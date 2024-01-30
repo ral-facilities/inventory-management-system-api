@@ -319,10 +319,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     )
 
     assert response.status_code == 422
-    assert (
-        response.json()["detail"][0]["msg"]
-        == "List should have at least 1 item after validation, not 0"
-    )
+    assert response.json()["detail"][0]["msg"] == "List should have at least 1 item after validation, not 0"
 
 
 def test_create_catalogue_category_with_properties_with_allowed_values(test_client):
@@ -1170,6 +1167,93 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
         "code": "category-a",
         "parent_id": None,
     }
+
+
+def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_allowed_values_list(test_client):
+    """
+    Test modifying catalogue item properties to have a list of allowed values
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        **catalogue_category_post,
+        **catalogue_category_patch,
+        "id": ANY,
+        "code": "category-b",
+        "parent_id": None,
+    }
+
+
+def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_invalid_allowed_values_list_number(
+    test_client,
+):
+    """
+    Test modifying catalogue item properties to have a number property containing an allowed_values list with an
+    invalid number
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, "4", 6]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
+
+
+def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_invalid_allowed_values_list_string(
+    test_client,
+):
+    """
+    Test modifying catalogue item properties to have a string property containing an allowed_values list with an
+    invalid string
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green", 6]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
 
 
 def test_partial_update_catalogue_category_change_catalogue_item_properties_has_child_catalogue_items(test_client):
