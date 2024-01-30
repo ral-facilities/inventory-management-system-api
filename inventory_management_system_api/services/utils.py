@@ -4,7 +4,7 @@ Collection of some utility functions used by services
 
 import logging
 import re
-from typing import Any, Dict, List, Union
+from typing import Dict, List, Union
 
 from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
@@ -103,16 +103,13 @@ def _add_catalogue_item_property_units(
         supplied_property["unit"] = defined_properties[supplied_property_name]["unit"]
 
 
-def _validate_catalogue_item_property_value(
-    defined_property: Dict, supplied_property_name: str, supplied_property_value: Any
-) -> None:
+def _validate_catalogue_item_property_value(defined_property: Dict, supplied_property: Dict) -> None:
     """
     Validates that a given property value a valid type and is within the defined allowed_values (if specified) and
     raises and error if it is not.
 
     :param defined_property: Definition of the property from the catalogue category
-    :param supplied_property_name: Name of the supplied property
-    :param supplied_property_value: Value of the supplied property
+    :param supplied_property: Supplied property dictionary
     :raises InvalidCatalogueItemPropertyTypeError: If the supplied property value is found to either be an
                                                    invalid type, or not an allowed value
     """
@@ -120,20 +117,22 @@ def _validate_catalogue_item_property_value(
     defined_type = defined_property["type"]
     defined_allowed_values = defined_property["allowed_values"]
 
+    supplied_property_name = supplied_property["name"]
+    supplied_property_value = supplied_property["value"]
+
     if not CatalogueItemPropertySchema.validate_property_type(defined_type, supplied_property_value):
         raise InvalidCatalogueItemPropertyTypeError(
             f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: {defined_type}."
         )
 
-    if defined_allowed_values is not None:
-        # Verify the given property is one of the allowed
-        if defined_allowed_values["type"] == "list":
-            values = defined_allowed_values["values"]
-            if supplied_property_value not in values:
-                raise InvalidCatalogueItemPropertyTypeError(
-                    f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of "
-                    f"{', '.join([str(value) for value in values])}."
-                )
+    # Verify the given property is one of the allowed based on the type of allowed_values defined
+    if defined_allowed_values is not None and defined_allowed_values["type"] == "list":
+        values = defined_allowed_values["values"]
+        if supplied_property_value not in values:
+            raise InvalidCatalogueItemPropertyTypeError(
+                f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of "
+                f"{', '.join([str(value) for value in values])}."
+            )
 
 
 def _validate_catalogue_item_property_values(
@@ -152,9 +151,7 @@ def _validate_catalogue_item_property_values(
     """
     logger.info("Validating the values of the supplied properties against the expected property types")
     for supplied_property_name, supplied_property in supplied_properties.items():
-        _validate_catalogue_item_property_value(
-            defined_properties[supplied_property_name], supplied_property_name, supplied_property["value"]
-        )
+        _validate_catalogue_item_property_value(defined_properties[supplied_property_name], supplied_property)
 
 
 def _check_missing_mandatory_catalogue_item_properties(

@@ -48,7 +48,7 @@ class CatalogueItemPropertySchema(BaseModel):
     )
 
     @classmethod
-    def validate_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> None:
+    def validate_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> bool:
         """
         Validates a given value has a type matching a CatalogueItemPropertyType and returns false if they don't
 
@@ -56,11 +56,14 @@ class CatalogueItemPropertySchema(BaseModel):
         :param property_value: Value of the property being checked
         :returns: Whether the value is valid or not
         """
-        return not (
-            (expected_property_type == CatalogueItemPropertyType.STRING and not isinstance(property_value, str))
-            or (expected_property_type == CatalogueItemPropertyType.NUMBER and not isinstance(property_value, Number))
-            or (expected_property_type == CatalogueItemPropertyType.BOOLEAN and not isinstance(property_value, bool))
-        )
+
+        if expected_property_type == CatalogueItemPropertyType.STRING:
+            return isinstance(property_value, str)
+        if expected_property_type == CatalogueItemPropertyType.NUMBER:
+            return isinstance(property_value, Number)
+        if expected_property_type == CatalogueItemPropertyType.BOOLEAN:
+            return isinstance(property_value, bool)
+        return False
 
     @field_validator("unit")
     @classmethod
@@ -89,7 +92,8 @@ class CatalogueItemPropertySchema(BaseModel):
         Validator for the `allowed_values` field.
 
         It checks if the `type` of the catalogue item property is a `boolean` and if `allowed_values` has been specified
-        and raises a `ValueError` if this is the case.
+        and raises a `ValueError` if this is the case. In the case the `allowed_values` is as `list` type, then also
+        verifies all of the values are of the same `type` and raises a ValueError if not.
 
         :param allowed_values: The value of the `allowed_values` field.
         :param info: Validation info from pydantic.
@@ -101,8 +105,9 @@ class CatalogueItemPropertySchema(BaseModel):
                 raise ValueError(
                     f"allowed_values not allowed for a boolean catalogue item property '{info.data['name']}'"
                 )
-            # Ensure the allowed values have the correct type
+            # Check the type of allowed_values being used and validate them appropriately
             if isinstance(allowed_values, AllowedValuesListSchema):
+                # List type should have all values the same type
                 for allowed_value in allowed_values.values:
                     if not CatalogueItemPropertySchema.validate_property_type(
                         expected_property_type=info.data["type"], property_value=allowed_value
