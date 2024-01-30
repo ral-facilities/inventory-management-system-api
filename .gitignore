@@ -3,6 +3,7 @@
 mongodb/data/*
 !mongodb/data/.keep
 inventory_management_system_api/logging.ini
+/keys/jwt-key.pub
 
 
 # Byte-compiled / optimized / DLL files
