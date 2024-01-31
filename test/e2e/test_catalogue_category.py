@@ -2,7 +2,12 @@
 """
 End-to-End tests for the catalogue category router.
 """
+from test.e2e.mock_schemas import (
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED,
+)
 from unittest.mock import ANY
+
 from bson import ObjectId
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
@@ -30,8 +35,8 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     "id": ANY,
     "code": "category-b",
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
 }
 
@@ -50,8 +55,8 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     "code": "category-c",
     "parent_id": None,
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
 }
 
@@ -292,6 +297,146 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
     assert response.status_code == 201
     catalogue_category = response.json()
     assert catalogue_category == CATALOGUE_CATEGORY_POST_A_EXPECTED
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_length(test_client):
+    """
+    Test creating a catalogue category with a number property containing an allowed_values list that is empty
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "number",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": []},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["msg"] == "List should have at least 1 item after validation, not 0"
+
+
+def test_create_catalogue_category_with_properties_with_allowed_values(test_client):
+    """
+    Test creating a catalogue category with specific allowed values given
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
+
+    assert response.status_code == 201
+    catalogue_category = response.json()
+    assert catalogue_category == CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_number(test_client):
+    """
+    Test creating a catalogue category with a number property containing an allowed_values list with an invalid
+    number
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "number",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": [2, "4", 6]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_string(test_client):
+    """
+    Test creating a catalogue category with a string property containing an allowed_values list with an invalid
+    string
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "string",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": ["red", "green", 6]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_boolean(test_client):
+    """
+    Test creating a catalogue category with a boolean property containing an allowed_values list
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "boolean",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": ["red", "green"]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values not allowed for a boolean catalogue item property 'Property A'"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_type(test_client):
+    """
+    Test creating a catalogue category with a property containing allowed_values with an invalid type
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "string",
+                    "mandatory": False,
+                    "allowed_values": {"type": "string"},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Input tag 'string' found using 'type' does not match any of the expected tags: 'list'"
+    )
 
 
 def test_delete_catalogue_category(test_client):
@@ -631,7 +776,9 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
 
     catalogue_category_patch = {
         "is_leaf": True,
-        "catalogue_item_properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None}
+        ],
     }
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
@@ -777,7 +924,9 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
         "name": "Category B",
         "is_leaf": True,
         "parent_id": catalogue_category_a_id,
-        "catalogue_item_properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None}
+        ],
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_b_id = response.json()["id"]
@@ -948,7 +1097,9 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     """
     Test adding a catalogue item property.
     """
-    catalogue_item_properties = [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}]
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None}
+    ]
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
@@ -956,7 +1107,9 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties.append({"name": "Property B", "type": "boolean", "mandatory": True})
+    catalogue_item_properties.append(
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None}
+    )
     catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
@@ -976,8 +1129,8 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     Test removing a catalogue item property.
     """
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None},
     ]
     catalogue_category_post = {
         "name": "Category A",
@@ -1006,8 +1159,8 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     Test modifying a catalogue item property.
     """
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None},
     ]
     catalogue_category_post = {
         "name": "Category A",
@@ -1029,6 +1182,93 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
         "code": "category-a",
         "parent_id": None,
     }
+
+
+def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_allowed_values_list(test_client):
+    """
+    Test modifying catalogue item properties to have a list of allowed values
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        **catalogue_category_post,
+        **catalogue_category_patch,
+        "id": ANY,
+        "code": "category-b",
+        "parent_id": None,
+    }
+
+
+def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_invalid_allowed_values_list_number(
+    test_client,
+):
+    """
+    Test modifying catalogue item properties to have a number property containing an allowed_values list with an
+    invalid number
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, "4", 6]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
+
+
+def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_invalid_allowed_values_list_string(
+    test_client,
+):
+    """
+    Test modifying catalogue item properties to have a string property containing an allowed_values list with an
+    invalid string
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green", 6]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values must only contain values of the same type as the property itself"
+    )
 
 
 def test_partial_update_catalogue_category_change_catalogue_item_properties_has_child_catalogue_items(test_client):

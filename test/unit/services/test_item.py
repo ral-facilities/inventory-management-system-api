@@ -541,7 +541,7 @@ def test_update_with_missing_existing_properties(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": FULL_ITEM_INFO["properties"][-2:] + [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]],
+        "properties": [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]] + FULL_ITEM_INFO["properties"][-2:],
     }
 
     item = ItemOut(
