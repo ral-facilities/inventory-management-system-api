@@ -75,15 +75,8 @@ class ItemService:
             raise DatabaseIntegrityError(str(exc)) from exc
 
         supplied_properties = item.properties if item.properties else []
-        missing_supplied_properties = self._find_missing_supplied_properties(
-            catalogue_item.properties, supplied_properties
-        )
-        # Inherit the missing properties from the corresponding catalogue item. Create `PropertyPostRequestSchema`
-        # objects for the inherited properties and add them to the `supplied_properties` list before proceeding with
-        # processing and validation.
-        supplied_properties.extend(
-            [PropertyPostRequestSchema(**prop.model_dump()) for prop in missing_supplied_properties]
-        )
+        # Inherit the missing properties from the corresponding catalogue item
+        supplied_properties = self._merge_missing_properties(catalogue_item.properties, supplied_properties)
 
         defined_properties = catalogue_category.catalogue_item_properties
         properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
@@ -168,37 +161,36 @@ class ItemService:
                 raise DatabaseIntegrityError(str(exc)) from exc
 
             defined_properties = catalogue_category.catalogue_item_properties
-            supplied_properties = item.properties
-            missing_supplied_properties = self._find_missing_supplied_properties(
-                catalogue_item.properties, supplied_properties
-            )
-            # Inherit the missing properties from the corresponding catalogue item. Create `PropertyPostRequestSchema`
-            # objects for the inherited properties and add them to the `supplied_properties` list before proceeding with
-            # processing and validation.
-            supplied_properties.extend(
-                [PropertyPostRequestSchema(**prop.model_dump()) for prop in missing_supplied_properties]
-            )
+
+            # Inherit the missing properties from the corresponding catalogue item
+            supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
 
             update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
-    def _find_missing_supplied_properties(
+    def _merge_missing_properties(
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
-    ) -> List[Property]:
+    ) -> List[PropertyPostRequestSchema]:
         """
-        Find the properties that have not been supplied. If a property is part of the corresponding catalogue item but
-        not part of the supplied properties, it means that it is missing.
+        Merge the properties defined in a catalogue item with those that should be overriden for an item in
+        the order they are defined in the catalogue item.
 
         :param catalogue_item_properties: The list of property objects from the catalogue item.
         :param supplied_properties: The list of supplied property objects specific to the item.
-        :return: A list of properties that are have not been supplied.
+        :return: A merged list of properties for the item
         """
-        supplied_property_names = [supplied_property.name for supplied_property in supplied_properties]
+        supplied_properties_dict = {
+            supplied_property.name: supplied_property for supplied_property in supplied_properties
+        }
+        properties: List[PropertyPostRequestSchema] = []
 
-        missing_supplied_properties = []
+        # Use the order of properties from the catalogue item, and append either the supplied property or
+        # the catalogue item one where it is not found
         for catalogue_item_property in catalogue_item_properties:
-            if catalogue_item_property.name not in supplied_property_names:
-                missing_supplied_properties.append(catalogue_item_property)
-
-        return missing_supplied_properties
+            supplied_property = supplied_properties_dict.get(catalogue_item_property.name)
+            if supplied_property is not None:
+                properties.append(supplied_property)
+            else:
+                properties.append(PropertyPostRequestSchema(**catalogue_item_property.model_dump()))
+        return properties

@@ -47,6 +47,7 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "is_obsolete": False,
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
+    "notes": None,
     "properties": [
         {"name": "Property A", "value": 20, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
@@ -540,7 +541,7 @@ def test_update_with_missing_existing_properties(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": FULL_ITEM_INFO["properties"][-2:] + [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]],
+        "properties": [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]] + FULL_ITEM_INFO["properties"][-2:],
     }
 
     item = ItemOut(
