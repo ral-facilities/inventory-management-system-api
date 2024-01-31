@@ -903,7 +903,7 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, catalogue_cat
     # Mock utils so not moving to a child of itself
     mock_aggregation_pipeline = MagicMock()
     utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    utils_mock.check_move_result.return_value = True
+    utils_mock.is_valid_move_result.return_value = True
     database_mock.catalogue_categories.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
 
     catalogue_category_in = CatalogueCategoryIn(**{**CATALOGUE_CATEGORY_INFO, "parent_id": new_parent_id})
@@ -912,7 +912,7 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, catalogue_cat
     utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
         entity_id=catalogue_category.id, destination_id=new_parent_id, collection_name="catalogue_categories"
     )
-    utils_mock.check_move_result.assert_called_once()
+    utils_mock.is_valid_move_result.assert_called_once()
 
     database_mock.catalogue_categories.update_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.id)},
@@ -969,7 +969,7 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     # Mock utils so not moving to a child of itself
     mock_aggregation_pipeline = MagicMock()
     utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    utils_mock.check_move_result.return_value = False
+    utils_mock.is_valid_move_result.return_value = False
     database_mock.catalogue_categories.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
 
     catalogue_category_in = CatalogueCategoryIn(**{**CATALOGUE_CATEGORY_INFO, "parent_id": new_parent_id})
@@ -981,7 +981,7 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
         entity_id=catalogue_category.id, destination_id=new_parent_id, collection_name="catalogue_categories"
     )
-    utils_mock.check_move_result.assert_called_once()
+    utils_mock.is_valid_move_result.assert_called_once()
 
     database_mock.catalogue_categories.update_one.assert_not_called()
     database_mock.catalogue_categories.find_one.assert_has_calls(

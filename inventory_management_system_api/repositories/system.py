@@ -115,6 +115,7 @@ class SystemRepo:
         :return: The updated System
         :raises MissingRecordError: If the parent System specified by `parent_id` doesn't exist
         :raises DuplicateRecordError: If a duplicate System is found within the parent System
+        :raises InvalidActionError: If attempting to change the `parent_id` to one of its own child system ids
         """
         system_id = CustomObjectId(system_id)
 
@@ -129,7 +130,7 @@ class SystemRepo:
 
         # Prevent a system from being moved to one of its own children
         if moving_system:
-            if parent_id is not None and not utils.check_move_result(
+            if parent_id is not None and not utils.is_valid_move_result(
                 list(
                     self._systems_collection.aggregate(
                         utils.create_move_check_aggregation_pipeline(

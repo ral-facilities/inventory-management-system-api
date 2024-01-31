@@ -378,7 +378,7 @@ def test_update(utils_mock, test_helpers, database_mock, system_repository):
     updated_system = system_repository.update(system.id, system_in)
 
     utils_mock.create_breadcrumbs_aggregation_pipeline.assert_not_called()
-    utils_mock.check_move_result.assert_not_called()
+    utils_mock.is_valid_move_result.assert_not_called()
 
     database_mock.systems.update_one.assert_called_once_with(
         {
@@ -438,7 +438,7 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
     # Mock utils so not moving to a child of itself
     mock_aggregation_pipeline = MagicMock()
     utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    utils_mock.check_move_result.return_value = True
+    utils_mock.is_valid_move_result.return_value = True
     database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
 
     system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id})
@@ -447,7 +447,7 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
     utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
         entity_id=system.id, destination_id=new_parent_id, collection_name="systems"
     )
-    utils_mock.check_move_result.assert_called_once()
+    utils_mock.is_valid_move_result.assert_called_once()
 
     database_mock.systems.update_one.assert_called_once_with(
         {
@@ -509,7 +509,7 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     # Mock utils so moving to a child of itself
     mock_aggregation_pipeline = MagicMock()
     utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    utils_mock.check_move_result.return_value = False
+    utils_mock.is_valid_move_result.return_value = False
     database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_INVALID
 
     system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id})
@@ -521,7 +521,7 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
         entity_id=system.id, destination_id=new_parent_id, collection_name="systems"
     )
-    utils_mock.check_move_result.assert_called_once()
+    utils_mock.is_valid_move_result.assert_called_once()
 
     database_mock.systems.update_one.assert_not_called()
     database_mock.systems.find_one.assert_has_calls(

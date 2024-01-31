@@ -133,6 +133,8 @@ class CatalogueCategoryRepo:
         :return: The updated catalogue category.
         :raises MissingRecordError: If the parent catalogue category specified by `parent_id` doesn't exist.
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
+        :raises InvalidActionError: If attempting to change the `parent_id` to one of its own child catalogue category
+                                    ids.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
 
@@ -149,7 +151,7 @@ class CatalogueCategoryRepo:
 
         # Prevent a catalogue category from being moved to one of its own children
         if moving_catalogue_category:
-            if parent_id is not None and not utils.check_move_result(
+            if parent_id is not None and not utils.is_valid_move_result(
                 list(
                     self._catalogue_categories_collection.aggregate(
                         utils.create_move_check_aggregation_pipeline(

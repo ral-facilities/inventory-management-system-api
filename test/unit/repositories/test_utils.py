@@ -179,17 +179,17 @@ class TestCreateMoveCheckAggregationPipeline:
         assert str(exc.value) == f"Invalid ObjectId value '{destination_id}'"
 
 
-class TestCheckMoveResult:
-    """Test check_move_result functions correctly"""
+class TestIsValidMoveResult:
+    """Test is_valid_move_result functions correctly"""
 
-    def test_check_move_result_when_valid(self):
+    def test_is_valid_move_result_when_valid(self):
         """Test compute_breadcrumbs functions correctly when the result is valid"""
-        assert utils.check_move_result(MOCK_MOVE_QUERY_RESULT_VALID) is True
+        assert utils.is_valid_move_result(MOCK_MOVE_QUERY_RESULT_VALID) is True
 
-    def test_check_move_result_when_invalid(self):
+    def test_is_valid_move_result_when_invalid(self):
         """Test compute_breadcrumbs functions correctly when the result is invalid"""
-        assert utils.check_move_result(MOCK_MOVE_QUERY_RESULT_INVALID) is False
+        assert utils.is_valid_move_result(MOCK_MOVE_QUERY_RESULT_INVALID) is False
 
-    def test_check_when_entity_not_found(self):
+    def test_is_valid_move_result_when_entity_not_found(self):
         """Test compute_breadcrumbs functions correctly when the entity ID doesnt exist in the database to begin with"""
-        assert utils.check_move_result(MOCK_MOVE_QUERY_RESULT_NON_EXISTENT_ID) is False
+        assert utils.is_valid_move_result(MOCK_MOVE_QUERY_RESULT_NON_EXISTENT_ID) is False

@@ -48,7 +48,7 @@ class CatalogueItemPropertySchema(BaseModel):
     )
 
     @classmethod
-    def validate_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> bool:
+    def is_valid_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> bool:
         """
         Validates a given value has a type matching a CatalogueItemPropertyType and returns false if they don't
 
@@ -109,7 +109,7 @@ class CatalogueItemPropertySchema(BaseModel):
             if isinstance(allowed_values, AllowedValuesListSchema):
                 # List type should have all values the same type
                 for allowed_value in allowed_values.values:
-                    if not CatalogueItemPropertySchema.validate_property_type(
+                    if not CatalogueItemPropertySchema.is_valid_property_type(
                         expected_property_type=info.data["type"], property_value=allowed_value
                     ):
                         raise ValueError(

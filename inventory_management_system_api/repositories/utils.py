@@ -132,7 +132,7 @@ def create_move_check_aggregation_pipeline(entity_id: str, destination_id: str, 
 
     :raises InvalidObjectIdError: If the given entity_id or destination_id is invalid
     :return: The query to feed to the collection's aggregate method. The value of list(result) should
-             be passed to check_move_result below.
+             be passed to is_valid_move_result below.
     """
     return [
         {"$match": {"_id": CustomObjectId(destination_id)}},
@@ -170,9 +170,10 @@ def create_move_check_aggregation_pipeline(entity_id: str, destination_id: str, 
     ]
 
 
-def check_move_result(move_parent_check_result: list) -> bool:
+def is_valid_move_result(move_parent_check_result: list) -> bool:
     """
-    Processes the result of running the query returned by create_move_check_aggregation_pipeline above
+    Processes the result of running the query returned by create_move_check_aggregation_pipeline above and returns
+    whether it represents a valid move
 
     :param move_parent_check_result: Result of running the aggregation pipeline returned by
                                      create_move_check_aggregation_pipeline
