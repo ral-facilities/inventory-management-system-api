@@ -2,8 +2,10 @@
 Module for the overall configuration for the application.
 """
 from pathlib import Path
+from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
 
@@ -22,8 +24,27 @@ class AuthenticationConfig(BaseModel):
     Configuration model for the JWT access token authentication/authorization.
     """
 
-    public_key_path: str
-    jwt_algorithm: str
+    enabled: bool = False
+    public_key_path: Optional[str] = Field(default=None, validate_default=True)
+    jwt_algorithm: Optional[str] = Field(default=None, validate_default=True)
+
+    @field_validator("public_key_path", "jwt_algorithm")
+    @classmethod
+    def validate_unit(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
+        """
+        Validator for the `public_key_path` and `jwt_algorithm` fields to make them mandatory if the value of the
+        `enabled` is `True`
+
+        It checks if the `enabled` field has been set to `True` and raises a `TypeError` if this is the case.
+
+        :param field_value: The value of the field.
+        :param info: Validation info from pydantic.
+        :return: The value of the field.
+        :raises ValueError: If `unit` is provided when `type` is set to `boolean`.
+        """
+        if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
+            raise ValueError("Field required")
+        return field_value
 
 
 class DatabaseConfig(BaseModel):

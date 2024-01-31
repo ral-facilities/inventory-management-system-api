@@ -9,10 +9,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.logger_setup import setup_logger
 from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system, manufacturer, item
+if config.authentication.enabled:
+    from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
 
@@ -52,7 +53,20 @@ async def custom_validation_exception_handler(request: Request, exc: RequestVali
     return await request_validation_exception_handler(request, exc)
 
 
-# Fixes CORS issues but should be updated before deploying to prod
+def get_router_dependencies() -> list:
+    """
+    Get the list of dependencies for the API routers.
+    :return: List of dependencies
+    """
+    dependencies = []
+    # Include the `JWTBearer` as a dependency if authentication is enabled
+    if config.authentication.enabled is True:
+        dependencies.append(Depends(JWTBearer()))
+    return dependencies
+
+
+# pylint: disable=W0511
+# TODO: Fixes CORS issues but should be updated before deploying to prod
 ALLOWED_ORIGINS = ["*"]
 
 app.add_middleware(
@@ -63,11 +77,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(catalogue_category.router, dependencies=[Depends(JWTBearer())])
-app.include_router(catalogue_item.router, dependencies=[Depends(JWTBearer())])
-app.include_router(item.router, dependencies=[Depends(JWTBearer())])
-app.include_router(manufacturer.router, dependencies=[Depends(JWTBearer())])
-app.include_router(system.router, dependencies=[Depends(JWTBearer())])
+router_dependencies = get_router_dependencies()
+
+app.include_router(catalogue_category.router, dependencies=router_dependencies)
+app.include_router(catalogue_item.router, dependencies=router_dependencies)
+app.include_router(item.router, dependencies=router_dependencies)
+app.include_router(manufacturer.router, dependencies=router_dependencies)
+app.include_router(system.router, dependencies=router_dependencies)
 
 
 @app.get("/")

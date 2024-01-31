@@ -10,9 +10,10 @@ from inventory_management_system_api.core.config import config
 # parents
 BREADCRUMBS_TRAIL_MAX_LENGTH: int = 5
 
-# Read the content of the public key file into a constant. This is used for decoding of JWT access tokens.
-try:
-    with open(config.authentication.public_key_path, "r", encoding="utf-8") as f:
-        PUBLIC_KEY = f.read()
-except FileNotFoundError as exc:
-    sys.exit(f"Cannot find public key: {exc}")
+if config.authentication.enabled:
+    # Read the content of the public key file into a constant. This is used for decoding of JWT access tokens.
+    try:
+        with open(config.authentication.public_key_path, "r", encoding="utf-8") as f:
+            PUBLIC_KEY = f.read()
+    except FileNotFoundError as exc:
+        sys.exit(f"Cannot find public key: {exc}")
