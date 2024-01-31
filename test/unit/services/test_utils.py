@@ -4,10 +4,13 @@ Unit tests for the `utils` in /services.
 import pytest
 
 from inventory_management_system_api.core.exceptions import (
-    MissingMandatoryCatalogueItemProperty,
     InvalidCatalogueItemPropertyTypeError,
+    MissingMandatoryCatalogueItemProperty,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueItemProperty
+from inventory_management_system_api.models.catalogue_category import (
+    AllowedValues,
+    CatalogueItemProperty,
+)
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 from inventory_management_system_api.services import utils
 
@@ -15,18 +18,35 @@ DEFINED_PROPERTIES = [
     CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
     CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
     CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
+    CatalogueItemProperty(
+        name="Property D",
+        type="number",
+        unit="mm",
+        mandatory=True,
+        allowed_values=AllowedValues(type="list", values=[2, 4, 6]),
+    ),
+    CatalogueItemProperty(
+        name="Property E",
+        type="string",
+        mandatory=False,
+        allowed_values=AllowedValues(type="list", values=["red", "green"]),
+    ),
 ]
 
 SUPPLIED_PROPERTIES = [
     PropertyPostRequestSchema(name="Property A", value=20),
     PropertyPostRequestSchema(name="Property B", value=False),
     PropertyPostRequestSchema(name="Property C", value="20x15x10"),
+    PropertyPostRequestSchema(name="Property D", value=2),
+    PropertyPostRequestSchema(name="Property E", value="red"),
 ]
 
 EXPECTED_PROCESSED_PROPERTIES = [
     {"name": "Property A", "value": 20, "unit": "mm"},
     {"name": "Property B", "value": False, "unit": None},
     {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+    {"name": "Property D", "value": 2, "unit": "mm"},
+    {"name": "Property E", "value": "red", "unit": None},
 ]
 
 
@@ -54,14 +74,14 @@ class TestProcessCatalogueItemProperties:
         """
         Test `process_catalogue_item_properties` works correctly with missing non-mandatory properties.
         """
-        result = utils.process_catalogue_item_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES[-2:])
-        assert result == EXPECTED_PROCESSED_PROPERTIES[-2:]
+        result = utils.process_catalogue_item_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES[1:4])
+        assert result == EXPECTED_PROCESSED_PROPERTIES[1:4]
 
     def test_process_catalogue_item_properties_with_undefined_properties(self):
         """
         Test `process_catalogue_item_properties` works correctly with supplied properties that have not been defined.
         """
-        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostRequestSchema(name="Property D", value=1)]
+        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostRequestSchema(name="Property F", value=1)]
         result = utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
         assert result == EXPECTED_PROCESSED_PROPERTIES
 
@@ -88,6 +108,8 @@ class TestProcessCatalogueItemProperties:
             PropertyPostRequestSchema(name="Property A", value=20),
             PropertyPostRequestSchema(name="Property B", value=False),
             PropertyPostRequestSchema(name="Property C", value=True),
+            PropertyPostRequestSchema(name="Property D", value=2),
+            PropertyPostRequestSchema(name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
@@ -106,6 +128,8 @@ class TestProcessCatalogueItemProperties:
             PropertyPostRequestSchema(name="Property A", value="20"),
             PropertyPostRequestSchema(name="Property B", value=False),
             PropertyPostRequestSchema(name="Property C", value="20x15x10"),
+            PropertyPostRequestSchema(name="Property D", value=2),
+            PropertyPostRequestSchema(name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
@@ -124,6 +148,8 @@ class TestProcessCatalogueItemProperties:
             PropertyPostRequestSchema(name="Property A", value=20),
             PropertyPostRequestSchema(name="Property B", value="False"),
             PropertyPostRequestSchema(name="Property C", value="20x15x10"),
+            PropertyPostRequestSchema(name="Property D", value=2),
+            PropertyPostRequestSchema(name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
@@ -131,4 +157,44 @@ class TestProcessCatalogueItemProperties:
         assert (
             str(exc.value) == f"Invalid value type for catalogue item property '{supplied_properties[1].name}'. "
             "Expected type: boolean."
+        )
+
+    def test_process_catalogue_item_properties_with_invalid_allowed_value_list_number(self):
+        """
+        Test `process_catalogue_item_properties` works correctly when given an invalid value for a number catalogue
+        item property with a specific list of allowed values
+        """
+        supplied_properties = [
+            PropertyPostRequestSchema(name="Property A", value=20),
+            PropertyPostRequestSchema(name="Property B", value=False),
+            PropertyPostRequestSchema(name="Property C", value="20x15x10"),
+            PropertyPostRequestSchema(name="Property D", value=10),
+            PropertyPostRequestSchema(name="Property E", value="red"),
+        ]
+
+        with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
+            utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
+        assert (
+            str(exc.value) == f"Invalid value for catalogue item property '{supplied_properties[3].name}'. "
+            "Expected one of 2, 4, 6."
+        )
+
+    def test_process_catalogue_item_properties_with_invalid_allowed_value_list_string(self):
+        """
+        Test `process_catalogue_item_properties` works correctly when given an invalid value for a string catalogue
+        item property with a specific list of allowed values
+        """
+        supplied_properties = [
+            PropertyPostRequestSchema(name="Property A", value=20),
+            PropertyPostRequestSchema(name="Property B", value=False),
+            PropertyPostRequestSchema(name="Property C", value="20x15x10"),
+            PropertyPostRequestSchema(name="Property D", value=4),
+            PropertyPostRequestSchema(name="Property E", value="invalid"),
+        ]
+
+        with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
+            utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
+        assert (
+            str(exc.value) == f"Invalid value for catalogue item property '{supplied_properties[4].name}'. "
+            "Expected one of red, green."
         )

@@ -1,11 +1,24 @@
 """
 Module for defining the database models for representing catalogue categories.
 """
-from typing import List, Optional, Any
+from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+
+
+class AllowedValuesList(BaseModel):
+    """
+    Model representing a list of allowed values for a catalogue item property
+    """
+
+    type: Literal["list"]
+    values: List[Any]
+
+
+# Use discriminated union for any additional types of allowed values (so can use Pydantic's validation)
+AllowedValues = Annotated[AllowedValuesList, Field(discriminator="type")]
 
 
 class CatalogueItemProperty(BaseModel):
@@ -17,6 +30,7 @@ class CatalogueItemProperty(BaseModel):
     type: str
     unit: Optional[str] = None
     mandatory: bool
+    allowed_values: Optional[AllowedValues] = None
 
 
 class CatalogueCategoryIn(BaseModel):
