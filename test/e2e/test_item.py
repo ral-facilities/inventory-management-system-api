@@ -242,6 +242,91 @@ def test_create_with_missing_existing_properties(test_client):
     }
 
 
+def test_create_with_mandatory_properties_given_none(test_client):
+    """Test creating an item when a mandatory property is given a value of None"""
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "properties": [
+            {"name": "Property B", "value": None},
+            {"name": "Property C", "value": None},
+        ],
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Mandatory catalogue item property 'Property B' cannot be None."
+
+
+def test_create_with_non_mandatory_properties_given_none(test_client):
+    """Test creating an item when non-mandatory properties are given a value of None"""
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "properties": [
+            {"name": "Property A", "value": None},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "25x10x5"},
+            {"name": "Property D", "value": None},
+        ],
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 201
+    item = response.json()
+    assert item == {
+        **ITEM_POST_EXPECTED,
+        "properties": [
+            {"name": "Property A", "unit": "mm", "value": None},
+            {"name": "Property B", "unit": None, "value": False},
+            {"name": "Property C", "unit": "cm", "value": "25x10x5"},
+            {"name": "Property D", "unit": None, "value": None},
+        ],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+    }
+
+
 def test_create_item_without_properties(test_client):
     """
     Testing creating an item without properties.
@@ -975,6 +1060,97 @@ def test_partial_update_property_values(test_client):
     assert item == {
         **ITEM_POST_EXPECTED,
         "properties": [{"name": "Property A", "value": 12, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+    }
+
+
+def test_partial_update_property_values_with_mandatory_properties_given_none(test_client):
+    """
+    Test updating a item's mandatory properties to have a value of None
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {
+        "properties": [
+            {"name": "Property B", "value": None},
+            {"name": "Property C", "value": None},
+        ],
+    }
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Mandatory catalogue item property 'Property B' cannot be None."
+
+
+def test_partial_update_property_values_with_non_mandatory_properties_given_none(test_client):
+    """
+    Test updating a item's mandatory properties to have a value of None
+    """
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {
+        "properties": [
+            {"name": "Property A", "value": None},
+            {"name": "Property B", "value": False},
+            {"name": "Property C", "value": "20x15x10"},
+            {"name": "Property D", "value": None},
+        ],
+    }
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 200
+
+    item = response.json()
+
+    assert item == {
+        **ITEM_POST_EXPECTED,
+        "properties": [
+            {"name": "Property A", "unit": "mm", "value": None},
+            {"name": "Property B", "unit": None, "value": False},
+            {"name": "Property C", "unit": "cm", "value": "25x10x5"},
+            {"name": "Property D", "unit": None, "value": None},
+        ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
     }
