@@ -3,7 +3,11 @@ Unit tests for the `SystemRepo` repository
 """
 
 
-from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+from test.unit.repositories.test_utils import (
+    MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
+    MOCK_MOVE_QUERY_RESULT_INVALID,
+    MOCK_MOVE_QUERY_RESULT_VALID,
+)
 from typing import Optional
 from unittest.mock import MagicMock, call, patch
 
@@ -14,6 +18,7 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateRecordError,
+    InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
 )
@@ -272,7 +277,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
 
     mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
     mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
-    database_mock.systems.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+    database_mock.systems.aggregate.return_value = MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 
     retrieved_breadcrumbs = system_repository.get_breadcrumbs(system_id)
 
@@ -280,7 +285,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
         entity_id=system_id, collection_name="systems"
     )
     mock_utils.compute_breadcrumbs.assert_called_once_with(
-        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
+        list(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
         entity_id=system_id,
         collection_name="systems",
     )
@@ -348,7 +353,8 @@ def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_update(test_helpers, database_mock, system_repository):
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update(utils_mock, test_helpers, database_mock, system_repository):
     """
     Test updating a System
 
@@ -356,13 +362,10 @@ def test_update(test_helpers, database_mock, system_repository):
     """
     system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO)
 
-    # Mock `find_one` to return a System document
+    # Mock `find_one` to return the stored System document
     test_helpers.mock_find_one(
         database_mock.systems,
-        {
-            **SYSTEM_A_INFO,
-            "_id": CustomObjectId(system.id),
-        },
+        system.model_dump(),
     )
 
     # Mock `update_one` to return an object for the updated System document
@@ -371,11 +374,11 @@ def test_update(test_helpers, database_mock, system_repository):
     # Mock `find_one` to return the updated System document
     test_helpers.mock_find_one(database_mock.systems, {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id)})
 
-    # Mock `find_one` to not return a parent System document
-    test_helpers.mock_find_one(database_mock.systems, None)
-
     system_in = SystemIn(**SYSTEM_A_INFO)
     updated_system = system_repository.update(system.id, system_in)
+
+    utils_mock.create_breadcrumbs_aggregation_pipeline.assert_not_called()
+    utils_mock.is_valid_move_result.assert_not_called()
 
     database_mock.systems.update_one.assert_called_once_with(
         {
@@ -394,6 +397,140 @@ def test_update(test_helpers, database_mock, system_repository):
         ]
     )
     assert updated_system == system
+
+
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update_parent_id(utils_mock, test_helpers, database_mock, system_repository):
+    """
+    Test updating a System's parent_id
+
+    Verify that the `update` method properly handles the update of a System when the parent id changes
+    """
+    parent_system_id = str(ObjectId())
+    system = SystemOut(id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id})
+    new_parent_id = str(ObjectId())
+    expected_system = SystemOut(**{**system.model_dump(), "parent_id": new_parent_id})
+
+    # Mock `find_one` to return a parent System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            **SYSTEM_B_INFO,
+            "_id": CustomObjectId(new_parent_id),
+        },
+    )
+
+    # Mock `find_one` to return the stored System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        system.model_dump(),
+    )
+    # Mock `find_one` to return no duplicate systems found
+    test_helpers.mock_find_one(database_mock.systems, None)
+    # Mock `update_one` to return an object for the updated System document
+    test_helpers.mock_update_one(database_mock.systems)
+    # Mock `find_one` to return the updated System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {**system.model_dump(), "parent_id": CustomObjectId(new_parent_id)},
+    )
+
+    # Mock utils so not moving to a child of itself
+    mock_aggregation_pipeline = MagicMock()
+    utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    utils_mock.is_valid_move_result.return_value = True
+    database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
+
+    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id})
+    updated_system = system_repository.update(system.id, system_in)
+
+    utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
+        entity_id=system.id, destination_id=new_parent_id, collection_name="systems"
+    )
+    utils_mock.is_valid_move_result.assert_called_once()
+
+    database_mock.systems.update_one.assert_called_once_with(
+        {
+            "_id": CustomObjectId(system.id),
+        },
+        {
+            "$set": {
+                **system_in.model_dump(),
+            },
+        },
+    )
+    database_mock.systems.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(new_parent_id)}),
+            call({"_id": CustomObjectId(system.id)}),
+            call({"parent_id": CustomObjectId(new_parent_id), "code": system.code}),
+            call({"_id": CustomObjectId(system.id)}),
+        ]
+    )
+    assert updated_system == expected_system
+
+
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_mock, system_repository):
+    """
+    Test updating a System's parent_id when moving to a child of itself
+
+    Verify that the `update` method properly handles the update of a System when the new parent_id
+    is a child of itself
+    """
+    parent_system_id = str(ObjectId())
+    system = SystemOut(id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id})
+    new_parent_id = str(ObjectId())
+
+    # Mock `find_one` to return a parent System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {
+            **SYSTEM_B_INFO,
+            "_id": CustomObjectId(new_parent_id),
+        },
+    )
+
+    # Mock `find_one` to return the stored System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        system.model_dump(),
+    )
+    # Mock `find_one` to return no duplicates found
+    test_helpers.mock_find_one(database_mock.systems, None)
+    # Mock `update_one` to return an object for the updated System document
+    test_helpers.mock_update_one(database_mock.systems)
+    # Mock `find_one` to return the updated System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id), "parent_id": CustomObjectId(new_parent_id)},
+    )
+
+    # Mock utils so moving to a child of itself
+    mock_aggregation_pipeline = MagicMock()
+    utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    utils_mock.is_valid_move_result.return_value = False
+    database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_INVALID
+
+    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id})
+
+    with pytest.raises(InvalidActionError) as exc:
+        system_repository.update(system.id, system_in)
+    assert str(exc.value) == "Cannot move a system to one of its own children"
+
+    utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
+        entity_id=system.id, destination_id=new_parent_id, collection_name="systems"
+    )
+    utils_mock.is_valid_move_result.assert_called_once()
+
+    database_mock.systems.update_one.assert_not_called()
+    database_mock.systems.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(new_parent_id)}),
+            call({"_id": CustomObjectId(system.id)}),
+            call({"parent_id": CustomObjectId(new_parent_id), "code": system.code}),
+        ]
+    )
 
 
 def test_update_with_invalid_id(database_mock, system_repository):
