@@ -31,7 +31,7 @@ class AuthenticationConfig(BaseModel):
 
     @field_validator("public_key_path", "jwt_algorithm")
     @classmethod
-    def validate_unit(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
+    def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
         """
         Validator for the `public_key_path` and `jwt_algorithm` fields to make them mandatory if the value of the
         `enabled` is `True`
@@ -40,8 +40,8 @@ class AuthenticationConfig(BaseModel):
 
         :param field_value: The value of the field.
         :param info: Validation info from pydantic.
+        :raises ValueError: If no value is provided for the field when `enabled` is set to `True`.
         :return: The value of the field.
-        :raises ValueError: If `unit` is provided when `type` is set to `boolean`.
         """
         if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
             raise ValueError("Field required")

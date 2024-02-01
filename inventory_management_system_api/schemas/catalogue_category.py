@@ -77,8 +77,8 @@ class CatalogueItemPropertySchema(BaseModel):
 
         :param unit_value: The value of the `unit` field.
         :param info: Validation info from pydantic.
-        :return: The value of the `unit` field.
         :raises ValueError: If `unit` is provided when `type` is set to `boolean`.
+        :return: The value of the `unit` field.
         """
         if "type" in info.data and info.data["type"] == CatalogueItemPropertyType.BOOLEAN and unit_value is not None:
             raise ValueError(f"Unit not allowed for boolean catalogue item property '{info.data['name']}'")

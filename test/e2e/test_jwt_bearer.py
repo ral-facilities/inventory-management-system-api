@@ -57,19 +57,8 @@ def test_jwt_bearer_authorization_request(test_client, headers, expected_respons
     ]
 
     for api_route in api_routes:
-        if "GET" in api_route.methods:
-            response = test_client.get(api_route.path, headers=headers)
-            assert response.status_code == 403
-            assert response.json()["detail"] == expected_response_message
-        if "DELETE" in api_route.methods:
-            response = test_client.delete(api_route.path, headers=headers)
-            assert response.status_code == 403
-            assert response.json()["detail"] == expected_response_message
-        if "PATCH" in api_route.methods:
-            response = test_client.patch(api_route.path, headers=headers)
-            assert response.status_code == 403
-            assert response.json()["detail"] == expected_response_message
-        if "POST" in api_route.methods:
-            response = test_client.post(api_route.path, headers=headers)
-            assert response.status_code == 403
-            assert response.json()["detail"] == expected_response_message
+        for method in ["GET", "DELETE", "PATCH", "POST", "PUT"]:
+            if method in api_route.methods:
+                response = test_client.request(method, api_route.path, headers=headers)
+                assert response.status_code == 403
+                assert response.json()["detail"] == expected_response_message
