@@ -55,7 +55,7 @@ jobs:
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
 
       - name: Run unit tests
-        run: AUTHENTICATION__PUBLIC_KEY_PATH="./test/keys/jwt-key.pub" pytest test/unit/ --cov
+        run: pytest -c test/pytest.ini test/unit/ --cov
 
   e2e-tests:
     needs: [unit-tests]
@@ -90,7 +90,7 @@ jobs:
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
 
       - name: Run e2e tests
-        run: DATABASE__NAME="test-ims" AUTHENTICATION__PUBLIC_KEY_PATH="./test/keys/jwt-key.pub" pytest test/e2e/ --cov
+        run: pytest -c test/pytest.ini test/e2e/ --cov
 
   docker:
     # This job triggers only if all the other jobs succeed. It builds the Docker image and if successful,
