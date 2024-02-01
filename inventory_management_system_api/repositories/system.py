@@ -157,8 +157,6 @@ class SystemRepo:
         :raises MissingRecordError: If the System doesn't exist
         """
         system_id = CustomObjectId(system_id)
-        # pylint: disable=W0511
-        # TODO: Also need a check here on items when they are implemented
         if self._has_child_elements(system_id):
             raise ChildElementsExistError(f"System with ID {str(system_id)} has child elements and cannot be deleted")
 

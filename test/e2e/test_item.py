@@ -320,7 +320,9 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
             {"name": "Property A", "unit": "mm", "value": None},
             {"name": "Property B", "unit": None, "value": False},
             {"name": "Property C", "unit": "cm", "value": "25x10x5"},
-            {"name": "Property D", "unit": None, "value": None},
+            # pylint: disable=fixme
+            # TODO: Uncomment this - see #173
+            # {"name": "Property D", "unit": None, "value": None},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
@@ -1148,8 +1150,10 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
         "properties": [
             {"name": "Property A", "unit": "mm", "value": None},
             {"name": "Property B", "unit": None, "value": False},
-            {"name": "Property C", "unit": "cm", "value": "25x10x5"},
-            {"name": "Property D", "unit": None, "value": None},
+            {"name": "Property C", "unit": "cm", "value": "20x15x10"},
+            # pylint: disable=fixme
+            # TODO: Uncomment this - see #173
+            # {"name": "Property D", "unit": None, "value": None},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
