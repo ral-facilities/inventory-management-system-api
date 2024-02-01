@@ -1,6 +1,7 @@
 """
 Module for defining custom `ObjectId` data type classes used by Pydantic models.
 """
+
 from typing import Any
 
 from bson import ObjectId

@@ -1,6 +1,7 @@
 """
 Unit test for the `JWTBearer` class.
 """
+
 from unittest.mock import Mock, patch
 from test.conftest import VALID_ACCESS_TOKEN, EXPIRED_ACCESS_TOKEN, INVALID_ACCESS_TOKEN
 

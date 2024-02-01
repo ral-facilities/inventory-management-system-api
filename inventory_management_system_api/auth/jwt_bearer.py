@@ -1,6 +1,7 @@
 """
 Module for providing an implementation of the `JWTBearer` class.
 """
+
 import logging
 
 import jwt

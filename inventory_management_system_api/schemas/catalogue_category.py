@@ -1,6 +1,7 @@
 """
 Module for defining the API schema models for representing catalogue categories.
 """
+
 from enum import Enum
 from numbers import Number
 from typing import Annotated, Any, List, Literal, Optional

@@ -1,6 +1,7 @@
 """
 Module for the overall configuration for the application.
 """
+
 from pathlib import Path
 from typing import Optional
 

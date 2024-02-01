@@ -1,6 +1,7 @@
 """
 Module for providing common test configuration, test fixtures, and helper functions.
 """
+
 from typing import List, Type
 from unittest.mock import Mock, MagicMock
 
@@ -88,7 +89,6 @@ def fixture_system_repository(database_mock: Mock) -> SystemRepo:
 
 
 class RepositoryTestHelpers:
-
     """
     A utility class containing common helper methods for the repository tests.
 

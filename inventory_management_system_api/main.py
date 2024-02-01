@@ -1,6 +1,7 @@
 """
 Main module contains the API entrypoint.
 """
+
 import logging
 
 from fastapi import Depends, FastAPI, Request, status
@@ -12,6 +13,7 @@ from fastapi.responses import JSONResponse
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.logger_setup import setup_logger
 from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system, manufacturer, item
+
 if config.authentication.enabled:
     from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 

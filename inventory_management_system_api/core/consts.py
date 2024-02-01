@@ -1,6 +1,7 @@
 """
 Contains constants used in multiple places so they are easier to change
 """
+
 import sys
 
 from inventory_management_system_api.core.config import config

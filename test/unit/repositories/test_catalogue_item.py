@@ -1,6 +1,7 @@
 """
 Unit tests for the `CatalogueItemRepo` repository.
 """
+
 from unittest.mock import MagicMock
 from test.unit.repositories.test_item import FULL_ITEM_INFO
 

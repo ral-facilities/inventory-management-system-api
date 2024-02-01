@@ -1,6 +1,7 @@
 """
 Module providing test fixtures for the e2e tests.
 """
+
 from test.conftest import VALID_ACCESS_TOKEN
 
 import pytest

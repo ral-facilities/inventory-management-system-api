@@ -1,6 +1,7 @@
 """
 Module for defining the API schema models for representing breadcrumbs
 """
+
 from pydantic import BaseModel, Field
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH

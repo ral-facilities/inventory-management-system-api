@@ -1,6 +1,7 @@
 """
 End-to-end tests for the `JWTBearer` routers' dependency.
 """
+
 from test.conftest import (
     INVALID_ACCESS_TOKEN,
     EXPIRED_ACCESS_TOKEN,
