@@ -48,8 +48,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[test]
-      - name: Create environment file
-        run: cp inventory_management_system_api/.env.example inventory_management_system_api/.env
 
       - name: Create logging configuration file
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
@@ -83,8 +81,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[test]
-      - name: Create environment file
-        run: cp inventory_management_system_api/.env.example inventory_management_system_api/.env
 
       - name: Create logging configuration file
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
