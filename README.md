@@ -82,9 +82,9 @@ Ensure that MongoDB is installed and running on your machine before proceeding.
    at http://localhost:8000/docs.
 6. To run the unit tests, run :
    ```bash
-   AUTHENTICATION__PUBLIC_KEY_PATH="./test/keys/jwt-key.pub" pytest test/unit/
+   pytest -c test/pytest.ini test/unit/
    ```
 7. To run the e2e tests, run:
    ```bash
-   DATABASE__NAME="test-ims" AUTHENTICATION__PUBLIC_KEY_PATH="./test/keys/jwt-key.pub" pytest test/e2e/
+   pytest -c test/pytest.ini test/e2e/
    ```
