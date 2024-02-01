@@ -3,7 +3,10 @@
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
 from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
-from test.unit.repositories.test_utils import MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+from test.unit.repositories.test_utils import (
+    MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
+    MOCK_MOVE_QUERY_RESULT_VALID,
+)
 from unittest.mock import MagicMock, call, patch
 
 import pytest
@@ -13,6 +16,7 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateRecordError,
+    InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
 )
@@ -576,7 +580,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, catalogue_category_repositor
 
     mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
     mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
-    database_mock.catalogue_categories.aggregate.return_value = MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH
+    database_mock.catalogue_categories.aggregate.return_value = MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
 
     retrieved_breadcrumbs = catalogue_category_repository.get_breadcrumbs(catalogue_category_id)
 
@@ -584,7 +588,7 @@ def test_get_breadcrumbs(mock_utils, database_mock, catalogue_category_repositor
         entity_id=catalogue_category_id, collection_name="catalogue_categories"
     )
     mock_utils.compute_breadcrumbs.assert_called_once_with(
-        list(MOCK_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
+        list(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
         entity_id=catalogue_category_id,
         collection_name="catalogue_categories",
     )
@@ -854,6 +858,139 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
         ]
     )
     assert updated_catalogue_category == catalogue_category
+
+
+@patch("inventory_management_system_api.repositories.catalogue_category.utils")
+def test_update_parent_id(utils_mock, test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test updating a catalogue category's parent_id
+
+    Verify that the `update` method properly handles the update of a catalogue category when the
+    parent_id changes
+    """
+    parent_catalogue_category_id = str(ObjectId())
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()), **{**CATALOGUE_CATEGORY_INFO, "parent_id": parent_catalogue_category_id}
+    )
+    new_parent_id = str(ObjectId())
+    expected_catalogue_category = CatalogueCategoryOut(
+        **{**catalogue_category.model_dump(), "parent_id": new_parent_id}
+    )
+
+    # Mock `find_one` to return a parent catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {
+            **CATALOGUE_CATEGORY_INFO,
+            "_id": CustomObjectId(new_parent_id),
+        },
+    )
+    # Mock `find_one` to return the stored catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        catalogue_category.model_dump(),
+    )
+    # Mock `find_one` to return no duplicate catalogue categories found
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+    # Mock `update_one` to return an object for the updated catalogue category document
+    test_helpers.mock_update_one(database_mock.catalogue_categories)
+    # Mock `find_one` to return the updated catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {**catalogue_category.model_dump(), "parent_id": CustomObjectId(new_parent_id)},
+    )
+
+    # Mock utils so not moving to a child of itself
+    mock_aggregation_pipeline = MagicMock()
+    utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    utils_mock.is_valid_move_result.return_value = True
+    database_mock.catalogue_categories.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
+
+    catalogue_category_in = CatalogueCategoryIn(**{**CATALOGUE_CATEGORY_INFO, "parent_id": new_parent_id})
+    updated_catalogue_category = catalogue_category_repository.update(catalogue_category.id, catalogue_category_in)
+
+    utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
+        entity_id=catalogue_category.id, destination_id=new_parent_id, collection_name="catalogue_categories"
+    )
+    utils_mock.is_valid_move_result.assert_called_once()
+
+    database_mock.catalogue_categories.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_category.id)},
+        {"$set": {**catalogue_category_in.model_dump()}},
+    )
+    database_mock.catalogue_categories.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(new_parent_id)}),
+            call({"_id": CustomObjectId(catalogue_category.id)}),
+            call({"parent_id": CustomObjectId(new_parent_id), "code": catalogue_category.code}),
+            call({"_id": CustomObjectId(catalogue_category.id)}),
+        ]
+    )
+    assert updated_catalogue_category == expected_catalogue_category
+
+
+@patch("inventory_management_system_api.repositories.catalogue_category.utils")
+def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test updating a catalogue category's parent_id when moving to a child of itself
+
+    Verify that the `update` method properly handles the update of a catalogue category when the new
+    parent_id is a child of itself
+    """
+    parent_catalogue_category_id = str(ObjectId())
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()), **{**CATALOGUE_CATEGORY_INFO, "parent_id": parent_catalogue_category_id}
+    )
+    new_parent_id = str(ObjectId())
+
+    # Mock `find_one` to return a parent catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {
+            **CATALOGUE_CATEGORY_INFO,
+            "_id": CustomObjectId(new_parent_id),
+        },
+    )
+    # Mock `find_one` to return the stored catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        catalogue_category.model_dump(),
+    )
+    # Mock `find_one` to return no duplicate catalogue categories found
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+    # Mock `update_one` to return an object for the updated catalogue category document
+    test_helpers.mock_update_one(database_mock.catalogue_categories)
+    # Mock `find_one` to return the updated catalogue category document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {**catalogue_category.model_dump(), "parent_id": CustomObjectId(new_parent_id)},
+    )
+
+    # Mock utils so not moving to a child of itself
+    mock_aggregation_pipeline = MagicMock()
+    utils_mock.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
+    utils_mock.is_valid_move_result.return_value = False
+    database_mock.catalogue_categories.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
+
+    catalogue_category_in = CatalogueCategoryIn(**{**CATALOGUE_CATEGORY_INFO, "parent_id": new_parent_id})
+
+    with pytest.raises(InvalidActionError) as exc:
+        catalogue_category_repository.update(catalogue_category.id, catalogue_category_in)
+    assert str(exc.value) == "Cannot move a catalogue category to one of its own children"
+
+    utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
+        entity_id=catalogue_category.id, destination_id=new_parent_id, collection_name="catalogue_categories"
+    )
+    utils_mock.is_valid_move_result.assert_called_once()
+
+    database_mock.catalogue_categories.update_one.assert_not_called()
+    database_mock.catalogue_categories.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(new_parent_id)}),
+            call({"_id": CustomObjectId(catalogue_category.id)}),
+            call({"parent_id": CustomObjectId(new_parent_id), "code": catalogue_category.code}),
+        ]
+    )
 
 
 def test_update_with_invalid_id(catalogue_category_repository):

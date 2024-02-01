@@ -13,6 +13,7 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     DuplicateCatalogueItemPropertyNameError,
     DuplicateRecordError,
+    InvalidActionError,
     InvalidObjectIdError,
     LeafCategoryError,
     MissingRecordError,
@@ -172,6 +173,10 @@ def partial_update_catalogue_category(
     except DuplicateCatalogueItemPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
 
 @router.delete(

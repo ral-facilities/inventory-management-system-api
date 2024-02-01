@@ -3,7 +3,7 @@ Module for providing common test configuration, test fixtures, and helper functi
 """
 
 from typing import List, Type
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
