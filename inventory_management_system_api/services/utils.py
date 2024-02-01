@@ -130,7 +130,8 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
     else:
         if not CatalogueItemPropertySchema.is_valid_property_type(defined_type, supplied_property_value):
             raise InvalidCatalogueItemPropertyTypeError(
-                f"Invalid value type for catalogue item property '{supplied_property_name}'. Expected type: {defined_type}."
+                f"Invalid value type for catalogue item property '{supplied_property_name}'. "
+                f"Expected type: {defined_type}."
             )
 
         # Verify the given property is one of the allowed based on the type of allowed_values defined

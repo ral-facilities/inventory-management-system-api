@@ -355,6 +355,32 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     assert response.json()["detail"] == "Missing mandatory catalogue item property: 'Property B'"
 
 
+def test_create_catalogue_item_with_mandatory_properties_given_none(test_client):
+    """
+    Test creating a catalogue item with mandatory catalogue item properties given as None
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+        "properties": [
+            CATALOGUE_ITEM_POST_A["properties"][0],
+            {**CATALOGUE_ITEM_POST_A["properties"][1], "value": None},
+            {**CATALOGUE_ITEM_POST_A["properties"][2], "value": None},
+        ],
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Mandatory catalogue item property 'Property B' cannot be None."
+
+
 def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client):
     """
     Test creating a catalogue item with missing non-mandatory catalogue item properties.
@@ -382,6 +408,40 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
         "properties": CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+    }
+
+
+def test_create_catalogue_item_with_non_mandatory_properties_given_none(test_client):
+    """
+    Test creating a catalogue item with non-mandatory catalogue item properties given as None
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+        "properties": [
+            {**CATALOGUE_ITEM_POST_A["properties"][0], "value": None},
+            *CATALOGUE_ITEM_POST_A["properties"][1:],
+        ],
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    assert response.status_code == 201
+    catalogue_item = response.json()
+    assert catalogue_item == {
+        **CATALOGUE_ITEM_POST_A_EXPECTED,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+        "properties": [
+            {**CATALOGUE_ITEM_POST_A_EXPECTED["properties"][0], "value": None},
+            *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][1:],
+        ],
     }
 
 
@@ -1258,6 +1318,78 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
 
     assert response.status_code == 422
     assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
+
+
+def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test_client):
+    """
+    Test updating a catalogue item's mandatory properties to have a value of None 
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
+
+    catalogue_item_patch = {
+        "properties": [
+            CATALOGUE_ITEM_POST_A["properties"][0],
+            {**CATALOGUE_ITEM_POST_A["properties"][1], "value": None},
+            {**CATALOGUE_ITEM_POST_A["properties"][2], "value": None},
+        ],
+    }
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Mandatory catalogue item property 'Property B' cannot be None."
+
+
+def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(test_client):
+    """
+    Test updating a catalogue item's non-mandatory properties to have a value of None 
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
+
+    catalogue_item_patch = {
+        "properties": [
+            {**CATALOGUE_ITEM_POST_A["properties"][0], "value": None},
+            *CATALOGUE_ITEM_POST_A["properties"][1:],
+        ],
+    }
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 200
+    catalogue_item = response.json()
+    assert catalogue_item == {
+        **CATALOGUE_ITEM_POST_A_EXPECTED,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+        "properties": [
+            {**CATALOGUE_ITEM_POST_A_EXPECTED["properties"][0], "value": None},
+            *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][1:],
+        ],
+    }
 
 
 def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
