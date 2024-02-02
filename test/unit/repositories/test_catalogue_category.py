@@ -1150,7 +1150,7 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
 
     catalogue_category_id = str(ObjectId())
 
-    # Mock find_one to return 1 (children catalogue categories found)
+    # Mock find_one to return 1 (child catalogue categories found)
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
@@ -1159,7 +1159,7 @@ def test_has_child_elements_with_child_categories(test_helpers, database_mock, c
             "parent_id": catalogue_category_id,
         },
     )
-    # Mock find_one to return 0 (children catalogue items not found)
+    # Mock find_one to return 0 (child catalogue items not found)
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
     result = catalogue_category_repository.has_child_elements(catalogue_category_id)

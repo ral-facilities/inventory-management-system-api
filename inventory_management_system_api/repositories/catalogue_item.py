@@ -52,7 +52,7 @@ class CatalogueItemRepo:
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        if self._has_child_elements(catalogue_item_id):
+        if self.has_child_elements(catalogue_item_id):
             raise ChildElementsExistError(
                 f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
             )

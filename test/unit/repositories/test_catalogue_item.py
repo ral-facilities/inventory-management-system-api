@@ -1,6 +1,7 @@
 """
 Unit tests for the `CatalogueItemRepo` repository.
 """
+
 from unittest.mock import MagicMock
 from test.unit.repositories.test_item import FULL_ITEM_INFO
 
@@ -418,23 +419,61 @@ def test_update_with_invalid_id(catalogue_item_repository):
     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_item_id}'"
 
 
-def test_update_has_child_items(test_helpers, database_mock, catalogue_item_repository):
+def test_has_child_elements_with_no_child_items(test_helpers, database_mock, catalogue_item_repository):
     """
-    Test updating a catalogue item with child items.
+    Test has_child_elements returns false when there are no child items
     """
-    update_catalogue_item = MagicMock()
-    catalogue_item_id = str(ObjectId())
+    # Mock `find_one` to return no child items category document
+    test_helpers.mock_find_one(database_mock.items, None)
 
-    # Mock `find_one` to return the child item document
+    result = catalogue_item_repository.has_child_elements(ObjectId())
+
+    assert not result
+
+
+def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test has_child_elements returns true when there are child items
+    """
+
+    catalogue_category_id = str(ObjectId())
+
+    # Mock find_one to return 1 (child items found)
     test_helpers.mock_find_one(
-        database_mock.items,
+        database_mock.catalogue_categories,
         {
-            "_id": CustomObjectId(str(ObjectId())),
-            "catalogue_item_id": CustomObjectId(catalogue_item_id),
             **FULL_ITEM_INFO,
+            "_id": CustomObjectId(str(ObjectId())),
+            "catalogue_item_id": catalogue_category_id,
         },
     )
+    # Mock find_one to return 0 (child items not found)
+    test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    with pytest.raises(ChildElementsExistError) as exc:
-        catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
-    assert str(exc.value) == f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated"
+    result = catalogue_item_repository.has_child_elements(catalogue_category_id)
+
+    assert result
+
+
+def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test has_child_elements returns true when there are child items.
+    """
+    catalogue_category_id = str(ObjectId())
+
+    # Mock `find_one` to return no child catalogue category document
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+    # pylint: disable=duplicate-code
+    # Mock `find_one` to return the child catalogue item document
+    test_helpers.mock_find_one(
+        database_mock.catalogue_items,
+        {
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "_id": CustomObjectId(str(ObjectId())),
+            "catalogue_category_id": CustomObjectId(catalogue_category_id),
+        },
+    )
+    # pylint: enable=duplicate-code
+    result = catalogue_item_repository.has_child_elements(catalogue_category_id)
+
+    assert result
