@@ -1,6 +1,7 @@
 """
 Module for providing a service for managing catalogue categories using the `CatalogueCategoryRepo` repository.
 """
+
 import logging
 from typing import List, Optional
 
@@ -114,18 +115,24 @@ class CatalogueCategoryService:
         :param catalogue_category_id: The ID of the catalogue category to update.
         :param catalogue_category: The catalogue category containing the fields that need to be updated.
         :return: The updated catalogue category.
+        :raises ChildElementsExistError: If the catalogue category has child elements and attempting to update
+                                    either any of the disallowed properties (is_leaf or catalogue_item_properties)
         :raises MissingRecordError: If the catalogue category doesn't exist.
         :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
             moved is a leaf catalogue category.
-        :raises ChildElementsExistError: If the catalogue category has child elements and attempting to update
-                                    either any of the disallowed properties (is_leaf or catalogue_item_properties)
         """
         update_data = catalogue_category.model_dump(exclude_unset=True)
 
         stored_catalogue_category = self.get(catalogue_category_id)
-
         if not stored_catalogue_category:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+
+        # If any of these, need to ensure the category has no child elements
+        if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
+            if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
+                raise ChildElementsExistError(
+                    f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
+                )
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
             update_data["code"] = utils.generate_code(catalogue_category.name, "catalogue category")
@@ -138,13 +145,6 @@ class CatalogueCategoryService:
 
         if catalogue_category.catalogue_item_properties:
             self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
-
-        # If any of these, need to ensure the category has no child elements
-        if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
-            if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
-                raise ChildElementsExistError(
-                    f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
-                )
 
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})

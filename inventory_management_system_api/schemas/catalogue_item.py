@@ -1,6 +1,7 @@
 """
 Module for defining the API schema models for representing catalogue items.
 """
+
 from typing import List, Any, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
@@ -54,6 +55,10 @@ class CatalogueItemPostRequestSchema(BaseModel):
         description="The properties specific to this catalogue item as defined in the corresponding "
         "catalogue category",
     )
+
+
+# Special fields that are not allowed to be changed in a post request while the catalogue item has child elements
+CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS = ["manufacturer_id", "properties"]
 
 
 class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
