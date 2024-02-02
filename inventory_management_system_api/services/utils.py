@@ -55,8 +55,8 @@ def process_catalogue_item_properties(
 
     # Some mandatory catalogue item properties may not have been supplied
     _check_missing_mandatory_catalogue_item_properties(defined_properties_dict, supplied_properties_dict)
-    # Catalogue item properties that have not been defined may have been supplied
-    supplied_properties_dict = _filter_matching_catalogue_item_properties(
+    # Some non-mandatory catalogue item properties may not have been supplied
+    supplied_properties_dict = _merge_non_mandatory_catalogue_item_properties(
         defined_properties_dict, supplied_properties_dict
     )
     # Supplied catalogue item properties do not have units as we can't trust they would be correct
@@ -184,22 +184,20 @@ def _check_missing_mandatory_catalogue_item_properties(
             )
 
 
-def _filter_matching_catalogue_item_properties(
-    defined_properties: Dict[str, Dict],
-    supplied_properties: Dict[str, Dict],
+def _merge_non_mandatory_catalogue_item_properties(
+    defined_properties: Dict[str, Dict], supplied_properties: Dict[str, Dict]
 ) -> Dict[str, Dict]:
     """
-    Filter through the supplied properties and extract the ones matching the defined properties.
-
-    :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
-        database.
-    :param supplied_properties: The supplied catalogue item properties.
-    :return: The supplied properties that are matching the defined properties.
+    Merges in any non-mandatory properties that have not been supplied, giving them a value of None, using
+    the same order as they are defined.
     """
-    logger.info("Extracting the supplied properties that are matching the defined properties")
-    matching_properties = {}
-    for supplied_property_name, supplied_property in supplied_properties.items():
-        if supplied_property_name in defined_properties:
-            matching_properties[supplied_property_name] = supplied_property
+    logger.info("Merging any missing defined non-mandatory properties with the supplied properties")
 
-    return matching_properties
+    properties: Dict[str, Dict] = {}
+    for defined_property_name, defined_property in defined_properties.items():
+        supplied_property = supplied_properties.get(defined_property_name)
+        if supplied_property is not None:
+            properties[defined_property_name] = supplied_property
+        elif not defined_property["mandatory"]:
+            properties[defined_property_name] = {"name": defined_property_name, "value": None}
+    return properties

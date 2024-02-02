@@ -1,6 +1,7 @@
 """
 Unit tests for the `utils` in /services.
 """
+
 import pytest
 
 from inventory_management_system_api.core.exceptions import (
@@ -75,7 +76,11 @@ class TestProcessCatalogueItemProperties:
         Test `process_catalogue_item_properties` works correctly with missing non-mandatory properties.
         """
         result = utils.process_catalogue_item_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES[1:4])
-        assert result == EXPECTED_PROCESSED_PROPERTIES[1:4]
+        assert result == [
+            {**EXPECTED_PROCESSED_PROPERTIES[0], "value": None},
+            *EXPECTED_PROCESSED_PROPERTIES[1:4],
+            {**EXPECTED_PROCESSED_PROPERTIES[4], "value": None},
+        ]
 
     def test_process_catalogue_item_properties_with_undefined_properties(self):
         """
