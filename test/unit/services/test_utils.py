@@ -86,6 +86,29 @@ class TestProcessCatalogueItemProperties:
         result = utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
         assert result == EXPECTED_PROCESSED_PROPERTIES
 
+    def test_process_catalogue_item_properties_with_none_non_mandatory_properties(self):
+        """
+        Test `process_catalogue_item_properties` works correctly when explicitely giving a value of None
+        for non-mandatory properties.
+        """
+        result = utils.process_catalogue_item_properties(
+            DEFINED_PROPERTIES,
+            [
+                PropertyPostRequestSchema(name="Property A", value=None),
+                PropertyPostRequestSchema(name="Property B", value=False),
+                PropertyPostRequestSchema(name="Property C", value="20x15x10"),
+                PropertyPostRequestSchema(name="Property D", value=2),
+                PropertyPostRequestSchema(name="Property E", value=None),
+            ],
+        )
+        assert result == [
+            {"name": "Property A", "value": None, "unit": "mm"},
+            {"name": "Property B", "value": False, "unit": None},
+            {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+            {"name": "Property D", "value": 2, "unit": "mm"},
+            {"name": "Property E", "value": None, "unit": None},
+        ]
+
     def test_process_catalogue_item_properties_with_supplied_properties_and_no_defined_properties(self):
         """
         Test `process_catalogue_item_properties` works correctly with supplied properties but no defined properties.
@@ -159,6 +182,22 @@ class TestProcessCatalogueItemProperties:
             str(exc.value) == f"Invalid value type for catalogue item property '{supplied_properties[1].name}'. "
             "Expected type: boolean."
         )
+
+    def test_process_catalogue_item_properties_with_invalid_value_type_for_mandatory_property(self):
+        """
+        Test `process_catalogue_item_properties` works correctly with a None value given for a mandatory property.
+        """
+        supplied_properties = [
+            PropertyPostRequestSchema(name="Property A", value=20),
+            PropertyPostRequestSchema(name="Property B", value=False),
+            PropertyPostRequestSchema(name="Property C", value=None),
+            PropertyPostRequestSchema(name="Property D", value=2),
+            PropertyPostRequestSchema(name="Property E", value="red"),
+        ]
+
+        with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
+            utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
+        assert str(exc.value) == f"Mandatory catalogue item property '{supplied_properties[2].name}' cannot be None."
 
     def test_process_catalogue_item_properties_with_invalid_allowed_value_list_number(self):
         """
