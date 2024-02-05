@@ -114,29 +114,29 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
                                                    invalid type, or not an allowed value
     """
 
-    defined_type = defined_property["type"]
-    defined_allowed_values = defined_property["allowed_values"]
-    defined_value_mandatory = defined_property["mandatory"]
+    defined_property_type = defined_property["type"]
+    defined_property_allowed_values = defined_property["allowed_values"]
+    defined_property_mandatory = defined_property["mandatory"]
 
     supplied_property_name = supplied_property["name"]
     supplied_property_value = supplied_property["value"]
 
     # Do not type check a value of None
     if supplied_property_value is None:
-        if defined_value_mandatory:
+        if defined_property_mandatory:
             raise InvalidCatalogueItemPropertyTypeError(
                 f"Mandatory catalogue item property '{supplied_property_name}' cannot be None."
             )
     else:
-        if not CatalogueItemPropertySchema.is_valid_property_type(defined_type, supplied_property_value):
+        if not CatalogueItemPropertySchema.is_valid_property_type(defined_property_type, supplied_property_value):
             raise InvalidCatalogueItemPropertyTypeError(
                 f"Invalid value type for catalogue item property '{supplied_property_name}'. "
-                f"Expected type: {defined_type}."
+                f"Expected type: {defined_property_type}."
             )
 
         # Verify the given property is one of the allowed based on the type of allowed_values defined
-        if defined_allowed_values is not None and defined_allowed_values["type"] == "list":
-            values = defined_allowed_values["values"]
+        if defined_property_allowed_values is not None and defined_property_allowed_values["type"] == "list":
+            values = defined_property_allowed_values["values"]
             if supplied_property_value not in values:
                 raise InvalidCatalogueItemPropertyTypeError(
                     f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of "

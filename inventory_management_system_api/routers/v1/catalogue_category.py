@@ -2,6 +2,7 @@
 Module for providing an API router which defines routes for managing catalogue categories using the
 `CatalogueCategoryService` service.
 """
+
 import logging
 from typing import Annotated, List, Optional
 

@@ -3,7 +3,7 @@
 mongodb/data/*
 !mongodb/data/.keep
 inventory_management_system_api/logging.ini
-
+/keys/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

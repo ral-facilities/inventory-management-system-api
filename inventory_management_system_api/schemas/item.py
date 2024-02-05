@@ -1,6 +1,7 @@
 """
 Module for defining the API schema models for representing items.
 """
+
 from enum import Enum
 from typing import Optional, List
 

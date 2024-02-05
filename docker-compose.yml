@@ -6,6 +6,7 @@ services:
     build: .
     volumes:
       - ./inventory_management_system_api:/inventory-management-system-api-run/inventory_management_system_api
+      - ./keys:/inventory-management-system-api-run/keys
     ports:
       - 8000:8000
     restart: on-failure

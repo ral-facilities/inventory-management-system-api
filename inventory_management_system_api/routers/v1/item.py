@@ -1,6 +1,7 @@
 """
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
+
 import logging
 from typing import Annotated, List, Optional
 

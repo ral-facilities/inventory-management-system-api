@@ -2,12 +2,12 @@
 Unit tests for the `SystemRepo` repository
 """
 
-
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
     MOCK_MOVE_QUERY_RESULT_INVALID,
     MOCK_MOVE_QUERY_RESULT_VALID,
 )
+
 from typing import Optional
 from unittest.mock import MagicMock, call, patch
 

@@ -1,6 +1,7 @@
 """
 Module for defining the API schema models for representing catalogue items.
 """
+
 from typing import List, Any, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
