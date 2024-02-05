@@ -1,6 +1,7 @@
 """
 Module for defining the database models for representing catalogue items.
 """
+
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator

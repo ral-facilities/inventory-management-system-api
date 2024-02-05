@@ -1,6 +1,7 @@
 """
 Module for providing common test configuration and test fixtures.
 """
+
 from typing import List, Type, Union
 from unittest.mock import Mock
 

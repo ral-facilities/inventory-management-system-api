@@ -1,6 +1,7 @@
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
+
 from unittest.mock import MagicMock
 
 import pytest

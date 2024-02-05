@@ -1,6 +1,7 @@
 """
 Module for providing a custom implementation of the `ObjectId` class.
 """
+
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError

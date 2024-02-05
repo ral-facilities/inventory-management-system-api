@@ -1,6 +1,7 @@
 """
 Module for providing a service for managing catalogue categories using the `CatalogueCategoryRepo` repository.
 """
+
 import logging
 from typing import List, Optional
 

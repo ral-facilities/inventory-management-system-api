@@ -1,6 +1,7 @@
 """
 Module for defining the database models for representing catalogue categories.
 """
+
 from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator

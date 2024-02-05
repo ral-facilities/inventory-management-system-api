@@ -1,6 +1,7 @@
 """
 Unit tests for the `ManufacturerRepo` repository.
 """
+
 from unittest.mock import call
 from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
 import pytest

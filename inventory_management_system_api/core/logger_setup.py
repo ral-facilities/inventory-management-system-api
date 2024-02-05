@@ -1,6 +1,7 @@
 """
 Module for setting up and configuring the logging system.
 """
+
 import logging
 import logging.config
 from pathlib import Path

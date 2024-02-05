@@ -1,6 +1,7 @@
 """
 End-to-End tests for the manufacturer router.
 """
+
 from bson import ObjectId
 
 MANUFACTURER_POST = {
