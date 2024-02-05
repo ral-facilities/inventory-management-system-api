@@ -824,10 +824,47 @@ def test_get_catalogue_items_with_invalid_catalogue_category_id_filter(test_clie
     assert len(catalogue_items) == 0
 
 
-def test_partial_update_catalogue_item(test_client):
+def test_partial_update_catalogue_item_when_no_child_elements(test_client):
     """
-    Test changing the name and description of a catalogue item.
+    Test changing the name and description of a catalogue item when it doesn't have any child
+    elements
     """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    # pylint: enable=duplicate-code
+
+    catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 200
+
+    catalogue_item = response.json()
+
+    assert catalogue_item == {
+        **CATALOGUE_ITEM_POST_A_EXPECTED,
+        **catalogue_item_patch,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+
+
+def test_partial_update_catalogue_item_when_has_child_elements(test_client):
+    """
+    Test updating a catalogue item which has child items.
+    """
+    # pylint: disable=duplicate-code
+    # Parent
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -880,37 +917,6 @@ def test_partial_update_catalogue_item_nonexistent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "A catalogue item with such ID was not found"
-
-
-def test_partial_update_catalogue_item_has_child_items(test_client):
-    """
-    Test updating a catalogue item which has child items.
-    """
-    # pylint: disable=duplicate-code
-    # Parent
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_id = response.json()["id"]
-
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-    manufacturer_id = response.json()["id"]
-
-    catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_A,
-        "catalogue_category_id": catalogue_category_id,
-        "manufacturer_id": manufacturer_id,
-    }
-    # pylint: enable=duplicate-code
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-    catalogue_item_id = response.json()["id"]
-
-    # child
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
-    test_client.post("/v1/items", json=item_post)
-
-    response = test_client.patch(f"/v1/catalogue-items/{catalogue_item_id}", json={"name": "Catalogue Item B"})
-
-    assert response.status_code == 409
-    assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id(test_client):
