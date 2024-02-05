@@ -824,10 +824,10 @@ def test_get_catalogue_items_with_invalid_catalogue_category_id_filter(test_clie
     assert len(catalogue_items) == 0
 
 
-def test_partial_update_catalogue_item_when_no_child_elements(test_client):
+def test_partial_update_catalogue_item_when_no_child_items(test_client):
     """
     Test changing the name and description of a catalogue item when it doesn't have any child
-    elements
+    items
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
@@ -859,7 +859,7 @@ def test_partial_update_catalogue_item_when_no_child_elements(test_client):
     }
 
 
-def test_partial_update_catalogue_item_when_has_child_elements(test_client):
+def test_partial_update_catalogue_item_when_has_child_items(test_client):
     """
     Test updating a catalogue item which has child items.
     """
@@ -1563,10 +1563,46 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
         response.json()["detail"] == "Invalid value for catalogue item property 'Property A'. Expected one of 2, 4, 6."
     )
 
-
-def test_partial_update_catalogue_item_change_manufacturer_id(test_client):
+def test_partial_update_catalogue_item_properties_when_has_child_items(test_client):
     """
-    Test updating the manufacturer ID of a catalogue item.
+    Test updating the properties of a catalogue item when it has child items.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_d_id = response.json()["id"]
+
+    manufacturer_e_post = {
+        **MANUFACTURER,
+        "name": "Manufacturer E",
+    }
+    response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
+    manufacturer_e_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_d_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # Child
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    test_client.post("/v1/items", json=item_post)
+
+    catalogue_item_patch = {
+        "manufacturer_id": manufacturer_e_id,
+    }
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
+
+def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_items(test_client):
+    """
+    Test updating the manufacturer ID of a catalogue item when it doesn't have any child items.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_id = response.json()["id"]
@@ -1611,6 +1647,37 @@ def test_partial_update_catalogue_item_change_manufacturer_id(test_client):
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_e_id,
     }
+
+
+def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_items(test_client):
+    """
+    Test updating the manufacturer ID of a catalogue item when it has child items.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # Child
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    test_client.post("/v1/items", json=item_post)
+
+    catalogue_item_patch = {
+        "properties": CATALOGUE_ITEM_POST_A["properties"],
+    }
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
 
 
 def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_client):
