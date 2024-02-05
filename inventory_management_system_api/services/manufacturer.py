@@ -1,6 +1,7 @@
 """
 Module for providing a service for managing manufacturers using the `ManufacturerRepo` repository.
 """
+
 import logging
 
 from typing import List, Optional

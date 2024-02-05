@@ -1,6 +1,7 @@
 """
 Unit tests for the `utils` in /services.
 """
+
 import pytest
 
 from inventory_management_system_api.core.exceptions import (

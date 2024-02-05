@@ -2,7 +2,6 @@
 Module for defining the database models for representing manufacturer.
 """
 
-
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer

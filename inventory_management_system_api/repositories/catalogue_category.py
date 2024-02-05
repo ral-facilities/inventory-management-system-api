@@ -1,6 +1,7 @@
 """
 Module for providing a repository for managing catalogue categories in a MongoDB database.
 """
+
 import logging
 from typing import List, Optional
 

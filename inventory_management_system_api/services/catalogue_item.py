@@ -2,6 +2,7 @@
 Module for providing a service for managing catalogue items using the `CatalogueItemRepo` and `CatalogueCategoryRepo`
 repositories.
 """
+
 import logging
 from typing import Optional, List
 

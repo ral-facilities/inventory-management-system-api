@@ -1,6 +1,7 @@
 """
 Module for defining the API schema models for representing Systems
 """
+
 from enum import Enum
 from typing import Optional
 

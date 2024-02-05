@@ -1,6 +1,7 @@
 """
 Module for providing a repository for managing System's in a MongoDB database
 """
+
 import logging
 from typing import Optional
 

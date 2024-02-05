@@ -1,6 +1,7 @@
 """
 Module for defining the database models for representing items.
 """
+
 from typing import Optional, List, Any
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator, AwareDatetime
