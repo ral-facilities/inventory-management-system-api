@@ -189,7 +189,13 @@ def _merge_non_mandatory_catalogue_item_properties(
 ) -> Dict[str, Dict]:
     """
     Merges in any non-mandatory properties that have not been supplied, giving them a value of None, using
-    the same order as they are defined.
+    the same order as they are defined. Any extra undefined properties that get supplied will be ignored.
+
+    :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
+                               database.
+    :param supplied_properties: The supplied catalogue item properties.
+    :return: The supplied properties combined with any unsupplied non mandatory properites (with a value of None) in
+             the order they are defined.
     """
     logger.info("Merging any missing defined non-mandatory properties with the supplied properties")
 
