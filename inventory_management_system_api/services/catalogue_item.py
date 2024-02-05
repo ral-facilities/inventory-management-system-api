@@ -7,13 +7,19 @@ import logging
 from typing import Optional, List
 
 from fastapi import Depends
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
-from inventory_management_system_api.core.exceptions import MissingRecordError, NonLeafCategoryError
+from inventory_management_system_api.core.exceptions import (
+    ChildElementsExistError,
+    MissingRecordError,
+    NonLeafCategoryError,
+)
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.catalogue_item import (
+    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
     PropertyPostRequestSchema,
@@ -116,6 +122,7 @@ class CatalogueItemService:
         """
         return self._catalogue_item_repository.list(catalogue_category_id)
 
+    # pylint:disable=too-many-branches
     def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchRequestSchema) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.
@@ -134,6 +141,13 @@ class CatalogueItemService:
         stored_catalogue_item = self.get(catalogue_item_id)
         if not stored_catalogue_item:
             raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+
+        # If any of these, need to ensure the catalogue item has no child elements
+        if any(key in update_data for key in CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS):
+            if self._catalogue_item_repository.has_child_elements(CustomObjectId(catalogue_item_id)):
+                raise ChildElementsExistError(
+                    f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+                )
 
         catalogue_category = None
         if (

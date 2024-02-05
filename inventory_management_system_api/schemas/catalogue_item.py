@@ -57,6 +57,10 @@ class CatalogueItemPostRequestSchema(BaseModel):
     )
 
 
+# Special fields that are not allowed to be changed in a post request while the catalogue item has child elements
+CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS = ["manufacturer_id", "properties"]
+
+
 class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     """
     Schema model for a catalogue item update request.

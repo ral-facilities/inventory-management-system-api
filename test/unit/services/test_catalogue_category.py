@@ -341,11 +341,12 @@ def test_list(catalogue_category_repository_mock, catalogue_category_service):
     assert result == catalogue_category_repository_mock.list.return_value
 
 
-def test_update(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_update_when_no_child_elements(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
-    Test updating a catalogue category.
+    Test updating a catalogue category without child elements
 
-    Verify that the `update` method properly handles the catalogue category to be updated.
+    Verify that the `update` method properly handles the catalogue category to be updated when it doesnt have any
+    child elements.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
@@ -368,6 +369,8 @@ def test_update(test_helpers, catalogue_category_repository_mock, catalogue_cate
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
     )
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
@@ -389,6 +392,55 @@ def test_update(test_helpers, catalogue_category_repository_mock, catalogue_cate
     # pylint: enable=duplicate-code
     assert updated_catalogue_category == catalogue_category
 
+def test_update_when_has_child_elements(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+    """
+    Test updating a catalogue category when it has child elements
+
+    Verify that the `update` method properly handles the catalogue category to be updated when it has children.
+    """
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[],
+    )
+
+    # Mock `get` to return a catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name="Category A",
+            code="category-a",
+            is_leaf=catalogue_category.is_leaf,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    # Mock so child elements found
+    catalogue_category_repository_mock.has_child_elements.return_value = True
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    updated_catalogue_category = catalogue_category_service.update(
+        catalogue_category.id, CatalogueCategoryPatchRequestSchema(name=catalogue_category.name)
+    )
+
+    # pylint: disable=duplicate-code
+    catalogue_category_repository_mock.update.assert_called_once_with(
+        catalogue_category.id,
+        CatalogueCategoryIn(
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        ),
+    )
+    # pylint: enable=duplicate-code
+    assert updated_catalogue_category == catalogue_category
 
 def test_update_with_nonexistent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
@@ -433,6 +485,8 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
         ),
     )
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
     # Mock `get` to return a parent catalogue category
     # pylint: disable=duplicate-code
     test_helpers.mock_get(
@@ -487,6 +541,8 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             catalogue_item_properties=[],
         ),
     )
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
     catalogue_category_a_id = str(ObjectId())
     # Mock `get` to return a parent catalogue category
     test_helpers.mock_get(
@@ -529,9 +585,6 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
     )
     # pylint: enable=duplicate-code
 
-    # Mock so no child elements found
-    catalogue_category_repository_mock.has_child_elements.return_value = False
-
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
@@ -547,6 +600,8 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             ],
         ),
     )
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
@@ -589,9 +644,6 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
     )
     # pylint: enable=duplicate-code
 
-    # Mock so no child elements found
-    catalogue_category_repository_mock.has_child_elements.return_value = False
-
     # Mock `get` to return a catalogue category
     # pylint: disable=duplicate-code
     test_helpers.mock_get(
@@ -605,6 +657,8 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
         ),
     )
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
     # pylint: enable=duplicate-code
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
@@ -646,9 +700,6 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
     )
     # pylint: enable=duplicate-code
 
-    # Mock so child elements found
-    catalogue_category_repository_mock.has_child_elements.return_value = True
-
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
@@ -664,6 +715,8 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
             ],
         ),
     )
+    # Mock so child elements found
+    catalogue_category_repository_mock.has_child_elements.return_value = True
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
@@ -699,9 +752,6 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
     )
     # pylint: enable=duplicate-code
 
-    # Mock so child elements found
-    catalogue_category_repository_mock.has_child_elements.return_value = True
-
     # Mock `get` to return a catalogue category
     # pylint: disable=duplicate-code
     test_helpers.mock_get(
@@ -715,6 +765,8 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
         ),
     )
+    # Mock so child elements found
+    catalogue_category_repository_mock.has_child_elements.return_value = True
     # pylint: enable=duplicate-code
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
@@ -769,6 +821,8 @@ def test_update_properties_to_have_duplicate_names(
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
         ),
     )
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
     # pylint: enable=duplicate-code
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
