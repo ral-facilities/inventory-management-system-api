@@ -5,6 +5,7 @@ WORKDIR /inventory-management-system-api-run
 COPY README.md pyproject.toml ./
 # Copy inventory_management_system_api source files
 COPY inventory_management_system_api/ inventory_management_system_api/
+COPY logs/ logs/
 
 RUN set -eux; \
     \
@@ -18,10 +19,8 @@ RUN set -eux; \
     addgroup -S inventory-management-system-api; \
     adduser -S -D -G inventory-management-system-api -H -h /inventory-management-system-api-run inventory-management-system-api; \
     \
-    # Create a log file \
-    touch inventory-management-system-api.log; \
-    # Change ownership of log file - app will need to write to it
-    chown -R inventory-management-system-api:inventory-management-system-api inventory-management-system-api.log;
+    # Change ownership of logs/ - app will need to write log files to it \
+    chown -R inventory-management-system-api:inventory-management-system-api logs/;
 
 USER inventory-management-system-api
 
