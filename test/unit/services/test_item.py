@@ -74,6 +74,7 @@ FULL_ITEM_INFO = {
         {"name": "Property A", "value": 21, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {"name": "Property D", "value": None, "unit": None},
     ],
 }
 # pylint: enable=duplicate-code
@@ -248,7 +249,10 @@ def test_create_without_properties(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
-            **{**FULL_ITEM_INFO, "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
+            **{
+                **FULL_ITEM_INFO,
+                "properties": [*FULL_CATALOGUE_ITEM_A_INFO["properties"], FULL_ITEM_INFO["properties"][-1]],
+            },
         )
     )
     assert created_item == item
@@ -482,7 +486,7 @@ def test_update_change_property_value(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": [{"name": "Property A", "value": 1, "unit": "mm"}] + FULL_ITEM_INFO["properties"][-2:],
+        "properties": [{"name": "Property A", "value": 1, "unit": "mm"}] + FULL_ITEM_INFO["properties"][-3:],
     }
 
     item = ItemOut(
@@ -542,7 +546,7 @@ def test_update_with_missing_existing_properties(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]] + FULL_ITEM_INFO["properties"][-2:],
+        "properties": [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]] + FULL_ITEM_INFO["properties"][-3:],
     }
 
     item = ItemOut(

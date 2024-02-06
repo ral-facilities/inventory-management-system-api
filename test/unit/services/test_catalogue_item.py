@@ -1272,7 +1272,13 @@ def test_update_remove_non_mandatory_property(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **catalogue_item_info,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "properties": [
+                    {"name": "Property A", "value": None, "unit": "mm"},
+                    *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
+                ],
+            },
         ),
     )
     assert updated_catalogue_item == catalogue_item

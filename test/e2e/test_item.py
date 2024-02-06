@@ -88,6 +88,7 @@ ITEM_POST_EXPECTED = {
         {"name": "Property A", "value": 21, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {"name": "Property D", "value": None, "unit": None},
     ],
 }
 
@@ -236,6 +237,7 @@ def test_create_with_missing_existing_properties(test_client):
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "unit": None, "value": False},
             {"name": "Property C", "unit": "cm", "value": "25x10x5"},
+            {"name": "Property D", "unit": None, "value": None},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
@@ -320,9 +322,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
             {"name": "Property A", "unit": "mm", "value": None},
             {"name": "Property B", "unit": None, "value": False},
             {"name": "Property C", "unit": "cm", "value": "25x10x5"},
-            # pylint: disable=fixme
-            # TODO: Uncomment this - see #173
-            # {"name": "Property D", "unit": None, "value": None},
+            {"name": "Property D", "unit": None, "value": None},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
@@ -359,7 +359,7 @@ def test_create_item_without_properties(test_client):
         **ITEM_POST_EXPECTED,
         "catalogue_item_id": catalogue_item_id,
         "system_id": None,
-        "properties": [{"name": "Property A", "value": 20, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+        "properties": [{"name": "Property A", "value": 20, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
     }
 
 
@@ -1061,7 +1061,7 @@ def test_partial_update_property_values(test_client):
 
     assert item == {
         **ITEM_POST_EXPECTED,
-        "properties": [{"name": "Property A", "value": 12, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-2:],
+        "properties": [{"name": "Property A", "value": 12, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
     }
@@ -1151,9 +1151,7 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
             {"name": "Property A", "unit": "mm", "value": None},
             {"name": "Property B", "unit": None, "value": False},
             {"name": "Property C", "unit": "cm", "value": "20x15x10"},
-            # pylint: disable=fixme
-            # TODO: Uncomment this - see #173
-            # {"name": "Property D", "unit": None, "value": None},
+            {"name": "Property D", "unit": None, "value": None},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
@@ -1326,6 +1324,7 @@ def test_partial_update_with_missing_existing_properties(test_client):
             {"name": "Property A", "value": 20, "unit": "mm"},
             {"name": "Property B", "unit": None, "value": False},
             {"name": "Property C", "unit": "cm", "value": "25x10x5"},
+            {"name": "Property D", "unit": None, "value": None},
         ],
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,

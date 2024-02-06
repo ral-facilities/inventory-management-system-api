@@ -407,7 +407,10 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
-        "properties": CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+        "properties": [
+            {"name": "Property A", "unit": "mm", "value": None},
+            *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+        ],
     }
 
 
@@ -1105,7 +1108,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
         **CATALOGUE_ITEM_POST_B_EXPECTED,
         "catalogue_category_id": catalogue_category_a_id,
         "manufacturer_id": manufacturer_id,
-        "properties": CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+        "properties": [
+            {"name": "Property A", "unit": "mm", "value": None},
+            *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+        ],
     }
 
 
@@ -1328,7 +1334,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
 
 def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test_client):
     """
-    Test updating a catalogue item's mandatory properties to have a value of None 
+    Test updating a catalogue item's mandatory properties to have a value of None
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
@@ -1360,7 +1366,7 @@ def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test
 
 def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(test_client):
     """
-    Test updating a catalogue item's non-mandatory properties to have a value of None 
+    Test updating a catalogue item's non-mandatory properties to have a value of None
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
@@ -1460,7 +1466,10 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
-        "properties": CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+        "properties": [
+            {"name": "Property A", "unit": "mm", "value": None},
+            *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:],
+        ],
     }
 
 

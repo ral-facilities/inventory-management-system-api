@@ -173,7 +173,7 @@ class ItemService:
         self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[PropertyPostRequestSchema]:
         """
-        Merge the properties defined in a catalogue item with those that should be overriden for an item in
+        Merges the properties defined in a catalogue item with those that should be overriden for an item in
         the order they are defined in the catalogue item.
 
         :param catalogue_item_properties: The list of property objects from the catalogue item.
