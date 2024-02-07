@@ -30,5 +30,5 @@ class UnitRepo:
 
         :return: List of Units or an empty list if no Units are retrieved
         """
-        units = self._units_collection.find({})
+        units = self._units_collection.find()
         return [UnitOut(**unit) for unit in units]
