@@ -7,10 +7,12 @@ from test.e2e.mock_schemas import (
     CATALOGUE_ITEM_POST_ALLOWED_VALUES,
     ITEM_POST_ALLOWED_VALUES,
     ITEM_POST_ALLOWED_VALUES_EXPECTED,
+    SYSTEM_POST_A,
+    SYSTEM_POST_B,
 )
 from unittest.mock import ANY
-from bson import ObjectId
 
+from bson import ObjectId
 
 # pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_A = {
@@ -51,22 +53,6 @@ MANUFACTURER_POST = {
     },
     "telephone": "0932348348",
 }
-
-SYSTEM_POST_A = {
-    "name": "System A",
-    "description": "System description",
-    "location": "Test location",
-    "owner": "Me",
-    "importance": "low",
-}
-
-SYSTEM_POST_B = {
-    "name": "System B",
-    "description": "System description",
-    "location": "Test location",
-    "owner": "Me",
-    "importance": "low",
-}
 # pylint: enable=duplicate-code
 
 ITEM_POST = {
@@ -97,13 +83,16 @@ def test_create_item(test_client):
     """
     Test creating an item.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -151,9 +140,11 @@ def test_create_item_with_invalid_system_id(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -176,9 +167,11 @@ def test_create_item_with_non_existent_system_id(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -197,11 +190,11 @@ def test_create_item_with_non_existent_system_id(test_client):
 
 def test_create_with_missing_existing_properties(test_client):
     """Test creating an item when not all properties defined in the catalogue item are supplied"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -245,12 +238,14 @@ def test_create_with_missing_existing_properties(test_client):
 
 
 def test_create_with_mandatory_properties_given_none(test_client):
-    """Test creating an item when a mandatory property is given a value of None"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test creating an item when a mandatory property is given a value of None
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -281,12 +276,14 @@ def test_create_with_mandatory_properties_given_none(test_client):
 
 
 def test_create_with_non_mandatory_properties_given_none(test_client):
-    """Test creating an item when non-mandatory properties are given a value of None"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test creating an item when non-mandatory properties are given a value of None
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -335,9 +332,14 @@ def test_create_item_without_properties(test_client):
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -347,7 +349,7 @@ def test_create_item_without_properties(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     del item_post["properties"]
     response = test_client.post("/v1/items", json=item_post)
 
@@ -358,7 +360,7 @@ def test_create_item_without_properties(test_client):
     assert item == {
         **ITEM_POST_EXPECTED,
         "catalogue_item_id": catalogue_item_id,
-        "system_id": None,
+        "system_id": system_id,
         "properties": [{"name": "Property A", "value": 20, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
     }
 
@@ -367,13 +369,16 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
     """
     Test creating an item with invalid value type for a string catalogue item property.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -402,13 +407,16 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     """
     Test creating an item with invalid value type for a number catalogue item property.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -437,13 +445,16 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     """
     Test creating an item with invalid value type for a boolean catalogue item property.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -472,13 +483,16 @@ def test_create_item_with_allowed_values(test_client):
     """
     Test creating an item when using allowed_values in the properties.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
@@ -503,13 +517,16 @@ def test_create_item_with_allowed_values_invalid_list_string(test_client):
     Test creating an item when giving a string property a value that is not within the defined allowed_values
     list
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
@@ -539,13 +556,16 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
     Test creating an item when giving a number property a value that is not within the defined allowed_values
     list
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
@@ -573,13 +593,16 @@ def test_delete(test_client):
     """
     Test deleting an item
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -625,13 +648,16 @@ def test_get_item(test_client):
     """
     Test getting an item by its ID.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -678,13 +704,18 @@ def test_get_items(test_client):
     """
     Test getting items
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id_a = response.json()["id"]
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_B)
+    system_id_b = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -694,8 +725,8 @@ def test_get_items(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
-    item_post_b = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id_a}
+    item_post_b = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id_b}
 
     test_client.post("/v1/items", json=item_post_a)
     test_client.post("/v1/items", json=item_post_b)
@@ -710,12 +741,12 @@ def test_get_items(test_client):
         {
             **ITEM_POST_EXPECTED,
             "catalogue_item_id": catalogue_item_id,
-            "system_id": None,
+            "system_id": system_id_a,
         },
         {
             **ITEM_POST_EXPECTED,
             "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
+            "system_id": system_id_b,
         },
     ]
 
@@ -724,13 +755,16 @@ def test_get_items_with_system_id_filters(test_client):
     """
     Test getting items with system id filter
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -765,12 +799,16 @@ def test_get_items_with_catalogue_id_filters(test_client):
     """
     Test getting items with catalogue item id filter
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -780,7 +818,7 @@ def test_get_items_with_catalogue_id_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
     test_client.post("/v1/items", json=item_post_a)
 
@@ -794,7 +832,7 @@ def test_get_items_with_catalogue_id_filters(test_client):
         {
             **ITEM_POST_EXPECTED,
             "catalogue_item_id": catalogue_item_id,
-            "system_id": None,
+            "system_id": system_id,
         }
     ]
 
@@ -803,13 +841,16 @@ def test_get_items_with_no_matching_filters(test_client):
     """
     Test getting items with neither filter having matching results
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -819,7 +860,7 @@ def test_get_items_with_no_matching_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
-    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": None}
+    item_post_a = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     item_post_b = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
     test_client.post("/v1/items", json=item_post_a)
@@ -858,11 +899,11 @@ def test_partial_update_item(test_client):
     """
     Test changing 'usage_status' and 'is_defective' in an item
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -918,11 +959,11 @@ def test_partial_update_change_catalogue_item_id(test_client):
     """
     Test moving an item to another catalogue item
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -951,14 +992,14 @@ def test_partial_update_change_system_id(test_client):
     """
     Test changing the system ID of an item
     """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id_a = response.json()["id"]
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_B)
     system_id_b = response.json()["id"]
-
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -992,12 +1033,14 @@ def test_partial_update_change_system_id(test_client):
 
 
 def test_partial_update_change_nonexistent_system_id(test_client):
-    """Test updating system ID which is nonexistent"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test updating system ID which is nonexistent
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1023,12 +1066,14 @@ def test_partial_update_change_nonexistent_system_id(test_client):
 
 
 def test_partial_update_property_values(test_client):
-    """Test updating property values"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test updating property values
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1071,11 +1116,11 @@ def test_partial_update_property_values_with_mandatory_properties_given_none(tes
     """
     Test updating a item's mandatory properties to have a value of None
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1109,11 +1154,11 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
     """
     Test updating a item's mandatory properties to have a value of None
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1159,12 +1204,14 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
 
 
 def test_partial_update_property_values_with_allowed_values(test_client):
-    """Test updating property values when using allowed_values in the catalogue category properties"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test updating property values when using allowed_values in the catalogue category properties
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1206,13 +1253,15 @@ def test_partial_update_property_values_with_allowed_values(test_client):
 
 
 def test_partial_update_property_values_with_allowed_values_invalid_list_string(test_client):
-    """Test updating property values when giving a string property a value that is not within the defined
-    allowed_values"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test updating property values when giving a string property a value that is not within the defined
+    allowed_values
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1245,13 +1294,15 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
 
 
 def test_partial_update_property_values_with_allowed_values_invalid_list_number(test_client):
-    """Test updating property values when giving a number property a value that is not within the defined
-    allowed_values"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test updating property values when giving a number property a value that is not within the defined
+    allowed_values
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1283,12 +1334,14 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
 
 
 def test_partial_update_with_missing_existing_properties(test_client):
-    """Test updating an item when not all properties defined in the catalogue item are supplied"""
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
+    """
+    Test updating an item when not all properties defined in the catalogue item are supplied
+    """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1335,11 +1388,11 @@ def test_partial_update_item_change_value_for_string_property_invalid_type(test_
     """
     Test changing the value of a string item property to an invalid type.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1371,11 +1424,11 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
     """
     Test changing the value of a string item property to an invalid type.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
@@ -1407,11 +1460,11 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(test
     """
     Test changing the value of a string item property to an invalid type.
     """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
