@@ -86,7 +86,7 @@ class ItemRepo:
         query = {}
         if system_id:
             # allows users to filter by items with no system ID
-            query["system_id"] = None if system_id == "null" else CustomObjectId(system_id)
+            query["system_id"] = CustomObjectId(system_id)
 
         if catalogue_item_id:
             catalogue_item_id = CustomObjectId(catalogue_item_id)

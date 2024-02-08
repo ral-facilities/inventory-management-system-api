@@ -157,7 +157,7 @@ def test_get_breadcrumbs(test_helpers, system_repository_mock, system_service):
 
     Verify that the `get_breadcrumbs` method properly handles the retrieval of a System
     """
-    system_id = str(ObjectId)
+    system_id = str(ObjectId())
     breadcrumbs = MagicMock()
 
     # Mock `get` to return breadcrumbs
