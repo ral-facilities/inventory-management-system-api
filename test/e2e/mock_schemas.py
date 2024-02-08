@@ -81,4 +81,46 @@ ITEM_POST_ALLOWED_VALUES_EXPECTED = {
         {"name": "Property B", "value": "green", "unit": None},
     ],
 }
+
+SYSTEM_POST_A = {
+    "name": "System A",
+    "description": "System description",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+}
+SYSTEM_POST_A_EXPECTED = {
+    **SYSTEM_POST_A,
+    "id": ANY,
+    "parent_id": None,
+    "code": "system-a",
+}
+
+# To be posted as a child of the above
+SYSTEM_POST_B = {
+    "name": "System B",
+    "description": "System description",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+}
+SYSTEM_POST_B_EXPECTED = {
+    **SYSTEM_POST_B,
+    "id": ANY,
+    "code": "system-b",
+}
+
+SYSTEM_POST_C = {
+    "name": "System C",
+    "description": "System description",
+    "location": "Test location",
+    "owner": "Me",
+    "importance": "low",
+}
+SYSTEM_POST_C_EXPECTED = {
+    **SYSTEM_POST_C,
+    "id": ANY,
+    "parent_id": None,
+    "code": "system-c",
+}
 # pylint: enable=duplicate-code
