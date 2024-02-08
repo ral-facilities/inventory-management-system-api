@@ -407,13 +407,13 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     """
     Test creating an item with invalid value type for a number catalogue item property.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
 
@@ -445,13 +445,13 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     """
     Test creating an item with invalid value type for a boolean catalogue item property.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
 
@@ -483,11 +483,13 @@ def test_create_item_with_allowed_values(test_client):
     """
     Test creating an item when using allowed_values in the properties.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
@@ -556,6 +558,7 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
     Test creating an item when giving a number property a value that is not within the defined allowed_values
     list
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
@@ -563,7 +566,6 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
     system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
@@ -593,6 +595,7 @@ def test_delete(test_client):
     """
     Test deleting an item
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -600,7 +603,6 @@ def test_delete(test_client):
     system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    # pylint: disable=duplicate-code
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
@@ -1298,6 +1300,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
     Test updating property values when giving a number property a value that is not within the defined
     allowed_values
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
     catalogue_category_id = response.json()["id"]
 
@@ -1307,7 +1310,6 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category_id,
@@ -1337,6 +1339,7 @@ def test_partial_update_with_missing_existing_properties(test_client):
     """
     Test updating an item when not all properties defined in the catalogue item are supplied
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -1346,7 +1349,6 @@ def test_partial_update_with_missing_existing_properties(test_client):
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -1424,6 +1426,7 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
     """
     Test changing the value of a string item property to an invalid type.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -1433,7 +1436,6 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_id,
@@ -1460,6 +1462,7 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(test
     """
     Test changing the value of a string item property to an invalid type.
     """
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -1468,6 +1471,7 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(test
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
+    # pylint: enable=duplicate-code
 
     # pylint: disable=duplicate-code
     catalogue_item_post = {
