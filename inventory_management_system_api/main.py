@@ -12,7 +12,14 @@ from fastapi.responses import JSONResponse
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.logger_setup import setup_logger
-from inventory_management_system_api.routers.v1 import catalogue_category, catalogue_item, system, manufacturer, item
+from inventory_management_system_api.routers.v1 import (
+    catalogue_category,
+    catalogue_item,
+    item,
+    manufacturer,
+    system,
+    unit,
+)
 
 if config.authentication.enabled:
     from inventory_management_system_api.auth.jwt_bearer import JWTBearer
@@ -86,6 +93,7 @@ app.include_router(catalogue_item.router, dependencies=router_dependencies)
 app.include_router(item.router, dependencies=router_dependencies)
 app.include_router(manufacturer.router, dependencies=router_dependencies)
 app.include_router(system.router, dependencies=router_dependencies)
+app.include_router(unit.router, dependencies=router_dependencies)
 
 
 @app.get("/")

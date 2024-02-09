@@ -32,4 +32,5 @@ class SystemOut(SystemIn):
 
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
+
     model_config = ConfigDict(populate_by_name=True)
