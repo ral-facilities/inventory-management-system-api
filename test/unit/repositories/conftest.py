@@ -17,15 +17,15 @@ from inventory_management_system_api.repositories.catalogue_item import Catalogu
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.system import SystemRepo
+from inventory_management_system_api.repositories.unit import UnitRepo
 
 
 @pytest.fixture(name="database_mock")
 def fixture_database_mock() -> Mock:
     """
-    Fixture to create a mock of the MongoDB database dependency and the `catalogue_categories` and `catalogue_items`
-    collections.
+    Fixture to create a mock of the MongoDB database dependency and its collections.
 
-    :return: Mocked MongoDB database instance with the mocked `catalogue_categories` and `catalogue_items` collections.
+    :return: Mocked MongoDB database instance with the mocked collections.
     """
     database_mock = Mock(Database)
     database_mock.catalogue_categories = Mock(Collection)
@@ -33,6 +33,7 @@ def fixture_database_mock() -> Mock:
     database_mock.items = Mock(Collection)
     database_mock.manufacturers = Mock(Collection)
     database_mock.systems = Mock(Collection)
+    database_mock.units = Mock(Collection)
     return database_mock
 
 
@@ -86,6 +87,17 @@ def fixture_system_repository(database_mock: Mock) -> SystemRepo:
     :return: `SystemRepo` instance with the mocked dependency.
     """
     return SystemRepo(database_mock)
+
+
+@pytest.fixture(name="unit_repository")
+def fixture_unit_repository(database_mock: Mock) -> UnitRepo:
+    """
+    Fixture to create a `UnitRepo` instance with a mocked Database dependency.
+
+    :param database_mock: Mocked MongoDB database instance.
+    :return: `UnitRepo` instance with the mocked dependency.
+    """
+    return UnitRepo(database_mock)
 
 
 class RepositoryTestHelpers:
