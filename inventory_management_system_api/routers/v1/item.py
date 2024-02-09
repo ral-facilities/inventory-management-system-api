@@ -24,7 +24,7 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
 
 
 @router.post(
-    path="/",
+    path="",
     summary="Create a new item",
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
@@ -77,7 +77,7 @@ def delete_item(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
 
-@router.get(path="/", summary="Get items", response_description="List of items")
+@router.get(path="", summary="Get items", response_description="List of items")
 def get_items(
     item_service: Annotated[ItemService, Depends(ItemService)],
     system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,

@@ -26,7 +26,7 @@ router = APIRouter(prefix="/v1/systems", tags=["systems"])
 
 
 @router.post(
-    path="/",
+    path="",
     summary="Create a new System",
     response_description="The created System",
     status_code=status.HTTP_201_CREATED,
@@ -50,7 +50,7 @@ def create_system(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
-@router.get(path="/", summary="Get Systems", response_description="List of Systems")
+@router.get(path="", summary="Get Systems", response_description="List of Systems")
 def get_systems(
     system_service: Annotated[SystemService, Depends(SystemService)],
     parent_id: Annotated[Optional[str], Query(description="Filter Systems by parent ID")] = None,
