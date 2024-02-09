@@ -27,7 +27,7 @@ class ItemPostRequestSchema(BaseModel):
     """
 
     catalogue_item_id: str = Field(description="The ID of the corresponding catalogue item for this item")
-    system_id: str = Field(default=None, description="The ID of the system that the item belongs to")
+    system_id: str = Field(description="The ID of the system that the item belongs to")
     purchase_order_number: Optional[str] = Field(default=None, description="The purchase order number of the item")
     is_defective: bool = Field(description="Whether the item is defective or not")
     usage_status: ItemUsageStatus = Field(
