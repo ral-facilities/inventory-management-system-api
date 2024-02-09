@@ -1048,8 +1048,44 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_without_prop
     assert response.status_code == 422
     assert (
         response.json()["detail"]
-        == "Invalid value type for catalogue item property 'Property A'. Expected type: boolean."
+        == "Cannot move catalogue item to a category with different catalogue_item_properties without specifying the "
+        "new properties"
     )
+
+
+def test_partial_update_catalogue_item_change_catalogue_category_id_with_properties(test_client):
+    """
+    Test moving a catalogue item to another catalogue category while supplying any new catalogue item properties.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_a_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
+    catalogue_category_b_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_a_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+
+    new_properties = CATALOGUE_ITEM_POST_B["properties"]
+    catalogue_item_patch = {"catalogue_category_id": catalogue_category_b_id, "properties": new_properties}
+    response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
+
+    assert response.status_code == 200
+
+    catalogue_item = response.json()
+
+    assert catalogue_item == {
+        **CATALOGUE_ITEM_POST_A_EXPECTED,
+        "catalogue_category_id": catalogue_category_b_id,
+        "manufacturer_id": manufacturer_id,
+        "properties": CATALOGUE_ITEM_POST_B_EXPECTED["properties"],
+    }
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mandatory_properties(test_client):

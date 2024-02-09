@@ -859,7 +859,63 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
             catalogue_item_id,
             CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),
         )
-    assert str(exc.value) == "Cannot move catalogue item to a category with different catalogue_item_properties"
+    assert (
+        str(exc.value) == "Cannot move catalogue item to a category with different catalogue_item_properties without "
+        "specifying the new properties"
+    )
+
+
+def test_update_change_catalogue_category_id_different_defined_properties_order_without_supplied_properties(
+    test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
+):
+    """
+    Test moving a catalogue item to another catalogue category that has different defined catalogue item properties
+    order when no properties are supplied.
+    """
+    catalogue_item_id = str(ObjectId())
+    current_catalogue_category_id = str(ObjectId())
+
+    # Mock `get` to return a catalogue item
+    test_helpers.mock_get(
+        catalogue_item_repository_mock,
+        CatalogueItemOut(
+            id=catalogue_item_id,
+            manufacturer_id=str(ObjectId()),
+            catalogue_category_id=str(ObjectId()),
+            **FULL_CATALOGUE_ITEM_A_INFO,
+        ),
+    )
+    # Mock so no child elements found
+    catalogue_item_repository_mock.has_child_elements.return_value = False
+    catalogue_category_id = str(ObjectId())
+    # Mock `get` to return the new catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": [
+                    *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][::-1],
+                ],
+            },
+        ),
+    )
+    # Mock `get` to return the current catalogue category
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(id=current_catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+    )
+
+    with pytest.raises(InvalidActionError) as exc:
+        catalogue_item_service.update(
+            catalogue_item_id,
+            CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),
+        )
+    assert (
+        str(exc.value) == "Cannot move catalogue item to a category with different catalogue_item_properties without "
+        "specifying the new properties"
+    )
 
 
 def test_update_change_catalogue_category_id_different_defined_properties_with_supplied_properties(

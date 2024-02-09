@@ -4,26 +4,25 @@ repositories.
 """
 
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import Depends
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
     MissingRecordError,
     NonLeafCategoryError,
 )
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
-    CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
-    PropertyPostRequestSchema,
+    CatalogueItemPostRequestSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -170,7 +169,8 @@ class CatalogueItemService:
                 )
                 if current_catalogue_category.catalogue_item_properties != catalogue_category.catalogue_item_properties:
                     raise InvalidActionError(
-                        "Cannot move catalogue item to a category with different catalogue_item_properties"
+                        "Cannot move catalogue item to a category with different catalogue_item_properties without "
+                        "specifying the new properties"
                     )
 
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
