@@ -18,7 +18,7 @@ class ItemIn(BaseModel):
     """
 
     catalogue_item_id: CustomObjectIdField
-    system_id: Optional[CustomObjectIdField] = None
+    system_id: CustomObjectIdField
     purchase_order_number: Optional[str] = None
     is_defective: bool
     usage_status: int

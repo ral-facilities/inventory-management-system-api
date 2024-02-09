@@ -529,7 +529,7 @@ def test_delete(catalogue_item_repository_mock, catalogue_item_service):
 
     Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
     """
-    catalogue_item_id = str(ObjectId)
+    catalogue_item_id = str(ObjectId())
 
     catalogue_item_service.delete(catalogue_item_id)
 

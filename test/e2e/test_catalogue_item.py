@@ -6,6 +6,7 @@ from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
+    SYSTEM_POST_A,
 )
 from test.e2e.test_item import ITEM_POST
 from unittest.mock import ANY
@@ -676,6 +677,9 @@ def test_delete_catalogue_item_with_child_items(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -689,7 +693,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
     catalogue_item_id = response.json()["id"]
 
     # child
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     test_client.post("/v1/items", json=item_post)
 
     response = test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
@@ -1211,6 +1215,9 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b_id = response.json()["id"]
 
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -1228,7 +1235,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
     }
 
     # child
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     test_client.post("/v1/items", json=item_post)
 
     response = test_client.patch(f"/v1/catalogue-items/{catalogue_item_id}", json=catalogue_item_patch)
@@ -1704,12 +1711,16 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
         response.json()["detail"] == "Invalid value for catalogue item property 'Property A'. Expected one of 2, 4, 6."
     )
 
+
 def test_partial_update_catalogue_item_properties_when_has_child_items(test_client):
     """
     Test updating the properties of a catalogue item when it has child items.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_d_id = response.json()["id"]
@@ -1730,7 +1741,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     catalogue_item_id = response.json()["id"]
 
     # Child
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     test_client.post("/v1/items", json=item_post)
 
     catalogue_item_patch = {
@@ -1740,6 +1751,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
+
 
 def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_items(test_client):
     """
@@ -1797,6 +1809,9 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -1809,7 +1824,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     catalogue_item_id = response.json()["id"]
 
     # Child
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id}
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     test_client.post("/v1/items", json=item_post)
 
     catalogue_item_patch = {

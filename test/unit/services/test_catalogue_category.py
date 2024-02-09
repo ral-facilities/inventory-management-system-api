@@ -314,7 +314,7 @@ def test_get_breadcrumbs(test_helpers, catalogue_category_repository_mock, catal
 
     Verify that the `get_breadcrumbs` method properly handles the retrieval of a System
     """
-    catalogue_category_id = str(ObjectId)
+    catalogue_category_id = str(ObjectId())
     breadcrumbs = MagicMock()
 
     # Mock `get` to return breadcrumbs
@@ -392,6 +392,7 @@ def test_update_when_no_child_elements(test_helpers, catalogue_category_reposito
     # pylint: enable=duplicate-code
     assert updated_catalogue_category == catalogue_category
 
+
 def test_update_when_has_child_elements(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test updating a catalogue category when it has child elements
@@ -441,6 +442,7 @@ def test_update_when_has_child_elements(test_helpers, catalogue_category_reposit
     )
     # pylint: enable=duplicate-code
     assert updated_catalogue_category == catalogue_category
+
 
 def test_update_with_nonexistent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
