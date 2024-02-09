@@ -16,7 +16,7 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/units", tags=["units"])
 
 
-@router.get(path="/", summary="Get Units", response_description="List of Units")
+@router.get(path="", summary="Get Units", response_description="List of Units")
 def get_units(unit_service: Annotated[UnitService, Depends(UnitService)]) -> list[UnitSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Units")

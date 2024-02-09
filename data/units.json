@@ -1,46 +1,68 @@
 [
     {
-        "_id": "65c3968fcca15ccd501b0cd0",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd0"
+        },
         "value": "nm"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd1",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd1"
+        },
         "value": "μm"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd2",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd2"
+        },
         "value": "mm"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd3",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd3"
+        },
         "value": "cm"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd4",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd4"
+        },
         "value": "m"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd5",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd5"
+        },
         "value": "J"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd6",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd6"
+        },
         "value": "kg"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd7",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd7"
+        },
         "value": "s"
     },
     {
-        "_id": "65c3968fcca15ccd501b0cd8",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0cd8"
+        },
         "value": "K"
     },
     {
-        "_id": "65c3968fcca15ccd501b0ce0",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0ce0"
+        },
         "value": "°C"
     },
     {
-        "_id": "65c3968fcca15ccd501b0ce1",
+        "_id": {
+            "$oid": "65c3968fcca15ccd501b0ce1"
+        },
         "value": "£"
     }
 ]

@@ -10,7 +10,8 @@ from inventory_management_system_api.core.database import get_database
 
 # Load in the units data
 with open("./data/units.json", "r", encoding="utf-8") as file:
-    UNITS = json.load(file)
+    units_data = json.load(file)
+    UNITS = [{"_id": unit["_id"]["$oid"], "value": unit["value"]} for unit in units_data]
 UNITS_EXPECTED = [{"id": unit["_id"], "value": unit["value"]} for unit in UNITS]
 
 
