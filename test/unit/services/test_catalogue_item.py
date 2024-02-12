@@ -529,7 +529,7 @@ def test_delete(catalogue_item_repository_mock, catalogue_item_service):
 
     Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
     """
-    catalogue_item_id = str(ObjectId)
+    catalogue_item_id = str(ObjectId())
 
     catalogue_item_service.delete(catalogue_item_id)
 
@@ -1272,7 +1272,13 @@ def test_update_remove_non_mandatory_property(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **catalogue_item_info,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "properties": [
+                    {"name": "Property A", "value": None, "unit": "mm"},
+                    *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
+                ],
+            },
         ),
     )
     assert updated_catalogue_item == catalogue_item

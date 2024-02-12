@@ -158,12 +158,14 @@ def test_list(test_helpers, database_mock, item_repository):
         **FULL_ITEM_INFO,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
     )
 
     item_b = ItemOut(
         **FULL_ITEM_INFO,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
     )
 
     # Mock `find` to return a list of item documents
@@ -174,11 +176,13 @@ def test_list(test_helpers, database_mock, item_repository):
                 **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item_a.id),
                 "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
+                "system_id": CustomObjectId(item_a.system_id),
             },
             {
                 **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item_b.id),
                 "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
+                "system_id": CustomObjectId(item_b.system_id),
             },
         ],
     )
@@ -212,8 +216,8 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
             {
                 **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
-                "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                "system_id": CustomObjectId(item.system_id),
             }
         ],
     )
@@ -221,38 +225,6 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
     retrieved_item = item_repository.list(item.system_id, None)
 
     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)})
-    assert retrieved_item == [item]
-
-
-def test_list_with_system_id_as_null(test_helpers, database_mock, item_repository):
-    """
-    Test getting items based on the provided system ID filter.
-
-    Verify that the `list` method properly handles the retrieval of items based on
-    the provided system ID filter
-    """
-
-    item = ItemOut(
-        **FULL_ITEM_INFO,
-        id=str(ObjectId()),
-        catalogue_item_id=str(ObjectId()),
-    )
-
-    # Mock `find` to return a list of item documents
-    test_helpers.mock_find(
-        database_mock.items,
-        [
-            {
-                **FULL_ITEM_INFO,
-                "_id": CustomObjectId(item.id),
-                "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-            }
-        ],
-    )
-
-    retrieved_item = item_repository.list("null", None)
-
-    database_mock.items.find.assert_called_once_with({"system_id": None})
     assert retrieved_item == [item]
 
 
@@ -309,8 +281,8 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
             {
                 **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
-                "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                "system_id": CustomObjectId(item.system_id),
             }
         ],
     )
@@ -373,8 +345,8 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
             {
                 **FULL_ITEM_INFO,
                 "_id": CustomObjectId(item.id),
-                "system_id": CustomObjectId(item.system_id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
+                "system_id": CustomObjectId(item.system_id),
             }
         ],
     )

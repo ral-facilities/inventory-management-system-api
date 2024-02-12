@@ -2,6 +2,13 @@
 End-to-End tests for the System router
 """
 
+from test.e2e.mock_schemas import (
+    SYSTEM_POST_A,
+    SYSTEM_POST_A_EXPECTED,
+    SYSTEM_POST_B,
+    SYSTEM_POST_B_EXPECTED,
+    SYSTEM_POST_C,
+)
 from test.e2e.test_catalogue_category import CATALOGUE_CATEGORY_POST_B
 from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
@@ -25,48 +32,6 @@ SYSTEM_POST_REQUIRED_ONLY_EXPECTED = {
     "location": None,
     "owner": None,
     "code": "system-test",
-}
-
-SYSTEM_POST_A = {
-    "name": "System A",
-    "description": "System description",
-    "location": "Test location",
-    "owner": "Me",
-    "importance": "low",
-}
-SYSTEM_POST_A_EXPECTED = {
-    **SYSTEM_POST_A,
-    "id": ANY,
-    "parent_id": None,
-    "code": "system-a",
-}
-
-# To be posted as a child of the above
-SYSTEM_POST_B = {
-    "name": "System B",
-    "description": "System description",
-    "location": "Test location",
-    "owner": "Me",
-    "importance": "low",
-}
-SYSTEM_POST_B_EXPECTED = {
-    **SYSTEM_POST_B,
-    "id": ANY,
-    "code": "system-b",
-}
-
-SYSTEM_POST_C = {
-    "name": "System C",
-    "description": "System description",
-    "location": "Test location",
-    "owner": "Me",
-    "importance": "low",
-}
-SYSTEM_POST_C_EXPECTED = {
-    **SYSTEM_POST_C,
-    "id": ANY,
-    "parent_id": None,
-    "code": "system-c",
 }
 
 

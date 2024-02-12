@@ -1,5 +1,5 @@
 """
-Module for providing a repository for managing System's in a MongoDB database
+Module for providing a repository for managing Systems in a MongoDB database
 """
 
 import logging
@@ -26,7 +26,7 @@ logger = logging.getLogger()
 
 class SystemRepo:
     """
-    Repository for managing System's in a MongoDB database
+    Repository for managing Systems in a MongoDB database
     """
 
     def __init__(self, database: Database = Depends(get_database)) -> None:
@@ -101,7 +101,7 @@ class SystemRepo:
         Retrieve Systems from a MongoDB database based on the provided filters
 
         :param parent_id: parent_id to filter Systems by
-        :return: List of System's or an empty list if no Systems are retrieved
+        :return: List of Systems or an empty list if no Systems are retrieved
         """
         query = utils.list_query(parent_id, "systems")
 

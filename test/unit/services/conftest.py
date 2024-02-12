@@ -12,16 +12,18 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.system import SystemRepo
+from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
 from inventory_management_system_api.services.system import SystemService
+from inventory_management_system_api.services.unit import UnitService
 
 
 @pytest.fixture(name="catalogue_category_repository_mock")
@@ -72,6 +74,16 @@ def fixture_system_repository_mock() -> Mock:
     :return: Mocked SystemRepo instance.
     """
     return Mock(SystemRepo)
+
+
+@pytest.fixture(name="unit_repository_mock")
+def fixture_unit_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `UnitRepo` dependency.
+
+    :return: Mocked UnitRepo instance.
+    """
+    return Mock(UnitRepo)
 
 
 @pytest.fixture(name="catalogue_category_service")
@@ -144,6 +156,18 @@ def fixture_system_service(system_repository_mock: Mock) -> SystemService:
     :return: `SystemService` instance with the mocked dependency
     """
     return SystemService(system_repository_mock)
+
+
+@pytest.fixture(name="unit_service")
+def fixture_unit_service(unit_repository_mock: Mock) -> UnitService:
+    """
+    Fixture to create a `UnitService` instance with a mocked `UnitRepo`
+    dependencies.
+
+    :param unit_repository_mock: Mocked `UnitRepo` instance
+    :return: `UnitService` instance with the mocked dependency
+    """
+    return UnitService(unit_repository_mock)
 
 
 class ServiceTestHelpers:

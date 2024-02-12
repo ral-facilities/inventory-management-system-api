@@ -74,6 +74,7 @@ FULL_ITEM_INFO = {
         {"name": "Property A", "value": 21, "unit": "mm"},
         {"name": "Property B", "value": False, "unit": None},
         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {"name": "Property D", "value": None, "unit": None},
     ],
 }
 # pylint: enable=duplicate-code
@@ -125,14 +126,14 @@ def test_create_with_non_existent_catalogue_item_id(
     """
     Test creating an item with a non-existent catalogue item ID.
     """
-    catalogue_item_id = str(ObjectId)
+    catalogue_item_id = str(ObjectId())
 
     # Mock `get` to not return a catalogue item
     test_helpers.mock_get(catalogue_item_repository_mock, None)
 
     with pytest.raises(MissingRecordError) as exc:
         item_service.create(
-            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId), **ITEM_INFO)
+            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId()), **ITEM_INFO)
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     item_repository_mock.create.assert_not_called()
@@ -145,7 +146,7 @@ def test_create_with_invalid_catalogue_item_id(
     """
     Test creating an item with an invalid catalogue item ID.
     """
-    catalogue_item_id = str(ObjectId)
+    catalogue_item_id = str(ObjectId())
     catalogue_category_id = "invalid"
     manufacturer_id = str(ObjectId())
     # Mock `get` to return a catalogue item
@@ -165,7 +166,7 @@ def test_create_with_invalid_catalogue_item_id(
 
     with pytest.raises(DatabaseIntegrityError) as exc:
         item_service.create(
-            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId), **ITEM_INFO)
+            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId()), **ITEM_INFO)
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
@@ -179,8 +180,8 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
     """
     Test creating an item with a non-existent catalogue category ID in a catalogue item.
     """
-    catalogue_item_id = str(ObjectId)
-    catalogue_category_id = str(ObjectId)
+    catalogue_item_id = str(ObjectId())
+    catalogue_category_id = str(ObjectId())
     manufacturer_id = str(ObjectId())
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
@@ -197,12 +198,12 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
 
     with pytest.raises(DatabaseIntegrityError) as exc:
         item_service.create(
-            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId), **ITEM_INFO)
+            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId()), **ITEM_INFO)
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     item_repository_mock.create.assert_not_called()
-    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_item_id}"
+    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
 
 def test_create_without_properties(
@@ -248,7 +249,10 @@ def test_create_without_properties(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
-            **{**FULL_ITEM_INFO, "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
+            **{
+                **FULL_ITEM_INFO,
+                "properties": [*FULL_CATALOGUE_ITEM_A_INFO["properties"], FULL_ITEM_INFO["properties"][-1]],
+            },
         )
     )
     assert created_item == item
@@ -260,7 +264,7 @@ def test_delete(item_repository_mock, item_service):
 
     Verify that the `delete` method properly handles the deletion of item by ID.
     """
-    item_id = str(ObjectId)
+    item_id = str(ObjectId())
 
     item_service.delete(item_id)
 
@@ -482,7 +486,7 @@ def test_update_change_property_value(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": [{"name": "Property A", "value": 1, "unit": "mm"}] + FULL_ITEM_INFO["properties"][-2:],
+        "properties": [{"name": "Property A", "value": 1, "unit": "mm"}] + FULL_ITEM_INFO["properties"][-3:],
     }
 
     item = ItemOut(
@@ -542,7 +546,7 @@ def test_update_with_missing_existing_properties(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]] + FULL_ITEM_INFO["properties"][-2:],
+        "properties": [FULL_CATALOGUE_ITEM_A_INFO["properties"][0]] + FULL_ITEM_INFO["properties"][-3:],
     }
 
     item = ItemOut(

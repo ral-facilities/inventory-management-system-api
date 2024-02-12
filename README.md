@@ -141,16 +141,6 @@ Ensure that Python is installed on your machine before proceeding.
 
 ## Notes
 
-### JWT Authentication/Authorization
-This microservice supports JWT authentication/authorization and this can be enabled or disabled by setting
-the `AUTHENTICATION__ENABLED` environment variable to `True` or `False`. When enabled, all the endpoints require a JWT
-access token to be supplied. This ensures that only authenticated and authorized users can access the resources. To
-decode the JWT access token, the application needs the public key that corresponding to the private key used for
-encoding the token. Once the JWT access token is decoded successfully, it checks that it has a `username` in the
-payload, and it has not expired. This means that any microservice can be used to generate JWT access tokens so long as
-it meets  the above criteria. The [LDAP-JWT Authentication Service](https://github.com/ral-facilities/ldap-jwt-auth) is
-a microservice that provides user authentication against an LDAP server and returns a JWT access token.
-
 ### Application Configuration
 The configuration for the application is handled
 using [Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/). It allows for loading config
@@ -174,3 +164,31 @@ Listed below are the environment variables supported by the application.
 | `DATABASE__HOSTNAME`              | The hostname of the database to use for the `MongoClient` to connect to the database.                        | Yes                 |                                                       |
 | `DATABASE__PORT`                  | The port of the database to use for the `MongoClient` to connect to the database.                            | Yes                 |                                                       |
 | `DATABASE__NAME`                  | The name of the database to use for the `MongoClient` to connect to the database.                            | Yes                 |                                                       |
+
+### JWT Authentication/Authorization
+This microservice supports JWT authentication/authorization and this can be enabled or disabled by setting
+the `AUTHENTICATION__ENABLED` environment variable to `True` or `False`. When enabled, all the endpoints require a JWT
+access token to be supplied. This ensures that only authenticated and authorized users can access the resources. To
+decode the JWT access token, the application needs the public key that corresponding to the private key used for
+encoding the token. Once the JWT access token is decoded successfully, it checks that it has a `username` in the
+payload, and it has not expired. This means that any microservice can be used to generate JWT access tokens so long as
+it meets  the above criteria. The [LDAP-JWT Authentication Service](https://github.com/ral-facilities/ldap-jwt-auth) is
+a microservice that provides user authentication against an LDAP server and returns a JWT access token.
+
+### Adding units
+Units should be added to the MongoDB database using `mongoimport` on the provided units file found at
+`/data/units.json`. If adding more units to this file, ensure the `_id` values are valid `ObjectId`'s.
+
+#### Updating a local MongoDB instance
+To update the list of units, replacing all existing with the contents of the `./data/units.json` file use the command
+```bash
+mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop ./data/units.json
+```
+from the root directory of this repo, replacing the username and password as appropriate.
+
+#### Updating a MongoDB instance running in a docker container
+When running using docker first locate the running container with the instance of MongoDB using `docker ps`. Then use
+```bash
+docker exec -i CONTAINER_ID sh -c "mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop" < ./data/units.json
+```
+Replacing `CONTAINER_ID` with the actual container ID of the MongoDB instance.

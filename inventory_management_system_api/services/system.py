@@ -75,7 +75,7 @@ class SystemService:
         Retrieve Systems based on the provided filters
 
         :param parent_id: parent_id to filter Systems by
-        :return: List of System's or an empty list if no Systems are retrieved
+        :return: List of Systems or an empty list if no Systems are retrieved
         """
         return self._system_repository.list(parent_id)
 
