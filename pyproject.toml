@@ -10,7 +10,7 @@ dependencies = [
     "fastapi[all]==0.109.2",
     "PyJWT==2.8.0",
     "pymongo==4.6.1",
-    "uvicorn==0.27.0"
+    "uvicorn==0.27.1"
 ]
 
 [project.urls]
