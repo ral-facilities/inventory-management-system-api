@@ -5,6 +5,7 @@ WORKDIR /inventory-management-system-api-run
 COPY README.md pyproject.toml ./
 # Copy inventory_management_system_api source files
 COPY inventory_management_system_api/ inventory_management_system_api/
+COPY logs/ logs/
 
 RUN set -eux; \
     \
@@ -18,22 +19,10 @@ RUN set -eux; \
     addgroup -S inventory-management-system-api; \
     adduser -S -D -G inventory-management-system-api -H -h /inventory-management-system-api-run inventory-management-system-api; \
     \
-    # Create a log file \
-    touch inventory-management-system-api.log; \
-    # Change ownership of log file - app will need to write to it
-    chown -R inventory-management-system-api:inventory-management-system-api inventory-management-system-api.log;
+    # Change ownership of logs/ - app will need to write log files to it \
+    chown -R inventory-management-system-api:inventory-management-system-api logs/;
 
 USER inventory-management-system-api
-
-ENV API__TITLE="Inventory Management System API"
-ENV API__DESCRIPTION="This is the API for the Inventory Management System"
-ENV API__ROOT_PATH=""
-ENV DATABASE__PROTOCOL=mongodb
-ENV DATABASE__USERNAME=root
-ENV DATABASE__PASSWORD=example
-ENV DATABASE__HOSTNAME=localhost
-ENV DATABASE__PORT=27017
-ENV DATABASE__NAME=ims
 
 CMD ["uvicorn", "inventory_management_system_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000

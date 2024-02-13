@@ -27,7 +27,7 @@ router = APIRouter(prefix="/v1/manufacturers", tags=["manufacturers"])
 
 
 @router.post(
-    path="/",
+    path="",
     summary="Create new manufacturer",
     response_description="The new manufacturer",
     status_code=status.HTTP_201_CREATED,
@@ -51,7 +51,7 @@ def create_manufacturer(
 
 
 @router.get(
-    path="/",
+    path="",
     summary="Get all manufacturers",
     response_description="List of manufacturers",
 )

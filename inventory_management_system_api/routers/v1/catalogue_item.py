@@ -29,7 +29,7 @@ logger = logging.getLogger()
 router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
 
 
-@router.get(path="/", summary="Get catalogue items", response_description="List of catalogue items")
+@router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
 def get_catalogue_items(
     catalogue_category_id: Annotated[
         Optional[str], Query(description="Filter catalogue items by catalogue category ID")
@@ -70,7 +70,7 @@ def get_catalogue_item(
 
 
 @router.post(
-    path="/",
+    path="",
     summary="Create a new catalogue item",
     response_description="The created catalogue item",
     status_code=status.HTTP_201_CREATED,
