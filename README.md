@@ -51,7 +51,8 @@ production)!
    docker build -f Dockerfile -t inventory_management_system_api_image .
    ```
 
-2. Start the container using the image built and map it to port `8000` locally:
+2. Start the container using the image built and map it to port `8000` locally (please note that the public key volume 
+   is only needed if JWT Auth is enabled):
    ```bash
    docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
    ```
