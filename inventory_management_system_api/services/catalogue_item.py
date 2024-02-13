@@ -4,25 +4,25 @@ repositories.
 """
 
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import Depends
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
+    InvalidActionError,
     MissingRecordError,
     NonLeafCategoryError,
 )
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
-    CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
-    PropertyPostRequestSchema,
+    CatalogueItemPostRequestSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -161,17 +161,17 @@ class CatalogueItemService:
             if catalogue_category.is_leaf is False:
                 raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
-            # If the catalogue category ID is updated but no catalogue item properties are supplied then the stored
-            # catalogue item properties should be used. They need to be processed and validated against the defined
-            # properties of the new catalogue category.
+            # If the catalogue category ID is updated but no catalogue item properties are supplied then we
+            # only allow the item to be moved provided that the two categories expect exactly the same properties
             if "properties" not in update_data:
-                # Create `PropertyPostRequestSchema` objects from the stored catalogue item properties and assign them
-                # to the `properties` field of `catalogue_item` before proceeding with processing and validation.
-                catalogue_item.properties = [
-                    PropertyPostRequestSchema(**prop.model_dump()) for prop in stored_catalogue_item.properties
-                ]
-                # Get the new `catalogue_item` state
-                update_data = catalogue_item.model_dump(exclude_unset=True)
+                current_catalogue_category = self._catalogue_category_repository.get(
+                    stored_catalogue_item.catalogue_category_id
+                )
+                if current_catalogue_category.catalogue_item_properties != catalogue_category.catalogue_item_properties:
+                    raise InvalidActionError(
+                        "Cannot move catalogue item to a category with different catalogue_item_properties without "
+                        "specifying the new properties"
+                    )
 
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
             manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)

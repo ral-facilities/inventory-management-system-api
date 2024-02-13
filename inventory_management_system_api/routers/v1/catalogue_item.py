@@ -4,22 +4,23 @@ service.
 """
 
 import logging
-from typing import List, Annotated, Optional
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, status, Depends, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    MissingRecordError,
-    InvalidObjectIdError,
-    NonLeafCategoryError,
+    InvalidActionError,
     InvalidCatalogueItemPropertyTypeError,
+    InvalidObjectIdError,
     MissingMandatoryCatalogueItemProperty,
+    MissingRecordError,
+    NonLeafCategoryError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
-    CatalogueItemSchema,
-    CatalogueItemPostRequestSchema,
     CatalogueItemPatchRequestSchema,
+    CatalogueItemPostRequestSchema,
+    CatalogueItemSchema,
 )
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
@@ -161,6 +162,10 @@ def partial_update_catalogue_item(
         message = "Catalogue item has child elements and cannot be updated"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
 
 @router.delete(

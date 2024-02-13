@@ -136,10 +136,12 @@ def partial_update_system(
         message = "A System with the same name already exists within the parent System"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint:disable=duplicate-code
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    # pylint:enable=duplicate-code
 
 
 @router.delete(
