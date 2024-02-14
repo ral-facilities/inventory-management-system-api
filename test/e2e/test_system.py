@@ -160,7 +160,7 @@ def test_create_system_with_invalid_parent_id(test_client):
     response = test_client.post("/v1/systems", json={**SYSTEM_POST_A, "parent_id": "invalid"})
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System ID does not exist"
+    assert response.json()["detail"] == "The specified parent System does not exist"
 
 
 def test_create_system_with_non_existent_parent_id(test_client):
@@ -170,7 +170,7 @@ def test_create_system_with_non_existent_parent_id(test_client):
     response = test_client.post("/v1/systems", json={**SYSTEM_POST_A, "parent_id": str(ObjectId())})
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System ID does not exist"
+    assert response.json()["detail"] == "The specified parent System does not exist"
 
 
 def test_create_system_with_invalid_importance(test_client):
@@ -270,7 +270,7 @@ def test_get_system_with_invalid_id(test_client):
     response = test_client.get("/v1/systems/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_get_system_with_non_existent_id(test_client):
@@ -280,7 +280,7 @@ def test_get_system_with_non_existent_id(test_client):
     response = test_client.get(f"/v1/systems/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_get_system_breadcrumbs_when_no_parent(test_client):
@@ -341,17 +341,17 @@ def test_get_system_breadcrumbs_with_invalid_id(test_client):
     response = test_client.get("/v1/systems/invalid/breadcrumbs")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_get_system_breadcrumbs_with_non_existent_id(test_client):
     """
-    Test getting the breadcrumbs for a non existent system
+    Test getting the breadcrumbs for a non-existent system
     """
     response = test_client.get(f"/v1/systems/{str(ObjectId())}/breadcrumbs")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_partial_update_system_parent_id(test_client):
@@ -388,7 +388,7 @@ def test_partial_update_system_invalid_parent_id(test_client):
     response = test_client.patch(f"/v1/systems/{system['id']}", json={"parent_id": "invalid"})
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System ID does not exist"
+    assert response.json()["detail"] == "The specified parent System does not exist"
 
 
 def test_partial_update_system_non_existent_parent_id(test_client):
@@ -403,7 +403,7 @@ def test_partial_update_system_non_existent_parent_id(test_client):
     response = test_client.patch(f"/v1/systems/{system['id']}", json={"parent_id": str(ObjectId())})
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System ID does not exist"
+    assert response.json()["detail"] == "The specified parent System does not exist"
 
 
 def test_partial_update_system_parent_id_duplicate_name(test_client):
@@ -455,7 +455,7 @@ def test_partial_update_system_invalid_id(test_client):
     response = test_client.patch("/v1/systems/invalid", json={"name": "Updated name"})
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_partial_update_system_non_existent_id(test_client):
@@ -465,7 +465,7 @@ def test_partial_update_system_non_existent_id(test_client):
     response = test_client.patch(f"/v1/systems/{str(ObjectId())}", json={"name": "Updated name"})
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_delete_system(test_client):
@@ -492,18 +492,18 @@ def test_delete_system_with_invalid_id(test_client):
     response = test_client.delete("/v1/systems/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_delete_system_with_non_existent_id(test_client):
     """
-    Test deleting a System with a non existent ID
+    Test deleting a System with a non-existent ID
     """
     # Delete
     response = test_client.delete(f"/v1/systems/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "System with such ID was not found"
+    assert response.json()["detail"] == "System not found"
 
 
 def test_delete_system_with_child_system(test_client):

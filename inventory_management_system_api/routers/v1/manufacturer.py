@@ -74,17 +74,14 @@ def get_one_manufacturer(
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturer with ID %s", manufacturer_id)
+    message = "Manufacturer not found"
     try:
         manufacturer = manufacturer_service.get(manufacturer_id)
         if not manufacturer:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="The requested manufacturer was not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid object value")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The requested manufacturer was not found"
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
     return ManufacturerSchema(**manufacturer.model_dump())
 
@@ -129,12 +126,10 @@ def delete_manufacturer(
     try:
         manufacturer_service.delete(manufacturer_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        logger.exception("The specified manufacturer does not exist")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The specified manufacturer does not exist"
-        ) from exc
+        message = "The specified manufacturer does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfCatalogueItemError as exc:
-        logger.exception("The specified manufacturer is a part of a Catalogue Item")
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="The specified manufacturer is a part of a Catalogue Item"
-        ) from exc
+        message = "The specified manufacturer is a part of a Catalogue Item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

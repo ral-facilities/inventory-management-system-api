@@ -145,12 +145,12 @@ def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified catalogue category does not exist"
 
 
-def test_create_catalogue_item_with_nonexistent_catalogue_category_id(test_client):
+def test_create_catalogue_item_with_non_existent_catalogue_category_id(test_client):
     """
-    Test creating a catalogue item with a nonexistent catalogue category id.
+    Test creating a catalogue item with a non-existent catalogue category id.
     """
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
@@ -160,12 +160,12 @@ def test_create_catalogue_item_with_nonexistent_catalogue_category_id(test_clien
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified catalogue category does not exist"
 
 
-def test_create_catalogue_item_with_nonexistent_manufacturer_id(test_client):
+def test_create_catalogue_item_with_non_existent_manufacturer_id(test_client):
     """
-    Test creating a catalogue item with a nonexistent manufacturer id
+    Test creating a catalogue item with a non-existent manufacturer id
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 
@@ -177,7 +177,7 @@ def test_create_catalogue_item_with_nonexistent_manufacturer_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
+    assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
 def test_create_catalogue_item_with_an_invalid_manufacturer_id(test_client):
@@ -194,7 +194,7 @@ def test_create_catalogue_item_with_an_invalid_manufacturer_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
+    assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
 def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
@@ -277,7 +277,7 @@ def test_create_catalogue_item_with_invalid_obsolete_replacement_catalogue_item_
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
+    assert response.json()["detail"] == "The specified replacement catalogue item does not exist"
 
 
 def test_create_catalogue_item_with_non_existent_obsolete_replacement_catalogue_item_id(test_client):
@@ -300,7 +300,7 @@ def test_create_catalogue_item_with_non_existent_obsolete_replacement_catalogue_
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
+    assert response.json()["detail"] == "The specified replacement catalogue item does not exist"
 
 
 def test_create_catalogue_item_without_properties(test_client):
@@ -655,17 +655,17 @@ def test_delete_catalogue_item_with_invalid_id(test_client):
     response = test_client.delete("/v1/catalogue-items/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+    assert response.json()["detail"] == "Catalogue item not found"
 
 
-def test_delete_catalogue_item_with_nonexistent_id(test_client):
+def test_delete_catalogue_item_with_non_existent_id(test_client):
     """
-    Test deleting a catalogue item with a nonexistent ID.
+    Test deleting a catalogue item with a non-existent ID.
     """
     response = test_client.delete(f"/v1/catalogue-items/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+    assert response.json()["detail"] == "Catalogue item not found"
 
 
 def test_delete_catalogue_item_with_child_items(test_client):
@@ -743,17 +743,17 @@ def test_get_catalogue_item_with_invalid_id(test_client):
     response = test_client.get("/v1/catalogue-items/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+    assert response.json()["detail"] == "Catalogue item not found"
 
 
-def test_get_catalogue_item_with_nonexistent_id(test_client):
+def test_get_catalogue_item_with_non_existent_id(test_client):
     """
-    Test getting a catalogue item with a nonexistent ID.
+    Test getting a catalogue item with a non-existent ID.
     """
     response = test_client.get(f"/v1/catalogue-items/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+    assert response.json()["detail"] == "Catalogue item not found"
 
 
 def test_get_catalogue_items(test_client):
@@ -971,10 +971,10 @@ def test_partial_update_catalogue_item_invalid_id(test_client):
     response = test_client.patch("/v1/catalogue-items/invalid", json=catalogue_item_patch)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+    assert response.json()["detail"] == "Catalogue item not found"
 
 
-def test_partial_update_catalogue_item_nonexistent_id(test_client):
+def test_partial_update_catalogue_item_non_existent_id(test_client):
     """
     Test updating a catalogue item with a nonexistent ID.
     """
@@ -983,7 +983,7 @@ def test_partial_update_catalogue_item_nonexistent_id(test_client):
     response = test_client.patch(f"/v1/catalogue-items/{str(ObjectId())}", json=catalogue_item_patch)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue item with such ID was not found"
+    assert response.json()["detail"] == "Catalogue item not found"
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id(test_client):
@@ -1226,12 +1226,12 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified catalogue category does not exist"
 
 
-def test_partial_update_catalogue_item_change_catalogue_category_id_nonexistent_id(test_client):
+def test_partial_update_catalogue_item_change_catalogue_category_id_non_existent_id(test_client):
     """
-    Test changing the catalogue category ID of a catalogue item to a nonexistent ID.
+    Test changing the catalogue category ID of a catalogue item to a non-existent ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
@@ -1255,7 +1255,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_nonexistent_
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified catalogue category does not exist"
 
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_non_leaf_catalogue_category(test_client):
@@ -1391,7 +1391,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
+    assert response.json()["detail"] == "The specified replacement catalogue item does not exist"
 
 
 def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id_non_existent_id(test_client):
@@ -1417,7 +1417,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified replacement catalogue item ID does not exist"
+    assert response.json()["detail"] == "The specified replacement catalogue item does not exist"
 
 
 def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test_client):
@@ -1940,7 +1940,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_cl
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
+    assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
 def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id(test_client):
@@ -1966,4 +1966,4 @@ def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id(tes
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified manufacturer ID does not exist"
+    assert response.json()["detail"] == "The specified manufacturer does not exist"

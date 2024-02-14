@@ -188,7 +188,7 @@ def test_create_catalogue_category_with_invalid_parent_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified parent catalogue category does not exist"
 
 
 def test_create_catalogue_category_with_non_existent_parent_id(test_client):
@@ -200,7 +200,7 @@ def test_create_catalogue_category_with_non_existent_parent_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified parent catalogue category does not exist"
 
 
 def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_client):
@@ -460,7 +460,7 @@ def test_delete_catalogue_category_with_invalid_id(test_client):
     response = test_client.delete("/v1/catalogue-categories/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_delete_catalogue_category_with_non_existent_id(test_client):
@@ -470,7 +470,7 @@ def test_delete_catalogue_category_with_non_existent_id(test_client):
     response = test_client.delete(f"/v1/catalogue-categories/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_delete_catalogue_category_with_child_catalogue_categories(test_client):
@@ -543,7 +543,7 @@ def test_get_catalogue_category_with_invalid_id(test_client):
     response = test_client.get("/v1/catalogue-categories/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_get_catalogue_category_with_non_existent_id(test_client):
@@ -553,7 +553,7 @@ def test_get_catalogue_category_with_non_existent_id(test_client):
     response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_get_catalogue_categories(test_client):
@@ -682,17 +682,17 @@ def test_get_catalogue_category_breadcrumbs_with_invalid_id(test_client):
     response = test_client.get("/v1/catalogue-categories/invalid/breadcrumbs")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_get_catalogue_category_breadcrumbs_with_non_existent_id(test_client):
     """
-    Test getting the breadcrumbs for a non existent catalogue category
+    Test getting the breadcrumbs for a non-existent catalogue category
     """
     response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}/breadcrumbs")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_partial_update_catalogue_category_change_name(test_client):
@@ -1076,7 +1076,7 @@ def test_partial_update_catalogue_category_change_parent_id_invalid_id(test_clie
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified parent catalogue category does not exist"
 
 
 def test_partial_update_catalogue_category_change_parent_id_non_existent_id(test_client):
@@ -1090,7 +1090,7 @@ def test_partial_update_catalogue_category_change_parent_id_non_existent_id(test
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent catalogue category ID does not exist"
+    assert response.json()["detail"] == "The specified parent catalogue category does not exist"
 
 
 def test_partial_update_catalogue_category_add_catalogue_item_property(test_client):
@@ -1308,7 +1308,7 @@ def test_partial_update_catalogue_category_invalid_id(test_client):
     response = test_client.patch("/v1/catalogue-categories/invalid", json=catalogue_category_patch)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_partial_update_catalogue_category_non_existent_id(test_client):
@@ -1320,7 +1320,7 @@ def test_partial_update_catalogue_category_non_existent_id(test_client):
     response = test_client.patch(f"/v1/catalogue-categories/{str(ObjectId())}", json=catalogue_category_patch)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "A catalogue category with such ID was not found"
+    assert response.json()["detail"] == "Catalogue category not found"
 
 
 def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_client):

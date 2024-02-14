@@ -41,7 +41,7 @@ def create_system(
         system = system_service.create(system)
         return SystemSchema(**system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent System ID does not exist"
+        message = "The specified parent System does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
@@ -76,16 +76,15 @@ def get_system(
 ) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting System with ID: %s", system_service)
+    message = "System not found"
     try:
         system = system_service.get(system_id)
         if not system:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
         return SystemSchema(**system.model_dump())
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="A System with such ID was not found"
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
 
 @router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")
@@ -99,7 +98,7 @@ def get_system_breadcrumbs(
     try:
         return system_service.get_breadcrumbs(system_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "System with such ID was not found"
+        message = "System not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
@@ -125,11 +124,11 @@ def partial_update_system(
         return SystemSchema(**updated_system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
-            message = "The specified parent System ID does not exist"
+            message = "The specified parent System does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
-        message = "A System with such ID was not found"
+        message = "System not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateRecordError as exc:
@@ -159,7 +158,7 @@ def delete_system(
     try:
         system_service.delete(system_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "System with such ID was not found"
+        message = "System not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildElementsExistError as exc:
