@@ -63,7 +63,7 @@ def get_catalogue_category(
 ) -> CatalogueCategorySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
-    message = "A catalogue category with such ID was not found"
+    message = "Catalogue category not found"
     try:
         catalogue_category = catalogue_category_service.get(catalogue_category_id)
         if not catalogue_category:
@@ -84,7 +84,7 @@ def get_catalogue_category_breadcrumbs(
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Catalogue category with such ID was not found"
+        message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
@@ -113,7 +113,7 @@ def create_catalogue_category(
         catalogue_category = catalogue_category_service.create(catalogue_category)
         return CatalogueCategorySchema(**catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent catalogue category ID does not exist"
+        message = "The specified parent catalogue category does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
@@ -151,11 +151,11 @@ def partial_update_catalogue_category(
             and catalogue_category.parent_id in str(exc)
             or "parent catalogue category" in str(exc).lower()
         ):
-            message = "The specified parent catalogue category ID does not exist"
+            message = "The specified parent catalogue category does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
-        message = "A catalogue category with such ID was not found"
+        message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildElementsExistError as exc:
@@ -194,7 +194,7 @@ def delete_catalogue_category(
     try:
         catalogue_category_service.delete(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "A catalogue category with such ID was not found"
+        message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildElementsExistError as exc:

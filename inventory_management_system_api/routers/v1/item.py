@@ -44,11 +44,11 @@ def create_item(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
-            message = "The specified system ID does not exist"
+            message = "The specified system does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
-        message = "The specified catalogue item ID does not exist"
+        message = "The specified catalogue item does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DatabaseIntegrityError as exc:
@@ -72,7 +72,7 @@ def delete_item(
     try:
         item_service.delete(item_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "An item with such ID was not found"
+        message = "Item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
@@ -142,10 +142,10 @@ def partial_update_item(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
-            message = "The specified system ID does not exist"
+            message = "The specified system does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        message = "An item with such ID was not found"
+        message = "Item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:

@@ -181,7 +181,7 @@ def test_get_manufacturer_with_invalid_id(test_client):
 
     response = test_client.get("/v1/manufacturers/invalid")
     assert response.status_code == 404
-    assert response.json()["detail"] == "The requested manufacturer was not found"
+    assert response.json()["detail"] == "Manufacturer not found"
 
 
 def test_get_manufactuer_with_nonexistent_id(test_client):
@@ -189,7 +189,7 @@ def test_get_manufactuer_with_nonexistent_id(test_client):
     response = test_client.get(f"/v1/manufacturers/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "The requested manufacturer was not found"
+    assert response.json()["detail"] == "Manufacturer not found"
 
 
 def test_update(test_client):
@@ -381,7 +381,7 @@ def test_delete_with_an_invalid_id(test_client):
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
-def test_delete_with_a_nonexistent_id(test_client):
+def test_delete_with_a_non_existent_id(test_client):
     """Test trying to delete a manufacturer with a non-existent ID"""
     manufacturer_post = {
         "name": "Manufacturer A",

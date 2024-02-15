@@ -58,7 +58,7 @@ def get_catalogue_item(
 ) -> CatalogueItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
-    message = "A catalogue item with such ID was not found"
+    message = "Catalogue item not found"
     try:
         catalogue_item = catalogue_item_service.get(catalogue_item_id)
         if not catalogue_item:
@@ -89,15 +89,15 @@ def create_catalogue_item(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if catalogue_item.catalogue_category_id in str(exc) or "catalogue category" in str(exc).lower():
-            message = "The specified catalogue category ID does not exist"
+            message = "The specified catalogue category does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         if catalogue_item.manufacturer_id in str(exc) or "manufacturer" in str(exc).lower():
-            message = "The specified manufacturer ID does not exist"
+            message = "The specified manufacturer does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
-        message = "The specified replacement catalogue item ID does not exist"
+        message = "The specified replacement catalogue item does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except NonLeafCategoryError as exc:
@@ -131,7 +131,7 @@ def partial_update_catalogue_item(
             and catalogue_item.catalogue_category_id in str(exc)
             or "catalogue category" in str(exc).lower()
         ):
-            message = "The specified catalogue category ID does not exist"
+            message = "The specified catalogue category does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         if (
@@ -139,7 +139,7 @@ def partial_update_catalogue_item(
             and catalogue_item.manufacturer_id in str(exc)
             or "manufacturer" in str(exc).lower()
         ):
-            message = "The specified manufacturer ID does not exist"
+            message = "The specified manufacturer does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
@@ -147,11 +147,11 @@ def partial_update_catalogue_item(
             catalogue_item.obsolete_replacement_catalogue_item_id
             and catalogue_item.obsolete_replacement_catalogue_item_id in str(exc)
         ):
-            message = "The specified replacement catalogue item ID does not exist"
+            message = "The specified replacement catalogue item does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
-        message = "A catalogue item with such ID was not found"
+        message = "Catalogue item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except NonLeafCategoryError as exc:
@@ -183,7 +183,7 @@ def delete_catalogue_item(
     try:
         catalogue_item_service.delete(catalogue_item_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "A catalogue item with such ID was not found"
+        message = "Catalogue item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildElementsExistError as exc:

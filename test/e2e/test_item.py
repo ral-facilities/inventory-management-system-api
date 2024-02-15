@@ -120,7 +120,7 @@ def test_create_item_with_invalid_catalogue_item_id(test_client):
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified catalogue item ID does not exist"
+    assert response.json()["detail"] == "The specified catalogue item does not exist"
 
 
 def test_create_item_with_non_existent_catalogue_item_id(test_client):
@@ -131,7 +131,7 @@ def test_create_item_with_non_existent_catalogue_item_id(test_client):
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified catalogue item ID does not exist"
+    assert response.json()["detail"] == "The specified catalogue item does not exist"
 
 
 def test_create_item_with_invalid_system_id(test_client):
@@ -158,7 +158,7 @@ def test_create_item_with_invalid_system_id(test_client):
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified system ID does not exist"
+    assert response.json()["detail"] == "The specified system does not exist"
 
 
 def test_create_item_with_non_existent_system_id(test_client):
@@ -185,7 +185,7 @@ def test_create_item_with_non_existent_system_id(test_client):
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified system ID does not exist"
+    assert response.json()["detail"] == "The specified system does not exist"
 
 
 def test_create_with_missing_existing_properties(test_client):
@@ -633,7 +633,7 @@ def test_delete_with_invalid_id(test_client):
     response = test_client.delete("v1/items/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "An item with such ID was not found"
+    assert response.json()["detail"] == "Item not found"
 
 
 def test_delete_catalogue_item_with_nonexistent_id(test_client):
@@ -643,7 +643,7 @@ def test_delete_catalogue_item_with_nonexistent_id(test_client):
     response = test_client.delete(f"/v1/items/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "An item with such ID was not found"
+    assert response.json()["detail"] == "Item not found"
 
 
 def test_get_item(test_client):
@@ -942,19 +942,19 @@ def test_partial_update_item_invalid_id(test_client):
     response = test_client.patch("/v1/items/invalid", json=item_patch)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "An item with such ID was not found"
+    assert response.json()["detail"] == "Item not found"
 
 
-def test_partial_update_item_nonexistent_id(test_client):
+def test_partial_update_item_non_existent_id(test_client):
     """
-    Test updating an item with a nonexistent ID.
+    Test updating an item with a non-existent ID.
     """
     item_patch = {"usage_status": 1, "is_defective": True}
 
     response = test_client.patch(f"/v1/items/{str(ObjectId())}", json=item_patch)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "An item with such ID was not found"
+    assert response.json()["detail"] == "Item not found"
 
 
 def test_partial_update_change_catalogue_item_id(test_client):
@@ -1034,9 +1034,9 @@ def test_partial_update_change_system_id(test_client):
     }
 
 
-def test_partial_update_change_nonexistent_system_id(test_client):
+def test_partial_update_change_non_existent_system_id(test_client):
     """
-    Test updating system ID which is nonexistent
+    Test updating system ID which is non-existent
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
@@ -1064,7 +1064,7 @@ def test_partial_update_change_nonexistent_system_id(test_client):
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
     assert response.status_code == 422
-    assert response.json()["detail"] == "The specified system ID does not exist"
+    assert response.json()["detail"] == "The specified system does not exist"
 
 
 def test_partial_update_property_values(test_client):
