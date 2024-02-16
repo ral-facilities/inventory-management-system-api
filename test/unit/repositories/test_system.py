@@ -113,16 +113,19 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
     Verify that the `create` method properly handles the creation of a System with a parent ID
     """
     # pylint: disable=duplicate-code
-    system_info = {
-        **SYSTEM_A_INFO,
-        "parent_id": str(ObjectId()),
-    }
+    system_in = SystemIn(
+        **{
+            **SYSTEM_A_INFO,
+            "parent_id": str(ObjectId()),
+        }
+    )
+    system_info = system_in.model_dump()
     system = SystemOut(id=str(ObjectId()), **system_info)
 
     # Mock `find_one` to return the parent system document
     test_helpers.mock_find_one(
         database_mock.systems,
-        {"_id": CustomObjectId(system.parent_id), "parent_id": None, **SYSTEM_A_INFO},
+        {**system_info, "_id": CustomObjectId(system.parent_id), "parent_id": None},
     )
     # pylint: enable=duplicate-code
     # Mock `find_one` to return no duplicate systen found in parent system
@@ -132,10 +135,10 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
     # Mock `find_one` to return the inserted system document
     test_helpers.mock_find_one(
         database_mock.systems,
-        {"_id": CustomObjectId(system.id), **system_info},
+        {**system_info, "_id": CustomObjectId(system.id)},
     )
 
-    created_system = system_repository.create(SystemIn(**system_info))
+    created_system = system_repository.create(system_in)
 
     database_mock.systems.insert_one.assert_called_once_with(
         {**system_info, "parent_id": CustomObjectId(system.parent_id)},
