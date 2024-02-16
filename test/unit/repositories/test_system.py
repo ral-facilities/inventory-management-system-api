@@ -409,8 +409,8 @@ def test_update(utils_mock, test_helpers, database_mock, system_repository):
             call({"_id": CustomObjectId(system.id)}),
         ]
     )
-    assert system_in.created_time == system.created_time
-    assert system_in.modified_time != system.modified_time
+    assert updated_system.created_time == system.created_time
+    assert updated_system.modified_time != system.modified_time
     assert updated_system == SystemOut(id=system.id, **system_in.model_dump())
 
 
@@ -422,15 +422,17 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
     Verify that the `update` method properly handles the update of a System when the parent id changes
     """
     parent_system_id = str(ObjectId())
-    system = SystemOut(id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id})
+    system = SystemOut(
+        id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id, **MOCK_CREATED_MODIFIED_TIME}
+    )
     new_parent_id = str(ObjectId())
-    expected_system = SystemOut(**{**system.model_dump(), "parent_id": new_parent_id})
 
     # Mock `find_one` to return a parent System document
     test_helpers.mock_find_one(
         database_mock.systems,
         {
             **SYSTEM_B_INFO,
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(new_parent_id),
         },
     )
@@ -445,9 +447,10 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
     # Mock `update_one` to return an object for the updated System document
     test_helpers.mock_update_one(database_mock.systems)
     # Mock `find_one` to return the updated System document
+    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id, **MOCK_CREATED_MODIFIED_TIME})
     test_helpers.mock_find_one(
         database_mock.systems,
-        {**system.model_dump(), "parent_id": CustomObjectId(new_parent_id)},
+        {**system_in.model_dump(), "_id": CustomObjectId(system.id)},
     )
 
     # Mock utils so not moving to a child of itself
@@ -456,7 +459,6 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
     utils_mock.is_valid_move_result.return_value = True
     database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
 
-    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id})
     updated_system = system_repository.update(system.id, system_in)
 
     utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
@@ -482,7 +484,9 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
             call({"_id": CustomObjectId(system.id)}),
         ]
     )
-    assert updated_system == expected_system
+    assert updated_system.created_time == system.created_time
+    assert updated_system.modified_time != system.modified_time
+    assert updated_system == SystemOut(id=system.id, **{**system_in.model_dump(), "parent_id": new_parent_id})
 
 
 @patch("inventory_management_system_api.repositories.system.utils")
@@ -494,7 +498,9 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     is a child of itself
     """
     parent_system_id = str(ObjectId())
-    system = SystemOut(id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id})
+    system = SystemOut(
+        id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id, **MOCK_CREATED_MODIFIED_TIME}
+    )
     new_parent_id = str(ObjectId())
 
     # Mock `find_one` to return a parent System document
@@ -502,6 +508,7 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
         database_mock.systems,
         {
             **SYSTEM_B_INFO,
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(new_parent_id),
         },
     )
@@ -516,9 +523,10 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     # Mock `update_one` to return an object for the updated System document
     test_helpers.mock_update_one(database_mock.systems)
     # Mock `find_one` to return the updated System document
+    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id, **MOCK_CREATED_MODIFIED_TIME})
     test_helpers.mock_find_one(
         database_mock.systems,
-        {**SYSTEM_A_INFO, "_id": CustomObjectId(system.id), "parent_id": CustomObjectId(new_parent_id)},
+        {**system_in.model_dump(), "_id": CustomObjectId(system.id)},
     )
 
     # Mock utils so moving to a child of itself
@@ -591,16 +599,19 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
     Verify that the `update` method properly handles the update of a System with a duplicate name in the
     parent System
     """
-    system = SystemIn(**SYSTEM_A_INFO)
+    system = SystemIn(**SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
     system_id = str(ObjectId())
 
     # Mock `find_one` to return a parent System document
-    test_helpers.mock_find_one(database_mock.systems, {**SYSTEM_B_INFO, "_id": CustomObjectId(system_id)})
+    test_helpers.mock_find_one(
+        database_mock.systems, {**SYSTEM_B_INFO, "_id": CustomObjectId(system_id), **MOCK_CREATED_MODIFIED_TIME}
+    )
     # Mock `find_one` to return duplicate systen found in parent system
     test_helpers.mock_find_one(
         database_mock.systems,
         {
             **SYSTEM_B_INFO,
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(system_id),
         },
     )
