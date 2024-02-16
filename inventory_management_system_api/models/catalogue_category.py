@@ -7,7 +7,7 @@ from typing import Annotated, Any, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifedAtInMixin, CreatedModifiedAtOutMixin
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
 class AllowedValuesList(BaseModel):
@@ -68,13 +68,13 @@ class CatalogueCategoryBase(BaseModel):
         return catalogue_item_properties
 
 
-class CatalogueCategoryIn(CreatedModifedAtInMixin, CatalogueCategoryBase):
+class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBase):
     """
     Input database model for a catalogue category.
     """
 
 
-class CatalogueCategoryOut(CreatedModifiedAtOutMixin, CatalogueCategoryBase):
+class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBase):
     """
     Output database model for a catalogue category.
     """

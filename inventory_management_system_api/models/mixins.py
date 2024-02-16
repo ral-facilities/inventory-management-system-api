@@ -9,7 +9,7 @@ from typing import Optional
 from pydantic import AwareDatetime, BaseModel, model_validator
 
 
-class CreatedModifedAtInMixin(BaseModel):
+class CreatedModifiedTimeInMixin(BaseModel):
     """
     Input model mixin that provides creation and modfied time fields
 
@@ -24,7 +24,7 @@ class CreatedModifedAtInMixin(BaseModel):
     modified_time: Optional[AwareDatetime] = None
 
     @model_validator(mode="after")
-    def validator(self) -> "CreatedModifedAtInMixin":
+    def validator(self) -> "CreatedModifiedTimeInMixin":
         """
         Validator that assigns the created_time and modified_time times.
 
@@ -39,7 +39,7 @@ class CreatedModifedAtInMixin(BaseModel):
         return self
 
 
-class CreatedModifiedAtOutMixin(BaseModel):
+class CreatedModifiedTimeOutMixin(BaseModel):
     """
     Output model mixin that provides creation and modfied time fields
     """

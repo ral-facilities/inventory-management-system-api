@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validato
 
 from inventory_management_system_api.models.catalogue_item import Property
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifedAtInMixin, CreatedModifiedAtOutMixin
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 # pylint: disable=duplicate-code
 
@@ -50,13 +50,13 @@ class ItemBase(BaseModel):
 # pylint: enable=duplicate-code
 
 
-class ItemIn(CreatedModifedAtInMixin, ItemBase):
+class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
     """
     Input database model for an item.
     """
 
 
-class ItemOut(CreatedModifiedAtOutMixin, ItemBase):
+class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
     """
     Output database model for an item.
     """
