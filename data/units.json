@@ -3,66 +3,54 @@
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd0"
         },
-        "value": "nm"
+        "value": "mm"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd1"
         },
-        "value": "μm"
+        "value": "degrees"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd2"
         },
-        "value": "mm"
+        "value": "nm"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd3"
         },
-        "value": "cm"
+        "value": "ns"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd4"
         },
-        "value": "m"
+        "value": "Hz"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd5"
         },
-        "value": "J"
+        "value": "ppm"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd6"
         },
-        "value": "kg"
+        "value": "J/cm²"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd7"
         },
-        "value": "s"
+        "value": "J"
     },
     {
         "_id": {
             "$oid": "65c3968fcca15ccd501b0cd8"
         },
-        "value": "K"
-    },
-    {
-        "_id": {
-            "$oid": "65c3968fcca15ccd501b0ce0"
-        },
-        "value": "°C"
-    },
-    {
-        "_id": {
-            "$oid": "65c3968fcca15ccd501b0ce1"
-        },
-        "value": "£"
+        "value": "W"
     }
 ]
