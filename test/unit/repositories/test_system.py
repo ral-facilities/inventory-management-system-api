@@ -107,9 +107,7 @@ def test_create(test_helpers, database_mock, system_repository):
 
     created_system = system_repository.create(system_in)
 
-    database_mock.systems.insert_one.assert_called_once_with(
-        {**system_info},
-    )
+    database_mock.systems.insert_one.assert_called_once_with(system_info)
     assert created_system == system_out
 
 
