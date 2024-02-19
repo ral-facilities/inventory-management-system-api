@@ -5,6 +5,7 @@ End-to-End tests for the catalogue item router.
 from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+    CREATED_MODIFIED_VALUES_EXPECTED,
     ITEM_POST_ALLOWED_VALUES,
     ITEM_POST_ALLOWED_VALUES_EXPECTED,
     SYSTEM_POST_A,
@@ -67,6 +68,7 @@ ITEM_POST = {
 
 ITEM_POST_EXPECTED = {
     **ITEM_POST,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "purchase_order_number": None,
     "asset_number": None,
