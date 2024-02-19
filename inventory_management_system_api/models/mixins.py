@@ -6,7 +6,7 @@ and functionality
 from datetime import datetime, timezone
 from typing import Optional
 
-from pydantic import AwareDatetime, BaseModel, model_validator
+from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 
 class CreatedModifiedTimeInMixin(BaseModel):
@@ -20,7 +20,7 @@ class CreatedModifiedTimeInMixin(BaseModel):
     database entry.
     """
 
-    created_time: AwareDatetime = datetime.now(timezone.utc)
+    created_time: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     modified_time: Optional[AwareDatetime] = None
 
     @model_validator(mode="after")
