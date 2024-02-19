@@ -34,7 +34,7 @@ test = [
 ]
 
 scripts = [
-    "faker==23.2.0",
+    "faker==23.2.1",
     "requests==2.31.0"
 ]
 
