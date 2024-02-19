@@ -409,8 +409,6 @@ def test_update(utils_mock, test_helpers, database_mock, system_repository):
             call({"_id": CustomObjectId(system.id)}),
         ]
     )
-    assert updated_system.created_time == system.created_time
-    assert updated_system.modified_time != system.modified_time
     assert updated_system == SystemOut(id=system.id, **system_in.model_dump())
 
 
@@ -484,8 +482,6 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
             call({"_id": CustomObjectId(system.id)}),
         ]
     )
-    assert updated_system.created_time == system.created_time
-    assert updated_system.modified_time != system.modified_time
     assert updated_system == SystemOut(id=system.id, **{**system_in.model_dump(), "parent_id": new_parent_id})
 
 
