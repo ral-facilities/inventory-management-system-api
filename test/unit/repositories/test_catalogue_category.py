@@ -728,6 +728,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
     # Mock `update_one` to return an object for the updated catalogue category document
     test_helpers.mock_update_one(database_mock.catalogue_categories)
+    # pylint: disable=duplicate-code
     # Mock `find_one` to return the updated catalogue category document
     catalogue_category_in = CatalogueCategoryIn(
         name=catalogue_category.name,
@@ -736,6 +737,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
         parent_id=catalogue_category.parent_id,
         catalogue_item_properties=catalogue_category.catalogue_item_properties,
     )
+    # pylint: enable=duplicate-code
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {

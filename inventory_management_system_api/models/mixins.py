@@ -28,7 +28,7 @@ class CreatedModifiedTimeInMixin(BaseModel):
         """
         Validator that assigns the created_time and modified_time times.
 
-        When `modified_time` is None, which occurrs when not assigning data from an existing database model this
+        When `modified_time` is None, which occurs when not assigning data from an existing database model this
         assigns the `modified_time` time to be the same as the `created_time` to ensure they are identical. When
         `modified_time` is defined then it is reassigned as its assumed it already exists and is now being updated.
         """

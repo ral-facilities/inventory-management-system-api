@@ -2,7 +2,9 @@
 Unit tests for the `SystemService` service
 """
 
+from datetime import timedelta
 from unittest.mock import MagicMock
+from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 
 import pytest
 from bson import ObjectId
@@ -23,6 +25,8 @@ SYSTEM_A_INFO = {
 SYSTEM_A_INFO_FULL = {
     **SYSTEM_A_INFO,
     "code": "test-name-a",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 }
 
 SYSTEM_B_INFO = {
@@ -37,10 +41,17 @@ SYSTEM_B_INFO = {
 SYSTEM_B_INFO_FULL = {
     **SYSTEM_A_INFO,
     "code": "test-name-b",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 }
 
 
-def test_create(test_helpers, system_repository_mock, system_service):
+def test_create(
+    test_helpers,
+    system_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    system_service,
+):
     """
     Test creating a System
 
@@ -58,7 +69,12 @@ def test_create(test_helpers, system_repository_mock, system_service):
     assert created_system == system
 
 
-def test_create_with_parent_id(test_helpers, system_repository_mock, system_service):
+def test_create_with_parent_id(
+    test_helpers,
+    system_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    system_service,
+):
     """
     Test creating a System with a parent ID
 
@@ -71,6 +87,8 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     full_system_info = {
         **system_info,
         "code": SYSTEM_B_INFO_FULL["code"],
+        "created_time": SYSTEM_B_INFO_FULL["created_time"],
+        "modified_time": SYSTEM_B_INFO_FULL["modified_time"],
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -89,7 +107,12 @@ def test_create_with_parent_id(test_helpers, system_repository_mock, system_serv
     assert created_system == system
 
 
-def test_create_with_whitespace_name(test_helpers, system_repository_mock, system_service):
+def test_create_with_whitespace_name(
+    test_helpers,
+    system_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    system_service,
+):
     """
     Test creating a System with a name containing leading/trailing/consecutive whitespaces
 
@@ -103,6 +126,8 @@ def test_create_with_whitespace_name(test_helpers, system_repository_mock, syste
     full_system_info = {
         **system_info,
         "code": "test-name",
+        "created_time": SYSTEM_B_INFO_FULL["created_time"],
+        "modified_time": SYSTEM_B_INFO_FULL["modified_time"],
     }
     system = SystemOut(id=str(ObjectId()), **full_system_info)
 
@@ -184,25 +209,49 @@ def test_list(system_repository_mock, system_service):
     assert result == system_repository_mock.list.return_value
 
 
-def test_update(test_helpers, system_repository_mock, system_service):
+def test_update(
+    test_helpers,
+    system_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    system_service,
+):
     """
     Test updating a System
 
     Verify that the 'update' method properly handles the update of a System
     """
-    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO_FULL)
+    system = SystemOut(
+        id=str(ObjectId()),
+        **{**SYSTEM_A_INFO_FULL, "created_time": SYSTEM_A_INFO_FULL["created_time"] - timedelta(days=5)},
+    )
 
     # Mock `get` to return a System
     test_helpers.mock_get(
         system_repository_mock,
-        SystemOut(id=system.id, **{**SYSTEM_A_INFO_FULL, "name": "Different name", "code": "different-name"}),
+        SystemOut(
+            id=system.id,
+            **{
+                **SYSTEM_A_INFO_FULL,
+                "name": "Different name",
+                "code": "different-name",
+                "created_time": SYSTEM_A_INFO_FULL["created_time"] - timedelta(days=5),
+            },
+        ),
     )
     # Mock 'update' to return the updated System
     test_helpers.mock_update(system_repository_mock, system)
 
     updated_system = system_service.update(system.id, SystemPatchSchema(name=system.name))
 
-    system_repository_mock.update.assert_called_once_with(system.id, SystemIn(**SYSTEM_A_INFO_FULL))
+    system_repository_mock.update.assert_called_once_with(
+        system.id,
+        SystemIn(
+            **{
+                **SYSTEM_A_INFO_FULL,
+                "created_time": system.created_time,
+            }
+        ),
+    )
     assert updated_system == system
 
 
@@ -218,6 +267,7 @@ def test_update_with_non_existent_id(test_helpers, system_repository_mock, syste
     system_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
         system_service.update(system_id, MagicMock())
+    system_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No System found with ID: {system_id}"
 
 
