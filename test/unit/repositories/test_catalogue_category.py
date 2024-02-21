@@ -731,6 +731,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     # pylint: disable=duplicate-code
     # Mock `find_one` to return the updated catalogue category document
     catalogue_category_in = CatalogueCategoryIn(
+        **MOCK_CREATED_MODIFIED_TIME,
         name=catalogue_category.name,
         code=catalogue_category.code,
         is_leaf=catalogue_category.is_leaf,

@@ -369,10 +369,10 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
     }
     # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
+        **catalogue_item_info,
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **catalogue_item_info,
     )
     # pylint: enable=duplicate-code
 
@@ -393,9 +393,9 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
     test_helpers.mock_find_one(database_mock.items, None)
 
     catalogue_item_in = CatalogueItemIn(
+        **catalogue_item_info,
         catalogue_category_id=catalogue_item.catalogue_category_id,
         manufacturer_id=catalogue_item.manufacturer_id,
-        **catalogue_item_info,
     )
     updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in)
 
