@@ -2,7 +2,8 @@
 Unit tests for the `ManufacturerRepo` repository.
 """
 
-from unittest.mock import call
+from unittest.mock import MagicMock, call
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
 from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
 import pytest
 from bson import ObjectId
@@ -18,7 +19,7 @@ from inventory_management_system_api.models.manufacturer import ManufacturerIn, 
 from inventory_management_system_api.schemas.manufacturer import AddressSchema
 
 
-def test_create_manufacturer(test_helpers, database_mock, manufacturer_repository):
+def test_create(test_helpers, database_mock, manufacturer_repository):
     """
     Test creating a manufacturer.
 
@@ -26,9 +27,7 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
     duplicate manufacturer, and creates the manufacturer.
     """
     # pylint: disable=duplicate-code
-
-    manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
+    manufacturer_in = ManufacturerIn(
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
@@ -41,39 +40,36 @@ def test_create_manufacturer(test_helpers, database_mock, manufacturer_repositor
         ),
         telephone="0932348348",
     )
+    manufacturer_info = manufacturer_in.model_dump()
+    manufacturer_out = ManufacturerOut(
+        **manufacturer_info,
+        id=str(ObjectId()),
+    )
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return no duplicate manufacturers found
     test_helpers.mock_find_one(database_mock.manufacturers, None)
     # Mock 'insert one' to return object for inserted manufacturer
-    test_helpers.mock_insert_one(database_mock.manufacturers, CustomObjectId(manufacturer.id))
+    test_helpers.mock_insert_one(database_mock.manufacturers, CustomObjectId(manufacturer_out.id))
     # Mock 'find_one' to return the inserted manufacturer document
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
-            "_id": CustomObjectId(manufacturer.id),
-            "code": manufacturer.code,
-            "name": manufacturer.name,
-            "url": manufacturer.url,
-            "address": manufacturer.address,
-            "telephone": manufacturer.telephone,
+            **manufacturer_info,
+            "_id": CustomObjectId(manufacturer_out.id),
         },
     )
-    # pylint: disable=duplicate-code
 
-    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
-    # pylint: disable=duplicate-code
     created_manufacturer = manufacturer_repository.create(manufacturer_in)
 
     database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump())
-    # pylint: enable=duplicate-code
     database_mock.manufacturers.find_one.assert_has_calls(
         [
-            call({"code": manufacturer.code}),
-            call({"_id": CustomObjectId(manufacturer.id)}),
+            call({"code": manufacturer_out.code}),
+            call({"_id": CustomObjectId(manufacturer_out.id)}),
         ]
     )
-    assert created_manufacturer == manufacturer
+    assert created_manufacturer == manufacturer_out
 
 
 def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer_repository):
@@ -83,8 +79,7 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
     Verify that the `create` method properly handles a manufacturer with a duplicate name, finds that there is a
     duplicate manufacturer, and does not create the manufacturer.
     """
-    manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
+    manufacturer_in = ManufacturerIn(
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
@@ -97,39 +92,31 @@ def test_create_manufacturer_duplicate(test_helpers, database_mock, manufacturer
         ),
         telephone="0932348348",
     )
+    manufacturer_info = manufacturer_in.model_dump()
+    manufacturer_out = ManufacturerOut(
+        **manufacturer_info,
+        id=str(ObjectId()),
+    )
 
     # Mock `find_one` to return duplicate manufacturer found
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
-            "_id": ObjectId(),
-            "code": manufacturer.code,
-            "name": manufacturer.name,
-            "url": manufacturer.url,
-            "address": manufacturer.address,
-            "telephone": manufacturer.telephone,
+            **manufacturer_info,
+            "_id": CustomObjectId(manufacturer_out.id),
         },
     )
 
     with pytest.raises(DuplicateRecordError) as exc:
-        manufacturer_repository.create(
-            # pylint: disable=duplicate-code
-            ManufacturerIn(
-                name=manufacturer.name,
-                code=manufacturer.code,
-                url=manufacturer.url,
-                address=manufacturer.address,
-                telephone=manufacturer.telephone,
-            )
-        )
-    # pylint: enable=duplicate-code
+        manufacturer_repository.create(manufacturer_out)
     assert str(exc.value) == "Duplicate manufacturer found"
 
 
 def test_list(test_helpers, database_mock, manufacturer_repository):
     """Test getting all manufacturers"""
     manufacturer_1 = ManufacturerOut(
-        _id=str(ObjectId()),
+        **MOCK_CREATED_MODIFIED_TIME,
+        id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
@@ -144,7 +131,8 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
     )
 
     manufacturer_2 = ManufacturerOut(
-        _id=str(ObjectId()),
+        **MOCK_CREATED_MODIFIED_TIME,
+        id=str(ObjectId()),
         name="Manufacturer B",
         code="manufacturer-b",
         url="http://example.co.uk",
@@ -162,6 +150,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         database_mock.manufacturers,
         [
             {
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(manufacturer_1.id),
                 "code": manufacturer_1.code,
                 "name": manufacturer_1.name,
@@ -170,6 +159,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
                 "telephone": manufacturer_1.telephone,
             },
             {
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(manufacturer_2.id),
                 "code": manufacturer_2.code,
                 "name": manufacturer_2.name,
@@ -194,12 +184,12 @@ def test_list_when_no_manufacturers(test_helpers, database_mock, manufacturer_re
     assert retrieved_manufacturers == []
 
 
-def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_repository):
+def test_get(test_helpers, database_mock, manufacturer_repository):
     """
     Test getting a manufacturer by id
     """
     manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
+        id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
@@ -211,10 +201,12 @@ def test_get_manufacturer_by_id(test_helpers, database_mock, manufacturer_reposi
             country="United Kingdom",
         ),
         telephone="0932348348",
+        **MOCK_CREATED_MODIFIED_TIME,
     )
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(manufacturer.id),
             "code": manufacturer.code,
             "name": manufacturer.name,
@@ -253,7 +245,7 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     """Test updating a manufacturer"""
     # pylint: disable=duplicate-code
     manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
+        id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
@@ -265,13 +257,15 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
             country="United Kingdom",
         ),
         telephone="0932348348",
+        **MOCK_CREATED_MODIFIED_TIME,
     )
     # pylint: enable=duplicate-code
 
-    # Mock 'find_one' to return the inserted manufacturer document
+    # Mock 'find_one' to return the existing manufacturer document
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(manufacturer.id),
             "code": "manufacturer-b",
             "name": "Manufacturer B",
@@ -292,23 +286,19 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
 
     test_helpers.mock_update_one(database_mock.manufacturers)
     # Mock 'find_one' to return the inserted manufacturer document
+    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
+            **manufacturer_in.model_dump(),
             "_id": CustomObjectId(manufacturer.id),
-            "code": manufacturer.code,
-            "name": manufacturer.name,
-            "url": manufacturer.url,
-            "address": manufacturer.address,
-            "telephone": manufacturer.telephone,
         },
     )
 
-    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
     # pylint: disable=duplicate-code
     updated_manufacturer = manufacturer_repository.update(
         manufacturer.id,
-        ManufacturerIn(**manufacturer_in.model_dump()),
+        manufacturer_in,
     )
     # pylint: enable=duplicate-code
 
@@ -317,27 +307,15 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         {"$set": manufacturer_in.model_dump()},
     )
 
-    assert updated_manufacturer == manufacturer
+    assert updated_manufacturer == ManufacturerOut(id=manufacturer.id, **manufacturer_in.model_dump())
 
 
 def test_update_with_invalid_id(manufacturer_repository):
     """Test trying to update with an invalid ID"""
-    updated_manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
-        name="Manufacturer A",
-        code="manufacturer-a",
-        url="http://testUrl.co.uk",
-        address=AddressSchema(
-            address_line="1 Example Street",
-            town="Oxford",
-            county="Oxfordshire",
-            postcode="OX1 2AB",
-            country="United Kingdom",
-        ),
-        telephone="0932348348",
-    )
 
+    updated_manufacturer = MagicMock()
     manufactuer_id = "invalid"
+
     with pytest.raises(InvalidObjectIdError) as exc:
         manufacturer_repository.update(manufactuer_id, updated_manufacturer)
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
@@ -346,8 +324,8 @@ def test_update_with_invalid_id(manufacturer_repository):
 def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_repository):
     """Testing trying to update a manufacturer's name to one that already exists in the database"""
 
-    updated_manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
+    updated_manufacturer = ManufacturerIn(
+        **MOCK_CREATED_MODIFIED_TIME,
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testUrl.co.uk",
@@ -366,7 +344,8 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
-            "_id": ObjectId(),
+            **MOCK_CREATED_MODIFIED_TIME,
+            "_id": CustomObjectId(manufacturer_id),
             "code": "manufacturer-b",
             "name": "Manufacturer B",
             "url": "http://example.com",
@@ -378,6 +357,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
                 "country": "United Kingdom",
             },
             "telephone": "0348343897",
+            **MOCK_CREATED_MODIFIED_TIME,
         },
     )
 
@@ -397,6 +377,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
                 "country": "United Kingdom",
             },
             "telephone": "0348343897",
+            **MOCK_CREATED_MODIFIED_TIME,
         },
     )
 
@@ -413,7 +394,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
     """Test partially updating a manufacturer address"""
     # pylint: disable=duplicate-code
     manufacturer = ManufacturerOut(
-        _id=str(ObjectId()),
+        id=str(ObjectId()),
         name="Manufacturer A",
         code="manufacturer-a",
         url="http://testurl.co.uk/",
@@ -425,12 +406,15 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
             country="United Kingdom",
         ),
         telephone="0932348348",
+        **MOCK_CREATED_MODIFIED_TIME,
     )
     # pylint: enable=duplicate-code
 
+    # Mock `find_one` to return the existing manufacturer document
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(manufacturer.id),
             "name": "Manufacturer A",
             "code": "manufacturer-a",
@@ -449,6 +433,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(manufacturer.id),
             "code": manufacturer.code,
             "name": manufacturer.name,
@@ -458,33 +443,23 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
         },
     )
 
+    manufactuerer_in = ManufacturerIn(
+        name=manufacturer.name,
+        code=manufacturer.code,
+        url=manufacturer.url,
+        address=AddressSchema(address_line="100 Test Street", postcode="test", country="test"),
+        telephone=manufacturer.telephone,
+    )
+
     updated_manufacturer = manufacturer_repository.update(
         manufacturer.id,
-        ManufacturerIn(
-            name=manufacturer.name,
-            code=manufacturer.code,
-            url=manufacturer.url,
-            address=AddressSchema(address_line="100 Test Street", postcode="test", country="test"),
-            telephone=manufacturer.telephone,
-        ),
+        manufactuerer_in,
     )
 
     database_mock.manufacturers.update_one.assert_called_once_with(
         {"_id": CustomObjectId(manufacturer.id)},
         {
-            "$set": {
-                "name": "Manufacturer A",
-                "code": "manufacturer-a",
-                "url": "http://testurl.co.uk/",
-                "address": {
-                    "address_line": "100 Test Street",
-                    "town": None,
-                    "county": None,
-                    "country": "test",
-                    "postcode": "test",
-                },
-                "telephone": "0932348348",
-            },
+            "$set": manufactuerer_in.model_dump(),
         },
     )
     assert updated_manufacturer == manufacturer

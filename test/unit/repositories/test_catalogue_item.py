@@ -3,6 +3,7 @@ Unit tests for the `CatalogueItemRepo` repository.
 """
 
 from unittest.mock import MagicMock
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
 from test.unit.repositories.test_item import FULL_ITEM_INFO
 
 import pytest
@@ -66,40 +67,37 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     duplicate catalogue item, and creates the catalogue item.
     """
     # pylint: disable=duplicate-code
-    catalogue_item = CatalogueItemOut(
+    catalogue_item_in = CatalogueItemIn(
         **FULL_CATALOGUE_ITEM_A_INFO,
-        id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
+    )
+    catalogue_item_info = catalogue_item_in.model_dump()
+    catalogue_item_out = CatalogueItemOut(
+        **catalogue_item_info,
+        id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
     # Mock `insert_one` to return an object for the inserted catalogue item document
-    test_helpers.mock_insert_one(database_mock.catalogue_items, CustomObjectId(catalogue_item.id))
+    test_helpers.mock_insert_one(database_mock.catalogue_items, CustomObjectId(catalogue_item_out.id))
 
     # Mock `find_one` to return the inserted catalogue item document
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
-            **FULL_CATALOGUE_ITEM_A_INFO,
-            "_id": CustomObjectId(catalogue_item.id),
-            "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-            "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
+            **catalogue_item_info,
+            "_id": CustomObjectId(catalogue_item_out.id),
         },
     )
 
     # Mock `find_one` to return no duplicate catalogue items found
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    catalogue_item_in = CatalogueItemIn(
-        **FULL_CATALOGUE_ITEM_A_INFO,
-        catalogue_category_id=catalogue_item.catalogue_category_id,
-        manufacturer_id=catalogue_item.manufacturer_id,
-    )
     created_catalogue_item = catalogue_item_repository.create(catalogue_item_in)
 
-    database_mock.catalogue_items.insert_one.assert_called_once_with(catalogue_item_in.model_dump())
-    assert created_catalogue_item == catalogue_item
+    database_mock.catalogue_items.insert_one.assert_called_once_with(catalogue_item_info)
+    assert created_catalogue_item == catalogue_item_out
 
 
 def test_delete(test_helpers, database_mock, catalogue_item_repository):
@@ -187,6 +185,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
         **FULL_CATALOGUE_ITEM_A_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
     )
     # pylint: enable=duplicate-code
 
@@ -194,10 +193,11 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
     test_helpers.mock_find_one(
         database_mock.catalogue_items,
         {
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(catalogue_item.id),
             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
             "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
-            **FULL_CATALOGUE_ITEM_A_INFO,
         },
     )
 
@@ -246,12 +246,14 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
         **FULL_CATALOGUE_ITEM_A_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
     )
     catalogue_item_b = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
         **FULL_CATALOGUE_ITEM_B_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
     )
 
     # Mock `find` to return a list of catalogue item documents
@@ -259,16 +261,18 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         database_mock.catalogue_items,
         [
             {
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(catalogue_item_a.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item_a.catalogue_category_id),
                 "manufacturer_id": CustomObjectId(catalogue_item_a.manufacturer_id),
-                **FULL_CATALOGUE_ITEM_A_INFO,
             },
             {
+                **FULL_CATALOGUE_ITEM_B_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(catalogue_item_b.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item_b.catalogue_category_id),
                 "manufacturer_id": CustomObjectId(catalogue_item_b.manufacturer_id),
-                **FULL_CATALOGUE_ITEM_B_INFO,
             },
         ],
     )
@@ -292,6 +296,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
         **FULL_CATALOGUE_ITEM_A_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
     )
     # pylint: enable=duplicate-code
     # Mock `find` to return a list of catalogue item documents
@@ -299,10 +304,11 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
         database_mock.catalogue_items,
         [
             {
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(catalogue_item.id),
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
                 "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
-                **FULL_CATALOGUE_ITEM_A_INFO,
             }
         ],
     )
@@ -357,15 +363,16 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
     """
     catalogue_item_info = {
         **FULL_CATALOGUE_ITEM_A_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         "name": "Catalogue Item B",
         "description": "This is Catalogue Item B",
     }
     # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
+        **catalogue_item_info,
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **catalogue_item_info,
     )
     # pylint: enable=duplicate-code
 
@@ -386,9 +393,9 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
     test_helpers.mock_find_one(database_mock.items, None)
 
     catalogue_item_in = CatalogueItemIn(
+        **catalogue_item_info,
         catalogue_category_id=catalogue_item.catalogue_category_id,
         manufacturer_id=catalogue_item.manufacturer_id,
-        **catalogue_item_info,
     )
     updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in)
 

@@ -5,6 +5,7 @@ End-to-End tests for the catalogue category router.
 from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED,
+    CREATED_MODIFIED_VALUES_EXPECTED,
 )
 from unittest.mock import ANY
 
@@ -15,6 +16,7 @@ from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LE
 CATALOGUE_CATEGORY_POST_A = {"name": "Category A", "is_leaf": False}
 CATALOGUE_CATEGORY_POST_A_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_A,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "category-a",
     "parent_id": None,
@@ -32,6 +34,7 @@ CATALOGUE_CATEGORY_POST_B = {
 }
 CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_B,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "category-b",
     "catalogue_item_properties": [
@@ -51,6 +54,7 @@ CATALOGUE_CATEGORY_POST_C = {
 }
 CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_C,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "category-c",
     "parent_id": None,
@@ -786,6 +790,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
     assert response.json() == {
         **catalogue_category_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
@@ -806,6 +811,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_
     assert response.json() == {
         **catalogue_category_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
@@ -851,6 +857,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf(test_cli
     assert response.json() == {
         **catalogue_category_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
@@ -905,6 +912,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_cat
     assert response.json() == {
         **catalogue_category_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "catalogue_item_properties": [],
         "code": "category-a",
@@ -938,6 +946,7 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
     assert response.json() == {
         **catalogue_category_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "code": "category-b",
     }
@@ -978,6 +987,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     assert response.json() == {
         **catalogue_category_b_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "catalogue_item_properties": [],
         "id": ANY,
         "code": "category-b",
@@ -1016,6 +1026,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
     assert response.json() == {
         **catalogue_category_b_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "catalogue_item_properties": [],
         "id": ANY,
         "code": "category-b",
@@ -1117,6 +1128,7 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     catalogue_item_properties[1]["unit"] = None
     assert response.json() == {
         **catalogue_category_post,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
@@ -1147,6 +1159,7 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     catalogue_item_properties[0]["unit"] = None
     assert response.json() == {
         **catalogue_category_post,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
@@ -1177,6 +1190,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     catalogue_item_properties[1]["unit"] = None
     assert response.json() == {
         **catalogue_category_post,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "catalogue_item_properties": catalogue_item_properties,
         "id": ANY,
         "code": "category-a",
@@ -1207,6 +1221,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     assert response.json() == {
         **catalogue_category_post,
         **catalogue_category_patch,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "code": "category-b",
         "parent_id": None,

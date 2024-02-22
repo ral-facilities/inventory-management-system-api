@@ -6,6 +6,7 @@ from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
+    CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
 )
 from test.e2e.test_item import ITEM_POST
@@ -64,6 +65,7 @@ CATALOGUE_ITEM_POST_A = {
 
 CATALOGUE_ITEM_POST_A_EXPECTED = {
     **CATALOGUE_ITEM_POST_A,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "cost_to_rework_gbp": None,
     "days_to_rework": None,
@@ -94,6 +96,7 @@ CATALOGUE_ITEM_POST_B = {
 
 CATALOGUE_ITEM_POST_B_EXPECTED = {
     **CATALOGUE_ITEM_POST_B,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "drawing_link": None,
     "item_model_number": None,

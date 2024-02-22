@@ -2,7 +2,9 @@
 Unit tests for the `CatalogueCategoryService` service.
 """
 
+from datetime import timedelta
 from unittest.mock import MagicMock
+from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 
 import pytest
 from bson import ObjectId
@@ -24,7 +26,12 @@ from inventory_management_system_api.schemas.catalogue_category import (
 )
 
 
-def test_create(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_create(
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
     """
     Test creating a catalogue category.
 
@@ -39,6 +46,8 @@ def test_create(test_helpers, catalogue_category_repository_mock, catalogue_cate
         is_leaf=False,
         parent_id=None,
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -67,7 +76,12 @@ def test_create(test_helpers, catalogue_category_repository_mock, catalogue_cate
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_create_with_parent_id(
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
     """
     Test creating a catalogue category with a parent ID.
 
@@ -84,6 +98,8 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
             CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
         ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -98,6 +114,8 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
             is_leaf=False,
             parent_id=None,
             catalogue_item_properties=[],
+            created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+            modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
     )
     # pylint: enable=duplicate-code
@@ -127,7 +145,12 @@ def test_create_with_parent_id(test_helpers, catalogue_category_repository_mock,
     assert created_catalogue_category == catalogue_category
 
 
-def test_create_with_whitespace_name(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_create_with_whitespace_name(
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
     """
     Test creating a catalogue category name containing leading/trailing/consecutive whitespaces.
 
@@ -144,6 +167,8 @@ def test_create_with_whitespace_name(test_helpers, catalogue_category_repository
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
             CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
         ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -186,6 +211,8 @@ def test_create_with_leaf_parent_catalogue_category(
         is_leaf=False,
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -203,6 +230,8 @@ def test_create_with_leaf_parent_catalogue_category(
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
                 CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
             ],
+            created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+            modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
     )
     # pylint: enable=duplicate-code
@@ -216,10 +245,11 @@ def test_create_with_leaf_parent_catalogue_category(
                 catalogue_item_properties=catalogue_category.catalogue_item_properties,
             )
         )
+    catalogue_category_repository_mock.create.assert_not_called()
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
 
 
-def test_create_with_duplicate_property_names(catalogue_category_service):
+def test_create_with_duplicate_property_names(catalogue_category_repository_mock, catalogue_category_service):
     """
     Test trying to create a catalogue category with duplicate catalogue item property names
     """
@@ -234,6 +264,8 @@ def test_create_with_duplicate_property_names(catalogue_category_service):
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
             CatalogueItemProperty(name="Property A", type="boolean", mandatory=True),
         ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -247,6 +279,7 @@ def test_create_with_duplicate_property_names(catalogue_category_service):
             )
         )
         # pylint: enable=duplicate-code
+    catalogue_category_repository_mock.create.assert_not_called()
     assert str(exc.value) == (
         f"Duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
     )
@@ -272,22 +305,15 @@ def test_get(test_helpers, catalogue_category_repository_mock, catalogue_categor
     Verify that the `get` method properly handles the retrieval of a catalogue category by ID.
     """
     # pylint: disable=duplicate-code
-    catalogue_category = CatalogueCategoryOut(
-        id=str(ObjectId()),
-        name="Category A",
-        code="category-a",
-        is_leaf=False,
-        parent_id=None,
-        catalogue_item_properties=[],
-    )
-    # pylint: enable=duplicate-code
+    catalogue_category_id = str(ObjectId())
+    catalogue_category = MagicMock()
 
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
-    retrieved_catalogue_category = catalogue_category_service.get(catalogue_category.id)
+    retrieved_catalogue_category = catalogue_category_service.get(catalogue_category_id)
 
-    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     assert retrieved_catalogue_category == catalogue_category
 
 
@@ -341,11 +367,16 @@ def test_list(catalogue_category_repository_mock, catalogue_category_service):
     assert result == catalogue_category_repository_mock.list.return_value
 
 
-def test_update_when_no_child_elements(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_update_when_no_child_elements(
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
     """
     Test updating a catalogue category without child elements
 
-    Verify that the `update` method properly handles the catalogue category to be updated when it doesnt have any
+    Verify that the `update` method properly handles the catalogue category to be updated when it doesn't have any
     child elements.
     """
     catalogue_category = CatalogueCategoryOut(
@@ -355,6 +386,8 @@ def test_update_when_no_child_elements(test_helpers, catalogue_category_reposito
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
 
     # Mock `get` to return a catalogue category
@@ -367,6 +400,8 @@ def test_update_when_no_child_elements(test_helpers, catalogue_category_reposito
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements not found
@@ -387,13 +422,20 @@ def test_update_when_no_child_elements(test_helpers, catalogue_category_reposito
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.modified_time,
         ),
     )
     # pylint: enable=duplicate-code
     assert updated_catalogue_category == catalogue_category
 
 
-def test_update_when_has_child_elements(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_update_when_has_child_elements(
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
     """
     Test updating a catalogue category when it has child elements
 
@@ -406,6 +448,8 @@ def test_update_when_has_child_elements(test_helpers, catalogue_category_reposit
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
 
     # Mock `get` to return a catalogue category
@@ -418,6 +462,8 @@ def test_update_when_has_child_elements(test_helpers, catalogue_category_reposit
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements found
@@ -438,6 +484,8 @@ def test_update_when_has_child_elements(test_helpers, catalogue_category_reposit
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.modified_time,
         ),
     )
     # pylint: enable=duplicate-code
@@ -458,10 +506,16 @@ def test_update_with_nonexistent_id(test_helpers, catalogue_category_repository_
         catalogue_category_service.update(
             catalogue_category_id, CatalogueCategoryPatchRequestSchema(catalogue_item_properties=[])
         )
+    catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
 
-def test_update_change_parent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_update_change_parent_id(
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
     """
     Test moving a catalogue category to another parent catalogue category.
     """
@@ -473,6 +527,8 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
         is_leaf=False,
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
 
     # Mock `get` to return a catalogue category
@@ -485,6 +541,8 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             is_leaf=catalogue_category.is_leaf,
             parent_id=None,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements not found
@@ -500,6 +558,8 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             is_leaf=False,
             parent_id=None,
             catalogue_item_properties=[],
+            created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+            modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
     )
     # pylint: enable=duplicate-code
@@ -510,6 +570,7 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
         catalogue_category.id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category.parent_id)
     )
 
+    # pylint: disable=duplicate-code
     catalogue_category_repository_mock.update.assert_called_once_with(
         catalogue_category.id,
         CatalogueCategoryIn(
@@ -518,8 +579,11 @@ def test_update_change_parent_id(test_helpers, catalogue_category_repository_moc
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.modified_time,
         ),
     )
+    # pylint: enable=duplicate-code
     assert updated_catalogue_category == catalogue_category
 
 
@@ -541,6 +605,8 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             is_leaf=False,
             parent_id=None,
             catalogue_item_properties=[],
+            created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+            modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
     )
     # Mock so child elements not found
@@ -559,6 +625,8 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
                 CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
             ],
+            created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+            modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
     )
     # pylint: enable=duplicate-code
@@ -567,11 +635,15 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
         catalogue_category_service.update(
             catalogue_category_b_id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category_a_id)
         )
+    catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
 
 
 def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
-    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
 ):
     """
     Test changing a catalogue category from leaf to non-leaf when the category doesn't have any child elements.
@@ -584,6 +656,8 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
         is_leaf=False,
         parent_id=None,
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -600,6 +674,8 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
                 CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
             ],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements not found
@@ -619,13 +695,18 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.modified_time,
         ),
     )
     assert updated_catalogue_category == catalogue_category
 
 
 def test_update_change_catalogue_item_properties_when_no_child_elements(
-    test_helpers, catalogue_category_repository_mock, catalogue_category_service
+    test_helpers,
+    catalogue_category_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
 ):
     """
     Test updating a catalogue category's item properties when it has no child elements.
@@ -643,6 +724,8 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
             CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
         ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -657,6 +740,8 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements not found
@@ -680,6 +765,8 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.modified_time,
         ),
     )
     assert updated_catalogue_category == catalogue_category
@@ -699,6 +786,8 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
         is_leaf=False,
         parent_id=None,
         catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -715,6 +804,8 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
                 CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
                 CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
             ],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.modified_time,
         ),
     )
     # Mock so child elements found
@@ -724,7 +815,6 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
 
     with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_service.update(catalogue_category.id, CatalogueCategoryPatchRequestSchema(is_leaf=False))
-
     catalogue_category_repository_mock.update.assert_not_called()
     assert (
         str(exc.value)
@@ -751,6 +841,8 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
             CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
             CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
         ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -765,6 +857,8 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements found
@@ -780,7 +874,6 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
                 catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
             ),
         )
-
     catalogue_category_repository_mock.update.assert_not_called()
     assert (
         str(exc.value)
@@ -807,6 +900,8 @@ def test_update_properties_to_have_duplicate_names(
             CatalogueItemProperty(name="Duplicate", type="number", unit="mm", mandatory=False),
             CatalogueItemProperty(name="Duplicate", type="boolean", mandatory=True),
         ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
     # pylint: enable=duplicate-code
 
@@ -821,6 +916,8 @@ def test_update_properties_to_have_duplicate_names(
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
         ),
     )
     # Mock so child elements not found
@@ -836,7 +933,6 @@ def test_update_properties_to_have_duplicate_names(
                 catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
             ),
         )
-
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == (
         f"Duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"

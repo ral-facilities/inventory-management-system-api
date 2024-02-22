@@ -2,9 +2,11 @@
 Module for defining the API schema models for representing catalogue items.
 """
 
-from typing import List, Any, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
+
+from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
 class PropertyPostRequestSchema(BaseModel):
@@ -78,7 +80,7 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     is_obsolete: Optional[bool] = Field(default=None, description="Whether the catalogue item is obsolete or not")
 
 
-class CatalogueItemSchema(CatalogueItemPostRequestSchema):
+class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostRequestSchema):
     """
     Schema model for a catalogue item response.
     """

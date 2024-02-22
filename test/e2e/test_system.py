@@ -3,6 +3,7 @@ End-to-End tests for the System router
 """
 
 from test.e2e.mock_schemas import (
+    CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
     SYSTEM_POST_A_EXPECTED,
     SYSTEM_POST_B,
@@ -26,6 +27,7 @@ SYSTEM_POST_REQUIRED_ONLY = {
 
 SYSTEM_POST_REQUIRED_ONLY_EXPECTED = {
     **SYSTEM_POST_REQUIRED_ONLY,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "description": None,
@@ -92,7 +94,12 @@ def _test_partial_update_system(
     response = test_client.patch(f"/v1/systems/{system['id']}", json=update_values)
 
     assert response.status_code == 200
-    assert response.json() == {**system, **update_values, **additional_expected_values}
+    assert response.json() == {
+        **system,
+        **CREATED_MODIFIED_VALUES_EXPECTED,
+        **update_values,
+        **additional_expected_values,
+    }
 
 
 def test_create_system(test_client):

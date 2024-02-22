@@ -2,13 +2,15 @@
 Unit tests for the `ItemRepo` repository.
 """
 
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
 from unittest.mock import MagicMock
+
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
-from inventory_management_system_api.models.item import ItemOut, ItemIn
+from inventory_management_system_api.models.item import ItemIn, ItemOut
 
 # pylint: disable=duplicate-code
 FULL_SYSTEM_A_INFO = {
@@ -40,11 +42,15 @@ def test_create(test_helpers, database_mock, item_repository):
     Test creating an item.
     """
     # pylint: disable=duplicate-code
-    item = ItemOut(
+    item_in = ItemIn(
         **FULL_ITEM_INFO,
-        id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+    )
+    item_info = item_in.model_dump()
+    item_out = ItemOut(
+        **item_info,
+        id=str(ObjectId()),
     )
     # pylint: enable=duplicate-code
 
@@ -53,32 +59,26 @@ def test_create(test_helpers, database_mock, item_repository):
         database_mock.systems,
         {
             **FULL_SYSTEM_A_INFO,
-            "_id": CustomObjectId(item.system_id),
+            **MOCK_CREATED_MODIFIED_TIME,
+            "_id": CustomObjectId(item_out.system_id),
         },
     )
     # Mock `insert_one` to return an object for the inserted item document
-    test_helpers.mock_insert_one(database_mock.items, CustomObjectId(item.id))
+    test_helpers.mock_insert_one(database_mock.items, CustomObjectId(item_out.id))
     # Mock `find_one` to return the inserted item document
     test_helpers.mock_find_one(
         database_mock.items,
         {
-            **FULL_ITEM_INFO,
-            "_id": CustomObjectId(item.id),
-            "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-            "system_id": CustomObjectId(item.system_id),
+            **item_info,
+            "_id": CustomObjectId(item_out.id),
         },
     )
 
-    item_in = ItemIn(
-        **FULL_ITEM_INFO,
-        catalogue_item_id=item.catalogue_item_id,
-        system_id=item.system_id,
-    )
     created_item = item_repository.create(item_in)
 
-    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item.system_id)})
+    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item_out.system_id)})
     database_mock.items.insert_one.assert_called_once_with(item_in.model_dump())
-    assert created_item == item
+    assert created_item == item_out
 
 
 def test_create_with_non_existent_system_id(test_helpers, database_mock, item_repository):
@@ -156,6 +156,7 @@ def test_list(test_helpers, database_mock, item_repository):
     """
     item_a = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -163,6 +164,7 @@ def test_list(test_helpers, database_mock, item_repository):
 
     item_b = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -174,12 +176,14 @@ def test_list(test_helpers, database_mock, item_repository):
         [
             {
                 **FULL_ITEM_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(item_a.id),
                 "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
                 "system_id": CustomObjectId(item_a.system_id),
             },
             {
                 **FULL_ITEM_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(item_b.id),
                 "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
                 "system_id": CustomObjectId(item_b.system_id),
@@ -203,6 +207,7 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
     # pylint: disable=duplicate-code
     item = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -215,6 +220,7 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
         [
             {
                 **FULL_ITEM_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 "system_id": CustomObjectId(item.system_id),
@@ -268,6 +274,7 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
     # pylint: disable=duplicate-code
     item = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -280,6 +287,7 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
         [
             {
                 **FULL_ITEM_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 "system_id": CustomObjectId(item.system_id),
@@ -332,6 +340,7 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
     # pylint: disable=duplicate-code
     item = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -344,6 +353,7 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
         [
             {
                 **FULL_ITEM_INFO,
+                **MOCK_CREATED_MODIFIED_TIME,
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 "system_id": CustomObjectId(item.system_id),
@@ -391,6 +401,7 @@ def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_
     # pylint: disable=duplicate-code
     item = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -437,6 +448,7 @@ def test_get(test_helpers, database_mock, item_repository):
     # pylint: disable=duplicate-code
     item = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -448,6 +460,7 @@ def test_get(test_helpers, database_mock, item_repository):
         database_mock.items,
         {
             **FULL_ITEM_INFO,
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
             "system_id": CustomObjectId(item.system_id),
@@ -497,6 +510,7 @@ def test_update(test_helpers, database_mock, item_repository):
     # pylint: disable=duplicate-code
     item = ItemOut(
         **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
@@ -510,13 +524,19 @@ def test_update(test_helpers, database_mock, item_repository):
         database_mock.items,
         {
             **FULL_ITEM_INFO,
+            **MOCK_CREATED_MODIFIED_TIME,
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
             "system_id": CustomObjectId(item.system_id),
         },
     )
 
-    item_in = ItemIn(**FULL_ITEM_INFO, catalogue_item_id=item.catalogue_item_id, system_id=item.system_id)
+    item_in = ItemIn(
+        **FULL_ITEM_INFO,
+        **MOCK_CREATED_MODIFIED_TIME,
+        catalogue_item_id=item.catalogue_item_id,
+        system_id=item.system_id,
+    )
     updated_item = item_repository.update(item.id, item_in)
 
     database_mock.items.update_one.assert_called_once_with(

@@ -2,19 +2,20 @@
 Module for defining the database models for representing items.
 """
 
-from typing import Optional, List, Any
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, AwareDatetime
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 from inventory_management_system_api.models.catalogue_item import Property
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 # pylint: disable=duplicate-code
 
 
-class ItemIn(BaseModel):
+class ItemBase(BaseModel):
     """
-    Input database model for an item.
+    Base database model for an item.
     """
 
     catalogue_item_id: CustomObjectIdField
@@ -49,7 +50,13 @@ class ItemIn(BaseModel):
 # pylint: enable=duplicate-code
 
 
-class ItemOut(ItemIn):
+class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
+    """
+    Input database model for an item.
+    """
+
+
+class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
     """
     Output database model for an item.
     """
