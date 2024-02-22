@@ -557,10 +557,8 @@ def test_update_change_property_value(
         item_repository_mock,
         ItemOut(
             **{
-                **FULL_ITEM_INFO,
                 **item.model_dump(),
                 "properties": FULL_ITEM_INFO["properties"],
-                "created_time": item.created_time,
                 "modified_time": item.created_time,
             }
         ),
@@ -629,7 +627,9 @@ def test_update_with_missing_existing_properties(
     # Mock `get` to return an item
     test_helpers.mock_get(
         item_repository_mock,
-        ItemOut(**{**FULL_ITEM_INFO, **item.model_dump(), "properties": FULL_ITEM_INFO["properties"]}),
+        ItemOut(
+            **{**item.model_dump(), "properties": FULL_ITEM_INFO["properties"], "modified_time": item.created_time}
+        ),
     )
 
     catalogue_category_id = str(ObjectId())

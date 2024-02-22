@@ -234,7 +234,8 @@ def test_update(
                 **SYSTEM_A_INFO_FULL,
                 "name": "Different name",
                 "code": "different-name",
-                "created_time": SYSTEM_A_INFO_FULL["created_time"] - timedelta(days=5),
+                "created_time": system.created_time,
+                "modified_time": system.created_time,
             },
         ),
     )

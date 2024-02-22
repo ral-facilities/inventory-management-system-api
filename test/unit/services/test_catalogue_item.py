@@ -1331,7 +1331,7 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
-            id=str(ObjectId()),
+            id=catalogue_item.id,
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
             **{
@@ -1494,7 +1494,10 @@ def test_update_remove_non_mandatory_property(
     """
     catalogue_item_info = {
         **FULL_CATALOGUE_ITEM_A_INFO,
-        "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
+        "properties": [
+            {"name": "Property A", "value": None, "unit": "mm"},
+            *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
+        ],
         "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
     }
     catalogue_item = CatalogueItemOut(
@@ -1538,14 +1541,7 @@ def test_update_remove_non_mandatory_property(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **{
-                **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": [
-                    {"name": "Property A", "value": None, "unit": "mm"},
-                    *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
-                ],
-                "created_time": catalogue_item.created_time,
-            },
+            **catalogue_item_info,
         ),
     )
     assert updated_catalogue_item == catalogue_item
