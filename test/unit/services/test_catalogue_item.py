@@ -1440,10 +1440,7 @@ def test_update_add_non_mandatory_property(
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                "properties": [
-                    {"name": "Property B", "value": False, "unit": None},
-                    {"name": "Property C", "value": "20x15x10", "unit": "cm"},
-                ],
+                "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
                 "modified_time": catalogue_item.created_time,
             }
         ),
@@ -1513,8 +1510,7 @@ def test_update_remove_non_mandatory_property(
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                **FULL_CATALOGUE_ITEM_A_INFO,
-                "created_time": catalogue_item.created_time,
+                "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"],
                 "modified_time": catalogue_item.created_time,
             }
         ),
@@ -1532,7 +1528,7 @@ def test_update_remove_non_mandatory_property(
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
         CatalogueItemPatchRequestSchema(
-            properties=[{"name": prop.name, "value": prop.value} for prop in catalogue_item.properties]
+            properties=[{"name": prop.name, "value": prop.value} for prop in catalogue_item.properties[-2:]]
         ),
     )
 
@@ -1618,8 +1614,7 @@ def test_update_change_property_value(
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                **FULL_CATALOGUE_ITEM_A_INFO,
-                "created_time": catalogue_item.created_time,
+                "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"],
                 "modified_time": catalogue_item.created_time,
             }
         ),
