@@ -2,7 +2,9 @@
 Mock data for sharing between different repo tests
 """
 
+from datetime import datetime, timezone
+
 MOCK_CREATED_MODIFIED_TIME = {
-    "created_time": "2024-02-16T14:01:13.233000Z",
-    "modified_time": "2024-02-16T14:01:13.233000Z",
+    "created_time": datetime(2024, 2, 16, 14, 1, 13, 0, tzinfo=timezone.utc),
+    "modified_time": datetime(2024, 2, 16, 14, 1, 13, 0, tzinfo=timezone.utc),
 }
