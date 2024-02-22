@@ -56,7 +56,7 @@ jobs:
         run: pytest -c test/pytest.ini test/unit/ --cov
 
   e2e-tests:
-    needs: [unit-tests]
+    needs: [ unit-tests ]
     name: End-to-End Tests
     runs-on: ubuntu-latest
     steps:
@@ -91,31 +91,31 @@ jobs:
   docker:
     # This job triggers only if all the other jobs succeed. It builds the Docker image and if successful,
     # it pushes it to Harbor.
-    needs: [linting, unit-tests, e2e-tests]
+    needs: [ linting, unit-tests, e2e-tests ]
     name: Docker
     runs-on: ubuntu-latest
     steps:
-    - name: Check out repo
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Check out repo
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-    - name: Login to Harbor
-      uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
-      with:
-        registry: harbor.stfc.ac.uk/inventory-management-system
-        username: ${{ secrets.HARBOR_USERNAME }}
-        password: ${{ secrets.HARBOR_TOKEN }}
+      - name: Login to Harbor
+        uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
+        with:
+          registry: harbor.stfc.ac.uk/inventory-management-system
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_TOKEN }}
 
-    - name: Extract metadata (tags, labels) for Docker
-      id: meta
-      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
-      with:
-        images: harbor.stfc.ac.uk/inventory-management-system/ims-api
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+        with:
+          images: harbor.stfc.ac.uk/inventory-management-system/ims-api
 
-    - name: Build and push Docker image to Harbor
-      uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
-      with:
-        context: .
-        file: ./Dockerfile.prod
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+      - name: Build and push Docker image to Harbor
+        uses: docker/build-push-action@4a13e500e55cf31b7a5d59a38ab2040ab0f42f56 # v5.1.0
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
