@@ -16,7 +16,7 @@ services:
       - DATABASE__HOSTNAME=mongo-db
 
   mongo-db:
-    image: mongo:6.0-jammy
+    image: mongo:7.0-jammy
     container_name: mongodb_container
     volumes:
       - ./mongodb/data:/data/db
