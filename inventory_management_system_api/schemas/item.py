@@ -8,6 +8,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, AwareDatetime
 
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema, PropertySchema
+from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
 class ItemUsageStatus(int, Enum):
@@ -66,7 +67,7 @@ class ItemPatchRequestSchema(ItemPostRequestSchema):
     )
 
 
-class ItemSchema(ItemPostRequestSchema):
+class ItemSchema(CreatedModifiedSchemaMixin, ItemPostRequestSchema):
     """
     Schema model for an item response.
     """

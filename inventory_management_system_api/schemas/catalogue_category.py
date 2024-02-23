@@ -9,6 +9,8 @@ from typing import Annotated, Any, List, Literal, Optional
 from pydantic import BaseModel, Field, conlist, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
+from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+
 
 class CatalogueItemPropertyType(str, Enum):
     """
@@ -154,7 +156,7 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
 
 
-class CatalogueCategorySchema(CatalogueCategoryPostRequestSchema):
+class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
     """
     Schema model for a catalogue category response.
     """

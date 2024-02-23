@@ -7,6 +7,7 @@ from typing import Any, List, Optional
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
 class Property(BaseModel):
@@ -19,9 +20,9 @@ class Property(BaseModel):
     unit: Optional[str] = None
 
 
-class CatalogueItemIn(BaseModel):
+class CatalogueItemBase(BaseModel):
     """
-    Input database model for a catalogue item.
+    Base database model for a catalogue item.
     """
 
     catalogue_category_id: CustomObjectIdField
@@ -68,7 +69,13 @@ class CatalogueItemIn(BaseModel):
         return url if url is None else str(url)
 
 
-class CatalogueItemOut(CatalogueItemIn):
+class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBase):
+    """
+    Input database model for a catalogue item.
+    """
+
+
+class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
     """
     Output database model for a catalogue item.
     """

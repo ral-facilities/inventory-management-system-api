@@ -5,6 +5,8 @@ Mock data for sharing between different e2e tests - In particular avoids circula
 # Leaf with allowed values in properties
 from unittest.mock import ANY
 
+CREATED_MODIFIED_VALUES_EXPECTED = {"created_time": ANY, "modified_time": ANY}
+
 # pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_ALLOWED_VALUES = {
     "name": "Category Allowed Values",
@@ -29,6 +31,7 @@ CATALOGUE_CATEGORY_POST_ALLOWED_VALUES = {
 
 CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED = {
     **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "category-allowed-values",
     "parent_id": None,
@@ -49,6 +52,7 @@ CATALOGUE_ITEM_POST_ALLOWED_VALUES = {
 
 CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED = {
     **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "drawing_link": None,
     "item_model_number": None,
@@ -73,6 +77,7 @@ ITEM_POST_ALLOWED_VALUES = {
 
 ITEM_POST_ALLOWED_VALUES_EXPECTED = {
     **ITEM_POST_ALLOWED_VALUES,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "purchase_order_number": None,
     "asset_number": None,
@@ -91,6 +96,7 @@ SYSTEM_POST_A = {
 }
 SYSTEM_POST_A_EXPECTED = {
     **SYSTEM_POST_A,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "code": "system-a",
@@ -106,6 +112,7 @@ SYSTEM_POST_B = {
 }
 SYSTEM_POST_B_EXPECTED = {
     **SYSTEM_POST_B,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "system-b",
 }
@@ -119,6 +126,7 @@ SYSTEM_POST_C = {
 }
 SYSTEM_POST_C_EXPECTED = {
     **SYSTEM_POST_C,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "code": "system-c",
