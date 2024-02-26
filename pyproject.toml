@@ -18,7 +18,7 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
-    "pylint==3.0.3",
+    "pylint==3.1.0",
     "inventory-management-system-api[test]"
 ]
 
