@@ -9,7 +9,7 @@ dependencies = [
     "cryptography==42.0.4",
     "fastapi[all]==0.109.2",
     "PyJWT==2.8.0",
-    "pymongo==4.6.1",
+    "pymongo==4.6.2",
     "uvicorn==0.27.1"
 ]
 
