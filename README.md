@@ -173,10 +173,13 @@ values loaded from the `.env` file.
 Listed below are the environment variables supported by the application.
 
 | Environment Variable              | Description                                                                                                  | Mandatory           | Default Value                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------- | ----------------------------------------------------- |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------|---------------------|-------------------------------------------------------|
 | `API__TITLE`                      | The title of the API which is added to the generated OpenAPI.                                                | No                  | `Inventory Management System API`                     |
 | `API__DESCRIPTION`                | The description of the API which is added to the generated OpenAPI.                                          | No                  | `This is the API for the Inventory Management System` |
 | `API__ROOT_PATH`                  | (If using a proxy) The path prefix handled by a proxy that is not seen by the app.                           | No                  | ` `                                                   |
+| `API__ALLOWED_CORS_HEADERS`       | The list of headers that are allowed to be included in cross-origin requests.                                | Yes                 |                                                       |
+| `API__ALLOWED_CORS_ORIGINS`       | The list of origins (domains) that are allowed to make cross-origin requests.                                | Yes                 |                                                       |
+| `API__ALLOWED_CORS_METHODS`       | The list of methods that are allowed to be used to make cross-origin requests.                               | Yes                 |                                                       |
 | `AUTHENTICATION__ENABLED`         | Whether JWT auth is enabled.                                                                                 | Yes                 | `False`                                               |
 | `AUTHENTICATION__PUBLIC_KEY_PATH` | The path to the public key to be used for decoding JWT access token signed by the corresponding private key. | If JWT auth enabled |                                                       |
 | `AUTHENTICATION__JWT_ALGORITHM`   | The algorithm to use to decode the JWT access token.                                                         | If JWT auth enabled |                                                       |
