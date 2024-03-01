@@ -74,13 +74,9 @@ def get_router_dependencies() -> list:
     return dependencies
 
 
-# pylint: disable=W0511
-# TODO: Fixes CORS issues but should be updated before deploying to prod
-ALLOWED_ORIGINS = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=config.api.allowed_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
