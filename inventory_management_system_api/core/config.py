@@ -18,6 +18,7 @@ class APIConfig(BaseModel):
     title: str = "Inventory Management System API"
     description: str = "This is the API for the Inventory Management System"
     root_path: str = ""  # (If using a proxy) The path prefix handled by a proxy that is not seen by the app.
+    allowed_cors_headers: List[str]
     allowed_cors_origins: List[str]
 
 
