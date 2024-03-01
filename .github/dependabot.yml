@@ -7,6 +7,11 @@ updates:
     schedule:
       # Check for updates every week
       interval: "weekly"
+    # Update multiple dependencies at the same time
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # Maintain pip dependencies
   - package-ecosystem: "pip"
@@ -14,3 +19,8 @@ updates:
     schedule:
       # Check for updates every week
       interval: "weekly"
+    # Update multiple dependencies at the same time
+    groups:
+      pip:
+        patterns:
+          - "*"
