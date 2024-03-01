@@ -20,6 +20,7 @@ class APIConfig(BaseModel):
     root_path: str = ""  # (If using a proxy) The path prefix handled by a proxy that is not seen by the app.
     allowed_cors_headers: List[str]
     allowed_cors_origins: List[str]
+    allowed_cors_methods: List[str]
 
 
 class AuthenticationConfig(BaseModel):
@@ -27,7 +28,7 @@ class AuthenticationConfig(BaseModel):
     Configuration model for the JWT access token authentication/authorization.
     """
 
-    enabled: bool = False
+    enabled: bool
     public_key_path: Optional[str] = Field(default=None, validate_default=True)
     jwt_algorithm: Optional[str] = Field(default=None, validate_default=True)
 
