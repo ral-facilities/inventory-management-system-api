@@ -101,7 +101,7 @@ jobs:
       - name: Login to Harbor
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3.0.0
         with:
-          registry: harbor.stfc.ac.uk/inventory-management-system
+          registry: ${{ secrets.HARBOR_URL }}
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_TOKEN }}
 
@@ -109,7 +109,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
         with:
-          images: harbor.stfc.ac.uk/inventory-management-system/ims-api
+          images: ${{ secrets.HARBOR_URL }}/ims-api
 
       - name: Build and push Docker image to Harbor
         uses: docker/build-push-action@af5a7ed5ba88268d5278f7203fb52cd833f66d6e # v5.2.0
