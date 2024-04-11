@@ -201,10 +201,10 @@ payload, and it has not expired. This means that any microservice can be used to
 it meets the above criteria. The [LDAP-JWT Authentication Service](https://github.com/ral-facilities/ldap-jwt-auth) is
 a microservice that provides user authentication against an LDAP server and returns a JWT access token.
 
-### Adding units
+### Adding units and usage statuses
 
-Units should be added to the MongoDB database using `mongoimport` on the provided units file found at
-`/data/units.json`. If adding more units to this file, ensure the `_id` values are valid `ObjectId`'s.
+Units and usage statuses should be added to the MongoDB database using `mongoimport` on the provided units and usage statues file found at
+`/data/units.json` and `/data/usage_statuses.json` respectively. If additional units and usage statuses are being added to these files, ensure that the `_id` values are valid `ObjectIds`.
 
 #### Updating a local MongoDB instance
 
@@ -214,14 +214,26 @@ To update the list of units, replacing all existing with the contents of the `./
 mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop ./data/units.json
 ```
 
+To update the list of usage statuses, replacing all existing with the contents of the `./data/usage_statuses.json` file use the command
+
+```bash
+mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection usage_statuses --type=json --jsonArray --drop ./data/usage_statuses.json
+```
+
 from the root directory of this repo, replacing the username and password as appropriate.
 
 #### Updating a MongoDB instance running in a docker container
 
-When running using docker first locate the running container with the instance of MongoDB using `docker ps`. Then use
+When running using docker first locate the running container with the instance of MongoDB using `docker ps`. Then use:
 
+For units:
 ```bash
 docker exec -i CONTAINER_ID mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop < ./data/units.json
+```
+
+For usage statuses:
+```bash
+docker exec -i CONTAINER_ID mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection usage_statuses --type=json --jsonArray --drop < ./data/usage_statuses.json
 ```
 
 Replacing `CONTAINER_ID` with the actual container ID of the MongoDB instance.
