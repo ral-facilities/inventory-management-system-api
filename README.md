@@ -36,7 +36,7 @@ Ensure that Docker is installed and running on your machine before proceeding.
    ```bash
    openssl rand -base64 756 > ./mongodb/keys/rs_keyfile
    chmod 0400 ./mongodb/keys/rs_keyfile
-   chown 999:999 ./mongodb/keys/rs_keyfile
+   sudo chown 999:999 ./mongodb/keys/rs_keyfile
    ```
 
 4. (**Required only if JWT Auth is enabled**) Create a `keys` directory in the root of the project directory and inside
@@ -159,7 +159,7 @@ Ensure that Python is installed on your machine before proceeding.
    ```bash
    openssl rand -base64 756 > ./mongodb/keys/rs_keyfile
    chmod 0400 ./mongodb/keys/rs_keyfile
-   chown 999:999 ./mongodb/keys/rs_keyfile
+   sudo chown 999:999 ./mongodb/keys/rs_keyfile
    ```
 
 6. (**Required only if JWT Auth is enabled**) Create a `keys` directory in the root of the project directory and inside

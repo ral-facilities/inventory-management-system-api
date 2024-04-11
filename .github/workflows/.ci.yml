@@ -64,11 +64,20 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@b0a1493307c4e9b82ed61f3858d606c5ff190c64 #v1.10.0
-        with:
-          mongodb-version: "7.0"
-          mongodb-replica-set: rs0
-          mongodb-db: test-ims
+        run: |
+          openssl rand -base64 756 > ./mongodb/keys/rs_keyfile
+          sudo chmod 0400 ./mongodb/keys/rs_keyfile
+          sudo chown 999:999 ./mongodb/keys/rs_keyfile
+          docker compose pull mongo-db
+          docker compose up -d --wait --wait-timeout 30 mongo-db
+          sleep 10
+          docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'localhost:27017' }]})"
+          sudo chmod -R 777 ./mongodb/data
+          docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.status()"
+      - name: Display logs
+        if: always()
+        run: |
+          docker logs mongodb_container
 
       - name: Set up Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
