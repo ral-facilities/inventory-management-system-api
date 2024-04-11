@@ -19,8 +19,10 @@ services:
   mongo-db:
     image: mongo:7.0-jammy
     container_name: mongodb_container
+    command: ["--replSet", "rs0", "--keyFile", "/etc/mongodb/keys/rs_keyfile"]
     volumes:
       - ./mongodb/data:/data/db
+      - ./mongodb/keys:/etc/mongodb/keys
     restart: always
     ports:
       - 27017:27017
