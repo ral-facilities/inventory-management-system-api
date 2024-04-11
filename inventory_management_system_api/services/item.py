@@ -40,6 +40,7 @@ class ItemService:
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
         system_repository: SystemRepo = Depends(SystemRepo),
         usage_status_repository: UsageStatusRepo = Depends(UsageStatusRepo),
+        # pylint: disable=too-many-arguments
     ) -> None:
         """
         Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`,

@@ -11,8 +11,12 @@ from inventory_management_system_api.core.database import get_database
 # Load in the usage statuses data
 with open("./data/usage_statuses.json", "r", encoding="utf-8") as file:
     usage_statuses_data = json.load(file)
-    USAGE_STATUSES = [{"_id": usage_status["_id"]["$oid"], "value": usage_status["value"]} for usage_status in usage_statuses_data]
-USAGE_STATUSES_EXPECTED = [{"id": usage_status["_id"], "value": usage_status["value"]} for usage_status in USAGE_STATUSES]
+    USAGE_STATUSES = [
+        {"_id": usage_status["_id"]["$oid"], "value": usage_status["value"]} for usage_status in usage_statuses_data
+    ]
+USAGE_STATUSES_EXPECTED = [
+    {"id": usage_status["_id"], "value": usage_status["value"]} for usage_status in USAGE_STATUSES
+]
 
 
 @pytest.fixture(name="add_usage_statuses_to_database", autouse=True, scope="session")

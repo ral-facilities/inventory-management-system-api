@@ -12,7 +12,6 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.system import SystemOut
-from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo

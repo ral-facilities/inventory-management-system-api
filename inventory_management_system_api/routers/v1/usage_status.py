@@ -17,7 +17,9 @@ router = APIRouter(prefix="/v1/usage_statuses", tags=["usage statuses"])
 
 
 @router.get(path="", summary="Get usage statuses", response_description="List of usage statuses")
-def get_usage_statuses(usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)]) -> list[UsageStatusSchema]:
+def get_usage_statuses(
+    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)]
+) -> list[UsageStatusSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Usage statuses")
 
