@@ -67,8 +67,6 @@ jobs:
         uses: supercharge/mongodb-github-action@b0a1493307c4e9b82ed61f3858d606c5ff190c64 #v1.10.0
         with:
           mongodb-version: "7.0"
-          mongodb-username: root
-          mongodb-password: example
           mongodb-replica-set: rs0
           mongodb-db: test-ims
 
