@@ -19,6 +19,7 @@ from inventory_management_system_api.routers.v1 import (
     manufacturer,
     system,
     unit,
+    catalogue_item_property_template,
 )
 
 if config.authentication.enabled:
@@ -90,6 +91,7 @@ app.include_router(item.router, dependencies=router_dependencies)
 app.include_router(manufacturer.router, dependencies=router_dependencies)
 app.include_router(system.router, dependencies=router_dependencies)
 app.include_router(unit.router, dependencies=router_dependencies)
+app.include_router(catalogue_item_property_template.router, dependencies=router_dependencies)
 
 
 @app.get("/")

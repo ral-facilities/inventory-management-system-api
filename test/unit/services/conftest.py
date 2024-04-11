@@ -18,6 +18,9 @@ from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
+from inventory_management_system_api.repositories.catalogue_item_property_template import (
+    CatalogueItemPropertyTemplateRepo,
+)
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
@@ -25,6 +28,9 @@ from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
 from inventory_management_system_api.services.system import SystemService
 from inventory_management_system_api.services.unit import UnitService
+from inventory_management_system_api.services.catalogue_item_property_template import (
+    CatalogueItemPropertyTemplateService,
+)
 
 
 @pytest.fixture(name="catalogue_category_repository_mock")
@@ -85,6 +91,16 @@ def fixture_unit_repository_mock() -> Mock:
     :return: Mocked UnitRepo instance.
     """
     return Mock(UnitRepo)
+
+
+@pytest.fixture(name="catalogue_item_property_template_repository_mock")
+def fixture_catalogue_item_property_template_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `CatalogueItemPropertyTemplateRepo` dependency.
+
+    :return: Mocked  CatalogueItemPropertyTemplateRepo instance.
+    """
+    return Mock(CatalogueItemPropertyTemplateRepo)
 
 
 @pytest.fixture(name="catalogue_category_service")
@@ -169,6 +185,20 @@ def fixture_unit_service(unit_repository_mock: Mock) -> UnitService:
     :return: `UnitService` instance with the mocked dependency
     """
     return UnitService(unit_repository_mock)
+
+
+@pytest.fixture(name="catalogue_item_property_template_service")
+def fixture_catalogue_item_property_template_service(
+    catalogue_item_property_template_repository_mock: Mock,
+) -> CatalogueItemPropertyTemplateService:
+    """
+    Fixture to create a `CatalogueItemPropertyTemplateService` instance with a mocked
+    `CatalogueItemPropertyTemplateRepo` dependencies.
+
+    :param catalogue_item_property_template_repository_mock: Mocked `CatalogueItemPropertyTemplateRepo` instance
+    :return: `CatalogueItemPropertyTemplateService` instance with the mocked dependency
+    """
+    return CatalogueItemPropertyTemplateService(catalogue_item_property_template_repository_mock)
 
 
 class ServiceTestHelpers:

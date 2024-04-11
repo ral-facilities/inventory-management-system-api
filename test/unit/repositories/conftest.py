@@ -18,6 +18,9 @@ from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
+from inventory_management_system_api.repositories.catalogue_item_property_template import (
+    CatalogueItemPropertyTemplateRepo,
+)
 
 
 @pytest.fixture(name="database_mock")
@@ -34,6 +37,7 @@ def fixture_database_mock() -> Mock:
     database_mock.manufacturers = Mock(Collection)
     database_mock.systems = Mock(Collection)
     database_mock.units = Mock(Collection)
+    database_mock.catalogue_item_property_templates = Mock(Collection)
     return database_mock
 
 
@@ -98,6 +102,17 @@ def fixture_unit_repository(database_mock: Mock) -> UnitRepo:
     :return: `UnitRepo` instance with the mocked dependency.
     """
     return UnitRepo(database_mock)
+
+
+@pytest.fixture(name="catalogue_item_property_template_repository")
+def fixture_catalogue_item_property_template_repository(database_mock: Mock) -> CatalogueItemPropertyTemplateRepo:
+    """
+    Fixture to create a `CatalogueItemPropertyTemplateRepo` instance with a mocked Database dependency.
+
+    :param database_mock: Mocked MongoDB database instance.
+    :return: `CatalogueItemPropertyTemplateRepo` instance with the mocked dependency.
+    """
+    return CatalogueItemPropertyTemplateRepo(database_mock)
 
 
 class RepositoryTestHelpers:
