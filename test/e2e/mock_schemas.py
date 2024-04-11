@@ -3,6 +3,7 @@ Mock data for sharing between different e2e tests - In particular avoids circula
 """
 
 # Leaf with allowed values in properties
+import json
 from unittest.mock import ANY
 
 CREATED_MODIFIED_VALUES_EXPECTED = {"created_time": ANY, "modified_time": ANY}
@@ -132,3 +133,13 @@ SYSTEM_POST_C_EXPECTED = {
     "code": "system-c",
 }
 # pylint: enable=duplicate-code
+
+# Load in the usage statuses data
+with open("./data/usage_statuses.json", "r", encoding="utf-8") as file:
+    usage_statuses_data = json.load(file)
+    USAGE_STATUSES = [
+        {"_id": usage_status["_id"]["$oid"], "value": usage_status["value"]} for usage_status in usage_statuses_data
+    ]
+USAGE_STATUSES_EXPECTED = [
+    {"id": usage_status["_id"], "value": usage_status["value"]} for usage_status in USAGE_STATUSES
+]

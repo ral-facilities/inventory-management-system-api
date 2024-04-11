@@ -85,9 +85,6 @@ jobs:
       - name: Create logging configuration file
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
 
-      - name: Import usage statuses data to ims api
-        run: docker exec -i $(docker ps | grep mongo | awk '{ print $1 }') mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection usage_statuses --type=json --jsonArray --drop < ./data/usage_statuses.json
-
       - name: Run e2e tests
         run: pytest -c test/pytest.ini test/e2e/ --cov
 
