@@ -58,7 +58,7 @@ MANUFACTURER_POST = {
 
 ITEM_POST = {
     "is_defective": False,
-    "usage_status": 0,
+    "usage_status": "New",
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
@@ -365,6 +365,36 @@ def test_create_item_without_properties(test_client):
         "system_id": system_id,
         "properties": [{"name": "Property A", "value": 20, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
     }
+
+
+def test_create_item_with_invalid_usage_status(test_client):
+    """
+    Test creating an item with invalid usage status.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+    # pylint: enable=duplicate-code
+
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id, "usage_status": "Invalid"}
+    response = test_client.post("/v1/items", json=item_post)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified usage status does not exist"
 
 
 def test_create_item_with_invalid_value_type_for_string_property(test_client):
@@ -925,7 +955,7 @@ def test_partial_update_item(test_client):
     item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
     response = test_client.post("/v1/items", json=item_post)
 
-    item_patch = {"usage_status": 1, "is_defective": True}
+    item_patch = {"usage_status": "Used", "is_defective": True}
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
     assert response.status_code == 200
@@ -935,11 +965,44 @@ def test_partial_update_item(test_client):
     assert item == {**ITEM_POST_EXPECTED, **item_patch, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
 
+def test_partial_update_item_usage_status(test_client):
+    """
+    Test updating an item with a invalid usage status
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_id = response.json()["id"]
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category_id,
+        "manufacturer_id": manufacturer_id,
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {"usage_status": "Invalid"}
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified usage status does not exist"
+
+
 def test_partial_update_item_invalid_id(test_client):
     """
     Test updating an item with an invalid ID.
     """
-    item_patch = {"usage_status": 1, "is_defective": True}
+    item_patch = {"usage_status": "Used", "is_defective": True}
 
     response = test_client.patch("/v1/items/invalid", json=item_patch)
 
@@ -951,7 +1014,7 @@ def test_partial_update_item_non_existent_id(test_client):
     """
     Test updating an item with a non-existent ID.
     """
-    item_patch = {"usage_status": 1, "is_defective": True}
+    item_patch = {"usage_status": "Used", "is_defective": True}
 
     response = test_client.patch(f"/v1/items/{str(ObjectId())}", json=item_patch)
 

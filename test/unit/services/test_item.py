@@ -2,27 +2,27 @@
 Unit tests for the `ItemService` service.
 """
 
-from datetime import timedelta, datetime, timezone
-from unittest.mock import MagicMock
-
+import json
+from datetime import datetime, timedelta, timezone
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from unittest.mock import MagicMock
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
+    DatabaseIntegrityError,
     InvalidActionError,
     InvalidCatalogueItemPropertyTypeError,
-    MissingRecordError,
-    DatabaseIntegrityError,
     InvalidObjectIdError,
+    MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
-from inventory_management_system_api.models.item import ItemOut, ItemIn
+from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
+from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
-
 
 # pylint: disable=duplicate-code
 FULL_CATALOGUE_CATEGORY_A_INFO = {
@@ -65,7 +65,7 @@ FULL_CATALOGUE_ITEM_A_INFO = {
 
 ITEM_INFO = {
     "is_defective": False,
-    "usage_status": 0,
+    "usage_status": "New",
     "warranty_end_date": datetime(2015, 11, 15, 23, 59, 59, 0, tzinfo=timezone.utc),
     "serial_number": "xyz123",
     "delivered_date": datetime(2012, 12, 5, 12, 0, 0, 0, tzinfo=timezone.utc),
@@ -98,6 +98,17 @@ FULL_SYSTEM_INFO = {
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 }
+
+# Load in the usage statuses data
+with open("./data/usage_statuses.json", "r", encoding="utf-8") as file:
+    usage_statuses_data = json.load(file)
+    USAGE_STATUSES = [
+        {"_id": usage_status["_id"]["$oid"], "value": usage_status["value"]} for usage_status in usage_statuses_data
+    ]
+USAGE_STATUSES_LIST = [
+    UsageStatusOut(id=usage_status["_id"], value=usage_status["value"]) for usage_status in USAGE_STATUSES
+]
+
 # pylint: enable=duplicate-code
 
 
@@ -106,6 +117,7 @@ def test_create(
     item_repository_mock,
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
+    usage_status_repository_mock,
     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
     item_service,
 ):  # pylint: disable=too-many-arguments
@@ -133,6 +145,11 @@ def test_create(
     )
     # Mock `create` to return the created item
     test_helpers.mock_create(item_repository_mock, item)
+    # Mock `list` to return the usage statuses
+    test_helpers.mock_list(
+        usage_status_repository_mock,
+        USAGE_STATUSES_LIST,
+    )
 
     created_item = item_service.create(
         ItemPostRequestSchema(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **ITEM_INFO)
@@ -237,6 +254,7 @@ def test_create_without_properties(
     item_repository_mock,
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
+    usage_status_repository_mock,
     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
     item_service,
 ):  # pylint: disable=too-many-arguments
@@ -269,6 +287,11 @@ def test_create_without_properties(
     )
     # Mock `create` to return the created item
     test_helpers.mock_create(item_repository_mock, item)
+    # Mock `list` to return the usage statuses
+    test_helpers.mock_list(
+        usage_status_repository_mock,
+        USAGE_STATUSES_LIST,
+    )
 
     item_post = {**ITEM_INFO, "catalogue_item_id": item.catalogue_item_id, "system_id": item.system_id}
     del item_post["properties"]
@@ -352,6 +375,7 @@ def test_list(item_repository_mock, item_service):
 def test_update(
     test_helpers,
     item_repository_mock,
+    usage_status_repository_mock,
     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
     item_service,
 ):
@@ -375,10 +399,17 @@ def test_update(
     # Mock `get` to return an item
     test_helpers.mock_get(
         item_repository_mock,
-        ItemOut(**{**item.model_dump(), "is_defective": True, "usage_status": 1, "modified_time": item.created_time}),
+        ItemOut(
+            **{**item.model_dump(), "is_defective": True, "usage_status": "Used", "modified_time": item.created_time}
+        ),
     )
     # Mock `update` to return the updated item
     test_helpers.mock_update(item_repository_mock, item)
+    # Mock `list` to return the usage statuses
+    test_helpers.mock_list(
+        usage_status_repository_mock,
+        USAGE_STATUSES_LIST,
+    )
 
     updated_item = item_service.update(
         item.id, ItemPatchRequestSchema(is_defective=item.is_defective, usage_status=item.usage_status)
@@ -444,6 +475,7 @@ def test_update_change_system_id(
     test_helpers,
     item_repository_mock,
     system_repository_mock,
+    usage_status_repository_mock,
     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
     item_service,
 ):
@@ -475,6 +507,12 @@ def test_update_change_system_id(
             id=item.system_id,
             **FULL_SYSTEM_INFO,
         ),
+    )
+
+    # Mock `list` to return the usage statuses
+    test_helpers.mock_list(
+        usage_status_repository_mock,
+        USAGE_STATUSES_LIST,
     )
 
     # Mock `update` to return the updated item

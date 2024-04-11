@@ -26,7 +26,7 @@ FULL_SYSTEM_A_INFO = {
 FULL_ITEM_INFO = {
     "purchase_order_number": None,
     "is_defective": False,
-    "usage_status": 0,
+    "usage_status": "New",
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "asset_number": None,
     "serial_number": "xyz123",

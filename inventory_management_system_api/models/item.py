@@ -22,7 +22,7 @@ class ItemBase(BaseModel):
     system_id: CustomObjectIdField
     purchase_order_number: Optional[str] = None
     is_defective: bool
-    usage_status: int
+    usage_status: str
     warranty_end_date: Optional[AwareDatetime] = None
     asset_number: Optional[str] = None
     serial_number: Optional[str] = None

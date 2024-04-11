@@ -350,7 +350,7 @@ def generate_random_item(catalogue_item_id: str):
         "system_id": fake.random.choice(generated_system_ids),
         "purchase_order_number": fake.isbn10(),
         "is_defective": fake.random.randint(0, 100) > 90,
-        "usage_status": fake.random.choice([0, 1, 2, 3]),
+        "usage_status": fake.random.choice(["New", "Used", "In Use", "Scrapped"]),
         "warranty_end_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),

@@ -67,7 +67,7 @@ CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED = {
 
 ITEM_POST_ALLOWED_VALUES = {
     "is_defective": False,
-    "usage_status": 0,
+    "usage_status": "New",
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",

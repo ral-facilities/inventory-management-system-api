@@ -2,24 +2,12 @@
 Module for defining the API schema models for representing items.
 """
 
-from enum import Enum
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, AwareDatetime
 
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema, PropertySchema
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
-
-
-class ItemUsageStatus(int, Enum):
-    """
-    Enumeration for item usage statuses.
-    """
-
-    NEW = 0
-    IN_USE = 1
-    USED = 2
-    SCRAPPED = 3
 
 
 class ItemPostRequestSchema(BaseModel):
@@ -31,8 +19,8 @@ class ItemPostRequestSchema(BaseModel):
     system_id: str = Field(description="The ID of the system that the item belongs to")
     purchase_order_number: Optional[str] = Field(default=None, description="The purchase order number of the item")
     is_defective: bool = Field(description="Whether the item is defective or not")
-    usage_status: ItemUsageStatus = Field(
-        description="The usage status of the item. 0 means new, 1 means in use, 2 means used, and 3 means scrapped."
+    usage_status: str = Field(
+        description="The usage status of the item"
     )
     warranty_end_date: Optional[AwareDatetime] = Field(default=None, description="The warranty end date of the item")
     asset_number: Optional[str] = Field(default=None, description="The asset number of the item")
@@ -56,9 +44,9 @@ class ItemPatchRequestSchema(ItemPostRequestSchema):
     )
     system_id: Optional[str] = Field(default=None, description="The ID of the system that the item belongs to")
     is_defective: Optional[bool] = Field(default=None, description="Whether the item is defective or not")
-    usage_status: Optional[ItemUsageStatus] = Field(
+    usage_status: Optional[str] = Field(
         default=None,
-        description="The usage status of the item. 0 means new, 1 means in use, 2 means used, and 3 means scrapped.",
+        description="The usage status of the item.",
     )
     properties: Optional[List[PropertyPostRequestSchema]] = Field(
         default=None,
