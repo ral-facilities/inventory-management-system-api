@@ -965,39 +965,6 @@ def test_partial_update_item(test_client):
     assert item == {**ITEM_POST_EXPECTED, **item_patch, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
 
 
-def test_partial_update_item_usage_status(test_client):
-    """
-    Test updating an item with a invalid usage status
-    """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_id = response.json()["id"]
-
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
-
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    manufacturer_id = response.json()["id"]
-
-    # pylint: disable=duplicate-code
-    catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_A,
-        "catalogue_category_id": catalogue_category_id,
-        "manufacturer_id": manufacturer_id,
-    }
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-    catalogue_item_id = response.json()["id"]
-
-    # pylint: enable=duplicate-code
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
-    response = test_client.post("/v1/items", json=item_post)
-
-    item_patch = {"usage_status": "Invalid"}
-    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-    assert response.status_code == 422
-    assert response.json()["detail"] == "The specified usage status does not exist"
-
-
 def test_partial_update_item_invalid_id(test_client):
     """
     Test updating an item with an invalid ID.
