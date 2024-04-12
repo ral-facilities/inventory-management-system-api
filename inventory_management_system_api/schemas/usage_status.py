@@ -11,4 +11,4 @@ class UsageStatusSchema(BaseModel):
     """
 
     id: str = Field(description="ID of the Usage status")
-    value: str = Field(description="Status of the Usage status")
+    value: str = Field(description="Value of the Usage status")

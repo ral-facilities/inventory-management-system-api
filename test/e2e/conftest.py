@@ -25,7 +25,7 @@ def fixture_test_client() -> TestClient:
 @pytest.fixture(name="add_usage_statuses_to_database", autouse=True, scope="session")
 def fixture_add_usage_statuses_to_database():
     """
-    Fixture to add usage statuses to the usage_statuses collection in the database before any tests in this file run
+    Fixture to add usage statuses to the usage_statuses collection in the database before any tests run
     """
     usage_statuses_collection = get_database().usage_statuses
     usage_statuses_collection.delete_many({})
