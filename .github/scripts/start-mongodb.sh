@@ -10,7 +10,7 @@ docker compose pull mongo-db
 docker compose up -d --wait --wait-timeout 30 mongo-db
 sleep 10
 
-echo "Intialising MongoDB replica set"
+echo "Initialising MongoDB replica set"
 docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'localhost:27017' }]})"
 
 # Fix permission issue when setting up python afterwards, it seems to try and access the data directory but doesn't

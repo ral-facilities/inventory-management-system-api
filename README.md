@@ -154,11 +154,11 @@ Ensure that Python is installed on your machine before proceeding.
    cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
    ```
 
-5. Create a keyfile for mongodb to use for replica sets
+5. Create a keyfile for MongoDB to use for replica sets
 
    ```bash
    openssl rand -base64 756 > ./mongodb/keys/rs_keyfile
-   chmod 0400 ./mongodb/keys/rs_keyfile
+   sudo chmod 0400 ./mongodb/keys/rs_keyfile
    sudo chown 999:999 ./mongodb/keys/rs_keyfile
    ```
 
@@ -197,9 +197,9 @@ pytest -c test/pytest.ini test/
 
 ## Post setup instructions
 
-When running for the first time there are a few extra steps required to setup the database. These instructions assume the database is running via docker, althought the commands themselves can be adapted for a separate instance by removing the docker parts.
+When running for the first time there are a few extra steps required to setup the database. These instructions assume the database is running via docker, although the commands themselves can be adapted for a separate instance by removing the docker parts.
 
-### Intialising the replica set
+### Initialising the replica set
 
 For development replica sets are required to be able to use transactions. Once the mongodb instance is running use `mongosh` to login and run
 
@@ -215,7 +215,7 @@ rs.initiate( {
 For docker you may use
 
 ```bash
-docker exec -i CONTAINER_ID mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'mongodb_container:27017' }]})"
+docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'mongodb_container:27017' }]})"
 ```
 
 ### Adding units
@@ -235,13 +235,11 @@ from the root directory of this repo, replacing the username and password as app
 
 #### Updating a MongoDB instance running in a docker container
 
-When running using docker first locate the running container with the instance of MongoDB using `docker ps`. Then use
+When running using docker you can use use
 
 ```bash
-docker exec -i CONTAINER_ID mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop < ./data/units.json
+docker exec -i mongodb_container mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop < ./data/units.json
 ```
-
-Replacing `CONTAINER_ID` with the actual container ID of the MongoDB instance.
 
 ### Using mock data for testing [Optional]
 
@@ -250,7 +248,7 @@ Replacing `CONTAINER_ID` with the actual container ID of the MongoDB instance.
 The simplest way to populate the database with mock data is to use the already created database dump. If using docker you can use the command
 
 ```bash
-docker exec -i CONTAINER_ID mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
+docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
 ```
 
 to populate the database with mock data.
@@ -266,13 +264,13 @@ python ./scripts/generate_mock_data.py
 The parameters at the top of the file can be used to change the generated data. NOTE: This script will simply add to the existing database instance. So if you wish to update the `mock_data.dump`, you should first clear the database e.g. using
 
 ```bash
-docker exec -i CONTAINER_ID mongosh ims --username "root" --password "example" --authenticationDatabase=admin --eval "db.dropDatabase()"
+docker exec -i mongodb_container mongosh ims --username "root" --password "example" --authenticationDatabase=admin --eval "db.dropDatabase()"
 ```
 
 Then generate the mock data, import the units and then save the changes using `mongodump` via
 
 ```bash
-docker exec -i CONTAINER_ID mongodump --username "root" --password "example" --authenticationDatabase=admin --db ims --archive > ./data/mock_data.dump
+docker exec -i mongodb_container mongodump --username "root" --password "example" --authenticationDatabase=admin --db ims --archive > ./data/mock_data.dump
 ```
 
 ## Notes
