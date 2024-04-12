@@ -257,6 +257,7 @@ There is a script to generate mock data for testing purposes given in `./scripts
 ```bash
 python ./scripts/generate_mock_data.py
 ```
+Before running the script, make sure to import the units and usage statuses collections using one of the commands provided in the [Adding units and usage statuses](#adding-units-and-usage-statuses).
 
 The parameters at the top of the file can be used to change the generated data. NOTE: This script will simply add to the existing database instance. So if you wish to update the `mock_data.dump`, you should first clear the database e.g. using
 
