@@ -13,7 +13,7 @@ from inventory_management_system_api.services.usage_status import UsageStatusSer
 
 logger = logging.getLogger()
 
-router = APIRouter(prefix="/v1/usage_statuses", tags=["usage statuses"])
+router = APIRouter(prefix="/v1/usage-statuses", tags=["usage statuses"])
 
 
 @router.get(path="", summary="Get usage statuses", response_description="List of usage statuses")
