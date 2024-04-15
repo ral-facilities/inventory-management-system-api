@@ -8,16 +8,21 @@ from io import TextIOWrapper
 from pathlib import Path
 from typing import Optional
 
-from generate_mock_data import generate_mock_data
-
 logging.basicConfig(level=logging.INFO)
 
 
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
+    """
+    Runs a command using subprocess
+    """
+    logging.debug(f"Running command: {" ".join(args)}")
     return subprocess.run(args, stdin=stdin, stdout=stdout)
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
+    """
+    Runs a command within the mongodb container
+    """
     return run_command(
         [
             "docker",
@@ -32,6 +37,9 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
 
 
 def run_mongoimport_json_array_file(args: argparse.Namespace, database: str, collection: str, path: Path):
+    """
+    Runs mongoimport on a MongoDB database to import a json array from a file into a specified collection
+    """
     with open(path, "r", encoding="utf-8") as file:
         run_mongodb_command(
             [
@@ -107,12 +115,11 @@ class CommandDBInit(SubCommand):
 
     def run(self, args: argparse.Namespace):
         # Generate the keyfile (if it doesn't already exist - this part is linux specific)
-        logging.info(run_command("ls").stdout)
         rs_keyfile = Path("./mongodb/keys/rs_keyfile")
         if not rs_keyfile.is_file():
             logging.info("Generating replica set keyfile...")
             with open(rs_keyfile, "w") as file:
-                run_command(["openssl", "rand", "-base64", "756"], file)
+                run_command(["openssl", "rand", "-base64", "756"], stdout=file)
             logging.info("Assigning replica set keyfile ownership...")
             run_command(["sudo", "chmod", "0400", "./mongodb/keys/rs_keyfile"])
             run_command(["sudo", "chown", "999:999", "./mongodb/keys/rs_keyfile"])
@@ -236,7 +243,13 @@ class CommandDBGenerate(SubCommand):
             commands["db-import"].run(args)
             # Generate new data
             logging.info("Generating new mock data...")
-            generate_mock_data()
+            try:
+                # Import here only because CI wont install necessary packages to import it directly
+                from generate_mock_data import generate_mock_data
+
+                generate_mock_data()
+            except ImportError:
+                logging.error("Failed to find generate_mock_data.py")
             if args.dump:
                 logging.info("Dumping output...")
                 # Dump output again
