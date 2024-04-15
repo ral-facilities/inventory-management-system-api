@@ -67,20 +67,31 @@ def get_mongodb_auth_args(args: argparse.Namespace):
 
 
 class SubCommand(ABC):
+    """Base class for a sub command"""
+
     def __init__(self, help: str):
         self.help = help
 
     @abstractmethod
     def setup(parser: argparse.ArgumentParser):
-        # Setup parser
+        """Setup the parser by adding any parameters here"""
         pass
 
     @abstractmethod
     def run(args: argparse.Namespace):
+        """Run the command with the given parameters as added by 'setup'"""
         pass
 
 
 class CommandDBInit(SubCommand):
+    """Command that initialises the database
+
+    - Generates a replica set keyfile and sets it's permissions (if it doesn't already exist)
+    - Starts the mongodb service (and waits 10 seconds after it starts)
+    - Initialises the replica set with a single host
+    - Outputs the replica set status
+    """
+
     def __init__(self):
         super().__init__(help="Initialise database for development (using docker on linux)")
 
@@ -106,11 +117,13 @@ class CommandDBInit(SubCommand):
             run_command(["sudo", "chmod", "0400", "./mongodb/keys/rs_keyfile"])
             run_command(["sudo", "chown", "999:999", "./mongodb/keys/rs_keyfile"])
 
-        # Start up and init the replica set
         logging.info("Starting mongodb service...")
-        run_command(["docker", "compose", "up", "-d", "mongo-db"])
+        run_command(["docker", "compose", "up", "-d", "--wait", "--wait-timeout", "30", "mongo-db"])
+
+        # Wait as cannot initialise immediately
         time.sleep(10)
-        logging.info("Initialise replica set...")
+
+        logging.info("Initialising replica set...")
         replicaSetConfig = json.dumps(
             {"_id": "rs0", "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}]}
         )
@@ -125,8 +138,27 @@ class CommandDBInit(SubCommand):
             ]
         )
 
+        # Check the status
+        print("::group::Checking replica set status")
+        run_mongodb_command(
+            [
+                "mongosh",
+            ]
+            + get_mongodb_auth_args(args)
+            + [
+                "--eval",
+                "rs.status()",
+            ]
+        )
+        print("::endgroup::")
+
 
 class CommandDBImport(SubCommand):
+    """Command that imports data into the database
+
+    By default just the standard data e.g. the units, but with an option to import the generated mock data instead
+    """
+
     def __init__(self):
         super().__init__(help="Imports database for development")
 
@@ -137,7 +169,7 @@ class CommandDBImport(SubCommand):
             "-g",
             "--generated",
             action="store_true",
-            help="Specify this flag to import all generated test data instead of just units",
+            help="Specify this flag to import all generated test data instead of just standard data e.g. units",
         )
 
     def run(self, args: argparse.Namespace):
@@ -163,6 +195,15 @@ class CommandDBImport(SubCommand):
 
 
 class CommandDBGenerate(SubCommand):
+    """Command to generate new test data for the database (runs generate_mock_data.py)
+
+    - Deletes all existing data (after confirmation)
+    - Imports units
+    - Runs generate_mock_data.py
+
+    Has option to dump the data into './data/mock_data.dump'.
+    """
+
     def __init__(self):
         super().__init__(help="Generates new test data for the database and dumps it")
 
@@ -214,6 +255,7 @@ class CommandDBGenerate(SubCommand):
                     )
 
 
+# List of subcommands
 commands: dict[str, SubCommand] = {
     "db-init": CommandDBInit(),
     "db-import": CommandDBImport(),
