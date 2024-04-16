@@ -203,7 +203,7 @@ a microservice that provides user authentication against an LDAP server and retu
 
 ### Adding units and usage statuses
 
-Units and usage statuses should be added to the MongoDB database using `mongoimport` on the provided units and usage statues files found at
+Units and usage statuses should be added to the MongoDB database using `mongoimport` on the provided units and usage statuses files found at
 `/data/units.json` and `/data/usage_statuses.json` respectively. If additional units and usage statuses are being added to these files, ensure that the `_id` values are valid `ObjectIds`.
 
 #### Updating a local MongoDB instance
