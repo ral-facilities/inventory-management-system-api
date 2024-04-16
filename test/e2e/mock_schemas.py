@@ -30,7 +30,12 @@ CATALOGUE_CATEGORY_POST_ALLOWED_VALUES = {
 }
 
 CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED = {
-    **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+    **{
+        **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+        "catalogue_item_properties": [
+            {**prop, "id": ANY} for prop in CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["catalogue_item_properties"]
+        ],
+    },
     **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "category-allowed-values",

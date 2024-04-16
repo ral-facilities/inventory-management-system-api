@@ -38,8 +38,8 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     "id": ANY,
     "code": "category-b",
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
+        {"id": ANY, "name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"id": ANY, "name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
 }
 
@@ -59,8 +59,8 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     "code": "category-c",
     "parent_id": None,
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
+        {"id": ANY, "name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
+        {"id": ANY, "name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
 }
 
@@ -789,7 +789,12 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
     assert response.status_code == 200
     assert response.json() == {
         **catalogue_category_post,
-        **catalogue_category_patch,
+        **{
+            **catalogue_category_patch,
+            "catalogue_item_properties": [
+                {**prop, "id": ANY} for prop in catalogue_category_patch["catalogue_item_properties"]
+            ],
+        },
         **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
         "code": "category-a",
@@ -944,7 +949,12 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
 
     assert response.status_code == 200
     assert response.json() == {
-        **catalogue_category_post,
+        **{
+            **catalogue_category_post,
+            "catalogue_item_properties": [
+                {**prop, "id": ANY} for prop in catalogue_category_post["catalogue_item_properties"]
+            ],
+        },
         **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
@@ -1129,7 +1139,9 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     assert response.json() == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": catalogue_item_properties,
+        "catalogue_item_properties": [
+            {**prop, "id": ANY} for prop in catalogue_category_patch["catalogue_item_properties"]
+        ],
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
@@ -1160,7 +1172,9 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     assert response.json() == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": catalogue_item_properties,
+        "catalogue_item_properties": [
+            {**prop, "id": ANY} for prop in catalogue_category_patch["catalogue_item_properties"]
+        ],
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
@@ -1191,7 +1205,9 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     assert response.json() == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": catalogue_item_properties,
+        "catalogue_item_properties": [
+            {**prop, "id": ANY} for prop in catalogue_category_patch["catalogue_item_properties"]
+        ],
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
@@ -1220,8 +1236,10 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     assert response.status_code == 200
     assert response.json() == {
         **catalogue_category_post,
-        **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
+        "catalogue_item_properties": [
+            {**prop, "id": ANY} for prop in catalogue_category_patch["catalogue_item_properties"]
+        ],
         "id": ANY,
         "code": "category-b",
         "parent_id": None,
