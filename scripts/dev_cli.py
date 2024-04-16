@@ -211,11 +211,7 @@ class CommandDBImport(SubCommand):
                         "mongorestore",
                     ]
                     + get_mongodb_auth_args(args)
-                    + [
-                        "--db",
-                        "ims",
-                        "--archive",
-                    ],
+                    + ["--db", "ims", "--archive", "--drop"],
                     stdin=file,
                 )
         else:
