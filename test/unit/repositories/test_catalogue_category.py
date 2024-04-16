@@ -24,7 +24,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CatalogueItemProperty,
+    CatalogueItemPropertyIn,
 )
 
 CATALOGUE_CATEGORY_INFO = {
@@ -128,8 +128,8 @@ def test_create_leaf_category_with_catalogue_item_properties(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump()
@@ -163,14 +163,13 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
     """
     # pylint: disable=duplicate-code
     catalogue_category_in = CatalogueCategoryIn(
-        id=str(ObjectId()),
-        is_leaf=True,
         name="Category B",
         code="category-b",
+        is_leaf=True,
         parent_id=str(ObjectId()),
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump()
@@ -257,8 +256,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
         is_leaf=True,
         parent_id=str(ObjectId()),
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump()

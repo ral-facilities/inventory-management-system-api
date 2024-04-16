@@ -18,7 +18,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CatalogueItemProperty,
+    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
@@ -95,8 +95,8 @@ def test_create_with_parent_id(
         is_leaf=True,
         parent_id=str(ObjectId()),
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -164,8 +164,8 @@ def test_create_with_whitespace_name(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -227,8 +227,10 @@ def test_create_with_leaf_parent_catalogue_category(
             is_leaf=True,
             parent_id=None,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -261,8 +263,8 @@ def test_create_with_duplicate_property_names(catalogue_category_repository_mock
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property A", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -622,8 +624,10 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             is_leaf=True,
             parent_id=None,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -671,8 +675,10 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
@@ -721,8 +727,8 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -801,8 +807,10 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
@@ -838,8 +846,8 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -897,8 +905,8 @@ def test_update_properties_to_have_duplicate_names(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Duplicate", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Duplicate", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Duplicate", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Duplicate", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,

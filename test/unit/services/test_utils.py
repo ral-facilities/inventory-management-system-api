@@ -4,29 +4,33 @@ Unit tests for the `utils` in /services.
 
 import pytest
 
+from bson import ObjectId
+
 from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
     MissingMandatoryCatalogueItemProperty,
 )
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
-    CatalogueItemProperty,
+    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 from inventory_management_system_api.services import utils
 
 DEFINED_PROPERTIES = [
-    CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-    CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
-    CatalogueItemProperty(name="Property C", type="string", unit="cm", mandatory=True),
-    CatalogueItemProperty(
+    CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+    CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+    CatalogueItemPropertyOut(id=str(ObjectId()), name="Property C", type="string", unit="cm", mandatory=True),
+    CatalogueItemPropertyOut(
+        id=str(ObjectId()),
         name="Property D",
         type="number",
         unit="mm",
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[2, 4, 6]),
     ),
-    CatalogueItemProperty(
+    CatalogueItemPropertyOut(
+        id=str(ObjectId()),
         name="Property E",
         type="string",
         mandatory=False,

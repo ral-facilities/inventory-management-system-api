@@ -65,9 +65,9 @@ FULL_CATALOGUE_CATEGORY_A_INFO = {
     "is_leaf": True,
     "parent_id": None,
     "catalogue_item_properties": [
-        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
-        {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
+        {"id": str(ObjectId()), "name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"id": str(ObjectId()), "name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
+        {"id": str(ObjectId()), "name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
     ],
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -931,7 +931,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
                 "catalogue_item_properties": [
                     # Only change the unit
-                    {"name": "Property A", "type": "number", "unit": "m", "mandatory": False},
+                    {"id": str(ObjectId()), "name": "Property A", "type": "number", "unit": "m", "mandatory": False},
                     *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1:],
                 ],
             },
@@ -1057,7 +1057,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
                 "catalogue_item_properties": [
                     # Only change the unit
-                    {"name": "Property A", "type": "number", "unit": "m", "mandatory": False},
+                    {"id": str(ObjectId()), "name": "Property A", "type": "number", "unit": "m", "mandatory": False},
                     *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1:],
                 ],
             },
