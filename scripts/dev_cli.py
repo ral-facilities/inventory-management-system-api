@@ -2,13 +2,12 @@ import argparse
 import json
 import logging
 import subprocess
+import sys
 import time
 from abc import ABC, abstractmethod
 from io import TextIOWrapper
 from pathlib import Path
 from typing import Optional
-
-logging.basicConfig(level=logging.INFO)
 
 
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
@@ -23,10 +22,22 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
     )
     if stdout is None:
         for stdout_line in iter(popen.stdout.readline, ""):
-            print(stdout_line)
+            print(stdout_line, end="")
         popen.stdout.close()
     return_code = popen.wait()
     return return_code
+
+
+def start_group(text: str, args: argparse.Namespace):
+    if args.ci:
+        print(f"::group::{text}")
+    else:
+        logging.info(text)
+
+
+def end_group(args: argparse.Namespace):
+    if args.ci:
+        print("::endgroup::")
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
@@ -134,14 +145,14 @@ class CommandDBInit(SubCommand):
             run_command(["sudo", "chmod", "0400", "./mongodb/keys/rs_keyfile"])
             run_command(["sudo", "chown", "999:999", "./mongodb/keys/rs_keyfile"])
 
-        print("::group::Starting mongodb service")
+        start_group("Starting mongodb service", args)
         run_command(["docker", "compose", "up", "-d", "--wait", "--wait-timeout", "30", "mongo-db"])
 
         # Wait as cannot initialise immediately
         time.sleep(10)
-        print("::endgroup")
+        end_group(args)
 
-        print("::group::Initialising replica set")
+        start_group("Initialising replica set", args)
         replicaSetConfig = json.dumps(
             {"_id": "rs0", "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}]}
         )
@@ -155,10 +166,10 @@ class CommandDBInit(SubCommand):
                 f"rs.initiate({replicaSetConfig})",
             ]
         )
-        print("::endgroup::")
+        end_group(args)
 
         # Check the status
-        print("::group::Checking replica set status")
+        start_group("Checking replica set status", args)
         run_mongodb_command(
             [
                 "mongosh",
@@ -169,7 +180,7 @@ class CommandDBInit(SubCommand):
                 "rs.status()",
             ],
         )
-        print("::endgroup::")
+        end_group(args)
 
 
 class CommandDBImport(SubCommand):
@@ -209,9 +220,9 @@ class CommandDBImport(SubCommand):
                 )
         else:
             # Populate the database with standard data
-            print("::group::Importing units")
+            start_group("Importing units", args)
             run_mongoimport_json_array_file(args, database="ims", collection="units", path=Path("./data/units.json"))
-            print("::endgroup::")
+            end_group(args)
 
 
 class CommandDBGenerate(SubCommand):
@@ -235,6 +246,9 @@ class CommandDBGenerate(SubCommand):
         )
 
     def run(self, args: argparse.Namespace):
+        if args.ci:
+            sys.exit("Cannot use --ci with db-generate (currently has interactive input)")
+
         # Firstly confirm ok with deleting
         answer = input("This operation will replace all existing data, are you sure? ")
         if answer == "y" or answer == "yes":
@@ -290,6 +304,13 @@ commands: dict[str, SubCommand] = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="IMS Dev Script", description="Some commands for development")
+    parser.add_argument(
+        "--debug", action="store_true", help="Flag for setting the log level to debug to output more info"
+    )
+    parser.add_argument(
+        "--ci", action="store_true", help="Flag for when running on Github CI (will output groups for collapsing)"
+    )
+
     subparser = parser.add_subparsers(dest="command")
 
     for command_name, command in commands.items():
@@ -297,4 +318,10 @@ if __name__ == "__main__":
         command.setup(command_parser)
 
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
     commands[args.command].run(args)
