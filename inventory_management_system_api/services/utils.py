@@ -10,8 +10,8 @@ from inventory_management_system_api.core.exceptions import (
     InvalidCatalogueItemPropertyTypeError,
     MissingMandatoryCatalogueItemProperty,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueItemProperty
-from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertySchema
+from inventory_management_system_api.models.catalogue_category import CatalogueItemPropertyOut
+from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyPostRequestSchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 
 logger = logging.getLogger()
@@ -35,7 +35,7 @@ def generate_code(name: str, entity_type: str) -> str:
 
 
 def process_catalogue_item_properties(
-    defined_properties: List[CatalogueItemProperty],
+    defined_properties: List[CatalogueItemPropertyOut],
     supplied_properties: List[PropertyPostRequestSchema],
 ) -> List[Dict]:
     """
@@ -68,7 +68,7 @@ def process_catalogue_item_properties(
 
 
 def _create_catalogue_item_properties_dict(
-    catalogue_item_properties: Union[List[CatalogueItemProperty], List[PropertyPostRequestSchema]]
+    catalogue_item_properties: Union[List[CatalogueItemPropertyOut], List[PropertyPostRequestSchema]]
 ) -> Dict[str, Dict]:
     """
     Convert a list of catalogue item property objects into a dictionary where the keys are the catalogue item
@@ -128,7 +128,9 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
                 f"Mandatory catalogue item property '{supplied_property_name}' cannot be None."
             )
     else:
-        if not CatalogueItemPropertySchema.is_valid_property_type(defined_property_type, supplied_property_value):
+        if not CatalogueItemPropertyPostRequestSchema.is_valid_property_type(
+            defined_property_type, supplied_property_value
+        ):
             raise InvalidCatalogueItemPropertyTypeError(
                 f"Invalid value type for catalogue item property '{supplied_property_name}'. "
                 f"Expected type: {defined_property_type}."
