@@ -16,7 +16,17 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
     Runs a command using subprocess
     """
     logging.debug(f"Running command: {" ".join(args)}")
-    return subprocess.run(args, stdin=stdin, stdout=stdout)
+    # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
+    # for some reason)
+    popen = subprocess.Popen(
+        args, stdin=stdin, stdout=stdout if stdout is not None else subprocess.PIPE, universal_newlines=True
+    )
+    if stdout is None:
+        for stdout_line in iter(popen.stdout.readline, ""):
+            print(stdout_line)
+        popen.stdout.close()
+    return_code = popen.wait()
+    return return_code
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
@@ -124,13 +134,14 @@ class CommandDBInit(SubCommand):
             run_command(["sudo", "chmod", "0400", "./mongodb/keys/rs_keyfile"])
             run_command(["sudo", "chown", "999:999", "./mongodb/keys/rs_keyfile"])
 
-        logging.info("Starting mongodb service...")
+        print("::group::Starting mongodb service")
         run_command(["docker", "compose", "up", "-d", "--wait", "--wait-timeout", "30", "mongo-db"])
 
         # Wait as cannot initialise immediately
         time.sleep(10)
+        print("::endgroup")
 
-        logging.info("Initialising replica set...")
+        print("::group::Initialising replica set")
         replicaSetConfig = json.dumps(
             {"_id": "rs0", "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}]}
         )
@@ -144,6 +155,7 @@ class CommandDBInit(SubCommand):
                 f"rs.initiate({replicaSetConfig})",
             ]
         )
+        print("::endgroup::")
 
         # Check the status
         print("::group::Checking replica set status")
@@ -155,7 +167,7 @@ class CommandDBInit(SubCommand):
             + [
                 "--eval",
                 "rs.status()",
-            ]
+            ],
         )
         print("::endgroup::")
 
@@ -197,8 +209,9 @@ class CommandDBImport(SubCommand):
                 )
         else:
             # Populate the database with standard data
-            logging.info("Importing units...")
+            print("::group::Importing units")
             run_mongoimport_json_array_file(args, database="ims", collection="units", path=Path("./data/units.json"))
+            print("::endgroup::")
 
 
 class CommandDBGenerate(SubCommand):
