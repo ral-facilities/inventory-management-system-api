@@ -81,8 +81,8 @@ jobs:
       # the same time
       - name: Setup MongoDB database
         run: |
-          python ./scripts/dev_cli.py db-init --replicaSetMemberHost localhost
-          python ./scripts/dev_cli.py db-import
+          python ./scripts/dev_cli.py --ci db-init --replicaSetMemberHost localhost
+          python ./scripts/dev_cli.py --ci db-import
 
       - name: Run e2e tests
         run: pytest -c test/pytest.ini test/e2e/ --cov
