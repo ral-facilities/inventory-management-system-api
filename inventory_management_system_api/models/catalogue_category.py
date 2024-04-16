@@ -71,6 +71,25 @@ class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
     id: StringObjectIdField = Field(alias="_id")
     model_config = ConfigDict(populate_by_name=True)
 
+    def is_equal_without_id(self, other: Any) -> bool:
+        """
+        Compare this instance with another instance of `CatalogueItemPropertyOut` while ignoring the ID.
+
+        :param other: An instance of a model to compare with.
+        :return: `True` if the instances are of the same type and are equal when ignoring the ID field, `False`
+            otherwise.
+        """
+        if not isinstance(other, CatalogueItemPropertyOut):
+            return False
+
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.unit == other.unit
+            and self.mandatory == other.mandatory
+            and self.allowed_values == other.allowed_values
+        )
+
 
 class CatalogueCategoryBase(BaseModel):
     """
