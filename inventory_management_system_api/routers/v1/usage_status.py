@@ -52,7 +52,7 @@ def get_usage_status(
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting usage status with ID %s", usage_status_id)
-    message = "usage status not found"
+    message = "Usage status not found"
     try:
         usage_status = usage_status_service.get(usage_status_id)
         if not usage_status:

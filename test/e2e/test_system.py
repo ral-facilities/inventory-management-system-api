@@ -9,6 +9,7 @@ from test.e2e.mock_schemas import (
     SYSTEM_POST_B,
     SYSTEM_POST_B_EXPECTED,
     SYSTEM_POST_C,
+    USAGE_STATUS_POST_B,
 )
 from test.e2e.test_catalogue_category import CATALOGUE_CATEGORY_POST_B
 from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A
@@ -556,7 +557,15 @@ def test_delete_system_with_child_item(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
+    usage_status_id = response.json()["id"]
+
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "usage_status_id": usage_status_id,
+    }
     response = test_client.post("/v1/items", json=item_post)
     # pylint: enable=duplicate-code
 
