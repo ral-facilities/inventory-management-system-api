@@ -22,6 +22,7 @@ class ItemBase(BaseModel):
     system_id: CustomObjectIdField
     purchase_order_number: Optional[str] = None
     is_defective: bool
+    usage_status_id: CustomObjectIdField
     usage_status: str
     warranty_end_date: Optional[AwareDatetime] = None
     asset_number: Optional[str] = None
@@ -64,4 +65,6 @@ class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
     id: StringObjectIdField = Field(alias="_id")
     catalogue_item_id: StringObjectIdField
     system_id: Optional[StringObjectIdField] = None
+    usage_status_id: StringObjectIdField
+
     model_config = ConfigDict(populate_by_name=True)

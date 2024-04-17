@@ -81,8 +81,9 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
-        usage_statuses = [usage_status.value for usage_status in self._usage_status_repository.list()]
-        if item.usage_status not in usage_statuses:
+        usage_status_id = item.usage_status_id
+        usage_status = self._usage_status_repository.get(usage_status_id)
+        if not usage_status:
             raise MissingRecordError(f"No usage status found with name: {item.usage_status}")
 
         supplied_properties = item.properties if item.properties else []
@@ -93,12 +94,7 @@ class ItemService:
         properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._item_repository.create(
-            ItemIn(
-                **{
-                    **item.model_dump(),
-                    "properties": properties,
-                }
-            )
+            ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
         )
 
     def delete(self, item_id: str) -> None:
@@ -155,10 +151,12 @@ class ItemService:
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
-        if "usage_status" in update_data and item.usage_status != stored_item.usage_status:
-            usage_statuses = [usage_status.value for usage_status in self._usage_status_repository.list()]
-            if item.usage_status not in usage_statuses:
-                raise MissingRecordError(f"No usage status found with name: {item.usage_status}")
+        if "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id:
+            usage_status_id = item.usage_status_id
+            usage_status = self._usage_status_repository.get(usage_status_id)
+            if not usage_status:
+                raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+            update_data["usage_status"] = usage_status.value
 
         # If catalogue item ID not supplied then it will be fetched, and its parent catalogue category.
         # the defined (at a catalogue category level) and supplied properties will be used to find

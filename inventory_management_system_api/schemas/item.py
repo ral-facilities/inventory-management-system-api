@@ -19,9 +19,7 @@ class ItemPostRequestSchema(BaseModel):
     system_id: str = Field(description="The ID of the system that the item belongs to")
     purchase_order_number: Optional[str] = Field(default=None, description="The purchase order number of the item")
     is_defective: bool = Field(description="Whether the item is defective or not")
-    usage_status: str = Field(
-        description="The usage status of the item"
-    )
+    usage_status_id: str = Field(description="The ID of the usage status of the item")
     warranty_end_date: Optional[AwareDatetime] = Field(default=None, description="The warranty end date of the item")
     asset_number: Optional[str] = Field(default=None, description="The asset number of the item")
     serial_number: Optional[str] = Field(default=None, description="The serial number of the item")
@@ -44,9 +42,9 @@ class ItemPatchRequestSchema(ItemPostRequestSchema):
     )
     system_id: Optional[str] = Field(default=None, description="The ID of the system that the item belongs to")
     is_defective: Optional[bool] = Field(default=None, description="Whether the item is defective or not")
-    usage_status: Optional[str] = Field(
+    usage_status_id: Optional[str] = Field(
         default=None,
-        description="The usage status of the item.",
+        description="The ID of the usage status of the item.",
     )
     properties: Optional[List[PropertyPostRequestSchema]] = Field(
         default=None,
@@ -64,3 +62,4 @@ class ItemSchema(CreatedModifiedSchemaMixin, ItemPostRequestSchema):
     properties: List[PropertySchema] = Field(
         description="The properties specific to this item as defined in the corresponding catalogue category.",
     )
+    usage_status: str
