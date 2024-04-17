@@ -102,7 +102,6 @@ def test_create_item(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    # pylint: enable=duplicate-code
 
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
@@ -113,6 +112,7 @@ def test_create_item(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 201
@@ -252,7 +252,6 @@ def test_create_with_missing_existing_properties(test_client):
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
 
-    # pylint: enable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
@@ -263,6 +262,7 @@ def test_create_with_missing_existing_properties(test_client):
             {"name": "Property C", "value": "25x10x5"},
         ],
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 201
@@ -308,7 +308,7 @@ def test_create_with_mandatory_properties_given_none(test_client):
 
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
-    # pylint: enable=duplicate-code
+
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
@@ -319,6 +319,7 @@ def test_create_with_mandatory_properties_given_none(test_client):
             {"name": "Property C", "value": None},
         ],
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 422
@@ -349,7 +350,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
 
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
-    # pylint: enable=duplicate-code
+
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
@@ -362,6 +363,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
             {"name": "Property D", "value": None},
         ],
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
 
     assert response.status_code == 201
@@ -405,7 +407,6 @@ def test_create_item_without_properties(test_client):
 
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
-    # pylint: enable=duplicate-code
 
     item_post = {
         **ITEM_POST,
@@ -413,6 +414,7 @@ def test_create_item_without_properties(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     del item_post["properties"]
     response = test_client.post("/v1/items", json=item_post)
 
@@ -780,7 +782,6 @@ def test_delete(test_client):
     catalogue_item_id = response.json()["id"]
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
-    # pylint: enable=duplicate-code
 
     item_post = {
         **ITEM_POST,
@@ -788,6 +789,7 @@ def test_delete(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
 
     item_id = response.json()["id"]
@@ -842,7 +844,6 @@ def test_get_item(test_client):
     catalogue_item_id = response.json()["id"]
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
-    # pylint: enable=duplicate-code
 
     item_post = {
         **ITEM_POST,
@@ -850,6 +851,7 @@ def test_get_item(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
 
     item_id = response.json()["id"]

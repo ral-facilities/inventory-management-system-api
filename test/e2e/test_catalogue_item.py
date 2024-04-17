@@ -693,12 +693,12 @@ def test_delete_catalogue_item_with_child_items(test_client):
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
     }
-    # pylint: enable=duplicate-code
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-    catalogue_item_id = response.json()["id"]
 
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
+
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
 
     # child
     item_post = {
@@ -707,6 +707,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/items", json=item_post)
 
     response = test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
@@ -1843,7 +1844,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-
+    # pylint: disable=duplicate-code
     # Child
     item_post = {
         **ITEM_POST,
@@ -1851,6 +1852,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/items", json=item_post)
 
     catalogue_item_patch = {
@@ -1935,6 +1937,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     # Child
     item_post = {
         **ITEM_POST,
@@ -1942,6 +1945,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
         "system_id": system_id,
         "usage_status_id": usage_status_id,
     }
+    # pylint: enable=duplicate-code
     test_client.post("/v1/items", json=item_post)
 
     catalogue_item_patch = {
