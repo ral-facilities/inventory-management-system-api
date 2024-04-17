@@ -99,16 +99,6 @@ FULL_SYSTEM_INFO = {
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 }
 
-# Load in the usage statuses data
-with open("./data/usage_statuses.json", "r", encoding="utf-8") as file:
-    usage_statuses_data = json.load(file)
-    USAGE_STATUSES = [
-        {"_id": usage_status["_id"]["$oid"], "value": usage_status["value"]} for usage_status in usage_statuses_data
-    ]
-USAGE_STATUSES_LIST = [
-    UsageStatusOut(id=usage_status["_id"], value=usage_status["value"]) for usage_status in USAGE_STATUSES
-]
-
 # pylint: enable=duplicate-code
 
 
