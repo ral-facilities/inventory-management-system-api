@@ -9,20 +9,23 @@ from inventory_management_system_api.models.custom_object_id_data_types import S
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
-class CatalogueItemPropertyTemplateIn(CreatedModifiedTimeInMixin, CatalogueItemProperty):
-    """
-    Input database model for a catalogue item property template.
-    """
+class CatalogueItemPropertyTemplateBase(CatalogueItemProperty):
+    """Base database model for a catalogue item template"""
 
     code: str
 
 
-class CatalogueItemPropertyTemplateOut(CreatedModifiedTimeOutMixin, CatalogueItemProperty):
+class CatalogueItemPropertyTemplateIn(CreatedModifiedTimeInMixin, CatalogueItemPropertyTemplateBase):
+    """
+    Input database model for a catalogue item property template.
+    """
+
+
+class CatalogueItemPropertyTemplateOut(CreatedModifiedTimeOutMixin, CatalogueItemPropertyTemplateBase):
     """
     Output database model for a catalogue item property template.
     """
 
     id: StringObjectIdField = Field(alias="_id")
-    code: str
 
     model_config = ConfigDict(populate_by_name=True)
