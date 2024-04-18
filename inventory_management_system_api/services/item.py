@@ -14,7 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidObjectIdError,
 )
-from inventory_management_system_api.models.catalogue_item import Property
+from inventory_management_system_api.models.catalogue_item import PropertyOut
 from inventory_management_system_api.models.item import ItemOut, ItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -170,7 +170,7 @@ class ItemService:
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
     def _merge_missing_properties(
-        self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
+        self, catalogue_item_properties: List[PropertyOut], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[PropertyPostRequestSchema]:
         """
         Merges the properties defined in a catalogue item with those that should be overriden for an item in
@@ -181,14 +181,14 @@ class ItemService:
         :return: A merged list of properties for the item
         """
         supplied_properties_dict = {
-            supplied_property.name: supplied_property for supplied_property in supplied_properties
+            supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
         properties: List[PropertyPostRequestSchema] = []
 
         # Use the order of properties from the catalogue item, and append either the supplied property or
         # the catalogue item one where it is not found
         for catalogue_item_property in catalogue_item_properties:
-            supplied_property = supplied_properties_dict.get(catalogue_item_property.name)
+            supplied_property = supplied_properties_dict.get(catalogue_item_property.id)
             if supplied_property is not None:
                 properties.append(supplied_property)
             else:

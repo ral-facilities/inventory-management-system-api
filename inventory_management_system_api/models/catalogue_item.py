@@ -10,11 +10,23 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
-class Property(BaseModel):
+class PropertyIn(BaseModel):
     """
     Model representing a catalogue item property.
     """
 
+    id: CustomObjectIdField
+    name: str
+    value: Any
+    unit: Optional[str] = None
+
+
+class PropertyOut(BaseModel):
+    """
+    Model representing a catalogue item property.
+    """
+
+    id: StringObjectIdField
     name: str
     value: Any
     unit: Optional[str] = None
@@ -40,7 +52,7 @@ class CatalogueItemBase(BaseModel):
     obsolete_reason: Optional[str] = None
     obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
     notes: Optional[str] = None
-    properties: List[Property] = []
+    properties: List[PropertyIn] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -84,4 +96,23 @@ class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
     catalogue_category_id: StringObjectIdField
     manufacturer_id: StringObjectIdField
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
+    properties: List[PropertyOut] = []
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
+    # TODO - Check if this can be reused rather than duplicated
+    @field_validator("properties", mode="before")
+    @classmethod
+    def validate_properties(cls, properties: Any) -> Any:
+        """
+        Validator for the `properties` field that runs after field assignment but before type validation.
+
+        If the value is `None`, it replaces it with an empty list allowing for catalogue items without properties to be
+        created.
+
+        :param properties: The list of properties specific to this catalogue item as defined in the corresponding
+            catalogue category.
+        :return: The list of properties specific to this catalogue item or an empty list.
+        """
+        if properties is None:
+            properties = []
+        return properties

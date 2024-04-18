@@ -59,6 +59,8 @@ def process_catalogue_item_properties(
     supplied_properties_dict = _merge_non_mandatory_catalogue_item_properties(
         defined_properties_dict, supplied_properties_dict
     )
+    # Supplied catalogue item properties do not have names as we can't trust they would be correct
+    _add_catalogue_item_property_names(defined_properties_dict, supplied_properties_dict)
     # Supplied catalogue item properties do not have units as we can't trust they would be correct
     _add_catalogue_item_property_units(defined_properties_dict, supplied_properties_dict)
     # The values of the supplied catalogue item properties may not be of the expected types
@@ -72,16 +74,35 @@ def _create_catalogue_item_properties_dict(
 ) -> Dict[str, Dict]:
     """
     Convert a list of catalogue item property objects into a dictionary where the keys are the catalogue item
-    property names and the values are the catalogue item property dictionaries.
+    property IDs and the values are the catalogue item property dictionaries.
 
     :param catalogue_item_properties: The list of catalogue item property objects.
-    :return: A dictionary where the keys are the catalogue item property names and the values are the catalogue item
+    :return: A dictionary where the keys are the catalogue item property IDs and the values are the catalogue item
         property dictionaries.
     """
     return {
-        catalogue_item_property.name: catalogue_item_property.model_dump()
+        catalogue_item_property.id: catalogue_item_property.model_dump()
         for catalogue_item_property in catalogue_item_properties
     }
+
+
+def _add_catalogue_item_property_names(
+    defined_properties: Dict[str, Dict],
+    supplied_properties: Dict[str, Dict],
+) -> None:
+    """
+    Add the names to the supplied properties.
+
+    The supplied properties only contain an ID and value so the names from the defined properties in the database
+    are added to the supplied properties. This means that this method modifies the `supplied_properties` dictionary.
+
+    :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
+        database.
+    :param supplied_properties: The supplied catalogue item properties.
+    """
+    logger.info("Adding the names to the supplied properties")
+    for supplied_property_id, supplied_property in supplied_properties.items():
+        supplied_property["name"] = defined_properties[supplied_property_id]["name"]
 
 
 def _add_catalogue_item_property_units(
@@ -91,7 +112,7 @@ def _add_catalogue_item_property_units(
     """
     Add the units to the supplied properties.
 
-    The supplied properties only contain a name and value so the units from the defined properties in the database
+    The supplied properties only contain an ID and value so the units from the defined properties in the database
     are added to the supplied properties. This means that this method modifies the `supplied_properties` dictionary.
 
     :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
@@ -99,8 +120,8 @@ def _add_catalogue_item_property_units(
     :param supplied_properties: The supplied catalogue item properties.
     """
     logger.info("Adding the units to the supplied properties")
-    for supplied_property_name, supplied_property in supplied_properties.items():
-        supplied_property["unit"] = defined_properties[supplied_property_name]["unit"]
+    for supplied_property_id, supplied_property in supplied_properties.items():
+        supplied_property["unit"] = defined_properties[supplied_property_id]["unit"]
 
 
 def _validate_catalogue_item_property_value(defined_property: Dict, supplied_property: Dict) -> None:
@@ -118,22 +139,22 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
     defined_property_allowed_values = defined_property["allowed_values"]
     defined_property_mandatory = defined_property["mandatory"]
 
-    supplied_property_name = supplied_property["name"]
+    supplied_property_id = supplied_property["id"]
     supplied_property_value = supplied_property["value"]
 
     # Do not type check a value of None
     if supplied_property_value is None:
         if defined_property_mandatory:
             raise InvalidCatalogueItemPropertyTypeError(
-                f"Mandatory catalogue item property '{supplied_property_name}' cannot be None."
+                f"Mandatory catalogue item property with ID '{supplied_property_id}' cannot be None."
             )
     else:
         if not CatalogueItemPropertyPostRequestSchema.is_valid_property_type(
             defined_property_type, supplied_property_value
         ):
             raise InvalidCatalogueItemPropertyTypeError(
-                f"Invalid value type for catalogue item property '{supplied_property_name}'. "
-                f"Expected type: {defined_property_type}."
+                f"Invalid value type for catalogue item property with ID '{supplied_property_id}'. Expected type: "
+                f"{defined_property_type}."
             )
 
         # Verify the given property is one of the allowed based on the type of allowed_values defined
@@ -141,7 +162,7 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
             values = defined_property_allowed_values["values"]
             if supplied_property_value not in values:
                 raise InvalidCatalogueItemPropertyTypeError(
-                    f"Invalid value for catalogue item property '{supplied_property_name}'. Expected one of "
+                    f"Invalid value for catalogue item property with ID '{supplied_property_id}'. Expected one of "
                     f"{', '.join([str(value) for value in values])}."
                 )
 
@@ -161,8 +182,8 @@ def _validate_catalogue_item_property_values(
                                                    expected type.
     """
     logger.info("Validating the values of the supplied properties against the expected property types")
-    for supplied_property_name, supplied_property in supplied_properties.items():
-        _validate_catalogue_item_property_value(defined_properties[supplied_property_name], supplied_property)
+    for supplied_property_id, supplied_property in supplied_properties.items():
+        _validate_catalogue_item_property_value(defined_properties[supplied_property_id], supplied_property)
 
 
 def _check_missing_mandatory_catalogue_item_properties(
@@ -179,10 +200,10 @@ def _check_missing_mandatory_catalogue_item_properties(
     :raises MissingMandatoryCatalogueItemProperty: If a mandatory catalogue item property is missing/ not supplied.
     """
     logger.info("Checking for missing mandatory catalogue item properties")
-    for defined_property_name, defined_property in defined_properties.items():
-        if defined_property["mandatory"] and defined_property_name not in supplied_properties:
+    for defined_property_id, defined_property in defined_properties.items():
+        if defined_property["mandatory"] and defined_property_id not in supplied_properties:
             raise MissingMandatoryCatalogueItemProperty(
-                f"Missing mandatory catalogue item property: '{defined_property_name}'"
+                f"Missing mandatory catalogue item property with ID: '{defined_property_id}'"
             )
 
 
@@ -202,10 +223,10 @@ def _merge_non_mandatory_catalogue_item_properties(
     logger.info("Merging any missing defined non-mandatory properties with the supplied properties")
 
     properties: Dict[str, Dict] = {}
-    for defined_property_name, defined_property in defined_properties.items():
-        supplied_property = supplied_properties.get(defined_property_name)
+    for defined_property_id, defined_property in defined_properties.items():
+        supplied_property = supplied_properties.get(defined_property_id)
         if supplied_property is not None:
-            properties[defined_property_name] = supplied_property
+            properties[defined_property_id] = supplied_property
         elif not defined_property["mandatory"]:
-            properties[defined_property_name] = {"name": defined_property_name, "value": None}
+            properties[defined_property_id] = {"id": defined_property_id, "value": None}
     return properties
