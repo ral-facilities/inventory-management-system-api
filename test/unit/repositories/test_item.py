@@ -32,7 +32,7 @@ FULL_ITEM_INFO = {
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
     "notes": "Test notes",
-    "properties": [{"name": "Property A", "value": 21, "unit": "mm"}],
+    "properties": [{"id": str(ObjectId()), "name": "Property A", "value": 21, "unit": "mm"}],
 }
 # pylint: enable=duplicate-code
 

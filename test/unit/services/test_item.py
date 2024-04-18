@@ -55,9 +55,24 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [
-        {"name": "Property A", "value": 20, "unit": "mm"},
-        {"name": "Property B", "value": False, "unit": None},
-        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][0]["id"],
+            "name": "Property A",
+            "value": 20,
+            "unit": "mm",
+        },
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1]["id"],
+            "name": "Property B",
+            "value": False,
+            "unit": None,
+        },
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][2]["id"],
+            "name": "Property C",
+            "value": "20x15x10",
+            "unit": "cm",
+        },
     ],
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -70,7 +85,9 @@ ITEM_INFO = {
     "serial_number": "xyz123",
     "delivered_date": datetime(2012, 12, 5, 12, 0, 0, 0, tzinfo=timezone.utc),
     "notes": "Test notes",
-    "properties": [{"name": "Property A", "value": 21}],
+    "properties": [
+        {"id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][0]["id"], "name": "Property A", "value": 21}
+    ],
 }
 
 FULL_ITEM_INFO = {
@@ -78,10 +95,30 @@ FULL_ITEM_INFO = {
     "purchase_order_number": None,
     "asset_number": None,
     "properties": [
-        {"name": "Property A", "value": 21, "unit": "mm"},
-        {"name": "Property B", "value": False, "unit": None},
-        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
-        {"name": "Property D", "value": None, "unit": None},
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][0]["id"],
+            "name": "Property A",
+            "value": 21,
+            "unit": "mm",
+        },
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1]["id"],
+            "name": "Property B",
+            "value": False,
+            "unit": None,
+        },
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][2]["id"],
+            "name": "Property C",
+            "value": "20x15x10",
+            "unit": "cm",
+        },
+        {
+            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][3]["id"],
+            "name": "Property D",
+            "value": None,
+            "unit": None,
+        },
     ],
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -541,7 +578,15 @@ def test_update_change_property_value(
     """
     item_info = {
         **FULL_ITEM_INFO,
-        "properties": [{"name": "Property A", "value": 1, "unit": "mm"}] + FULL_ITEM_INFO["properties"][-3:],
+        "properties": [
+            {
+                "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][0]["id"],
+                "name": "Property A",
+                "value": 1,
+                "unit": "mm",
+            }
+        ]
+        + FULL_ITEM_INFO["properties"][-3:],
         "created_time": FULL_ITEM_INFO["created_time"] - timedelta(days=5),
     }
 
@@ -591,7 +636,7 @@ def test_update_change_property_value(
 
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(properties=[{"name": prop.name, "value": prop.value} for prop in item.properties]),
+        ItemPatchRequestSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties]),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -660,7 +705,7 @@ def test_update_with_missing_existing_properties(
     updated_item = item_service.update(
         item.id,
         ItemPatchRequestSchema(
-            properties=[{"name": prop["name"], "value": prop["value"]} for prop in FULL_ITEM_INFO["properties"][-2:]]
+            properties=[{"id": prop["id"], "value": prop["value"]} for prop in FULL_ITEM_INFO["properties"][-2:]]
         ),
     )
 
@@ -715,7 +760,7 @@ def test_update_change_value_for_string_property_invalid_type(
         ),
     )
 
-    properties = [{"name": prop.name, "value": prop.value} for prop in item.properties]
+    properties = [{"id": prop.id, "value": prop.value} for prop in item.properties]
     properties[2]["value"] = True
     with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
         item_service.update(
@@ -723,7 +768,10 @@ def test_update_change_value_for_string_property_invalid_type(
             ItemPatchRequestSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
-    assert str(exc.value) == "Invalid value type for catalogue item property 'Property C'. Expected type: string."
+    assert (
+        str(exc.value)
+        == f"Invalid value type for catalogue item property with ID '{item.properties[2].id}'. Expected type: string."
+    )
 
 
 def test_update_change_value_for_number_property_invalid_type(
@@ -766,7 +814,7 @@ def test_update_change_value_for_number_property_invalid_type(
         ),
     )
 
-    properties = [{"name": prop.name, "value": prop.value} for prop in item.properties]
+    properties = [{"id": prop.id, "value": prop.value} for prop in item.properties]
     properties[0]["value"] = "20"
     with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
         item_service.update(
@@ -774,7 +822,10 @@ def test_update_change_value_for_number_property_invalid_type(
             ItemPatchRequestSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
-    assert str(exc.value) == "Invalid value type for catalogue item property 'Property A'. Expected type: number."
+    assert (
+        str(exc.value)
+        == f"Invalid value type for catalogue item property with ID '{item.properties[0].id}'. Expected type: number."
+    )
 
 
 def test_update_change_value_for_boolean_property_invalid_type(
@@ -815,7 +866,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
         ),
     )
 
-    properties = [{"name": prop.name, "value": prop.value} for prop in item.properties]
+    properties = [{"id": prop.id, "value": prop.value} for prop in item.properties]
     properties[1]["value"] = "False"
     with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
         item_service.update(
@@ -823,4 +874,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
             ItemPatchRequestSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
-    assert str(exc.value) == "Invalid value type for catalogue item property 'Property B'. Expected type: boolean."
+    assert (
+        str(exc.value)
+        == f"Invalid value type for catalogue item property with ID '{item.properties[1].id}'. Expected type: boolean."
+    )

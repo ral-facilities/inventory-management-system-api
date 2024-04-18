@@ -33,9 +33,9 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [
-        {"name": "Property A", "value": 20, "unit": "mm"},
-        {"name": "Property B", "value": False, "unit": None},
-        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {"id": str(ObjectId()), "name": "Property A", "value": 20, "unit": "mm"},
+        {"id": str(ObjectId()), "name": "Property B", "value": False, "unit": None},
+        {"id": str(ObjectId()), "name": "Property C", "value": "20x15x10", "unit": "cm"},
     ],
 }
 
@@ -54,7 +54,7 @@ FULL_CATALOGUE_ITEM_B_INFO = {
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
     "notes": "Some extra information",
-    "properties": [{"name": "Property A", "value": True, "unit": None}],
+    "properties": [{"id": str(ObjectId()), "name": "Property A", "value": True, "unit": None}],
 }
 # pylint: enable=duplicate-code
 
