@@ -154,6 +154,7 @@ def test_list(test_helpers, database_mock, item_repository):
 
     Verify that the `list` method properly handles the retrieval of items
     """
+    # pylint: disable=duplicate-code
     item_a = ItemOut(
         **FULL_ITEM_INFO,
         **MOCK_CREATED_MODIFIED_TIME,
@@ -173,6 +174,7 @@ def test_list(test_helpers, database_mock, item_repository):
         usage_status_id=str(ObjectId()),
         usage_status="New",
     )
+    # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(

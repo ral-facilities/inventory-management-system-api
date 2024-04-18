@@ -3,7 +3,6 @@ Unit tests for the `ItemService` service.
 """
 
 from datetime import datetime, timedelta, timezone
-from inventory_management_system_api.models.usage_status import UsageStatusOut
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 from unittest.mock import MagicMock
 
@@ -21,6 +20,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
+from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
 
 # pylint: disable=duplicate-code
@@ -108,18 +108,7 @@ USAGE_STATUS_B = {
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 }
-USAGE_STATUS_C = {
-    "value": "In Use",
-    "code": "in-use",
-    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-}
-USAGE_STATUS_D = {
-    "value": "Scrapped",
-    "code": "scrapped",
-    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-}
+
 
 # pylint: enable=duplicate-code
 
@@ -136,6 +125,7 @@ def test_create(
     """
     Test creating an item.
     """
+    # pylint: disable=duplicate-code
     item = ItemOut(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
@@ -144,6 +134,7 @@ def test_create(
         usage_status="New",
         **FULL_ITEM_INFO,
     )
+    # pylint: enable=duplicate-code
 
     catalogue_category_id = str(ObjectId())
     manufacturer_id = str(ObjectId())
@@ -308,6 +299,7 @@ def test_create_without_properties(
     """
     Testing creating an item without properties.
     """
+    # pylint: disable=duplicate-code
     item = ItemOut(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
@@ -316,6 +308,7 @@ def test_create_without_properties(
         usage_status="New",
         **{**FULL_ITEM_INFO, "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
     )
+    # pylint: enable=duplicate-code
 
     catalogue_category_id = str(ObjectId())
     manufacturer_id = str(ObjectId())
