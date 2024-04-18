@@ -395,6 +395,12 @@ def create_manufacturer(manufacturer_data: dict) -> str:
     return post_avoiding_duplicate_names(endpoint="/v1/manufacturers", json=manufacturer_data)
 
 
+def create_catalogue_item_property_template(catalogue_item_property_template_data: dict) -> str:
+    return post_avoiding_duplicate_names(
+        endpoint="/v1/catalogue-item-property-templates", json=catalogue_item_property_template_data
+    )
+
+
 def create_catalogue_category(category_data: dict) -> str:
     return post_avoiding_duplicate_names(endpoint="/v1/catalogue-categories", json=category_data)
 
@@ -417,6 +423,14 @@ def populate_random_manufacturers() -> list[str]:
     for i in range(0, NUMBER_OF_MANUFACTURERS):
         manufacturer_ids[i] = create_manufacturer(generate_random_manufacturer())
     return manufacturer_ids
+
+
+def populate_random_catalogue_item_property_templates() -> list[str]:
+    # Usually faster than append
+
+    for i, template in enumerate(available_catalogue_item_properties):
+
+        create_catalogue_item_property_template(template)
 
 
 def populate_random_catalogue_categories(
@@ -483,6 +497,8 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
             generated_system_ids.append(id)
 
 
+logging.info("Populating catalogue item property templates...")
+populate_random_catalogue_item_property_templates()
 logging.info("Populating manufacturers...")
 manufacturer_ids = populate_random_manufacturers()
 logging.info("Populating catalogue categories...")
