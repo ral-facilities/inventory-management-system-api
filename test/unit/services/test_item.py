@@ -2,8 +2,8 @@
 Unit tests for the `ItemService` service.
 """
 
-import json
 from datetime import datetime, timedelta, timezone
+from inventory_management_system_api.models.usage_status import UsageStatusOut
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 from unittest.mock import MagicMock
 
@@ -21,7 +21,6 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
-from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
 
 # pylint: disable=duplicate-code
@@ -65,7 +64,6 @@ FULL_CATALOGUE_ITEM_A_INFO = {
 
 ITEM_INFO = {
     "is_defective": False,
-    "usage_status": "New",
     "warranty_end_date": datetime(2015, 11, 15, 23, 59, 59, 0, tzinfo=timezone.utc),
     "serial_number": "xyz123",
     "delivered_date": datetime(2012, 12, 5, 12, 0, 0, 0, tzinfo=timezone.utc),
@@ -98,6 +96,30 @@ FULL_SYSTEM_INFO = {
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 }
+USAGE_STATUS_A = {
+    "value": "New",
+    "code": "new",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+}
+USAGE_STATUS_B = {
+    "value": "Used",
+    "code": "used",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+}
+USAGE_STATUS_C = {
+    "value": "In Use",
+    "code": "in-use",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+}
+USAGE_STATUS_D = {
+    "value": "Scrapped",
+    "code": "scrapped",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+}
 
 # pylint: enable=duplicate-code
 
@@ -114,10 +136,18 @@ def test_create(
     """
     Test creating an item.
     """
-    item = ItemOut(id=str(ObjectId()), catalogue_item_id=str(ObjectId()), system_id=str(ObjectId()), **FULL_ITEM_INFO)
+    item = ItemOut(
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
+        **FULL_ITEM_INFO,
+    )
 
     catalogue_category_id = str(ObjectId())
     manufacturer_id = str(ObjectId())
+
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
@@ -135,20 +165,32 @@ def test_create(
     )
     # Mock `create` to return the created item
     test_helpers.mock_create(item_repository_mock, item)
-    # Mock `list` to return the usage statuses
-    test_helpers.mock_list(
+    # Mock `get` to return the usage status
+    test_helpers.mock_get(
         usage_status_repository_mock,
-        USAGE_STATUSES_LIST,
+        UsageStatusOut(id=item.usage_status_id, **USAGE_STATUS_A),
     )
 
     created_item = item_service.create(
-        ItemPostRequestSchema(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **ITEM_INFO)
+        ItemPostRequestSchema(
+            catalogue_item_id=item.catalogue_item_id,
+            system_id=item.system_id,
+            usage_status_id=item.usage_status_id,
+            usage_status=item.usage_status,
+            **ITEM_INFO,
+        )
     )
 
     catalogue_item_repository_mock.get.assert_called_once_with(item.catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     item_repository_mock.create.assert_called_once_with(
-        ItemIn(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **FULL_ITEM_INFO)
+        ItemIn(
+            catalogue_item_id=item.catalogue_item_id,
+            system_id=item.system_id,
+            usage_status_id=item.usage_status_id,
+            usage_status=item.usage_status,
+            **FULL_ITEM_INFO,
+        )
     )
     assert created_item == item
 
@@ -166,7 +208,12 @@ def test_create_with_non_existent_catalogue_item_id(
 
     with pytest.raises(MissingRecordError) as exc:
         item_service.create(
-            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId()), **ITEM_INFO)
+            ItemPostRequestSchema(
+                catalogue_item_id=catalogue_item_id,
+                system_id=str(ObjectId()),
+                usage_status_id=str(ObjectId()),
+                **ITEM_INFO,
+            )
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     item_repository_mock.create.assert_not_called()
@@ -199,7 +246,12 @@ def test_create_with_invalid_catalogue_item_id(
 
     with pytest.raises(DatabaseIntegrityError) as exc:
         item_service.create(
-            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId()), **ITEM_INFO)
+            ItemPostRequestSchema(
+                catalogue_item_id=catalogue_item_id,
+                system_id=str(ObjectId()),
+                usage_status_id=str(ObjectId()),
+                **ITEM_INFO,
+            )
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
@@ -231,7 +283,12 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
 
     with pytest.raises(DatabaseIntegrityError) as exc:
         item_service.create(
-            ItemPostRequestSchema(catalogue_item_id=catalogue_item_id, system_id=str(ObjectId()), **ITEM_INFO)
+            ItemPostRequestSchema(
+                catalogue_item_id=catalogue_item_id,
+                system_id=str(ObjectId()),
+                usage_status_id=str(ObjectId()),
+                **ITEM_INFO,
+            )
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
@@ -255,6 +312,8 @@ def test_create_without_properties(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **{**FULL_ITEM_INFO, "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"]},
     )
 
@@ -277,13 +336,18 @@ def test_create_without_properties(
     )
     # Mock `create` to return the created item
     test_helpers.mock_create(item_repository_mock, item)
-    # Mock `list` to return the usage statuses
-    test_helpers.mock_list(
+    # Mock `get` to return the usage status
+    test_helpers.mock_get(
         usage_status_repository_mock,
-        USAGE_STATUSES_LIST,
+        UsageStatusOut(id=item.usage_status_id, **USAGE_STATUS_A),
     )
 
-    item_post = {**ITEM_INFO, "catalogue_item_id": item.catalogue_item_id, "system_id": item.system_id}
+    item_post = {
+        **ITEM_INFO,
+        "catalogue_item_id": item.catalogue_item_id,
+        "system_id": item.system_id,
+        "usage_status_id": item.usage_status_id,
+    }
     del item_post["properties"]
     created_item = item_service.create(ItemPostRequestSchema(**item_post))
 
@@ -293,6 +357,8 @@ def test_create_without_properties(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
+            usage_status_id=item.usage_status_id,
+            usage_status=item.usage_status,
             **{
                 **FULL_ITEM_INFO,
                 "properties": [*FULL_CATALOGUE_ITEM_A_INFO["properties"], FULL_ITEM_INFO["properties"][-1]],
@@ -379,6 +445,8 @@ def test_update(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="Used",
         **{
             **FULL_ITEM_INFO,
             "created_time": FULL_ITEM_INFO["created_time"] - timedelta(days=5),
@@ -390,19 +458,24 @@ def test_update(
     test_helpers.mock_get(
         item_repository_mock,
         ItemOut(
-            **{**item.model_dump(), "is_defective": True, "usage_status": "Used", "modified_time": item.created_time}
+            **{
+                **item.model_dump(),
+                "is_defective": True,
+                "usage_status": item.usage_status,
+                "usage_status_id": item.usage_status_id,
+                "modified_time": item.created_time,
+            }
         ),
     )
     # Mock `update` to return the updated item
     test_helpers.mock_update(item_repository_mock, item)
-    # Mock `list` to return the usage statuses
-    test_helpers.mock_list(
+    # Mock `get` to return the usage status
+    test_helpers.mock_get(
         usage_status_repository_mock,
-        USAGE_STATUSES_LIST,
+        UsageStatusOut(id=item.usage_status_id, **USAGE_STATUS_B),
     )
-
     updated_item = item_service.update(
-        item.id, ItemPatchRequestSchema(is_defective=item.is_defective, usage_status=item.usage_status)
+        item.id, ItemPatchRequestSchema(is_defective=item.is_defective, usage_status_id=item.usage_status_id)
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -410,6 +483,8 @@ def test_update(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
+            usage_status_id=item.usage_status_id,
+            usage_status=item.usage_status,
             **{
                 **FULL_ITEM_INFO,
                 "created_time": item.created_time,
@@ -444,6 +519,8 @@ def test_update_change_catalogue_item_id(test_helpers, item_repository_mock, ite
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **FULL_ITEM_INFO,
     )
     # pylint: enable=duplicate-code
@@ -478,6 +555,8 @@ def test_update_change_system_id(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **{
             **FULL_ITEM_INFO,
             "created_time": FULL_ITEM_INFO["created_time"] - timedelta(days=5),
@@ -500,10 +579,10 @@ def test_update_change_system_id(
         ),
     )
 
-    # Mock `list` to return the usage statuses
-    test_helpers.mock_list(
+    # Mock `get` to return the usage status
+    test_helpers.mock_get(
         usage_status_repository_mock,
-        USAGE_STATUSES_LIST,
+        UsageStatusOut(id=item.usage_status_id, **USAGE_STATUS_A),
     )
 
     # Mock `update` to return the updated item
@@ -519,6 +598,8 @@ def test_update_change_system_id(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
+            usage_status=item.usage_status,
+            usage_status_id=item.usage_status_id,
             **{
                 **FULL_ITEM_INFO,
                 "created_time": item.created_time,
@@ -537,6 +618,8 @@ def test_update_with_nonexistent_system_id(test_helpers, system_repository_mock,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **FULL_ITEM_INFO,
     )
     # pylint: enable=duplicate-code
@@ -578,6 +661,8 @@ def test_update_change_property_value(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **item_info,
     )
 
@@ -624,7 +709,14 @@ def test_update_change_property_value(
     )
 
     item_repository_mock.update.assert_called_once_with(
-        item.id, ItemIn(catalogue_item_id=item.catalogue_item_id, system_id=item.system_id, **item_info)
+        item.id,
+        ItemIn(
+            catalogue_item_id=item.catalogue_item_id,
+            system_id=item.system_id,
+            usage_status_id=item.usage_status_id,
+            usage_status=item.usage_status,
+            **item_info,
+        ),
     )
     assert updated_item == item
 
@@ -650,6 +742,8 @@ def test_update_with_missing_existing_properties(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **item_info,
     )
 
@@ -698,6 +792,8 @@ def test_update_with_missing_existing_properties(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
+            usage_status_id=item.usage_status_id,
+            usage_status=item.usage_status,
             **item_info,
         ),
     )
@@ -715,6 +811,8 @@ def test_update_change_value_for_string_property_invalid_type(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **FULL_ITEM_INFO,
     )
     # pylint: enable=duplicate-code
@@ -766,6 +864,8 @@ def test_update_change_value_for_number_property_invalid_type(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **FULL_ITEM_INFO,
     )
     # pylint: enable=duplicate-code
@@ -816,6 +916,8 @@ def test_update_change_value_for_boolean_property_invalid_type(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
         **FULL_ITEM_INFO,
     )
 
