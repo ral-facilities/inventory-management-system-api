@@ -2,6 +2,9 @@ FROM python:3.12.2-alpine3.19@sha256:c7eb5c92b7933fe52f224a91a1ced27b91840ac9c69
 
 WORKDIR /inventory-management-system-api-run
 
+# Requirement when using a different workdir to get scripts to import correctly
+ENV PYTHONPATH="${PYTHONPATH}:/inventory-management-system-api-run"
+
 COPY pyproject.toml ./
 COPY inventory_management_system_api/ inventory_management_system_api/
 
