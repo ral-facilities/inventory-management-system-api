@@ -218,5 +218,5 @@ class CatalogueCategoryService:
                     {**catalogue_item_property.model_dump(), "unit": unit.value}
                 )
             else:
-                catalogue_item_properties_with_units.append({**catalogue_item_property.model_dump()})
+                catalogue_item_properties_with_units.append({**catalogue_item_property.model_dump(), "unit": None})
         return catalogue_item_properties_with_units
