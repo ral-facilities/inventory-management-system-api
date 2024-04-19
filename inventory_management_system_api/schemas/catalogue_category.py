@@ -35,14 +35,14 @@ class AllowedValuesListSchema(BaseModel):
 AllowedValuesSchema = Annotated[AllowedValuesListSchema, Field(discriminator="type")]
 
 
-class CatalogueItemPropertySchema(BaseModel):
+class CatalogueItemPropertyPostSchema(BaseModel):
     """
-    Schema model representing a catalogue item property.
+    Schema model representing a catalogue item property for post.
     """
 
     name: str = Field(description="The name of the property")
     type: CatalogueItemPropertyType = Field(description="The type of the property")
-    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
+    unit_id: Optional[str] = Field(default=None, description="The ID of the unit of the property")
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
     allowed_values: Optional[AllowedValuesSchema] = Field(
         default=None,
@@ -68,23 +68,23 @@ class CatalogueItemPropertySchema(BaseModel):
             return isinstance(property_value, bool)
         return False
 
-    @field_validator("unit")
+    @field_validator("unit_id")
     @classmethod
-    def validate_unit(cls, unit_value: Optional[str], info: ValidationInfo) -> Optional[str]:
+    def validate_unit_id(cls, unit_id: Optional[str], info: ValidationInfo) -> Optional[str]:
         """
-        Validator for the `unit` field.
+        Validator for the `unit_id` field.
 
-        It checks if the `type` of the catalogue item property is a `boolean` and if a` unit` has been specified. It
+        It checks if the `type` of the catalogue item property is a `boolean` and if a` unit_id` has been specified. It
         raises a `ValueError` if this is the case.
 
-        :param unit_value: The value of the `unit` field.
+        :param unit_id: The value of the `unit_id` field.
         :param info: Validation info from pydantic.
-        :raises ValueError: If `unit` is provided when `type` is set to `boolean`.
-        :return: The value of the `unit` field.
+        :raises ValueError: If `unit_id` is provided when `type` is set to `boolean`.
+        :return: The value of the `unit_id` field.
         """
-        if "type" in info.data and info.data["type"] == CatalogueItemPropertyType.BOOLEAN and unit_value is not None:
+        if "type" in info.data and info.data["type"] == CatalogueItemPropertyType.BOOLEAN and unit_id is not None:
             raise ValueError(f"Unit not allowed for boolean catalogue item property '{info.data['name']}'")
-        return unit_value
+        return unit_id
 
     @field_validator("allowed_values")
     @classmethod
@@ -122,6 +122,20 @@ class CatalogueItemPropertySchema(BaseModel):
         return allowed_values
 
 
+class CatalogueItemPropertyPatchSchema(CatalogueItemPropertyPostSchema):
+    """
+    Schema model representing a catalogue item property for patch.
+    """
+
+
+class CatalogueItemPropertySchema(CatalogueItemPropertyPostSchema):
+    """
+    Schema model representing a catalogue item property.
+    """
+
+    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
+
+
 class CatalogueCategoryPostRequestSchema(BaseModel):
     """
     Schema model for a catalogue category creation request.
@@ -133,7 +147,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         "elements but if it is not then it can only have catalogue categories as child elements."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: Optional[List[CatalogueItemPropertySchema]] = Field(
+    catalogue_item_properties: Optional[List[CatalogueItemPropertyPostSchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
@@ -154,12 +168,18 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
         "elements but if it is not then it can only have catalogue categories as child elements.",
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
+    catalogue_item_properties: Optional[List[CatalogueItemPropertyPatchSchema]] = Field(
+        default=None, description="The properties that the catalogue items in this category could/should have"
+    )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
+class CatalogueCategorySchema(CreatedModifiedSchemaMixin, BaseModel):
     """
     Schema model for a catalogue category response.
     """
 
     id: str = Field(description="The ID of the catalogue category")
     code: str = Field(description="The code of the catalogue category")
+    catalogue_item_properties: Optional[List[CatalogueItemPropertySchema]] = Field(
+        default=None, description="The properties that the catalogue items in this category could/should have"
+    )

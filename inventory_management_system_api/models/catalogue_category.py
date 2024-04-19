@@ -23,7 +23,7 @@ class AllowedValuesList(BaseModel):
 AllowedValues = Annotated[AllowedValuesList, Field(discriminator="type")]
 
 
-class CatalogueItemProperty(BaseModel):
+class CatalogueItemPropertyIn(BaseModel):
     """
     Model representing a catalogue item property.
     """
@@ -31,11 +31,20 @@ class CatalogueItemProperty(BaseModel):
     name: str
     type: str
     unit: Optional[str] = None
+    unit_id: Optional[CustomObjectIdField] = None
     mandatory: bool
     allowed_values: Optional[AllowedValues] = None
 
 
-class CatalogueCategoryBase(BaseModel):
+class CatalogueItemPropertyOut(CatalogueItemPropertyIn):
+    """
+    Model representing a catalogue item property.
+    """
+
+    unit_id: Optional[StringObjectIdField] = None
+
+
+class CatalogueCategoryBaseIn(BaseModel):
     """
     Base database model for a catalogue category.
     """
@@ -44,7 +53,7 @@ class CatalogueCategoryBase(BaseModel):
     code: str
     is_leaf: bool
     parent_id: Optional[CustomObjectIdField] = None
-    catalogue_item_properties: List[CatalogueItemProperty] = []
+    catalogue_item_properties: List[CatalogueItemPropertyIn] = []
 
     @field_validator("catalogue_item_properties", mode="before")
     @classmethod
@@ -68,13 +77,21 @@ class CatalogueCategoryBase(BaseModel):
         return catalogue_item_properties
 
 
-class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBase):
+class CatalogueCategoryBaseOut(CatalogueCategoryBaseIn):
+    """
+    Base database model for a catalogue category out.
+    """
+
+    catalogue_item_properties: List[CatalogueItemPropertyOut] = []
+
+
+class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBaseIn):
     """
     Input database model for a catalogue category.
     """
 
 
-class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBase):
+class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBaseOut):
     """
     Output database model for a catalogue category.
     """

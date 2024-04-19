@@ -10,17 +10,29 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
-class Property(BaseModel):
+class PropertyIn(BaseModel):
     """
-    Model representing a catalogue item property.
+    Model representing a catalogue item property in.
     """
 
     name: str
     value: Any
     unit: Optional[str] = None
+    unit_id: Optional[CustomObjectIdField] = None
 
 
-class CatalogueItemBase(BaseModel):
+class PropertyOut(BaseModel):
+    """
+    Model representing a catalogue item property out.
+    """
+
+    name: str
+    value: Any
+    unit: Optional[str] = None
+    unit_id: Optional[StringObjectIdField] = None
+
+
+class CatalogueItemBaseIn(BaseModel):
     """
     Base database model for a catalogue item.
     """
@@ -40,7 +52,7 @@ class CatalogueItemBase(BaseModel):
     obsolete_reason: Optional[str] = None
     obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
     notes: Optional[str] = None
-    properties: List[Property] = []
+    properties: List[PropertyIn] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -69,13 +81,21 @@ class CatalogueItemBase(BaseModel):
         return url if url is None else str(url)
 
 
-class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBase):
+class CatalogueItemBaseOut(CatalogueItemBaseIn):
+    """
+    Base database model for a catalogue item.
+    """
+
+    properties: List[PropertyOut] = []
+
+
+class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBaseIn):
     """
     Input database model for a catalogue item.
     """
 
 
-class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
+class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBaseOut):
     """
     Output database model for a catalogue item.
     """

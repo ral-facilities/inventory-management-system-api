@@ -6,16 +6,16 @@ from typing import Any, List, Optional
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
-from inventory_management_system_api.models.catalogue_item import Property
+from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 # pylint: disable=duplicate-code
 
 
-class ItemBase(BaseModel):
+class ItemBaseIn(BaseModel):
     """
-    Base database model for an item.
+    Base database model for an item in.
     """
 
     catalogue_item_id: CustomObjectIdField
@@ -28,7 +28,7 @@ class ItemBase(BaseModel):
     serial_number: Optional[str] = None
     delivered_date: Optional[AwareDatetime] = None
     notes: Optional[str] = None
-    properties: List[Property] = []
+    properties: List[PropertyIn] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -47,16 +47,24 @@ class ItemBase(BaseModel):
         return properties
 
 
+class ItemBaseOut(BaseModel):
+    """
+    Base database model for an item out.
+    """
+
+    properties: List[PropertyOut] = []
+
+
 # pylint: enable=duplicate-code
 
 
-class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
+class ItemIn(CreatedModifiedTimeInMixin, ItemBaseIn):
     """
     Input database model for an item.
     """
 
 
-class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
+class ItemOut(CreatedModifiedTimeOutMixin, ItemBaseOut):
     """
     Output database model for an item.
     """

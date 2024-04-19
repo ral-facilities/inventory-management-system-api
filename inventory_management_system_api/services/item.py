@@ -9,13 +9,13 @@ from typing import List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import (
-    InvalidActionError,
-    MissingRecordError,
     DatabaseIntegrityError,
+    InvalidActionError,
     InvalidObjectIdError,
+    MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_item import Property
-from inventory_management_system_api.models.item import ItemOut, ItemIn
+from inventory_management_system_api.models.catalogue_item import PropertyOut
+from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
@@ -170,7 +170,7 @@ class ItemService:
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
     def _merge_missing_properties(
-        self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
+        self, catalogue_item_properties: List[PropertyOut], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[PropertyPostRequestSchema]:
         """
         Merges the properties defined in a catalogue item with those that should be overriden for an item in
