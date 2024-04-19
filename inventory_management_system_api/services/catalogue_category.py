@@ -214,5 +214,9 @@ class CatalogueCategoryService:
                 if not unit:
                     raise MissingRecordError(f"No unit found with ID: {unit_id}")
                 # Copy unit ID and value to catalogue item property
-            catalogue_item_properties_with_units.append({**catalogue_item_property.model_dump(), "unit": unit.value})
+                catalogue_item_properties_with_units.append(
+                    {**catalogue_item_property.model_dump(), "unit": unit.value}
+                )
+            else:
+                catalogue_item_properties_with_units.append({**catalogue_item_property.model_dump()})
         return catalogue_item_properties_with_units
