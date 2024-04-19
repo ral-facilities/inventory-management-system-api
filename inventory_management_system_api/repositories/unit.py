@@ -2,33 +2,81 @@
 Module for providing a repository for managing Units in a MongoDB database
 """
 
+import logging
+from typing import Optional
+
 from fastapi import Depends
 from pymongo.collection import Collection
 from pymongo.database import Database
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.models.units import UnitOut
+from inventory_management_system_api.core.exceptions import DuplicateRecordError
+from inventory_management_system_api.models.units import UnitIn, UnitOut
+
+logger = logging.getLogger()
 
 
 class UnitRepo:
     """
-    Repository for managing Units in a MongoDB database
+    Repository for managing units in a MongoDB database
     """
 
     def __init__(self, database: Database = Depends(get_database)) -> None:
         """
         Initialise the `UnitRepo` with a MongoDB database instance
-
         :param database: Database to use
         """
         self._database = database
         self._units_collection: Collection = self._database.units
 
+    def create(self, unit: UnitIn) -> UnitOut:
+        """
+        Create a new unit in MongoDB database
+        :param unit: The unit to be created
+        :return: The created unit
+        :raises DuplicateRecordError: If a duplicate unit is found within collection
+        """
+
+        if self._is_duplicate_unit(unit.code):
+            raise DuplicateRecordError("Duplicate unit found")
+
+        logger.info("Inserting new unit into database")
+
+        result = self._units_collection.insert_one(unit.model_dump())
+        unit = self.get(str(result.inserted_id))
+
+        return unit
+
     def list(self) -> list[UnitOut]:
         """
-        Retrieve Units from a MongoDB database
-
-        :return: List of Units or an empty list if no Units are retrieved
+        Retrieve units from a MongoDB database
+        :return: List of units or an empty list if no units are retrieved
         """
         units = self._units_collection.find()
         return [UnitOut(**unit) for unit in units]
+
+    def get(self, unit_id: str) -> Optional[UnitOut]:
+        """
+        Retrieve a unit by its ID from a MongoDB database.
+        :param unit_id: The ID of the unit to retrieve.
+        :return: The retrieved unit, or `None` if not found.
+        """
+        unit_id = CustomObjectId(unit_id)
+        logger.info(
+            "Retrieving unit with ID: %s from the database",
+            unit_id,
+        )
+        unit = self._units_collection.find_one({"_id": unit_id})
+        if unit:
+            return UnitOut(**unit)
+        return None
+
+    def _is_duplicate_unit(self, code: str) -> bool:
+        """
+        Check if unit with the same name already exists in the units collection
+        :param code: The code of the unit to check for duplicates.
+        :return `True` if duplicate unit, `False` otherwise
+        """
+        logger.info("Checking if unit with code '%s' already exists", code)
+        return self._units_collection.find_one({"code": code}) is not None
