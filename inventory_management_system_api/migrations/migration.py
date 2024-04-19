@@ -1,3 +1,5 @@
+"""Module for providing a migration script"""
+
 import argparse
 import importlib
 from abc import ABC, abstractmethod
@@ -9,20 +11,23 @@ from inventory_management_system_api.core.database import get_database, mongodb_
 
 
 class BaseMigration(ABC):
+    """Base class for a migration with a forward and backward step"""
+
     @abstractmethod
     def __init__(self, database: Database):
         pass
 
     @abstractmethod
     def forward(self, session: ClientSession):
-        pass
+        """Method for executing the migration"""
 
     @abstractmethod
     def backward(self, session: ClientSession):
-        pass
+        """Method for reversing the migration"""
 
 
 def main():
+    """Entrypoint for the ims-migrate script"""
     parser = argparse.ArgumentParser()
 
     parser.add_argument("migration")
@@ -30,16 +35,12 @@ def main():
     args = parser.parse_args()
 
     migration_module = importlib.import_module(f"inventory_management_system_api.migrations.scripts.{args.migration}")
-    # path = Path(args.migration)
-    # spec = importlib.util.spec_from_file_location(path.stem, path)
-    # print(path.stem, path)
-    # migration_module = importlib.util.module_from_spec(spec)
-    # spec.loader.exec_module(migration_module)
+    migration_class = getattr(migration_module, "Migration", None)
 
     database = get_database()
-    migration_class = getattr(migration_module, "Migration", None)
     migration_instance: BaseMigration = migration_class(database)
 
+    # Run migration inside a session to lock writes and revert the changes if it fails
     with mongodb_client.start_session() as session:
         with session.start_transaction():
             if args.backward:
