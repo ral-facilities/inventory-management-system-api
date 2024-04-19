@@ -73,9 +73,9 @@ def test_get_with_nonexistent_id(
     test_helpers.mock_get(usage_status_repository_mock, None)
 
     # Mock `get` to return a usage status
-    retrieved_manufacturer = usage_status_service.get(usage_status_id)
+    retrieved_usage_status = usage_status_service.get(usage_status_id)
 
-    assert retrieved_manufacturer is None
+    assert retrieved_usage_status is None
     usage_status_repository_mock.get.assert_called_once_with(usage_status_id)
 
 
