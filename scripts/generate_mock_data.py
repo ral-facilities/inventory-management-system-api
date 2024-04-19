@@ -25,6 +25,8 @@ SEED = 0
 
 logging.basicConfig(level=logging.INFO)
 
+
+units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 manufacturer_names = [
     "Tech Innovators Inc.",
     "Global Gadgets Co.",
@@ -261,6 +263,12 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
     return category
 
 
+def generate_unit(unit):
+    return {
+        "value": unit,
+    }
+
+
 def generate_random_manufacturer():
     return {
         "name": fake.random.choice(manufacturer_names),
@@ -371,7 +379,7 @@ def generate_random_system(parent_id):
     }
 
 
-def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
+def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> str:
     """Posts an entity's data to the given endpoint, but adds - n to the end to avoid
     duplicates when a 409 is returned
 
@@ -383,7 +391,7 @@ def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
     while status_code == 409:
         response = requests.post(
             f"{API_URL}{endpoint}",
-            json=json if id == 0 else {**json, "name": f"{json['name']} - {id}"},
+            json=json if id == 0 else {**json, field: f"{json[field]} - {id}"},
             timeout=10,
         )
         status_code = response.status_code
@@ -392,23 +400,27 @@ def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
 
 
 def create_manufacturer(manufacturer_data: dict) -> str:
-    return post_avoiding_duplicate_names(endpoint="/v1/manufacturers", json=manufacturer_data)
+    return post_avoiding_duplicates(endpoint="/v1/manufacturers", field="name", json=manufacturer_data)
+
+
+def create_unit(unit_data: dict) -> str:
+    return post_avoiding_duplicates(endpoint="/v1/units", field="value", json=unit_data)
 
 
 def create_catalogue_category(category_data: dict) -> str:
-    return post_avoiding_duplicate_names(endpoint="/v1/catalogue-categories", json=category_data)
+    return post_avoiding_duplicates(endpoint="/v1/catalogue-categories", field="name", json=category_data)
 
 
 def create_catalogue_item(item_data: dict) -> str:
-    return post_avoiding_duplicate_names(endpoint="/v1/catalogue-items", json=item_data)
+    return post_avoiding_duplicates(endpoint="/v1/catalogue-items", field="name", json=item_data)
 
 
 def create_system(system_data: dict) -> str:
-    return post_avoiding_duplicate_names(endpoint="/v1/systems", json=system_data)
+    return post_avoiding_duplicates(endpoint="/v1/systems", field="name", json=system_data)
 
 
 def create_item(item_data: dict) -> str:
-    return post_avoiding_duplicate_names(endpoint="/v1/items", json=item_data)
+    return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 
 def populate_random_manufacturers() -> list[str]:
@@ -417,6 +429,14 @@ def populate_random_manufacturers() -> list[str]:
     for i in range(0, NUMBER_OF_MANUFACTURERS):
         manufacturer_ids[i] = create_manufacturer(generate_random_manufacturer())
     return manufacturer_ids
+
+
+def populate_random_units() -> list[str]:
+    # Usually faster than append
+
+    for i, unit in enumerate(units):
+        unit = generate_unit(unit)
+        create_unit(unit)
 
 
 def populate_random_catalogue_categories(
@@ -483,6 +503,8 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
             generated_system_ids.append(id)
 
 
+logging.info("Populating units...")
+populate_random_units()
 logging.info("Populating manufacturers...")
 manufacturer_ids = populate_random_manufacturers()
 logging.info("Populating catalogue categories...")
