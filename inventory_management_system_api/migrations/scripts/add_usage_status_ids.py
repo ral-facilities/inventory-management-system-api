@@ -1,14 +1,22 @@
+"""
+Module providing a migration to add usage statuses, add usage_status_id to items converting and convert their
+existing usage_status to a string value
+"""
+
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
+from inventory_management_system_api.migrations.migration import BaseMigration
 from inventory_management_system_api.services import utils
-
 
 old_usage_statuses = {0: "New", 1: "Used", 2: "In Use", 3: "Scrapped"}
 
 
-class Migration:
+class Migration(BaseMigration):
+    """Migration to add usage statuses, add usage_status_id to items converting and convert their
+    existing usage_status to a string value"""
+
     def __init__(self, database: Database):
         self._items_collection: Collection = database.items
         self._usage_status_collection: Collection = database.usage_statuses
