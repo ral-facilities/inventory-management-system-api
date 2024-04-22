@@ -3,14 +3,142 @@ Module providing a migration to add usage statuses, add usage_status_id to items
 existing usage_status to a string value
 """
 
+from typing import Any, List, Optional
+
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
+from inventory_management_system_api.models.catalogue_item import Property
+from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 from inventory_management_system_api.services import utils
 
 old_usage_statuses = {0: "New", 1: "Used", 2: "In Use", 3: "Scrapped"}
+
+
+# pylint disable=duplicate-code
+class OldItemBase(BaseModel):
+    """
+    Old base database model for an item.
+    """
+
+    catalogue_item_id: CustomObjectIdField
+    system_id: CustomObjectIdField
+    purchase_order_number: Optional[str] = None
+    is_defective: bool
+    usage_status: int
+    warranty_end_date: Optional[AwareDatetime] = None
+    asset_number: Optional[str] = None
+    serial_number: Optional[str] = None
+    delivered_date: Optional[AwareDatetime] = None
+    notes: Optional[str] = None
+    properties: List[Property] = []
+
+    @field_validator("properties", mode="before")
+    @classmethod
+    def validate_properties(cls, properties: Any) -> Any:
+        """
+        Validator for the `properties` field that runs after field assignment but before type validation.
+
+        If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
+
+        :param properties: The list of properties specific to this item as defined in the corresponding catalogue
+            category.
+        :return: The list of properties specific to this item or an empty list.
+        """
+        if properties is None:
+            properties = []
+        return properties
+
+
+class OldItemIn(CreatedModifiedTimeInMixin, OldItemBase):
+    """
+    Old input database model for an item.
+    """
+
+
+class OldItemOut(CreatedModifiedTimeOutMixin, OldItemBase):
+    """
+    Old output database model for an item.
+    """
+
+    id: StringObjectIdField = Field(alias="_id")
+    catalogue_item_id: StringObjectIdField
+    system_id: Optional[StringObjectIdField] = None
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class NewItemBase(BaseModel):
+    """
+    New base database model for an item.
+    """
+
+    catalogue_item_id: CustomObjectIdField
+    system_id: CustomObjectIdField
+    purchase_order_number: Optional[str] = None
+    is_defective: bool
+    usage_status_id: CustomObjectIdField
+    usage_status: str
+    warranty_end_date: Optional[AwareDatetime] = None
+    asset_number: Optional[str] = None
+    serial_number: Optional[str] = None
+    delivered_date: Optional[AwareDatetime] = None
+    notes: Optional[str] = None
+    properties: List[Property] = []
+
+    @field_validator("properties", mode="before")
+    @classmethod
+    def validate_properties(cls, properties: Any) -> Any:
+        """
+        Validator for the `properties` field that runs after field assignment but before type validation.
+
+        If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
+
+        :param properties: The list of properties specific to this item as defined in the corresponding catalogue
+            category.
+        :return: The list of properties specific to this item or an empty list.
+        """
+        if properties is None:
+            properties = []
+        return properties
+
+
+class NewItemIn(CreatedModifiedTimeInMixin, NewItemBase):
+    """
+    New database model for an item.
+    """
+
+    catalogue_item_id: CustomObjectIdField
+    system_id: CustomObjectIdField
+    purchase_order_number: Optional[str] = None
+    is_defective: bool
+    usage_status_id: CustomObjectIdField
+    usage_status: str
+    warranty_end_date: Optional[AwareDatetime] = None
+    asset_number: Optional[str] = None
+    serial_number: Optional[str] = None
+    delivered_date: Optional[AwareDatetime] = None
+    notes: Optional[str] = None
+    properties: List[Property] = []
+
+
+class NewItemOut(CreatedModifiedTimeOutMixin, NewItemBase):
+    """
+    Nww output database model for an item.
+    """
+
+    id: StringObjectIdField = Field(alias="_id")
+    catalogue_item_id: StringObjectIdField
+    system_id: Optional[StringObjectIdField] = None
+    usage_status_id: StringObjectIdField
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+# pylint enable=duplicate-code
 
 
 class Migration(BaseMigration):
@@ -41,10 +169,21 @@ class Migration(BaseMigration):
 
         items = list(self._items_collection.find(session=session))
         for item in items:
-            item["usage_status_id"] = usage_statuses[item["usage_status"]]["_id"]
+            item = OldItemOut(**item).model_dump()
+            item_id = CustomObjectIdField(item["id"])
+
+            item["usage_status_id"] = str(usage_statuses[item["usage_status"]]["_id"])
             item["usage_status"] = usage_statuses[item["usage_status"]]["value"]
 
-            self._items_collection.update_one({"_id": item["_id"]}, {"$set": item}, session=session)
+            item = {**NewItemIn(**item).model_dump(), "modified_time": item["modified_time"]}
+
+            self._items_collection.replace_one(
+                {"_id": item_id},
+                {
+                    "$set": item,
+                },
+                session=session,
+            )
 
     def backward(self, session: ClientSession):
         """Removes usage_status_id from items to undo the migration"""
@@ -57,10 +196,18 @@ class Migration(BaseMigration):
 
         items = list(self._items_collection.find(session=session))
         for item in items:
+            item = NewItemOut(**item).model_dump()
+            item_id = CustomObjectIdField(item["id"])
+
             del item["usage_status_id"]
             item["usage_status"] = usage_status_lookup[item["usage_status"]]
 
-            self._items_collection.update_one({"_id": item["_id"]}, {"$set": item}, session=session)
+            item = {**OldItemIn(**item).model_dump(), "modified_time": item["modified_time"]}
+            self._items_collection.replace_one(
+                {"_id": item_id},
+                item,
+                session=session,
+            )
 
         # Can't drop the collection during a transaction
         self._usage_status_collection.delete_many({}, session=session)
