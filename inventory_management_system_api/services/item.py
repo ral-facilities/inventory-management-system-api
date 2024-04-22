@@ -84,7 +84,7 @@ class ItemService:
         usage_status_id = item.usage_status_id
         usage_status = self._usage_status_repository.get(usage_status_id)
         if not usage_status:
-            raise MissingRecordError(f"No usage status found with name: {usage_status_id}")
+            raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
 
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
