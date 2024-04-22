@@ -25,13 +25,17 @@ class BaseMigration(ABC):
     def backward(self, session: ClientSession):
         """Method for reversing the migration"""
 
+    def backward_after_transaction(self, session: ClientSession):
+        """Method called after the backward function is called to do anything that can't be done inside a transaction
+        (ONLY USE IF NECESSARY e.g. dropping a collection)"""
+
 
 def main():
     """Entrypoint for the ims-migrate script"""
     parser = argparse.ArgumentParser()
 
     parser.add_argument("migration")
-    parser.add_argument("--backward", action="store_false")
+    parser.add_argument("--backward", action="store_true")
     args = parser.parse_args()
 
     migration_module = importlib.import_module(f"inventory_management_system_api.migrations.scripts.{args.migration}")
@@ -43,7 +47,9 @@ def main():
     # Run migration inside a session to lock writes and revert the changes if it fails
     with mongodb_client.start_session() as session:
         with session.start_transaction():
-            if args.backward:
+            if not args.backward:
                 migration_instance.forward(session)
             else:
                 migration_instance.backward(session)
+        if args.backward:
+            migration_instance.backward_after_transaction(session)
