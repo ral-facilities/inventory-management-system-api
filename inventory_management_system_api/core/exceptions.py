@@ -70,6 +70,12 @@ class PartOfCatalogueItemError(DatabaseError):
     """
 
 
+class PartOfCatalogueCategoryError(DatabaseError):
+    """
+    Exception raised when attempting to delete a unit that is a part of a catalogue category
+    """
+
+
 class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been

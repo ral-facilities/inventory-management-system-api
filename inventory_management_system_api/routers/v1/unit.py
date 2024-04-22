@@ -8,7 +8,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status, HTTPException, Path
 
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidObjectIdError,
+    MissingRecordError,
+    PartOfCatalogueCategoryError,
+)
 from inventory_management_system_api.schemas.unit import UnitPostRequestSchema, UnitSchema
 from inventory_management_system_api.services.unit import UnitService
 
@@ -71,3 +76,24 @@ def get_units(unit_service: Annotated[UnitService, Depends(UnitService)]) -> lis
 
     units = unit_service.list()
     return [UnitSchema(**unit.model_dump()) for unit in units]
+
+
+@router.delete(
+    path="/{unit_id}",
+    summary="Delete a unit by its ID",
+    response_description="Unit deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_unit(unit_id: str, unit_service: UnitService = Depends()) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting unit with ID: %s", unit_id)
+    try:
+        unit_service.delete(unit_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        logger.exception("The specified unit does not exist")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The specified unit does not exist") from exc
+    except PartOfCatalogueCategoryError as exc:
+        logger.exception("The specified unit is a part of a Catalogue category")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="The specified unit is a part of a Catalogue category"
+        ) from exc
