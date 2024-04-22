@@ -3,10 +3,12 @@ Unit tests for the `UsageStatusRepo` repository
 """
 
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
+from test.unit.repositories.test_item import FULL_ITEM_INFO
 from unittest.mock import call
 
 import pytest
 from bson import ObjectId
+
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -14,9 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfItemError,
 )
-
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
-from test.unit.repositories.test_item import FULL_ITEM_INFO
 
 
 def test_create(test_helpers, database_mock, usage_status_repository):

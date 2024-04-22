@@ -13,11 +13,9 @@ from test.e2e.mock_schemas import (
     USAGE_STATUS_POST_D,
     USAGE_STATUS_POST_D_EXPECTED,
 )
-
+from test.e2e.test_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A, ITEM_POST, MANUFACTURER_POST
 
 from bson import ObjectId
-
-from test.e2e.test_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A, ITEM_POST, MANUFACTURER_POST
 
 USAGE_STATUSES_EXPECTED = [
     USAGE_STATUS_POST_A_EXPECTED,
@@ -129,7 +127,7 @@ def test_delete_with_a_non_existent_id(test_client):
 
 def test_delete_usage_status_that_is_a_part_of_item(test_client):
     """Test trying to delete a usage status that is a part of a Item"""
-
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category_id = response.json()["id"]
 
@@ -137,7 +135,7 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
     system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    # pylint: disable=duplicate-code
+
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
