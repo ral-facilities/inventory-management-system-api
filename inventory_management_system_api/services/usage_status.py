@@ -48,3 +48,10 @@ class UsageStatusService:
         :return: List of Usage statuses or an empty list if no Usage statuses are retrieved
         """
         return self._usage_status_repository.list()
+
+    def delete(self, usage_status_id: str) -> None:
+        """
+        Delete a usage status by its ID
+        :param usage_status_id: The ID of the usage status to delete
+        """
+        return self._usage_status_repository.delete(usage_status_id)

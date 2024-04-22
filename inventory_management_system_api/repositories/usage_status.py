@@ -11,7 +11,7 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import DuplicateRecordError
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 logger = logging.getLogger()
@@ -30,6 +30,7 @@ class UsageStatusRepo:
         """
         self._database = database
         self._usage_statuses_collection: Collection = self._database.usage_statuses
+        self._items_collection: Collection = self._database.items
 
     def create(self, usage_status: UsageStatusIn) -> UsageStatusOut:
         """
@@ -76,6 +77,24 @@ class UsageStatusRepo:
             return UsageStatusOut(**usage_status)
         return None
 
+    def delete(self, usage_status_id: str) -> None:
+        """
+        Delete a usage status by its ID from MongoDB database.
+        Checks if usage status is a part of an item, and does not delete if it is
+
+        :param usage_status_id: The ID of the usage status to delete
+        :raises PartOfItemError: if usage status is a part of a catalogue item
+        :raises MissingRecordError: if supplied usage status ID does not exist in the database
+        """
+        usage_status_id = CustomObjectId(usage_status_id)
+        if self._is_usage_in_item(str(usage_status_id)):
+            raise PartOfItemError(f"The usage status with id {str(usage_status_id)} is a part of a Item")
+
+        logger.info("Deleting usage status with ID %s from the database", usage_status_id)
+        result = self._usage_statuses_collection.delete_one({"_id": usage_status_id})
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
+
     def _is_duplicate_usage_status(self, code: str) -> bool:
         """
         Check if usage status with the same name already exists in the usage statuses collection
@@ -85,3 +104,12 @@ class UsageStatusRepo:
         """
         logger.info("Checking if usage status with code '%s' already exists", code)
         return self._usage_statuses_collection.find_one({"code": code}) is not None
+
+    def _is_usage_in_item(self, usage_status_id: str) -> bool:
+        """Checks to see if any of the documents in the database have a specific usage status id
+
+        :param usage_status_id: The ID of the usage status that is looked for
+        :return: Returns True if 1 or more documents have the usage_status ID, false if none do
+        """
+        usage_status_id = CustomObjectId(usage_status_id)
+        return self._items_collection.find_one({"usage_status_id": usage_status_id}) is not None
