@@ -5,7 +5,6 @@ Module for providing a repository for managing Units in a MongoDB database
 import logging
 from typing import Optional
 
-from bson import ObjectId
 from fastapi import Depends
 from pymongo.collection import Collection
 from pymongo.database import Database
@@ -110,7 +109,7 @@ class UnitRepo:
         :return: Returns True if 1 or more documents have the unit ID, false if none do
         """
         # Convert unit_id to ObjectId
-        unit_id = ObjectId(unit_id)
+        unit_id = CustomObjectId(unit_id)
 
         # Query for documents where 'unit_id' exists in the nested 'catalogue_item_properties' list
         query = {"catalogue_item_properties.unit_id": unit_id}
