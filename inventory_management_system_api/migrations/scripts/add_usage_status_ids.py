@@ -19,7 +19,7 @@ from inventory_management_system_api.services import utils
 old_usage_statuses = {0: "New", 1: "Used", 2: "In Use", 3: "Scrapped"}
 
 
-# pylint disable=duplicate-code
+# pylint:disable=duplicate-code
 class OldItemBase(BaseModel):
     """
     Old base database model for an item.
@@ -138,7 +138,7 @@ class NewItemOut(CreatedModifiedTimeOutMixin, NewItemBase):
     model_config = ConfigDict(populate_by_name=True)
 
 
-# pylint enable=duplicate-code
+# pylint:enable=duplicate-code
 
 
 class Migration(BaseMigration):

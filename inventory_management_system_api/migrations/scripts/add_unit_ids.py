@@ -3,17 +3,77 @@ Module providing a migration to add unit_ids to the properties stored within cat
 items and items
 """
 
+from typing import Any, Optional, Union
+from pydantic import BaseModel
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
+from inventory_management_system_api.models.catalogue_category import AllowedValues
+from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField
 from inventory_management_system_api.services import utils
 
 old_units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 
 
-def add_unit_ids(new_unit_ids: list[dict], properties: list[dict]):
+# pylint:disable=duplicate-code
+class OldCatalogueItemPropertyOut(BaseModel):
+    """
+    Model representing a catalogue item property.
+    """
+
+    name: str
+    type: str
+    unit: Optional[str] = None
+    mandatory: bool
+    allowed_values: Optional[AllowedValues] = None
+
+
+class NewCatalogueItemPropertyIn(BaseModel):
+    """
+    Model representing a catalogue item property.
+    """
+
+    name: str
+    type: str
+    unit: Optional[str] = None
+    unit_id: Optional[CustomObjectIdField] = None
+    mandatory: bool
+    allowed_values: Optional[AllowedValues] = None
+
+
+class OldProperty(BaseModel):
+    """
+    Model representing a catalogue item property.
+    """
+
+    name: str
+    value: Any
+    unit: Optional[str] = None
+
+
+class NewPropertyIn(BaseModel):
+    """
+    Model representing a catalogue item property.
+    Model representing a catalogue item property in.
+    """
+
+    name: str
+    value: Any
+    unit: Optional[str] = None
+    unit_id: Optional[CustomObjectIdField] = None
+
+
+# pylint:enable=duplicate-code
+
+
+def add_unit_ids(
+    old_property_out_type: Union[OldCatalogueItemPropertyOut, OldProperty],
+    new_property_in_type: Union[NewCatalogueItemPropertyIn, NewPropertyIn],
+    new_unit_ids: list[dict],
+    properties: list[dict],
+):
     """
     Add unit ids to a list of properties by looking up the corresponding property in a given
     list of catalogue category properties
@@ -29,9 +89,13 @@ def add_unit_ids(new_unit_ids: list[dict], properties: list[dict]):
             if not unit_id:
                 raise ValueError(f"Could not find unit '{prop['unit']}' in list of new unit ids, could not migrate")
 
-            properties[i] = {**prop, "unit_id": unit_id}
+            properties[i] = new_property_in_type(
+                **{**old_property_out_type(**prop).model_dump(), "unit_id": str(unit_id)}
+            ).model_dump()
         else:
-            properties[i] = {**prop, "unit_id": None}
+            properties[i] = new_property_in_type(
+                **{**old_property_out_type(**prop).model_dump(), "unit_id": None}
+            ).model_dump()
 
     return properties
 
@@ -74,7 +138,10 @@ class Migration(BaseMigration):
         catalogue_categories = list(self._catalogue_categories_collection.find({"is_leaf": True}, session=session))
         for catalogue_category in catalogue_categories:
             catalogue_category["catalogue_item_properties"] = add_unit_ids(
-                new_unit_ids, catalogue_category["catalogue_item_properties"]
+                OldCatalogueItemPropertyOut,
+                NewCatalogueItemPropertyIn,
+                new_unit_ids,
+                catalogue_category["catalogue_item_properties"],
             )
             self._catalogue_categories_collection.update_one(
                 {"_id": catalogue_category["_id"]}, {"$set": catalogue_category}, session=session
@@ -83,7 +150,9 @@ class Migration(BaseMigration):
         # Migrate catalogue items
         catalogue_items = list(self._catalogue_items_collection.find({}, session=session))
         for catalogue_item in catalogue_items:
-            catalogue_item["properties"] = add_unit_ids(new_unit_ids, catalogue_item["properties"])
+            catalogue_item["properties"] = add_unit_ids(
+                OldProperty, NewPropertyIn, new_unit_ids, catalogue_item["properties"]
+            )
             self._catalogue_items_collection.update_one(
                 {"_id": catalogue_item["_id"]}, {"$set": catalogue_item}, session=session
             )
@@ -91,7 +160,7 @@ class Migration(BaseMigration):
         # Migrate items
         items = list(self._items_collection.find({}, session=session))
         for item in items:
-            item["properties"] = add_unit_ids(new_unit_ids, item["properties"])
+            item["properties"] = add_unit_ids(OldProperty, NewPropertyIn, new_unit_ids, item["properties"])
             self._items_collection.update_one({"_id": item["_id"]}, {"$set": item}, session=session)
 
     def backward(self, session: ClientSession):
