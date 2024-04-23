@@ -2,8 +2,7 @@
 """
 End-to-End tests for the catalogue item router.
 """
-from typing import Optional
-
+from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES,
@@ -108,21 +107,6 @@ CATALOGUE_ITEM_POST_B_EXPECTED = {
 }
 
 
-def inject_property_ids(catalogue_category_properties: Optional[list], catalogue_item_properties: list):
-    properties = []
-    for catalogue_item_property in catalogue_item_properties:
-        if catalogue_category_properties:
-            catalogue_category_prop_id = next(
-                prop["id"] for prop in catalogue_category_properties if prop["name"] == catalogue_item_property["name"]
-            )
-        else:
-            catalogue_category_prop_id = str(ObjectId())
-
-        properties.append({**catalogue_item_property, "id": catalogue_category_prop_id})
-
-    return properties
-
-
 def test_create_catalogue_item(test_client):
     """
     Test creating a catalogue item.
@@ -138,7 +122,7 @@ def test_create_catalogue_item(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -154,7 +138,7 @@ def test_create_catalogue_item(test_client):
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
         ),
     }
@@ -168,7 +152,7 @@ def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": "invalid",
         "manufacturer_id": str(ObjectId()),
-        "properties": inject_property_ids(None, CATALOGUE_ITEM_POST_A["properties"]),
+        "properties": add_ids_to_properties(None, CATALOGUE_ITEM_POST_A["properties"]),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -184,7 +168,7 @@ def test_create_catalogue_item_with_non_existent_catalogue_category_id(test_clie
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": str(ObjectId()),
         "manufacturer_id": str(ObjectId()),
-        "properties": inject_property_ids(None, CATALOGUE_ITEM_POST_A["properties"]),
+        "properties": add_ids_to_properties(None, CATALOGUE_ITEM_POST_A["properties"]),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
@@ -203,7 +187,7 @@ def test_create_catalogue_item_with_non_existent_manufacturer_id(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": response.json()["id"],
         "manufacturer_id": str(ObjectId()),
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -224,7 +208,7 @@ def test_create_catalogue_item_with_an_invalid_manufacturer_id(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": response.json()["id"],
         "manufacturer_id": "invalid",
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -246,7 +230,7 @@ def test_create_catalogue_item_in_non_leaf_catalogue_category(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": response.json()["id"],
         "manufacturer_id": str(ObjectId()),
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -272,7 +256,7 @@ def test_create_catalogue_item_with_obsolete_replacement_catalogue_item_id(test_
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -285,7 +269,7 @@ def test_create_catalogue_item_with_obsolete_replacement_catalogue_item_id(test_
         "manufacturer_id": manufacturer_id,
         "is_obsolete": True,
         "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -301,7 +285,7 @@ def test_create_catalogue_item_with_obsolete_replacement_catalogue_item_id(test_
         "manufacturer_id": manufacturer_id,
         "is_obsolete": True,
         "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
         ),
     }
@@ -323,7 +307,7 @@ def test_create_catalogue_item_with_invalid_obsolete_replacement_catalogue_item_
         "manufacturer_id": manufacturer_id,
         "is_obsolete": True,
         "obsolete_replacement_catalogue_item_id": "invalid",
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -349,7 +333,7 @@ def test_create_catalogue_item_with_non_existent_obsolete_replacement_catalogue_
         "manufacturer_id": manufacturer_id,
         "is_obsolete": True,
         "obsolete_replacement_catalogue_item_id": str(ObjectId()),
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -404,7 +388,7 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [CATALOGUE_ITEM_POST_A["properties"][0], CATALOGUE_ITEM_POST_A["properties"][2]],
         ),
@@ -430,7 +414,7 @@ def test_create_catalogue_item_with_mandatory_properties_given_none(test_client)
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 CATALOGUE_ITEM_POST_A["properties"][0],
@@ -460,7 +444,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]
         ),
     }
@@ -474,7 +458,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "unit": "mm", "value": None}, *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:]],
         ),
@@ -495,7 +479,7 @@ def test_create_catalogue_item_with_non_mandatory_properties_given_none(test_cli
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{**CATALOGUE_ITEM_POST_A["properties"][0], "value": None}, *CATALOGUE_ITEM_POST_A["properties"][1:]],
         ),
@@ -508,7 +492,7 @@ def test_create_catalogue_item_with_non_mandatory_properties_given_none(test_cli
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {**CATALOGUE_ITEM_POST_A_EXPECTED["properties"][0], "value": None},
@@ -532,7 +516,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {"name": "Property A", "value": 20},
@@ -565,7 +549,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_number_property(test_
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {"name": "Property A", "value": "20"},
@@ -598,7 +582,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {"name": "Property A", "value": 20},
@@ -632,7 +616,7 @@ def test_create_catalogue_item_with_allowed_values(test_client):
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
         ),
     }
@@ -647,7 +631,7 @@ def test_create_catalogue_item_with_allowed_values(test_client):
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED["properties"]
         ),
     }
@@ -669,7 +653,7 @@ def test_create_catalogue_item_with_allowed_values_invalid_list_string(test_clie
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "blue"}],
         ),
@@ -701,7 +685,7 @@ def test_create_catalogue_item_with_allowed_values_invalid_list_number(test_clie
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "value": 10}, {"name": "Property B", "value": "red"}],
         ),
@@ -732,7 +716,7 @@ def test_delete_catalogue_item(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -786,7 +770,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -799,7 +783,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "properties": inject_property_ids(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
 
@@ -824,7 +808,7 @@ def test_get_catalogue_item(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -843,7 +827,7 @@ def test_get_catalogue_item(test_client):
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
         ),
     }
@@ -885,7 +869,7 @@ def test_get_catalogue_items(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -895,7 +879,7 @@ def test_get_catalogue_items(test_client):
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -912,7 +896,7 @@ def test_get_catalogue_items(test_client):
             **CATALOGUE_ITEM_POST_A_EXPECTED,
             "catalogue_category_id": catalogue_category_a["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": inject_property_ids(
+            "properties": add_ids_to_properties(
                 catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
             ),
         },
@@ -920,7 +904,7 @@ def test_get_catalogue_items(test_client):
             **CATALOGUE_ITEM_POST_B_EXPECTED,
             "catalogue_category_id": catalogue_category_b["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": inject_property_ids(
+            "properties": add_ids_to_properties(
                 catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
             ),
         },
@@ -943,7 +927,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -953,7 +937,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter(test_client):
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -970,7 +954,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter(test_client):
             **CATALOGUE_ITEM_POST_B_EXPECTED,
             "catalogue_category_id": catalogue_category_b["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": inject_property_ids(
+            "properties": add_ids_to_properties(
                 catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
             ),
         }
@@ -993,7 +977,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter_no_matching_resul
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1003,7 +987,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter_no_matching_resul
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1047,7 +1031,7 @@ def test_partial_update_catalogue_item_when_no_child_items(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1066,7 +1050,7 @@ def test_partial_update_catalogue_item_when_no_child_items(test_client):
         **catalogue_item_patch,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
         ),
     }
@@ -1089,7 +1073,7 @@ def test_partial_update_catalogue_item_when_has_child_items(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1108,7 +1092,7 @@ def test_partial_update_catalogue_item_when_has_child_items(test_client):
         **catalogue_item_patch,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
         ),
     }
@@ -1152,7 +1136,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
             "catalogue_item_properties": CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"],
         },
     )
-    catalogue_category_b_id = response.json()["id"]
+    catalogue_category_b = response.json()
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -1161,14 +1145,14 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "catalogue_category_id": catalogue_category_b_id,
+        "catalogue_category_id": catalogue_category_b["id"],
     }
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
@@ -1178,10 +1162,10 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
 
     assert catalogue_item == {
         **CATALOGUE_ITEM_POST_A_EXPECTED,
-        "catalogue_category_id": catalogue_category_b_id,
+        "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
-            catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
+        "properties": add_ids_to_properties(
+            catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
         ),
     }
 
@@ -1202,7 +1186,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_without_prop
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1235,7 +1219,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_propert
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1243,7 +1227,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_propert
 
     catalogue_item_patch = {
         "catalogue_category_id": catalogue_category_b["id"],
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1257,7 +1241,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_propert
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
         ),
     }
@@ -1287,7 +1271,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_differe
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1320,7 +1304,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mand
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1328,7 +1312,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mand
 
     catalogue_item_patch = {
         "catalogue_category_id": catalogue_category_a["id"],
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], [CATALOGUE_ITEM_POST_B["properties"][0]]
         ),
     }
@@ -1355,7 +1339,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1363,7 +1347,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
 
     catalogue_item_patch = {
         "catalogue_category_id": catalogue_category_a["id"],
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]
         ),
     }
@@ -1375,7 +1359,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
         **CATALOGUE_ITEM_POST_B_EXPECTED,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"],
             [{"name": "Property A", "unit": "mm", "value": None}, *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:]],
         ),
@@ -1397,7 +1381,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1406,7 +1390,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
 
     catalogue_item_patch = {
         "catalogue_category_id": "invalid",
-        "properties": inject_property_ids(None, [CATALOGUE_ITEM_POST_A["properties"][0]]),
+        "properties": add_ids_to_properties(None, [CATALOGUE_ITEM_POST_A["properties"][0]]),
     }
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
@@ -1429,7 +1413,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_non_existent
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1438,7 +1422,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_non_existent
 
     catalogue_item_patch = {
         "catalogue_category_id": str(ObjectId()),
-        "properties": inject_property_ids(None, [CATALOGUE_ITEM_POST_A["properties"][0]]),
+        "properties": add_ids_to_properties(None, [CATALOGUE_ITEM_POST_A["properties"][0]]),
     }
     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
 
@@ -1463,7 +1447,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_non_leaf_cat
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1497,7 +1481,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1506,7 +1490,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
 
     catalogue_item_patch = {
         "catalogue_category_id": catalogue_category_b["id"],
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1516,7 +1500,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "properties": inject_property_ids(catalogue_category_a["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category_a["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
 
@@ -1542,7 +1526,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category_a["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_a["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1553,7 +1537,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category_b["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -1572,7 +1556,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         "manufacturer_id": manufacturer_id,
         "is_obsolete": True,
         "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category_b["catalogue_item_properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
         ),
     }
@@ -1593,7 +1577,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1622,7 +1606,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1651,7 +1635,7 @@ def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1659,7 +1643,7 @@ def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test
     # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 CATALOGUE_ITEM_POST_A["properties"][0],
@@ -1690,7 +1674,7 @@ def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1698,7 +1682,7 @@ def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(
     # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{**CATALOGUE_ITEM_POST_A["properties"][0], "value": None}, *CATALOGUE_ITEM_POST_A["properties"][1:]],
         ),
@@ -1711,7 +1695,7 @@ def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {**CATALOGUE_ITEM_POST_A_EXPECTED["properties"][0], "value": None},
@@ -1735,14 +1719,14 @@ def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         )
     }
@@ -1756,7 +1740,7 @@ def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
         ),
     }
@@ -1777,7 +1761,7 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1785,7 +1769,7 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
     # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]
         )
     }
@@ -1799,7 +1783,7 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
         **CATALOGUE_ITEM_POST_A_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "unit": "mm", "value": None}, *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:]],
         ),
@@ -1821,7 +1805,7 @@ def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -1829,7 +1813,7 @@ def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
     # pylint: enable=duplicate-code
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [CATALOGUE_ITEM_POST_A["properties"][0], CATALOGUE_ITEM_POST_A["properties"][2]],
         )
@@ -1856,14 +1840,14 @@ def test_partial_update_catalogue_item_change_value_for_string_property_invalid_
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {"name": "Property A", "value": 20},
@@ -1896,14 +1880,14 @@ def test_partial_update_catalogue_item_change_value_for_number_property_invalid_
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {"name": "Property A", "value": "20"},
@@ -1936,14 +1920,14 @@ def test_partial_update_catalogue_item_change_value_for_boolean_property_invalid
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [
                 {"name": "Property A", "value": 20},
@@ -1976,14 +1960,14 @@ def test_partial_update_catalogue_item_change_values_with_allowed_values(test_cl
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "value": 6}, {"name": "Property B", "value": "green"}],
         ),
@@ -1998,7 +1982,7 @@ def test_partial_update_catalogue_item_change_values_with_allowed_values(test_cl
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "unit": "mm", "value": 6}, {"name": "Property B", "unit": None, "value": "green"}],
         ),
@@ -2020,14 +2004,14 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "blue"}],
         ),
@@ -2057,14 +2041,14 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
         ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"],
             [{"name": "Property A", "value": 10}, {"name": "Property B", "value": "green"}],
         ),
@@ -2103,7 +2087,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_d_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -2115,7 +2099,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "properties": inject_property_ids(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
 
@@ -2157,7 +2141,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_item
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_d_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -2177,7 +2161,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_item
         **catalogue_item_patch,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_e_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
         ),
     }
@@ -2200,7 +2184,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -2212,12 +2196,12 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "properties": inject_property_ids(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
 
     catalogue_item_patch = {
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
@@ -2241,7 +2225,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_cl
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
@@ -2270,7 +2254,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id(tes
         **CATALOGUE_ITEM_POST_B,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": inject_property_ids(
+        "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_B["properties"]
         ),
     }
