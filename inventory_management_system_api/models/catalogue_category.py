@@ -2,10 +2,10 @@
 Module for defining the database models for representing catalogue categories.
 """
 
-from typing import Annotated, Any, List, Literal, Optional, Callable
+from typing import Annotated, Any, List, Literal, Optional
 
 from bson import ObjectId
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_serializer
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
@@ -41,26 +41,9 @@ class CatalogueItemPropertyIn(CatalogueItemPropertyBase):
     Input database model for a catalogue item property.
     """
 
-    def __init__(self, **data):
-        """
-        Initialise the `CatalogueItemPropertyIn` with an `_id` field of `ObjectId` type.
-
-        Because the catalogue item properties are stored in a list inside the catalogue categories and not in a separate
-        collection, it means that the IDs have to be manually generated here.
-        @param data:
-        """
-        super().__init__(**data)
-        # Automatically generate an `ObjectId` value when a model is initialised
-        object.__setattr__(self, "_id", ObjectId())
-
-    @model_serializer(mode="wrap")
-    def serialize_model(self, serializer: Callable[..., dict[str, Any]]) -> dict[str, Any]:
-        """
-        Custom model serializer allowing for `_id` to be included in the `model_dump` output.
-        """
-        result = serializer(self)
-        result["_id"] = self._id
-        return result
+    # Because the catalogue item properties are stored in a list inside the catalogue categories and not in a separate
+    # collection, it means that the IDs have to be manually generated here.
+    id: CustomObjectIdField = Field(default_factory=ObjectId, serialization_alias="_id")
 
 
 class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
