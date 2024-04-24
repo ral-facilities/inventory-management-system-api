@@ -10,6 +10,19 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
+def validate_properties(properties: Any) -> Any:
+    """
+    Method for validating properties specific to a catalogue item.
+
+    :param properties: The list of properties specific to this catalogue item as defined in the corresponding
+        catalogue category.
+    :return: The list of properties specific to this catalogue item or an empty list.
+    """
+    if properties is None:
+        properties = []
+    return properties
+
+
 class PropertyIn(BaseModel):
     """
     Model representing a catalogue item property.
@@ -54,22 +67,8 @@ class CatalogueItemBase(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
-    @field_validator("properties", mode="before")
-    @classmethod
-    def validate_properties(cls, properties: Any) -> Any:
-        """
-        Validator for the `properties` field that runs after field assignment but before type validation.
-
-        If the value is `None`, it replaces it with an empty list allowing for catalogue items without properties to be
-        created.
-
-        :param properties: The list of properties specific to this catalogue item as defined in the corresponding
-            catalogue category.
-        :return: The list of properties specific to this catalogue item or an empty list.
-        """
-        if properties is None:
-            properties = []
-        return properties
+    # Validator for the `properties` field that runs after field assignment but before type validation
+    validate_properties_field = field_validator("properties", mode="before")(validate_properties)
 
     @field_serializer("drawing_link")
     def serialize_url(self, url: HttpUrl):
@@ -99,20 +98,5 @@ class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
     properties: List[PropertyOut] = []
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
-    # TODO - Check if this can be reused rather than duplicated
-    @field_validator("properties", mode="before")
-    @classmethod
-    def validate_properties(cls, properties: Any) -> Any:
-        """
-        Validator for the `properties` field that runs after field assignment but before type validation.
-
-        If the value is `None`, it replaces it with an empty list allowing for catalogue items without properties to be
-        created.
-
-        :param properties: The list of properties specific to this catalogue item as defined in the corresponding
-            catalogue category.
-        :return: The list of properties specific to this catalogue item or an empty list.
-        """
-        if properties is None:
-            properties = []
-        return properties
+    # Validator for the `properties` field that runs after field assignment but before type validation.
+    validate_properties_field = field_validator("properties", mode="before")(validate_properties)

@@ -10,7 +10,20 @@ from inventory_management_system_api.models.catalogue_item import PropertyIn, Pr
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
-# pylint: disable=duplicate-code
+
+def validate_properties(properties: Any) -> Any:
+    """
+    Method for validating properties specific to an item.
+
+    If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
+
+    :param properties: The list of properties specific to this item as defined in the corresponding catalogue
+        category.
+    :return: The list of properties specific to this item or an empty list.
+    """
+    if properties is None:
+        properties = []
+    return properties
 
 
 class ItemBase(BaseModel):
@@ -30,24 +43,8 @@ class ItemBase(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
-    @field_validator("properties", mode="before")
-    @classmethod
-    def validate_properties(cls, properties: Any) -> Any:
-        """
-        Validator for the `properties` field that runs after field assignment but before type validation.
-
-        If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
-
-        :param properties: The list of properties specific to this item as defined in the corresponding catalogue
-            category.
-        :return: The list of properties specific to this item or an empty list.
-        """
-        if properties is None:
-            properties = []
-        return properties
-
-
-# pylint: enable=duplicate-code
+    # Validator for the `properties` field that runs after field assignment but before type validation
+    validate_properties_field = field_validator("properties", mode="before")(validate_properties)
 
 
 class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
@@ -67,19 +64,5 @@ class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
     properties: List[PropertyOut] = []
     model_config = ConfigDict(populate_by_name=True)
 
-    # TODO - Check if this can be reused rather than duplicated
-    @field_validator("properties", mode="before")
-    @classmethod
-    def validate_properties(cls, properties: Any) -> Any:
-        """
-        Validator for the `properties` field that runs after field assignment but before type validation.
-
-        If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
-
-        :param properties: The list of properties specific to this item as defined in the corresponding catalogue
-            category.
-        :return: The list of properties specific to this item or an empty list.
-        """
-        if properties is None:
-            properties = []
-        return properties
+    # Validator for the `properties` field that runs after field assignment but before type validation
+    validate_properties_field = field_validator("properties", mode="before")(validate_properties)
