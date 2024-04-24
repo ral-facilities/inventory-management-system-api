@@ -460,27 +460,3 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     result = catalogue_item_repository.has_child_elements(catalogue_category_id)
 
     assert result
-
-
-def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mock, catalogue_item_repository):
-    """
-    Test has_child_elements returns true when there are child items.
-    """
-    catalogue_category_id = str(ObjectId())
-
-    # Mock `find_one` to return no child catalogue category document
-    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
-    # pylint: disable=duplicate-code
-    # Mock `find_one` to return the child catalogue item document
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items,
-        {
-            **FULL_CATALOGUE_ITEM_A_INFO,
-            "_id": CustomObjectId(str(ObjectId())),
-            "catalogue_category_id": CustomObjectId(catalogue_category_id),
-        },
-    )
-    # pylint: enable=duplicate-code
-    result = catalogue_item_repository.has_child_elements(catalogue_category_id)
-
-    assert result

@@ -51,7 +51,7 @@ def test_create(test_helpers, database_mock, catalogue_category_repository):
         parent_id=None,
         catalogue_item_properties=[],
     )
-    catalogue_category_info = catalogue_category_in.model_dump()
+    catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
     # pylint: enable=duplicate-code
 
@@ -92,7 +92,7 @@ def test_create_leaf_category_without_catalogue_item_properties(
         parent_id=None,
         catalogue_item_properties=[],
     )
-    catalogue_category_info = catalogue_category_in.model_dump()
+    catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
     # pylint: enable=duplicate-code
 
@@ -132,7 +132,7 @@ def test_create_leaf_category_with_catalogue_item_properties(
             CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
-    catalogue_category_info = catalogue_category_in.model_dump()
+    catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
     # pylint: enable=duplicate-code
 
@@ -172,7 +172,7 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
             CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
-    catalogue_category_info = catalogue_category_in.model_dump()
+    catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
     # pylint: enable=duplicate-code
 
@@ -228,7 +228,7 @@ def test_create_with_nonexistent_parent_id(test_helpers, database_mock, catalogu
         parent_id=str(ObjectId()),
         catalogue_item_properties=[],
     )
-    catalogue_category_info = catalogue_category_in.model_dump()
+    catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
     # pylint: enable=duplicate-code
 
@@ -260,7 +260,7 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
             CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
-    catalogue_category_info = catalogue_category_in.model_dump()
+    catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
     # pylint: enable=duplicate-code
 
@@ -741,7 +741,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
-            **catalogue_category_in.model_dump(),
+            **catalogue_category_in.model_dump(by_alias=True),
             "_id": CustomObjectId(catalogue_category.id),
         },
     )
@@ -752,7 +752,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
         {"_id": CustomObjectId(catalogue_category.id)},
         {
             "$set": {
-                **catalogue_category_in.model_dump(),
+                **catalogue_category_in.model_dump(by_alias=True),
             }
         },
     )
@@ -764,7 +764,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
         ]
     )
     assert updated_catalogue_category == CatalogueCategoryOut(
-        id=catalogue_category.id, **catalogue_category_in.model_dump()
+        id=catalogue_category.id, **catalogue_category_in.model_dump(by_alias=True)
     )
 
 
@@ -828,7 +828,7 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, catalogue_cat
 
     database_mock.catalogue_categories.update_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category.id)},
-        {"$set": {**catalogue_category_in.model_dump()}},
+        {"$set": {**catalogue_category_in.model_dump(by_alias=True)}},
     )
     database_mock.catalogue_categories.find_one.assert_has_calls(
         [
@@ -881,7 +881,7 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {
-            **catalogue_category_in.model_dump(),
+            **catalogue_category_in.model_dump(by_alias=True),
             "_id": CustomObjectId(catalogue_category.id),
             "parent_id": CustomObjectId(new_parent_id),
         },

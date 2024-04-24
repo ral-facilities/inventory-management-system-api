@@ -108,6 +108,7 @@ def test_create_item(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
+    # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
@@ -115,6 +116,7 @@ def test_create_item(test_client):
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
+    # pylint: enable=duplicate-code
 
     assert response.status_code == 201
 
@@ -324,9 +326,11 @@ def test_create_with_mandatory_properties_given_none(test_client):
     }
     response = test_client.post("/v1/items", json=item_post)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
     assert response.json()["detail"] == f"Mandatory catalogue item property with ID '{prop_id}' cannot be None."
+    # pylint: enable=duplicate-code
 
 
 def test_create_with_non_mandatory_properties_given_none(test_client):
@@ -470,12 +474,14 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
     }
     response = test_client.post("/v1/items", json=item_post)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][2]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: string."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_create_item_with_invalid_value_type_for_number_property(test_client):
@@ -515,12 +521,14 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     }
     response = test_client.post("/v1/items", json=item_post)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: number."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
@@ -559,12 +567,14 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     }
     response = test_client.post("/v1/items", json=item_post)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: boolean."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_create_item_with_allowed_values(test_client):
@@ -657,12 +667,14 @@ def test_create_item_with_allowed_values_invalid_list_string(test_client):
     }
     response = test_client.post("/v1/items", json=item_post)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of red, green."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_create_item_with_allowed_values_invalid_list_number(test_client):
@@ -703,12 +715,14 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
     }
     response = test_client.post("/v1/items", json=item_post)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of 2, 4, 6."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_delete(test_client):
@@ -991,14 +1005,15 @@ def test_get_items_with_catalogue_id_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
+    # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
-
     test_client.post("/v1/items", json=item_post)
+    # pylint: enable=duplicate-code
 
     response = test_client.get("/v1/items", params={"catalogue_item_id": catalogue_item_id})
 
@@ -1044,12 +1059,14 @@ def test_get_items_with_no_matching_filters(test_client):
     catalogue_item_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
+    # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
+    # pylint: enable=duplicate-code
 
     test_client.post("/v1/items", json=item_post)
     test_client.post("/v1/items", json=item_post)
@@ -1399,9 +1416,11 @@ def test_partial_update_property_values_with_mandatory_properties_given_none(tes
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
     assert response.json()["detail"] == f"Mandatory catalogue item property with ID '{prop_id}' cannot be None."
+    # pylint: enable=duplicate-code
 
 
 def test_partial_update_property_values_with_non_mandatory_properties_given_none(test_client):
@@ -1574,12 +1593,14 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of red, green."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_partial_update_property_values_with_allowed_values_invalid_list_number(test_client):
@@ -1626,12 +1647,14 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of 2, 4, 6."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_partial_update_with_missing_existing_properties(test_client):
@@ -1737,12 +1760,14 @@ def test_partial_update_item_change_value_for_string_property_invalid_type(test_
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][2]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: string."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_partial_update_item_change_value_for_number_property_invalid_type(test_client):
@@ -1786,12 +1811,14 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: number."
     )
+    # pylint: enable=duplicate-code
 
 
 def test_partial_update_item_change_value_for_boolean_property_invalid_type(test_client):
@@ -1837,9 +1864,11 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(test
     }
     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
 
+    # pylint: disable=duplicate-code
     assert response.status_code == 422
     prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
     assert (
         response.json()["detail"]
         == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: boolean."
     )
+    # pylint: enable=duplicate-code

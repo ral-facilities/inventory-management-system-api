@@ -149,9 +149,8 @@ class TestProcessCatalogueItemProperties:
         with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
             utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
         assert (
-            str(exc.value)
-            == f"Invalid value type for catalogue item property with ID '{supplied_properties[2].id}'. "
-               "Expected type: string."
+            str(exc.value) == f"Invalid value type for catalogue item property with ID '{supplied_properties[2].id}'. "
+            "Expected type: string."
         )
 
     def test_process_catalogue_item_properties_with_invalid_value_type_for_number_property(self):
@@ -170,9 +169,8 @@ class TestProcessCatalogueItemProperties:
         with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
             utils.process_catalogue_item_properties(DEFINED_PROPERTIES, supplied_properties)
         assert (
-            str(exc.value)
-            == f"Invalid value type for catalogue item property with ID '{supplied_properties[0].id}'. "
-               "Expected type: number."
+            str(exc.value) == f"Invalid value type for catalogue item property with ID '{supplied_properties[0].id}'. "
+            "Expected type: number."
         )
 
     def test_process_catalogue_item_properties_with_invalid_value_type_for_boolean_property(self):

@@ -4,6 +4,8 @@ Unit tests for the `CatalogueCategoryService` service.
 """
 from datetime import timedelta
 from unittest.mock import MagicMock, call
+
+from test.conftest import add_ids_to_properties
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 
 import pytest
@@ -32,9 +34,9 @@ FULL_CATALOGUE_CATEGORY_A_INFO = {
     "is_leaf": True,
     "parent_id": None,
     "catalogue_item_properties": [
-        {"id": str(ObjectId()), "name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-        {"id": str(ObjectId()), "name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
-        {"id": str(ObjectId()), "name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
+        {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
     ],
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -44,6 +46,16 @@ FULL_CATALOGUE_CATEGORY_B_INFO = {
     "name": "Category B",
     "code": "category-b",
     "is_leaf": False,
+    "parent_id": None,
+    "catalogue_item_properties": [],
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+}
+
+FULL_CATALOGUE_CATEGORY_C_INFO = {
+    "name": "Category C",
+    "code": "category-c",
+    "is_leaf": True,
     "parent_id": None,
     "catalogue_item_properties": [],
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -60,17 +72,9 @@ CATALOGUE_ITEM_A_INFO = {
     "item_model_number": "abc123",
     "is_obsolete": False,
     "properties": [
-        {"id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][0]["id"], "name": "Property A", "value": 20},
-        {
-            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1]["id"],
-            "name": "Property B",
-            "value": False,
-        },
-        {
-            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][2]["id"],
-            "name": "Property C",
-            "value": "20x15x10",
-        },
+        {"name": "Property A", "value": 20},
+        {"name": "Property B", "value": False},
+        {"name": "Property C", "value": "20x15x10"},
     ],
 }
 
@@ -83,24 +87,9 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [
-        {
-            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][0]["id"],
-            "name": "Property A",
-            "value": 20,
-            "unit": "mm",
-        },
-        {
-            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1]["id"],
-            "name": "Property B",
-            "value": False,
-            "unit": None,
-        },
-        {
-            "id": FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][2]["id"],
-            "name": "Property C",
-            "value": "20x15x10",
-            "unit": "cm",
-        },
+        {"name": "Property A", "value": 20, "unit": "mm"},
+        {"name": "Property B", "value": False, "unit": None},
+        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
     ],
     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -142,18 +131,31 @@ def test_create(
     matching catalogue item properties, adds the units to the supplied properties, and validates the property values.
     """
     # pylint: disable=duplicate-code
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": catalogue_item_properties,
+        },
     )
     # pylint: enable=duplicate-code
 
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
     # Mock `get` to return a manufacturer
     test_helpers.mock_get(
@@ -167,7 +169,10 @@ def test_create(
         CatalogueItemPostRequestSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **CATALOGUE_ITEM_A_INFO,
+            **{
+                **CATALOGUE_ITEM_A_INFO,
+                "properties": [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
+            },
         )
     )
 
@@ -176,7 +181,10 @@ def test_create(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **FULL_CATALOGUE_ITEM_A_INFO,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "properties": catalogue_item_properties,
+            },
         )
     )
     assert created_catalogue_item == catalogue_item
@@ -192,6 +200,7 @@ def test_create_with_nonexistent_catalogue_category_id(
     find a catalogue category with such ID, and does not create the catalogue item.
     """
     catalogue_category_id = str(ObjectId())
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
 
     # Mock `get` to not return a catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, None)
@@ -201,7 +210,10 @@ def test_create_with_nonexistent_catalogue_category_id(
             CatalogueItemPostRequestSchema(
                 catalogue_category_id=catalogue_category_id,
                 manufacturer_id=str(ObjectId()),
-                **CATALOGUE_ITEM_A_INFO,
+                **{
+                    **CATALOGUE_ITEM_A_INFO,
+                    "properties": [{"id": prop["id"], "value": prop["value"]} for prop in catalogue_item_properties],
+                },
             ),
         )
     catalogue_item_repository_mock.create.assert_not_called()
@@ -219,14 +231,25 @@ def test_create_with_nonexistent_manufacturer_id(
     """
     Test creating a catalogue item with a manufacturer id that is nonexistent
     """
-
     catalogue_category_id = str(ObjectId())
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
 
     # Mock `get` to return a catalogue category
+    # pylint: disable=duplicate-code
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
+    # pylint: enable=duplicate-code
 
     # Mock `get` to not return a manufacturer
     test_helpers.mock_get(manufacturer_repository_mock, None)
@@ -237,7 +260,10 @@ def test_create_with_nonexistent_manufacturer_id(
             CatalogueItemPostRequestSchema(
                 catalogue_category_id=catalogue_category_id,
                 manufacturer_id=manufacturer_id,
-                **CATALOGUE_ITEM_A_INFO,
+                **{
+                    **CATALOGUE_ITEM_A_INFO,
+                    "properties": [{"id": prop["id"], "value": prop["value"]} for prop in catalogue_item_properties],
+                },
             )
         )
     catalogue_item_repository_mock.create.assert_not_called()
@@ -254,6 +280,8 @@ def test_create_in_non_leaf_catalogue_category(
     the catalogue category exists, finds that the catalogue category is not a leaf category, and does not create the
     catalogue item.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
+
     catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_B_INFO)
 
     # Mock `get` to return the catalogue category
@@ -262,7 +290,12 @@ def test_create_in_non_leaf_catalogue_category(
     with pytest.raises(NonLeafCategoryError) as exc:
         catalogue_item_service.create(
             CatalogueItemPostRequestSchema(
-                catalogue_category_id=catalogue_category.id, manufacturer_id=str(ObjectId()), **CATALOGUE_ITEM_A_INFO
+                catalogue_category_id=catalogue_category.id,
+                manufacturer_id=str(ObjectId()),
+                **{
+                    **CATALOGUE_ITEM_A_INFO,
+                    "properties": [{"id": prop["id"], "value": prop["value"]} for prop in catalogue_item_properties],
+                },
             ),
         )
     catalogue_item_repository_mock.create.assert_not_called()
@@ -281,6 +314,7 @@ def test_create_with_obsolete_replacement_catalogue_item_id(
     Test creating a catalogue item with an obsolete replacement catalogue item ID.
     """
     obsolete_replacement_catalogue_item_id = str(ObjectId())
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -289,13 +323,23 @@ def test_create_with_obsolete_replacement_catalogue_item_id(
             **FULL_CATALOGUE_ITEM_A_INFO,
             "is_obsolete": True,
             "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            "properties": catalogue_item_properties,
         },
     )
 
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
     # Mock `get` to return a replacement catalogue item
     test_helpers.mock_get(
@@ -304,7 +348,12 @@ def test_create_with_obsolete_replacement_catalogue_item_id(
             id=obsolete_replacement_catalogue_item_id,
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **{**FULL_CATALOGUE_ITEM_A_INFO, "name": "Catalogue Item B", "description": "This is Catalogue Item B"},
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "name": "Catalogue Item B",
+                "description": "This is Catalogue Item B",
+                "properties": catalogue_item_properties,
+            },
         ),
     )
     # Mock `create` to return the created catalogue item
@@ -318,6 +367,7 @@ def test_create_with_obsolete_replacement_catalogue_item_id(
                 **CATALOGUE_ITEM_A_INFO,
                 "is_obsolete": True,
                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+                "properties": [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
             },
         )
     )
@@ -332,6 +382,7 @@ def test_create_with_obsolete_replacement_catalogue_item_id(
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "is_obsolete": True,
                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+                "properties": catalogue_item_properties,
             },
         )
     )
@@ -347,7 +398,18 @@ def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(
     Verify that the `create` method properly handles a catalogue item with a nonexistent obsolete replacement catalogue
     item ID, does not find a catalogue item with such ID, and does not create the catalogue item.
     """
-    catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_A_INFO)
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
+
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        **{
+            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            "catalogue_item_properties": add_ids_to_properties(
+                catalogue_item_properties,
+                FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+            ),
+        },
+    )
 
     # Mock `get` to return the catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
@@ -365,6 +427,7 @@ def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(
                     **FULL_CATALOGUE_ITEM_A_INFO,
                     "is_obsolete": True,
                     "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+                    "properties": [{"id": prop["id"], "value": prop["value"]} for prop in catalogue_item_properties],
                 },
             ),
         )
@@ -408,7 +471,7 @@ def test_create_without_properties(
         CatalogueItemPostRequestSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **CATALOGUE_ITEM_A_INFO,
+            **{**CATALOGUE_ITEM_A_INFO, "properties": []},
         )
     )
 
@@ -433,7 +496,16 @@ def test_create_with_missing_mandatory_properties(
     the catalogue category exists and that it is a leaf category, finds that there are missing mandatory catalogue item
     properties, and does not create the catalogue item.
     """
-    catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_A_INFO)
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        **{
+            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            "catalogue_item_properties": add_ids_to_properties(
+                None,
+                FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+            ),
+        },
+    )
 
     # Mock `get` to return the catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
@@ -448,7 +520,6 @@ def test_create_with_missing_mandatory_properties(
                     "properties": [
                         {
                             "id": catalogue_category.catalogue_item_properties[2].id,
-                            "name": "Property C",
                             "value": "20x15x10",
                         },
                     ],
@@ -474,7 +545,16 @@ def test_create_with_with_invalid_value_type_for_string_property(
     missing mandatory catalogue item properties, finds invalid value type for a string catalogue item property, and does
     not create the catalogue item.
     """
-    catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_A_INFO)
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        **{
+            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            "catalogue_item_properties": add_ids_to_properties(
+                None,
+                FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+            ),
+        },
+    )
 
     # Mock `get` to return the catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
@@ -487,22 +567,17 @@ def test_create_with_with_invalid_value_type_for_string_property(
                 **{
                     **CATALOGUE_ITEM_A_INFO,
                     "properties": [
-                        {"id": catalogue_category.catalogue_item_properties[0].id, "name": "Property A", "value": 20},
-                        {
-                            "id": catalogue_category.catalogue_item_properties[1].id,
-                            "name": "Property B",
-                            "value": False,
-                        },
-                        {"id": catalogue_category.catalogue_item_properties[2].id, "name": "Property C", "value": True},
+                        {"id": catalogue_category.catalogue_item_properties[0].id, "value": 20},
+                        {"id": catalogue_category.catalogue_item_properties[1].id, "value": False},
+                        {"id": catalogue_category.catalogue_item_properties[2].id, "value": True},
                     ],
                 },
             ),
         )
     catalogue_item_repository_mock.create.assert_not_called()
     assert (
-        str(exc.value)
-        == "Invalid value type for catalogue item property with ID "
-           f"'{catalogue_category.catalogue_item_properties[2].id}'. Expected type: string."
+        str(exc.value) == "Invalid value type for catalogue item property with ID "
+        f"'{catalogue_category.catalogue_item_properties[2].id}'. Expected type: string."
     )
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
@@ -518,7 +593,16 @@ def test_create_with_invalid_value_type_for_number_property(
     missing mandatory catalogue item properties, finds invalid value type for a number catalogue item property, and does
     not create the catalogue item.
     """
-    catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_A_INFO)
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        **{
+            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            "catalogue_item_properties": add_ids_to_properties(
+                None,
+                FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+            ),
+        },
+    )
 
     # Mock `get` to return the catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
@@ -531,26 +615,17 @@ def test_create_with_invalid_value_type_for_number_property(
                 **{
                     **CATALOGUE_ITEM_A_INFO,
                     "properties": [
-                        {"id": catalogue_category.catalogue_item_properties[0].id, "name": "Property A", "value": "20"},
-                        {
-                            "id": catalogue_category.catalogue_item_properties[1].id,
-                            "name": "Property B",
-                            "value": False,
-                        },
-                        {
-                            "id": catalogue_category.catalogue_item_properties[2].id,
-                            "name": "Property C",
-                            "value": "20x15x10",
-                        },
+                        {"id": catalogue_category.catalogue_item_properties[0].id, "value": "20"},
+                        {"id": catalogue_category.catalogue_item_properties[1].id, "value": False},
+                        {"id": catalogue_category.catalogue_item_properties[2].id, "value": "20x15x10"},
                     ],
                 },
             )
         )
     catalogue_item_repository_mock.create.assert_not_called()
     assert (
-        str(exc.value)
-        == "Invalid value type for catalogue item property with ID "
-           f"'{catalogue_category.catalogue_item_properties[0].id}'. Expected type: number."
+        str(exc.value) == "Invalid value type for catalogue item property with ID "
+        f"'{catalogue_category.catalogue_item_properties[0].id}'. Expected type: number."
     )
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
@@ -566,7 +641,16 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
     missing mandatory catalogue item properties, finds invalid value type for a boolean catalogue item property, and
     does not create the catalogue item.
     """
-    catalogue_category = CatalogueCategoryOut(id=str(ObjectId()), **FULL_CATALOGUE_CATEGORY_A_INFO)
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        **{
+            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            "catalogue_item_properties": add_ids_to_properties(
+                None,
+                FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+            ),
+        },
+    )
 
     # Mock `get` to return the catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
@@ -579,26 +663,17 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
                 **{
                     **CATALOGUE_ITEM_A_INFO,
                     "properties": [
-                        {"id": catalogue_category.catalogue_item_properties[0].id, "name": "Property A", "value": 20},
-                        {
-                            "id": catalogue_category.catalogue_item_properties[1].id,
-                            "name": "Property B",
-                            "value": "False",
-                        },
-                        {
-                            "id": catalogue_category.catalogue_item_properties[2].id,
-                            "name": "Property C",
-                            "value": "20x15x10",
-                        },
+                        {"id": catalogue_category.catalogue_item_properties[0].id, "value": 20},
+                        {"id": catalogue_category.catalogue_item_properties[1].id, "value": "False"},
+                        {"id": catalogue_category.catalogue_item_properties[2].id, "value": "20x15x10"},
                     ],
                 },
             )
         )
     catalogue_item_repository_mock.create.assert_not_called()
     assert (
-        str(exc.value)
-        == "Invalid value type for catalogue item property with ID "
-           f"'{catalogue_category.catalogue_item_properties[1].id}'. Expected type: boolean."
+        str(exc.value) == "Invalid value type for catalogue item property with ID "
+        f"'{catalogue_category.catalogue_item_properties[1].id}'. Expected type: boolean."
     )
 
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
@@ -680,6 +755,7 @@ def test_update_when_no_child_elements(
     children.
     """
     # pylint: disable=duplicate-code
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -687,6 +763,7 @@ def test_update_when_no_child_elements(
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
     # pylint: enable=duplicate-code
@@ -721,6 +798,7 @@ def test_update_when_no_child_elements(
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -736,10 +814,10 @@ def test_update_when_has_child_elements(
     """
     Test updating a catalogue item with child elements.
 
-    Verify that the `update` method properly handles the catalogue item to be updated when it doesnt have any
-    children.
+    Verify that the `update` method properly handles the catalogue item to be updated when it has children.
     """
     # pylint: disable=duplicate-code
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -747,6 +825,7 @@ def test_update_when_has_child_elements(
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
     # pylint: enable=duplicate-code
@@ -781,6 +860,7 @@ def test_update_when_has_child_elements(
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -814,6 +894,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
     Test moving a catalogue item to another catalogue category that has the same defined catalogue item properties when
     no properties are supplied.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -821,11 +902,12 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
 
     current_catalogue_category_id = str(ObjectId())
-
+    current_catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
@@ -834,6 +916,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
                 **catalogue_item.model_dump(),
                 "catalogue_category_id": current_catalogue_category_id,
                 "modified_time": catalogue_item.created_time,
+                "properties": current_catalogue_item_properties,
             }
         ),
     )
@@ -842,12 +925,29 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
     # Mock `get` to return the new catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
     # Mock `get` to return the current catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=current_catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=current_catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_C_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    current_catalogue_item_properties, FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"]
+                ),
+            },
+        ),
     )
     # Mock `update` to return the updated catalogue item
     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
@@ -864,14 +964,13 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
     assert updated_catalogue_item == catalogue_item
 
 
-# TODO - Check if this test is actually working as expected
-@pytest.mark.skip
 def test_update_change_catalogue_category_id_same_defined_properties_with_supplied_properties(
     test_helpers,
     catalogue_category_repository_mock,
@@ -883,6 +982,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
     Test moving a catalogue item to another catalogue category that has the same defined catalogue item properties when
     properties are supplied.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -890,23 +990,21 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
-    current_catalogue_category_id = str(ObjectId())
 
+    current_catalogue_category_id = str(ObjectId())
+    current_catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                "catalogue_category_id": str(ObjectId()),
-                "properties": [
-                    {"name": "Property A", "value": 1, "unit": "mm"},
-                    {"name": "Property B", "value": True, "unit": None},
-                    {"name": "Property C", "value": "1x1x1", "unit": "cm"},
-                ],
+                "catalogue_category_id": current_catalogue_category_id,
                 "modified_time": catalogue_item.created_time,
+                "properties": current_catalogue_item_properties,
             }
         ),
     )
@@ -915,12 +1013,29 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
     # Mock `get` to return the new catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
     # Mock `get` to return the current catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=current_catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=current_catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_C_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    current_catalogue_item_properties, FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"]
+                ),
+            },
+        ),
     )
     # Mock `update` to return the updated catalogue item
     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
@@ -929,7 +1044,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
         catalogue_item.id,
         CatalogueItemPatchRequestSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
-            properties=[{"name": prop.name, "value": prop.value} for prop in catalogue_item.properties],
+            properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
         ),
     )
 
@@ -941,6 +1056,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -958,40 +1074,56 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
     no properties are supplied.
     """
     catalogue_item_id = str(ObjectId())
-    current_catalogue_category_id = str(ObjectId())
+    catalogue_category_id = str(ObjectId())
 
+    current_catalogue_category_id = str(ObjectId())
+    current_catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
             id=catalogue_item_id,
+            catalogue_category_id=current_catalogue_category_id,
             manufacturer_id=str(ObjectId()),
-            catalogue_category_id=str(ObjectId()),
-            **FULL_CATALOGUE_ITEM_A_INFO,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "properties": current_catalogue_item_properties,
+            },
         ),
     )
     # Mock so no child elements found
     catalogue_item_repository_mock.has_child_elements.return_value = False
-    catalogue_category_id = str(ObjectId())
     # Mock `get` to return the new catalogue category
+    # pylint: disable=duplicate-code
     test_helpers.mock_get(
         catalogue_category_repository_mock,
         CatalogueCategoryOut(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": [
-                    # Only change the unit
-                    {"id": str(ObjectId()), "name": "Property A", "type": "number", "unit": "m", "mandatory": False},
-                    *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1:],
-                ],
+                "catalogue_item_properties": add_ids_to_properties(
+                    None,
+                    [
+                        {"name": "Property A", "type": "number", "unit": "m", "mandatory": False},
+                        *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1:],
+                    ],
+                ),
             },
         ),
     )
+    # pylint: enable=duplicate-code
     # Mock `get` to return the current catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=current_catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=current_catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_C_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    current_catalogue_item_properties, FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"]
+                ),
+            },
+        ),
     )
 
     with pytest.raises(InvalidActionError) as exc:
@@ -1017,38 +1149,55 @@ def test_update_change_catalogue_category_id_different_defined_properties_order_
     order when no properties are supplied.
     """
     catalogue_item_id = str(ObjectId())
-    current_catalogue_category_id = str(ObjectId())
+    catalogue_category_id = str(ObjectId())
 
+    current_catalogue_category_id = str(ObjectId())
+    current_catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
             id=catalogue_item_id,
+            catalogue_category_id=current_catalogue_category_id,
             manufacturer_id=str(ObjectId()),
-            catalogue_category_id=str(ObjectId()),
-            **FULL_CATALOGUE_ITEM_A_INFO,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "properties": current_catalogue_item_properties,
+            },
         ),
     )
     # Mock so no child elements found
     catalogue_item_repository_mock.has_child_elements.return_value = False
-    catalogue_category_id = str(ObjectId())
     # Mock `get` to return the new catalogue category
+    # pylint: disable=duplicate-code
     test_helpers.mock_get(
         catalogue_category_repository_mock,
         CatalogueCategoryOut(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": [
-                    *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][::-1],
-                ],
+                "catalogue_item_properties": add_ids_to_properties(
+                    None,
+                    [
+                        *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][::-1],
+                    ],
+                ),
             },
         ),
     )
+    # pylint: enable=duplicate-code
     # Mock `get` to return the current catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=current_catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=current_catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_C_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    current_catalogue_item_properties, FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"]
+                ),
+            },
+        ),
     )
 
     with pytest.raises(InvalidActionError) as exc:
@@ -1063,8 +1212,6 @@ def test_update_change_catalogue_category_id_different_defined_properties_order_
     )
 
 
-# TODO - Check if this test is actually working as expected
-@pytest.mark.skip
 def test_update_change_catalogue_category_id_different_defined_properties_with_supplied_properties(
     test_helpers,
     catalogue_category_repository_mock,
@@ -1076,6 +1223,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
     Test moving a catalogue item to another catalogue category that has different defined catalogue item properties when
     properties are supplied.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -1083,19 +1231,23 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
-    current_catalogue_category_id = str(ObjectId())
 
+    current_catalogue_category_id = str(ObjectId())
+    current_catalogue_item_properties = add_ids_to_properties(
+        None, [{"name": "Property A", "value": True, "unit": None}]
+    )
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                "catalogue_category_id": str(ObjectId()),
-                "properties": [{"name": "Property A", "value": True, "unit": None}],
+                "catalogue_category_id": current_catalogue_category_id,
                 "modified_time": catalogue_item.created_time,
+                "properties": current_catalogue_item_properties,
             }
         ),
     )
@@ -1108,18 +1260,26 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
             id=catalogue_item.catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": [
-                    # Only change the unit
-                    {"id": str(ObjectId()), "name": "Property A", "type": "number", "unit": "m", "mandatory": False},
-                    *FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"][1:],
-                ],
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
             },
         ),
     )
     # Mock `get` to return the current catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=current_catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=current_catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_C_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    current_catalogue_item_properties,
+                    [{"name": "Property A", "type": "boolean", "unit": None, "mandatory": True}],
+                ),
+            },
+        ),
     )
     # Mock `update` to return the updated catalogue item
     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
@@ -1128,7 +1288,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
         catalogue_item.id,
         CatalogueItemPatchRequestSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
-            properties=[{"name": prop.name, "value": prop.value} for prop in catalogue_item.properties],
+            properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
         ),
     )
 
@@ -1139,12 +1299,8 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
             manufacturer_id=catalogue_item.manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": [
-                    # Only changed the unit
-                    {"name": "Property A", "value": 20, "unit": "m"},
-                    *FULL_CATALOGUE_ITEM_A_INFO["properties"][1:],
-                ],
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -1164,7 +1320,10 @@ def test_update_with_nonexistent_catalogue_category_id(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1194,6 +1353,7 @@ def test_update_with_existent_manufacturer_id_when_has_no_child_elements(
     """
     Test updating manufacturer id to an existing id when the catalogue item has no child elements
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -1201,6 +1361,7 @@ def test_update_with_existent_manufacturer_id_when_has_no_child_elements(
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
 
@@ -1238,6 +1399,7 @@ def test_update_with_existent_manufacturer_id_when_has_no_child_elements(
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -1253,11 +1415,15 @@ def test_update_with_existent_manufacturer_id_when_has_child_elements(
     """
     Test updating manufacturer id to an existing id when the catalogue item has child elements
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": catalogue_item_properties,
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1302,7 +1468,10 @@ def test_update_with_nonexistent_manufacturer_id(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1335,7 +1504,10 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1368,6 +1540,7 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
     Test updating a catalogue item with an obsolete replacement catalogue item ID.
     """
     obsolete_replacement_catalogue_item_id = str(ObjectId())
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -1377,6 +1550,7 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
             "is_obsolete": True,
             "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
 
@@ -1391,6 +1565,7 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
                 "modified_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -1403,7 +1578,12 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
             id=obsolete_replacement_catalogue_item_id,
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **{**FULL_CATALOGUE_ITEM_A_INFO, "name": "Catalogue Item B", "description": "This is Catalogue Item B"},
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "name": "Catalogue Item B",
+                "description": "This is Catalogue Item B",
+                "properties": catalogue_item_properties,
+            },
         ),
     )
     # Mock `update` to return the updated catalogue item
@@ -1426,6 +1606,7 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
                 "is_obsolete": True,
                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -1442,7 +1623,10 @@ def test_update_with_non_existent_obsolete_replacement_catalogue_item_id(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1477,6 +1661,7 @@ def test_update_add_non_mandatory_property(
     """
     Test adding a non-mandatory catalogue item property and a value.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
@@ -1484,6 +1669,7 @@ def test_update_add_non_mandatory_property(
         **{
             **FULL_CATALOGUE_ITEM_A_INFO,
             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
         },
     )
 
@@ -1493,8 +1679,11 @@ def test_update_add_non_mandatory_property(
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
                 "modified_time": catalogue_item.created_time,
+                "properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
+                ),
             }
         ),
     )
@@ -1505,7 +1694,13 @@ def test_update_add_non_mandatory_property(
         catalogue_category_repository_mock,
         CatalogueCategoryOut(
             id=catalogue_item.catalogue_category_id,
-            **FULL_CATALOGUE_CATEGORY_A_INFO,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
         ),
     )
     # Mock `update` to return the updated catalogue item
@@ -1526,6 +1721,7 @@ def test_update_add_non_mandatory_property(
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
                 "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
             },
         ),
     )
@@ -1542,24 +1738,18 @@ def test_update_remove_non_mandatory_property(
     """
     Test removing a non-mandatory catalogue item property and its value.
     """
-    catalogue_item_info = {
-        **FULL_CATALOGUE_ITEM_A_INFO,
-        "properties": [
-            {
-                "id": FULL_CATALOGUE_ITEM_A_INFO["properties"][0]["id"],
-                "name": "Property A",
-                "value": None,
-                "unit": "mm",
-            },
-            *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
-        ],
-        "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
-    }
+    catalogue_item_properties = add_ids_to_properties(
+        None, [{"name": "Property A", "value": None, "unit": "mm"}, *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:]]
+    )
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **catalogue_item_info,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1568,8 +1758,10 @@ def test_update_remove_non_mandatory_property(
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"],
                 "modified_time": catalogue_item.created_time,
+                "properties": add_ids_to_properties(
+                    catalogue_item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
+                ),
             }
         ),
     )
@@ -1578,7 +1770,16 @@ def test_update_remove_non_mandatory_property(
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
     # Mock `update` to return the updated catalogue item
     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
@@ -1595,7 +1796,11 @@ def test_update_remove_non_mandatory_property(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **catalogue_item_info,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
+            },
         ),
     )
     assert updated_catalogue_item == catalogue_item
@@ -1610,11 +1815,15 @@ def test_update_remove_mandatory_property(
     """
     Test removing a mandatory catalogue item property and its value.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": catalogue_item_properties,
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1627,7 +1836,16 @@ def test_update_remove_mandatory_property(
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
 
     with pytest.raises(MissingMandatoryCatalogueItemProperty) as exc:
@@ -1651,20 +1869,19 @@ def test_update_change_property_value(
     """
     Test updating a value of a property.
     """
-    catalogue_item_info = {
-        **FULL_CATALOGUE_ITEM_A_INFO,
-        "properties": [
-            {"id": FULL_CATALOGUE_ITEM_A_INFO["properties"][0]["id"], "name": "Property A", "value": 1, "unit": "mm"}
-        ]
-        + FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:],
-        "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
-    }
+    catalogue_item_properties = add_ids_to_properties(
+        None, [{"name": "Property A", "value": 1, "unit": "mm"}, *FULL_CATALOGUE_ITEM_A_INFO["properties"][-2:]]
+    )
     # pylint: disable=duplicate-code
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **catalogue_item_info,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
+            "properties": catalogue_item_properties,
+        },
     )
     # pylint: enable=duplicate-code
 
@@ -1674,8 +1891,10 @@ def test_update_change_property_value(
         CatalogueItemOut(
             **{
                 **catalogue_item.model_dump(),
-                "properties": FULL_CATALOGUE_ITEM_A_INFO["properties"],
                 "modified_time": catalogue_item.created_time,
+                "properties": add_ids_to_properties(
+                    catalogue_item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
+                ),
             }
         ),
     )
@@ -1684,7 +1903,16 @@ def test_update_change_property_value(
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
     # Mock `update` to return the updated catalogue item
     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
@@ -1701,7 +1929,11 @@ def test_update_change_property_value(
         CatalogueItemIn(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
-            **catalogue_item_info,
+            **{
+                **FULL_CATALOGUE_ITEM_A_INFO,
+                "created_time": catalogue_item.created_time,
+                "properties": catalogue_item_properties,
+            },
         ),
     )
     assert updated_catalogue_item == catalogue_item
@@ -1713,11 +1945,15 @@ def test_update_change_value_for_string_property_invalid_type(
     """
     Test changing the value of a string property to an invalid type.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": catalogue_item_properties,
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1730,7 +1966,16 @@ def test_update_change_value_for_string_property_invalid_type(
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
 
     properties = [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties]
@@ -1744,7 +1989,7 @@ def test_update_change_value_for_string_property_invalid_type(
     assert (
         str(exc.value)
         == f"Invalid value type for catalogue item property with ID '{catalogue_item.properties[2].id}'. "
-           "Expected type: string."
+        "Expected type: string."
     )
 
 
@@ -1754,11 +1999,15 @@ def test_update_change_value_for_number_property_invalid_type(
     """
     Test changing the value of a number property to an invalid type.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": catalogue_item_properties,
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1771,7 +2020,16 @@ def test_update_change_value_for_number_property_invalid_type(
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
 
     properties = [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties]
@@ -1785,7 +2043,7 @@ def test_update_change_value_for_number_property_invalid_type(
     assert (
         str(exc.value)
         == f"Invalid value type for catalogue item property with ID '{catalogue_item.properties[0].id}'. "
-           "Expected type: number."
+        "Expected type: number."
     )
 
 
@@ -1795,11 +2053,15 @@ def test_update_change_value_for_boolean_property_invalid_type(
     """
     Test changing the value of a boolean property to an invalid type.
     """
+    catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     catalogue_item = CatalogueItemOut(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": catalogue_item_properties,
+        },
     )
 
     # Mock `get` to return a catalogue item
@@ -1812,7 +2074,16 @@ def test_update_change_value_for_boolean_property_invalid_type(
     # Mock `get` to return a catalogue category
     test_helpers.mock_get(
         catalogue_category_repository_mock,
-        CatalogueCategoryOut(id=catalogue_item.catalogue_category_id, **FULL_CATALOGUE_CATEGORY_A_INFO),
+        CatalogueCategoryOut(
+            id=catalogue_item.catalogue_category_id,
+            **{
+                **FULL_CATALOGUE_CATEGORY_A_INFO,
+                "catalogue_item_properties": add_ids_to_properties(
+                    catalogue_item_properties,
+                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                ),
+            },
+        ),
     )
 
     properties = [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties]
@@ -1826,7 +2097,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
     assert (
         str(exc.value)
         == f"Invalid value type for catalogue item property with ID '{catalogue_item.properties[1].id}'. "
-           "Expected type: boolean."
+        "Expected type: boolean."
     )
 
 
@@ -1841,7 +2112,10 @@ def test_update_properties_when_has_child_elements(
         id=str(ObjectId()),
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
-        **FULL_CATALOGUE_ITEM_A_INFO,
+        **{
+            **FULL_CATALOGUE_ITEM_A_INFO,
+            "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
+        },
     )
     # pylint: enable=duplicate-code
 
