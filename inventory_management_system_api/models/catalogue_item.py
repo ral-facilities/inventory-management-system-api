@@ -28,7 +28,7 @@ class PropertyIn(BaseModel):
     Model representing a catalogue item property.
     """
 
-    id: CustomObjectIdField
+    id: CustomObjectIdField = Field(serialization_alias="_id")
     name: str
     value: Any
     unit: Optional[str] = None
@@ -39,10 +39,12 @@ class PropertyOut(BaseModel):
     Model representing a catalogue item property.
     """
 
-    id: StringObjectIdField
+    id: StringObjectIdField = Field(alias="_id")
     name: str
     value: Any
     unit: Optional[str] = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CatalogueItemBase(BaseModel):

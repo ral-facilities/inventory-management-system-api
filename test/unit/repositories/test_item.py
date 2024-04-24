@@ -47,7 +47,7 @@ def test_create(test_helpers, database_mock, item_repository):
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
-    item_info = item_in.model_dump()
+    item_info = item_in.model_dump(by_alias=True)
     item_out = ItemOut(
         **item_info,
         id=str(ObjectId()),
@@ -77,7 +77,7 @@ def test_create(test_helpers, database_mock, item_repository):
     created_item = item_repository.create(item_in)
 
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item_out.system_id)})
-    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump())
+    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump(by_alias=True))
     assert created_item == item_out
 
 
@@ -544,7 +544,7 @@ def test_update(test_helpers, database_mock, item_repository):
         {
             "$set": {
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **item_in.model_dump(),
+                **item_in.model_dump(by_alias=True),
             }
         },
     )

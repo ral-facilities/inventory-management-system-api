@@ -72,7 +72,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
     )
-    catalogue_item_info = catalogue_item_in.model_dump()
+    catalogue_item_info = catalogue_item_in.model_dump(by_alias=True)
     catalogue_item_out = CatalogueItemOut(
         **catalogue_item_info,
         id=str(ObjectId()),
@@ -404,7 +404,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         {
             "$set": {
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-                **catalogue_item_in.model_dump(),
+                **catalogue_item_in.model_dump(by_alias=True),
             }
         },
     )

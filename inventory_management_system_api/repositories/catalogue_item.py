@@ -40,7 +40,7 @@ class CatalogueItemRepo:
         :return: The created catalogue item.
         """
         logger.info("Inserting the new catalogue item into the database")
-        result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump())
+        result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump(by_alias=True))
         catalogue_item = self.get(str(result.inserted_id))
         return catalogue_item
 
@@ -87,7 +87,9 @@ class CatalogueItemRepo:
         catalogue_item_id = CustomObjectId(catalogue_item_id)
 
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
-        self._catalogue_items_collection.update_one({"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump()})
+        self._catalogue_items_collection.update_one(
+            {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}
+        )
         catalogue_item = self.get(str(catalogue_item_id))
         return catalogue_item
 
