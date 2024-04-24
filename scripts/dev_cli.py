@@ -130,8 +130,8 @@ class CommandDBInit(SubCommand):
         parser.add_argument(
             "-rsmh",
             "--replicaSetMemberHost",
-            default="mongodb_container",
-            help="Host to use for the replica set (default: 'mongodb_container')",
+            default="localhost",
+            help="Host to use for the replica set (default: 'localhost')",
         )
 
     def run(self, args: argparse.Namespace):
