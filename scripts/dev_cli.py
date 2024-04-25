@@ -1,3 +1,5 @@
+"""Module defining a CLI Script for some common development tasks"""
+
 import argparse
 import json
 import logging
@@ -14,7 +16,7 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
     """
     Runs a command using subprocess
     """
-    logging.debug(f"Running command: {" ".join(args)}")
+    logging.debug("Running command: %s", " ".join(args))
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
     # for some reason)
     popen = subprocess.Popen(
@@ -29,6 +31,7 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
 
 
 def start_group(text: str, args: argparse.Namespace):
+    """Print the start of a group for Github CI (to get collapsable sections)"""
     if args.ci:
         print(f"::group::{text}")
     else:
@@ -36,6 +39,7 @@ def start_group(text: str, args: argparse.Namespace):
 
 
 def end_group(args: argparse.Namespace):
+    """End of a group for Github CI"""
     if args.ci:
         print("::endgroup::")
 
@@ -81,11 +85,13 @@ def run_mongoimport_json_array_file(args: argparse.Namespace, database: str, col
 
 
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
+    """Adds common arguments for MongoDB authentication"""
     parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
     parser.add_argument("-p", "--password", default="example", help="Password for MongoDB authentication")
 
 
 def get_mongodb_auth_args(args: argparse.Namespace):
+    """Returns arguments in a list to use the parser arguments defined in add_mongodb_auth_args above"""
     return [
         "--username",
         args.username,
@@ -102,14 +108,12 @@ class SubCommand(ABC):
         self.help = help
 
     @abstractmethod
-    def setup(parser: argparse.ArgumentParser):
+    def setup(self, parser: argparse.ArgumentParser):
         """Setup the parser by adding any parameters here"""
-        pass
 
     @abstractmethod
-    def run(args: argparse.Namespace):
+    def run(self, args: argparse.Namespace):
         """Run the command with the given parameters as added by 'setup'"""
-        pass
 
 
 class CommandDBInit(SubCommand):
@@ -139,7 +143,7 @@ class CommandDBInit(SubCommand):
         rs_keyfile = Path("./mongodb/keys/rs_keyfile")
         if not rs_keyfile.is_file():
             logging.info("Generating replica set keyfile...")
-            with open(rs_keyfile, "w") as file:
+            with open(rs_keyfile, "w", encoding="utf-8") as file:
                 run_command(["openssl", "rand", "-base64", "756"], stdout=file)
             logging.info("Assigning replica set keyfile ownership...")
             run_command(["sudo", "chmod", "0400", "./mongodb/keys/rs_keyfile"])
@@ -298,7 +302,9 @@ commands: dict[str, SubCommand] = {
     "db-generate": CommandDBGenerate(),
 }
 
-if __name__ == "__main__":
+
+def main():
+    """Runs CLI commands"""
     parser = argparse.ArgumentParser(prog="IMS Dev Script", description="Some commands for development")
     parser.add_argument(
         "--debug", action="store_true", help="Flag for setting the log level to debug to output more info"
@@ -321,3 +327,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     commands[args.command].run(args)
+
+
+if __name__ == "__main__":
+    main()
