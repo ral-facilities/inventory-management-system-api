@@ -199,7 +199,27 @@ pytest -c test/pytest.ini test/
 
 When running for the first time there are a few extra steps required to setup the database. These instructions assume the database is running via docker, although the commands themselves can be adapted for a separate instance by removing the docker parts.
 
-### Initialising the replica set
+### Setting up the database
+
+#### Using dev_cli
+
+For development the easiest way to setup the database is to use the included dev_cli script assuming you are using Linux. To initialise the database use
+
+```bash
+python ./scripts/dev_cli.py db-init
+```
+
+Then populate the database with the initial data using
+
+```bash
+python ./scripts/dev_cli.py db-import
+```
+
+You may also use `python ./scripts/dev_cli.py db-import -g` if you wish to import the generated mock data.
+
+#### Manually
+
+#### Initialising the replica set
 
 For development replica sets are required to be able to use transactions. Once the mongodb instance is running use `mongosh` to login and run
 
@@ -207,10 +227,12 @@ For development replica sets are required to be able to use transactions. Once t
 rs.initiate( {
    _id : "rs0",
    members: [
-      { _id: 0, host: "hostname:27017" }
+      { _id: 0, host: "<hostname>:27017" }
    ]
 })
 ```
+
+replacing `<hostname>` with the actual hostname for the replica set.
 
 For docker you may use
 
@@ -218,12 +240,12 @@ For docker you may use
 docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'mongodb_container:27017' }]})"
 ```
 
-### Adding units
+#### Adding default data
 
 Units should be added to the MongoDB database using `mongoimport` on the provided units file found at
 `/data/units.json`. If adding more units to this file, ensure the `_id` values are valid `ObjectId`'s.
 
-#### Updating a local MongoDB instance
+##### Updating a local MongoDB instance
 
 To update the list of units, replacing all existing with the contents of the `./data/units.json` file use the command
 
@@ -233,7 +255,7 @@ mongoimport --username 'root' --password 'example' --authenticationDatabase=admi
 
 from the root directory of this repo, replacing the username and password as appropriate.
 
-#### Updating a MongoDB instance running in a docker container
+##### Updating a MongoDB instance running in a docker container
 
 When running using docker you can use use
 
@@ -253,13 +275,31 @@ docker exec -i mongodb_container mongorestore --username "root" --password "exam
 
 to populate the database with mock data.
 
-#### Generating new mock data
-
-There is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To use it from your development environment first ensure the API is running and then execute it with
+Otherwise there is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To use it from your development environment first ensure the API is running and then execute it with
 
 ```bash
 python ./scripts/generate_mock_data.py
 ```
+
+## Generating new mock data
+
+##### Using dev_cli
+
+The easiest way to generate new mock data assuming you are using Linux is via the dev_cli script. To do this use
+
+```bash
+python ./scripts/dev_cli.py db-generate
+```
+
+This will clear the database, import the default data e.g. units and then generate mock data. If the `generate_mock_data.py` script is changed, or if there are database model changes please use
+
+```bash
+python ./scripts/dev_cli.py db-generate -d
+```
+
+to update the `./data/mock_data.dump` file and commit the changes.
+
+##### Manually
 
 The parameters at the top of the file can be used to change the generated data. NOTE: This script will simply add to the existing database instance. So if you wish to update the `mock_data.dump`, you should first clear the database e.g. using
 
@@ -267,7 +307,7 @@ The parameters at the top of the file can be used to change the generated data. 
 docker exec -i mongodb_container mongosh ims --username "root" --password "example" --authenticationDatabase=admin --eval "db.dropDatabase()"
 ```
 
-Then generate the mock data, import the units and then save the changes using `mongodump` via
+Then generate the mock data, import the units and then update the `./data/mock_data.dump` file using `mongodump` via
 
 ```bash
 docker exec -i mongodb_container mongodump --username "root" --password "example" --authenticationDatabase=admin --db ims --archive > ./data/mock_data.dump

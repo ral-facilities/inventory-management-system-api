@@ -63,11 +63,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
 
-      # Used to use supercharge/mongodb-github-action, but it cant currently use auth and a replica set at
-      # the same time
-      - name: Start MongoDB
-        run: ./.github/scripts/start-mongodb.sh
-
       - name: Set up Python
         uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
@@ -81,6 +76,13 @@ jobs:
 
       - name: Create logging configuration file
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
+
+      # Used to use supercharge/mongodb-github-action, but it can't currently use auth and a replica set at
+      # the same time
+      - name: Setup MongoDB database
+        run: |
+          python ./scripts/dev_cli.py --ci db-init --replicaSetMemberHost localhost
+          python ./scripts/dev_cli.py --ci db-import
 
       - name: Run e2e tests
         run: pytest -c test/pytest.ini test/e2e/ --cov
