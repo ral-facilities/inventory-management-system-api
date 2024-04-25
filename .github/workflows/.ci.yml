@@ -63,13 +63,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
 
+      # Used to use supercharge/mongodb-github-action, but it cant currently use auth and a replica set at
+      # the same time
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@b0a1493307c4e9b82ed61f3858d606c5ff190c64 #v1.10.0
-        with:
-          mongodb-version: "7.0"
-          mongodb-username: root
-          mongodb-password: example
-          mongodb-db: test-ims
+        run: ./.github/scripts/start-mongodb.sh
 
       - name: Set up Python
         uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
