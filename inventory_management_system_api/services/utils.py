@@ -11,7 +11,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryCatalogueItemProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueItemPropertyOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 
 logger = logging.getLogger()
@@ -149,7 +149,7 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
                 f"Mandatory catalogue item property with ID '{supplied_property_id}' cannot be None."
             )
     else:
-        if not CatalogueItemPropertyPostRequestSchema.is_valid_property_type(
+        if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
             defined_property_type, supplied_property_value
         ):
             raise InvalidCatalogueItemPropertyTypeError(

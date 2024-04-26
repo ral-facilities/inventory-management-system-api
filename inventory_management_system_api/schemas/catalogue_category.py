@@ -4,7 +4,7 @@ Module for defining the API schema models for representing catalogue categories.
 
 from enum import Enum
 from numbers import Number
-from typing import Annotated, Any, List, Literal, Optional
+from typing import Annotated, Any, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, conlist, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -35,9 +35,9 @@ class AllowedValuesListSchema(BaseModel):
 AllowedValuesSchema = Annotated[AllowedValuesListSchema, Field(discriminator="type")]
 
 
-class CatalogueItemPropertyPostRequestSchema(BaseModel):
+class CatalogueCategoryPostRequestPropertySchema(BaseModel):
     """
-    Schema model for a catalogue item property creation request.
+    Schema model for a catalogue item property within a catalogue category creation request.
     """
 
     name: str = Field(description="The name of the property")
@@ -112,7 +112,7 @@ class CatalogueItemPropertyPostRequestSchema(BaseModel):
             if isinstance(allowed_values, AllowedValuesListSchema):
                 # List type should have all values the same type
                 for allowed_value in allowed_values.values:
-                    if not CatalogueItemPropertyPostRequestSchema.is_valid_property_type(
+                    if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
                         expected_property_type=info.data["type"], property_value=allowed_value
                     ):
                         raise ValueError(
@@ -122,7 +122,7 @@ class CatalogueItemPropertyPostRequestSchema(BaseModel):
         return allowed_values
 
 
-class CatalogueItemPropertySchema(CatalogueItemPropertyPostRequestSchema):
+class CatalogueItemPropertySchema(CatalogueCategoryPostRequestPropertySchema):
     """
     Schema model representing a catalogue item property.
     """
@@ -141,7 +141,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         "elements but if it is not then it can only have catalogue categories as child elements."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: Optional[List[CatalogueItemPropertyPostRequestSchema]] = Field(
+    catalogue_item_properties: Optional[List[CatalogueCategoryPostRequestPropertySchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
@@ -173,4 +173,16 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostR
     code: str = Field(description="The code of the catalogue category")
     catalogue_item_properties: Optional[List[CatalogueItemPropertySchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
+    )
+
+
+class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropertySchema):
+    """
+    Schema model for a catalogue item property creation request
+    """
+
+    default_value: Optional[Union[str, int, bool]] = Field(
+        default=None,
+        description="Value to populate all child catalogue items and items with. Required if the added field is "
+        "mandatory.",
     )

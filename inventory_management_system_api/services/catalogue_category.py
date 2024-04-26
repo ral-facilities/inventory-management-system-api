@@ -21,7 +21,7 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
-    CatalogueItemPropertyPostRequestSchema,
+    CatalogueCategoryPostRequestPropertySchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -151,7 +151,7 @@ class CatalogueCategoryService:
         )
 
     def _check_duplicate_catalogue_item_property_names(
-        self, catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema]
+        self, catalogue_item_properties: List[CatalogueCategoryPostRequestPropertySchema]
     ) -> None:
         """
         Go through all the catalogue item properties to check for any duplicate names.
