@@ -3,6 +3,7 @@ Module for providing a repository for managing Units in a MongoDB database
 """
 
 from fastapi import Depends
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -24,11 +25,12 @@ class UnitRepo:
         self._database = database
         self._units_collection: Collection = self._database.units
 
-    def list(self) -> list[UnitOut]:
+    def list(self, session: ClientSession = None) -> list[UnitOut]:
         """
         Retrieve Units from a MongoDB database
 
+        :param session: PyMongo ClientSession to use for database operations
         :return: List of Units or an empty list if no Units are retrieved
         """
-        units = self._units_collection.find()
+        units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
