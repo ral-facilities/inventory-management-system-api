@@ -242,7 +242,7 @@ class CommandDBGenerate(SubCommand):
         add_mongodb_auth_args(parser)
 
         parser.add_argument(
-            "-d", "--dump", action="store_false", help="Whether to dump the output into a file that can be committed"
+            "-d", "--dump", action="store_true", help="Whether to dump the output into a file that can be committed"
         )
 
     def run(self, args: argparse.Namespace):
@@ -255,9 +255,7 @@ class CommandDBGenerate(SubCommand):
             # Delete the existing data
             logging.info("Deleting database contents...")
             run_mongodb_command(
-                [
-                    "mongosh",
-                ]
+                ["mongosh", "ims"]
                 + get_mongodb_auth_args(args)
                 + [
                     "--eval",
