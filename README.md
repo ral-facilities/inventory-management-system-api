@@ -227,10 +227,12 @@ For development replica sets are required to be able to use transactions. Once t
 rs.initiate( {
    _id : "rs0",
    members: [
-      { _id: 0, host: "hostname:27017" }
+      { _id: 0, host: "<hostname>:27017" }
    ]
 })
 ```
+
+replacing `<hostname>` with the actual hostname for the replica set.
 
 For docker you may use
 

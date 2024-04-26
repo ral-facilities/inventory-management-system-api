@@ -2,11 +2,12 @@
 Unit tests for the `UnitRepo` repository
 """
 
+from unittest.mock import MagicMock
+
 from bson import ObjectId
+
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-
 from inventory_management_system_api.models.units import UnitOut
-
 
 UNIT_A_INFO = {"value": "millimeter"}
 UNIT_B_INFO = {"value": "micrometer"}
@@ -20,6 +21,7 @@ def test_list(test_helpers, database_mock, unit_repository):
     """
     unit_a = UnitOut(id=str(ObjectId()), **UNIT_A_INFO)
     unit_b = UnitOut(id=str(ObjectId()), **UNIT_B_INFO)
+    session = MagicMock()
 
     # Mock `find` to return a list of Unit documents
     test_helpers.mock_find(
@@ -27,7 +29,7 @@ def test_list(test_helpers, database_mock, unit_repository):
         [{"_id": CustomObjectId(unit_a.id), **UNIT_A_INFO}, {"_id": CustomObjectId(unit_b.id), **UNIT_B_INFO}],
     )
 
-    retrieved_units = unit_repository.list()
+    retrieved_units = unit_repository.list(session=session)
 
-    database_mock.units.find.assert_called_once_with()
+    database_mock.units.find.assert_called_once_with(session=session)
     assert retrieved_units == [unit_a, unit_b]

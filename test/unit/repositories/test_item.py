@@ -52,6 +52,7 @@ def test_create(test_helpers, database_mock, item_repository):
         **item_info,
         id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a system
@@ -74,10 +75,10 @@ def test_create(test_helpers, database_mock, item_repository):
         },
     )
 
-    created_item = item_repository.create(item_in)
+    created_item = item_repository.create(item_in, session=session)
 
-    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item_out.system_id)})
-    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump())
+    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item_out.system_id)}, session=session)
+    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump(), session=session)
     assert created_item == item_out
 
 
@@ -99,7 +100,7 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
             )
         )
 
-    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)})
+    database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(system_id)}, session=None)
     database_mock.items.insert_one.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
 
@@ -111,13 +112,14 @@ def test_delete(test_helpers, database_mock, item_repository):
     Verify that the `delete` method properly handles the deletion of an item by ID.
     """
     item_id = str(ObjectId())
+    session = MagicMock()
 
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.items, 1)
 
-    item_repository.delete(item_id)
+    item_repository.delete(item_id, session=session)
 
-    database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
+    database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)}, session=session)
 
 
 def test_delete_with_invalid_id(item_repository):
@@ -131,11 +133,11 @@ def test_delete_with_invalid_id(item_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_delete_with_nonexistent_id(test_helpers, database_mock, item_repository):
+def test_delete_with_non_existent_id(test_helpers, database_mock, item_repository):
     """
     Test deleting an item with an invalid ID.
 
-    Verify that the `delete` method properly handles the deletion of an item with a nonexistent ID.
+    Verify that the `delete` method properly handles the deletion of an item with a non-existent ID.
     """
     item_id = str(ObjectId())
 
@@ -145,7 +147,7 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, item_repository
     with pytest.raises(MissingRecordError) as exc:
         item_repository.delete(item_id)
     assert str(exc.value) == f"No item found with ID: {item_id}"
-    database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
+    database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)}, session=None)
 
 
 def test_list(test_helpers, database_mock, item_repository):
@@ -169,6 +171,7 @@ def test_list(test_helpers, database_mock, item_repository):
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
 
     # Mock `find` to return a list of item documents
     test_helpers.mock_find(
@@ -191,9 +194,9 @@ def test_list(test_helpers, database_mock, item_repository):
         ],
     )
 
-    retrieved_item = item_repository.list(None, None)
+    retrieved_item = item_repository.list(None, None, session=session)
 
-    database_mock.items.find.assert_called_once_with({})
+    database_mock.items.find.assert_called_once_with({}, session=session)
     assert retrieved_item == [item_a, item_b]
 
 
@@ -212,6 +215,7 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
@@ -228,9 +232,9 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
         ],
     )
 
-    retrieved_item = item_repository.list(item.system_id, None)
+    retrieved_item = item_repository.list(item.system_id, None, session=session)
 
-    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)})
+    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)}, session=session)
     assert retrieved_item == [item]
 
 
@@ -242,13 +246,15 @@ def test_list_with_system_id_filter_no_matching_results(test_helpers, database_m
     Verify the `list` method properly handles the retrieval of items based on the provided
     system ID filter
     """
+    session = MagicMock()
+
     # Mock `find` to return an empty list of item documents
     test_helpers.mock_find(database_mock.items, [])
 
     system_id = str(ObjectId())
-    retrieved_items = item_repository.list(system_id, None)
+    retrieved_items = item_repository.list(system_id, None, session=session)
 
-    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id)})
+    database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id)}, session=session)
     assert retrieved_items == []
 
 
@@ -279,6 +285,7 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
@@ -295,9 +302,11 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
         ],
     )
 
-    retrieved_item = item_repository.list(None, item.catalogue_item_id)
+    retrieved_item = item_repository.list(None, item.catalogue_item_id, session=session)
 
-    database_mock.items.find.assert_called_once_with({"catalogue_item_id": CustomObjectId(item.catalogue_item_id)})
+    database_mock.items.find.assert_called_once_with(
+        {"catalogue_item_id": CustomObjectId(item.catalogue_item_id)}, session=session
+    )
     assert retrieved_item == [item]
 
 
@@ -309,13 +318,17 @@ def test_with_catalogue_item_id_filter_no_matching_results(test_helpers, databas
     Verify the `list` method properly handles the retrieval of items based on the provided
     catalogue item ID filter
     """
+    session = MagicMock()
+
     # Mock `find` to return an empty list of item documents
     test_helpers.mock_find(database_mock.items, [])
 
     catalogue_item_id = str(ObjectId())
-    retrieved_items = item_repository.list(None, catalogue_item_id)
+    retrieved_items = item_repository.list(None, catalogue_item_id, session=session)
 
-    database_mock.items.find.assert_called_once_with({"catalogue_item_id": CustomObjectId(catalogue_item_id)})
+    database_mock.items.find.assert_called_once_with(
+        {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
+    )
     assert retrieved_items == []
 
 
@@ -345,6 +358,7 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
@@ -361,10 +375,11 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
         ],
     )
 
-    retrieved_item = item_repository.list(item.system_id, item.catalogue_item_id)
+    retrieved_item = item_repository.list(item.system_id, item.catalogue_item_id, session=session)
 
     database_mock.items.find.assert_called_once_with(
-        {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)}
+        {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)},
+        session=session,
     )
     assert retrieved_item == [item]
 
@@ -377,15 +392,18 @@ def test_list_no_matching_result_both_filters(test_helpers, database_mock, item_
     Verify the `list` method properly handles the retrieval of items based on the provided
     system and catalogue item ID filters
     """
+    session = MagicMock()
+
     # Mock `find` to return an empty list of item documents
     test_helpers.mock_find(database_mock.items, [])
 
     system_id = str(ObjectId())
     catalogue_item_id = str(ObjectId())
-    retrieved_items = item_repository.list(system_id, catalogue_item_id)
+    retrieved_items = item_repository.list(system_id, catalogue_item_id, session=session)
 
     database_mock.items.find.assert_called_once_with(
-        {"system_id": CustomObjectId(system_id), "catalogue_item_id": CustomObjectId(catalogue_item_id)}
+        {"system_id": CustomObjectId(system_id), "catalogue_item_id": CustomObjectId(catalogue_item_id)},
+        session=session,
     )
     assert retrieved_items == []
 
@@ -406,6 +424,7 @@ def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find` to return a list of item documents
@@ -416,10 +435,11 @@ def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_
 
     # catalogue item id no matching results
     rd_catalogue_item_id = str(ObjectId())
-    retrieved_item = item_repository.list(item.system_id, rd_catalogue_item_id)
+    retrieved_item = item_repository.list(item.system_id, rd_catalogue_item_id, session=session)
 
     database_mock.items.find.assert_called_with(
-        {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)}
+        {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)},
+        session=session,
     )
     assert retrieved_item == []
 
@@ -431,10 +451,11 @@ def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_
 
     # system id no matching results
     rd_system_id = str(ObjectId())
-    retrieved_item = item_repository.list(rd_system_id, item.catalogue_item_id)
+    retrieved_item = item_repository.list(rd_system_id, item.catalogue_item_id, session=session)
 
     database_mock.items.find.assert_called_with(
-        {"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)}
+        {"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)},
+        session=session,
     )
     assert retrieved_item == []
 
@@ -453,6 +474,7 @@ def test_get(test_helpers, database_mock, item_repository):
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return the inserted item document
@@ -467,9 +489,9 @@ def test_get(test_helpers, database_mock, item_repository):
         },
     )
 
-    retrieved_item = item_repository.get(item.id)
+    retrieved_item = item_repository.get(item.id, session=session)
 
-    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)})
+    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)}, session=session)
     assert retrieved_item == item
 
 
@@ -484,11 +506,11 @@ def test_get_with_invalid_id(item_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
+def test_get_with_non_existent_id(test_helpers, database_mock, item_repository):
     """
-    Test getting an item with a nonexistent ID.
+    Test getting an item with a non-existent ID.
 
-    Verify the `get` method properly handles the retrieval of an item with a nonexistent ID.
+    Verify the `get` method properly handles the retrieval of an item with a non-existent ID.
     """
     item_id = str(ObjectId())
 
@@ -498,7 +520,7 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, item_repository):
     retrieved_item = item_repository.get(item_id)
 
     assert retrieved_item is None
-    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item_id)})
+    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item_id)}, session=None)
 
 
 def test_update(test_helpers, database_mock, item_repository):
@@ -515,6 +537,7 @@ def test_update(test_helpers, database_mock, item_repository):
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `update_one` to return an object for the updated item document
@@ -537,7 +560,7 @@ def test_update(test_helpers, database_mock, item_repository):
         catalogue_item_id=item.catalogue_item_id,
         system_id=item.system_id,
     )
-    updated_item = item_repository.update(item.id, item_in)
+    updated_item = item_repository.update(item.id, item_in, session=session)
 
     database_mock.items.update_one.assert_called_once_with(
         {"_id": CustomObjectId(item.id)},
@@ -547,8 +570,9 @@ def test_update(test_helpers, database_mock, item_repository):
                 **item_in.model_dump(),
             }
         },
+        session=session,
     )
-    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)})
+    database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)}, session=session)
     assert updated_item == item
 
 
