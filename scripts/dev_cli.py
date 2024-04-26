@@ -255,9 +255,7 @@ class CommandDBGenerate(SubCommand):
             # Delete the existing data
             logging.info("Deleting database contents...")
             run_mongodb_command(
-                [
-                    "mongosh",
-                ]
+                ["mongosh", "ims"]
                 + get_mongodb_auth_args(args)
                 + [
                     "--eval",
