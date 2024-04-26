@@ -483,11 +483,16 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
             generated_system_ids.append(system_id)
 
 
-logging.info("Populating manufacturers...")
-manufacturer_ids = populate_random_manufacturers()
-logging.info("Populating catalogue categories...")
-populate_random_catalogue_categories(available_manufacturers=manufacturer_ids)
-logging.info("Populating systems...")
-populate_random_systems()
-logging.info("Populating items...")
-populate_random_items()
+def generate_mock_data():
+    logging.info("Populating manufacturers...")
+    manufacturer_ids = populate_random_manufacturers()
+    logging.info("Populating catalogue categories...")
+    populate_random_catalogue_categories(available_manufacturers=manufacturer_ids)
+    logging.info("Populating systems...")
+    populate_random_systems()
+    logging.info("Populating items...")
+    populate_random_items()
+
+
+if __name__ == "__main__":
+    generate_mock_data()
