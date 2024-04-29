@@ -221,4 +221,16 @@ def create_catalogue_item_property(
     logger.info("Creating a new catalogue item property at the catalogue category level")
     logger.debug("Catalogue item property data: %s", catalogue_item_property)
 
-    catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+    try:
+        return catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "Catalogue category not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DuplicateCatalogueItemPropertyNameError as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
