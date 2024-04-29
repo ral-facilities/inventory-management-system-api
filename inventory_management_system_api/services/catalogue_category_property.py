@@ -7,6 +7,7 @@ import logging
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import InvalidActionError
+from inventory_management_system_api.models.catalogue_category import CatalogueItemPropertyIn, CatalogueItemPropertyOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
@@ -70,7 +71,11 @@ class CatalogueCategoryPropertyService:
             catalogue_category.catalogue_item_properties + [catalogue_item_property]
         )
 
+        catalogue_item_property_in = CatalogueItemPropertyIn(**catalogue_item_property.model_dump())
+
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
             with session.start_transaction():
                 pass
+
+        return CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump())

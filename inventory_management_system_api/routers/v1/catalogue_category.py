@@ -222,7 +222,9 @@ def create_catalogue_item_property(
     logger.debug("Catalogue item property data: %s", catalogue_item_property)
 
     try:
-        return catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+        return CatalogueItemPropertySchema(
+            **catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property).model_dump()
+        )
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "Catalogue category not found"
         logger.exception(message)
