@@ -8,20 +8,18 @@ import logging
 from fastapi import Depends
 
 from inventory_management_system_api.core.database import mongodb_client
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    InvalidActionError, MissingRecordError)
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueItemPropertyIn,
-    CatalogueItemPropertyOut,
-)
+    CatalogueCategoryIn, CatalogueItemPropertyIn, CatalogueItemPropertyOut)
 from inventory_management_system_api.models.catalogue_item import PropertyIn
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.catalogue_category import \
+    CatalogueCategoryRepo
+from inventory_management_system_api.repositories.catalogue_item import \
+    CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
-from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueItemPropertyPostRequestSchema,
-    CatalogueItemPropertySchema,
-)
+from inventory_management_system_api.schemas.catalogue_category import \
+    CatalogueItemPropertyPostRequestSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -53,7 +51,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_item_property: CatalogueItemPropertyPostRequestSchema,
-    ) -> CatalogueItemPropertySchema:
+    ) -> CatalogueItemPropertyOut:
         """Create a new property at the catalogue category level
 
         Property will be propagated down through catalogue items and items when there are children.

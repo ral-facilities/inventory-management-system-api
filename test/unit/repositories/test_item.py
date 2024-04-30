@@ -3,7 +3,6 @@ Unit tests for the `ItemRepo` repository.
 """
 
 from datetime import datetime, timezone
-from inventory_management_system_api.models.catalogue_item import PropertyIn
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from unittest.mock import MagicMock, patch
 
@@ -12,6 +11,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 
 # pylint: disable=duplicate-code
@@ -274,7 +274,7 @@ def test_list_with_invalid_system_id_filter(item_repository):
 
 def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_repository):
     """
-    Test getting items based on the provided castalogue item ID filter.
+    Test getting items based on the provided catalogue item ID filter.
 
     Verify that the `list` method properly handles the retrieval of items based on
     the provided catalogue item ID filter

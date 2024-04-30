@@ -70,7 +70,9 @@ class TestDuplicateCatalogueItemPropertyNames:
     """Tests for the `check_duplicate_catalogue_item_property_names` method"""
 
     def test_with_no_duplicate_names(self):
-        """Test `check_duplicate_catalogue_item_property_names` works correctly when there are no duplicate names given"""
+        """
+        Test `check_duplicate_catalogue_item_property_names` works correctly when there are no duplicate names given
+        """
 
         utils.check_duplicate_catalogue_item_property_names(DEFINED_PROPERTIES)
 
