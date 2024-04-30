@@ -2,8 +2,10 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from unittest.mock import MagicMock
+from datetime import datetime, timezone
+from inventory_management_system_api.models.catalogue_item import PropertyIn
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
@@ -588,3 +590,31 @@ def test_update_with_invalid_id(item_repository):
     with pytest.raises(InvalidObjectIdError) as exc:
         item_repository.update(item_id, updated_item)
     assert str(exc.value) == f"Invalid ObjectId value '{item_id}'"
+
+
+@patch("inventory_management_system_api.repositories.item.datetime")
+def test_insert_property_to_all_in(datetime_mock, test_helpers, database_mock, item_repository):
+    """
+    Test inserting a catalogue item property
+
+    Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
+    property
+    """
+    session = MagicMock()
+    catalogue_item_ids = [ObjectId(), ObjectId()]
+    property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
+    datetime_mock.now.return_value = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
+
+    # Mock 'update_many'
+    test_helpers.mock_update_many(database_mock.items)
+
+    item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
+
+    database_mock.items.update_many.assert_called_once_with(
+        {"catalogue_item_id": {"$in": catalogue_item_ids}},
+        {
+            "$push": {"properties": property_in.model_dump(by_alias=True)},
+            "$set": {"modified_time": datetime_mock.now.return_value},
+        },
+        session=session,
+    )

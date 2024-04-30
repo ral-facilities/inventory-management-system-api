@@ -4,7 +4,7 @@ Module for providing a repository for managing catalogue items in a MongoDB data
 
 from datetime import datetime, timezone
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from bson import ObjectId
 from fastapi import Depends
@@ -139,7 +139,7 @@ class CatalogueItemRepo:
         item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id}, session=session)
         return item is not None
 
-    def list_ids(self, catalogue_category_id: str, session: ClientSession = None) -> List[Dict[str, ObjectId]]:
+    def list_ids(self, catalogue_category_id: str, session: ClientSession = None) -> List[ObjectId]:
         """
         Retrieve a list of all catalogue item ids with a specific catalogue_category_id from a MongoDB
         database. Performs a projection to only include _id. (Required for mass updates of properties

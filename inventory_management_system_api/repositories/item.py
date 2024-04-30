@@ -4,7 +4,7 @@ Module for providing a repository for managing items in a MongoDB database.
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from bson import ObjectId
 from fastapi import Depends
@@ -130,7 +130,7 @@ class ItemRepo:
         return item
 
     def insert_property_to_all_in(
-        self, catalogue_item_ids: List[Dict[str, ObjectId]], property_in: PropertyIn, session: ClientSession = None
+        self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: ClientSession = None
     ):
         """
         Inserts a property into every item with one of the given catalogue_item_id's using an update_many query
