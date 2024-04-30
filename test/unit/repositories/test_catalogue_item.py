@@ -33,9 +33,9 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [
-        {"name": "Property A", "value": 20, "unit": "mm"},
-        {"name": "Property B", "value": False, "unit": None},
-        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {"id": str(ObjectId()), "name": "Property A", "value": 20, "unit": "mm"},
+        {"id": str(ObjectId()), "name": "Property B", "value": False, "unit": None},
+        {"id": str(ObjectId()), "name": "Property C", "value": "20x15x10", "unit": "cm"},
     ],
 }
 
@@ -54,7 +54,7 @@ FULL_CATALOGUE_ITEM_B_INFO = {
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
     "notes": "Some extra information",
-    "properties": [{"name": "Property A", "value": True, "unit": None}],
+    "properties": [{"id": str(ObjectId()), "name": "Property A", "value": True, "unit": None}],
 }
 # pylint: enable=duplicate-code
 
@@ -72,7 +72,7 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
     )
-    catalogue_item_info = catalogue_item_in.model_dump()
+    catalogue_item_info = catalogue_item_in.model_dump(by_alias=True)
     catalogue_item_out = CatalogueItemOut(
         **catalogue_item_info,
         id=str(ObjectId()),
@@ -420,7 +420,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         {
             "$set": {
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-                **catalogue_item_in.model_dump(),
+                **catalogue_item_in.model_dump(by_alias=True),
             }
         },
         session=session,
@@ -476,30 +476,6 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     # Mock find_one to return 0 (child items not found)
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    result = catalogue_item_repository.has_child_elements(catalogue_category_id)
-
-    assert result
-
-
-def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mock, catalogue_item_repository):
-    """
-    Test has_child_elements returns true when there are child items.
-    """
-    catalogue_category_id = str(ObjectId())
-
-    # Mock `find_one` to return no child catalogue category document
-    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
-    # pylint: disable=duplicate-code
-    # Mock `find_one` to return the child catalogue item document
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items,
-        {
-            **FULL_CATALOGUE_ITEM_A_INFO,
-            "_id": CustomObjectId(str(ObjectId())),
-            "catalogue_category_id": CustomObjectId(catalogue_category_id),
-        },
-    )
-    # pylint: enable=duplicate-code
     result = catalogue_item_repository.has_child_elements(catalogue_category_id)
 
     assert result

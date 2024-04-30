@@ -32,7 +32,7 @@ FULL_ITEM_INFO = {
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
     "notes": "Test notes",
-    "properties": [{"name": "Property A", "value": 21, "unit": "mm"}],
+    "properties": [{"id": str(ObjectId()), "name": "Property A", "value": 21, "unit": "mm"}],
 }
 # pylint: enable=duplicate-code
 
@@ -47,7 +47,7 @@ def test_create(test_helpers, database_mock, item_repository):
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
-    item_info = item_in.model_dump()
+    item_info = item_in.model_dump(by_alias=True)
     item_out = ItemOut(
         **item_info,
         id=str(ObjectId()),
@@ -78,7 +78,7 @@ def test_create(test_helpers, database_mock, item_repository):
     created_item = item_repository.create(item_in, session=session)
 
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item_out.system_id)}, session=session)
-    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump(), session=session)
+    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump(by_alias=True), session=session)
     assert created_item == item_out
 
 
@@ -567,7 +567,7 @@ def test_update(test_helpers, database_mock, item_repository):
         {
             "$set": {
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **item_in.model_dump(),
+                **item_in.model_dump(by_alias=True),
             }
         },
         session=session,

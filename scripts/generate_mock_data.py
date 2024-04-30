@@ -277,7 +277,7 @@ def generate_random_manufacturer():
 
 
 def generate_random_catalogue_item_property(catalogue_category_property: dict):
-    prop = {"name": catalogue_category_property["name"]}
+    prop = {"id": catalogue_category_property["id"]}
 
     allowed_values = catalogue_category_property["allowed_values"]
     if allowed_values is not None:
@@ -378,36 +378,36 @@ def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
     Returns:
         str - The ID of the entity created
     """
-    id = 0
+    index = 0
     status_code = 409
     while status_code == 409:
         response = requests.post(
             f"{API_URL}{endpoint}",
-            json=json if id == 0 else {**json, "name": f"{json['name']} - {id}"},
+            json=json if index == 0 else {**json, "name": f"{json['name']} - {index}"},
             timeout=10,
         )
         status_code = response.status_code
-        id += 1
-    return response.json()["id"]
+        index += 1
+    return response.json()
 
 
-def create_manufacturer(manufacturer_data: dict) -> str:
+def create_manufacturer(manufacturer_data: dict) -> dict[str, str]:
     return post_avoiding_duplicate_names(endpoint="/v1/manufacturers", json=manufacturer_data)
 
 
-def create_catalogue_category(category_data: dict) -> str:
+def create_catalogue_category(category_data: dict) -> dict[str, str]:
     return post_avoiding_duplicate_names(endpoint="/v1/catalogue-categories", json=category_data)
 
 
-def create_catalogue_item(item_data: dict) -> str:
+def create_catalogue_item(item_data: dict) -> dict[str, str]:
     return post_avoiding_duplicate_names(endpoint="/v1/catalogue-items", json=item_data)
 
 
-def create_system(system_data: dict) -> str:
+def create_system(system_data: dict) -> dict[str, str]:
     return post_avoiding_duplicate_names(endpoint="/v1/systems", json=system_data)
 
 
-def create_item(item_data: dict) -> str:
+def create_item(item_data: dict) -> dict[str, str]:
     return post_avoiding_duplicate_names(endpoint="/v1/items", json=item_data)
 
 
@@ -415,7 +415,7 @@ def populate_random_manufacturers() -> list[str]:
     # Usually faster than append
     manufacturer_ids = [None] * NUMBER_OF_MANUFACTURERS
     for i in range(0, NUMBER_OF_MANUFACTURERS):
-        manufacturer_ids[i] = create_manufacturer(generate_random_manufacturer())
+        manufacturer_ids[i] = create_manufacturer(generate_random_manufacturer())["id"]
     return manufacturer_ids
 
 
@@ -441,7 +441,7 @@ def populate_random_catalogue_categories(
                         parent_catalogue_category["catalogue_item_properties"] if parent_catalogue_category else None
                     ),
                 )
-                item_id = create_catalogue_item(item)
+                item_id = create_catalogue_item(item)["id"]
                 generated_catalogue_items[item_id] = parent_id
             else:
                 # Always make the last level a leaf
@@ -450,12 +450,12 @@ def populate_random_catalogue_categories(
                 else:
                     new_is_leaf = fake.random.random() < PROBABILITY_CATEGORY_IS_LEAF
                 catalogue_category = generate_random_catalogue_category(parent_id, new_is_leaf)
-                id = create_catalogue_category(catalogue_category)
-                generated_catalogue_categories[id] = catalogue_category
+                catalogue_category = create_catalogue_category(catalogue_category)
+                generated_catalogue_categories[catalogue_category["id"]] = catalogue_category
                 populate_random_catalogue_categories(
                     available_manufacturers=available_manufacturers,
                     levels_deep=levels_deep + 1,
-                    parent_id=id,
+                    parent_id=catalogue_category["id"],
                     is_leaf=new_is_leaf,
                     parent_catalogue_category=catalogue_category,
                 )
@@ -478,9 +478,9 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
         num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
         for i in range(0, num_to_generate):
             system = generate_random_system(parent_id)
-            id = create_system(system)
-            populate_random_systems(levels_deep=levels_deep + 1, parent_id=id)
-            generated_system_ids.append(id)
+            system_id = create_system(system)["id"]
+            populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
+            generated_system_ids.append(system_id)
 
 
 def generate_mock_data():

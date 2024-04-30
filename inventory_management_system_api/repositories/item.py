@@ -45,7 +45,7 @@ class ItemRepo:
             raise MissingRecordError(f"No system found with ID: {item.system_id}")
 
         logger.info("Inserting the new item into the database")
-        result = self._items_collection.insert_one(item.model_dump(), session=session)
+        result = self._items_collection.insert_one(item.model_dump(by_alias=True), session=session)
 
         item = self.get(str(result.inserted_id), session=session)
         return item
@@ -122,6 +122,6 @@ class ItemRepo:
         """
         item_id = CustomObjectId(item_id)
         logger.info("Updating item with ID: %s in the database", item_id)
-        self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump()}, session=session)
+        self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
         item = self.get(str(item_id), session=session)
         return item
