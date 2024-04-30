@@ -3,8 +3,10 @@ Module for providing a repository for managing items in a MongoDB database.
 """
 
 import logging
-from typing import List, Optional
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
+from bson import ObjectId
 from fastapi import Depends
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -13,6 +15,7 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 
 logger = logging.getLogger()
@@ -125,3 +128,29 @@ class ItemRepo:
         self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
         item = self.get(str(item_id), session=session)
         return item
+
+    def insert_property_to_all_in(
+        self, catalogue_item_ids: List[Dict[str, ObjectId]], property_in: PropertyIn, session: ClientSession = None
+    ):
+        """
+        Inserts a property into every item with one of the given catalogue_item_id's using an update_many query
+
+        :param catalogue_item_ids: List of catalogue_item_id's to look for in the items that the property should be
+                                   added to
+        :param property_in: The property to insert into the items' properties list
+        :param session: PyMongo ClientSession to use for database operations
+        """
+
+        # This log should happen after the corresponding one finding the ids during a property addition, don't log
+        # all the ids as there could be many
+        logger.info(
+            "Inserting property into corresponding items of the catalogue items",
+        )
+        self._items_collection.update_many(
+            {"catalogue_item_id": {"$in": catalogue_item_ids}},
+            {
+                "$push": {"properties": property_in.model_dump(by_alias=True)},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
+            },
+            session=session,
+        )

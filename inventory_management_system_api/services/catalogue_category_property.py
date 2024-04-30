@@ -4,14 +4,17 @@ propagation down through their child catalogue items and items using their respe
 """
 
 import logging
+
 from fastapi import Depends
 
+from inventory_management_system_api.core.database import mongodb_client
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueItemPropertyIn,
     CatalogueItemPropertyOut,
 )
+from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
@@ -19,7 +22,6 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueItemPropertyPostRequestSchema,
     CatalogueItemPropertySchema,
 )
-from inventory_management_system_api.core.database import mongodb_client
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -91,41 +93,28 @@ class CatalogueCategoryPropertyService:
         with mongodb_client.start_session() as session:
             with session.start_transaction():
                 # Firstly update the catalogue category
-                # self._catalogue_category_repository.update(
-                #     catalogue_category_id, catalogue_category_in, session=session
-                # )
+                self._catalogue_category_repository.update(
+                    catalogue_category_id, catalogue_category_in, session=session
+                )
 
-                # ids = list(
-                #     self._catalogue_item_repository._catalogue_items_collection.find(
-                #         {"catalogue_category_id": ObjectId(catalogue_category_id)}, {"_id": 1}
-                #     )
-                # )
-                # start_time = time.time()
-                # self._catalogue_item_repository._catalogue_items_collection.update_many(
-                #     {"catalogue_category_id": catalogue_category_id}, {"$set": {"catalogue_item_properties": []}}
-                # )
-                # ids = list(
-                #     self._catalogue_item_repository._catalogue_items_collection.find(
-                #         {"catalogue_category_id": ObjectId(catalogue_category_id)}, {"_id": 1}
-                #     )
-                # )
-                # self._catalogue_item_repository._catalogue_items_collection.update_many(
-                #     {"_id": {"$in": ids}}, {"$set": {"catalogue_item_properties": []}}
-                # )
-                # for id in ids:
-                #     self._catalogue_item_repository._catalogue_items_collection.update_many(
-                #         {"_id": id}, {"$set": {"catalogue_item_properties": []}}
-                #     )
-                # updates = []
-                # for id in ids:
-                #     updates.append(UpdateMany({"_id": id}, {"$set": {"catalogue_item_properties": []}}))
-                # self._catalogue_item_repository._catalogue_items_collection.bulk_write(updates, session=session)
-                # logger.debug(ids)
-                # print(len(ids))
-                # logger.debug("Time taken %s", (time.time() - start_time))
+                # Property to be added catalogue items and items
+                property_in = PropertyIn(
+                    id=str(catalogue_item_property_in.id),
+                    name=catalogue_item_property_in.name,
+                    value=catalogue_item_property.default_value,
+                    unit=catalogue_item_property.unit,
+                )
 
-                # Now need to update catalogue items and items
-                # raise InvalidActionError("AVOID ACTUAL UPDATE")
-                pass
+                # Add property to all catalogue items of the catalogue category
+                self._catalogue_item_repository.insert_property_to_all_matching(
+                    catalogue_category_id, property_in, session=session
+                )
+
+                # Add property to all items of the catalogue items
+                # Obtain a list of ids to do this rather than iterate one by one as its faster. Limiting factor
+                # would be memory to store these ids and the network bandwidth it takes to send the request to the
+                # database but for 10000 items being updated this only takes 4.92 KB
+                catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
+                self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
 
         return CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump())
