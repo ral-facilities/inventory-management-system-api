@@ -58,6 +58,8 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_id: ID of the catalogue category to add the property to
         :catalogue_item_property: Property to add (with additional info on how to perform the migration if necessary)
         :raises InvalidActionError: If attempting to add a mandatory property without a default_value being specified
+                                    or if the catalogue category is not a leaf
+        :raises MissingRecordError: If the catalogue category doesn't exist
         :return: The created catalogue item property as defined at the catalogue category level
         """
 
