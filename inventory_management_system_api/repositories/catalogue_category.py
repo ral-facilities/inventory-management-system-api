@@ -3,6 +3,7 @@ Module for providing a repository for managing catalogue categories in a MongoDB
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import Depends
@@ -18,7 +19,11 @@ from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn,
+    CatalogueCategoryOut,
+    CatalogueItemPropertyIn,
+)
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
@@ -240,4 +245,38 @@ class CatalogueCategoryRepo:
                 {"catalogue_category_id": catalogue_category_id}, session=session
             )
             is not None
+        )
+
+    def update_catalogue_item_property(
+        self,
+        catalogue_category_id: str,
+        catalogue_item_property_id: str,
+        catalogue_item_property: CatalogueItemPropertyIn,
+        session: ClientSession,
+    ):
+        """
+        Updates a catalogue item property given its ID and the ID of the catalogue category it's in
+
+        :param catalogue_category_id: The ID of the catalogue category to update
+        :param catalogue_item_property_id: The ID of the catalogue item property to update
+        :param catalogue_item_property: The catalogue item property containing the update data
+        :param session: PyMongo ClientSession to use for database operations
+        """
+        # TODO: Perform checks in here?, perhaps a get_catalogue_item_property method then return the response?
+        # same for duplicate check? Would be extra unnecessary queries though given the checks must happen in
+        # the service. Also wont make sense for catalogue items and items. The catalogue_category_id is not
+        # actually needed here at the moment.
+        self._catalogue_categories_collection.update_one(
+            {
+                "_id": CustomObjectId(catalogue_category_id),
+                "catalogue_item_properties._id": CustomObjectId(catalogue_item_property_id),
+            },
+            {
+                "$set": {
+                    "catalogue_item_properties.$[elem]": catalogue_item_property.model_dump(by_alias=True),
+                    "modified_time": datetime.now(timezone.utc),
+                }
+            },
+            array_filters=[{"elem._id": CustomObjectId(catalogue_item_property_id)}],
+            session=session,
         )

@@ -211,3 +211,16 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
                 raise ValueError("default_value is not one of the allowed_values")
 
         return default_value
+
+
+class CatalogueItemPropertyPatchRequestSchema(BaseModel):
+    """
+    Schema model for a catalogue item property patch request
+    """
+
+    name: Optional[str] = Field(default=None, description="The name of the property")
+    allowed_values: Optional[AllowedValuesSchema] = Field(
+        default=None,
+        description="Definition of the allowed values this property can take. 'null' indicates any value matching the "
+        "type is allowed.",
+    )

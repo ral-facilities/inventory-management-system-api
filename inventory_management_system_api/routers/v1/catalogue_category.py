@@ -23,6 +23,7 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
     CatalogueCategorySchema,
+    CatalogueItemPropertyPatchRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
     CatalogueItemPropertySchema,
 )
@@ -236,3 +237,41 @@ def create_catalogue_item_property(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+
+@router.patch(
+    path="/{catalogue_category_id}/properties/{catalogue_item_property_id}",
+    summary="Update catalogue item property at the catalogue category level",
+    response_description="The updated catalogue item property as defined at the catalogue category level",
+)
+def partial_update_catalogue_item_property(
+    catalogue_item_property: CatalogueItemPropertyPatchRequestSchema,
+    catalogue_category_id: str = Path(description="The ID of the catalogue category containing the property to patch"),
+    catalogue_item_property_id: str = Path(description="The ID of the catalogue item property patch"),
+    catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
+) -> CatalogueItemPropertySchema:
+    # pylint: disable=missing-function-docstring
+    logger.info(
+        "Partially updating catalogue category with ID %s's catalogue item property with ID: %s",
+        catalogue_category_id,
+        catalogue_item_property_id,
+    )
+    logger.debug("Catalogue item property data: %s", catalogue_item_property)
+
+    try:
+        return CatalogueItemPropertySchema(
+            **catalogue_category_property_service.update(
+                catalogue_category_id, catalogue_item_property_id, catalogue_item_property
+            ).model_dump()
+        )
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if catalogue_item_property_id in str(exc):
+            message = "Catalogue item property not found"
+        else:
+            message = "Catalogue category not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DuplicateCatalogueItemPropertyNameError as exc:
+        message = "A catalogue item property with the same name already exists within the catalogue category"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

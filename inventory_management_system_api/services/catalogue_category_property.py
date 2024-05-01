@@ -18,7 +18,10 @@ from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
-from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueItemPropertyPatchRequestSchema,
+    CatalogueItemPropertyPostRequestSchema,
+)
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -117,3 +120,65 @@ class CatalogueCategoryPropertyService:
                 self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
 
         return CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump())
+
+    def update(
+        self,
+        catalogue_category_id: str,
+        catalogue_item_property_id: str,
+        catalogue_item_property: CatalogueItemPropertyPatchRequestSchema,
+    ) -> CatalogueItemPropertyOut:
+        """
+        Update a property at the catalogue category level by its id
+
+        Property changes will be propagated down through the catalogue items and items when required where there are
+        children
+
+        :param catalogue_category_id: The ID of the catalogue category to update
+        :param catalogue_item_property_id: The ID of the catalogue item property within the category to update
+        :param catalogue_item_property: The property values to update
+        :raises MissingRecordError: If the catalogue category doesn't exist, or the catalogue item property doesn't
+                                    exist within the specified catalogue category
+        """
+
+        update_data = catalogue_item_property.model_dump(exclude_unset=True)
+
+        # Obtain the existing catalogue category to validate against
+        stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+        if not stored_catalogue_category:
+            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+
+        # Attempt to locate the property
+        existing_property_out: CatalogueItemPropertyOut = None
+        for prop in stored_catalogue_category.catalogue_item_properties:
+            if prop.id == catalogue_item_property_id:
+                existing_property_out = prop
+                break
+
+        if not existing_property_out:
+            raise MissingRecordError(f"No catalogue item property found with ID: {catalogue_item_property_id}")
+
+        # Modify the name if necessary and check it doesn't cause a conflict
+        if "name" in update_data:
+            existing_property_out.name = update_data["name"]
+            utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
+
+        # TODO: Need to perform validation on the allowed_values using the existing property type
+
+        catalogue_item_property_in = CatalogueItemPropertyIn(
+            **{**existing_property_out.model_dump(), **catalogue_item_property.model_dump()}
+        )
+
+        # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
+        with mongodb_client.start_session() as session:
+            with session.start_transaction():
+                # Firstly update the catalogue category
+                self._catalogue_category_repository.update_catalogue_item_property(
+                    catalogue_category_id, catalogue_item_property_id, catalogue_item_property_in, session=session
+                )
+
+                # Avoid propagating changes unless absolutely necessary
+                if "name" in update_data:
+                    # TODO: Propagate through catalogue items and items
+                    pass
+
+        return CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump(by_alias=True))
