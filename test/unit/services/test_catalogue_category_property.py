@@ -25,7 +25,7 @@ from inventory_management_system_api.schemas.catalogue_category import Catalogue
 @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
 @pytest.mark.parametrize(
     "mandatory,default_value",
-    [(False, None), (True, "42")],
+    [(False, None), (True, 42)],
     ids=["non_mandatory_without_default_value", "mandatory_with_default_value"],
 )
 def test_create(
