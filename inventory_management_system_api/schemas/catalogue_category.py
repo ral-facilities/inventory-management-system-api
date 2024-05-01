@@ -186,3 +186,28 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
         description="Value to populate all child catalogue items and items with. Required if the added field is "
         "mandatory.",
     )
+
+    @field_validator("default_value")
+    @classmethod
+    def validate_default_value(
+        cls, default_value: Optional[Union[str, int, bool]], info: ValidationInfo
+    ) -> Optional[Union[str, int, bool]]:
+        """
+        Validator for the `default_value` field.
+
+        It checks if the `type` of the default value is a valid type and if allowed_properties is defined, ensures
+        that the given value is within the list.
+
+        :param allowed_values: The value of the `allowed_values` field.
+        :param info: Validation info from pydantic.
+        :return: The value of the `allowed_values` field.
+        """
+        if default_value is not None:
+            if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+                expected_property_type=info.data["type"], property_value=default_value
+            ):
+                raise ValueError("default_value must be the same type as the property itself")
+            if info.data["allowed_values"] and default_value not in info.data["allowed_values"]:
+                raise ValueError("default_value is not one of the allowed_values")
+
+        return default_value

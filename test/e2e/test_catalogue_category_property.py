@@ -164,10 +164,16 @@ class CreateDSL:
         self.catalogue_item_property = self._catalogue_item_post_response.json()
         assert self.catalogue_item_property == {**catalogue_item_property_expected, "id": ANY}
 
-    def check_catalogue_item_property_response_failed(self, status_code, detail):
+    def check_catalogue_item_property_response_failed_with_message(self, status_code, detail):
         """Checks the response of posting a catalogue item property failed as expected"""
         assert self._catalogue_item_post_response.status_code == status_code
         assert self._catalogue_item_post_response.json()["detail"] == detail
+
+    def check_catalogue_item_property_response_failed_with_validation_message(self, status_code, message):
+        """Checks the response of posting a catalogue item property failed as expected with a pydantic validation
+        message"""
+        assert self._catalogue_item_post_response.status_code == status_code
+        assert self._catalogue_item_post_response.json()["detail"][0]["msg"] == message
 
     def check_catalogue_category_updated(self, catalogue_item_property_expected):
         """Checks the catalogue category is updated correctly with the new property"""
@@ -236,13 +242,13 @@ class TestCreate(CreateDSL):
         self.post_catalogue_item_property(
             CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, catalogue_category_id=str(ObjectId())
         )
-        self.check_catalogue_item_property_response_failed(404, "Catalogue category not found")
+        self.check_catalogue_item_property_response_failed_with_message(404, "Catalogue category not found")
 
     def test_create_property_with_invalid_catalogue_category_id(self):
         """Test adding a property when given an invalid catalogue category id"""
 
         self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, catalogue_category_id="invalid")
-        self.check_catalogue_item_property_response_failed(404, "Catalogue category not found")
+        self.check_catalogue_item_property_response_failed_with_message(404, "Catalogue category not found")
 
     def test_create_mandatory_property_without_default_value(self):
         """
@@ -259,8 +265,43 @@ class TestCreate(CreateDSL):
                 "mandatory": True,
             }
         )
-        self.check_catalogue_item_property_response_failed(
+        self.check_catalogue_item_property_response_failed_with_message(
             422, "Cannot add a mandatory property without a default value"
+        )
+
+    def test_create_mandatory_property_with_invalid_default_value(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item without
+        a default value
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "number",
+                "unit": "mm",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": [1, 2, 3]},
+                "default_value": 42,
+            }
+        )
+        self.check_catalogue_item_property_response_failed_with_validation_message(
+            422, "Value error, default_value is not one of the allowed_values"
+        )
+
+    def test_create_mandatory_property_with_invalid_default_value_type(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
+        a default value with an invalid type
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {"name": "Property B", "type": "number", "unit": "mm", "mandatory": True, "default_value": "wrong_type"}
+        )
+        self.check_catalogue_item_property_response_failed_with_validation_message(
+            422, "Value error, default_value must be the same type as the property itself"
         )
 
     def test_create_property_non_leaf_catalogue_category(self):
@@ -270,6 +311,6 @@ class TestCreate(CreateDSL):
 
         self.post_non_leaf_catalogue_category()
         self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY)
-        self.check_catalogue_item_property_response_failed(
+        self.check_catalogue_item_property_response_failed_with_message(
             422, "Cannot add a property to a non-leaf catalogue category"
         )
