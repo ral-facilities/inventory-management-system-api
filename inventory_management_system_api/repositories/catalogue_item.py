@@ -154,10 +154,10 @@ class CatalogueItemRepo:
             "Finding the id's of all catalogue items within the catalogue category with ID '%s' in the database",
             catalogue_category_id,
         )
+
         # Using distinct has a 16MB limit
         # https://stackoverflow.com/questions/29771192/how-do-i-get-a-list-of-just-the-objectids-using-pymongo
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
-
         return self._catalogue_items_collection.find(
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, {"_id": 1}, session=session
         ).distinct("_id")
@@ -177,6 +177,7 @@ class CatalogueItemRepo:
             "Inserting property into catalogue item's with a catalogue category ID: %s in the database",
             catalogue_category_id,
         )
+
         self._catalogue_items_collection.update_many(
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
             {
