@@ -10,7 +10,6 @@ from fastapi import Depends
 from inventory_management_system_api.core.database import mongodb_client
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
     CatalogueItemPropertyIn,
     CatalogueItemPropertyOut,
 )
@@ -87,16 +86,12 @@ class CatalogueCategoryPropertyService:
 
         catalogue_item_property_in = CatalogueItemPropertyIn(**catalogue_item_property.model_dump())
 
-        # New catalogue category data
-        catalogue_category_in = CatalogueCategoryIn(**stored_catalogue_category.model_dump())
-        catalogue_category_in.catalogue_item_properties.append(catalogue_item_property_in)
-
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
             with session.start_transaction():
                 # Firstly update the catalogue category
-                self._catalogue_category_repository.update(
-                    catalogue_category_id, catalogue_category_in, session=session
+                catalogue_item_property_out = self._catalogue_category_repository.create_catalogue_item_property(
+                    catalogue_category_id, catalogue_item_property_in, session=session
                 )
 
                 # Property to be added catalogue items and items
@@ -119,7 +114,7 @@ class CatalogueCategoryPropertyService:
                 catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
                 self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
 
-        return CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump())
+        return catalogue_item_property_out
 
     def update(
         self,
@@ -172,7 +167,7 @@ class CatalogueCategoryPropertyService:
         with mongodb_client.start_session() as session:
             with session.start_transaction():
                 # Firstly update the catalogue category
-                self._catalogue_category_repository.update_catalogue_item_property(
+                catalogue_item_property_out = self._catalogue_category_repository.update_catalogue_item_property(
                     catalogue_category_id, catalogue_item_property_id, catalogue_item_property_in, session=session
                 )
 
@@ -181,4 +176,4 @@ class CatalogueCategoryPropertyService:
                     # TODO: Propagate through catalogue items and items
                     pass
 
-        return CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump(by_alias=True))
+        return catalogue_item_property_out

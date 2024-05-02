@@ -23,6 +23,7 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
     CatalogueItemPropertyIn,
+    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -247,6 +248,39 @@ class CatalogueCategoryRepo:
             is not None
         )
 
+    def create_catalogue_item_property(
+        self,
+        catalogue_category_id: str,
+        catalogue_item_property: CatalogueItemPropertyIn,
+        session: ClientSession = None,
+    ) -> CatalogueItemPropertyOut:
+        """
+        Create a new a catalogue item property within a catalogue category given its ID in a MongoDB database
+
+        This method only affects catalogue categories so this should only be used in conjunction with the respective
+        insert methods within the catalogue items and items repos if the catalogue category may have children.
+
+        :param catalogue_category_id: The ID of the catalogue category to add the property to
+        :param catalogue_item_property: The catalogue item property containing the property data
+        :param session: PyMongo ClientSession to use for database operations
+        :return: The added catalogue category
+        """
+
+        logger.info(
+            "Inserting new catalogue item property into catalogue category with ID: %s in the database",
+            catalogue_category_id,
+        )
+        catalogue_item_property_data = catalogue_item_property.model_dump(by_alias=True)
+        self._catalogue_categories_collection.update_one(
+            {"_id": CustomObjectId(catalogue_category_id)},
+            {
+                "$push": {"catalogue_item_properties": catalogue_item_property_data},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
+            },
+            session=session,
+        )
+        return CatalogueItemPropertyOut(**catalogue_item_property_data)
+
     def update_catalogue_item_property(
         self,
         catalogue_category_id: str,
@@ -266,6 +300,7 @@ class CatalogueCategoryRepo:
         # same for duplicate check? Would be extra unnecessary queries though given the checks must happen in
         # the service. Also wont make sense for catalogue items and items. The catalogue_category_id is not
         # actually needed here at the moment.
+        catalogue_item_property_data = catalogue_item_property.model_dump(by_alias=True)
         self._catalogue_categories_collection.update_one(
             {
                 "_id": CustomObjectId(catalogue_category_id),
@@ -273,10 +308,11 @@ class CatalogueCategoryRepo:
             },
             {
                 "$set": {
-                    "catalogue_item_properties.$[elem]": catalogue_item_property.model_dump(by_alias=True),
+                    "catalogue_item_properties.$[elem]": catalogue_item_property_data,
                     "modified_time": datetime.now(timezone.utc),
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(catalogue_item_property_id)}],
             session=session,
         )
+        return CatalogueItemPropertyOut(**catalogue_item_property_data)

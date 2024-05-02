@@ -10,10 +10,8 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
     CatalogueCategoryOut,
     CatalogueItemPropertyIn,
-    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyPostRequestSchema
@@ -70,27 +68,21 @@ def test_create(
 
     # Start of transaction
     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-    catalogue_category_repository_mock.update.assert_called_once_with(
+    catalogue_category_repository_mock.create_catalogue_item_property.assert_called_once_with(
         catalogue_category_id,
         ANY,
         session=session,
     )
 
     expected_catalogue_item_property_in = CatalogueItemPropertyIn(**catalogue_item_property.model_dump())
-    expected_catalogue_item_properties_in = [
-        CatalogueItemPropertyIn(**prop.model_dump()) for prop in stored_catalogue_category.catalogue_item_properties
-    ] + [expected_catalogue_item_property_in]
-    expected_catalogue_category_in = CatalogueCategoryIn(
-        **{**stored_catalogue_category.model_dump(), "catalogue_item_properties": expected_catalogue_item_properties_in}
-    )
 
-    # Catalogue category update
-    update_catalogue_category_in = catalogue_category_repository_mock.update.call_args_list[0][0][1]
-    assert update_catalogue_category_in.model_dump() == {
-        **expected_catalogue_category_in.model_dump(),
-        "catalogue_item_properties": [
-            {**prop.model_dump(), "id": ANY} for prop in expected_catalogue_item_properties_in
-        ],
+    # Catalogue item property insertion into catalogue category
+    inserted_catalogue_item_property_in = (
+        catalogue_category_repository_mock.create_catalogue_item_property.call_args_list[0][0][1]
+    )
+    assert inserted_catalogue_item_property_in.model_dump() == {
+        **expected_catalogue_item_property_in.model_dump(),
+        "id": ANY,
     }
 
     # Property
@@ -125,10 +117,10 @@ def test_create(
     }
 
     # Final output
-    assert created_catalogue_item_property.model_dump() == {
-        **CatalogueItemPropertyOut(**expected_catalogue_item_property_in.model_dump()).model_dump(),
-        "id": ANY,
-    }
+    assert (
+        created_catalogue_item_property
+        == catalogue_category_repository_mock.create_catalogue_item_property.return_value
+    )
 
 
 def test_create_mandatory_property_without_default_value(
@@ -167,7 +159,7 @@ def test_create_mandatory_property_without_default_value(
     assert str(exc.value) == "Cannot add a mandatory property without a default value"
 
     # Ensure no updates
-    catalogue_category_repository_mock.update.assert_not_called()
+    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
@@ -199,7 +191,7 @@ def test_create_mandatory_property_with_missing_catalogue_category(
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
     # Ensure no updates
-    catalogue_category_repository_mock.update.assert_not_called()
+    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
@@ -240,6 +232,6 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     assert str(exc.value) == "Cannot add a property to a non-leaf catalogue category"
 
     # Ensure no updates
-    catalogue_category_repository_mock.update.assert_not_called()
+    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
