@@ -154,7 +154,7 @@ class CatalogueCategoryPropertyService:
             raise MissingRecordError(f"No catalogue item property found with ID: {catalogue_item_property_id}")
 
         # Modify the name if necessary and check it doesn't cause a conflict
-        updating_name = "name" in update_data and update_data["name"] != stored_catalogue_category.name
+        updating_name = "name" in update_data and update_data["name"] != existing_property_out.name
         if updating_name:
             existing_property_out.name = update_data["name"]
             utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
