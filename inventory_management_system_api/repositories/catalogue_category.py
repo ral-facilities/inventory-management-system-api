@@ -286,7 +286,7 @@ class CatalogueCategoryRepo:
         catalogue_category_id: str,
         catalogue_item_property_id: str,
         catalogue_item_property: CatalogueItemPropertyIn,
-        session: ClientSession,
+        session: ClientSession = None,
     ):
         """
         Updates a catalogue item property given its ID and the ID of the catalogue category it's in
@@ -300,6 +300,13 @@ class CatalogueCategoryRepo:
         # same for duplicate check? Would be extra unnecessary queries though given the checks must happen in
         # the service. Also wont make sense for catalogue items and items. The catalogue_category_id is not
         # actually needed here at the moment.
+
+        logger.info(
+            "Updating property with ID: %s inside catalogue category with ID: %s in the database",
+            catalogue_item_property_id,
+            catalogue_category_id,
+        )
+
         catalogue_item_property_data = catalogue_item_property.model_dump(by_alias=True)
         self._catalogue_categories_collection.update_one(
             {

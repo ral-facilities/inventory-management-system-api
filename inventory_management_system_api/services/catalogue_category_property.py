@@ -153,11 +153,14 @@ class CatalogueCategoryPropertyService:
             raise MissingRecordError(f"No catalogue item property found with ID: {catalogue_item_property_id}")
 
         # Modify the name if necessary and check it doesn't cause a conflict
-        if "name" in update_data:
+        updating_name = "name" in update_data and update_data["name"] != stored_catalogue_category.name
+        if updating_name:
             existing_property_out.name = update_data["name"]
             utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
 
         # TODO: Need to perform validation on the allowed_values using the existing property type
+        #       as CatalogueCategoryPostRequestPropertySchema would have done and check that the
+        #       changes are actually allowed e.g. only adding allowed values
 
         catalogue_item_property_in = CatalogueItemPropertyIn(
             **{**existing_property_out.model_dump(), **catalogue_item_property.model_dump()}
@@ -172,8 +175,12 @@ class CatalogueCategoryPropertyService:
                 )
 
                 # Avoid propagating changes unless absolutely necessary
-                if "name" in update_data:
-                    # TODO: Propagate through catalogue items and items
-                    pass
+                if updating_name:
+                    self._catalogue_item_repository.update_names_of_all_properties_with_id(
+                        catalogue_item_property_id, catalogue_item_property.name, session=session
+                    )
+                    self._item_repository.update_names_of_all_properties_with_id(
+                        catalogue_item_property_id, catalogue_item_property.name, session=session
+                    )
 
         return catalogue_item_property_out
