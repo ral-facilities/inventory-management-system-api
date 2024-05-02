@@ -275,3 +275,10 @@ def partial_update_catalogue_item_property(
         message = "A catalogue item property with the same name already exists within the catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # TODO: Replace with RequestValidationError? - currently different to catalogue category post if allowed
+    #       values were wrong, but can't validate in the schema here
+    #       https://github.com/tiangolo/fastapi/issues/471 ?
+    except ValueError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc

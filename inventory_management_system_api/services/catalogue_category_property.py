@@ -18,6 +18,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueCategoryPostRequestPropertySchema,
     CatalogueItemPropertyPatchRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
 )
@@ -159,9 +160,11 @@ class CatalogueCategoryPropertyService:
             existing_property_out.name = update_data["name"]
             utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
 
-        # TODO: Need to perform validation on the allowed_values using the existing property type
-        #       as CatalogueCategoryPostRequestPropertySchema would have done and check that the
-        #       changes are actually allowed e.g. only adding allowed values
+        CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(
+            catalogue_item_property.allowed_values, existing_property_out.model_dump()
+        )
+
+        # TODO: Ensure properties are only added
 
         catalogue_item_property_in = CatalogueItemPropertyIn(
             **{**existing_property_out.model_dump(), **catalogue_item_property.model_dump()}
