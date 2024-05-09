@@ -168,11 +168,21 @@ class CatalogueItemService:
                 current_catalogue_category = self._catalogue_category_repository.get(
                     stored_catalogue_item.catalogue_category_id
                 )
-                if current_catalogue_category.catalogue_item_properties != catalogue_category.catalogue_item_properties:
-                    raise InvalidActionError(
-                        "Cannot move catalogue item to a category with different catalogue_item_properties without "
-                        "specifying the new properties"
-                    )
+
+                old_to_new_id_map = {}
+                for current_catalogue_category_prop, catalogue_category_prop in zip(
+                    current_catalogue_category.catalogue_item_properties, catalogue_category.catalogue_item_properties
+                ):
+                    if not current_catalogue_category_prop.is_equal_without_id(catalogue_category_prop):
+                        raise InvalidActionError(
+                            "Cannot move catalogue item to a category with different catalogue_item_properties without "
+                            "specifying the new properties"
+                        )
+                    old_to_new_id_map[current_catalogue_category_prop.id] = catalogue_category_prop.id
+
+                # The IDs of the properties need to be updated to those of the new catalogue category
+                for stored_catalogue_item_prop in stored_catalogue_item.properties:
+                    stored_catalogue_item_prop.id = old_to_new_id_map[stored_catalogue_item_prop.id]
 
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
             manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
