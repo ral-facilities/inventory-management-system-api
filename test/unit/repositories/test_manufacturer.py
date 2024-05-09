@@ -45,7 +45,6 @@ def test_create(test_helpers, database_mock, manufacturer_repository):
         **manufacturer_info,
         id=str(ObjectId()),
     )
-    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return no duplicate manufacturers found
@@ -61,13 +60,13 @@ def test_create(test_helpers, database_mock, manufacturer_repository):
         },
     )
 
-    created_manufacturer = manufacturer_repository.create(manufacturer_in, session=session)
+    created_manufacturer = manufacturer_repository.create(manufacturer_in)
 
-    database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump(), session=session)
+    database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump())
     database_mock.manufacturers.find_one.assert_has_calls(
         [
-            call({"code": manufacturer_out.code}, session=session),
-            call({"_id": CustomObjectId(manufacturer_out.id)}, session=session),
+            call({"code": manufacturer_out.code}),
+            call({"_id": CustomObjectId(manufacturer_out.id)}),
         ]
     )
     assert created_manufacturer == manufacturer_out
@@ -146,7 +145,6 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         ),
         telephone="073434394",
     )
-    session = MagicMock()
 
     test_helpers.mock_find(
         database_mock.manufacturers,
@@ -172,9 +170,9 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
         ],
     )
 
-    retrieved_manufacturers = manufacturer_repository.list(session=session)
+    retrieved_manufacturers = manufacturer_repository.list()
 
-    database_mock.manufacturers.find.assert_called_once_with(session=session)
+    database_mock.manufacturers.find.assert_called_once()
     assert retrieved_manufacturers == [manufacturer_1, manufacturer_2]
 
 
@@ -205,8 +203,6 @@ def test_get(test_helpers, database_mock, manufacturer_repository):
         telephone="0932348348",
         **MOCK_CREATED_MODIFIED_TIME,
     )
-    session = MagicMock()
-
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
@@ -219,10 +215,8 @@ def test_get(test_helpers, database_mock, manufacturer_repository):
             "telephone": manufacturer.telephone,
         },
     )
-    retrieved_manufacturer = manufacturer_repository.get(manufacturer.id, session=session)
-    database_mock.manufacturers.find_one.assert_called_once_with(
-        {"_id": CustomObjectId(manufacturer.id)}, session=session
-    )
+    retrieved_manufacturer = manufacturer_repository.get(manufacturer.id)
+    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer.id)})
     assert retrieved_manufacturer == manufacturer
 
 
@@ -244,7 +238,7 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repos
     retrieved_manufacturer = manufacturer_repository.get(manufacturer_id)
 
     assert retrieved_manufacturer is None
-    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)}, session=None)
+    database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
 def test_update(test_helpers, database_mock, manufacturer_repository):
@@ -265,7 +259,6 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
         telephone="0932348348",
         **MOCK_CREATED_MODIFIED_TIME,
     )
-    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock 'find_one' to return the existing manufacturer document
@@ -303,11 +296,15 @@ def test_update(test_helpers, database_mock, manufacturer_repository):
     )
 
     # pylint: disable=duplicate-code
-    updated_manufacturer = manufacturer_repository.update(manufacturer.id, manufacturer_in, session=session)
+    updated_manufacturer = manufacturer_repository.update(
+        manufacturer.id,
+        manufacturer_in,
+    )
     # pylint: enable=duplicate-code
 
     database_mock.manufacturers.update_one.assert_called_once_with(
-        {"_id": CustomObjectId(manufacturer.id)}, {"$set": manufacturer_in.model_dump()}, session=session
+        {"_id": CustomObjectId(manufacturer.id)},
+        {"$set": manufacturer_in.model_dump()},
     )
 
     assert updated_manufacturer == ManufacturerOut(id=manufacturer.id, **manufacturer_in.model_dump())
@@ -411,7 +408,6 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
         telephone="0932348348",
         **MOCK_CREATED_MODIFIED_TIME,
     )
-    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return the existing manufacturer document
@@ -447,7 +443,7 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
         },
     )
 
-    manufacturer_in = ManufacturerIn(
+    manufactuerer_in = ManufacturerIn(
         name=manufacturer.name,
         code=manufacturer.code,
         url=manufacturer.url,
@@ -455,14 +451,16 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
         telephone=manufacturer.telephone,
     )
 
-    updated_manufacturer = manufacturer_repository.update(manufacturer.id, manufacturer_in, session=session)
+    updated_manufacturer = manufacturer_repository.update(
+        manufacturer.id,
+        manufactuerer_in,
+    )
 
     database_mock.manufacturers.update_one.assert_called_once_with(
         {"_id": CustomObjectId(manufacturer.id)},
         {
-            "$set": manufacturer_in.model_dump(),
+            "$set": manufactuerer_in.model_dump(),
         },
-        session=session,
     )
     assert updated_manufacturer == manufacturer
 
@@ -470,18 +468,15 @@ def test_partial_update_address(test_helpers, database_mock, manufacturer_reposi
 def test_delete(test_helpers, database_mock, manufacturer_repository):
     """Test trying to delete a manufacturer"""
     manufacturer_id = str(ObjectId())
-    session = MagicMock()
 
     test_helpers.mock_delete_one(database_mock.manufacturers, 1)
 
     # Mock `find_one` to return no child catalogue item document
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    manufacturer_repository.delete(manufacturer_id, session=session)
+    manufacturer_repository.delete(manufacturer_id)
 
-    database_mock.manufacturers.delete_one.assert_called_once_with(
-        {"_id": CustomObjectId(manufacturer_id)}, session=session
-    )
+    database_mock.manufacturers.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
 def test_delete_with_an_invalid_id(manufacturer_repository):
@@ -493,7 +488,7 @@ def test_delete_with_an_invalid_id(manufacturer_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_delete_with_a_non_existent_id(test_helpers, database_mock, manufacturer_repository):
+def test_delete_with_a_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
     """Test trying to delete a manufacturer with a non-existent ID"""
     manufacturer_id = str(ObjectId())
 
@@ -504,9 +499,7 @@ def test_delete_with_a_non_existent_id(test_helpers, database_mock, manufacturer
     with pytest.raises(MissingRecordError) as exc:
         manufacturer_repository.delete(manufacturer_id)
     assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
-    database_mock.manufacturers.delete_one.assert_called_once_with(
-        {"_id": CustomObjectId(manufacturer_id)}, session=None
-    )
+    database_mock.manufacturers.delete_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)})
 
 
 def test_delete_manufacturer_that_is_part_of_a_catalogue_item(test_helpers, database_mock, manufacturer_repository):

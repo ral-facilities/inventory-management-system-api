@@ -31,37 +31,41 @@ class UnitRepo:
         self._database = database
         self._units_collection: Collection = self._database.units
 
-    def create(self, unit: UnitIn) -> UnitOut:
+    def create(self, unit: UnitIn, session: ClientSession = None) -> UnitOut:
         """
         Create a new unit in MongoDB database
         :param unit: The unit to be created
+        :param session: PyMongo ClientSession to use for database operations
         :return: The created unit
         :raises DuplicateRecordError: If a duplicate unit is found within collection
         """
 
-        if self._is_duplicate_unit(unit.code):
+        if self._is_duplicate_unit(unit.code, session=session):
             raise DuplicateRecordError("Duplicate unit found")
 
         logger.info("Inserting new unit into database")
 
-        result = self._units_collection.insert_one(unit.model_dump())
-        unit = self.get(str(result.inserted_id))
+        result = self._units_collection.insert_one(unit.model_dump(), session=session)
+        unit = self.get(str(result.inserted_id), session=session)
 
         return unit
 
-    def list(self) -> list[UnitOut]:
+    def list(self, session: ClientSession = None) -> list[UnitOut]:
         """
         Retrieve units from a MongoDB database
 
+        :param session: PyMongo ClientSession to use for database operations
         :return: List of units or an empty list if no units are retrieved
         """
-        units = self._units_collection.find()
+        units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
 
-    def get(self, unit_id: str) -> Optional[UnitOut]:
+    def get(self, unit_id: str, session: ClientSession = None) -> Optional[UnitOut]:
         """
         Retrieve a unit by its ID from a MongoDB database.
+
         :param unit_id: The ID of the unit to retrieve.
+        :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved unit, or `None` if not found.
         """
         unit_id = CustomObjectId(unit_id)
@@ -69,16 +73,17 @@ class UnitRepo:
             "Retrieving unit with ID: %s from the database",
             unit_id,
         )
-        unit = self._units_collection.find_one({"_id": unit_id})
+        unit = self._units_collection.find_one({"_id": unit_id}, session=session)
         if unit:
             return UnitOut(**unit)
         return None
 
-    def _is_duplicate_unit(self, code: str) -> bool:
+    def _is_duplicate_unit(self, code: str, session: ClientSession = None) -> bool:
         """
         Check if unit with the same name already exists in the units collection
         :param code: The code of the unit to check for duplicates.
+        :param session: PyMongo ClientSession to use for database operations
         :return `True` if duplicate unit, `False` otherwise
         """
         logger.info("Checking if unit with code '%s' already exists", code)
-        return self._units_collection.find_one({"code": code}) is not None
+        return self._units_collection.find_one({"code": code}, session=session) is not None
