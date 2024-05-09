@@ -14,7 +14,7 @@ class PropertyPostRequestSchema(BaseModel):
     Schema model for a catalogue item property creation request.
     """
 
-    name: str = Field(description="The name of the catalogue item property")
+    id: str = Field(description="The ID of the catalogue item property")
     value: Any = Field(default=None, description="The value of the catalogue item property")
 
 
@@ -23,6 +23,7 @@ class PropertySchema(PropertyPostRequestSchema):
     Schema model for a catalogue item property response.
     """
 
+    name: str = Field(description="The name of the catalogue item property")
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 

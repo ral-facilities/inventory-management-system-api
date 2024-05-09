@@ -3,7 +3,7 @@ Unit tests for the `CatalogueCategoryService` service.
 """
 
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 
 import pytest
@@ -18,7 +18,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CatalogueItemProperty,
+    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
@@ -95,8 +95,8 @@ def test_create_with_parent_id(
         is_leaf=True,
         parent_id=str(ObjectId()),
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -132,15 +132,25 @@ def test_create_with_parent_id(
     )
 
     # pylint: disable=duplicate-code
-    catalogue_category_repository_mock.create.assert_called_once_with(
-        CatalogueCategoryIn(
-            name=catalogue_category.name,
-            code=catalogue_category.code,
-            is_leaf=catalogue_category.is_leaf,
-            parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
-        )
-    )
+    # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
+    # be different
+    catalogue_category_repository_mock.create.assert_called_once()
+    create_catalogue_category_in = catalogue_category_repository_mock.create.call_args_list[0][0][0]
+    assert isinstance(create_catalogue_category_in, CatalogueCategoryIn)
+    assert create_catalogue_category_in.model_dump() == {
+        **(
+            CatalogueCategoryIn(
+                name=catalogue_category.name,
+                code=catalogue_category.code,
+                is_leaf=catalogue_category.is_leaf,
+                parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+            ).model_dump()
+        ),
+        "catalogue_item_properties": [
+            {**prop.model_dump(), "id": ANY} for prop in catalogue_category.catalogue_item_properties
+        ],
+    }
     # pylint: enable=duplicate-code
     assert created_catalogue_category == catalogue_category
 
@@ -164,8 +174,8 @@ def test_create_with_whitespace_name(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -184,15 +194,25 @@ def test_create_with_whitespace_name(
     )
 
     # pylint: disable=duplicate-code
-    catalogue_category_repository_mock.create.assert_called_once_with(
-        CatalogueCategoryIn(
-            name=catalogue_category.name,
-            code=catalogue_category.code,
-            is_leaf=catalogue_category.is_leaf,
-            parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
-        )
-    )
+    # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
+    # be different
+    catalogue_category_repository_mock.create.assert_called_once()
+    create_catalogue_category_in = catalogue_category_repository_mock.create.call_args_list[0][0][0]
+    assert isinstance(create_catalogue_category_in, CatalogueCategoryIn)
+    assert create_catalogue_category_in.model_dump() == {
+        **(
+            CatalogueCategoryIn(
+                name=catalogue_category.name,
+                code=catalogue_category.code,
+                is_leaf=catalogue_category.is_leaf,
+                parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+            ).model_dump()
+        ),
+        "catalogue_item_properties": [
+            {**prop.model_dump(), "id": ANY} for prop in catalogue_category.catalogue_item_properties
+        ],
+    }
     # pylint: enable=duplicate-code
     assert created_catalogue_category == catalogue_category
 
@@ -227,8 +247,10 @@ def test_create_with_leaf_parent_catalogue_category(
             is_leaf=True,
             parent_id=None,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -261,8 +283,8 @@ def test_create_with_duplicate_property_names(catalogue_category_repository_mock
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property A", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -622,8 +644,10 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             is_leaf=True,
             parent_id=None,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -671,8 +695,10 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
@@ -721,8 +747,8 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -757,18 +783,27 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
         ),
     )
 
-    catalogue_category_repository_mock.update.assert_called_once_with(
-        catalogue_category.id,
-        CatalogueCategoryIn(
-            name=catalogue_category.name,
-            code=catalogue_category.code,
-            is_leaf=catalogue_category.is_leaf,
-            parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
-            created_time=catalogue_category.created_time,
-            modified_time=catalogue_category.modified_time,
+    # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
+    # be different
+    catalogue_category_repository_mock.update.assert_called_once_with(catalogue_category.id, ANY)
+    update_catalogue_category_in = catalogue_category_repository_mock.update.call_args_list[0][0][1]
+    assert isinstance(update_catalogue_category_in, CatalogueCategoryIn)
+    assert update_catalogue_category_in.model_dump() == {
+        **(
+            CatalogueCategoryIn(
+                name=catalogue_category.name,
+                code=catalogue_category.code,
+                is_leaf=catalogue_category.is_leaf,
+                parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+                created_time=catalogue_category.created_time,
+                modified_time=catalogue_category.modified_time,
+            ).model_dump()
         ),
-    )
+        "catalogue_item_properties": [
+            {**prop.model_dump(), "id": ANY} for prop in catalogue_category.catalogue_item_properties
+        ],
+    }
     assert updated_catalogue_category == catalogue_category
 
 
@@ -801,8 +836,10 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
             catalogue_item_properties=[
-                CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-                CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+                CatalogueItemPropertyOut(
+                    id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False
+                ),
+                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
@@ -838,8 +875,8 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Property B", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -897,8 +934,8 @@ def test_update_properties_to_have_duplicate_names(
         is_leaf=True,
         parent_id=None,
         catalogue_item_properties=[
-            CatalogueItemProperty(name="Duplicate", type="number", unit="mm", mandatory=False),
-            CatalogueItemProperty(name="Duplicate", type="boolean", mandatory=True),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Duplicate", type="number", unit="mm", mandatory=False),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Duplicate", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
