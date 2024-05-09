@@ -168,7 +168,7 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, BaseModel):
+class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
     """
     Schema model for a catalogue category response.
     """
