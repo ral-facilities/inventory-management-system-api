@@ -9,7 +9,10 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidObjectIdError,
+)
 from inventory_management_system_api.models.units import UnitIn, UnitOut
 
 
@@ -83,9 +86,13 @@ def test_create_unit_duplicate(test_helpers, database_mock, unit_repository):
 
 def test_list(test_helpers, database_mock, unit_repository):
     """Test getting all units"""
-    unit_1 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
+    unit_1 = UnitOut(
+        **MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm"
+    )
 
-    unit_2 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="nm", code="nm")
+    unit_2 = UnitOut(
+        **MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="nm", code="nm"
+    )
 
     test_helpers.mock_find(
         database_mock.units,
@@ -126,7 +133,9 @@ def test_get(test_helpers, database_mock, unit_repository):
     """
     Test getting a unit by id
     """
-    unit = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
+    unit = UnitOut(
+        **MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm"
+    )
 
     test_helpers.mock_find_one(
         database_mock.units,
@@ -138,7 +147,9 @@ def test_get(test_helpers, database_mock, unit_repository):
         },
     )
     retrieved_unit = unit_repository.get(unit.id)
-    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit.id)})
+    database_mock.units.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(unit.id)}
+    )
     assert retrieved_unit == unit
 
 
@@ -160,4 +171,6 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, unit_repository):
     retrieved_unit = unit_repository.get(unit_id)
 
     assert retrieved_unit is None
-    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit_id)})
+    database_mock.units.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(unit_id)}
+    )

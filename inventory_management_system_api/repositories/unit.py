@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 
 from fastapi import Depends
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -51,6 +52,7 @@ class UnitRepo:
     def list(self) -> list[UnitOut]:
         """
         Retrieve units from a MongoDB database
+
         :return: List of units or an empty list if no units are retrieved
         """
         units = self._units_collection.find()
