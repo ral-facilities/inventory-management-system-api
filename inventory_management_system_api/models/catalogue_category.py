@@ -32,6 +32,7 @@ class CatalogueItemPropertyBase(BaseModel):
     name: str
     type: str
     unit_id: Optional[CustomObjectIdField] = None
+    unit: Optional[str] = None
     mandatory: bool
     allowed_values: Optional[AllowedValues] = None
 
@@ -52,7 +53,6 @@ class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
     """
 
     id: StringObjectIdField = Field(alias="_id")
-    unit: Optional[str] = None
     unit_id: Optional[StringObjectIdField] = None
     model_config = ConfigDict(populate_by_name=True)
 
