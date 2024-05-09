@@ -2,6 +2,7 @@
 End-to-End tests for the System router
 """
 
+from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import (
     CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
@@ -10,8 +11,7 @@ from test.e2e.mock_schemas import (
     SYSTEM_POST_B_EXPECTED,
     SYSTEM_POST_C,
 )
-from test.e2e.test_catalogue_category import CATALOGUE_CATEGORY_POST_B
-from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A
+from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A, CATALOGUE_CATEGORY_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
 from typing import Any, Optional
 from unittest.mock import ANY
@@ -153,7 +153,7 @@ def test_create_system_with_duplicate_name_within_parent(test_client):
     parent_system = response.json()
 
     # Child - post twice as will have the same name
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+    test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
     response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
 
     assert response.status_code == 409
@@ -523,7 +523,7 @@ def test_delete_system_with_child_system(test_client):
     parent_system = response.json()
 
     # Child
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+    test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
 
     # Delete
     response = test_client.delete(f"/v1/systems/{parent_system['id']}")
@@ -542,22 +542,30 @@ def test_delete_system_with_child_item(test_client):
 
     # Create a child item
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-    catalogue_category_id = response.json()["id"]
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
-        "catalogue_category_id": catalogue_category_id,
+        "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
+        "properties": add_ids_to_properties(
+            catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
+        ),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    item_post = {**ITEM_POST, "catalogue_item_id": catalogue_item_id, "system_id": system_id}
-    response = test_client.post("/v1/items", json=item_post)
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+    }
+    test_client.post("/v1/items", json=item_post)
     # pylint: enable=duplicate-code
 
     # Delete

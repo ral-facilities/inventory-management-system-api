@@ -181,14 +181,14 @@ class ItemService:
         :return: A merged list of properties for the item
         """
         supplied_properties_dict = {
-            supplied_property.name: supplied_property for supplied_property in supplied_properties
+            supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
         properties: List[PropertyPostRequestSchema] = []
 
         # Use the order of properties from the catalogue item, and append either the supplied property or
         # the catalogue item one where it is not found
         for catalogue_item_property in catalogue_item_properties:
-            supplied_property = supplied_properties_dict.get(catalogue_item_property.name)
+            supplied_property = supplied_properties_dict.get(catalogue_item_property.id)
             if supplied_property is not None:
                 properties.append(supplied_property)
             else:

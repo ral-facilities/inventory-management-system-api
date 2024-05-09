@@ -4,6 +4,7 @@ Module for defining the database models for representing catalogue categories.
 
 from typing import Annotated, Any, List, Literal, Optional
 
+from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
@@ -23,28 +24,60 @@ class AllowedValuesList(BaseModel):
 AllowedValues = Annotated[AllowedValuesList, Field(discriminator="type")]
 
 
-class CatalogueItemPropertyIn(BaseModel):
+class CatalogueItemPropertyBase(BaseModel):
     """
-    Model representing a catalogue item property.
+    Base database model for a catalogue item property.
     """
 
     name: str
     type: str
-    unit: Optional[str] = None
     unit_id: Optional[CustomObjectIdField] = None
     mandatory: bool
     allowed_values: Optional[AllowedValues] = None
 
 
-class CatalogueItemPropertyOut(CatalogueItemPropertyIn):
+class CatalogueItemPropertyIn(CatalogueItemPropertyBase):
     """
-    Model representing a catalogue item property.
+    Input database model for a catalogue item property.
     """
 
+    # Because the catalogue item properties are stored in a list inside the catalogue categories and not in a separate
+    # collection, it means that the IDs have to be manually generated here.
+    id: CustomObjectIdField = Field(default_factory=ObjectId, serialization_alias="_id")
+
+
+class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
+    """
+    Output database model for a catalogue item property.
+    """
+
+    id: StringObjectIdField = Field(alias="_id")
+    unit: Optional[str] = None
     unit_id: Optional[StringObjectIdField] = None
+    model_config = ConfigDict(populate_by_name=True)
+
+    def is_equal_without_id(self, other: Any) -> bool:
+        """
+        Compare this instance with another instance of `CatalogueItemPropertyOut` while ignoring the ID.
+
+        :param other: An instance of a model to compare with.
+        :return: `True` if the instances are of the same type and are equal when ignoring the ID field, `False`
+            otherwise.
+        """
+        if not isinstance(other, CatalogueItemPropertyOut):
+            return False
+
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.unit == other.unit
+            and self.unit_id == other.unit_id
+            and self.mandatory == other.mandatory
+            and self.allowed_values == other.allowed_values
+        )
 
 
-class CatalogueCategoryBaseIn(BaseModel):
+class CatalogueCategoryBase(BaseModel):
     """
     Base database model for a catalogue category.
     """
@@ -77,7 +110,7 @@ class CatalogueCategoryBaseIn(BaseModel):
         return catalogue_item_properties
 
 
-class CatalogueCategoryBaseOut(CatalogueCategoryBaseIn):
+class CatalogueCategoryBaseOut(CatalogueCategoryBase):
     """
     Base database model for a catalogue category out.
     """
@@ -85,7 +118,7 @@ class CatalogueCategoryBaseOut(CatalogueCategoryBaseIn):
     catalogue_item_properties: List[CatalogueItemPropertyOut] = []
 
 
-class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBaseIn):
+class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBase):
     """
     Input database model for a catalogue category.
     """
@@ -98,4 +131,5 @@ class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBaseOut
 
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
+    catalogue_item_properties: List[CatalogueItemPropertyOut] = []
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

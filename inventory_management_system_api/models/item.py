@@ -10,10 +10,8 @@ from inventory_management_system_api.models.catalogue_item import PropertyIn, Pr
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
-# pylint: disable=duplicate-code
 
-
-class ItemBaseIn(BaseModel):
+class ItemBase(BaseModel):
     """
     Base database model for an item in.
     """
@@ -30,14 +28,13 @@ class ItemBaseIn(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
+    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
         """
         Validator for the `properties` field that runs after field assignment but before type validation.
-
         If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
-
         :param properties: The list of properties specific to this item as defined in the corresponding catalogue
             category.
         :return: The list of properties specific to this item or an empty list.
@@ -46,25 +43,16 @@ class ItemBaseIn(BaseModel):
             properties = []
         return properties
 
-
-class ItemBaseOut(BaseModel):
-    """
-    Base database model for an item out.
-    """
-
-    properties: List[PropertyOut] = []
+    # pylint: enable=duplicate-code
 
 
-# pylint: enable=duplicate-code
-
-
-class ItemIn(CreatedModifiedTimeInMixin, ItemBaseIn):
+class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
     """
     Input database model for an item.
     """
 
 
-class ItemOut(CreatedModifiedTimeOutMixin, ItemBaseOut):
+class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
     """
     Output database model for an item.
     """
@@ -72,4 +60,6 @@ class ItemOut(CreatedModifiedTimeOutMixin, ItemBaseOut):
     id: StringObjectIdField = Field(alias="_id")
     catalogue_item_id: StringObjectIdField
     system_id: Optional[StringObjectIdField] = None
+    properties: List[PropertyOut] = []
+
     model_config = ConfigDict(populate_by_name=True)

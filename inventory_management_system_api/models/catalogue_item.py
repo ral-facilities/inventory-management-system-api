@@ -15,9 +15,9 @@ class PropertyIn(BaseModel):
     Model representing a catalogue item property in.
     """
 
+    id: CustomObjectIdField = Field(serialization_alias="_id")
     name: str
     value: Any
-    unit: Optional[str] = None
     unit_id: Optional[CustomObjectIdField] = None
 
 
@@ -26,10 +26,13 @@ class PropertyOut(BaseModel):
     Model representing a catalogue item property out.
     """
 
+    id: StringObjectIdField = Field(alias="_id")
     name: str
     value: Any
     unit: Optional[str] = None
     unit_id: Optional[StringObjectIdField] = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class CatalogueItemBaseIn(BaseModel):
@@ -54,15 +57,14 @@ class CatalogueItemBaseIn(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
+    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
         """
         Validator for the `properties` field that runs after field assignment but before type validation.
-
         If the value is `None`, it replaces it with an empty list allowing for catalogue items without properties to be
         created.
-
         :param properties: The list of properties specific to this catalogue item as defined in the corresponding
             catalogue category.
         :return: The list of properties specific to this catalogue item or an empty list.
@@ -70,6 +72,8 @@ class CatalogueItemBaseIn(BaseModel):
         if properties is None:
             properties = []
         return properties
+
+    # pylint: enable=duplicate-code
 
     @field_serializer("drawing_link")
     def serialize_url(self, url: HttpUrl):
@@ -104,4 +108,5 @@ class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBaseOut):
     catalogue_category_id: StringObjectIdField
     manufacturer_id: StringObjectIdField
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
+    properties: List[PropertyOut] = []
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

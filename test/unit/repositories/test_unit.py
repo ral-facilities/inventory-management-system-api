@@ -3,13 +3,16 @@ Unit tests for the `UnitRepo` repository
 """
 
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from unittest.mock import call
+from unittest.mock import MagicMock, call
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidObjectIdError,
+)
 from inventory_management_system_api.models.units import UnitIn, UnitOut
 
 
@@ -26,6 +29,7 @@ def test_create(test_helpers, database_mock, unit_repository):
         **unit_info,
         id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return no duplicate units found
@@ -41,13 +45,13 @@ def test_create(test_helpers, database_mock, unit_repository):
         },
     )
 
-    created_unit = unit_repository.create(unit_in)
+    created_unit = unit_repository.create(unit_in, session=session)
 
-    database_mock.units.insert_one.assert_called_once_with(unit_in.model_dump())
+    database_mock.units.insert_one.assert_called_once_with(unit_in.model_dump(), session=session)
     database_mock.units.find_one.assert_has_calls(
         [
-            call({"code": unit_out.code}),
-            call({"_id": CustomObjectId(unit_out.id)}),
+            call({"code": unit_out.code}, session=session),
+            call({"_id": CustomObjectId(unit_out.id)}, session=session),
         ]
     )
     assert created_unit == unit_out
@@ -87,6 +91,8 @@ def test_list(test_helpers, database_mock, unit_repository):
 
     unit_2 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="nm", code="nm")
 
+    session = MagicMock()
+
     test_helpers.mock_find(
         database_mock.units,
         [
@@ -105,7 +111,7 @@ def test_list(test_helpers, database_mock, unit_repository):
         ],
     )
 
-    retrieved_units = unit_repository.list()
+    retrieved_units = unit_repository.list(session=session)
 
     database_mock.units.find.assert_called_once()
     assert retrieved_units == [
@@ -128,6 +134,8 @@ def test_get(test_helpers, database_mock, unit_repository):
     """
     unit = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
 
+    session = MagicMock()
+
     test_helpers.mock_find_one(
         database_mock.units,
         {
@@ -137,8 +145,8 @@ def test_get(test_helpers, database_mock, unit_repository):
             "value": unit.value,
         },
     )
-    retrieved_unit = unit_repository.get(unit.id)
-    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit.id)})
+    retrieved_unit = unit_repository.get(unit.id, session=session)
+    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit.id)}, session=session)
     assert retrieved_unit == unit
 
 
@@ -160,4 +168,4 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, unit_repository):
     retrieved_unit = unit_repository.get(unit_id)
 
     assert retrieved_unit is None
-    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit_id)})
+    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=None)
