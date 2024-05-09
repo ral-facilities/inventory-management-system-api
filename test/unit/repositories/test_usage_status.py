@@ -125,7 +125,7 @@ def test_list(test_helpers, database_mock, usage_status_repository):
         ],
     )
 
-    retrieved_usage_statuses = usage_status_repository.list()
+    retrieved_usage_statuses = usage_status_repository.list(session=session)
 
     database_mock.usage_statuses.find.assert_called_once()
     assert retrieved_usage_statuses == [
