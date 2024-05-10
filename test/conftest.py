@@ -50,9 +50,19 @@ def add_ids_to_properties(properties_with_ids: Optional[list], properties_withou
                 for property_with_id in properties_with_ids
                 if property_with_id["name"] == property_without_id["name"]
             )
+            unit_id = next(
+                property_with_id["unit_id"]
+                for property_with_id in properties_with_ids
+                if property_with_id["unit"] == property_without_id["unit"]
+            )
         else:
             prop_id = str(ObjectId())
+            unit_id = None
+            if property_without_id.get("unit_id") is None:
+                if property_without_id.get("unit") is not None:
+                    unit_id = str(ObjectId())
+            else:
+                unit_id = property_without_id["unit_id"]
 
-        properties.append({**property_without_id, "id": prop_id})
-
+        properties.append({**property_without_id, "id": prop_id, "unit_id": unit_id})
     return properties

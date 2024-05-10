@@ -71,7 +71,6 @@ class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
             self.name == other.name
             and self.type == other.type
             and self.unit == other.unit
-            and self.unit_id == other.unit_id
             and self.mandatory == other.mandatory
             and self.allowed_values == other.allowed_values
         )
