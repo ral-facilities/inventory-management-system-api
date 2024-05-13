@@ -11,8 +11,9 @@ from test.e2e.mock_schemas import (
     SYSTEM_POST_B_EXPECTED,
     SYSTEM_POST_C,
 )
-from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A, CATALOGUE_CATEGORY_POST_A
+from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
+from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from typing import Any, Optional
 from unittest.mock import ANY
 
@@ -542,7 +543,24 @@ def test_delete_system_with_child_item(test_client):
 
     # Create a child item
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    # units
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit_mm = response.json()
+
+    response = test_client.post("/v1/units", json=UNIT_POST_B)
+    unit_cm = response.json()
+
+    units = [unit_mm, unit_cm]
+
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_A,
+            "catalogue_item_properties": add_ids_to_properties(
+                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
+            ),
+        },
+    )
     catalogue_category = response.json()
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)

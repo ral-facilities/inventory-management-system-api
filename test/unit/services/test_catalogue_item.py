@@ -3,10 +3,9 @@
 Unit tests for the `CatalogueCategoryService` service.
 """
 from datetime import timedelta
-from unittest.mock import ANY, MagicMock, call
-
 from test.conftest import add_ids_to_properties
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from unittest.mock import MagicMock, call
 
 import pytest
 from bson import ObjectId
@@ -26,7 +25,6 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPatchRequestSchema,
     CatalogueItemPostRequestSchema,
 )
-
 
 FULL_CATALOGUE_CATEGORY_A_INFO = {
     "name": "Category A",

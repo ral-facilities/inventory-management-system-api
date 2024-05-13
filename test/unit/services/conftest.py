@@ -93,7 +93,8 @@ def fixture_catalogue_category_service(
     catalogue_category_repository_mock: Mock, unit_repository_mock: Mock
 ) -> CatalogueCategoryService:
     """
-    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` and `UnitRepo` dependency.
+    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` and `UnitRepo`
+    dependency.
 
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :param unit_repository_mock: Mocked `UnitRepo` instance.

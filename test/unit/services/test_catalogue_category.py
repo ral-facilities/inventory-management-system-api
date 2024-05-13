@@ -1,11 +1,11 @@
+# pylint: disable=too-many-lines
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
 
 from datetime import timedelta
-from unittest.mock import ANY, MagicMock
-from inventory_management_system_api.models.units import UnitOut
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from unittest.mock import ANY, MagicMock
 
 import pytest
 from bson import ObjectId
@@ -21,11 +21,11 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryOut,
     CatalogueItemPropertyOut,
 )
+from inventory_management_system_api.models.units import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
 )
-
 
 UNIT_A = {
     "value": "mm",
