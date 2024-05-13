@@ -4,12 +4,14 @@ propagation down through their child catalogue items and items using their respe
 """
 
 import logging
+from typing import Optional
 
 from fastapi import Depends
 
 from inventory_management_system_api.core.database import mongodb_client
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
+    AllowedValues,
     CatalogueItemPropertyIn,
     CatalogueItemPropertyOut,
 )
@@ -18,6 +20,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.schemas.catalogue_category import (
+    AllowedValuesSchema,
     CatalogueCategoryPostRequestPropertySchema,
     CatalogueItemPropertyPatchRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
@@ -118,6 +121,40 @@ class CatalogueCategoryPropertyService:
 
         return catalogue_item_property_out
 
+    def _check_valid_allowed_values_update(
+        self, existing_allowed_values: Optional[AllowedValues], new_allowed_values: Optional[AllowedValuesSchema]
+    ):
+        """Validates a potential change of allowed_values
+
+        :param existing_allowed_values: Existing allowed_values from the catalogue category database model
+        :param new_allowed_values: New definition of allowed values to validate
+        :raises InvalidActionError:
+            - If the existing allowed_values is None and the new values are not
+            - If the existing allowed_values is not None and the new values are
+            - If the type of allowed values is being changed
+            - If the type of allowed values is 'list' while modifying the list in any way other than adding extra
+              values
+        """
+        # Prevent adding allowed_values to an existing property
+        if existing_allowed_values is None and new_allowed_values is not None:
+            raise InvalidActionError("Cannot add allowed_values to an existing catalogue item property")
+
+        # Prevent removing allowed_values from an existing property
+        if existing_allowed_values is not None and new_allowed_values is None:
+            raise InvalidActionError("Cannot remove allowed_values from an existing catalogue item property")
+
+        # Prevent changing an allowed_values' type
+        if existing_allowed_values.type != new_allowed_values.type:
+            raise InvalidActionError(
+                "Cannot modify a catalogue item properties' allowed_values to have a different type"
+            )
+
+        # Ensure that a list type adds to the existing values (order doesn't matter)
+        if existing_allowed_values.type == "list":
+            for existing_value in existing_allowed_values.values:
+                if existing_value not in new_allowed_values.values:
+                    raise InvalidActionError("Cannot modify existing `allowed_values`, you may only add more")
+
     def update(
         self,
         catalogue_category_id: str,
@@ -160,7 +197,10 @@ class CatalogueCategoryPropertyService:
             existing_property_out.name = update_data["name"]
             utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
 
-        # TODO: Ensure properties are only added
+        if "allowed_values" in update_data:
+            self._check_valid_allowed_values_update(
+                existing_property_out.allowed_values, catalogue_item_property.allowed_values
+            )
 
         CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(
             catalogue_item_property.allowed_values, existing_property_out.model_dump()

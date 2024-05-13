@@ -632,7 +632,6 @@ def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, dat
     session = MagicMock()
     property_id = str(ObjectId())
     new_property_name = "new property name"
-    datetime_mock.now.return_value = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
 
     # Mock 'update_many'
     test_helpers.mock_update_many(database_mock.items)

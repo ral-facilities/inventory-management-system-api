@@ -10,6 +10,7 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
+    AllowedValues,
     CatalogueCategoryOut,
     CatalogueItemPropertyIn,
     CatalogueItemPropertyOut,
@@ -263,7 +264,12 @@ def test_update(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id, name="Property A", type="number", unit="mm", mandatory=True
+        id=catalogue_item_property_id,
+        name="Property A",
+        type="number",
+        unit="mm",
+        mandatory=True,
+        allowed_values=AllowedValues(type="list", values=[100]),
     )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,

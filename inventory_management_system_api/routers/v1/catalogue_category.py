@@ -271,10 +271,16 @@ def partial_update_catalogue_item_property(
             message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    # pylint:disable=duplicate-code
     except DuplicateCatalogueItemPropertyNameError as exc:
         message = "A catalogue item property with the same name already exists within the catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    # pylint:enable=duplicate-code
     # TODO: Replace with RequestValidationError? - currently different to catalogue category post if allowed
     #       values were wrong, but can't validate in the schema here
     #       https://github.com/tiangolo/fastapi/issues/471 ?
