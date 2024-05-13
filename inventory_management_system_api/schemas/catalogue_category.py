@@ -226,7 +226,7 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
                 expected_property_type=info.data["type"], property_value=default_value
             ):
                 raise ValueError("default_value must be the same type as the property itself")
-            if info.data["allowed_values"] and default_value not in info.data["allowed_values"]:
+            if info.data["allowed_values"] and default_value not in info.data["allowed_values"].values:
                 raise ValueError("default_value is not one of the allowed_values")
 
         return default_value
