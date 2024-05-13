@@ -164,11 +164,9 @@ class CatalogueCategoryPropertyService:
             catalogue_item_property.allowed_values, existing_property_out.model_dump()
         )
 
-        # TODO: Ensure properties are only added
+        # TODO: Ensure allowed values are only added?
 
-        catalogue_item_property_in = CatalogueItemPropertyIn(
-            **{**existing_property_out.model_dump(), **catalogue_item_property.model_dump()}
-        )
+        catalogue_item_property_in = CatalogueItemPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
