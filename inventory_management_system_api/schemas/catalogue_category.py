@@ -51,7 +51,9 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
     )
 
     @classmethod
-    def is_valid_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> bool:
+    def is_valid_property_type(
+        cls, expected_property_type: CatalogueItemPropertyType, property_value: Optional[Union[str, float, bool]]
+    ) -> bool:
         """
         Validates a given value has a type matching a CatalogueItemPropertyType and returns false if they don't
 
@@ -63,6 +65,8 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         if expected_property_type == CatalogueItemPropertyType.STRING:
             return isinstance(property_value, str)
         if expected_property_type == CatalogueItemPropertyType.NUMBER:
+            # Python cares if there is a decimal or not, so can't just use float for this check, even though
+            # Pydantic & the FastAPI docs shows float as 'number'
             return isinstance(property_value, Number)
         if expected_property_type == CatalogueItemPropertyType.BOOLEAN:
             return isinstance(property_value, bool)
@@ -181,7 +185,7 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
     Schema model for a catalogue item property creation request
     """
 
-    default_value: Optional[Union[str, int, bool]] = Field(
+    default_value: Optional[Union[str, float, bool]] = Field(
         default=None,
         description="Value to populate all child catalogue items and items with. Required if the added field is "
         "mandatory.",
@@ -190,8 +194,8 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
     @field_validator("default_value")
     @classmethod
     def validate_default_value(
-        cls, default_value: Optional[Union[str, int, bool]], info: ValidationInfo
-    ) -> Optional[Union[str, int, bool]]:
+        cls, default_value: Optional[Union[str, float, bool]], info: ValidationInfo
+    ) -> Optional[Union[str, float, bool]]:
         """
         Validator for the `default_value` field.
 
