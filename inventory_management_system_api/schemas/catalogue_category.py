@@ -195,10 +195,10 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
         """
         Validator for the `default_value` field.
 
-        It checks if the `type` of the default value is a valid type and if allowed_properties is defined, ensures
+        It checks if the `type` of the default value is a valid type and if `allowed_values` is defined, ensures
         that the given value is within the list.
 
-        :param allowed_values: The value of the `allowed_values` field.
+        :param default_value: The value of the `default_value` field.
         :param info: Validation info from pydantic.
         :return: The value of the `allowed_values` field.
         """
