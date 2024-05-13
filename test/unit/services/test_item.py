@@ -25,10 +25,7 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
-from inventory_management_system_api.schemas.item import (
-    ItemPatchRequestSchema,
-    ItemPostRequestSchema,
-)
+from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
 
 # pylint: disable=duplicate-code
 FULL_CATALOGUE_CATEGORY_A_INFO = {
@@ -156,9 +153,7 @@ def test_create(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -194,18 +189,13 @@ def test_create(
             usage_status=item.usage_status,
             **{
                 **ITEM_INFO,
-                "properties": [
-                    {"id": prop["id"], "value": prop["value"]}
-                    for prop in item_properties
-                ],
+                "properties": [{"id": prop["id"], "value": prop["value"]} for prop in item_properties],
             },
         )
     )
 
     catalogue_item_repository_mock.get.assert_called_once_with(item.catalogue_item_id)
-    catalogue_category_repository_mock.get.assert_called_once_with(
-        catalogue_category_id
-    )
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     item_repository_mock.create.assert_called_once_with(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
@@ -273,9 +263,7 @@ def test_create_with_invalid_catalogue_category_id(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -293,17 +281,12 @@ def test_create_with_invalid_catalogue_category_id(
                 usage_status_id=str(ObjectId()),
                 **{
                     **ITEM_INFO,
-                    "properties": [
-                        {"id": prop["id"], "value": prop["value"]}
-                        for prop in item_properties
-                    ],
+                    "properties": [{"id": prop["id"], "value": prop["value"]} for prop in item_properties],
                 },
             )
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
-    catalogue_category_repository_mock.get.assert_called_once_with(
-        catalogue_category_id
-    )
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     item_repository_mock.create.assert_not_called()
     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_category_id}'"
 
@@ -332,9 +315,7 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -349,22 +330,14 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
                 usage_status_id=str(ObjectId()),
                 **{
                     **ITEM_INFO,
-                    "properties": [
-                        {"id": prop["id"], "value": prop["value"]}
-                        for prop in item_properties
-                    ],
+                    "properties": [{"id": prop["id"], "value": prop["value"]} for prop in item_properties],
                 },
             )
         )
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
-    catalogue_category_repository_mock.get.assert_called_once_with(
-        catalogue_category_id
-    )
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     item_repository_mock.create.assert_not_called()
-    assert (
-        str(exc.value)
-        == f"No catalogue category found with ID: {catalogue_category_id}"
-    )
+    assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
 
 def test_create_without_properties(
@@ -441,9 +414,7 @@ def test_create_without_properties(
     created_item = item_service.create(ItemPostRequestSchema(**item_post))
 
     catalogue_item_repository_mock.get.assert_called_once_with(item.catalogue_item_id)
-    catalogue_category_repository_mock.get.assert_called_once_with(
-        catalogue_category_id
-    )
+    catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
     item_repository_mock.create.assert_called_once_with(
         ItemIn(
             catalogue_item_id=item.catalogue_item_id,
@@ -576,9 +547,7 @@ def test_update(
     )
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(
-            is_defective=item.is_defective, usage_status_id=item.usage_status_id
-        ),
+        ItemPatchRequestSchema(is_defective=item.is_defective, usage_status_id=item.usage_status_id),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -614,9 +583,7 @@ def test_update_with_nonexistent_id(test_helpers, item_repository_mock, item_ser
     assert str(exc.value) == f"No item found with ID: {item_id}"
 
 
-def test_update_change_catalogue_item_id(
-    test_helpers, item_repository_mock, item_service
-):
+def test_update_change_catalogue_item_id(test_helpers, item_repository_mock, item_service):
     """
     Test updating an item with a catalogue item ID.
     """
@@ -738,9 +705,7 @@ def test_update_change_system_id(
     assert updated_item == item
 
 
-def test_update_with_nonexistent_system_id(
-    test_helpers, system_repository_mock, item_repository_mock, item_service
-):
+def test_update_with_nonexistent_system_id(test_helpers, system_repository_mock, item_repository_mock, item_service):
     """
     Test updating an item with a non-existent system ID.
     """
@@ -839,9 +804,7 @@ def test_update_change_property_value(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -867,11 +830,7 @@ def test_update_change_property_value(
 
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(
-            properties=[
-                {"id": prop.id, "value": prop.value} for prop in item.properties
-            ]
-        ),
+        ItemPatchRequestSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties]),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -946,9 +905,7 @@ def test_update_with_missing_existing_properties(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -974,11 +931,7 @@ def test_update_with_missing_existing_properties(
 
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(
-            properties=[
-                {"id": prop.id, "value": prop.value} for prop in item.properties[-2:]
-            ]
-        ),
+        ItemPatchRequestSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties[-2:]]),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -1038,9 +991,7 @@ def test_update_change_value_for_string_property_invalid_type(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -1113,9 +1064,7 @@ def test_update_change_value_for_number_property_invalid_type(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
@@ -1186,9 +1135,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": add_ids_to_properties(
-                    item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-                ),
+                "properties": add_ids_to_properties(item_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
             },
         ),
     )
