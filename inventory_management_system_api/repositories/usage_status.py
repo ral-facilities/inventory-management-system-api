@@ -13,15 +13,10 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    MissingRecordError,
-    PartOfItemError,
-)
-from inventory_management_system_api.models.usage_status import (
-    UsageStatusIn,
-    UsageStatusOut,
-)
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
+
+from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
+
 
 logger = logging.getLogger()
 
@@ -41,9 +36,7 @@ class UsageStatusRepo:
         self._usage_statuses_collection: Collection = self._database.usage_statuses
         self._items_collection: Collection = self._database.items
 
-    def create(
-        self, usage_status: UsageStatusIn, session: ClientSession = None
-    ) -> UsageStatusOut:
+    def create(self, usage_status: UsageStatusIn, session: ClientSession = None) -> UsageStatusOut:
         """
         Create a new usage status in MongoDB database
 
@@ -58,9 +51,7 @@ class UsageStatusRepo:
 
         logger.info("Inserting new usage status into database")
 
-        result = self._usage_statuses_collection.insert_one(
-            usage_status.model_dump(), session=session
-        )
+        result = self._usage_statuses_collection.insert_one(usage_status.model_dump(), session=session)
         usage_status = self.get(str(result.inserted_id), session=session)
 
         return usage_status
@@ -75,9 +66,7 @@ class UsageStatusRepo:
         usage_statuses = self._usage_statuses_collection.find(session=session)
         return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
 
-    def get(
-        self, usage_status_id: str, session: ClientSession = None
-    ) -> Optional[UsageStatusOut]:
+    def get(self, usage_status_id: str, session: ClientSession = None) -> Optional[UsageStatusOut]:
         """
         Retrieve a usage status by its ID from a MongoDB database.
 
@@ -90,9 +79,7 @@ class UsageStatusRepo:
             "Retrieving usage status with ID: %s from the database",
             usage_status_id,
         )
-        usage_status = self._usage_statuses_collection.find_one(
-            {"_id": usage_status_id}, session=session
-        )
+        usage_status = self._usage_statuses_collection.find_one({"_id": usage_status_id}, session=session)
         if usage_status:
             return UsageStatusOut(**usage_status)
         return None
@@ -108,24 +95,14 @@ class UsageStatusRepo:
         """
         usage_status_id = CustomObjectId(usage_status_id)
         if self._is_usage_in_item(str(usage_status_id), session=session):
-            raise PartOfItemError(
-                f"The usage status with id {str(usage_status_id)} is a part of a Item"
-            )
+            raise PartOfItemError(f"The usage status with id {str(usage_status_id)} is a part of a Item")
 
-        logger.info(
-            "Deleting usage status with ID %s from the database", usage_status_id
-        )
-        result = self._usage_statuses_collection.delete_one(
-            {"_id": usage_status_id}, session=session
-        )
+        logger.info("Deleting usage status with ID %s from the database", usage_status_id)
+        result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(
-                f"No usage status found with ID: {str(usage_status_id)}"
-            )
+            raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
 
-    def _is_duplicate_usage_status(
-        self, code: str, session: ClientSession = None
-    ) -> bool:
+    def _is_duplicate_usage_status(self, code: str, session: ClientSession = None) -> bool:
         """
         Check if usage status with the same name already exists in the usage statuses collection
 
@@ -134,14 +111,9 @@ class UsageStatusRepo:
         :return `True` if duplicate usage status, `False` otherwise
         """
         logger.info("Checking if usage status with code '%s' already exists", code)
-        return (
-            self._usage_statuses_collection.find_one({"code": code}, session=session)
-            is not None
-        )
+        return self._usage_statuses_collection.find_one({"code": code}, session=session) is not None
 
-    def _is_usage_in_item(
-        self, usage_status_id: str, session: ClientSession = None
-    ) -> bool:
+    def _is_usage_in_item(self, usage_status_id: str, session: ClientSession = None) -> bool:
         """Checks to see if any of the documents in the database have a specific usage status id
 
         :param usage_status_id: The ID of the usage status that is looked for
@@ -149,9 +121,4 @@ class UsageStatusRepo:
         :return: Returns True if 1 or more documents have the usage_status ID, false if none do
         """
         usage_status_id = CustomObjectId(usage_status_id)
-        return (
-            self._items_collection.find_one(
-                {"usage_status_id": usage_status_id}, session=session
-            )
-            is not None
-        )
+        return self._items_collection.find_one({"usage_status_id": usage_status_id}, session=session) is not None
