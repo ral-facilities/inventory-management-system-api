@@ -230,6 +230,9 @@ generated_catalogue_items: dict[str, list[str]] = {}
 # So that systems can be assigned in items
 generated_system_ids: list[str] = []
 
+# Dictionary with key=id and value=list of dictionaries of the units
+generated_units: dict[str, list[dict]] = {}
+
 
 def optional_address_field(function):
     return function() if fake.random.random() < PROBABILITY_ADDRESS_HAS_OPTIONAL_FIELD else None
@@ -252,6 +255,13 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
         if is_leaf and fake.random.random() < PROBABILITY_CATALOGUE_CATEGORY_HAS_EXTRA_FIELDS
         else None
     )
+
+    # Iterate over properties to add unit_id if a matching unit is found
+    if catalogue_item_properties:
+        for prop in catalogue_item_properties:
+            unit = generated_units.get(prop["unit"])
+            if unit is not None:
+                prop["unit_id"] = unit["id"]
 
     category: dict = {
         "name": f"{fake.random.choice(catalogue_category_names)}",
@@ -436,7 +446,8 @@ def populate_random_units() -> list[str]:
 
     for i, unit in enumerate(units):
         unit = generate_unit(unit)
-        create_unit(unit)
+        unit = create_unit(unit)
+        generated_units[unit["value"]] = unit
 
 
 def populate_random_catalogue_categories(
