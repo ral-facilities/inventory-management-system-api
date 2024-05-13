@@ -86,3 +86,12 @@ def test_list(unit_repository_mock, unit_service):
 
     unit_repository_mock.list.assert_called_once_with()
     assert result == unit_repository_mock.list.return_value
+
+
+def test_delete(unit_repository_mock, unit_service):
+    """Test deleting a unit"""
+    unit_id = str(ObjectId())
+
+    unit_service.delete(unit_id)
+
+    unit_repository_mock.delete.assert_called_once_with(unit_id)

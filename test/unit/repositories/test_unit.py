@@ -3,6 +3,7 @@ Unit tests for the `UnitRepo` repository
 """
 
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
+from test.unit.repositories.test_catalogue_category import CATALOGUE_CATEGORY_INFO
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -12,6 +13,8 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
+    MissingRecordError,
+    PartOfCatalogueCategoryError,
 )
 from inventory_management_system_api.models.units import UnitIn, UnitOut
 
@@ -169,3 +172,72 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, unit_repository):
 
     assert retrieved_unit is None
     database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=None)
+
+
+def test_delete(test_helpers, database_mock, unit_repository):
+    """Test trying to delete a unit"""
+    unit_id = str(ObjectId())
+    session = MagicMock()
+
+    test_helpers.mock_delete_one(database_mock.units, 1)
+
+    # Mock `find_one` to return no child catalogue item document
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+
+    unit_repository.delete(unit_id, session=session)
+
+    database_mock.units.delete_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=session)
+
+
+def test_delete_with_an_invalid_id(unit_repository):
+    """Test trying to delete a unit with an invalid ID"""
+    unit_id = "invalid"
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        unit_repository.delete(unit_id)
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+
+
+def test_delete_with_a_non_existent_id(test_helpers, database_mock, unit_repository):
+    """Test trying to delete a manufacturer with a non-existent ID"""
+    unit_id = str(ObjectId())
+
+    test_helpers.mock_delete_one(database_mock.units, 0)
+    # Mock `find_one` to return no child catalogue item document
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
+
+    with pytest.raises(MissingRecordError) as exc:
+        unit_repository.delete(unit_id)
+    assert str(exc.value) == f"No unit found with ID: {unit_id}"
+    database_mock.units.delete_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=None)
+
+
+def test_delete_unit_that_is_part_of_a_catalogue_category(test_helpers, database_mock, unit_repository):
+    """Test trying to delete a unit that is part of a Catalogue category"""
+    unit_id = str(ObjectId())
+
+    catalogue_category_id = str(ObjectId())
+
+    # pylint: disable=duplicate-code
+    # Mock find_one to return children catalogue category found
+    test_helpers.mock_find_one(
+        database_mock.catalogue_categories,
+        {
+            **CATALOGUE_CATEGORY_INFO,
+            "_id": CustomObjectId(str(ObjectId())),
+            "parent_id": catalogue_category_id,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "number",
+                    "unit": "mm",
+                    "unit_id": unit_id,
+                    "mandatory": False,
+                }
+            ],
+        },
+    )
+    # pylint: enable=duplicate-code
+    with pytest.raises(PartOfCatalogueCategoryError) as exc:
+        unit_repository.delete(unit_id)
+    assert str(exc.value) == f"The unit with id {str(unit_id)} is a part of a Catalogue category"

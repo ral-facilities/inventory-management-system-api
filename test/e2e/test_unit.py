@@ -122,3 +122,55 @@ def test_get_unit_with_nonexistent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Unit not found"
+
+
+def test_delete(test_client):
+    """Test deleting a unit"""
+
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit = response.json()
+
+    response = test_client.delete(f"/v1/units/{unit['id']}")
+    assert response.status_code == 204
+
+
+def test_delete_with_an_invalid_id(test_client):
+    """Test trying to delete a unit with an invalid ID"""
+
+    response = test_client.delete("/v1/units/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The specified unit does not exist"
+
+
+def test_delete_with_a_non_existent_id(test_client):
+    """Test trying to delete a unit with a non-existent ID"""
+
+    response = test_client.delete(f"/v1/units/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "The specified unit does not exist"
+
+
+def test_delete_unit_that_is_a_part_of_catalogue_category(test_client):
+    """Test trying to delete a unit that is a part of a Catalogue Category"""
+
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit_mm = response.json()
+
+    # pylint: disable=duplicate-code
+    catalogue_category_post = {
+        "name": "Category A",
+        "is_leaf": True,
+        "catalogue_item_properties": [
+            {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_mm["id"], "mandatory": False},
+            {"name": "Property B", "type": "boolean", "mandatory": True},
+        ],
+    }
+    # pylint: enable=duplicate-code
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    response = test_client.delete(f"/v1/units/{unit_mm['id']}")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "The specified unit is a part of a Catalogue category"
