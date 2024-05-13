@@ -2,7 +2,6 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from datetime import datetime, timezone
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from unittest.mock import MagicMock, patch
 
@@ -603,7 +602,6 @@ def test_insert_property_to_all_in(datetime_mock, test_helpers, database_mock, i
     session = MagicMock()
     catalogue_item_ids = [ObjectId(), ObjectId()]
     property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
-    datetime_mock.now.return_value = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
 
     # Mock 'update_many'
     test_helpers.mock_update_many(database_mock.items)
