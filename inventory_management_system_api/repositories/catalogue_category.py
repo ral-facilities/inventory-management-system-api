@@ -296,10 +296,6 @@ class CatalogueCategoryRepo:
         :param catalogue_item_property: The catalogue item property containing the update data
         :param session: PyMongo ClientSession to use for database operations
         """
-        # TODO: Perform checks in here?, perhaps a get_catalogue_item_property method then return the response?
-        # same for duplicate check? Would be extra unnecessary queries though given the checks must happen in
-        # the service. Also wont make sense for catalogue items and items. The catalogue_category_id is not
-        # actually needed here at the moment.
 
         logger.info(
             "Updating property with ID: %s inside catalogue category with ID: %s in the database",

@@ -164,8 +164,6 @@ class CatalogueCategoryPropertyService:
             catalogue_item_property.allowed_values, existing_property_out.model_dump()
         )
 
-        # TODO: Ensure allowed values are only added?
-
         catalogue_item_property_in = CatalogueItemPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together

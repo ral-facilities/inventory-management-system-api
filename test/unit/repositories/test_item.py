@@ -618,3 +618,37 @@ def test_insert_property_to_all_in(datetime_mock, test_helpers, database_mock, i
         },
         session=session,
     )
+
+
+# pylint:disable=duplicate-code
+
+
+@patch("inventory_management_system_api.repositories.item.datetime")
+def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, item_repository):
+    """
+    Test updating the names of all properties with a given id
+
+    Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
+    property names
+    """
+    session = MagicMock()
+    property_id = str(ObjectId())
+    new_property_name = "new property name"
+    datetime_mock.now.return_value = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
+
+    # Mock 'update_many'
+    test_helpers.mock_update_many(database_mock.items)
+
+    item_repository.update_names_of_all_properties_with_id(property_id, new_property_name, session=session)
+
+    database_mock.items.update_many.assert_called_once_with(
+        {"properties._id": CustomObjectId(property_id)},
+        {
+            "$set": {"properties.$[elem].name": new_property_name, "modified_time": datetime_mock.now.return_value},
+        },
+        array_filters=[{"elem._id": CustomObjectId(property_id)}],
+        session=session,
+    )
+
+
+# pylint:enable=duplicate-code
