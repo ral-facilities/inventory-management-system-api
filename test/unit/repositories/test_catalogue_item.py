@@ -33,9 +33,9 @@ FULL_CATALOGUE_ITEM_A_INFO = {
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [
-        {"name": "Property A", "value": 20, "unit": "mm"},
-        {"name": "Property B", "value": False, "unit": None},
-        {"name": "Property C", "value": "20x15x10", "unit": "cm"},
+        {"id": str(ObjectId()), "name": "Property A", "value": 20, "unit": "mm"},
+        {"id": str(ObjectId()), "name": "Property B", "value": False, "unit": None},
+        {"id": str(ObjectId()), "name": "Property C", "value": "20x15x10", "unit": "cm"},
     ],
 }
 
@@ -54,7 +54,7 @@ FULL_CATALOGUE_ITEM_B_INFO = {
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
     "notes": "Some extra information",
-    "properties": [{"name": "Property A", "value": True, "unit": None}],
+    "properties": [{"id": str(ObjectId()), "name": "Property A", "value": True, "unit": None}],
 }
 # pylint: enable=duplicate-code
 
@@ -72,11 +72,12 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
     )
-    catalogue_item_info = catalogue_item_in.model_dump()
+    catalogue_item_info = catalogue_item_in.model_dump(by_alias=True)
     catalogue_item_out = CatalogueItemOut(
         **catalogue_item_info,
         id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `insert_one` to return an object for the inserted catalogue item document
@@ -94,9 +95,9 @@ def test_create(test_helpers, database_mock, catalogue_item_repository):
     # Mock `find_one` to return no duplicate catalogue items found
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    created_catalogue_item = catalogue_item_repository.create(catalogue_item_in)
+    created_catalogue_item = catalogue_item_repository.create(catalogue_item_in, session=session)
 
-    database_mock.catalogue_items.insert_one.assert_called_once_with(catalogue_item_info)
+    database_mock.catalogue_items.insert_one.assert_called_once_with(catalogue_item_info, session=session)
     assert created_catalogue_item == catalogue_item_out
 
 
@@ -107,6 +108,7 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
     Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
     """
     catalogue_item_id = str(ObjectId())
+    session = MagicMock()
 
     # Mock `delete_one` to return that one document has been deleted
     test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
@@ -114,9 +116,11 @@ def test_delete(test_helpers, database_mock, catalogue_item_repository):
     # Mock `find_one` to return no child item document
     test_helpers.mock_find_one(database_mock.items, None)
 
-    catalogue_item_repository.delete(catalogue_item_id)
+    catalogue_item_repository.delete(catalogue_item_id, session=session)
 
-    database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
+    database_mock.catalogue_items.delete_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item_id)}, session=session
+    )
 
 
 def test_delete_with_child_items(test_helpers, database_mock, catalogue_item_repository):
@@ -153,11 +157,11 @@ def test_delete_with_invalid_id(catalogue_item_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_repository):
+def test_delete_with_non_existent_id(test_helpers, database_mock, catalogue_item_repository):
     """
-    Test deleting a catalogue item with a nonexistent ID.
+    Test deleting a catalogue item with a non-existent ID.
 
-    Verify that the `delete` method properly handles the deletion of a catalogue item with a nonexistent ID.
+    Verify that the `delete` method properly handles the deletion of a catalogue item with a non-existent ID.
     """
     catalogue_item_id = str(ObjectId())
 
@@ -170,7 +174,9 @@ def test_delete_with_nonexistent_id(test_helpers, database_mock, catalogue_item_
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_repository.delete(catalogue_item_id)
     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
-    database_mock.catalogue_items.delete_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
+    database_mock.catalogue_items.delete_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item_id)}, session=None
+    )
 
 
 def test_get(test_helpers, database_mock, catalogue_item_repository):
@@ -187,6 +193,7 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
         **FULL_CATALOGUE_ITEM_A_INFO,
         **MOCK_CREATED_MODIFIED_TIME,
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `find_one` to return a catalogue item document
@@ -201,9 +208,11 @@ def test_get(test_helpers, database_mock, catalogue_item_repository):
         },
     )
 
-    retrieved_catalogue_item = catalogue_item_repository.get(catalogue_item.id)
+    retrieved_catalogue_item = catalogue_item_repository.get(catalogue_item.id, session=session)
 
-    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item.id)})
+    database_mock.catalogue_items.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item.id)}, session=session
+    )
     assert retrieved_catalogue_item == catalogue_item
 
 
@@ -218,11 +227,11 @@ def test_get_with_invalid_id(catalogue_item_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_item_repository):
+def test_get_with_non_existent_id(test_helpers, database_mock, catalogue_item_repository):
     """
-    Test getting a catalogue item with a nonexistent ID.
+    Test getting a catalogue item with a non-existent ID.
 
-    Verify that the `get` method properly handles the retrieval of a catalogue item with a nonexistent ID.
+    Verify that the `get` method properly handles the retrieval of a catalogue item with a non-existent ID.
     """
     catalogue_item_id = str(ObjectId())
 
@@ -232,7 +241,9 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, catalogue_item_rep
     retrieved_catalogue_item = catalogue_item_repository.get(catalogue_item_id)
 
     assert retrieved_catalogue_item is None
-    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item_id)})
+    database_mock.catalogue_items.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item_id)}, session=None
+    )
 
 
 def test_list(test_helpers, database_mock, catalogue_item_repository):
@@ -255,6 +266,7 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         **FULL_CATALOGUE_ITEM_B_INFO,
         **MOCK_CREATED_MODIFIED_TIME,
     )
+    session = MagicMock()
 
     # Mock `find` to return a list of catalogue item documents
     test_helpers.mock_find(
@@ -277,9 +289,9 @@ def test_list(test_helpers, database_mock, catalogue_item_repository):
         ],
     )
 
-    retrieved_catalogue_items = catalogue_item_repository.list(None)
+    retrieved_catalogue_items = catalogue_item_repository.list(None, session=session)
 
-    database_mock.catalogue_items.find.assert_called_once_with({})
+    database_mock.catalogue_items.find.assert_called_once_with({}, session=session)
     assert retrieved_catalogue_items == [catalogue_item_a, catalogue_item_b]
 
 
@@ -298,6 +310,7 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
         **FULL_CATALOGUE_ITEM_A_INFO,
         **MOCK_CREATED_MODIFIED_TIME,
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
     # Mock `find` to return a list of catalogue item documents
     test_helpers.mock_find(
@@ -313,10 +326,10 @@ def test_list_with_catalogue_category_id_filter(test_helpers, database_mock, cat
         ],
     )
 
-    retrieved_catalogue_items = catalogue_item_repository.list(catalogue_item.catalogue_category_id)
+    retrieved_catalogue_items = catalogue_item_repository.list(catalogue_item.catalogue_category_id, session=session)
 
     database_mock.catalogue_items.find.assert_called_once_with(
-        {"catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id)}
+        {"catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id)}, session=session
     )
     assert retrieved_catalogue_items == [catalogue_item]
 
@@ -331,14 +344,16 @@ def test_list_with_catalogue_category_id_filter_no_matching_results(
     Verify that the `list` method properly handles the retrieval of catalogue items based on the provided catalogue
     category ID filter.
     """
+    session = MagicMock()
+
     # Mock `find` to return an empty list of catalogue item documents
     test_helpers.mock_find(database_mock.catalogue_items, [])
 
     catalogue_category_id = str(ObjectId())
-    retrieved_catalogue_items = catalogue_item_repository.list(catalogue_category_id)
+    retrieved_catalogue_items = catalogue_item_repository.list(catalogue_category_id, session=session)
 
     database_mock.catalogue_items.find.assert_called_once_with(
-        {"catalogue_category_id": CustomObjectId(catalogue_category_id)}
+        {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, session=session
     )
     assert retrieved_catalogue_items == []
 
@@ -374,6 +389,7 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=str(ObjectId()),
         manufacturer_id=str(ObjectId()),
     )
+    session = MagicMock()
     # pylint: enable=duplicate-code
 
     # Mock `update_one` to return an object for the updated catalogue item document
@@ -397,18 +413,21 @@ def test_update(test_helpers, database_mock, catalogue_item_repository):
         catalogue_category_id=catalogue_item.catalogue_category_id,
         manufacturer_id=catalogue_item.manufacturer_id,
     )
-    updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in)
+    updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in, session=session)
 
     database_mock.catalogue_items.update_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_item.id)},
         {
             "$set": {
                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-                **catalogue_item_in.model_dump(),
+                **catalogue_item_in.model_dump(by_alias=True),
             }
         },
+        session=session,
     )
-    database_mock.catalogue_items.find_one.assert_called_once_with({"_id": CustomObjectId(catalogue_item.id)})
+    database_mock.catalogue_items.find_one.assert_called_once_with(
+        {"_id": CustomObjectId(catalogue_item.id)}, session=session
+    )
     assert updated_catalogue_item == catalogue_item
 
 
@@ -457,30 +476,6 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     # Mock find_one to return 0 (child items not found)
     test_helpers.mock_find_one(database_mock.catalogue_items, None)
 
-    result = catalogue_item_repository.has_child_elements(catalogue_category_id)
-
-    assert result
-
-
-def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mock, catalogue_item_repository):
-    """
-    Test has_child_elements returns true when there are child items.
-    """
-    catalogue_category_id = str(ObjectId())
-
-    # Mock `find_one` to return no child catalogue category document
-    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
-    # pylint: disable=duplicate-code
-    # Mock `find_one` to return the child catalogue item document
-    test_helpers.mock_find_one(
-        database_mock.catalogue_items,
-        {
-            **FULL_CATALOGUE_ITEM_A_INFO,
-            "_id": CustomObjectId(str(ObjectId())),
-            "catalogue_category_id": CustomObjectId(catalogue_category_id),
-        },
-    )
-    # pylint: enable=duplicate-code
     result = catalogue_item_repository.has_child_elements(catalogue_category_id)
 
     assert result

@@ -3,7 +3,7 @@ Module for providing a service for managing catalogue categories using the `Cata
 """
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from fastapi import Depends
 
@@ -22,12 +22,10 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
-    CatalogueItemPropertyPatchSchema,
-    CatalogueItemPropertyPostSchema,
+    CatalogueItemPropertyPostRequestSchema,
     CatalogueItemPropertySchema,
 )
 from inventory_management_system_api.services import utils
-
 
 logger = logging.getLogger()
 
@@ -177,7 +175,7 @@ class CatalogueCategoryService:
         )
 
     def _check_duplicate_catalogue_item_property_names(
-        self, catalogue_item_properties: List[Union[CatalogueItemPropertyPatchSchema, CatalogueItemPropertyPostSchema]]
+        self, catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema]
     ) -> None:
         """
         Go through all the catalogue item properties to check for any duplicate names.
@@ -196,7 +194,7 @@ class CatalogueCategoryService:
 
     def _add_catalogue_item_property_units(
         self,
-        catalogue_item_properties: List[Union[CatalogueItemPropertyPatchSchema, CatalogueItemPropertyPostSchema]],
+        catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema],
     ) -> List[CatalogueItemPropertySchema]:
         """
         Adds units to the catalogue item properties based on the provided unit IDs.

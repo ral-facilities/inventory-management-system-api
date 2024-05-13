@@ -12,6 +12,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.system import SystemOut
+from inventory_management_system_api.models.units import UnitOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
@@ -88,14 +89,18 @@ def fixture_unit_repository_mock() -> Mock:
 
 
 @pytest.fixture(name="catalogue_category_service")
-def fixture_catalogue_category_service(catalogue_category_repository_mock: Mock) -> CatalogueCategoryService:
+def fixture_catalogue_category_service(
+    catalogue_category_repository_mock: Mock, unit_repository_mock: Mock
+) -> CatalogueCategoryService:
     """
-    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` dependency.
+    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` and `UnitRepo`
+    dependency.
 
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param unit_repository_mock: Mocked `UnitRepo` instance.
     :return: `CatalogueCategoryService` instance with the mocked dependency.
     """
-    return CatalogueCategoryService(catalogue_category_repository_mock)
+    return CatalogueCategoryService(catalogue_category_repository_mock, unit_repository_mock)
 
 
 @pytest.fixture(name="catalogue_item_service")
@@ -193,7 +198,8 @@ class ServiceTestHelpers:
 
     @staticmethod
     def mock_get(
-        repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, None]
+        repository_mock: Mock,
+        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, UnitOut, None],
     ) -> None:
         """
         Mock the `get` method of the repository mock to return a specific repository object.

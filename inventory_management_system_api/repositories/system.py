@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 
 from fastapi import Depends
+from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -39,7 +40,7 @@ class SystemRepo:
         self._systems_collection: Collection = self._database.systems
         self._items_collection: Collection = self._database.items
 
-    def create(self, system: SystemIn) -> SystemOut:
+    def create(self, system: SystemIn, session: ClientSession = None) -> SystemOut:
         """
         Create a new System in a MongoDB database
 
@@ -48,71 +49,77 @@ class SystemRepo:
         System and raises a `DuplicateRecordError` if it is.
 
         :param system: System to be created
+        :param session: PyMongo ClientSession to use for database operations
         :return: Created System
         :raises MissingRecordError: If the parent System specified by `parent_id` doesn't exist
         :raises DuplicateRecordError: If a duplicate System is found within the parent System
         """
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id and not self.get(parent_id):
+        if parent_id and not self.get(parent_id, session=session):
             raise MissingRecordError(f"No parent System found with ID: {parent_id}")
 
-        if self._is_duplicate_system(parent_id, system.code):
+        if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError("Duplicate System found within the parent System")
 
         logger.info("Inserting the new System into the database")
-        result = self._systems_collection.insert_one(system.model_dump())
-        system = self.get(str(result.inserted_id))
+        result = self._systems_collection.insert_one(system.model_dump(), session=session)
+        system = self.get(str(result.inserted_id), session=session)
         return system
 
-    def get(self, system_id: str) -> Optional[SystemOut]:
+    def get(self, system_id: str, session: ClientSession = None) -> Optional[SystemOut]:
         """
         Retrieve a System by its ID from a MongoDB database
 
         :param system_id: ID of the System to retrieve
+        :param session: PyMongo ClientSession to use for database operations
         :return: Retrieved System or `None` if not found
         """
         system_id = CustomObjectId(system_id)
         logger.info("Retrieving system with ID: %s from the database", system_id)
-        system = self._systems_collection.find_one({"_id": system_id})
+        system = self._systems_collection.find_one({"_id": system_id}, session=session)
         if system:
             return SystemOut(**system)
         return None
 
-    def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
+    def get_breadcrumbs(self, system_id: str, session: ClientSession = None) -> BreadcrumbsGetSchema:
         """
         Retrieve the breadcrumbs for a specific system
 
         :param system_id: ID of the system to retrieve breadcrumbs for
+        :param session: PyMongo ClientSession to use for database operations
         :return: Breadcrumbs
         """
         logger.info("Querying breadcrumbs for system with id '%s'", system_id)
         return utils.compute_breadcrumbs(
             list(
                 self._systems_collection.aggregate(
-                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems")
+                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems"),
+                    session=session,
                 )
             ),
             entity_id=system_id,
             collection_name="systems",
         )
 
-    def list(self, parent_id: Optional[str]) -> list[SystemOut]:
+    def list(self, parent_id: Optional[str], session: ClientSession = None) -> list[SystemOut]:
         """
         Retrieve Systems from a MongoDB database based on the provided filters
 
         :param parent_id: parent_id to filter Systems by
+        :param session: PyMongo ClientSession to use for database operations
         :return: List of Systems or an empty list if no Systems are retrieved
         """
         query = utils.list_query(parent_id, "systems")
 
-        systems = self._systems_collection.find(query)
+        systems = self._systems_collection.find(query, session=session)
         return [SystemOut(**system) for system in systems]
 
-    def update(self, system_id: str, system: SystemIn) -> SystemOut:
+    def update(self, system_id: str, system: SystemIn, session: ClientSession = None) -> SystemOut:
         """Update a system by its ID in a MongoDB database
 
         :param system_id: ID of the System to update
         :param system: System containing the update data
+        :param session: PyMongo ClientSession to use for database operations
         :return: The updated System
         :raises MissingRecordError: If the parent System specified by `parent_id` doesn't exist
         :raises DuplicateRecordError: If a duplicate System is found within the parent System
@@ -121,12 +128,14 @@ class SystemRepo:
         system_id = CustomObjectId(system_id)
 
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id and not self.get(parent_id):
+        if parent_id and not self.get(parent_id, session=session):
             raise MissingRecordError(f"No parent System found with ID: {parent_id}")
 
-        stored_system = self.get(str(system_id))
+        stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
-        if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(parent_id, system.code):
+        if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(
+            parent_id, system.code, session=session
+        ):
             raise DuplicateRecordError("Duplicate System found within the parent System")
 
         # Prevent a system from being moved to one of its own children
@@ -136,60 +145,64 @@ class SystemRepo:
                     self._systems_collection.aggregate(
                         utils.create_move_check_aggregation_pipeline(
                             entity_id=str(system_id), destination_id=parent_id, collection_name="systems"
-                        )
+                        ),
+                        session=session,
                     )
                 )
             ):
                 raise InvalidActionError("Cannot move a system to one of its own children")
 
         logger.info("Updating system with ID: %s in the database", system_id)
-        self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()})
+        self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
 
-        return self.get(str(system_id))
+        return self.get(str(system_id), session=session)
 
-    def delete(self, system_id: str) -> None:
+    def delete(self, system_id: str, session: ClientSession = None) -> None:
         """
         Delete a System by its ID from a MongoDB database
 
         The method checks if the system has any child and raises a `ChildElementsExistError` if it does
 
         :param system_id: ID of the System to delete
+        :param session: PyMongo ClientSession to use for database operations
         :raises ChildElementsExistError: If the System has child elements
         :raises MissingRecordError: If the System doesn't exist
         """
         system_id = CustomObjectId(system_id)
-        if self._has_child_elements(system_id):
+        if self._has_child_elements(system_id, session=session):
             raise ChildElementsExistError(f"System with ID {str(system_id)} has child elements and cannot be deleted")
 
         logger.info("Deleting system with ID: %s from the database", system_id)
-        result = self._systems_collection.delete_one({"_id": system_id})
+        result = self._systems_collection.delete_one({"_id": system_id}, session=session)
         if result.deleted_count == 0:
             raise MissingRecordError(f"No System found with ID: {str(system_id)}")
 
-    def _is_duplicate_system(self, parent_id: Optional[str], code: str) -> bool:
+    def _is_duplicate_system(self, parent_id: Optional[str], code: str, session: ClientSession = None) -> bool:
         """
         Check if a System with the same code already exists within the parent System
 
         :param parent_id: ID of the parent System which can also be `None`
         :param code: Code of the System to check for duplicates
+        :param session: PyMongo ClientSession to use for database operations
         :return: `True` if a duplicate System code is found under the given parent, `False` otherwise
         """
         logger.info("Checking if System with code '%s' already exists within the parent System", code)
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        return self._systems_collection.find_one({"parent_id": parent_id, "code": code}) is not None
+        return self._systems_collection.find_one({"parent_id": parent_id, "code": code}, session=session) is not None
 
-    def _has_child_elements(self, system_id: CustomObjectId) -> bool:
+    def _has_child_elements(self, system_id: CustomObjectId, session: ClientSession = None) -> bool:
         """
         Check if a System has any child System's or any Item's based on its ID
 
         :param system_id: ID of the System to check
+        :param session: PyMongo ClientSession to use for database operations
         :return: True if the System has child elements, False otherwise
         """
         logger.info("Checking if system with ID '%s' has child elements", str(system_id))
 
         return (
-            self._systems_collection.find_one({"parent_id": system_id}) is not None
-            or self._items_collection.find_one({"system_id": system_id}) is not None
+            self._systems_collection.find_one({"parent_id": system_id}, session=session) is not None
+            or self._items_collection.find_one({"system_id": system_id}, session=session) is not None
         )

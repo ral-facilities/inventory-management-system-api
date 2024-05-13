@@ -35,9 +35,9 @@ class AllowedValuesListSchema(BaseModel):
 AllowedValuesSchema = Annotated[AllowedValuesListSchema, Field(discriminator="type")]
 
 
-class CatalogueItemPropertyPostSchema(BaseModel):
+class CatalogueItemPropertyPostRequestSchema(BaseModel):
     """
-    Schema model representing a catalogue item property for post.
+    Schema model for a catalogue item property creation request.
     """
 
     name: str = Field(description="The name of the property")
@@ -112,7 +112,7 @@ class CatalogueItemPropertyPostSchema(BaseModel):
             if isinstance(allowed_values, AllowedValuesListSchema):
                 # List type should have all values the same type
                 for allowed_value in allowed_values.values:
-                    if not CatalogueItemPropertySchema.is_valid_property_type(
+                    if not CatalogueItemPropertyPostRequestSchema.is_valid_property_type(
                         expected_property_type=info.data["type"], property_value=allowed_value
                     ):
                         raise ValueError(
@@ -122,17 +122,12 @@ class CatalogueItemPropertyPostSchema(BaseModel):
         return allowed_values
 
 
-class CatalogueItemPropertyPatchSchema(CatalogueItemPropertyPostSchema):
-    """
-    Schema model representing a catalogue item property for patch.
-    """
-
-
-class CatalogueItemPropertySchema(CatalogueItemPropertyPostSchema):
+class CatalogueItemPropertySchema(CatalogueItemPropertyPostRequestSchema):
     """
     Schema model representing a catalogue item property.
     """
 
+    id: str = Field(description="The ID of the catalogue item property")
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
@@ -147,7 +142,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         "elements but if it is not then it can only have catalogue categories as child elements."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: Optional[List[CatalogueItemPropertyPostSchema]] = Field(
+    catalogue_item_properties: Optional[List[CatalogueItemPropertyPostRequestSchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
@@ -168,12 +163,12 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
         "elements but if it is not then it can only have catalogue categories as child elements.",
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: Optional[List[CatalogueItemPropertyPatchSchema]] = Field(
+    catalogue_item_properties: Optional[List[CatalogueItemPropertyPostRequestSchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, BaseModel):
+class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
     """
     Schema model for a catalogue category response.
     """
