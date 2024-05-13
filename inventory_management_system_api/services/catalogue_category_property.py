@@ -160,6 +160,8 @@ class CatalogueCategoryPropertyService:
             existing_property_out.name = update_data["name"]
             utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
 
+        # TODO: Ensure properties are only added
+
         CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(
             catalogue_item_property.allowed_values, existing_property_out.model_dump()
         )

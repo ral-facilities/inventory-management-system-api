@@ -12,9 +12,13 @@ from inventory_management_system_api.core.exceptions import InvalidActionError, 
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryOut,
     CatalogueItemPropertyIn,
+    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
-from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueItemPropertyPatchRequestSchema,
+    CatalogueItemPropertyPostRequestSchema,
+)
 
 # pylint:disable=too-many-locals
 # pylint:disable=too-many-arguments
@@ -235,3 +239,73 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
+
+
+@patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
+def test_update(
+    mongodb_client_mock,
+    test_helpers,
+    catalogue_category_repository_mock,
+    catalogue_item_repository_mock,
+    item_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_property_service,
+):
+    """
+    Test updating a property at the catalogue category level
+
+    Verify that the `update` method properly handles the property to be created and propagates the changes
+    downwards through catalogue items (This test supplies both name and allowed_values)
+    """
+    catalogue_category_id = str(ObjectId())
+    catalogue_item_property_id = str(ObjectId())
+    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+        name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
+    )
+    stored_catalogue_item_property = CatalogueItemPropertyOut(
+        id=catalogue_item_property_id, name="Property A", type="number", unit="mm", mandatory=True
+    )
+    stored_catalogue_category = CatalogueCategoryOut(
+        id=catalogue_category_id,
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[stored_catalogue_item_property],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+    )
+
+    # Mock the stored catalogue category to one without a property with the same name
+    test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
+
+    updated_catalogue_item_property = catalogue_category_property_service.update(
+        catalogue_category_id, catalogue_item_property_id, catalogue_item_property
+    )
+
+    # Start of transaction
+    session = mongodb_client_mock.start_session.return_value.__enter__.return_value
+    catalogue_category_repository_mock.update_catalogue_item_property.assert_called_once_with(
+        catalogue_category_id,
+        catalogue_item_property_id,
+        CatalogueItemPropertyIn(
+            **{**stored_catalogue_item_property.model_dump(), **catalogue_item_property.model_dump()}
+        ),
+        session=session,
+    )
+
+    # Catalogue items update
+    catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_called_once_with(
+        catalogue_item_property_id, catalogue_item_property.name, session=session
+    )
+
+    # Items update
+    item_repository_mock.update_names_of_all_properties_with_id.assert_called_once_with(
+        catalogue_item_property_id, catalogue_item_property.name, session=session
+    )
+
+    # Final output
+    assert (
+        updated_catalogue_item_property
+        == catalogue_category_repository_mock.update_catalogue_item_property.return_value
+    )
