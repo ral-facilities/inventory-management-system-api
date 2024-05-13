@@ -86,6 +86,18 @@ CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED = {
 NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED = CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED
 NEW_PROPERTY_MANDATORY_EXPECTED = {"name": "Property B", "unit": "mm", "value": 42}
 
+CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES = {
+    **CATALOGUE_ITEM_PROPERTY_POST_MANDATORY,
+    "allowed_values": {"type": "list", "values": [42]},
+}
+CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED = {
+    **NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED,
+    "allowed_values": {"type": "list", "values": [42]},
+}
+NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED = (
+    CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+)
+
 
 class CreateDSL:
     """Base class for create tests"""
@@ -233,6 +245,22 @@ class TestCreate(CreateDSL):
 
         self.check_catalogue_item_property_response_success(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED)
         self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+        self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
+        self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
+
+    def test_create_mandatory_property_with_allowed_values(self):
+        """
+        Test adding a mandatory property with allowed values to an already existing catalogue category, catalogue item
+        and item (ensures the default_value is allowed)
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+
+        self.check_catalogue_item_property_response_success(
+            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+        )
+        self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED)
         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
 
