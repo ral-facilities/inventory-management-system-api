@@ -147,7 +147,7 @@ class CatalogueItemRepo:
 
         :param catalogue_category_id: The ID of the catalogue category to filter catalogue items by.
         :param session: PyMongo ClientSession to use for database operations
-        :return: A list of dicts in the form { _id: ObjectId }, or an empty list if no catalogue items are returned by
+        :return: A list object catalogue item ObjectId's or an empty list if no catalogue items are returned by
                  the database.
         """
         logger.info(
