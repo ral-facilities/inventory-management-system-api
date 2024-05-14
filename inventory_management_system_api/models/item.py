@@ -42,6 +42,7 @@ class ItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
+
     # pylint: enable=duplicate-code
 
 

@@ -2,12 +2,14 @@
 Unit tests for the `CatalogueItemRepo` repository.
 """
 
-from unittest.mock import MagicMock
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
+from datetime import datetime, timezone
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from test.unit.repositories.test_item import FULL_ITEM_INFO
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
+from pymongo.cursor import Cursor
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -15,8 +17,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, CatalogueItemIn
-
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 
 FULL_CATALOGUE_ITEM_A_INFO = {
     "name": "Catalogue Item A",
@@ -479,3 +480,54 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
     result = catalogue_item_repository.has_child_elements(catalogue_category_id)
 
     assert result
+
+
+def test_list_ids(database_mock, catalogue_item_repository):
+    """
+    Test getting catalogue item ids.
+
+    Verify that the `list_ids` method properly handles the retrieval of catalogue item ids given a
+    catalogue_category_id to filter by.
+    """
+    session = MagicMock()
+    catalogue_category_id = str(ObjectId())
+    find_cursor_mock = MagicMock(Cursor)
+
+    # Mock `find` to return the cursor mock so we can check distinct is used correctly
+    database_mock.catalogue_items.find.return_value = find_cursor_mock
+
+    retrieved_catalogue_items = catalogue_item_repository.list_ids(catalogue_category_id, session=session)
+
+    database_mock.catalogue_items.find.assert_called_once_with(
+        {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, {"_id": 1}, session=session
+    )
+    find_cursor_mock.distinct.assert_called_once_with("_id")
+    assert retrieved_catalogue_items == find_cursor_mock.distinct.return_value
+
+
+@patch("inventory_management_system_api.repositories.catalogue_item.datetime")
+def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test inserting a catalogue item property
+
+    Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
+    property
+    """
+    session = MagicMock()
+    catalogue_category_id = str(ObjectId())
+    property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
+    datetime_mock.now.return_value = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
+
+    # Mock 'update_many'
+    test_helpers.mock_update_many(database_mock.catalogue_items)
+
+    catalogue_item_repository.insert_property_to_all_matching(catalogue_category_id, property_in, session=session)
+
+    database_mock.catalogue_items.update_many.assert_called_once_with(
+        {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
+        {
+            "$push": {"properties": property_in.model_dump(by_alias=True)},
+            "$set": {"modified_time": datetime_mock.now.return_value},
+        },
+        session=session,
+    )

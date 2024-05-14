@@ -23,8 +23,11 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
     CatalogueCategorySchema,
+    CatalogueItemPropertyPostRequestSchema,
+    CatalogueItemPropertySchema,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
+from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
 
 logger = logging.getLogger()
 
@@ -201,3 +204,35 @@ def delete_catalogue_category(
         message = "Catalogue category has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.post(
+    path="/{catalogue_category_id}/properties",
+    summary="Create a new catalogue item property at the catalogue category level",
+    response_description="The created catalogue item property as defined at the catalogue category level",
+    status_code=status.HTTP_201_CREATED,
+)
+def create_catalogue_item_property(
+    catalogue_item_property: CatalogueItemPropertyPostRequestSchema,
+    catalogue_category_id: str = Path(description="The ID of the catalogue category to add a property to"),
+    catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
+) -> CatalogueItemPropertySchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Creating a new catalogue item property at the catalogue category level")
+    logger.debug("Catalogue item property data: %s", catalogue_item_property)
+
+    try:
+        return CatalogueItemPropertySchema(
+            **catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property).model_dump()
+        )
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "Catalogue category not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DuplicateCatalogueItemPropertyNameError as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
