@@ -2,7 +2,7 @@
 Module for defining the database models for representing catalogue items.
 """
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 
@@ -17,7 +17,7 @@ class PropertyIn(BaseModel):
 
     id: CustomObjectIdField = Field(serialization_alias="_id")
     name: str
-    value: Optional[Union[str, float, bool]]
+    value: Any
     unit: Optional[str] = None
 
 
@@ -28,7 +28,7 @@ class PropertyOut(BaseModel):
 
     id: StringObjectIdField = Field(alias="_id")
     name: str
-    value: Optional[Union[str, float, bool]]
+    value: Any
     unit: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)

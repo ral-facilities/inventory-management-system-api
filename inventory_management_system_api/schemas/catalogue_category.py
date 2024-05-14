@@ -4,7 +4,7 @@ Module for defining the API schema models for representing catalogue categories.
 
 from enum import Enum
 from numbers import Number
-from typing import Annotated, Any, List, Literal, Optional, Union
+from typing import Annotated, Any, List, Literal, Optional
 
 from pydantic import BaseModel, Field, conlist, field_validator
 from pydantic_core.core_schema import ValidationInfo
@@ -51,9 +51,7 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
     )
 
     @classmethod
-    def is_valid_property_type(
-        cls, expected_property_type: CatalogueItemPropertyType, property_value: Optional[Union[str, float, bool]]
-    ) -> bool:
+    def is_valid_property_type(cls, expected_property_type: CatalogueItemPropertyType, property_value: Any) -> bool:
         """
         Validates a given value has a type matching a CatalogueItemPropertyType and returns false if they don't
 
@@ -207,7 +205,7 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
     Schema model for a catalogue item property creation request
     """
 
-    default_value: Optional[Union[str, float, bool]] = Field(
+    default_value: Any = Field(
         default=None,
         description="Value to populate all child catalogue items and items with. Required if the added field is "
         "mandatory.",
@@ -215,9 +213,7 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
 
     @field_validator("default_value")
     @classmethod
-    def validate_default_value(
-        cls, default_value: Optional[Union[str, float, bool]], info: ValidationInfo
-    ) -> Optional[Union[str, float, bool]]:
+    def validate_default_value(cls, default_value: Any, info: ValidationInfo) -> Any:
         """
         Validator for the `default_value` field.
 
