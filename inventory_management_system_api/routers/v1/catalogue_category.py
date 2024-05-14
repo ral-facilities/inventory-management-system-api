@@ -279,10 +279,6 @@ def partial_update_catalogue_item_property(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    # pylint:enable=duplicate-code
-    # TODO: Replace with RequestValidationError? - currently different to catalogue category post if allowed
-    #       values were wrong, but can't validate in the schema here
-    #       https://github.com/tiangolo/fastapi/issues/471 ?
     except ValueError as exc:
         message = str(exc)
         logger.exception(message)
