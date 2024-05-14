@@ -62,14 +62,17 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         :returns: Whether the value is valid or not
         """
 
+        # pylint: disable=unidiomatic-typecheck
         if expected_property_type == CatalogueItemPropertyType.STRING:
             return isinstance(property_value, str)
         if expected_property_type == CatalogueItemPropertyType.NUMBER:
             # Python cares if there is a decimal or not, so can't just use float for this check, even though
             # Pydantic & the FastAPI docs shows float as 'number'
-            return isinstance(property_value, Number)
+            # Also boolean is a subtype of integer so have to use type here
+            return isinstance(property_value, Number) and type(property_value) is not bool
         if expected_property_type == CatalogueItemPropertyType.BOOLEAN:
-            return isinstance(property_value, bool)
+            return type(property_value) is bool
+        # pylint: enable=unidiomatic-typecheck
         return False
 
     @field_validator("unit")
@@ -211,7 +214,9 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
                 expected_property_type=info.data["type"], property_value=default_value
             ):
                 raise ValueError("default_value must be the same type as the property itself")
-            if info.data["allowed_values"] and default_value not in info.data["allowed_values"].values:
-                raise ValueError("default_value is not one of the allowed_values")
+            if "allowed_values" in info.data and info.data["allowed_values"]:
+                allowed_values = info.data["allowed_values"]
+                if allowed_values.type == "list" and default_value not in info.data["allowed_values"].values:
+                    raise ValueError("default_value is not one of the allowed_values")
 
         return default_value

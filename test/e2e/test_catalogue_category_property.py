@@ -297,10 +297,33 @@ class TestCreate(CreateDSL):
             422, "Cannot add a mandatory property without a default value"
         )
 
-    def test_create_mandatory_property_with_invalid_default_value(self):
+    def test_create_mandatory_property_with_invalid_default_value_boolean_int(self):
         """
         Test adding a mandatory property to an already existing catalogue category, catalogue item and item without
-        a default value
+        with a default value that is a boolean value while the type of the property is an int (this can cause an
+        issue if not implemented property as boolean is a subclass of int - technically also applies to other
+        endpoints' type checks but they occur in the same place in code anyway)
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "number",
+                "unit": "mm",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": [1, 2, 3]},
+                "default_value": True,
+            }
+        )
+        self.check_catalogue_item_property_response_failed_with_validation_message(
+            422, "Value error, default_value must be the same type as the property itself"
+        )
+
+    def test_create_mandatory_property_with_invalid_default_value_not_in_allowed(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with a
+        default value that is excluded by the allowed_values
         """
 
         self.post_catalogue_category_and_items()
