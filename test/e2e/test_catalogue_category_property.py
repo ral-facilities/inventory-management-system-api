@@ -73,7 +73,7 @@ CATALOGUE_ITEM_PROPERTY_POST_MANDATORY = {
     "type": "number",
     "unit": "mm",
     "mandatory": True,
-    "default_value": 42,
+    "default_value": 20,
 }
 CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED = {
     "name": "Property B",
@@ -84,15 +84,15 @@ CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED = {
 }
 
 NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED = CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED
-NEW_PROPERTY_MANDATORY_EXPECTED = {"name": "Property B", "unit": "mm", "value": 42}
+NEW_PROPERTY_MANDATORY_EXPECTED = {"name": "Property B", "unit": "mm", "value": 20}
 
 CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES = {
     **CATALOGUE_ITEM_PROPERTY_POST_MANDATORY,
-    "allowed_values": {"type": "list", "values": [42]},
+    "allowed_values": {"type": "list", "values": [10, 20, 30]},
 }
 CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED = {
     **NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED,
-    "allowed_values": {"type": "list", "values": [42]},
+    "allowed_values": {"type": "list", "values": [10, 20, 30]},
 }
 NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED = (
     CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
@@ -100,7 +100,7 @@ NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED = (
 
 CATALOGUE_ITEM_PROPERTY_PATCH = {
     "name": "New property name",
-    "allowed_values": {"type": "list", "values": [42, 24]},
+    "allowed_values": {"type": "list", "values": [10, 20, 30, 40]},
 }
 
 CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED = {
@@ -109,10 +109,10 @@ CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED = {
 }
 
 NEW_CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED = CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED
-NEW_PROPERTY_PATCH_EXPECTED = {"name": "New property name", "unit": "mm", "value": 42}
+NEW_PROPERTY_PATCH_EXPECTED = {"name": "New property name", "unit": "mm", "value": 20}
 
 CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY = {
-    "allowed_values": {"type": "list", "values": [42, 24]},
+    "allowed_values": {"type": "list", "values": [10, 20, 30, 40]},
 }
 CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED = {
     **CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED,
@@ -595,4 +595,123 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_item_property({"name": EXISTING_CATALOGUE_CATEGORY_PROPERTY_POST["name"]})
         self.check_catalogue_item_property_patch_response_failed_with_message(
             422, "Duplicate catalogue item property name: Property A"
+        )
+
+    def test_updating_property_allowed_values_from_none_to_value(self):
+        """
+        Test updating a property to have a allowed_values when it was initially None
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY)
+        self.check_catalogue_item_property_post_response_success(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED)
+
+        # Patch the property
+        self.patch_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY)
+        self.check_catalogue_item_property_patch_response_failed_with_message(
+            422, "Cannot add allowed_values to an existing catalogue item property"
+        )
+
+    def test_updating_property_allowed_values_from_value_to_none(self):
+        """
+        Test updating a property to have no allowed_values when it initially had
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.check_catalogue_item_property_post_response_success(
+            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+        )
+
+        # Patch the property
+        self.patch_catalogue_item_property({"allowed_values": None})
+        self.check_catalogue_item_property_patch_response_failed_with_message(
+            422, "Cannot remove allowed_values from an existing catalogue item property"
+        )
+
+    def test_updating_property_removing_allowed_values_list(self):
+        """
+        Test updating a property to remove an element from an allowed values list
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.check_catalogue_item_property_post_response_success(
+            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+        )
+
+        # Patch the property
+        self.patch_catalogue_item_property(
+            {
+                "allowed_values": {
+                    "type": "list",
+                    # Remove a single value
+                    "values": CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"][0:-1],
+                }
+            }
+        )
+        self.check_catalogue_item_property_patch_response_failed_with_message(
+            422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+        )
+
+    def test_updating_property_modifying_allowed_values_list(self):
+        """
+        Test updating a property to modify a value in an allowed values list
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.check_catalogue_item_property_post_response_success(
+            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+        )
+
+        # Patch the property
+        self.patch_catalogue_item_property(
+            {
+                "allowed_values": {
+                    "type": "list",
+                    # Change only the last value
+                    "values": [
+                        *CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"][0:-1],
+                        42,
+                    ],
+                }
+            }
+        )
+        self.check_catalogue_item_property_patch_response_failed_with_message(
+            422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+        )
+
+    def test_updating_property_allowed_values_list_adding_with_different_type(self):
+        """
+        Test updating a property to modify a value in an allowed values list to add an extra element but with a
+        different type to the rest
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.check_catalogue_item_property_post_response_success(
+            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+        )
+
+        # Patch the property
+        self.patch_catalogue_item_property(
+            {
+                "allowed_values": {
+                    "type": "list",
+                    # Change only the last value
+                    "values": [
+                        *CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"],
+                        "different type",
+                    ],
+                }
+            }
+        )
+        self.check_catalogue_item_property_patch_response_failed_with_message(
+            422, "allowed_values of type 'list' must only contain values of the same type as the property itself"
         )

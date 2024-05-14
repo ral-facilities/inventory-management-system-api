@@ -624,7 +624,10 @@ def test_update_allowed_values_removing_element(
         catalogue_category_property_service.update(
             catalogue_category_id, catalogue_item_property_id, catalogue_item_property
         )
-    assert str(exc.value) == "Cannot modify existing `allowed_values`, you may only add more"
+    assert (
+        str(exc.value)
+        == "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+    )
 
     # Ensure no updates actually called
     catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
@@ -677,7 +680,10 @@ def test_update_allowed_values_modifying_element(
         catalogue_category_property_service.update(
             catalogue_category_id, catalogue_item_property_id, catalogue_item_property
         )
-    assert str(exc.value) == "Cannot modify existing `allowed_values`, you may only add more"
+    assert (
+        str(exc.value)
+        == "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+    )
 
     # Ensure no updates actually called
     catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()

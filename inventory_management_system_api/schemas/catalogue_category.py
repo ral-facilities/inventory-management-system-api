@@ -121,7 +121,8 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
                         expected_property_type=catalogue_category_data["type"], property_value=allowed_value
                     ):
                         raise ValueError(
-                            "allowed_values must only contain values of the same type as the property itself"
+                            "allowed_values of type 'list' must only contain values of the same type as the property "
+                            "itself"
                         )
 
     @field_validator("allowed_values")

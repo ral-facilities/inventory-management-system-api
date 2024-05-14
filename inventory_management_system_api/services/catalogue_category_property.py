@@ -129,8 +129,8 @@ class CatalogueCategoryPropertyService:
         :param existing_allowed_values: Existing allowed_values from the catalogue category database model
         :param new_allowed_values: New definition of allowed values to validate
         :raises InvalidActionError:
-            - If the existing allowed_values is None and the new values are not
-            - If the existing allowed_values is not None and the new values are
+            - If the existing allowed_values is None and the new allowed_values is not
+            - If the existing allowed_values is not None and the new allowed_values is
             - If the type of allowed values is being changed
             - If the type of allowed values is 'list' while modifying the list in any way other than adding extra
               values
@@ -153,7 +153,10 @@ class CatalogueCategoryPropertyService:
         if existing_allowed_values.type == "list":
             for existing_value in existing_allowed_values.values:
                 if existing_value not in new_allowed_values.values:
-                    raise InvalidActionError("Cannot modify existing `allowed_values`, you may only add more")
+                    raise InvalidActionError(
+                        "Cannot modify existing values inside allowed_values of type 'list', you may only add more "
+                        "values"
+                    )
 
     def update(
         self,
