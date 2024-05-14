@@ -2,7 +2,7 @@
 Module for defining the API schema models for representing catalogue items.
 """
 
-from typing import List, Optional, Union
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -15,9 +15,7 @@ class PropertyPostRequestSchema(BaseModel):
     """
 
     id: str = Field(description="The ID of the catalogue item property")
-    value: Optional[Union[str, float, bool]] = Field(
-        default=None, description="The value of the catalogue item property"
-    )
+    value: Any = Field(default=None, description="The value of the catalogue item property")
 
 
 class PropertySchema(PropertyPostRequestSchema):
