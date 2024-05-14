@@ -287,7 +287,7 @@ class CatalogueCategoryRepo:
         catalogue_item_property_id: str,
         catalogue_item_property: CatalogueItemPropertyIn,
         session: ClientSession = None,
-    ):
+    ) -> CatalogueItemPropertyOut:
         """
         Updates a catalogue item property given its ID and the ID of the catalogue category it's in
 
@@ -295,6 +295,7 @@ class CatalogueCategoryRepo:
         :param catalogue_item_property_id: The ID of the catalogue item property to update
         :param catalogue_item_property: The catalogue item property containing the update data
         :param session: PyMongo ClientSession to use for database operations
+        :return: The updated catalogue item property
         """
 
         logger.info(

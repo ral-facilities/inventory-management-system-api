@@ -189,7 +189,7 @@ class CatalogueItemRepo:
 
     def update_names_of_all_properties_with_id(
         self, property_id: str, new_property_name: str, session: ClientSession = None
-    ):
+    ) -> None:
         """
         Updates the name of a property in every catalogue item it is present in
 

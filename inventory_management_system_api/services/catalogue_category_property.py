@@ -123,7 +123,7 @@ class CatalogueCategoryPropertyService:
 
     def _check_valid_allowed_values_update(
         self, existing_allowed_values: Optional[AllowedValues], new_allowed_values: Optional[AllowedValuesSchema]
-    ):
+    ) -> None:
         """Validates a potential change of allowed_values
 
         :param existing_allowed_values: Existing allowed_values from the catalogue category database model
@@ -185,7 +185,7 @@ class CatalogueCategoryPropertyService:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
         # Attempt to locate the property
-        existing_property_out: CatalogueItemPropertyOut = None
+        existing_property_out: Optional[CatalogueItemPropertyOut] = None
         for prop in stored_catalogue_category.catalogue_item_properties:
             if prop.id == catalogue_item_property_id:
                 existing_property_out = prop

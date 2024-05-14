@@ -158,7 +158,7 @@ class ItemRepo:
     # pylint:disable=duplicate-code
     def update_names_of_all_properties_with_id(
         self, property_id: str, new_property_name: str, session: ClientSession = None
-    ):
+    ) -> None:
         """
         Updates the name of a property in every item it is present in
 
