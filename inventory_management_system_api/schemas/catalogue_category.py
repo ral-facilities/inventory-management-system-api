@@ -216,7 +216,12 @@ class CatalogueItemPropertyPostRequestSchema(CatalogueCategoryPostRequestPropert
                 raise ValueError("default_value must be the same type as the property itself")
             if "allowed_values" in info.data and info.data["allowed_values"]:
                 allowed_values = info.data["allowed_values"]
-                if allowed_values.type == "list" and default_value not in info.data["allowed_values"].values:
+
+                # Check the type of allowed_values being used and validate the default value appropriately
+                if (
+                    isinstance(allowed_values, AllowedValuesListSchema)
+                    and default_value not in info.data["allowed_values"].values
+                ):
                     raise ValueError("default_value is not one of the allowed_values")
 
         return default_value

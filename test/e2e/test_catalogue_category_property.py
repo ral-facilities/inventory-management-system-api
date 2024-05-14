@@ -355,6 +355,26 @@ class TestCreate(CreateDSL):
             422, "Value error, default_value must be the same type as the property itself"
         )
 
+    def test_create_mandatory_property_with_boolean_allowed_values(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
+        a boolean type and allowed values is rejected appropriately
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "boolean",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": [1, 2, 3]},
+                "default_value": False,
+            }
+        )
+        self.check_catalogue_item_property_response_failed_with_validation_message(
+            422, "Value error, allowed_values not allowed for a boolean catalogue item property 'Property B'"
+        )
+
     def test_create_property_non_leaf_catalogue_category(self):
         """
         Test adding a property to an non leaf catalogue category
