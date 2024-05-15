@@ -7,11 +7,12 @@ import re
 from typing import Dict, List, Union
 
 from inventory_management_system_api.core.exceptions import (
+    DuplicateCatalogueItemPropertyNameError,
     InvalidCatalogueItemPropertyTypeError,
     MissingMandatoryCatalogueItemProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueItemPropertyOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueItemPropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 
 logger = logging.getLogger()
@@ -32,6 +33,27 @@ def generate_code(name: str, entity_type: str) -> str:
     logger.info("Generating code for the %s based on its name", entity_type)
     name = name.lower().strip()
     return re.sub(r"\s+", "-", name)
+
+
+def check_duplicate_catalogue_item_property_names(
+    catalogue_item_properties: list[CatalogueCategoryPostRequestPropertySchema | CatalogueItemPropertyOut],
+) -> None:
+    """
+    Go through a list of catalogue item properties to check for any duplicate names during creation of a catalogue
+    category or an addition of a property later on.
+
+    :param catalogue_item_properties: The supplied catalogue item properties
+    :raises DuplicateCatalogueItemPropertyName: If a duplicate catalogue item property name is found.
+    """
+    logger.info("Checking for duplicate catalogue item property names")
+    seen_catalogue_item_property_names = set()
+    for catalogue_item_property in catalogue_item_properties:
+        catalogue_item_property_name = catalogue_item_property.name.lower().strip()
+        if catalogue_item_property_name in seen_catalogue_item_property_names:
+            raise DuplicateCatalogueItemPropertyNameError(
+                f"Duplicate catalogue item property name: {catalogue_item_property.name.strip()}"
+            )
+        seen_catalogue_item_property_names.add(catalogue_item_property_name)
 
 
 def process_catalogue_item_properties(
@@ -149,7 +171,7 @@ def _validate_catalogue_item_property_value(defined_property: Dict, supplied_pro
                 f"Mandatory catalogue item property with ID '{supplied_property_id}' cannot be None."
             )
     else:
-        if not CatalogueItemPropertyPostRequestSchema.is_valid_property_type(
+        if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
             defined_property_type, supplied_property_value
         ):
             raise InvalidCatalogueItemPropertyTypeError(

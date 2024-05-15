@@ -187,7 +187,18 @@ class RepositoryTestHelpers:
         """
         update_one_result_mock = Mock(UpdateResult)
         update_one_result_mock.acknowledged = True
-        collection_mock.insert_one.return_value = update_one_result_mock
+        collection_mock.update_many.return_value = update_one_result_mock
+
+    @staticmethod
+    def mock_update_many(collection_mock: Mock) -> None:
+        """
+        Mock the `update_many` method of the MongoDB database collection mock to return an `UpdateResult` object.
+
+        :param collection_mock: Mocked MongoDB database collection instance.
+        """
+        update_many_result_mock = Mock(UpdateResult)
+        update_many_result_mock.acknowledged = True
+        collection_mock.update_many.return_value = update_many_result_mock
 
 
 @pytest.fixture(name="test_helpers")
