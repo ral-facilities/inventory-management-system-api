@@ -386,6 +386,74 @@ def test_update_category_only(
     )
 
 
+@patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
+def test_update_with_no_changes_allowed_values_none(
+    mongodb_client_mock,
+    test_helpers,
+    catalogue_category_repository_mock,
+    catalogue_item_repository_mock,
+    item_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_property_service,
+):
+    """
+    Test updating a property at the catalogue category level
+
+    Verify that the `update` method properly handles the property to be created and propagates the changes
+    downwards through catalogue items (in this case passing allowed_values as None when the database
+    model also uses None)
+    """
+    catalogue_category_id = str(ObjectId())
+    catalogue_item_property_id = str(ObjectId())
+    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(allowed_values=None)
+    stored_catalogue_item_property = CatalogueItemPropertyOut(
+        id=catalogue_item_property_id,
+        name="Property A",
+        type="number",
+        unit="mm",
+        mandatory=True,
+        allowed_values=None,
+    )
+    stored_catalogue_category = CatalogueCategoryOut(
+        id=catalogue_category_id,
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[stored_catalogue_item_property],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+    )
+
+    # Mock the stored catalogue category to one without a property with the same name
+    test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
+
+    updated_catalogue_item_property = catalogue_category_property_service.update(
+        catalogue_category_id, catalogue_item_property_id, catalogue_item_property
+    )
+
+    # Start of transaction
+    session = mongodb_client_mock.start_session.return_value.__enter__.return_value
+    catalogue_category_repository_mock.update_catalogue_item_property.assert_called_once_with(
+        catalogue_category_id,
+        catalogue_item_property_id,
+        CatalogueItemPropertyIn(
+            **{**stored_catalogue_item_property.model_dump(), **catalogue_item_property.model_dump(exclude_unset=True)}
+        ),
+        session=session,
+    )
+
+    # Ensure changes aren't propagated
+    catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
+    item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
+
+    # Final output
+    assert (
+        updated_catalogue_item_property
+        == catalogue_category_repository_mock.update_catalogue_item_property.return_value
+    )
+
+
 def test_update_with_missing_catalogue_category(
     test_helpers,
     catalogue_category_repository_mock,

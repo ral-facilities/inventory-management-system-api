@@ -135,6 +135,11 @@ class CatalogueCategoryPropertyService:
             - If the type of allowed values is 'list' while modifying the list in any way other than adding extra
               values
         """
+        # Ignore checks if both existing and new allowed_values is None
+        # (as there is no change)
+        if existing_allowed_values is None and new_allowed_values is None:
+            return
+
         # Prevent adding allowed_values to an existing property
         if existing_allowed_values is None and new_allowed_values is not None:
             raise InvalidActionError("Cannot add allowed_values to an existing catalogue item property")

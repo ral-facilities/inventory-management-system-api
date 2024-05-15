@@ -506,6 +506,30 @@ class TestUpdate(UpdateDSL):
         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
 
+    def test_update_category_no_changes_allowed_values_none(self):
+        """
+        Test updating a property at the catalogue category level but with an update that shouldn't change anything
+        (in this case also passing allowed_values as None and keeping it None on the patch request)
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY)
+        self.check_catalogue_item_property_post_response_success(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+
+        # Patch the property
+        self.patch_catalogue_item_property(
+            {"name": CATALOGUE_ITEM_PROPERTY_POST_MANDATORY["name"], "allowed_values": None}
+        )
+
+        # Check updated correctly
+        self.check_catalogue_item_property_patch_response_success(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+        # These are testing values are the same as they should have been prior to the patch (NEW_ is only there from
+        # the create tests)
+        self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+        self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
+        self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
+
     def test_update_non_existent_catalogue_category_id(self):
         """
         Test updating a property at the catalogue category level when the specified catalogue category doesn't exist
