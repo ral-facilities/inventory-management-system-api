@@ -615,13 +615,13 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
     test_helpers.mock_find_one(
         database_mock.systems, {**SYSTEM_B_INFO, "_id": CustomObjectId(system_id), **MOCK_CREATED_MODIFIED_TIME}
     )
-    # Mock `find_one` to return duplicate systen found in parent system
+    # Mock `find_one` to return duplicate system found in parent system
     test_helpers.mock_find_one(
         database_mock.systems,
         {
             **SYSTEM_B_INFO,
             **MOCK_CREATED_MODIFIED_TIME,
-            "_id": CustomObjectId(system_id),
+            "_id": ObjectId(),
         },
     )
 
@@ -630,6 +630,59 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
     assert str(exc.value) == "Duplicate System found within the parent System"
 
     database_mock.systems.update_one.assert_not_called()
+
+
+@patch("inventory_management_system_api.repositories.system.utils")
+def test_update_change_captialistion_of_name(utils_mock, test_helpers, database_mock, system_repository):
+    """
+    Test updating a System when the code is the same and the captialisation of the name has changed.
+
+    Verify that the `update` method properly handles the update of a System
+    """
+    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
+    session = MagicMock()
+
+    # Mock `find_one` to return the stored System document
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        system.model_dump(),
+    )
+
+    # Mock `find_one` to return duplicate system found in parent system
+    test_helpers.mock_find_one(
+        database_mock.systems,
+        {**system.model_dump(), "_id": CustomObjectId(system.id)},
+    )
+
+    # Mock `update_one` to return an object for the updated System document
+    test_helpers.mock_update_one(database_mock.systems)
+
+    # Mock `find_one` to return the updated System document
+    system_in = SystemIn(**{**SYSTEM_A_INFO, "name": "TeSt NaMe A"}, **MOCK_CREATED_MODIFIED_TIME)
+    test_helpers.mock_find_one(database_mock.systems, {**system_in.model_dump(), "_id": CustomObjectId(system.id)})
+
+    updated_system = system_repository.update(system.id, system_in, session=session)
+
+    utils_mock.create_breadcrumbs_aggregation_pipeline.assert_not_called()
+    utils_mock.is_valid_move_result.assert_not_called()
+
+    database_mock.systems.update_one.assert_called_once_with(
+        {
+            "_id": CustomObjectId(system.id),
+        },
+        {
+            "$set": {
+                **system_in.model_dump(),
+            },
+        },
+        session=session,
+    )
+    database_mock.systems.find_one.assert_has_calls(
+        [
+            call({"_id": CustomObjectId(system.id)}, session=session),
+        ]
+    )
+    assert updated_system == SystemOut(id=system.id, **system_in.model_dump())
 
 
 def test_delete(test_helpers, database_mock, system_repository):

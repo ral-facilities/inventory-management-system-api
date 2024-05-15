@@ -744,6 +744,22 @@ def test_partial_update_catalogue_category_change_name(test_client):
     }
 
 
+def test_partial_update_catalogue_category_change_captialistion_of_name(test_client):
+    """
+    Test changing the captialistion of the name of a catalogue category.
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+
+    catalogue_category_patch = {"name": "CaTeGoRy A"}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        **CATALOGUE_CATEGORY_POST_A_EXPECTED,
+        **catalogue_category_patch,
+    }
+
+
 def test_partial_update_catalogue_category_change_name_duplicate(test_client):
     """
     Test changing the name of a catalogue category to a name that already exists.

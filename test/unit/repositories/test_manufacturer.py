@@ -247,6 +247,89 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repos
     database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)}, session=None)
 
 
+def test_update_change_captialistion_of_name(test_helpers, database_mock, manufacturer_repository):
+    """Test updating a manufacturer when the code is the same and the captialisation of the name has changed."""
+    # pylint: disable=duplicate-code
+    manufacturer = ManufacturerOut(
+        id=str(ObjectId()),
+        name="MaNuFaCtUrEr A",
+        code="manufacturer-a",
+        url="http://testUrl.co.uk",
+        address=AddressSchema(
+            address_line="1 Example Street",
+            town="Oxford",
+            county="Oxfordshire",
+            postcode="OX1 2AB",
+            country="United Kingdom",
+        ),
+        telephone="0932348348",
+        **MOCK_CREATED_MODIFIED_TIME,
+    )
+    session = MagicMock()
+    # pylint: enable=duplicate-code
+
+    # Mock 'find_one' to return the existing manufacturer document
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            **MOCK_CREATED_MODIFIED_TIME,
+            "_id": CustomObjectId(manufacturer.id),
+            "code": "manufacturer-a",
+            "name": "Manufacturer A",
+            "url": "http://testUrl.co.uk",
+            "address": {
+                "address_line": "1 Example Street",
+                "town": "Oxford",
+                "county": "Oxfordshire",
+                "postcode": "OX1 2AB",
+                "country": "United Kingdom",
+            },
+            "telephone": "0932348348",
+        },
+    )
+
+    # Mock `find_one` to return no duplicate manufacturers found
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            **MOCK_CREATED_MODIFIED_TIME,
+            "_id": CustomObjectId(manufacturer.id),
+            "code": "manufacturer-a",
+            "name": "Manufacturer A",
+            "url": "http://testUrl.co.uk",
+            "address": {
+                "address_line": "1 Example Street",
+                "town": "Oxford",
+                "county": "Oxfordshire",
+                "postcode": "OX1 2AB",
+                "country": "United Kingdom",
+            },
+            "telephone": "0932348348",
+        },
+    )
+
+    test_helpers.mock_update_one(database_mock.manufacturers)
+    # Mock 'find_one' to return the inserted manufacturer document
+    manufacturer_in = ManufacturerIn(**manufacturer.model_dump())
+    test_helpers.mock_find_one(
+        database_mock.manufacturers,
+        {
+            **manufacturer_in.model_dump(),
+            "_id": CustomObjectId(manufacturer.id),
+        },
+    )
+
+    # pylint: disable=duplicate-code
+    updated_manufacturer = manufacturer_repository.update(manufacturer.id, manufacturer_in, session=session)
+    # pylint: enable=duplicate-code
+
+    database_mock.manufacturers.update_one.assert_called_once_with(
+        {"_id": CustomObjectId(manufacturer.id)}, {"$set": manufacturer_in.model_dump()}, session=session
+    )
+
+    assert updated_manufacturer == ManufacturerOut(id=manufacturer.id, **manufacturer_in.model_dump())
+
+
 def test_update(test_helpers, database_mock, manufacturer_repository):
     """Test updating a manufacturer"""
     # pylint: disable=duplicate-code
@@ -368,7 +451,7 @@ def test_update_with_duplicate_name(test_helpers, database_mock, manufacturer_re
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {
-            "_id": CustomObjectId(manufacturer_id),
+            "_id": ObjectId(),
             "code": "manufacturer-b",
             "name": "Manufacturer B",
             "url": "http://example.com",

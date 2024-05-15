@@ -101,7 +101,7 @@ class ManufacturerRepo:
 
         stored_manufacturer = self.get(str(manufacturer_id), session=session)
         if stored_manufacturer.name != manufacturer.name:
-            if self._is_duplicate_manufacturer(manufacturer.code, session=session):
+            if self._is_duplicate_manufacturer(manufacturer.code, manufacturer_id, session=session):
                 raise DuplicateRecordError("Duplicate manufacturer found")
 
         logger.info("Updating manufacturer with ID %s", manufacturer_id)
@@ -115,7 +115,7 @@ class ManufacturerRepo:
     def delete(self, manufacturer_id: str, session: ClientSession = None) -> None:
         """
         Delete a manufacturer by its ID from MongoDB database.
-        Checks if manufactuer is a part of an item, and does not delete if it is
+        Checks if manufacturer is a part of an item, and does not delete if it is
 
         :param manufacturer_id: The ID of the manufacturer to delete
         :param session: PyMongo ClientSession to use for database operations
@@ -133,16 +133,20 @@ class ManufacturerRepo:
         if result.deleted_count == 0:
             raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
 
-    def _is_duplicate_manufacturer(self, code: str, session: ClientSession = None) -> bool:
+    def _is_duplicate_manufacturer(
+        self, code: str, manufacturer_id: CustomObjectId = None, session: ClientSession = None
+    ) -> bool:
         """
         Check if manufacturer with the same name already exists in the manufacturer collection
 
         :param code: The code of the manufacturer to check for duplicates.
+        :param manufacturer_id: The ID of the manufacturer to check if the duplicate manufacturer found is itself.
         :param session: PyMongo ClientSession to use for database operations
         :return `True` if duplicate manufacturer, `False` otherwise
         """
         logger.info("Checking if manufacturer with code '%s' already exists", code)
-        return self._manufacturers_collection.find_one({"code": code}, session=session) is not None
+        manufacturer_with_code = self._manufacturers_collection.find_one({"code": code}, session=session)
+        return manufacturer_with_code is not None and manufacturer_id != manufacturer_with_code["_id"]
 
     def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str, session: ClientSession = None) -> bool:
         """Checks to see if any of the documents in the database have a specific manufacturer id
