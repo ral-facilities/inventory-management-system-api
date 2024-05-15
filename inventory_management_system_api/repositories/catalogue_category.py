@@ -280,3 +280,43 @@ class CatalogueCategoryRepo:
             session=session,
         )
         return CatalogueItemPropertyOut(**catalogue_item_property_data)
+
+    def update_catalogue_item_property(
+        self,
+        catalogue_category_id: str,
+        catalogue_item_property_id: str,
+        catalogue_item_property: CatalogueItemPropertyIn,
+        session: ClientSession = None,
+    ) -> CatalogueItemPropertyOut:
+        """
+        Updates a catalogue item property given its ID and the ID of the catalogue category it's in
+
+        :param catalogue_category_id: The ID of the catalogue category to update
+        :param catalogue_item_property_id: The ID of the catalogue item property to update
+        :param catalogue_item_property: The catalogue item property containing the update data
+        :param session: PyMongo ClientSession to use for database operations
+        :return: The updated catalogue item property
+        """
+
+        logger.info(
+            "Updating property with ID: %s inside catalogue category with ID: %s in the database",
+            catalogue_item_property_id,
+            catalogue_category_id,
+        )
+
+        catalogue_item_property_data = catalogue_item_property.model_dump(by_alias=True)
+        self._catalogue_categories_collection.update_one(
+            {
+                "_id": CustomObjectId(catalogue_category_id),
+                "catalogue_item_properties._id": CustomObjectId(catalogue_item_property_id),
+            },
+            {
+                "$set": {
+                    "catalogue_item_properties.$[elem]": catalogue_item_property_data,
+                    "modified_time": datetime.now(timezone.utc),
+                }
+            },
+            array_filters=[{"elem._id": CustomObjectId(catalogue_item_property_id)}],
+            session=session,
+        )
+        return CatalogueItemPropertyOut(**catalogue_item_property_data)

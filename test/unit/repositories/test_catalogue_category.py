@@ -1186,3 +1186,69 @@ def test_create_catalogue_item_property_with_invalid_id(database_mock, catalogue
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
+
+
+@patch("inventory_management_system_api.repositories.catalogue_category.datetime")
+def test_update_catalogue_item_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
+    """
+    Test update_catalogue_item_property performs the correct database update query
+    """
+    session = MagicMock()
+    catalogue_category_id = str(ObjectId())
+    catalogue_item_property_id = str(ObjectId())
+    catalogue_item_property_in = CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+
+    # Mock 'update_one'
+    test_helpers.mock_update_one(database_mock.catalogue_categories)
+
+    result = catalogue_category_repository.update_catalogue_item_property(
+        catalogue_category_id, catalogue_item_property_id, catalogue_item_property_in, session=session
+    )
+
+    database_mock.catalogue_categories.update_one.assert_called_once_with(
+        {
+            "_id": CustomObjectId(catalogue_category_id),
+            "catalogue_item_properties._id": CustomObjectId(catalogue_item_property_id),
+        },
+        {
+            "$set": {
+                "catalogue_item_properties.$[elem]": catalogue_item_property_in.model_dump(by_alias=True),
+                "modified_time": datetime_mock.now.return_value,
+            },
+        },
+        array_filters=[{"elem._id": CustomObjectId(catalogue_item_property_id)}],
+        session=session,
+    )
+    assert result == CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump(by_alias=True))
+
+
+def test_update_catalogue_item_property_with_invalid_catalogue_category_id(
+    database_mock, catalogue_category_repository
+):
+    """
+    Test update_catalogue_item_property performs the correct database update query when given an invalid catalogue
+    category id
+    """
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_category_repository.update_catalogue_item_property(
+            "invalid", str(ObjectId()), CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+        )
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+    database_mock.catalogue_categories.update_one.assert_not_called()
+
+
+def test_update_catalogue_item_property_with_invalid_catalogue_item_property_id(
+    database_mock, catalogue_category_repository
+):
+    """
+    Test update_catalogue_item_property performs the correct database update query when given an invalid catalogue
+    item property id
+    """
+
+    with pytest.raises(InvalidObjectIdError) as exc:
+        catalogue_category_repository.update_catalogue_item_property(
+            str(ObjectId()), "invalid", CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+        )
+    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+    database_mock.catalogue_categories.update_one.assert_not_called()

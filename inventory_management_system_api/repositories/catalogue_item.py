@@ -174,7 +174,7 @@ class CatalogueItemRepo:
         """
 
         logger.info(
-            "Inserting property into catalogue item's with a catalogue category: %s in the database",
+            "Inserting property into catalogue item's with a catalogue category ID: %s in the database",
             catalogue_category_id,
         )
 
@@ -184,5 +184,32 @@ class CatalogueItemRepo:
                 "$push": {"properties": property_in.model_dump(by_alias=True)},
                 "$set": {"modified_time": datetime.now(timezone.utc)},
             },
+            session=session,
+        )
+
+    def update_names_of_all_properties_with_id(
+        self, property_id: str, new_property_name: str, session: ClientSession = None
+    ) -> None:
+        """
+        Updates the name of a property in every catalogue item it is present in
+
+        Also updates the modified_time to reflect the update
+
+        :param property_id: The ID of the property to update
+        :param new_property_name: The new property name
+        :param session: PyMongo ClientSession to use for database operations
+        """
+
+        logger.info("Updating all properties with ID: %s inside catalogue items in the database", property_id)
+
+        self._catalogue_items_collection.update_many(
+            {"properties._id": CustomObjectId(property_id)},
+            {
+                "$set": {
+                    "properties.$[elem].name": new_property_name,
+                    "modified_time": datetime.now(timezone.utc),
+                }
+            },
+            array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )

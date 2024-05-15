@@ -2,7 +2,6 @@
 Unit tests for the `CatalogueItemRepo` repository.
 """
 
-from datetime import datetime, timezone
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from test.unit.repositories.test_item import FULL_ITEM_INFO
 from unittest.mock import MagicMock, patch
@@ -516,7 +515,6 @@ def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_m
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
     property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
-    datetime_mock.now.return_value = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
 
     # Mock 'update_many'
     test_helpers.mock_update_many(database_mock.catalogue_items)
@@ -529,5 +527,32 @@ def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_m
             "$push": {"properties": property_in.model_dump(by_alias=True)},
             "$set": {"modified_time": datetime_mock.now.return_value},
         },
+        session=session,
+    )
+
+
+@patch("inventory_management_system_api.repositories.catalogue_item.datetime")
+def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
+    """
+    Test updating the names of all properties with a given id
+
+    Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
+    property names
+    """
+    session = MagicMock()
+    property_id = str(ObjectId())
+    new_property_name = "new property name"
+
+    # Mock 'update_many'
+    test_helpers.mock_update_many(database_mock.catalogue_items)
+
+    catalogue_item_repository.update_names_of_all_properties_with_id(property_id, new_property_name, session=session)
+
+    database_mock.catalogue_items.update_many.assert_called_once_with(
+        {"properties._id": CustomObjectId(property_id)},
+        {
+            "$set": {"properties.$[elem].name": new_property_name, "modified_time": datetime_mock.now.return_value},
+        },
+        array_filters=[{"elem._id": CustomObjectId(property_id)}],
         session=session,
     )
