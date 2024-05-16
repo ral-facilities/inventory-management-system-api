@@ -7,6 +7,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
+    DuplicateCatalogueItemPropertyNameError,
     InvalidCatalogueItemPropertyTypeError,
     MissingMandatoryCatalogueItemProperty,
 )
@@ -53,6 +54,34 @@ EXPECTED_PROCESSED_PROPERTIES = [
     {"id": DEFINED_PROPERTIES[3].id, "name": "Property D", "value": 2, "unit": "mm"},
     {"id": DEFINED_PROPERTIES[4].id, "name": "Property E", "value": "red", "unit": None},
 ]
+
+
+class TestGenerateCode:
+    """Tests for the `generate_code` method"""
+
+    def test_generate_code(self):
+        """Test `generate_code` works correctly"""
+
+        result = utils.generate_code("string with spaces", "entity_type")
+        assert result == "string-with-spaces"
+
+
+class TestDuplicateCatalogueItemPropertyNames:
+    """Tests for the `check_duplicate_catalogue_item_property_names` method"""
+
+    def test_with_no_duplicate_names(self):
+        """
+        Test `check_duplicate_catalogue_item_property_names` works correctly when there are no duplicate names given
+        """
+
+        utils.check_duplicate_catalogue_item_property_names(DEFINED_PROPERTIES)
+
+    def test_with_duplicate_names(self):
+        """Test `check_duplicate_catalogue_item_property_names` works correctly when there are duplicate names given"""
+
+        with pytest.raises(DuplicateCatalogueItemPropertyNameError) as exc:
+            utils.check_duplicate_catalogue_item_property_names([*DEFINED_PROPERTIES, DEFINED_PROPERTIES[-1]])
+        assert str(exc.value) == f"Duplicate catalogue item property name: {DEFINED_PROPERTIES[-1].name}"
 
 
 class TestProcessCatalogueItemProperties:

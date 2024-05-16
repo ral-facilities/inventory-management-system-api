@@ -20,6 +20,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.system import SystemRepo
+from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
 from inventory_management_system_api.services import utils
@@ -38,18 +39,24 @@ class ItemService:
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
         system_repository: SystemRepo = Depends(SystemRepo),
+        usage_status_repository: UsageStatusRepo = Depends(UsageStatusRepo),
+        # pylint: disable=too-many-arguments
     ) -> None:
         """
-        Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`, and `CatalogueItemRepo` repos.
+        Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`,
+        `CatalogueItemRepo`, `SystemRepo` and `UsageStatusRepo` repos.
 
         :param item_repository: The `ItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
+        :param system_repository: The `SystemRepo` repository to use.
+        :param usage_status_repository: The `UsageStatusRepo` repository to use.
         """
         self._item_repository = item_repository
         self._catalogue_category_repository = catalogue_category_repository
         self._catalogue_item_repository = catalogue_item_repository
         self._system_repository = system_repository
+        self._usage_status_repository = usage_status_repository
 
     def create(self, item: ItemPostRequestSchema) -> ItemOut:
         """
@@ -74,6 +81,11 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
+        usage_status_id = item.usage_status_id
+        usage_status = self._usage_status_repository.get(usage_status_id)
+        if not usage_status:
+            raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
         supplied_properties = self._merge_missing_properties(catalogue_item.properties, supplied_properties)
@@ -82,12 +94,7 @@ class ItemService:
         properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
 
         return self._item_repository.create(
-            ItemIn(
-                **{
-                    **item.model_dump(),
-                    "properties": properties,
-                }
-            )
+            ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
         )
 
     def delete(self, item_id: str) -> None:
@@ -124,7 +131,7 @@ class ItemService:
         The method checks if the item exists in the database and raises a `MissingRecordError` if it does
         not. If the system ID is being updated, it checks if the system ID with such ID exists and raises
         a `MissingRecordError` if it does not. It raises a `ChildElementsExistError` if a catalogue item
-        ID is supplied. When updatimg properties, existing properties must all be supplied, or they will
+        ID is supplied. When updating properties, existing properties must all be supplied, or they will
         be overwritten by the catalogue item properties.
 
         :param item_id: The ID of the item to update.
@@ -144,6 +151,12 @@ class ItemService:
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
+        if "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id:
+            usage_status_id = item.usage_status_id
+            usage_status = self._usage_status_repository.get(usage_status_id)
+            if not usage_status:
+                raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+            update_data["usage_status"] = usage_status.value
 
         # If catalogue item ID not supplied then it will be fetched, and its parent catalogue category.
         # the defined (at a catalogue category level) and supplied properties will be used to find

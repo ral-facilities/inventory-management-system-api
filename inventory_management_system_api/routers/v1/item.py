@@ -47,6 +47,10 @@ def create_item(
             message = "The specified system does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        if item.usage_status_id in str(exc):
+            message = "The specified usage status does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
         message = "The specified catalogue item does not exist"
         logger.exception(message)
@@ -143,6 +147,10 @@ def partial_update_item(
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
             message = "The specified system does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        if item.usage_status_id in str(exc):
+            message = "The specified usage status does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         message = "Item not found"
