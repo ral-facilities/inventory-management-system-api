@@ -68,7 +68,7 @@ class CatalogueCategoryService:
 
         catalogue_item_properties = []
         if catalogue_category.catalogue_item_properties:
-            self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
+            utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
             catalogue_item_properties = self._add_catalogue_item_property_units(
                 catalogue_category.catalogue_item_properties
@@ -163,7 +163,7 @@ class CatalogueCategoryService:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         if catalogue_category.catalogue_item_properties:
-            self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
+            utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
             catalogue_item_properties = self._add_catalogue_item_property_units(
                 catalogue_category.catalogue_item_properties

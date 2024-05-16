@@ -433,7 +433,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     assert response.status_code == 422
     assert (
         response.json()["detail"][0]["msg"]
-        == "Value error, allowed_values must only contain values of the same type as the property itself"
+        == "Value error, allowed_values of type 'list' must only contain values of the same type as the property itself"
     )
 
 
@@ -460,7 +460,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     assert response.status_code == 422
     assert (
         response.json()["detail"][0]["msg"]
-        == "Value error, allowed_values must only contain values of the same type as the property itself"
+        == "Value error, allowed_values of type 'list' must only contain values of the same type as the property itself"
     )
 
 
@@ -1480,7 +1480,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     assert response.status_code == 422
     assert (
         response.json()["detail"][0]["msg"]
-        == "Value error, allowed_values must only contain values of the same type as the property itself"
+        == "Value error, allowed_values of type 'list' must only contain values of the same type as the property itself"
     )
 
 
@@ -1509,7 +1509,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     assert response.status_code == 422
     assert (
         response.json()["detail"][0]["msg"]
-        == "Value error, allowed_values must only contain values of the same type as the property itself"
+        == "Value error, allowed_values of type 'list' must only contain values of the same type as the property itself"
     )
 
 
