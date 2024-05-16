@@ -2,6 +2,10 @@
 Module for providing pytest testing configuration.
 """
 
+from typing import Optional
+
+from bson import ObjectId
+
 VALID_ACCESS_TOKEN = (
     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjoyNTM0MDIzMDA3OTl9.bagU2Wix8wKzydVU_L3Z"
     "ZuuMAxGxV4OTuZq_kS2Fuwm839_8UZOkICnPTkkpvsm1je0AWJaIXLGgwEa5zUjpG6lTrMMmzR9Zi63F0NXpJqQqoOZpTBMYBaggsXqFkdsv-yAKUZ"
@@ -24,3 +28,31 @@ EXPIRED_ACCESS_TOKEN = (
 )
 
 INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN + "1"
+
+
+def add_ids_to_properties(properties_with_ids: Optional[list], properties_without_ids: list):
+    """
+    A tests method for adding the IDs from the properties in `properties_with_ids` as the IDs to the properties in
+    `properties_without_ids` based on matching names. Unique IDs are generated for each property if no
+    `properties_with_ids` are provided.
+
+    :param properties_with_ids: The list of properties with IDs. These are typically the catalogue category
+    properties.
+    :param properties_without_ids: The list of properties without IDs. These can be catalogue category, catalogue item
+        or item properties.
+    :return: The list of properties with the added IDs.
+    """
+    properties = []
+    for property_without_id in properties_without_ids:
+        if properties_with_ids:
+            prop_id = next(
+                property_with_id["id"]
+                for property_with_id in properties_with_ids
+                if property_with_id["name"] == property_without_id["name"]
+            )
+        else:
+            prop_id = str(ObjectId())
+
+        properties.append({**property_without_id, "id": prop_id})
+
+    return properties

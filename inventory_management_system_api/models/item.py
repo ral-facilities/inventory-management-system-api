@@ -6,11 +6,9 @@ from typing import Any, List, Optional
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
-from inventory_management_system_api.models.catalogue_item import Property
+from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
-
-# pylint: disable=duplicate-code
 
 
 class ItemBase(BaseModel):
@@ -28,16 +26,15 @@ class ItemBase(BaseModel):
     serial_number: Optional[str] = None
     delivered_date: Optional[AwareDatetime] = None
     notes: Optional[str] = None
-    properties: List[Property] = []
+    properties: List[PropertyIn] = []
 
+    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
         """
         Validator for the `properties` field that runs after field assignment but before type validation.
-
         If the value is `None`, it replaces it with an empty list allowing for items without properties to be created.
-
         :param properties: The list of properties specific to this item as defined in the corresponding catalogue
             category.
         :return: The list of properties specific to this item or an empty list.
@@ -46,8 +43,7 @@ class ItemBase(BaseModel):
             properties = []
         return properties
 
-
-# pylint: enable=duplicate-code
+    # pylint: enable=duplicate-code
 
 
 class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
@@ -64,4 +60,5 @@ class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
     id: StringObjectIdField = Field(alias="_id")
     catalogue_item_id: StringObjectIdField
     system_id: Optional[StringObjectIdField] = None
+    properties: List[PropertyOut] = []
     model_config = ConfigDict(populate_by_name=True)

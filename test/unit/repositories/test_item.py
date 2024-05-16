@@ -2,14 +2,15 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from unittest.mock import MagicMock
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 
 # pylint: disable=duplicate-code
@@ -32,7 +33,7 @@ FULL_ITEM_INFO = {
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
     "notes": "Test notes",
-    "properties": [{"name": "Property A", "value": 21, "unit": "mm"}],
+    "properties": [{"id": str(ObjectId()), "name": "Property A", "value": 21, "unit": "mm"}],
 }
 # pylint: enable=duplicate-code
 
@@ -47,7 +48,7 @@ def test_create(test_helpers, database_mock, item_repository):
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
     )
-    item_info = item_in.model_dump()
+    item_info = item_in.model_dump(by_alias=True)
     item_out = ItemOut(
         **item_info,
         id=str(ObjectId()),
@@ -78,7 +79,7 @@ def test_create(test_helpers, database_mock, item_repository):
     created_item = item_repository.create(item_in, session=session)
 
     database_mock.systems.find_one.assert_called_once_with({"_id": CustomObjectId(item_out.system_id)}, session=session)
-    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump(), session=session)
+    database_mock.items.insert_one.assert_called_once_with(item_in.model_dump(by_alias=True), session=session)
     assert created_item == item_out
 
 
@@ -272,7 +273,7 @@ def test_list_with_invalid_system_id_filter(item_repository):
 
 def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_repository):
     """
-    Test getting items based on the provided castalogue item ID filter.
+    Test getting items based on the provided catalogue item ID filter.
 
     Verify that the `list` method properly handles the retrieval of items based on
     the provided catalogue item ID filter
@@ -567,7 +568,7 @@ def test_update(test_helpers, database_mock, item_repository):
         {
             "$set": {
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-                **item_in.model_dump(),
+                **item_in.model_dump(by_alias=True),
             }
         },
         session=session,
@@ -588,3 +589,63 @@ def test_update_with_invalid_id(item_repository):
     with pytest.raises(InvalidObjectIdError) as exc:
         item_repository.update(item_id, updated_item)
     assert str(exc.value) == f"Invalid ObjectId value '{item_id}'"
+
+
+@patch("inventory_management_system_api.repositories.item.datetime")
+def test_insert_property_to_all_in(datetime_mock, test_helpers, database_mock, item_repository):
+    """
+    Test inserting a catalogue item property
+
+    Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
+    property
+    """
+    session = MagicMock()
+    catalogue_item_ids = [ObjectId(), ObjectId()]
+    property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
+
+    # Mock 'update_many'
+    test_helpers.mock_update_many(database_mock.items)
+
+    item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
+
+    database_mock.items.update_many.assert_called_once_with(
+        {"catalogue_item_id": {"$in": catalogue_item_ids}},
+        {
+            "$push": {"properties": property_in.model_dump(by_alias=True)},
+            "$set": {"modified_time": datetime_mock.now.return_value},
+        },
+        session=session,
+    )
+
+
+# pylint:disable=duplicate-code
+
+
+@patch("inventory_management_system_api.repositories.item.datetime")
+def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, item_repository):
+    """
+    Test updating the names of all properties with a given id
+
+    Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
+    property names
+    """
+    session = MagicMock()
+    property_id = str(ObjectId())
+    new_property_name = "new property name"
+
+    # Mock 'update_many'
+    test_helpers.mock_update_many(database_mock.items)
+
+    item_repository.update_names_of_all_properties_with_id(property_id, new_property_name, session=session)
+
+    database_mock.items.update_many.assert_called_once_with(
+        {"properties._id": CustomObjectId(property_id)},
+        {
+            "$set": {"properties.$[elem].name": new_property_name, "modified_time": datetime_mock.now.return_value},
+        },
+        array_filters=[{"elem._id": CustomObjectId(property_id)}],
+        session=session,
+    )
+
+
+# pylint:enable=duplicate-code

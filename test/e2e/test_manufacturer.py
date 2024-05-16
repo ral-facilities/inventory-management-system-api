@@ -2,6 +2,7 @@
 End-to-End tests for the manufacturer router.
 """
 
+from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import CREATED_MODIFIED_VALUES_EXPECTED
 from unittest.mock import ANY
 
@@ -253,9 +254,9 @@ def test_delete_with_a_non_existent_id(test_client):
 
 def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     """Test trying to delete a manufacturer that is a part of a Catalogue Item"""
-
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
     manufacturer_id = response.json()["id"]
+
     # pylint: disable=duplicate-code
     catalogue_category_post = {
         "name": "Category A",
@@ -267,22 +268,25 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     }
     # pylint: enable=duplicate-code
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
-    catalogue_category_id = response.json()["id"]
+    catalogue_category = response.json()
+
     # pylint: disable=duplicate-code
     catalogue_item_post = {
         "name": "Catalogue Item A",
-        "catalogue_category_id": catalogue_category_id,
+        "catalogue_category_id": catalogue_category["id"],
         "description": "This is Catalogue Item A",
         "cost_gbp": 129.99,
         "days_to_replace": 2.0,
         "drawing_link": "https://drawing-link.com/",
         "item_model_number": "abc123",
         "is_obsolete": False,
-        "properties": [
-            {"name": "Property A", "value": 20},
-            {"name": "Property B", "value": False},
-            {"name": "Property C", "value": "20x15x10"},
-        ],
+        "properties": add_ids_to_properties(
+            catalogue_category["catalogue_item_properties"],
+            [
+                {"name": "Property A", "value": 20},
+                {"name": "Property B", "value": False},
+            ],
+        ),
         "manufacturer_id": manufacturer_id,
     }
     # pylint: enable=duplicate-code

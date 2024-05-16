@@ -2,9 +2,11 @@
 Module for providing a repository for managing catalogue items in a MongoDB database.
 """
 
+from datetime import datetime, timezone
 import logging
 from typing import List, Optional
 
+from bson import ObjectId
 from fastapi import Depends
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -13,7 +15,7 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 
 logger = logging.getLogger()
 
@@ -42,7 +44,7 @@ class CatalogueItemRepo:
         :return: The created catalogue item.
         """
         logger.info("Inserting the new catalogue item into the database")
-        result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump(), session=session)
+        result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump(by_alias=True), session=session)
         catalogue_item = self.get(str(result.inserted_id), session=session)
         return catalogue_item
 
@@ -95,14 +97,14 @@ class CatalogueItemRepo:
 
         logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
         self._catalogue_items_collection.update_one(
-            {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump()}, session=session
+            {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
         )
         catalogue_item = self.get(str(catalogue_item_id), session=session)
         return catalogue_item
 
     def list(self, catalogue_category_id: Optional[str], session: ClientSession = None) -> List[CatalogueItemOut]:
         """
-        Retrieve all catalogue items from a MongoDB.
+        Retrieve all catalogue items from a MongoDB database.
 
         :param catalogue_category_id: The ID of the catalogue category to filter catalogue items by.
         :param session: PyMongo ClientSession to use for database operations
@@ -136,3 +138,78 @@ class CatalogueItemRepo:
         logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
         item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id}, session=session)
         return item is not None
+
+    def list_ids(self, catalogue_category_id: str, session: ClientSession = None) -> List[ObjectId]:
+        """
+        Retrieve a list of all catalogue item ids with a specific catalogue_category_id from a MongoDB
+        database. Performs a projection to only include _id. (Required for mass updates of properties
+        to reduce memory usage)
+
+        :param catalogue_category_id: The ID of the catalogue category to filter catalogue items by.
+        :param session: PyMongo ClientSession to use for database operations
+        :return: A list object catalogue item ObjectId's or an empty list if no catalogue items are returned by
+                 the database.
+        """
+        logger.info(
+            "Finding the id's of all catalogue items within the catalogue category with ID '%s' in the database",
+            catalogue_category_id,
+        )
+
+        # Using distinct has a 16MB limit
+        # https://stackoverflow.com/questions/29771192/how-do-i-get-a-list-of-just-the-objectids-using-pymongo
+        # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
+        return self._catalogue_items_collection.find(
+            {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, {"_id": 1}, session=session
+        ).distinct("_id")
+
+    def insert_property_to_all_matching(
+        self, catalogue_category_id: str, property_in: PropertyIn, session: ClientSession = None
+    ):
+        """
+        Inserts a property into every catalogue item with a given catalogue_category_id via an update_many query
+
+        :param catalogue_category_id: The ID of the catalogue category who's catalogue items to update
+        :param property_in: The property to insert into the catalogue items' properties list
+        :param session: PyMongo ClientSession to use for database operations
+        """
+
+        logger.info(
+            "Inserting property into catalogue item's with a catalogue category ID: %s in the database",
+            catalogue_category_id,
+        )
+
+        self._catalogue_items_collection.update_many(
+            {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
+            {
+                "$push": {"properties": property_in.model_dump(by_alias=True)},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
+            },
+            session=session,
+        )
+
+    def update_names_of_all_properties_with_id(
+        self, property_id: str, new_property_name: str, session: ClientSession = None
+    ) -> None:
+        """
+        Updates the name of a property in every catalogue item it is present in
+
+        Also updates the modified_time to reflect the update
+
+        :param property_id: The ID of the property to update
+        :param new_property_name: The new property name
+        :param session: PyMongo ClientSession to use for database operations
+        """
+
+        logger.info("Updating all properties with ID: %s inside catalogue items in the database", property_id)
+
+        self._catalogue_items_collection.update_many(
+            {"properties._id": CustomObjectId(property_id)},
+            {
+                "$set": {
+                    "properties.$[elem].name": new_property_name,
+                    "modified_time": datetime.now(timezone.utc),
+                }
+            },
+            array_filters=[{"elem._id": CustomObjectId(property_id)}],
+            session=session,
+        )

@@ -20,6 +20,7 @@ from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
+from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
@@ -96,6 +97,24 @@ def fixture_catalogue_category_service(catalogue_category_repository_mock: Mock)
     :return: `CatalogueCategoryService` instance with the mocked dependency.
     """
     return CatalogueCategoryService(catalogue_category_repository_mock)
+
+
+@pytest.fixture(name="catalogue_category_property_service")
+def fixture_catalogue_category_property_service(
+    catalogue_category_repository_mock: Mock, catalogue_item_repository_mock: Mock, item_repository_mock: Mock
+) -> CatalogueCategoryPropertyService:
+    """
+    Fixture to create a `CatalogueCategoryPropertyService` instance with mocked `CatalogueCategoryRepo`,
+    `CatalogueItemRepo`, and `ItemRepo` dependencies.
+
+    :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param item_repository_mock: Mocked `ItemRepo` instance.
+    :return: `CatalogueCategoryPropertyService` instance with the mocked dependencies.
+    """
+    return CatalogueCategoryPropertyService(
+        catalogue_category_repository_mock, catalogue_item_repository_mock, item_repository_mock
+    )
 
 
 @pytest.fixture(name="catalogue_item_service")

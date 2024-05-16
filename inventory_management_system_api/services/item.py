@@ -14,7 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidObjectIdError,
 )
-from inventory_management_system_api.models.catalogue_item import Property
+from inventory_management_system_api.models.catalogue_item import PropertyOut
 from inventory_management_system_api.models.item import ItemOut, ItemIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -40,7 +40,7 @@ class ItemService:
         system_repository: SystemRepo = Depends(SystemRepo),
     ) -> None:
         """
-        Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`, and `CatalogueItemRepo` repos.
+        Initialise the `ItemService` with a `ItemRepo`, `CatalogueCategoryRepo`, and `CatalogueItemRepo` repos.
 
         :param item_repository: The `ItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
@@ -124,7 +124,7 @@ class ItemService:
         The method checks if the item exists in the database and raises a `MissingRecordError` if it does
         not. If the system ID is being updated, it checks if the system ID with such ID exists and raises
         a `MissingRecordError` if it does not. It raises a `ChildElementsExistError` if a catalogue item
-        ID is supplied. When updatimg properties, existing properties must all be supplied, or they will
+        ID is supplied. When updating properties, existing properties must all be supplied, or they will
         be overwritten by the catalogue item properties.
 
         :param item_id: The ID of the item to update.
@@ -170,7 +170,7 @@ class ItemService:
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
     def _merge_missing_properties(
-        self, catalogue_item_properties: List[Property], supplied_properties: List[PropertyPostRequestSchema]
+        self, catalogue_item_properties: List[PropertyOut], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[PropertyPostRequestSchema]:
         """
         Merges the properties defined in a catalogue item with those that should be overriden for an item in
@@ -181,14 +181,14 @@ class ItemService:
         :return: A merged list of properties for the item
         """
         supplied_properties_dict = {
-            supplied_property.name: supplied_property for supplied_property in supplied_properties
+            supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
         properties: List[PropertyPostRequestSchema] = []
 
         # Use the order of properties from the catalogue item, and append either the supplied property or
         # the catalogue item one where it is not found
         for catalogue_item_property in catalogue_item_properties:
-            supplied_property = supplied_properties_dict.get(catalogue_item_property.name)
+            supplied_property = supplied_properties_dict.get(catalogue_item_property.id)
             if supplied_property is not None:
                 properties.append(supplied_property)
             else:
