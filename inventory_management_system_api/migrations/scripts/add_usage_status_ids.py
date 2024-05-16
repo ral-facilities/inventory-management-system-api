@@ -11,7 +11,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
-from inventory_management_system_api.models.catalogue_item import Property
+from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 from inventory_management_system_api.services import utils
@@ -35,7 +35,7 @@ class OldItemBase(BaseModel):
     serial_number: Optional[str] = None
     delivered_date: Optional[AwareDatetime] = None
     notes: Optional[str] = None
-    properties: List[Property] = []
+    properties: List[PropertyIn] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -68,6 +68,7 @@ class OldItemOut(CreatedModifiedTimeOutMixin, OldItemBase):
     id: StringObjectIdField = Field(alias="_id")
     catalogue_item_id: StringObjectIdField
     system_id: Optional[StringObjectIdField] = None
+    properties: List[PropertyOut] = []
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -87,7 +88,7 @@ class NewItemBase(BaseModel):
     serial_number: Optional[str] = None
     delivered_date: Optional[AwareDatetime] = None
     notes: Optional[str] = None
-    properties: List[Property] = []
+    properties: List[PropertyIn] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -111,19 +112,6 @@ class NewItemIn(CreatedModifiedTimeInMixin, NewItemBase):
     New database model for an item.
     """
 
-    catalogue_item_id: CustomObjectIdField
-    system_id: CustomObjectIdField
-    purchase_order_number: Optional[str] = None
-    is_defective: bool
-    usage_status_id: CustomObjectIdField
-    usage_status: str
-    warranty_end_date: Optional[AwareDatetime] = None
-    asset_number: Optional[str] = None
-    serial_number: Optional[str] = None
-    delivered_date: Optional[AwareDatetime] = None
-    notes: Optional[str] = None
-    properties: List[Property] = []
-
 
 class NewItemOut(CreatedModifiedTimeOutMixin, NewItemBase):
     """
@@ -134,6 +122,7 @@ class NewItemOut(CreatedModifiedTimeOutMixin, NewItemBase):
     catalogue_item_id: StringObjectIdField
     system_id: Optional[StringObjectIdField] = None
     usage_status_id: StringObjectIdField
+    properties: List[PropertyOut] = []
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -179,9 +168,7 @@ class Migration(BaseMigration):
 
             self._items_collection.replace_one(
                 {"_id": item_id},
-                {
-                    "$set": item,
-                },
+                item,
                 session=session,
             )
 
