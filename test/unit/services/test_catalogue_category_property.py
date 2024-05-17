@@ -3,6 +3,7 @@ Unit tests for the `CatalogueCategoryPropertyService` service.
 """
 
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from test.unit.services.test_catalogue_category import UNIT_A
 from unittest.mock import ANY, patch
 
 import pytest
@@ -16,6 +17,7 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
+from inventory_management_system_api.models.units import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueItemPropertyPatchRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
@@ -39,6 +41,7 @@ def test_create(
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
     item_repository_mock,
+    unit_repository_mock,
     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
     catalogue_category_property_service,
 ):
@@ -50,8 +53,9 @@ def test_create(
     property with a default value
     """
     catalogue_category_id = str(ObjectId())
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
-        name="Property A", type="number", unit="mm", mandatory=mandatory, default_value=default_value
+        name="Property A", type="number", unit_id=unit.id, mandatory=mandatory, default_value=default_value
     )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
@@ -67,6 +71,9 @@ def test_create(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, unit)
+
     created_catalogue_item_property = catalogue_category_property_service.create(
         catalogue_category_id, catalogue_item_property
     )
@@ -79,7 +86,9 @@ def test_create(
         session=session,
     )
 
-    expected_catalogue_item_property_in = CatalogueItemPropertyIn(**catalogue_item_property.model_dump())
+    expected_catalogue_item_property_in = CatalogueItemPropertyIn(
+        **{**catalogue_item_property.model_dump(), "unit": unit.value}
+    )
 
     # Catalogue item property insertion into catalogue category
     inserted_catalogue_item_property_in = (
@@ -95,7 +104,8 @@ def test_create(
         id=str(expected_catalogue_item_property_in.id),
         name=expected_catalogue_item_property_in.name,
         value=catalogue_item_property.default_value,
-        unit=expected_catalogue_item_property_in.unit,
+        unit=unit.value,
+        unit_id=unit.id,
     )
 
     # Catalogue items update

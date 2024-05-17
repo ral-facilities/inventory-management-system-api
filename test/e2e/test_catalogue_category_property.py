@@ -4,6 +4,7 @@ End-to-End tests for the properties endpoint of the catalogue category router
 
 from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
+from test.e2e.test_unit import UNIT_POST_A
 from typing import Optional
 from unittest.mock import ANY
 
@@ -128,6 +129,7 @@ class CreateDSL:
     catalogue_category: dict
     catalogue_item: dict
     item: dict
+    unit_mm: dict
 
     _catalogue_item_post_response: Response
     catalogue_item_property: dict
@@ -142,7 +144,23 @@ class CreateDSL:
         """Posts a catalogue category, catalogue item and item for create tests to act on"""
 
         # pylint:disable=duplicate-code
-        response = self.test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+
+        # units
+        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
+        self.unit_mm = response.json()
+
+        units = [self.unit_mm]
+
+        response = self.test_client.post(
+            "/v1/catalogue-categories",
+            json={
+                **CATALOGUE_CATEGORY_POST_A,
+                "catalogue_item_properties": add_ids_to_properties(
+                    None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
+                ),
+            },
+        )
+
         self.catalogue_category = response.json()
 
         response = self.test_client.post("/v1/systems", json=SYSTEM_POST_A)
@@ -156,7 +174,8 @@ class CreateDSL:
             "catalogue_category_id": self.catalogue_category["id"],
             "manufacturer_id": manufacturer_id,
             "properties": add_ids_to_properties(
-                self.catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
+                self.catalogue_category["catalogue_item_properties"],
+                CATALOGUE_ITEM_POST_A["properties"],
             ),
         }
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -224,7 +243,10 @@ class CreateDSL:
 
         assert new_catalogue_category["catalogue_item_properties"] == add_ids_to_properties(
             [*self.catalogue_category["catalogue_item_properties"], self.catalogue_item_property],
-            [EXISTING_CATALOGUE_CATEGORY_PROPERTY_EXPECTED, catalogue_item_property_expected],
+            [
+                {**EXISTING_CATALOGUE_CATEGORY_PROPERTY_EXPECTED, "unit_id": self.unit_mm["id"]},
+                catalogue_item_property_expected,
+            ],
         )
 
     def check_catalogue_item_updated(self, property_expected):
@@ -256,9 +278,11 @@ class TestCreate(CreateDSL):
         """
 
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY)
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": self.unit_mm["id"]})
 
-        self.check_catalogue_item_property_post_response_success(CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY_EXPECTED)
+        self.check_catalogue_item_property_post_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_NON_MANDATORY_EXPECTED)
         self.check_catalogue_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
@@ -269,10 +293,14 @@ class TestCreate(CreateDSL):
         """
 
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY)
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY, "unit_id": self.unit_mm["id"]})
 
-        self.check_catalogue_item_property_post_response_success(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED)
-        self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+        self.check_catalogue_item_property_post_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
+        self.check_catalogue_category_updated(
+            {**NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
 
@@ -283,12 +311,16 @@ class TestCreate(CreateDSL):
         """
 
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
 
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
-        self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED)
+        self.check_catalogue_category_updated(
+            {**NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
 
@@ -296,7 +328,8 @@ class TestCreate(CreateDSL):
         """Test adding a property when the specified catalogue category id is invalid"""
 
         self.post_catalogue_item_property(
-            CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, catalogue_category_id=str(ObjectId())
+            CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY,
+            catalogue_category_id=str(ObjectId()),
         )
         self.check_catalogue_item_property_post_response_failed_with_message(404, "Catalogue category not found")
 
@@ -305,6 +338,22 @@ class TestCreate(CreateDSL):
 
         self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, catalogue_category_id="invalid")
         self.check_catalogue_item_property_post_response_failed_with_message(404, "Catalogue category not found")
+
+    def test_create_property_with_invalid_unit_id(self):
+        """Test adding a property when given an invalid unit id"""
+
+        self.post_catalogue_category_and_items()
+
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": "invalid"})
+        self.check_catalogue_item_property_post_response_failed_with_message(404, "The specified unit does not exist")
+
+    def test_create_property_with_non_existent_unit_id(self):
+        """Test adding a property when the specified unit id is invalid"""
+
+        self.post_catalogue_category_and_items()
+
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": str(ObjectId())})
+        self.check_catalogue_item_property_post_response_failed_with_message(404, "The specified unit does not exist")
 
     def test_create_mandatory_property_without_default_value(self):
         """
@@ -470,19 +519,25 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
         self.patch_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_PATCH)
 
         # Check updated correctly down the tree
-        self.check_catalogue_item_property_patch_response_success(CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED)
-        self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED)
-        self.check_catalogue_item_updated(NEW_PROPERTY_PATCH_EXPECTED)
-        self.check_item_updated(NEW_PROPERTY_PATCH_EXPECTED)
+        self.check_catalogue_item_property_patch_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
+        self.check_catalogue_category_updated(
+            {**NEW_CATALOGUE_ITEM_PROPERTY_PATCH_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
+        self.check_catalogue_item_updated({**NEW_PROPERTY_PATCH_EXPECTED, "unit_id": self.unit_mm["id"]})
+        self.check_item_updated({**NEW_PROPERTY_PATCH_EXPECTED, "unit_id": self.unit_mm["id"]})
 
     def test_update_category_only(self):
         """
@@ -492,9 +547,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -502,13 +559,15 @@ class TestUpdate(UpdateDSL):
 
         # Check updated correctly
         self.check_catalogue_item_property_patch_response_success(
-            CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
-        self.check_catalogue_category_updated(CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED)
+        self.check_catalogue_category_updated(
+            {**CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
         # These are testing values are the same as they should have been prior to the patch (NEW_ is only there from
         # the create tests)
-        self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
-        self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
+        self.check_catalogue_item_updated({**NEW_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]})
+        self.check_item_updated({**NEW_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]})
 
     def test_update_category_no_changes_allowed_values_none(self):
         """
@@ -518,8 +577,10 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY)
-        self.check_catalogue_item_property_post_response_success(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY, "unit_id": self.unit_mm["id"]})
+        self.check_catalogue_item_property_post_response_success(
+            {**NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
 
         # Patch the property
         self.patch_catalogue_item_property(
@@ -527,12 +588,16 @@ class TestUpdate(UpdateDSL):
         )
 
         # Check updated correctly
-        self.check_catalogue_item_property_patch_response_success(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
+        self.check_catalogue_item_property_patch_response_success(
+            {**NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
         # These are testing values are the same as they should have been prior to the patch (NEW_ is only there from
         # the create tests)
-        self.check_catalogue_category_updated(NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED)
-        self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
-        self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
+        self.check_catalogue_category_updated(
+            {**NEW_CATALOGUE_ITEM_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
+        self.check_catalogue_item_updated({**NEW_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]})
+        self.check_item_updated({**NEW_PROPERTY_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]})
 
     def test_update_non_existent_catalogue_category_id(self):
         """
@@ -541,9 +606,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -559,9 +626,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -578,9 +647,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -596,9 +667,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -614,9 +687,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -632,8 +707,10 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY)
-        self.check_catalogue_item_property_post_response_success(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED)
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY, "unit_id": self.unit_mm["id"]})
+        self.check_catalogue_item_property_post_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_EXPECTED, "unit_id": self.unit_mm["id"]}
+        )
 
         # Patch the property
         self.patch_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_PATCH_ALLOWED_VALUES_ONLY)
@@ -648,9 +725,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -666,9 +745,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -692,9 +773,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property
@@ -722,9 +805,11 @@ class TestUpdate(UpdateDSL):
 
         # Setup by creating a property to update
         self.post_catalogue_category_and_items()
-        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.post_catalogue_item_property(
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES, "unit_id": self.unit_mm["id"]}
+        )
         self.check_catalogue_item_property_post_response_success(
-            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+            {**CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED, "unit_id": self.unit_mm["id"]}
         )
 
         # Patch the property

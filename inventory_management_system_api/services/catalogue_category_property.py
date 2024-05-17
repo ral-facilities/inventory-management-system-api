@@ -19,6 +19,7 @@ from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
+from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.catalogue_category import (
     AllowedValuesSchema,
     CatalogueCategoryPostRequestPropertySchema,
@@ -40,17 +41,21 @@ class CatalogueCategoryPropertyService:
         catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
         catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
         item_repository: ItemRepo = Depends(ItemRepo),
+        unit_repository: UnitRepo = Depends(UnitRepo),
     ):
         """
-        Initialise the `PropertyService` with a `CatalogueCategoryRepo`, `CatalogueItemRepo` and `ItemRepo` repos.
+        Initialise the `PropertyService` with a `CatalogueCategoryRepo`, `CatalogueItemRepo`,
+        `ItemRepo` and `UnitRepo` repos.
 
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param item_repository: The `ItemRepo` repository to use.
+        :param unit_repository: The `UnitRepo` repository to use.
         """
         self._catalogue_category_repository = catalogue_category_repository
         self._catalogue_item_repository = catalogue_item_repository
         self._item_repository = item_repository
+        self._unit_repository = unit_repository
 
     def create(
         self,
@@ -89,7 +94,21 @@ class CatalogueCategoryPropertyService:
             stored_catalogue_category.catalogue_item_properties + [catalogue_item_property]
         )
 
-        catalogue_item_property_in = CatalogueItemPropertyIn(**catalogue_item_property.model_dump())
+        # Check unit id exists in units collection
+        unit = None
+        # pylint: disable=duplicate-code
+        if catalogue_item_property.unit_id is not None:
+            unit_id = catalogue_item_property.unit_id
+            unit = self._unit_repository.get(unit_id)
+            if not unit:
+                raise MissingRecordError(f"No unit found with ID: {unit_id}")
+        # pylint: enable=duplicate-code
+
+        catalogue_item_property_in = CatalogueItemPropertyIn(
+            **{**catalogue_item_property.model_dump(), "unit": unit.value}
+        )
+
+        # print(catalogue_item_property_in)
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
@@ -99,12 +118,14 @@ class CatalogueCategoryPropertyService:
                     catalogue_category_id, catalogue_item_property_in, session=session
                 )
 
-                # Property to be added catalogue items and items
+                print(catalogue_item_property.unit_id)
+
                 property_in = PropertyIn(
                     id=str(catalogue_item_property_in.id),
                     name=catalogue_item_property_in.name,
                     value=catalogue_item_property.default_value,
-                    unit=catalogue_item_property.unit,
+                    unit=unit.value,
+                    unit_id=catalogue_item_property.unit_id,
                 )
 
                 # Add property to all catalogue items of the catalogue category

@@ -2,9 +2,12 @@
 Module for providing pytest testing configuration.
 """
 
+import logging
 from typing import Optional
 
 from bson import ObjectId
+
+logger = logging.getLogger()
 
 VALID_ACCESS_TOKEN = (
     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjoyNTM0MDIzMDA3OTl9.bagU2Wix8wKzydVU_L3Z"
@@ -57,9 +60,12 @@ def add_ids_to_properties(
             )
 
             unit_id = next(
-                property_with_id["unit_id"]
-                for property_with_id in properties_with_ids
-                if property_with_id.get("unit") == property_without_id.get("unit")
+                (
+                    property_with_id["unit_id"]
+                    for property_with_id in properties_with_ids
+                    if property_with_id.get("unit") == property_without_id.get("unit")
+                ),
+                (None),
             )
         else:
             prop_id = str(ObjectId())
@@ -78,4 +84,5 @@ def add_ids_to_properties(
                 unit_id = property_without_id["unit_id"]
 
         properties.append({**property_without_id, "id": prop_id, "unit_id": unit_id})
+
     return properties

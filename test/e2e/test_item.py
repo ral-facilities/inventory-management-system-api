@@ -88,6 +88,7 @@ def test_create_item(test_client):
     Test creating an item.
     """
     # pylint: disable=duplicate-code
+
     # units
     response = test_client.post("/v1/units", json=UNIT_POST_A)
     unit_mm = response.json()
@@ -1166,6 +1167,7 @@ def test_get_items(test_client):
     Test getting items
     """
     # pylint: disable=duplicate-code
+    # pylint:disable=too-many-locals
     # units
     response = test_client.post("/v1/units", json=UNIT_POST_A)
     unit_mm = response.json()
@@ -1253,6 +1255,7 @@ def test_get_items(test_client):
             "properties": properties_expected,
         },
     ]
+    # pylint:enable=too-many-locals
 
 
 def test_get_items_with_system_id_filters(test_client):
@@ -1880,7 +1883,26 @@ def test_partial_update_property_values(test_client):
     """
     Test updating property values
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    # pylint: disable=duplicate-code
+    # units
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit_mm = response.json()
+
+    response = test_client.post("/v1/units", json=UNIT_POST_B)
+    unit_cm = response.json()
+
+    units = [unit_mm, unit_cm]
+
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_A,
+            "catalogue_item_properties": add_ids_to_properties(
+                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
+            ),
+        },
+    )
+    # pylint: enable=duplicate-code
     catalogue_category = response.json()
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
