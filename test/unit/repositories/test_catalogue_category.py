@@ -1086,9 +1086,9 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
     assert str(exc.value) == "Duplicate catalogue category found within the parent catalogue category"
 
 
-def test_update_change_captialistion_of_name_within_parent(test_helpers, database_mock, catalogue_category_repository):
+def test_update_change_capitalisation_of_name_within_parent(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test updating a catalogue category when the code is the same and the captialisation of the name has changed.
+    Test updating a catalogue category when the code is the same and the capitalisation of the name has changed.
 
     Verify that the `update` method properly handles the catalogue category to be updated, checks that the catalogue
     category does not have child elements, there is not a duplicate catalogue category, and updates the catalogue
@@ -1119,7 +1119,7 @@ def test_update_change_captialistion_of_name_within_parent(test_helpers, databas
             "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         },
     )
-    # Mock `find_one` to return no duplicate catalogue categories found
+    # Mock `find_one` to return a duplicate catalogue category but with the same id as the one being updated
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {

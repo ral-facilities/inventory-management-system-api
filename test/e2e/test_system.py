@@ -449,9 +449,6 @@ def test_partial_update_captialistion_of_system_name(test_client):
         {
             "name": "SyStEm A",
         },
-        {
-            "name": "SyStEm A",
-        },
     )
 
 

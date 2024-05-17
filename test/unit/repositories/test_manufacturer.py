@@ -288,7 +288,7 @@ def test_update_change_captialistion_of_name(test_helpers, database_mock, manufa
         },
     )
 
-    # Mock `find_one` to return no duplicate manufacturers found
+    # Mock `find_one` to return a duplicate manufacturer but with the same id as the one being updated
     test_helpers.mock_find_one(
         database_mock.manufacturers,
         {

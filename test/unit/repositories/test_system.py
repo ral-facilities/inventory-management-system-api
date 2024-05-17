@@ -648,7 +648,7 @@ def test_update_change_captialistion_of_name(utils_mock, test_helpers, database_
         system.model_dump(),
     )
 
-    # Mock `find_one` to return duplicate system found in parent system
+    # Mock `find_one` to return a duplicate system but with the same id as the one being updated
     test_helpers.mock_find_one(
         database_mock.systems,
         {**system.model_dump(), "_id": CustomObjectId(system.id)},

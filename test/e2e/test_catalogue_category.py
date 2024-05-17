@@ -744,7 +744,7 @@ def test_partial_update_catalogue_category_change_name(test_client):
     }
 
 
-def test_partial_update_catalogue_category_change_captialistion_of_name(test_client):
+def test_partial_update_catalogue_category_change_capitalisation_of_name(test_client):
     """
     Test changing the captialistion of the name of a catalogue category.
     """
