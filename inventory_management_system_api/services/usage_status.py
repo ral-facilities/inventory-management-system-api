@@ -27,6 +27,7 @@ class UsageStatusService:
     def create(self, usage_status: UsageStatusPostRequestSchema) -> UsageStatusOut:
         """
         Create a new usage status.
+
         :param usage_status: The usage status to be created.
         :return: The created usage status.
         """
@@ -36,6 +37,7 @@ class UsageStatusService:
     def get(self, usage_status_id: str) -> Optional[UsageStatusOut]:
         """
         Get usage status by its ID.
+
         :param: usage_status_id: The ID of the requested usage status
         :return: The retrieved usage status, or None if not found
         """
@@ -52,6 +54,7 @@ class UsageStatusService:
     def delete(self, usage_status_id: str) -> None:
         """
         Delete a usage status by its ID
+
         :param usage_status_id: The ID of the usage status to delete
         """
         return self._usage_status_repository.delete(usage_status_id)

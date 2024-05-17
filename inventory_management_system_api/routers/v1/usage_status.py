@@ -92,12 +92,10 @@ def delete_usage_status(usage_status_id: str, usage_status_service: UsageStatusS
     try:
         usage_status_service.delete(usage_status_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        logger.exception("The specified usage status does not exist")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="The specified usage status does not exist"
-        ) from exc
+        message = "Usage status not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfItemError as exc:
-        logger.exception("The specified usage status is a part of a Item")
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="The specified usage status is a part of a Item"
-        ) from exc
+        message = "The specified usage status is a part of an Item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

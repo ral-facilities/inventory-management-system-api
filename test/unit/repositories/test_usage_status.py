@@ -207,9 +207,7 @@ def test_delete_with_an_invalid_id(usage_status_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_delete_with_a_nonexistent_id(
-    test_helpers, database_mock, usage_status_repository
-):
+def test_delete_with_a_non_existent_id(test_helpers, database_mock, usage_status_repository):
     """Test trying to delete a usage status with a non-existent ID"""
     usage_status_id = str(ObjectId())
 
@@ -225,9 +223,7 @@ def test_delete_with_a_nonexistent_id(
     )
 
 
-def test_delete_usage_status_that_is_part_of_a_catalogue_item(
-    test_helpers, database_mock, usage_status_repository
-):
+def test_delete_usage_status_that_is_part_of_a_catalogue_item(test_helpers, database_mock, usage_status_repository):
     """Test trying to delete a usage status that is part of a Catalogue Item"""
     usage_status_id = str(ObjectId())
 
@@ -249,7 +245,4 @@ def test_delete_usage_status_that_is_part_of_a_catalogue_item(
     # pylint: enable=duplicate-code
     with pytest.raises(PartOfItemError) as exc:
         usage_status_repository.delete(usage_status_id)
-    assert (
-        str(exc.value)
-        == f"The usage status with id {str(usage_status_id)} is a part of a Item"
-    )
+    assert str(exc.value) == f"The usage status with id {str(usage_status_id)} is a part of a Item"

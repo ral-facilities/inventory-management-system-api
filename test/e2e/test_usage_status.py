@@ -119,7 +119,7 @@ def test_delete_with_an_invalid_id(test_client):
     response = test_client.delete("/v1/usage-statuses/invalid")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "The specified usage status does not exist"
+    assert response.json()["detail"] == "Usage status not found"
 
 
 def test_delete_with_a_non_existent_id(test_client):
@@ -128,7 +128,7 @@ def test_delete_with_a_non_existent_id(test_client):
     response = test_client.delete(f"/v1/usage-statuses/{str(ObjectId())}")
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "The specified usage status does not exist"
+    assert response.json()["detail"] == "Usage status not found"
 
 
 def test_delete_usage_status_that_is_a_part_of_item(test_client):
@@ -177,4 +177,4 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
     response = test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "The specified usage status is a part of a Item"
+    assert response.json()["detail"] == "The specified usage status is a part of an Item"
