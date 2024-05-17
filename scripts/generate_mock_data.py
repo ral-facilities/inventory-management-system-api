@@ -281,9 +281,9 @@ def generate_random_manufacturer():
     }
 
 
-def generate_usage_status(usage_status):
+def generate_usage_status(value: str):
     return {
-        "value": usage_status,
+        "value": value,
     }
 
 
@@ -356,16 +356,12 @@ def generate_random_item(catalogue_item_id: str):
             for catalogue_category_property in category_properties
         ]
 
-    generated_usage_status_ids = list(generated_usage_statuses.keys())
-    usage_status_id = fake.random.choice(generated_usage_status_ids)
-    usage_status = generated_usage_statuses[usage_status_id]["value"]
     return {
         "catalogue_item_id": catalogue_item_id,
         "system_id": fake.random.choice(generated_system_ids),
         "purchase_order_number": fake.isbn10(),
         "is_defective": fake.random.randint(0, 100) > 90,
-        "usage_status": usage_status,
-        "usage_status_id": usage_status_id,
+        "usage_status_id": fake.random.choice(list(generated_usage_statuses.keys())),
         "warranty_end_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),
@@ -438,7 +434,7 @@ def populate_random_manufacturers() -> list[str]:
     return manufacturer_ids
 
 
-def populate_random_usage_statuses() -> list[str]:
+def populate_usage_statuses() -> list[str]:
     # Usually faster than append
 
     for i, usage_status in enumerate(usage_statuses):
@@ -513,7 +509,7 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
 
 def generate_mock_data():
     logging.info("Populating usage statuses...")
-    populate_random_usage_statuses()
+    populate_usage_statuses()
     logging.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
     logging.info("Populating catalogue categories...")

@@ -27,7 +27,7 @@ class UsageStatusService:
     def create(self, usage_status: UsageStatusPostRequestSchema) -> UsageStatusOut:
         """
         Create a new usage status.
-        :param  usage_status: The usage status to be created.
+        :param usage_status: The usage status to be created.
         :return: The created usage status.
         """
         code = utils.generate_code(usage_status.value, "usage status")

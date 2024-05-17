@@ -19,24 +19,24 @@ router = APIRouter(prefix="/v1/usage-statuses", tags=["usage statuses"])
 
 @router.post(
     path="",
-    summary="Create new usage status",
-    response_description="The new usage status",
+    summary="Create a new usage status",
+    response_description="The created usage status",
     status_code=status.HTTP_201_CREATED,
 )
 def create_usage_status(
     usage_status: UsageStatusPostRequestSchema,
-    usage_status_service: UsageStatusService = Depends(),
+    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)],
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new usage status")
-    logger.debug("Usage status data is %s", usage_status)
+    logger.debug("Usage status data: %s", usage_status)
 
     try:
         usage_status = usage_status_service.create(usage_status)
         return UsageStatusSchema(**usage_status.model_dump())
 
     except DuplicateRecordError as exc:
-        message = "A usage status with the same name has been found"
+        message = "A usage status with the same name already exists"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
@@ -47,8 +47,8 @@ def create_usage_status(
     response_description="Single usage status",
 )
 def get_usage_status(
-    usage_status_id: str = Path(description="The ID of the usage status to be retrieved"),
-    usage_status_service: UsageStatusService = Depends(),
+    usage_status_id: Annotated[str, Path(description="The ID of the usage status to be retrieved")],
+    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)],
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting usage status with ID %s", usage_status_id)
@@ -58,7 +58,7 @@ def get_usage_status(
         if not usage_status:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
     except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid object value")
+        logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
     return UsageStatusSchema(**usage_status.model_dump())

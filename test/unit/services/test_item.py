@@ -18,9 +18,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryOut,
-)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
@@ -186,7 +184,6 @@ def test_create(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
             usage_status_id=item.usage_status_id,
-            usage_status=item.usage_status,
             **{
                 **ITEM_INFO,
                 "properties": [{"id": prop["id"], "value": prop["value"]} for prop in item_properties],
@@ -226,8 +223,8 @@ def test_create_with_non_existent_catalogue_item_id(
         item_service.create(
             ItemPostRequestSchema(
                 catalogue_item_id=catalogue_item_id,
-                system_id=str(ObjectId()),
                 usage_status_id=str(ObjectId()),
+                system_id=str(ObjectId()),
                 **{
                     **ITEM_INFO,
                     "properties": add_ids_to_properties(None, ITEM_INFO["properties"]),

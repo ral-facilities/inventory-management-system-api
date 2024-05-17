@@ -47,7 +47,7 @@ def create_item(
             message = "The specified system does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        if item.usage_status_id in str(exc):
+        if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
             message = "The specified usage status does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
@@ -149,7 +149,7 @@ def partial_update_item(
             message = "The specified system does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        if item.usage_status_id in str(exc):
+        if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
             message = "The specified usage status does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc

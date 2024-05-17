@@ -73,10 +73,7 @@ class UsageStatusRepo:
         :return: The retrieved usage status, or `None` if not found.
         """
         usage_status_id = CustomObjectId(usage_status_id)
-        logger.info(
-            "Retrieving usage status with ID: %s from the database",
-            usage_status_id,
-        )
+        logger.info("Retrieving usage status with ID: %s from the database", usage_status_id)
         usage_status = self._usage_statuses_collection.find_one({"_id": usage_status_id}, session=session)
         if usage_status:
             return UsageStatusOut(**usage_status)
@@ -88,7 +85,7 @@ class UsageStatusRepo:
 
         :param code: The code of the usage status to check for duplicates.
         :param session: PyMongo ClientSession to use for database operations
-        :return `True` if duplicate usage status, `False` otherwise
+        :return: `True` if a duplicate usage status code is found, `False` otherwise
         """
         logger.info("Checking if usage status with code '%s' already exists", code)
         return self._usage_statuses_collection.find_one({"code": code}, session=session) is not None
