@@ -63,7 +63,7 @@ def test_get(
     assert retrieved_usage_status == usage_status
 
 
-def test_get_with_nonexistent_id(
+def test_get_with_non_existent_id(
     test_helpers,
     usage_status_repository_mock,
     usage_status_service,
@@ -82,6 +82,7 @@ def test_get_with_nonexistent_id(
 def test_list(usage_status_repository_mock, usage_status_service):
     """
     Test listing usage statuses
+
     Verify that the `list` method properly calls the repository function
     """
     result = usage_status_service.list()

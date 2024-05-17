@@ -18,9 +18,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryOut,
-)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
@@ -186,7 +184,6 @@ def test_create(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
             usage_status_id=item.usage_status_id,
-            usage_status=item.usage_status,
             **{
                 **ITEM_INFO,
                 "properties": [{"id": prop["id"], "value": prop["value"]} for prop in item_properties],
@@ -226,8 +223,8 @@ def test_create_with_non_existent_catalogue_item_id(
         item_service.create(
             ItemPostRequestSchema(
                 catalogue_item_id=catalogue_item_id,
-                system_id=str(ObjectId()),
                 usage_status_id=str(ObjectId()),
+                system_id=str(ObjectId()),
                 **{
                     **ITEM_INFO,
                     "properties": add_ids_to_properties(None, ITEM_INFO["properties"]),
@@ -237,6 +234,62 @@ def test_create_with_non_existent_catalogue_item_id(
     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
     item_repository_mock.create.assert_not_called()
     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
+
+
+def test_create_with_non_existent_usage_status_id(
+    test_helpers, item_repository_mock, usage_status_repository_mock, item_service
+):
+    """
+    Test creating an item with a non-existent usage status ID.
+    """
+    usage_status_id = str(ObjectId())
+
+    # Mock `get` to not return a catalogue item
+    test_helpers.mock_get(usage_status_repository_mock, None)
+
+    with pytest.raises(MissingRecordError) as exc:
+        item_service.create(
+            ItemPostRequestSchema(
+                catalogue_item_id=str(ObjectId()),
+                usage_status_id=usage_status_id,
+                system_id=str(ObjectId()),
+                **{
+                    **ITEM_INFO,
+                    "properties": add_ids_to_properties(None, ITEM_INFO["properties"]),
+                },
+            )
+        )
+    usage_status_repository_mock.get.assert_called_once_with(usage_status_id)
+    item_repository_mock.create.assert_not_called()
+    assert str(exc.value) == f"No usage status found with ID: {usage_status_id}"
+
+
+def test_create_with_invalid_usage_status_id(
+    test_helpers, item_repository_mock, usage_status_repository_mock, item_service
+):
+    """
+    Test creating an item with a invalid usage status ID.
+    """
+    usage_status_id = "invalid"
+
+    # Mock `get` to not return a catalogue item
+    test_helpers.mock_get(usage_status_repository_mock, None)
+
+    with pytest.raises(MissingRecordError) as exc:
+        item_service.create(
+            ItemPostRequestSchema(
+                catalogue_item_id=str(ObjectId()),
+                usage_status_id=usage_status_id,
+                system_id=str(ObjectId()),
+                **{
+                    **ITEM_INFO,
+                    "properties": add_ids_to_properties(None, ITEM_INFO["properties"]),
+                },
+            )
+        )
+    usage_status_repository_mock.get.assert_called_once_with(usage_status_id)
+    item_repository_mock.create.assert_not_called()
+    assert str(exc.value) == f"No usage status found with ID: {usage_status_id}"
 
 
 def test_create_with_invalid_catalogue_category_id(
@@ -747,6 +800,98 @@ def test_update_with_nonexistent_system_id(test_helpers, system_repository_mock,
         )
     item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
+
+
+def test_update_with_non_existent_usage_status(
+    test_helpers, usage_status_repository_mock, item_repository_mock, item_service
+):
+    """
+    Test updating an item with a non-existent usage status ID.
+    """
+    # pylint: disable=duplicate-code
+    item_properties = add_ids_to_properties(None, FULL_ITEM_INFO["properties"])
+    item = ItemOut(
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
+        **{
+            **FULL_ITEM_INFO,
+            "properties": item_properties,
+        },
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return an item
+    test_helpers.mock_get(
+        item_repository_mock,
+        ItemOut(
+            **{
+                **item.model_dump(),
+                "usage_status_id": str(ObjectId()),
+                "properties": item_properties,
+            }
+        ),
+    )
+
+    # Mock `get` to not return a catalogue item
+    test_helpers.mock_get(usage_status_repository_mock, None)
+
+    usage_status_id = str(ObjectId())
+    with pytest.raises(MissingRecordError) as exc:
+        item_service.update(
+            item.id,
+            ItemPatchRequestSchema(usage_status_id=usage_status_id),
+        )
+    item_repository_mock.update.assert_not_called()
+    assert str(exc.value) == f"No usage status found with ID: {usage_status_id}"
+
+
+def test_update_with_invalid_usage_status(
+    test_helpers, usage_status_repository_mock, item_repository_mock, item_service
+):
+    """
+    Test updating an item with a invalid usage status ID.
+    """
+    # pylint: disable=duplicate-code
+    item_properties = add_ids_to_properties(None, FULL_ITEM_INFO["properties"])
+    item = ItemOut(
+        id=str(ObjectId()),
+        catalogue_item_id=str(ObjectId()),
+        system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
+        **{
+            **FULL_ITEM_INFO,
+            "properties": item_properties,
+        },
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return an item
+    test_helpers.mock_get(
+        item_repository_mock,
+        ItemOut(
+            **{
+                **item.model_dump(),
+                "usage_status_id": str(ObjectId()),
+                "properties": item_properties,
+            }
+        ),
+    )
+
+    # Mock `get` to not return a catalogue item
+    test_helpers.mock_get(usage_status_repository_mock, None)
+
+    usage_status_id = "invalid"
+    with pytest.raises(MissingRecordError) as exc:
+        item_service.update(
+            item.id,
+            ItemPatchRequestSchema(usage_status_id=usage_status_id),
+        )
+    item_repository_mock.update.assert_not_called()
+    assert str(exc.value) == f"No usage status found with ID: {usage_status_id}"
 
 
 def test_update_change_property_value(

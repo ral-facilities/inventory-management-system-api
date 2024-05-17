@@ -46,9 +46,7 @@ def test_create_usage_status_with_duplicate_name(test_client):
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
 
     assert response.status_code == 409
-    assert (
-        response.json()["detail"] == "A usage status with the same name has been found"
-    )
+    assert response.json()["detail"] == "A usage status with the same name already exists"
 
 
 def test_get_usage_statuses(test_client):
@@ -136,9 +134,7 @@ def test_delete_with_a_non_existent_id(test_client):
 def test_delete_usage_status_that_is_a_part_of_item(test_client):
     """Test trying to delete a usage status that is a part of a Item"""
     # pylint: disable=duplicate-code
-    response = test_client.post(
-        "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A
-    )
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     catalogue_category = response.json()
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
@@ -173,9 +169,7 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)
