@@ -75,10 +75,7 @@ class UsageStatusRepo:
         :return: The retrieved usage status, or `None` if not found.
         """
         usage_status_id = CustomObjectId(usage_status_id)
-        logger.info(
-            "Retrieving usage status with ID: %s from the database",
-            usage_status_id,
-        )
+        logger.info("Retrieving usage status with ID: %s from the database", usage_status_id)
         usage_status = self._usage_statuses_collection.find_one({"_id": usage_status_id}, session=session)
         if usage_status:
             return UsageStatusOut(**usage_status)
@@ -87,6 +84,7 @@ class UsageStatusRepo:
     def delete(self, usage_status_id: str, session: ClientSession = None) -> None:
         """
         Delete a usage status by its ID from MongoDB database.
+
         Checks if usage status is a part of an item, and does not delete if it is
 
         :param usage_status_id: The ID of the usage status to delete
@@ -94,7 +92,7 @@ class UsageStatusRepo:
         :raises MissingRecordError: if supplied usage status ID does not exist in the database
         """
         usage_status_id = CustomObjectId(usage_status_id)
-        if self._is_usage_in_item(str(usage_status_id), session=session):
+        if self._is_usage_status_in_item(str(usage_status_id), session=session):
             raise PartOfItemError(f"The usage status with id {str(usage_status_id)} is a part of a Item")
 
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
@@ -108,12 +106,12 @@ class UsageStatusRepo:
 
         :param code: The code of the usage status to check for duplicates.
         :param session: PyMongo ClientSession to use for database operations
-        :return `True` if duplicate usage status, `False` otherwise
+        :return: `True` if a duplicate usage status code is found, `False` otherwise
         """
         logger.info("Checking if usage status with code '%s' already exists", code)
         return self._usage_statuses_collection.find_one({"code": code}, session=session) is not None
 
-    def _is_usage_in_item(self, usage_status_id: str, session: ClientSession = None) -> bool:
+    def _is_usage_status_in_item(self, usage_status_id: str, session: ClientSession = None) -> bool:
         """Checks to see if any of the documents in the database have a specific usage status id
 
         :param usage_status_id: The ID of the usage status that is looked for
