@@ -1560,6 +1560,98 @@ def test_partial_update_change_non_existent_system_id(test_client):
     assert response.json()["detail"] == "The specified system does not exist"
 
 
+def test_partial_update_change_non_existent_usage_status_id(test_client):
+    """
+    Test updating usage status ID which is non-existent
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category["id"],
+        "manufacturer_id": manufacturer_id,
+        "properties": add_ids_to_properties(
+            catalogue_category["catalogue_item_properties"],
+            CATALOGUE_ITEM_POST_A["properties"],
+        ),
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "usage_status_id": usage_status_id,
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {"usage_status_id": str(ObjectId())}
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified usage status does not exist"
+
+
+def test_partial_update_change_invalid_usage_status_id(test_client):
+    """
+    Test updating usage status ID which is invalid
+    """
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    manufacturer_id = response.json()["id"]
+
+    # pylint: disable=duplicate-code
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category["id"],
+        "manufacturer_id": manufacturer_id,
+        "properties": add_ids_to_properties(
+            catalogue_category["catalogue_item_properties"],
+            CATALOGUE_ITEM_POST_A["properties"],
+        ),
+    }
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
+
+    # pylint: enable=duplicate-code
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "usage_status_id": usage_status_id,
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+    }
+    response = test_client.post("/v1/items", json=item_post)
+
+    item_patch = {"usage_status_id": "invalid"}
+    response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified usage status does not exist"
+
+
 def test_partial_update_property_values(test_client):
     """
     Test updating property values
