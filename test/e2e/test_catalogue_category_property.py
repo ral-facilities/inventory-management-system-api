@@ -272,10 +272,10 @@ class TestCreate(CreateDSL):
         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
 
-    def test_create_mandatory_property_with_allowed_values(self):
+    def test_create_mandatory_property_with_allowed_values_list(self):
         """
-        Test adding a mandatory property with allowed values to an already existing catalogue category, catalogue item
-        and item (ensures the default_value is allowed)
+        Test adding a mandatory property with an allowed values list to an already existing catalogue category,
+        catalogue item and item (ensures the default_value is allowed)
         """
 
         self.post_catalogue_category_and_items()
@@ -344,10 +344,10 @@ class TestCreate(CreateDSL):
             422, "Value error, default_value must be the same type as the property itself"
         )
 
-    def test_create_mandatory_property_with_invalid_default_value_not_in_allowed(self):
+    def test_create_mandatory_property_with_invalid_default_value_not_in_allowed_values_list(self):
         """
         Test adding a mandatory property to an already existing catalogue category, catalogue item and item with a
-        default value that is excluded by the allowed_values
+        default value that is excluded by an allowed_values list
         """
 
         self.post_catalogue_category_and_items()
@@ -379,10 +379,94 @@ class TestCreate(CreateDSL):
             422, "Value error, default_value must be the same type as the property itself"
         )
 
-    def test_create_mandatory_property_with_boolean_allowed_values(self):
+    def test_create_mandatory_property_with_invalid_allowed_values_list_number(self):
         """
         Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
-        a boolean type and allowed values is rejected appropriately
+        a number type and an allowed_values list with an invalid number
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "number",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": [2, "4", 6]},
+                "default_value": False,
+            }
+        )
+        self.check_catalogue_item_property_post_response_failed_with_validation_message(
+            422,
+            "Value error, allowed_values of type 'list' must only contain values of the same type as the property "
+            "itself",
+        )
+
+    def test_create_mandatory_property_with_invalid_allowed_values_list_string(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
+        a string type and an allowed_values list with an invalid number
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "string",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": ["red", "green", 6]},
+                "default_value": False,
+            }
+        )
+        self.check_catalogue_item_property_post_response_failed_with_validation_message(
+            422,
+            "Value error, allowed_values of type 'list' must only contain values of the same type as the property "
+            "itself",
+        )
+
+    def test_create_mandatory_property_with_invalid_allowed_values_list_duplicate_number(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
+        a number type and an allowed_values list with a duplicate number value in it
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "number",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": [42, 10.2, 12, 42]},
+                "default_value": False,
+            }
+        )
+        self.check_catalogue_item_property_post_response_failed_with_validation_message(
+            422, "Value error, allowed_values of type 'list' contains a duplicate value: 42"
+        )
+
+    def test_create_mandatory_property_with_invalid_allowed_values_list_duplicate_string(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
+        a string type and an allowed_values list with a duplicate string value in it
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(
+            {
+                "name": "Property B",
+                "type": "string",
+                "mandatory": True,
+                "allowed_values": {"type": "list", "values": ["value1", "value2", "value3", "Value2"]},
+                "default_value": False,
+            }
+        )
+        self.check_catalogue_item_property_post_response_failed_with_validation_message(
+            422, "Value error, allowed_values of type 'list' contains a duplicate value: Value2"
+        )
+
+    def test_create_mandatory_property_with_boolean_allowed_values_list(self):
+        """
+        Test adding a mandatory property to an already existing catalogue category, catalogue item and item with
+        a boolean type and an allowed values list is rejected appropriately
         """
 
         self.post_catalogue_category_and_items()
@@ -712,8 +796,7 @@ class TestUpdate(UpdateDSL):
 
     def test_updating_property_allowed_values_list_adding_with_different_type(self):
         """
-        Test updating a property to modify a value in an allowed values list to add an extra element but with a
-        different type to the rest
+        Test updating a property to add a value to an allowed values list but with a different type to the rest
         """
 
         # Setup by creating a property to update
@@ -738,4 +821,35 @@ class TestUpdate(UpdateDSL):
         )
         self.check_catalogue_item_property_patch_response_failed_with_message(
             422, "allowed_values of type 'list' must only contain values of the same type as the property itself"
+        )
+
+    def test_updating_property_allowed_values_list_adding_duplicate_value(self):
+        """
+        Test updating a property to add a duplicate value to an allowed values list
+        """
+
+        # Setup by creating a property to update
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
+        self.check_catalogue_item_property_post_response_success(
+            CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
+        )
+
+        # Patch the property
+        self.patch_catalogue_item_property(
+            {
+                "allowed_values": {
+                    "type": "list",
+                    # Change only the last value
+                    "values": [
+                        *CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"],
+                        CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"][0],
+                    ],
+                }
+            }
+        )
+        self.check_catalogue_item_property_patch_response_failed_with_message(
+            422,
+            "allowed_values of type 'list' contains a duplicate value: "
+            f"{CATALOGUE_ITEM_PROPERTY_POST_MANDATORY_ALLOWED_VALUES['allowed_values']['values'][0]}",
         )

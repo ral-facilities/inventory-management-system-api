@@ -114,8 +114,11 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
                 )
             # Check the type of allowed_values being used and validate them appropriately
             if isinstance(allowed_values, AllowedValuesListSchema):
-                # List type should have all values the same type
+                # List type should have all values the same type and no duplicate values
+                seen_values = set()
+
                 for allowed_value in allowed_values.values:
+                    # Ensure the value is the correct type
                     if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
                         expected_property_type=catalogue_item_property_data["type"], property_value=allowed_value
                     ):
@@ -123,6 +126,16 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
                             "allowed_values of type 'list' must only contain values of the same type as the property "
                             "itself"
                         )
+
+                    # Ensure the value isn't duplicated
+                    seen_value = (
+                        allowed_value
+                        if catalogue_item_property_data["type"] != CatalogueItemPropertyType.STRING
+                        else allowed_value.lower()
+                    )
+                    if seen_value in seen_values:
+                        raise ValueError(f"allowed_values of type 'list' contains a duplicate value: {allowed_value}")
+                    seen_values.add(seen_value)
 
     @field_validator("allowed_values")
     @classmethod
