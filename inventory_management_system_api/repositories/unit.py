@@ -84,7 +84,9 @@ class UnitRepo:
     def delete(self, unit_id: str, session: ClientSession = None) -> None:
         """
         Delete a unit by its ID from MongoDB database.
+
         Checks if unit is a part of an item, and does not delete if it is
+
         :param unit_id: The ID of the unit to delete
         :raises PartOfCatalogueCategoryError: if unit is a part of a catalogue item
         :raises MissingRecordError: if supplied unit ID does not exist in the database
@@ -111,6 +113,7 @@ class UnitRepo:
 
     def _is_unit_in_catalogue_category(self, unit_id: str, session: ClientSession = None) -> bool:
         """Checks if any documents in the database have a specific unit id
+
         :param unit_id: The ID of the unit being looked for
         :return: Returns True if 1 or more documents have the unit ID, false if none do
         """
