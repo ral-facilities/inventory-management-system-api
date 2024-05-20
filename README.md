@@ -240,29 +240,6 @@ For docker you may use
 docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'mongodb_container:27017' }]})"
 ```
 
-#### Adding default data
-
-Units should be added to the MongoDB database using `mongoimport` on the provided units file found at
-`/data/units.json`. If adding more units to this file, ensure the `_id` values are valid `ObjectId`'s.
-
-##### Updating a local MongoDB instance
-
-To update the list of units, replacing all existing with the contents of the `./data/units.json` file use the command
-
-```bash
-mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop ./data/units.json
-```
-
-from the root directory of this repo, replacing the username and password as appropriate.
-
-##### Updating a MongoDB instance running in a docker container
-
-When running using docker you can use use
-
-```bash
-docker exec -i mongodb_container mongoimport --username 'root' --password 'example' --authenticationDatabase=admin --db ims --collection units --type=json --jsonArray --drop < ./data/units.json
-```
-
 ### Using mock data for testing [Optional]
 
 #### Populating the database
