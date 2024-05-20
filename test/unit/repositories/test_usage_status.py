@@ -21,7 +21,7 @@ from inventory_management_system_api.models.usage_status import (
 
 def test_create(test_helpers, database_mock, usage_status_repository):
     """
-     Test creating a usage status.
+    Test creating a usage status.
 
     Verify that the `create` method properly handles the usage status to be created,
     checks that there is not a duplicate usage status, and creates the usage status.
