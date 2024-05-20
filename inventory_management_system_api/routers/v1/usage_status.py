@@ -41,7 +41,7 @@ def create_usage_status(
         return UsageStatusSchema(**usage_status.model_dump())
 
     except DuplicateRecordError as exc:
-        message = "A usage status with the same name already exists"
+        message = "A usage status with the same value already exists"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 

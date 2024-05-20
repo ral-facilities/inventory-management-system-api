@@ -46,7 +46,7 @@ def test_create_usage_status_with_duplicate_name(test_client):
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "A usage status with the same name already exists"
+    assert response.json()["detail"] == "A usage status with the same value already exists"
 
 
 def test_get_usage_statuses(test_client):
