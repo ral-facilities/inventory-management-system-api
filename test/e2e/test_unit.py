@@ -118,8 +118,8 @@ def test_get_unit_with_invalid_id(test_client):
     assert response.json()["detail"] == "Unit not found"
 
 
-def test_get_unit_with_nonexistent_id(test_client):
-    """Test getting a units with an nonexistent id"""
+def test_get_unit_with_non_existent_id(test_client):
+    """Test getting a units with an non-existent id"""
 
     response = test_client.get(f"/v1/units/{str(ObjectId())}")
 

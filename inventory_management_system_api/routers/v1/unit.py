@@ -34,7 +34,6 @@ def create_unit(
     try:
         unit = unit_service.create(unit)
         return UnitSchema(**unit.model_dump())
-
     except DuplicateRecordError as exc:
         message = "A unit with the same value already exists"
         logger.exception(message)
@@ -64,7 +63,7 @@ def get_unit(
     return UnitSchema(**unit.model_dump())
 
 
-@router.get(path="", summary="Get units", response_description="List of units")
+@router.get(path="", summary="Get Units", response_description="List of Units")
 def get_units(unit_service: Annotated[UnitService, Depends(UnitService)]) -> list[UnitSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Units")

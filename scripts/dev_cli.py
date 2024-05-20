@@ -61,29 +61,6 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
     )
 
 
-def run_mongoimport_json_array_file(args: argparse.Namespace, database: str, collection: str, path: Path):
-    """
-    Runs mongoimport on a MongoDB database to import a json array from a file into a specified collection
-    """
-    with open(path, "r", encoding="utf-8") as file:
-        run_mongodb_command(
-            [
-                "mongoimport",
-            ]
-            + get_mongodb_auth_args(args)
-            + [
-                "--db",
-                database,
-                "--collection",
-                collection,
-                "--type=json",
-                "--jsonArray",
-                "--drop",
-            ],
-            stdin=file,
-        )
-
-
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
     """Adds common arguments for MongoDB authentication"""
     parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
@@ -188,10 +165,7 @@ class CommandDBInit(SubCommand):
 
 
 class CommandDBImport(SubCommand):
-    """Command that imports data into the database
-
-    By default just the standard data e.g. the units, but with an option to import the generated mock data instead
-    """
+    """Command that imports mock data into the database"""
 
     def __init__(self):
         super().__init__(help="Imports database for development")
@@ -250,10 +224,6 @@ class CommandDBGenerate(SubCommand):
                     "db.dropDatabase()",
                 ]
             )
-            # Import standard data again
-            logging.info("Importing standard data...")
-            args.generated = False
-            commands["db-import"].run(args)
             # Generate new data
             logging.info("Generating new mock data...")
             try:

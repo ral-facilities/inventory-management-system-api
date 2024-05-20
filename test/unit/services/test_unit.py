@@ -18,7 +18,7 @@ def test_create(
     unit_service,
 ):
     """
-    Testing creating a unit
+    Test creating a unit
     """
 
     # pylint: disable=duplicate-code
@@ -71,9 +71,10 @@ def test_get_with_non_existent_id(
     """Test getting a unit with an non-existent ID"""
 
     unit_id = str(ObjectId())
+
+    # Mock `get` to not return a Unit
     test_helpers.mock_get(unit_repository_mock, None)
 
-    # Mock `get` to return a unit
     retrieved_unit = unit_service.get(unit_id)
 
     assert retrieved_unit is None
