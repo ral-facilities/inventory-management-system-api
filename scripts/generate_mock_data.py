@@ -1,7 +1,7 @@
 import logging
 from datetime import timezone
 from enum import StrEnum
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from faker import Faker
@@ -390,7 +390,7 @@ def generate_random_system(parent_id):
     }
 
 
-def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> str:
+def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> dict[str, Any]:
     """Posts an entity's data to the given endpoint, but adds - n to the end to avoid
     duplicates when a 409 is returned
 
@@ -410,31 +410,31 @@ def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> str:
     return response.json()
 
 
-def create_manufacturer(manufacturer_data: dict) -> str:
+def create_manufacturer(manufacturer_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/manufacturers", field="name", json=manufacturer_data)
 
 
-def create_unit(unit_data: dict) -> str:
+def create_unit(unit_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/units", field="value", json=unit_data)
 
 
-def create_usage_status(usage_status_data: dict) -> str:
+def create_usage_status(usage_status_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/usage-statuses", field="value", json=usage_status_data)
 
 
-def create_catalogue_category(category_data: dict) -> str:
+def create_catalogue_category(category_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/catalogue-categories", field="name", json=category_data)
 
 
-def create_catalogue_item(item_data: dict) -> str:
+def create_catalogue_item(item_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/catalogue-items", field="name", json=item_data)
 
 
-def create_system(system_data: dict) -> str:
+def create_system(system_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/systems", field="name", json=system_data)
 
 
-def create_item(item_data: dict) -> str:
+def create_item(item_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 

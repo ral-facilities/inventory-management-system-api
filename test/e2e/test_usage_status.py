@@ -46,7 +46,7 @@ def test_create_usage_status_with_duplicate_name(test_client):
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "A usage status with the same name already exists"
+    assert response.json()["detail"] == "A usage status with the same value already exists"
 
 
 def test_get_usage_statuses(test_client):
@@ -177,4 +177,4 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
     response = test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "The specified usage status is a part of an Item"
+    assert response.json()["detail"] == "The specified usage status is part of an Item"
