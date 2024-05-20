@@ -19,6 +19,7 @@ from inventory_management_system_api.models.units import UnitIn, UnitOut
 def test_create(test_helpers, database_mock, unit_repository):
     """
     Test creating a unit.
+
     Verify that the `create` method properly handles the unit to be created,
     checks that there is not a duplicate unit, and creates the unit.
     """
@@ -47,7 +48,7 @@ def test_create(test_helpers, database_mock, unit_repository):
 
     created_unit = unit_repository.create(unit_in, session=session)
 
-    database_mock.units.insert_one.assert_called_once_with(unit_in.model_dump(), session=session)
+    database_mock.units.insert_one.assert_called_once_with(unit_info, session=session)
     database_mock.units.find_one.assert_has_calls(
         [
             call({"code": unit_out.code}, session=session),
@@ -60,6 +61,7 @@ def test_create(test_helpers, database_mock, unit_repository):
 def test_create_unit_duplicate(test_helpers, database_mock, unit_repository):
     """
     Test creating a unit with a duplicate code
+
     Verify that the `create` method properly handles a unit with a duplicate name,
     finds that there is a duplicate unit, and does not create the unit.
     """
@@ -70,7 +72,6 @@ def test_create_unit_duplicate(test_helpers, database_mock, unit_repository):
         id=str(ObjectId()),
     )
 
-    # Mock `find_one` to return duplicate manufacturer found
     # Mock `find_one` to return no duplicate units found
     test_helpers.mock_find_one(
         database_mock.units,
@@ -87,6 +88,7 @@ def test_create_unit_duplicate(test_helpers, database_mock, unit_repository):
 
 def test_list(test_helpers, database_mock, unit_repository):
     """Test getting all units"""
+
     unit_1 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
 
     unit_2 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="nm", code="nm")
@@ -122,6 +124,7 @@ def test_list(test_helpers, database_mock, unit_repository):
 
 def test_list_when_no_units(test_helpers, database_mock, unit_repository):
     """Test trying to get all units when there are none in the database"""
+
     test_helpers.mock_find(database_mock.units, [])
     retrieved_units = unit_repository.list()
 
@@ -132,6 +135,7 @@ def test_get(test_helpers, database_mock, unit_repository):
     """
     Test getting a unit by id
     """
+
     unit = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
 
     session = MagicMock()
@@ -154,15 +158,17 @@ def test_get_with_invalid_id(unit_repository):
     """
     Test getting a unit with an Invalid ID
     """
+
     with pytest.raises(InvalidObjectIdError) as exc:
         unit_repository.get("invalid")
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_get_with_nonexistent_id(test_helpers, database_mock, unit_repository):
+def test_get_with_non_existent_id(test_helpers, database_mock, unit_repository):
     """
     Test getting a unit with an ID that does not exist
     """
+
     unit_id = str(ObjectId())
     test_helpers.mock_find_one(database_mock.units, None)
     retrieved_unit = unit_repository.get(unit_id)

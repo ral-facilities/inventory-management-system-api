@@ -54,6 +54,7 @@ UNITS_EXPECTED = [
 
 def test_create_unit(test_client):
     """Test creating a unit"""
+
     response = test_client.post("/v1/units", json=UNIT_POST_A)
 
     assert response.status_code == 201
@@ -67,13 +68,14 @@ def test_create_unit_with_duplicate_name(test_client):
     response = test_client.post("/v1/units", json=UNIT_POST_A)
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "A unit with the same name has been found"
+    assert response.json()["detail"] == "A unit with the same value already exists"
 
 
 def test_get_units(test_client):
     """
     Test getting a list of units
     """
+
     test_client.post("/v1/units", json=UNIT_POST_A)
     test_client.post("/v1/units", json=UNIT_POST_B)
     test_client.post("/v1/units", json=UNIT_POST_C)
@@ -98,6 +100,7 @@ def test_get_units_when_no_units(test_client):
 
 def test_get_unit_with_id(test_client):
     """Test getting a unit by ID"""
+
     response = test_client.post("/v1/units", json=UNIT_POST_A)
 
     response = test_client.get(f"/v1/units/{response.json()['id']}")
