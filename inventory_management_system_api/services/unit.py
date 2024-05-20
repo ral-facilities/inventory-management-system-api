@@ -13,7 +13,7 @@ from inventory_management_system_api.services import utils
 
 class UnitService:
     """
-    Service for managing units
+    Service for managing Units
     """
 
     def __init__(self, unit_repository: UnitRepo = Depends(UnitRepo)) -> None:
@@ -26,7 +26,7 @@ class UnitService:
 
     def create(self, unit: UnitPostRequestSchema) -> UnitOut:
         """
-        Create a new unit.
+        Create a new Unit.
 
         :param unit: The unit to be created.
         :return: The created unit.
@@ -36,7 +36,7 @@ class UnitService:
 
     def get(self, unit_id: str) -> Optional[UnitOut]:
         """
-        Get unit by its ID.
+        Get Unit by its ID.
 
         :param unit_id: The ID of the requested unit
         :return: The retrieved unit, or None if not found
@@ -45,8 +45,8 @@ class UnitService:
 
     def list(self) -> list[UnitOut]:
         """
-        Retrieve a list of all units
+        Retrieve a list of all Units
 
-        :return: List of units or an empty list if no units are retrieved
+        :return: List of Units or an empty list if no Units are retrieved
         """
         return self._unit_repository.list()

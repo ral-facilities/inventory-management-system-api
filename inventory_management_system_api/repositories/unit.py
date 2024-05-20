@@ -20,7 +20,7 @@ logger = logging.getLogger()
 
 class UnitRepo:
     """
-    Repository for managing units in a MongoDB database
+    Repository for managing Units in a MongoDB database
     """
 
     def __init__(self, database: Database = Depends(get_database)) -> None:
@@ -33,7 +33,7 @@ class UnitRepo:
 
     def create(self, unit: UnitIn, session: ClientSession = None) -> UnitOut:
         """
-        Create a new unit in MongoDB database
+        Create a new Unit in MongoDB database
 
         :param unit: The unit to be created
         :param session: PyMongo ClientSession to use for database operations
@@ -53,17 +53,17 @@ class UnitRepo:
 
     def list(self, session: ClientSession = None) -> list[UnitOut]:
         """
-        Retrieve units from a MongoDB database
+        Retrieve Units from a MongoDB database
 
         :param session: PyMongo ClientSession to use for database operations
-        :return: List of units or an empty list if no units are retrieved
+        :return: List of Units or an empty list if no units are retrieved
         """
         units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
 
     def get(self, unit_id: str, session: ClientSession = None) -> Optional[UnitOut]:
         """
-        Retrieve a unit by its ID from a MongoDB database.
+        Retrieve a Unit by its ID from a MongoDB database.
 
         :param unit_id: The ID of the unit to retrieve.
         :param session: PyMongo ClientSession to use for database operations
@@ -78,7 +78,7 @@ class UnitRepo:
 
     def _is_duplicate_unit(self, code: str, session: ClientSession = None) -> bool:
         """
-        Check if unit with the same name already exists in the units collection
+        Check if Unit with the same name already exists in the Units collection
 
         :param code: The code of the unit to check for duplicates.
         :param session: PyMongo ClientSession to use for database operations
