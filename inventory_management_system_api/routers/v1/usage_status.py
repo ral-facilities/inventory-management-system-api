@@ -96,6 +96,6 @@ def delete_usage_status(usage_status_id: str, usage_status_service: UsageStatusS
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfItemError as exc:
-        message = "The specified usage status is a part of an Item"
+        message = "The specified usage status is part of an Item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

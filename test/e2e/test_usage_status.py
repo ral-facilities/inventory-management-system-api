@@ -177,4 +177,4 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
     response = test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "The specified usage status is a part of an Item"
+    assert response.json()["detail"] == "The specified usage status is part of an Item"
