@@ -2,12 +2,10 @@
 Module for providing pytest testing configuration.
 """
 
-import logging
 from typing import Optional
 
 from bson import ObjectId
 
-logger = logging.getLogger()
 
 VALID_ACCESS_TOKEN = (
     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjoyNTM0MDIzMDA3OTl9.bagU2Wix8wKzydVU_L3Z"

@@ -117,9 +117,10 @@ def create_catalogue_category(
         catalogue_category = catalogue_category_service.create(catalogue_category)
         return CatalogueCategorySchema(**catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        if catalogue_category.catalogue_item_properties is not None and any(
-            str(property.unit_id) in str(exc) for property in catalogue_category.catalogue_item_properties
-        ):
+        if (
+            catalogue_category.catalogue_item_properties is not None
+            and any(str(property.unit_id) in str(exc) for property in catalogue_category.catalogue_item_properties)
+        ) or "units" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
@@ -165,9 +166,10 @@ def partial_update_catalogue_category(
             message = "The specified parent catalogue category does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        if catalogue_category.catalogue_item_properties is not None and any(
-            str(property.unit_id) in str(exc) for property in catalogue_category.catalogue_item_properties
-        ):
+        if (
+            catalogue_category.catalogue_item_properties is not None
+            and any(str(property.unit_id) in str(exc) for property in catalogue_category.catalogue_item_properties)
+        ) or "units" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc

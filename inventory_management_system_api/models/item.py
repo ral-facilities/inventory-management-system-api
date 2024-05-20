@@ -15,7 +15,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 class ItemBase(BaseModel):
     """
-    Base database model for an item in.
+    Base database model for an item.
     """
 
     catalogue_item_id: CustomObjectIdField
