@@ -111,7 +111,6 @@ def test_create_item(test_client):
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
