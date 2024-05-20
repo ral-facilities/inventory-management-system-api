@@ -6,6 +6,7 @@ from typing import Optional
 
 from bson import ObjectId
 
+
 VALID_ACCESS_TOKEN = (
     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjoyNTM0MDIzMDA3OTl9.bagU2Wix8wKzydVU_L3Z"
     "ZuuMAxGxV4OTuZq_kS2Fuwm839_8UZOkICnPTkkpvsm1je0AWJaIXLGgwEa5zUjpG6lTrMMmzR9Zi63F0NXpJqQqoOZpTBMYBaggsXqFkdsv-yAKUZ"
@@ -51,15 +52,21 @@ def add_ids_to_properties(
     for property_without_id in properties_without_ids:
         if properties_with_ids:
             prop_id = next(
-                property_with_id["id"]
-                for property_with_id in properties_with_ids
-                if property_with_id["name"] == property_without_id["name"]
+                (
+                    property_with_id["id"]
+                    for property_with_id in properties_with_ids
+                    if property_with_id["name"] == property_without_id["name"]
+                ),
+                (None),
             )
 
             unit_id = next(
-                property_with_id["unit_id"]
-                for property_with_id in properties_with_ids
-                if property_with_id.get("unit") == property_without_id.get("unit")
+                (
+                    property_with_id["unit_id"]
+                    for property_with_id in properties_with_ids
+                    if property_with_id.get("unit") == property_without_id.get("unit")
+                ),
+                (None),
             )
         else:
             prop_id = str(ObjectId())
@@ -78,4 +85,5 @@ def add_ids_to_properties(
                 unit_id = property_without_id["unit_id"]
 
         properties.append({**property_without_id, "id": prop_id, "unit_id": unit_id})
+
     return properties

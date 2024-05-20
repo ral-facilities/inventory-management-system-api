@@ -1,7 +1,7 @@
 import logging
 from datetime import timezone
 from enum import StrEnum
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from faker import Faker
@@ -27,6 +27,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
+usage_statuses = ["New", "Used", "In Use", "Scrapped"]
+
 manufacturer_names = [
     "Tech Innovators Inc.",
     "Global Gadgets Co.",
@@ -233,6 +235,9 @@ generated_system_ids: list[str] = []
 # Dictionary with key=id and value=list of dictionaries of the units
 generated_units: dict[str, list[dict]] = {}
 
+# Dictionary with key=id and value=list of dictionaries of the usage_status
+generated_usage_statuses: dict[str, list[dict]] = {}
+
 
 def optional_address_field(function):
     return function() if fake.random.random() < PROBABILITY_ADDRESS_HAS_OPTIONAL_FIELD else None
@@ -273,9 +278,9 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
     return category
 
 
-def generate_unit(unit):
+def generate_unit(value: str):
     return {
-        "value": unit,
+        "value": value,
     }
 
 
@@ -291,6 +296,12 @@ def generate_random_manufacturer():
             "postcode": fake.postcode(),
         },
         "telephone": fake.phone_number(),
+    }
+
+
+def generate_usage_status(value: str):
+    return {
+        "value": value,
     }
 
 
@@ -368,7 +379,7 @@ def generate_random_item(catalogue_item_id: str):
         "system_id": fake.random.choice(generated_system_ids),
         "purchase_order_number": fake.isbn10(),
         "is_defective": fake.random.randint(0, 100) > 90,
-        "usage_status": fake.random.choice([0, 1, 2, 3]),
+        "usage_status_id": fake.random.choice(list(generated_usage_statuses.keys())),
         "warranty_end_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),
@@ -389,7 +400,7 @@ def generate_random_system(parent_id):
     }
 
 
-def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> str:
+def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> dict[str, Any]:
     """Posts an entity's data to the given endpoint, but adds - n to the end to avoid
     duplicates when a 409 is returned
 
@@ -409,27 +420,31 @@ def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> str:
     return response.json()
 
 
-def create_manufacturer(manufacturer_data: dict) -> str:
+def create_manufacturer(manufacturer_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/manufacturers", field="name", json=manufacturer_data)
 
 
-def create_unit(unit_data: dict) -> str:
+def create_unit(unit_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/units", field="value", json=unit_data)
 
 
-def create_catalogue_category(category_data: dict) -> str:
+def create_usage_status(usage_status_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/usage-statuses", field="value", json=usage_status_data)
+
+
+def create_catalogue_category(category_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/catalogue-categories", field="name", json=category_data)
 
 
-def create_catalogue_item(item_data: dict) -> str:
+def create_catalogue_item(item_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/catalogue-items", field="name", json=item_data)
 
 
-def create_system(system_data: dict) -> str:
+def create_system(system_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/systems", field="name", json=system_data)
 
 
-def create_item(item_data: dict) -> str:
+def create_item(item_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 
@@ -441,13 +456,18 @@ def populate_random_manufacturers() -> list[str]:
     return manufacturer_ids
 
 
-def populate_random_units() -> list[str]:
-    # Usually faster than append
-
+def populate_units():
     for i, unit in enumerate(units):
         unit = generate_unit(unit)
         unit = create_unit(unit)
         generated_units[unit["value"]] = unit
+
+
+def populate_usage_statuses():
+    for i, usage_status in enumerate(usage_statuses):
+        usage_status = generate_usage_status(usage_status)
+        usage_status = create_usage_status(usage_status)
+        generated_usage_statuses[usage_status["id"]] = usage_status
 
 
 def populate_random_catalogue_categories(
@@ -516,7 +536,9 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
 
 def generate_mock_data():
     logging.info("Populating units...")
-    populate_random_units()
+    populate_units()
+    logging.info("Populating usage statuses...")
+    populate_usage_statuses()
     logging.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
     logging.info("Populating catalogue categories...")

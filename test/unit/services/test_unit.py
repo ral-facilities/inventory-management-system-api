@@ -18,8 +18,9 @@ def test_create(
     unit_service,
 ):
     """
-    Testing creating a unit
+    Test creating a unit
     """
+
     # pylint: disable=duplicate-code
 
     unit = UnitOut(
@@ -49,6 +50,7 @@ def test_get(
     unit_service,
 ):
     """Test getting a unit by ID"""
+
     unit_id = str(ObjectId())
     unit = MagicMock()
 
@@ -61,16 +63,18 @@ def test_get(
     assert retrieved_unit == unit
 
 
-def test_get_with_nonexistent_id(
+def test_get_with_non_existent_id(
     test_helpers,
     unit_repository_mock,
     unit_service,
 ):
     """Test getting a unit with an non-existent ID"""
+
     unit_id = str(ObjectId())
+
+    # Mock `get` to not return a Unit
     test_helpers.mock_get(unit_repository_mock, None)
 
-    # Mock `get` to return a unit
     retrieved_unit = unit_service.get(unit_id)
 
     assert retrieved_unit is None
@@ -80,8 +84,10 @@ def test_get_with_nonexistent_id(
 def test_list(unit_repository_mock, unit_service):
     """
     Test listing units
+
     Verify that the `list` method properly calls the repository function
     """
+
     result = unit_service.list()
 
     unit_repository_mock.list.assert_called_once_with()

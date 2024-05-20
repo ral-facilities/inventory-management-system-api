@@ -18,6 +18,7 @@ from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
+from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 
 
 @pytest.fixture(name="database_mock")
@@ -34,6 +35,7 @@ def fixture_database_mock() -> Mock:
     database_mock.manufacturers = Mock(Collection)
     database_mock.systems = Mock(Collection)
     database_mock.units = Mock(Collection)
+    database_mock.usage_statuses = Mock(Collection)
     return database_mock
 
 
@@ -98,6 +100,17 @@ def fixture_unit_repository(database_mock: Mock) -> UnitRepo:
     :return: `UnitRepo` instance with the mocked dependency.
     """
     return UnitRepo(database_mock)
+
+
+@pytest.fixture(name="usage_status_repository")
+def fixture_usage_status_repository(database_mock: Mock) -> UsageStatusRepo:
+    """
+    Fixture to create a `UsageStatusRepo` instance with a mocked Database dependency.
+
+    :param database_mock: Mocked MongoDB database instance.
+    :return: `UsageStatusRepo` instance with the mocked dependency.
+    """
+    return UsageStatusRepo(database_mock)
 
 
 class RepositoryTestHelpers:
@@ -174,7 +187,18 @@ class RepositoryTestHelpers:
         """
         update_one_result_mock = Mock(UpdateResult)
         update_one_result_mock.acknowledged = True
-        collection_mock.insert_one.return_value = update_one_result_mock
+        collection_mock.update_many.return_value = update_one_result_mock
+
+    @staticmethod
+    def mock_update_many(collection_mock: Mock) -> None:
+        """
+        Mock the `update_many` method of the MongoDB database collection mock to return an `UpdateResult` object.
+
+        :param collection_mock: Mocked MongoDB database collection instance.
+        """
+        update_many_result_mock = Mock(UpdateResult)
+        update_many_result_mock.acknowledged = True
+        collection_mock.update_many.return_value = update_many_result_mock
 
 
 @pytest.fixture(name="test_helpers")

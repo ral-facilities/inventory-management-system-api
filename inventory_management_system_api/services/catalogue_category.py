@@ -68,7 +68,7 @@ class CatalogueCategoryService:
 
         catalogue_item_properties = []
         if catalogue_category.catalogue_item_properties:
-            self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
+            utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
             catalogue_item_properties = self._add_catalogue_item_property_units(
                 catalogue_category.catalogue_item_properties
@@ -163,7 +163,7 @@ class CatalogueCategoryService:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         if catalogue_category.catalogue_item_properties:
-            self._check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
+            utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
             catalogue_item_properties = self._add_catalogue_item_property_units(
                 catalogue_category.catalogue_item_properties
@@ -206,11 +206,13 @@ class CatalogueCategoryService:
         logger.info("Adding units to the catalogue item properties")
         catalogue_item_properties_with_units = []
         for catalogue_item_property in catalogue_item_properties:
+            # pylint: disable=duplicate-code
             if catalogue_item_property.unit_id is not None:
                 unit_id = catalogue_item_property.unit_id
                 unit = self._unit_repository.get(unit_id)
                 if not unit:
                     raise MissingRecordError(f"No unit found with ID: {unit_id}")
+                # pylint: enable=duplicate-code
                 # Copy unit ID and value to catalogue item property
                 catalogue_item_properties_with_units.append(
                     {**catalogue_item_property.model_dump(), "unit": unit.value}

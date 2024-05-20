@@ -9,6 +9,8 @@ from test.e2e.mock_schemas import (
     CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
     CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
+    USAGE_STATUS_POST_A,
+    USAGE_STATUS_POST_B,
 )
 from test.e2e.test_item import ITEM_POST
 from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
@@ -107,6 +109,44 @@ CATALOGUE_ITEM_POST_B_EXPECTED = {
     "properties": [{"name": "Property A", "value": True, "unit": None}],
 }
 
+# pylint: disable=duplicate-code
+def _post_units(test_client):
+    """Utility function for posting all mock units defined at the top of this file"""
+
+    response = test_client.get("/v1/units")
+    units = response.json()
+
+    if response.json() == []:
+
+        response = test_client.post("/v1/units", json=UNIT_POST_A)
+        unit_mm = response.json()
+
+        response = test_client.post("/v1/units", json=UNIT_POST_B)
+        unit_cm = response.json()
+
+        units = [unit_mm, unit_cm]
+
+    return units
+
+
+def _post_catalogue_category_with_units(test_client, catalogue_category):
+    """Utility function for posting Catalogue category a defined at the top of this file"""
+
+    units = _post_units(test_client)
+
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **catalogue_category,
+            "catalogue_item_properties": add_ids_to_properties(
+                None, catalogue_category["catalogue_item_properties"], units
+            ),
+        },
+    )
+    catalogue_category = response.json()
+
+    return catalogue_category
+# pylint: enable=duplicate-code
 
 def test_create_catalogue_item(test_client):
     """
@@ -114,25 +154,7 @@ def test_create_catalogue_item(test_client):
     """
     # pylint: disable=duplicate-code
 
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -167,6 +189,7 @@ def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     """
     Test creating a catalogue item with an invalid catalogue category id.
     """
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": "invalid",
@@ -199,12 +222,12 @@ def test_create_catalogue_item_with_non_existent_manufacturer_id(test_client):
     """
     Test creating a catalogue item with a non-existent manufacturer id
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
-        "catalogue_category_id": response.json()["id"],
+        "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": str(ObjectId()),
         "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
@@ -220,12 +243,12 @@ def test_create_catalogue_item_with_an_invalid_manufacturer_id(test_client):
     """
     Test creating a catalogue item with an invalid manufacturer id
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
-        "catalogue_category_id": response.json()["id"],
+        "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": "invalid",
         "properties": add_ids_to_properties(
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
@@ -263,8 +286,8 @@ def test_create_catalogue_item_with_obsolete_replacement_catalogue_item_id(test_
     """
     Test creating a catalogue item with an obsolete replacement catalogue item ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -314,8 +337,7 @@ def test_create_catalogue_item_with_invalid_obsolete_replacement_catalogue_item_
     """
     Test creating a catalogue item with an non-existent obsolete replacement catalogue item ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -340,8 +362,7 @@ def test_create_catalogue_item_with_non_existent_obsolete_replacement_catalogue_
     """
     Test creating a catalogue item with an non-existent obsolete replacement catalogue item ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -397,8 +418,7 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     """
     Test creating a catalogue item with missing mandatory catalogue item properties.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -423,8 +443,7 @@ def test_create_catalogue_item_with_mandatory_properties_given_none(test_client)
     """
     Test creating a catalogue item with mandatory catalogue item properties given as None
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -456,25 +475,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     Test creating a catalogue item with missing non-mandatory catalogue item properties.
     """
 
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -508,27 +509,8 @@ def test_create_catalogue_item_with_non_mandatory_properties_given_none(test_cli
     """
     Test creating a catalogue item with non-mandatory catalogue item properties given as None
     """
-    # pylint: disable=duplicate-code
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
 
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
-    # pylint: enable=duplicate-code
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -564,8 +546,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_
     """
     Test creating a catalogue item with invalid value type for a string catalogue item property.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -599,8 +580,8 @@ def test_create_catalogue_item_with_invalid_value_type_for_number_property(test_
     """
     Test creating a catalogue item with invalid value type for a number catalogue item property.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -634,8 +615,7 @@ def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test
     """
     Test creating a catalogue item with invalid value type for a boolean catalogue item property.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -670,22 +650,7 @@ def test_create_catalogue_item_with_allowed_values(test_client):
     Test creating a catalogue item when using allowed_values in the properties.
     """
     # pylint: disable=duplicate-code
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    units = [unit_mm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -721,8 +686,7 @@ def test_create_catalogue_item_with_allowed_values_invalid_list_string(test_clie
     the defined allowed_values list
     """
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -755,8 +719,7 @@ def test_create_catalogue_item_with_allowed_values_invalid_list_number(test_clie
     the defined allowed_values list
     """
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -788,8 +751,7 @@ def test_delete_catalogue_item(test_client):
     Test deleting a catalogue item.
     """
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -839,8 +801,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
     """
     # pylint: disable=duplicate-code
     # Parent
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
@@ -856,7 +817,10 @@ def test_delete_catalogue_item_with_child_items(test_client):
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
-    # pylint: enable=duplicate-code
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
+
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
@@ -866,6 +830,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
@@ -883,25 +848,7 @@ def test_get_catalogue_item(test_client):
     """
     # pylint: disable=duplicate-code
 
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -960,35 +907,8 @@ def test_get_catalogue_items(test_client):
     Test getting catalogue items.
     """
     # pylint: disable=duplicate-code
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-
-    catalogue_category_a = response.json()
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
-        },
-    )
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
     # pylint: enable=duplicate-code
 
@@ -1045,8 +965,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter(test_client):
     """
     Test getting catalogue items based on the provided catalogue category ID filter.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -1095,8 +1014,7 @@ def test_get_catalogue_items_with_catalogue_category_id_filter_no_matching_resul
     """
     Test getting catalogue items based on the provided catalogue category ID filter.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -1150,25 +1068,7 @@ def test_partial_update_catalogue_item_when_no_child_items(test_client):
     Test changing the name and description of a catalogue item when it doesn't have any child
     items
     """
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1208,25 +1108,7 @@ def test_partial_update_catalogue_item_when_has_child_items(test_client):
     Test updating a catalogue item which has child items.
     """
     # pylint: disable=duplicate-code
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-    # Parent
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1292,35 +1174,14 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
     """
     # pylint: disable=duplicate-code
     # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-
-    catalogue_category_a = response.json()
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
+    catalogue_category_b = _post_catalogue_category_with_units(
+        test_client,
+        {
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
+            "catalogue_item_properties": CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"],
         },
     )
-    catalogue_category_b = response.json()
     # pylint: enable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -1358,8 +1219,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_without_prop
     """
     Test moving a catalogue item to another catalogue category without supplying any catalogue item properties.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b_id = response.json()["id"]
 
@@ -1391,8 +1251,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_propert
     """
     Test moving a catalogue item to another catalogue category while supplying any new catalogue item properties.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -1436,17 +1295,17 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_differe
     Test moving a catalogue item to another catalogue category with the same properties but in a different order
     without supplying the new catalogue item properties.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        # Use the same properties but reverse the order
-        json={
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
+
+    catalogue_category_b = _post_catalogue_category_with_units(
+        test_client,
+        {
             **CATALOGUE_CATEGORY_POST_B,
             "catalogue_item_properties": CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"][::-1],
         },
     )
-    catalogue_category_b_id = response.json()["id"]
+
+    catalogue_category_b_id = catalogue_category_b["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -1476,8 +1335,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mand
     """
     Test moving a catalogue item to another catalogue category with missing mandatory catalogue item properties.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -1513,34 +1371,8 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
     """
     # pylint: disable=duplicate-code
     # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-
-    catalogue_category_a = response.json()
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
-        },
-    )
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
     # pylint: enable=duplicate-code
 
@@ -1582,8 +1414,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(t
     """
     Test changing the catalogue category ID of a catalogue item to an invalid ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1614,9 +1445,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_non_existent
     """
     Test changing the catalogue category ID of a catalogue item to a non-existent ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
-
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -1678,8 +1507,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
     """
     # pylint: disable=duplicate-code
     # Parent
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -1707,11 +1535,14 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
         ),
     }
 
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
     # child
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category_a["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
@@ -1726,8 +1557,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     """
     Test updating a catalogue item with an obsolete replacement catalogue item ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category_a = response.json()
+    catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
 
@@ -1778,8 +1608,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     """
     Test updating a catalogue item with an invalid obsolete replacement catalogue item ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1807,8 +1636,7 @@ def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_ite
     """
     Test updating a catalogue item with aa non-existent obsolete replacement catalogue item ID.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1836,8 +1664,7 @@ def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test
     """
     Test updating a catalogue item's mandatory properties to have a value of None
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1877,25 +1704,7 @@ def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(
     """
     Test updating a catalogue item's non-mandatory properties to have a value of None
     """
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -1940,25 +1749,8 @@ def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
     """
     Test adding a non-mandatory catalogue item property and a value.
     """
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
 
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -1998,25 +1790,8 @@ def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client
     """
     Test removing a non-mandatory catalogue item property and its value..
     """
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
 
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
-
-    units = [unit_mm, unit_cm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
-        },
-    )
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -2059,8 +1834,8 @@ def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
     """
     Test removing a mandatory catalogue item property and its value.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -2095,8 +1870,7 @@ def test_partial_update_catalogue_item_change_value_for_string_property_invalid_
     """
     Test changing the value of a string catalogue item property to an invalid type.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -2137,8 +1911,7 @@ def test_partial_update_catalogue_item_change_value_for_number_property_invalid_
     """
     Test changing the value of a number catalogue item property to an invalid type.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -2177,8 +1950,7 @@ def test_partial_update_catalogue_item_change_value_for_boolean_property_invalid
     """
     Test changing the value of a boolean catalogue item property to an invalid type.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -2219,24 +1991,8 @@ def test_partial_update_catalogue_item_change_values_with_allowed_values(test_cl
     """
     Test changing the value of properties with allowed_values defined
     """
-    # pylint: disable=duplicate-code
-    # units
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
 
-    units = [unit_mm]
-
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["catalogue_item_properties"], units
-            ),
-        },
-    )
-    # pylint: enable=duplicate-code
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -2279,8 +2035,8 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
     Test updating a catalogue item when giving a string property a value that is not within
     the defined allowed_values list
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-    catalogue_category = response.json()
+
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -2318,8 +2074,7 @@ def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_l
     Test updating a catalogue item when giving a number property a value that is not within
     the defined allowed_values list
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
@@ -2356,8 +2111,7 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     """
     Test updating the properties of a catalogue item when it has child items.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
@@ -2372,6 +2126,9 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
     manufacturer_e_id = response.json()["id"]
 
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
+    usage_status_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
@@ -2382,13 +2139,14 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-
+    # pylint: disable=duplicate-code
     # Child
     # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
@@ -2462,14 +2220,16 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     """
     Test updating the manufacturer ID of a catalogue item when it has child items.
     """
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    catalogue_category = response.json()
+    catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
 
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
@@ -2482,12 +2242,14 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     # Child
     # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
