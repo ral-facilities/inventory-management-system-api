@@ -446,7 +446,7 @@ def populate_random_manufacturers() -> list[str]:
     return manufacturer_ids
 
 
-def populate_units() -> list[str]:
+def populate_units():
     # Usually faster than append
 
     for i, unit in enumerate(units):
@@ -454,7 +454,7 @@ def populate_units() -> list[str]:
         create_unit(unit)
 
 
-def populate_usage_statuses() -> list[str]:
+def populate_usage_statuses():
     # Usually faster than append
 
     for i, usage_status in enumerate(usage_statuses):

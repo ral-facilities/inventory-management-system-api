@@ -12,11 +12,7 @@ from pathlib import Path
 from typing import Optional
 
 
-def run_command(
-    args: list[str],
-    stdin: Optional[TextIOWrapper] = None,
-    stdout: Optional[TextIOWrapper] = None,
-):
+def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
     """
     Runs a command using subprocess
     """
@@ -24,10 +20,7 @@ def run_command(
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
     # for some reason)
     popen = subprocess.Popen(
-        args,
-        stdin=stdin,
-        stdout=stdout if stdout is not None else subprocess.PIPE,
-        universal_newlines=True,
+        args, stdin=stdin, stdout=stdout if stdout is not None else subprocess.PIPE, universal_newlines=True
     )
     if stdout is None:
         for stdout_line in iter(popen.stdout.readline, ""):
@@ -51,11 +44,7 @@ def end_group(args: argparse.Namespace):
         print("::endgroup::")
 
 
-def run_mongodb_command(
-    args: list[str],
-    stdin: Optional[TextIOWrapper] = None,
-    stdout: Optional[TextIOWrapper] = None,
-):
+def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
     """
     Runs a command within the mongodb container
     """
@@ -98,12 +87,7 @@ def run_mongoimport_json_array_file(args: argparse.Namespace, database: str, col
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
     """Adds common arguments for MongoDB authentication"""
     parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
-    parser.add_argument(
-        "-p",
-        "--password",
-        default="example",
-        help="Password for MongoDB authentication",
-    )
+    parser.add_argument("-p", "--password", default="example", help="Password for MongoDB authentication")
 
 
 def get_mongodb_auth_args(args: argparse.Namespace):
@@ -166,18 +150,7 @@ class CommandDBInit(SubCommand):
             run_command(["sudo", "chown", "999:999", "./mongodb/keys/rs_keyfile"])
 
         start_group("Starting mongodb service", args)
-        run_command(
-            [
-                "docker",
-                "compose",
-                "up",
-                "-d",
-                "--wait",
-                "--wait-timeout",
-                "30",
-                "mongo-db",
-            ]
-        )
+        run_command(["docker", "compose", "up", "-d", "--wait", "--wait-timeout", "30", "mongo-db"])
 
         # Wait as cannot initialise immediately
         time.sleep(10)
@@ -185,10 +158,7 @@ class CommandDBInit(SubCommand):
 
         start_group("Initialising replica set", args)
         replicaSetConfig = json.dumps(
-            {
-                "_id": "rs0",
-                "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}],
-            }
+            {"_id": "rs0", "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}]}
         )
         run_mongodb_command(
             [
@@ -229,25 +199,18 @@ class CommandDBImport(SubCommand):
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
 
-        parser.add_argument(
-            "-g",
-            "--generated",
-            action="store_true",
-            help="Specify this flag to import all generated test data instead of just standard data e.g. units",
-        )
-
     def run(self, args: argparse.Namespace):
-        if args.generated:
-            # Populate database with generated test data
-            with open(Path("./data/mock_data.dump"), "r", encoding="utf-8") as file:
-                run_mongodb_command(
-                    [
-                        "mongorestore",
-                    ]
-                    + get_mongodb_auth_args(args)
-                    + ["--db", "ims", "--archive", "--drop"],
-                    stdin=file,
-                )
+
+        # Populate database with generated test data
+        with open(Path("./data/mock_data.dump"), "r", encoding="utf-8") as file:
+            run_mongodb_command(
+                [
+                    "mongorestore",
+                ]
+                + get_mongodb_auth_args(args)
+                + ["--db", "ims", "--archive", "--drop"],
+                stdin=file,
+            )
 
 
 class CommandDBGenerate(SubCommand):
@@ -267,10 +230,7 @@ class CommandDBGenerate(SubCommand):
         add_mongodb_auth_args(parser)
 
         parser.add_argument(
-            "-d",
-            "--dump",
-            action="store_true",
-            help="Whether to dump the output into a file that can be committed",
+            "-d", "--dump", action="store_true", help="Whether to dump the output into a file that can be committed"
         )
 
     def run(self, args: argparse.Namespace):
@@ -333,14 +293,10 @@ def main():
     """Runs CLI commands"""
     parser = argparse.ArgumentParser(prog="IMS Dev Script", description="Some commands for development")
     parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Flag for setting the log level to debug to output more info",
+        "--debug", action="store_true", help="Flag for setting the log level to debug to output more info"
     )
     parser.add_argument(
-        "--ci",
-        action="store_true",
-        help="Flag for when running on Github CI (will output groups for collapsing)",
+        "--ci", action="store_true", help="Flag for when running on Github CI (will output groups for collapsing)"
     )
 
     subparser = parser.add_subparsers(dest="command")
