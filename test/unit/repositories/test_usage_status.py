@@ -245,4 +245,4 @@ def test_delete_usage_status_that_is_part_of_a_catalogue_item(test_helpers, data
     # pylint: enable=duplicate-code
     with pytest.raises(PartOfItemError) as exc:
         usage_status_repository.delete(usage_status_id)
-    assert str(exc.value) == f"The usage status with id {str(usage_status_id)} is a part of a Item"
+    assert str(exc.value) == f"The usage status with ID {str(usage_status_id)} is a part of an Item"

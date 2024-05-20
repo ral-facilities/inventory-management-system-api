@@ -72,7 +72,7 @@ class PartOfCatalogueItemError(DatabaseError):
 
 class PartOfItemError(DatabaseError):
     """
-    Exception raised when attempting to delete a usage status that is a part of a item
+    Exception raised when attempting to delete a usage status that is a part of an item
     """
 
 

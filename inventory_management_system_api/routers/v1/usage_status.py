@@ -86,7 +86,9 @@ def get_usage_statuses(
     response_description="Usage status deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_usage_status(usage_status_id: str, usage_status_service: UsageStatusService = Depends()) -> None:
+def delete_usage_status(
+    usage_status_id: str, usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)]
+) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting usage status with ID: %s", usage_status_id)
     try:
