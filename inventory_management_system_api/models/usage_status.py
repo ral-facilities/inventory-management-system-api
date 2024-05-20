@@ -13,9 +13,9 @@ class UsageStatusBase(BaseModel):
     Base database model for a UsageStatus
     """
 
-    value: str = Field(description="Value of the Usage status")
+    value: str
     # Used for uniqueness checks (sanitised value)
-    code: str = Field(description="Code of the Usage status")
+    code: str
 
 
 class UsageStatusOut(CreatedModifiedTimeOutMixin, UsageStatusBase):
