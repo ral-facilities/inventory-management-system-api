@@ -4,7 +4,7 @@ Module for providing a service for managing Units using the `UnitRepo` repositor
 
 from typing import Optional
 from fastapi import Depends
-from inventory_management_system_api.models.units import UnitIn, UnitOut
+from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.unit import UnitPostRequestSchema
 
