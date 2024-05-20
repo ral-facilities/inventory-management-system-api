@@ -54,9 +54,12 @@ def add_ids_to_properties(
     for property_without_id in properties_without_ids:
         if properties_with_ids:
             prop_id = next(
-                property_with_id["id"]
-                for property_with_id in properties_with_ids
-                if property_with_id["name"] == property_without_id["name"]
+                (
+                    property_with_id["id"]
+                    for property_with_id in properties_with_ids
+                    if property_with_id["name"] == property_without_id["name"]
+                ),
+                (None),
             )
 
             unit_id = next(
