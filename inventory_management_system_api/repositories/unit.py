@@ -33,12 +33,12 @@ class UnitRepo:
 
     def create(self, unit: UnitIn, session: ClientSession = None) -> UnitOut:
         """
-        Create a new Unit in MongoDB database
+        Create a new Unit in a MongoDB database
 
         :param unit: The unit to be created
         :param session: PyMongo ClientSession to use for database operations
         :return: The created unit
-        :raises DuplicateRecordError: If a duplicate unit is found within collection
+        :raises DuplicateRecordError: If a duplicate unit is found within the collection
         """
 
         if self._is_duplicate_unit(unit.code, session=session):
@@ -78,7 +78,7 @@ class UnitRepo:
 
     def _is_duplicate_unit(self, code: str, session: ClientSession = None) -> bool:
         """
-        Check if Unit with the same name already exists in the Units collection
+        Check if a Unit with the same value already exists in the Units collection
 
         :param code: The code of the unit to check for duplicates.
         :param session: PyMongo ClientSession to use for database operations

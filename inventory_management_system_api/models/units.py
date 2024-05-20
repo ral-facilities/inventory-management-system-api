@@ -13,9 +13,9 @@ class UnitBase(BaseModel):
     Base database model for a Unit
     """
 
-    value: str = Field(description="Value of the Unit")
+    value: str
     # Used for uniqueness checks (sanitised value)
-    code: str = Field(description="Code of the Unit")
+    code: str
 
 
 class UnitOut(CreatedModifiedTimeOutMixin, UnitBase):

@@ -447,16 +447,12 @@ def populate_random_manufacturers() -> list[str]:
 
 
 def populate_units():
-    # Usually faster than append
-
     for i, unit in enumerate(units):
         unit = generate_unit(unit)
         create_unit(unit)
 
 
 def populate_usage_statuses():
-    # Usually faster than append
-
     for i, usage_status in enumerate(usage_statuses):
         usage_status = generate_usage_status(usage_status)
         usage_status = create_usage_status(usage_status)
