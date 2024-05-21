@@ -13,7 +13,7 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import DuplicateRecordError
-from inventory_management_system_api.models.units import UnitIn, UnitOut
+from inventory_management_system_api.models.unit import UnitIn, UnitOut
 
 logger = logging.getLogger()
 
