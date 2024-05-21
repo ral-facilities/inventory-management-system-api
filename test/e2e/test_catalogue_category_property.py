@@ -287,6 +287,22 @@ class TestCreate(CreateDSL):
         self.check_catalogue_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
 
+    def test_create_non_mandatory_property_with_no_unit(self):
+        """
+        Test adding a non-mandatory property to an already existing catalogue category, catalogue item and item
+        with no unit
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit": None})
+
+        self.check_catalogue_item_property_post_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY_EXPECTED, "unit": None}
+        )
+        self.check_catalogue_category_updated({**NEW_CATALOGUE_ITEM_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+        self.check_catalogue_item_updated({**NEW_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+        self.check_item_updated({**NEW_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+
     def test_create_mandatory_property(self):
         """
         Test adding a mandatory property to an already existing catalogue category, catalogue item and item
@@ -337,7 +353,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category_and_items()
 
         self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": "invalid"})
-        self.check_catalogue_item_property_post_response_failed_with_message(404, "The specified unit does not exist")
+        self.check_catalogue_item_property_post_response_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_property_with_non_existent_unit_id(self):
         """Test adding a property when the specified unit id is invalid"""
@@ -345,7 +361,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category_and_items()
 
         self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": str(ObjectId())})
-        self.check_catalogue_item_property_post_response_failed_with_message(404, "The specified unit does not exist")
+        self.check_catalogue_item_property_post_response_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_mandatory_property_without_default_value(self):
         """

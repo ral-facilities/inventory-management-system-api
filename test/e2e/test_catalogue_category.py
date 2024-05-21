@@ -216,6 +216,72 @@ def test_create_catalogue_category_with_duplicate_name_within_parent(test_client
     )
 
 
+def test_create_catalogue_category_with_non_existent_unit_id(test_client):
+    """
+    Test creating a catalogue category with non existent unit ID.
+    """
+    # Parent
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    parent_catalogue_category = response.json()
+
+    # units
+    unit_mm = {
+        "id": str(ObjectId()),
+        "value": "mm",
+        "code": "mm",
+        **CREATED_MODIFIED_VALUES_EXPECTED,
+    }
+    units = [unit_mm]
+
+    # Child
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_B,
+            "catalogue_item_properties": add_ids_to_properties(
+                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            ),
+            "parent_id": parent_catalogue_category["id"],
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified unit does not exist"
+
+
+def test_create_catalogue_category_with_invalid_unit_id(test_client):
+    """
+    Test creating a catalogue category with invalid unit ID.
+    """
+    # Parent
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    parent_catalogue_category = response.json()
+
+    # units
+    unit_mm = {
+        "id": "invalid",
+        "value": "mm",
+        "code": "mm",
+        **CREATED_MODIFIED_VALUES_EXPECTED,
+    }
+    units = [unit_mm]
+
+    # Child
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_B,
+            "catalogue_item_properties": add_ids_to_properties(
+                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            ),
+            "parent_id": parent_catalogue_category["id"],
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified unit does not exist"
+
+
 def test_create_catalogue_category_with_invalid_parent_id(test_client):
     """
     Test creating a catalogue category with an invalid parent ID.
@@ -1554,6 +1620,92 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
 
     assert response.status_code == 409
     assert response.json()["detail"] == "Catalogue category has child elements and cannot be updated"
+
+
+def test_partial_update_catalogue_category_invalid_unit_id(test_client):
+    """
+    Test modifying a catalogue item property when there is an invalid unit ID.
+    """
+
+    # units
+
+    _, unit_dict = _post_units(test_client)
+
+    catalogue_item_properties = [
+        {
+            "name": "Property A",
+            "type": "number",
+            "unit": "mm",
+            "unit_id": unit_dict["mm"],
+            "mandatory": False,
+            "allowed_values": None,
+        },
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None},
+    ]
+    catalogue_category_post = {
+        "name": "Category A",
+        "is_leaf": True,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    # invalid unit data
+    unit_cm = {
+        "id": "invalid",
+        "value": "cm",
+        "code": "cm",
+        **CREATED_MODIFIED_VALUES_EXPECTED,
+    }
+    catalogue_item_properties[0]["unit_id"] = unit_cm["id"]
+    catalogue_item_properties[0]["unit"] = unit_cm["value"]
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified unit does not exist"
+
+
+def test_partial_update_catalogue_category_non_existent_unit_id(test_client):
+    """
+    Test modifying a catalogue item property when there is an non existent unit ID.
+    """
+
+    # units
+
+    _, unit_dict = _post_units(test_client)
+
+    catalogue_item_properties = [
+        {
+            "name": "Property A",
+            "type": "number",
+            "unit": "mm",
+            "unit_id": unit_dict["mm"],
+            "mandatory": False,
+            "allowed_values": None,
+        },
+        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None},
+    ]
+    catalogue_category_post = {
+        "name": "Category A",
+        "is_leaf": True,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    # invalid unit data
+    unit_cm = {
+        "id": str(ObjectId()),
+        "value": "cm",
+        "code": "cm",
+        **CREATED_MODIFIED_VALUES_EXPECTED,
+    }
+    catalogue_item_properties[0]["unit_id"] = unit_cm["id"]
+    catalogue_item_properties[0]["unit"] = unit_cm["value"]
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "The specified unit does not exist"
 
 
 def test_partial_update_catalogue_category_invalid_id(test_client):

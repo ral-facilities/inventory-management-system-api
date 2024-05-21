@@ -24,8 +24,8 @@ class PropertySchema(PropertyPostRequestSchema):
     """
 
     name: str = Field(description="The name of the catalogue item property")
-    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
     unit_id: Optional[str] = Field(default=None, description="The ID of the unit")
+    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
 class CatalogueItemPostRequestSchema(BaseModel):
