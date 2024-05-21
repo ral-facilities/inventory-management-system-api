@@ -115,7 +115,7 @@ class NewItemIn(CreatedModifiedTimeInMixin, NewItemBase):
 
 class NewItemOut(CreatedModifiedTimeOutMixin, NewItemBase):
     """
-    Nww output database model for an item.
+    New output database model for an item.
     """
 
     id: StringObjectIdField = Field(alias="_id")
@@ -201,5 +201,5 @@ class Migration(BaseMigration):
 
     def backward_after_transaction(self, session: ClientSession):
         """Drops the usage status collection"""
-        # Cant drop inside transaction so do here
+        # Can't drop inside transaction so do here
         self._usage_status_collection.drop(session=session)
