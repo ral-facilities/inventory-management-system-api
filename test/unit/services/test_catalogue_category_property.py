@@ -17,7 +17,7 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
-from inventory_management_system_api.models.units import UnitOut
+from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueItemPropertyPatchRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
