@@ -211,7 +211,11 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
         [
             call({"_id": CustomObjectId(catalogue_category_out.parent_id)}, session=session),
             call(
-                {"parent_id": CustomObjectId(catalogue_category_out.parent_id), "code": catalogue_category_out.code},
+                {
+                    "parent_id": CustomObjectId(catalogue_category_out.parent_id),
+                    "code": catalogue_category_out.code,
+                    "_id": {"$ne": None},
+                },
                 session=session,
             ),
             call({"_id": CustomObjectId(catalogue_category_out.id)}, session=session),
@@ -294,7 +298,11 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
 
     assert str(exc.value) == "Duplicate catalogue category found within the parent catalogue category"
     database_mock.catalogue_categories.find_one.assert_called_with(
-        {"parent_id": CustomObjectId(catalogue_category_out.parent_id), "code": catalogue_category_out.code},
+        {
+            "parent_id": CustomObjectId(catalogue_category_out.parent_id),
+            "code": catalogue_category_out.code,
+            "_id": {"$ne": None},
+        },
         session=None,
     )
 
@@ -782,7 +790,14 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
     database_mock.catalogue_categories.find_one.assert_has_calls(
         [
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
-            call({"parent_id": catalogue_category.parent_id, "code": catalogue_category.code}, session=session),
+            call(
+                {
+                    "parent_id": catalogue_category.parent_id,
+                    "code": catalogue_category.code,
+                    "_id": {"$ne": CustomObjectId(catalogue_category.id)},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
         ]
     )
@@ -862,7 +877,14 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, catalogue_cat
         [
             call({"_id": CustomObjectId(new_parent_id)}, session=session),
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
-            call({"parent_id": CustomObjectId(new_parent_id), "code": catalogue_category.code}, session=session),
+            call(
+                {
+                    "parent_id": CustomObjectId(new_parent_id),
+                    "code": catalogue_category.code,
+                    "_id": {"$ne": CustomObjectId(catalogue_category.id)},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
         ]
     )
@@ -937,7 +959,14 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
         [
             call({"_id": CustomObjectId(new_parent_id)}, session=session),
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
-            call({"parent_id": CustomObjectId(new_parent_id), "code": catalogue_category.code}, session=session),
+            call(
+                {
+                    "parent_id": CustomObjectId(new_parent_id),
+                    "code": catalogue_category.code,
+                    "_id": {"$ne": CustomObjectId(catalogue_category.id)},
+                },
+                session=session,
+            ),
         ]
     )
 
@@ -1119,18 +1148,8 @@ def test_update_change_capitalisation_of_name_within_parent(test_helpers, databa
             "catalogue_item_properties": catalogue_category.catalogue_item_properties,
         },
     )
-    # Mock `find_one` to return a duplicate catalogue category but with the same id as the one being updated
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories,
-        {
-            **CATALOGUE_CATEGORY_INFO,
-            **MOCK_CREATED_MODIFIED_TIME,
-            "_id": CustomObjectId(catalogue_category.id),
-            "is_leaf": catalogue_category.is_leaf,
-            "parent_id": catalogue_category.parent_id,
-            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
-        },
-    )
+    # Mock `find_one` to return None as a duplicate was not found
+    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
     # Mock `update_one` to return an object for the updated catalogue category document
     test_helpers.mock_update_one(database_mock.catalogue_categories)
     # pylint: disable=duplicate-code
@@ -1168,7 +1187,14 @@ def test_update_change_capitalisation_of_name_within_parent(test_helpers, databa
     database_mock.catalogue_categories.find_one.assert_has_calls(
         [
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
-            call({"parent_id": catalogue_category.parent_id, "code": catalogue_category.code}, session=session),
+            call(
+                {
+                    "parent_id": catalogue_category.parent_id,
+                    "code": catalogue_category.code,
+                    "_id": {"$ne": CustomObjectId(catalogue_category.id)},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(catalogue_category.id)}, session=session),
         ]
     )

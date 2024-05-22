@@ -440,9 +440,9 @@ def test_partial_update_system_name(test_client):
     _test_partial_update_system(test_client, {"name": "Updated name"}, {"code": "updated-name"})
 
 
-def test_partial_update_captialistion_of_system_name(test_client):
+def test_partial_update_capitalisation_of_system_name(test_client):
     """
-    Test updating a captialistion of the System's name
+    Test updating a capitalisation of the System's name
     """
     _test_partial_update_system(
         test_client,

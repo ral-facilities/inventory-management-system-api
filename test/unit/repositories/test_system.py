@@ -154,7 +154,14 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
     database_mock.systems.find_one.assert_has_calls(
         [
             call({"_id": CustomObjectId(system_out.parent_id)}, session=session),
-            call({"parent_id": CustomObjectId(system_out.parent_id), "code": system_out.code}, session=session),
+            call(
+                {
+                    "parent_id": CustomObjectId(system_out.parent_id),
+                    "code": system_out.code,
+                    "_id": {"$ne": None},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(system_out.id)}, session=session),
         ]
     )
@@ -490,7 +497,14 @@ def test_update_parent_id(utils_mock, test_helpers, database_mock, system_reposi
         [
             call({"_id": CustomObjectId(new_parent_id)}, session=session),
             call({"_id": CustomObjectId(system.id)}, session=session),
-            call({"parent_id": CustomObjectId(new_parent_id), "code": system.code}, session=session),
+            call(
+                {
+                    "parent_id": CustomObjectId(new_parent_id),
+                    "code": system.code,
+                    "_id": {"$ne": CustomObjectId(system.id)},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(system.id)}, session=session),
         ]
     )
@@ -560,7 +574,14 @@ def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_moc
         [
             call({"_id": CustomObjectId(new_parent_id)}, session=None),
             call({"_id": CustomObjectId(system.id)}, session=None),
-            call({"parent_id": CustomObjectId(new_parent_id), "code": system.code}, session=None),
+            call(
+                {
+                    "parent_id": CustomObjectId(new_parent_id),
+                    "code": system.code,
+                    "_id": {"$ne": CustomObjectId(system.id)},
+                },
+                session=None,
+            ),
         ]
     )
 
@@ -633,9 +654,9 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, system
 
 
 @patch("inventory_management_system_api.repositories.system.utils")
-def test_update_change_captialistion_of_name(utils_mock, test_helpers, database_mock, system_repository):
+def test_update_change_capitalisation_of_name(utils_mock, test_helpers, database_mock, system_repository):
     """
-    Test updating a System when the code is the same and the captialisation of the name has changed.
+    Test updating a System when the code is the same and the capitalisation of the name has changed.
 
     Verify that the `update` method properly handles the update of a System
     """
@@ -648,11 +669,8 @@ def test_update_change_captialistion_of_name(utils_mock, test_helpers, database_
         system.model_dump(),
     )
 
-    # Mock `find_one` to return a duplicate system but with the same id as the one being updated
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system.model_dump(), "_id": CustomObjectId(system.id)},
-    )
+    # Mock `find_one` to return None as a duplicate was not found
+    test_helpers.mock_find_one(database_mock.systems, None)
 
     # Mock `update_one` to return an object for the updated System document
     test_helpers.mock_update_one(database_mock.systems)

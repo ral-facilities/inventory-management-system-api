@@ -145,8 +145,10 @@ class ManufacturerRepo:
         :return `True` if duplicate manufacturer, `False` otherwise
         """
         logger.info("Checking if manufacturer with code '%s' already exists", code)
-        manufacturer_with_code = self._manufacturers_collection.find_one({"code": code}, session=session)
-        return manufacturer_with_code is not None and manufacturer_id != manufacturer_with_code["_id"]
+        manufacturer = self._manufacturers_collection.find_one(
+            {"code": code, "_id": {"$ne": manufacturer_id}}, session=session
+        )
+        return manufacturer is not None
 
     def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str, session: ClientSession = None) -> bool:
         """Checks to see if any of the documents in the database have a specific manufacturer id

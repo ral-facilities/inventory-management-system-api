@@ -193,8 +193,10 @@ class SystemRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        system_with_code = self._systems_collection.find_one({"parent_id": parent_id, "code": code}, session=session)
-        return system_with_code is not None and system_id != system_with_code["_id"]
+        system = self._systems_collection.find_one(
+            {"parent_id": parent_id, "code": code, "_id": {"$ne": system_id}}, session=session
+        )
+        return system is not None
 
     def _has_child_elements(self, system_id: CustomObjectId, session: ClientSession = None) -> bool:
         """

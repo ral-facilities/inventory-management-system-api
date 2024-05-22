@@ -66,7 +66,13 @@ def test_create(test_helpers, database_mock, manufacturer_repository):
     database_mock.manufacturers.insert_one.assert_called_once_with(manufacturer_in.model_dump(), session=session)
     database_mock.manufacturers.find_one.assert_has_calls(
         [
-            call({"code": manufacturer_out.code}, session=session),
+            call(
+                {
+                    "code": manufacturer_out.code,
+                    "_id": {"$ne": None},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(manufacturer_out.id)}, session=session),
         ]
     )
@@ -247,8 +253,8 @@ def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repos
     database_mock.manufacturers.find_one.assert_called_once_with({"_id": CustomObjectId(manufacturer_id)}, session=None)
 
 
-def test_update_change_captialistion_of_name(test_helpers, database_mock, manufacturer_repository):
-    """Test updating a manufacturer when the code is the same and the captialisation of the name has changed."""
+def test_update_change_capitalisation_of_name(test_helpers, database_mock, manufacturer_repository):
+    """Test updating a manufacturer when the code is the same and the capitalisation of the name has changed."""
     # pylint: disable=duplicate-code
     manufacturer = ManufacturerOut(
         id=str(ObjectId()),
@@ -288,25 +294,8 @@ def test_update_change_captialistion_of_name(test_helpers, database_mock, manufa
         },
     )
 
-    # Mock `find_one` to return a duplicate manufacturer but with the same id as the one being updated
-    test_helpers.mock_find_one(
-        database_mock.manufacturers,
-        {
-            **MOCK_CREATED_MODIFIED_TIME,
-            "_id": CustomObjectId(manufacturer.id),
-            "code": "manufacturer-a",
-            "name": "Manufacturer A",
-            "url": "http://testUrl.co.uk",
-            "address": {
-                "address_line": "1 Example Street",
-                "town": "Oxford",
-                "county": "Oxfordshire",
-                "postcode": "OX1 2AB",
-                "country": "United Kingdom",
-            },
-            "telephone": "0932348348",
-        },
-    )
+    # Mock `find_one` to return None as a duplicate was not found
+    test_helpers.mock_find_one(database_mock.manufacturers, None)
 
     test_helpers.mock_update_one(database_mock.manufacturers)
     # Mock 'find_one' to return the inserted manufacturer document

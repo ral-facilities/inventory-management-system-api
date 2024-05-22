@@ -746,7 +746,7 @@ def test_partial_update_catalogue_category_change_name(test_client):
 
 def test_partial_update_catalogue_category_change_capitalisation_of_name(test_client):
     """
-    Test changing the captialistion of the name of a catalogue category.
+    Test changing the capitalisation of the name of a catalogue category.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 

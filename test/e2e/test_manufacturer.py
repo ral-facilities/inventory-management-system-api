@@ -194,8 +194,8 @@ def test_partial_address_update(test_client):
     }
 
 
-def test_update_captialistion_of_name(test_client):
-    """Test updating a manufacturer when the captialistion of the name is different"""
+def test_partial_update_capitalisation_of_name(test_client):
+    """Test updating a manufacturer when the capitalisation of the name is different"""
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
 

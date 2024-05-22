@@ -215,7 +215,7 @@ class CatalogueCategoryRepo:
         :param parent_id: The ID of the parent catalogue category which can also be `None`.
         :param code: The code of the catalogue category to check for duplicates.
         :param catalogue_category_id: The ID of the catalogue category to check if the duplicate
-         catalogue category found is itself.
+                                      catalogue category found is itself.
         :param session: PyMongo ClientSession to use for database operations
         :return: `True` if a duplicate catalogue category code is found, `False` otherwise.
         """
@@ -223,11 +223,11 @@ class CatalogueCategoryRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        catalogue_category_with_code = self._catalogue_categories_collection.find_one(
-            {"parent_id": parent_id, "code": code}, session=session
+        catalogue_category = self._catalogue_categories_collection.find_one(
+            {"parent_id": parent_id, "code": code, "_id": {"$ne": catalogue_category_id}}, session=session
         )
 
-        return catalogue_category_with_code is not None and catalogue_category_id != catalogue_category_with_code["_id"]
+        return catalogue_category is not None
 
     def has_child_elements(self, catalogue_category_id: CustomObjectId, session: ClientSession = None) -> bool:
         """
