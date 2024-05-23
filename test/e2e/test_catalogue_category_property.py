@@ -147,7 +147,6 @@ class CreateDSL:
 
         # pylint:disable=duplicate-code
 
-        # Post unit
         response = self.test_client.post("/v1/units", json=UNIT_POST_A)
         unit_mm = response.json()
 
