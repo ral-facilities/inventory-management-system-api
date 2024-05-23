@@ -3,6 +3,7 @@ End-to-End tests for the properties endpoint of the catalogue category router
 """
 
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_unit import UNIT_POST_A
 from typing import Optional
@@ -156,8 +157,8 @@ class CreateDSL:
             "/v1/catalogue-categories",
             json={
                 **CATALOGUE_CATEGORY_POST_A,
-                "catalogue_item_properties": add_ids_to_properties(
-                    None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], self.units
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], self.units
                 ),
             },
         )
@@ -212,7 +213,7 @@ class CreateDSL:
         self._catalogue_item_post_response = self.test_client.post(
             "/v1/catalogue-categories/"
             f"{catalogue_category_id if catalogue_category_id else self.catalogue_category['id']}/properties",
-            json=add_ids_to_properties(None, [catalogue_item_property_post], self.units)[0],
+            json=replace_unit_values_with_ids_in_properties([catalogue_item_property_post], self.units)[0],
         )
 
     def check_catalogue_item_property_post_response_success(self, catalogue_item_property_expected):

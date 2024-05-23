@@ -428,6 +428,78 @@ def test_create_catalogue_item_properties_with_non_existent_unit_id(
     assert str(exc.value) == (f"No unit found with ID: {unit.id}")
 
 
+def test_create_catalogue_item_properties_with_invalid_unit_id(
+    test_helpers,
+    catalogue_category_repository_mock,
+    unit_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
+    """
+    Test creating a catalogue category with a non existent unit ID.
+    """
+
+    unit = UnitOut(id="invalid", **UNIT_A)
+
+    # pylint: disable=duplicate-code
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category B",
+        code="category-b",
+        is_leaf=True,
+        parent_id=str(ObjectId()),
+        catalogue_item_properties=[
+            CatalogueItemPropertyOut(
+                id=str(ObjectId()),
+                name="Property A",
+                type="number",
+                unit_id=unit.id,
+                unit=unit.value,
+                mandatory=False,
+            ),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+        ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return the parent catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.parent_id,
+            name="Category A",
+            code="category-a",
+            is_leaf=False,
+            parent_id=None,
+            catalogue_item_properties=[],
+            created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+            modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        ),
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, None)
+
+    # Mock `create` to return the created catalogue category
+    test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_category_service.create(
+            CatalogueCategoryPostRequestSchema(
+                name=catalogue_category.name,
+                is_leaf=catalogue_category.is_leaf,
+                parent_id=catalogue_category.parent_id,
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+            )
+        )
+    catalogue_category_repository_mock.create.assert_not_called()
+    assert str(exc.value) == (f"No unit found with ID: {unit.id}")
+
+
 def test_delete(catalogue_category_repository_mock, catalogue_category_service):
     """
     Test deleting a catalogue category.
@@ -1153,6 +1225,70 @@ def test_update_change_catalogue_item_properties_with_non_existent_unit_id(
     """
     # pylint: disable=duplicate-code
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
+    catalogue_category = CatalogueCategoryOut(
+        id=str(ObjectId()),
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[
+            CatalogueItemPropertyOut(
+                id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
+            ),
+            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+        ],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+    )
+    # pylint: enable=duplicate-code
+
+    # Mock `get` to return a catalogue category
+    # pylint: disable=duplicate-code
+    test_helpers.mock_get(
+        catalogue_category_repository_mock,
+        CatalogueCategoryOut(
+            id=catalogue_category.id,
+            name=catalogue_category.name,
+            code=catalogue_category.code,
+            is_leaf=catalogue_category.is_leaf,
+            parent_id=catalogue_category.parent_id,
+            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            created_time=catalogue_category.created_time,
+            modified_time=catalogue_category.created_time,
+        ),
+    )
+
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, None)
+    # Mock so child elements not found
+    catalogue_category_repository_mock.has_child_elements.return_value = False
+    # pylint: enable=duplicate-code
+    # Mock `update` to return the updated catalogue category
+    test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_category_service.update(
+            catalogue_category.id,
+            CatalogueCategoryPatchRequestSchema(
+                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+            ),
+        )
+    catalogue_category_repository_mock.update.assert_not_called()
+    assert str(exc.value) == (f"No unit found with ID: {unit.id}")
+
+
+def test_update_change_catalogue_item_properties_with_invalid_unit_id(
+    test_helpers,
+    catalogue_category_repository_mock,
+    unit_repository_mock,
+    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    catalogue_category_service,
+):
+    """
+    Test updating a catalogue category's item properties when it an non existent unit ID.
+    """
+    # pylint: disable=duplicate-code
+    unit = UnitOut(id="invalid", **UNIT_A)
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
         name="Category A",

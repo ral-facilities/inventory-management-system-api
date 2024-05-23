@@ -31,25 +31,19 @@ EXPIRED_ACCESS_TOKEN = (
 INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN + "1"
 
 
-def add_ids_to_properties(
-    properties_with_ids: Optional[list], properties_without_ids: list, units: Optional[list] = None
-):
+def add_ids_to_properties(properties_with_ids: Optional[list], properties_without_ids: list):
     """
     A tests method for adding the IDs from the properties in `properties_with_ids` as the IDs to the properties in
     `properties_without_ids` based on matching names. Unique IDs are generated for each property if no
-    `properties_with_ids` are provided. If units are provided, it matches and assigns unit IDs to properties
-    based on unit values.
+    `properties_with_ids` are provided. Additionally, unique IDs are generated for each unit if the unit value
+    is not None.
 
     :param properties_with_ids: The list of properties with IDs. These are typically the catalogue category properties.
     :param properties_without_ids: The list of properties without IDs. These can be catalogue category, catalogue item
                                    or item properties.
-    :param units: The list of units used in the catalogue item properties
     :return: The list of properties with the added IDs.
     """
     properties = []
-    if units is None:
-        units = []
-    # pylint: disable=too-many-nested-blocks
     for property_without_id in properties_without_ids:
         prop_id = None
         unit_id = None
@@ -68,11 +62,7 @@ def add_ids_to_properties(
 
             if property_without_id.get("unit") is not None:
                 if property_without_id.get("unit_id") is None:
-                    for unit in units:
-                        if property_without_id["unit"] == unit["value"]:
-                            unit_id = unit["id"]
-                            break
-                # pylint: enable=too-many-nested-blocks
+                    unit_id = str(ObjectId())
                 else:
                     unit_id = property_without_id["unit_id"]
 

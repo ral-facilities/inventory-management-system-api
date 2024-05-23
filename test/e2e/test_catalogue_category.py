@@ -3,6 +3,7 @@
 End-to-End tests for the catalogue category router.
 """
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED,
@@ -108,10 +109,33 @@ def _post_nested_catalogue_categories(test_client, entities: list[dict]):
 def _post_catalogue_categories(test_client):
     """Utility function for posting all mock systems defined at the top of this file"""
 
+    # units
+
+    units, _ = _post_units(test_client)
+
     (category_a, category_b, *_) = _post_nested_catalogue_categories(
-        test_client, [CATALOGUE_CATEGORY_POST_A, CATALOGUE_CATEGORY_POST_B]
+        test_client,
+        [
+            CATALOGUE_CATEGORY_POST_A,
+            {
+                **CATALOGUE_CATEGORY_POST_B,
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+                ),
+            },
+        ],
     )
-    (category_c, *_) = _post_nested_catalogue_categories(test_client, [CATALOGUE_CATEGORY_POST_C])
+    (category_c, *_) = _post_nested_catalogue_categories(
+        test_client,
+        [
+            {
+                **CATALOGUE_CATEGORY_POST_C,
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+                ),
+            }
+        ],
+    )
 
     return category_a, category_b, category_c
 
@@ -174,8 +198,8 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
             ),
             "parent_id": parent_catalogue_category["id"],
         },
@@ -201,12 +225,30 @@ def test_create_catalogue_category_with_duplicate_name_within_parent(test_client
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
+    # units
+
+    units, _ = _post_units(test_client)
+
     # Child - post twice as will have the same name
     test_client.post(
-        "/v1/catalogue-categories", json={**CATALOGUE_CATEGORY_POST_B, "parent_id": parent_catalogue_category["id"]}
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_B,
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            ),
+            "parent_id": parent_catalogue_category["id"],
+        },
     )
     response = test_client.post(
-        "/v1/catalogue-categories", json={**CATALOGUE_CATEGORY_POST_B, "parent_id": parent_catalogue_category["id"]}
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_B,
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            ),
+            "parent_id": parent_catalogue_category["id"],
+        },
     )
 
     assert response.status_code == 409
@@ -238,8 +280,8 @@ def test_create_catalogue_category_with_non_existent_unit_id(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
             ),
             "parent_id": parent_catalogue_category["id"],
         },
@@ -271,8 +313,8 @@ def test_create_catalogue_category_with_invalid_unit_id(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
             ),
             "parent_id": parent_catalogue_category["id"],
         },
@@ -310,7 +352,19 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
     """
     Test creating a catalogue category in a leaf parent catalogue category.
     """
-    response = test_client.post("/v1/catalogue-categories", json={**CATALOGUE_CATEGORY_POST_C})
+
+    # units
+    units, _ = _post_units(test_client)
+
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_C,
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+            ),
+        },
+    )
     catalogue_category = response.json()
 
     parent_id = catalogue_category["id"]
@@ -363,8 +417,8 @@ def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(
         "/v1/catalogue-categories",
         json={
             **catalogue_category,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, catalogue_category["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                catalogue_category["catalogue_item_properties"], units
             ),
         },
     )
@@ -416,9 +470,15 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
     """
     Test creating a non-leaf catalogue category with catalogue item properties.
     """
+    # units
+
+    units, _ = _post_units(test_client)
+
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_A,
-        "catalogue_item_properties": CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"],
+        "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+            CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+        ),
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
@@ -463,8 +523,8 @@ def test_create_catalogue_category_with_properties_with_allowed_values(test_clie
         json={
             **{
                 **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-                "catalogue_item_properties": add_ids_to_properties(
-                    None, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["catalogue_item_properties"], units
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["catalogue_item_properties"], units
                 ),
             },
         },
@@ -472,6 +532,7 @@ def test_create_catalogue_category_with_properties_with_allowed_values(test_clie
 
     assert response.status_code == 201
     catalogue_category = response.json()
+    print(CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED)
     assert catalogue_category == {
         **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED,
         "catalogue_item_properties": add_ids_to_properties(
@@ -629,9 +690,20 @@ def test_delete_catalogue_category_with_child_catalogue_categories(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
+    # units
+
+    units, _ = _post_units(test_client)
+
     # Child
     test_client.post(
-        "/v1/catalogue-categories", json={**CATALOGUE_CATEGORY_POST_B, "parent_id": parent_catalogue_category["id"]}
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_B,
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            ),
+            "parent_id": parent_catalogue_category["id"],
+        },
     )
 
     response = test_client.delete(f"/v1/catalogue-categories/{parent_catalogue_category['id']}")
@@ -655,8 +727,8 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
         json={
             **{
                 **CATALOGUE_CATEGORY_POST_C,
-                "catalogue_item_properties": add_ids_to_properties(
-                    None, CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
                 ),
             },
         },
@@ -700,8 +772,8 @@ def test_get_catalogue_category(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
             ),
             "parent_id": parent_catalogue_category["id"],
         },
@@ -803,7 +875,21 @@ def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
     """
     Test getting the breadcrumbs for a catalogue category with no parents
     """
-    (category_c, *_) = _post_nested_catalogue_categories(test_client, [CATALOGUE_CATEGORY_POST_C])
+    # units
+
+    units, _ = _post_units(test_client)
+
+    (category_c, *_) = _post_nested_catalogue_categories(
+        test_client,
+        [
+            {
+                **CATALOGUE_CATEGORY_POST_C,
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+                ),
+            }
+        ],
+    )
 
     response = test_client.get(f"/v1/catalogue-categories/{category_c['id']}/breadcrumbs")
 
@@ -901,7 +987,20 @@ def test_partial_update_catalogue_category_change_name_duplicate(test_client):
     Test changing the name of a catalogue category to a name that already exists.
     """
     test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
+
+    # units
+
+    units, _ = _post_units(test_client)
+
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_B,
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            ),
+        },
+    )
 
     catalogue_category_patch = {"name": "Category A"}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
@@ -943,8 +1042,8 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
             ),
         },
     )
@@ -1159,8 +1258,8 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
         "name": "Category B",
         "is_leaf": True,
         "parent_id": catalogue_category_a_id,
-        "catalogue_item_properties": add_ids_to_properties(
-            None, [CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"][0]], units
+        "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+            [CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"][0]], units
         ),
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
@@ -1592,8 +1691,8 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
             ),
         },
     )
@@ -1743,8 +1842,8 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
             ),
         },
     )
