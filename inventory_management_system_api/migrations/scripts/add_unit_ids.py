@@ -4,23 +4,42 @@ items and items
 """
 
 from typing import Any, Optional, Union
-from pydantic import BaseModel
+
+from bson import ObjectId
+from pydantic import BaseModel, ConfigDict, Field
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
 from inventory_management_system_api.models.catalogue_category import AllowedValues
-from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField
+from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin
 from inventory_management_system_api.services import utils
 
 old_units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 
 
+class NewUnitBase(BaseModel):
+    """
+    New base database model for a Unit
+    """
+
+    value: str
+    # Used for uniqueness checks (sanitised value)
+    code: str
+
+
+class NewUnitIn(CreatedModifiedTimeInMixin, NewUnitBase):
+    """
+    New input database model for a Unit
+    """
+
+
 # pylint:disable=duplicate-code
-class OldCatalogueItemPropertyOut(BaseModel):
+class OldCatalogueItemPropertyBase(BaseModel):
     """
-    Model representing a catalogue item property.
+    Old base database model for a catalogue item property.
     """
 
     name: str
@@ -30,46 +49,88 @@ class OldCatalogueItemPropertyOut(BaseModel):
     allowed_values: Optional[AllowedValues] = None
 
 
-class NewCatalogueItemPropertyIn(BaseModel):
+class OldCatalogueItemPropertyOut(OldCatalogueItemPropertyBase):
     """
-    Model representing a catalogue item property.
+    Old output database model for a catalogue item property.
+    """
+
+    id: StringObjectIdField = Field(alias="_id")
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    def is_equal_without_id(self, other: Any) -> bool:
+        """
+        Compare this instance with another instance of `CatalogueItemPropertyOut` while ignoring the ID.
+
+        :param other: An instance of a model to compare with.
+        :return: `True` if the instances are of the same type and are equal when ignoring the ID field, `False`
+            otherwise.
+        """
+        if not isinstance(other, OldCatalogueItemPropertyOut):
+            return False
+
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.unit == other.unit
+            and self.mandatory == other.mandatory
+            and self.allowed_values == other.allowed_values
+        )
+
+
+class NewCatalogueItemPropertyBase(BaseModel):
+    """
+    New base database model for a catalogue item property.
     """
 
     name: str
     type: str
-    unit: Optional[str] = None
     unit_id: Optional[CustomObjectIdField] = None
+    unit: Optional[str] = None
     mandatory: bool
     allowed_values: Optional[AllowedValues] = None
 
 
-class OldProperty(BaseModel):
+class NewCatalogueItemPropertyIn(NewCatalogueItemPropertyBase):
     """
-    Model representing a catalogue item property.
+    Input database model for a catalogue item property.
     """
 
+    # Because the catalogue item properties are stored in a list inside the catalogue categories and not in a separate
+    # collection, it means that the IDs have to be manually generated here.
+    id: CustomObjectIdField = Field(default_factory=ObjectId, serialization_alias="_id")
+
+
+class OldPropertyOut(BaseModel):
+    """
+    Old model representing a catalogue item property.
+    """
+
+    id: StringObjectIdField = Field(alias="_id")
     name: str
     value: Any
     unit: Optional[str] = None
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class NewPropertyIn(BaseModel):
     """
-    Model representing a catalogue item property.
-    Model representing a catalogue item property in.
+    New input database model for a catalogue item property
     """
 
+    id: CustomObjectIdField = Field(serialization_alias="_id")
     name: str
     value: Any
-    unit: Optional[str] = None
     unit_id: Optional[CustomObjectIdField] = None
+    unit: Optional[str] = None
 
 
 # pylint:enable=duplicate-code
 
 
 def add_unit_ids(
-    old_property_out_type: Union[OldCatalogueItemPropertyOut, OldProperty],
+    old_property_out_type: Union[OldCatalogueItemPropertyOut, OldPropertyOut],
     new_property_in_type: Union[NewCatalogueItemPropertyIn, NewPropertyIn],
     new_unit_ids: list[dict],
     properties: list[dict],
@@ -130,7 +191,7 @@ class Migration(BaseMigration):
         # Add in the units
         for old_unit in old_units:
             result = self._units_collection.insert_one(
-                {"value": old_unit, "code": utils.generate_code(old_unit, "unit")}, session=session
+                NewUnitIn(value=old_unit, code=utils.generate_code(old_unit, "unit")).model_dump(), session=session
             )
             new_unit_ids[old_unit] = result.inserted_id
 
@@ -151,7 +212,7 @@ class Migration(BaseMigration):
         catalogue_items = list(self._catalogue_items_collection.find({}, session=session))
         for catalogue_item in catalogue_items:
             catalogue_item["properties"] = add_unit_ids(
-                OldProperty, NewPropertyIn, new_unit_ids, catalogue_item["properties"]
+                OldPropertyOut, NewPropertyIn, new_unit_ids, catalogue_item["properties"]
             )
             self._catalogue_items_collection.update_one(
                 {"_id": catalogue_item["_id"]}, {"$set": catalogue_item}, session=session
@@ -160,7 +221,7 @@ class Migration(BaseMigration):
         # Migrate items
         items = list(self._items_collection.find({}, session=session))
         for item in items:
-            item["properties"] = add_unit_ids(OldProperty, NewPropertyIn, new_unit_ids, item["properties"])
+            item["properties"] = add_unit_ids(OldPropertyOut, NewPropertyIn, new_unit_ids, item["properties"])
             self._items_collection.update_one({"_id": item["_id"]}, {"$set": item}, session=session)
 
     def backward(self, session: ClientSession):
