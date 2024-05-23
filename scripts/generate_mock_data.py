@@ -1,7 +1,7 @@
 import logging
 from datetime import timezone
 from enum import StrEnum
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from faker import Faker
@@ -24,6 +24,8 @@ MAX_NUMBER_OF_ITEMS_PER_CATALOGUE_ITEM = 5
 SEED = 0
 
 logging.basicConfig(level=logging.INFO)
+
+usage_statuses = ["New", "Used", "In Use", "Scrapped"]
 
 manufacturer_names = [
     "Tech Innovators Inc.",
@@ -228,6 +230,9 @@ generated_catalogue_items: dict[str, list[str]] = {}
 # So that systems can be assigned in items
 generated_system_ids: list[str] = []
 
+# Dictionary with key=id and value=list of dictionaries of the usage_status
+generated_usage_statuses: dict[str, list[dict]] = {}
+
 
 def optional_address_field(function):
     return function() if fake.random.random() < PROBABILITY_ADDRESS_HAS_OPTIONAL_FIELD else None
@@ -273,6 +278,12 @@ def generate_random_manufacturer():
             "postcode": fake.postcode(),
         },
         "telephone": fake.phone_number(),
+    }
+
+
+def generate_usage_status(value: str):
+    return {
+        "value": value,
     }
 
 
@@ -350,7 +361,7 @@ def generate_random_item(catalogue_item_id: str):
         "system_id": fake.random.choice(generated_system_ids),
         "purchase_order_number": fake.isbn10(),
         "is_defective": fake.random.randint(0, 100) > 90,
-        "usage_status": fake.random.choice([0, 1, 2, 3]),
+        "usage_status_id": fake.random.choice(list(generated_usage_statuses.keys())),
         "warranty_end_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),
@@ -371,7 +382,7 @@ def generate_random_system(parent_id):
     }
 
 
-def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
+def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> dict[str, Any]:
     """Posts an entity's data to the given endpoint, but adds - n to the end to avoid
     duplicates when a 409 is returned
 
@@ -383,7 +394,7 @@ def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
     while status_code == 409:
         response = requests.post(
             f"{API_URL}{endpoint}",
-            json=json if index == 0 else {**json, "name": f"{json['name']} - {index}"},
+            json=json if index == 0 else {**json, field: f"{json[field]} - {index}"},
             timeout=10,
         )
         status_code = response.status_code
@@ -391,24 +402,28 @@ def post_avoiding_duplicate_names(endpoint: str, json: dict) -> str:
     return response.json()
 
 
-def create_manufacturer(manufacturer_data: dict) -> dict[str, str]:
-    return post_avoiding_duplicate_names(endpoint="/v1/manufacturers", json=manufacturer_data)
+def create_manufacturer(manufacturer_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/manufacturers", field="name", json=manufacturer_data)
 
 
-def create_catalogue_category(category_data: dict) -> dict[str, str]:
-    return post_avoiding_duplicate_names(endpoint="/v1/catalogue-categories", json=category_data)
+def create_usage_status(usage_status_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/usage-statuses", field="value", json=usage_status_data)
 
 
-def create_catalogue_item(item_data: dict) -> dict[str, str]:
-    return post_avoiding_duplicate_names(endpoint="/v1/catalogue-items", json=item_data)
+def create_catalogue_category(category_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/catalogue-categories", field="name", json=category_data)
 
 
-def create_system(system_data: dict) -> dict[str, str]:
-    return post_avoiding_duplicate_names(endpoint="/v1/systems", json=system_data)
+def create_catalogue_item(item_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/catalogue-items", field="name", json=item_data)
 
 
-def create_item(item_data: dict) -> dict[str, str]:
-    return post_avoiding_duplicate_names(endpoint="/v1/items", json=item_data)
+def create_system(system_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/systems", field="name", json=system_data)
+
+
+def create_item(item_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 
 def populate_random_manufacturers() -> list[str]:
@@ -417,6 +432,15 @@ def populate_random_manufacturers() -> list[str]:
     for i in range(0, NUMBER_OF_MANUFACTURERS):
         manufacturer_ids[i] = create_manufacturer(generate_random_manufacturer())["id"]
     return manufacturer_ids
+
+
+def populate_usage_statuses() -> list[str]:
+    # Usually faster than append
+
+    for i, usage_status in enumerate(usage_statuses):
+        usage_status = generate_usage_status(usage_status)
+        usage_status = create_usage_status(usage_status)
+        generated_usage_statuses[usage_status["id"]] = usage_status
 
 
 def populate_random_catalogue_categories(
@@ -484,6 +508,8 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
 
 
 def generate_mock_data():
+    logging.info("Populating usage statuses...")
+    populate_usage_statuses()
     logging.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
     logging.info("Populating catalogue categories...")

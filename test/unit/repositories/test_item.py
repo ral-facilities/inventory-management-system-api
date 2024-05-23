@@ -27,7 +27,6 @@ FULL_SYSTEM_A_INFO = {
 FULL_ITEM_INFO = {
     "purchase_order_number": None,
     "is_defective": False,
-    "usage_status": 0,
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "asset_number": None,
     "serial_number": "xyz123",
@@ -47,6 +46,8 @@ def test_create(test_helpers, database_mock, item_repository):
         **FULL_ITEM_INFO,
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     item_info = item_in.model_dump(by_alias=True)
     item_out = ItemOut(
@@ -98,6 +99,8 @@ def test_create_with_non_existent_system_id(test_helpers, database_mock, item_re
                 **FULL_ITEM_INFO,
                 catalogue_item_id=str(ObjectId()),
                 system_id=system_id,
+                usage_status_id=str(ObjectId()),
+                usage_status="New",
             )
         )
 
@@ -157,12 +160,15 @@ def test_list(test_helpers, database_mock, item_repository):
 
     Verify that the `list` method properly handles the retrieval of items
     """
+    # pylint: disable=duplicate-code
     item_a = ItemOut(
         **FULL_ITEM_INFO,
         **MOCK_CREATED_MODIFIED_TIME,
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
 
     item_b = ItemOut(
@@ -171,7 +177,10 @@ def test_list(test_helpers, database_mock, item_repository):
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
+    # pylint: enable=duplicate-code
     session = MagicMock()
 
     # Mock `find` to return a list of item documents
@@ -184,6 +193,8 @@ def test_list(test_helpers, database_mock, item_repository):
                 "_id": CustomObjectId(item_a.id),
                 "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
                 "system_id": CustomObjectId(item_a.system_id),
+                "usage_status_id": CustomObjectId(item_a.usage_status_id),
+                "usage_status": item_a.usage_status,
             },
             {
                 **FULL_ITEM_INFO,
@@ -191,6 +202,8 @@ def test_list(test_helpers, database_mock, item_repository):
                 "_id": CustomObjectId(item_b.id),
                 "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
                 "system_id": CustomObjectId(item_b.system_id),
+                "usage_status_id": CustomObjectId(item_b.usage_status_id),
+                "usage_status": item_b.usage_status,
             },
         ],
     )
@@ -215,6 +228,8 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     session = MagicMock()
     # pylint: enable=duplicate-code
@@ -229,6 +244,8 @@ def test_list_with_system_id_filter(test_helpers, database_mock, item_repository
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 "system_id": CustomObjectId(item.system_id),
+                "usage_status_id": CustomObjectId(item.usage_status_id),
+                "usage_status": item.usage_status,
             }
         ],
     )
@@ -285,6 +302,8 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     session = MagicMock()
     # pylint: enable=duplicate-code
@@ -299,6 +318,8 @@ def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_re
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 "system_id": CustomObjectId(item.system_id),
+                "usage_status_id": CustomObjectId(item.usage_status_id),
+                "usage_status": item.usage_status,
             }
         ],
     )
@@ -349,7 +370,7 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
     """
     Test getting an item with both system and catalogue item id filters.
 
-    Verify that the `list` methof properly handles the retrieval of items with the provided ID filters
+    Verify that the `list` method properly handles the retrieval of items with the provided ID filters
     """
     # pylint: disable=duplicate-code
     item = ItemOut(
@@ -358,6 +379,8 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     session = MagicMock()
     # pylint: enable=duplicate-code
@@ -372,6 +395,8 @@ def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_
                 "_id": CustomObjectId(item.id),
                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
                 "system_id": CustomObjectId(item.system_id),
+                "usage_status_id": CustomObjectId(item.usage_status_id),
+                "usage_status": item.usage_status,
             }
         ],
     )
@@ -424,6 +449,8 @@ def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     session = MagicMock()
     # pylint: enable=duplicate-code
@@ -474,6 +501,8 @@ def test_get(test_helpers, database_mock, item_repository):
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     session = MagicMock()
     # pylint: enable=duplicate-code
@@ -487,6 +516,8 @@ def test_get(test_helpers, database_mock, item_repository):
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
             "system_id": CustomObjectId(item.system_id),
+            "usage_status_id": CustomObjectId(item.usage_status_id),
+            "usage_status": item.usage_status,
         },
     )
 
@@ -537,6 +568,8 @@ def test_update(test_helpers, database_mock, item_repository):
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
+        usage_status_id=str(ObjectId()),
+        usage_status="New",
     )
     session = MagicMock()
     # pylint: enable=duplicate-code
@@ -552,6 +585,8 @@ def test_update(test_helpers, database_mock, item_repository):
             "_id": CustomObjectId(item.id),
             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
             "system_id": CustomObjectId(item.system_id),
+            "usage_status_id": CustomObjectId(item.usage_status_id),
+            "usage_status": item.usage_status,
         },
     )
 
@@ -560,6 +595,8 @@ def test_update(test_helpers, database_mock, item_repository):
         **MOCK_CREATED_MODIFIED_TIME,
         catalogue_item_id=item.catalogue_item_id,
         system_id=item.system_id,
+        usage_status_id=item.usage_status_id,
+        usage_status=item.usage_status,
     )
     updated_item = item_repository.update(item.id, item_in, session=session)
 

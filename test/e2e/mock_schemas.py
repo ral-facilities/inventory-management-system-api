@@ -3,6 +3,7 @@ Mock data for sharing between different e2e tests - In particular avoids circula
 """
 
 # Leaf with allowed values in properties
+
 from unittest.mock import ANY
 
 CREATED_MODIFIED_VALUES_EXPECTED = {"created_time": ANY, "modified_time": ANY}
@@ -67,7 +68,6 @@ CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED = {
 
 ITEM_POST_ALLOWED_VALUES = {
     "is_defective": False,
-    "usage_status": 0,
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "serial_number": "xyz123",
     "delivered_date": "2012-12-05T12:00:00Z",
@@ -80,6 +80,8 @@ ITEM_POST_ALLOWED_VALUES_EXPECTED = {
     **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "purchase_order_number": None,
+    "usage_status": "New",
+    "usage_status_id": ANY,
     "asset_number": None,
     "properties": [
         {"name": "Property A", "unit": "mm", "value": 6},
@@ -132,3 +134,39 @@ SYSTEM_POST_C_EXPECTED = {
     "code": "system-c",
 }
 # pylint: enable=duplicate-code
+
+USAGE_STATUS_POST_A = {"value": "New"}
+
+USAGE_STATUS_POST_A_EXPECTED = {
+    **USAGE_STATUS_POST_A,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
+    "code": "new",
+    "id": ANY,
+}
+
+USAGE_STATUS_POST_B = {"value": "Used"}
+
+USAGE_STATUS_POST_B_EXPECTED = {
+    **USAGE_STATUS_POST_B,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
+    "code": "used",
+    "id": ANY,
+}
+
+USAGE_STATUS_POST_C = {"value": "In Use"}
+
+USAGE_STATUS_POST_C_EXPECTED = {
+    **USAGE_STATUS_POST_C,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
+    "code": "in-use",
+    "id": ANY,
+}
+
+USAGE_STATUS_POST_D = {"value": "Scrapped"}
+
+USAGE_STATUS_POST_D_EXPECTED = {
+    **USAGE_STATUS_POST_D,
+    **CREATED_MODIFIED_VALUES_EXPECTED,
+    "code": "scrapped",
+    "id": ANY,
+}
