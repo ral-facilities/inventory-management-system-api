@@ -2144,7 +2144,6 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    # pylint: disable=duplicate-code
     # Child
     # pylint: disable=duplicate-code
     item_post = {

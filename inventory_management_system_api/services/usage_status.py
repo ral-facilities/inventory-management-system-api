@@ -3,11 +3,12 @@ Module for providing a service for managing Usage statuses using the `UsageStatu
 """
 
 from typing import Optional
+
 from fastapi import Depends
+
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostRequestSchema
-
 from inventory_management_system_api.services import utils
 
 

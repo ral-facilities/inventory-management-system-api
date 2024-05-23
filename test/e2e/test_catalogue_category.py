@@ -596,6 +596,60 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     )
 
 
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_duplicate_number(test_client):
+    """
+    Test creating a catalogue category with a number property containing an allowed_values list with a duplicate
+    number value in it
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "number",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": [42, 10.2, 12, 42]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values of type 'list' contains a duplicate value: 42"
+    )
+
+
+def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_duplicate_string(test_client):
+    """
+    Test creating a catalogue category with a string property containing an allowed_values list with a duplicate
+    string value in it
+    """
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+            "catalogue_item_properties": [
+                {
+                    "name": "Property A",
+                    "type": "string",
+                    "mandatory": False,
+                    "allowed_values": {"type": "list", "values": ["value1", "value2", "value3", "Value2"]},
+                },
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values of type 'list' contains a duplicate value: Value2"
+    )
+
+
 def test_create_catalogue_category_with_properties_with_invalid_allowed_values_list_boolean(test_client):
     """
     Test creating a catalogue category with a boolean property containing an allowed_values list
@@ -1676,6 +1730,67 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     assert (
         response.json()["detail"][0]["msg"]
         == "Value error, allowed_values of type 'list' must only contain values of the same type as the property itself"
+    )
+
+
+def test_partial_update_catalogue_category_modify_property_to_have_invalid_allowed_values_list_duplicate_number(
+    test_client,
+):
+    """
+    Test modifying catalogue item properties to have a number property containing an allowed_values list with a
+    duplicate number value
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [42, 10.2, 12, 42]}
+    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values of type 'list' contains a duplicate value: 42"
+    )
+
+
+def test_partial_update_catalogue_category_modify_property_to_have_invalid_allowed_values_list_duplicate_string(
+    test_client,
+):
+    """
+    Test modifying catalogue item properties to have a string property containing an allowed_values list with a
+    duplicate string value
+    """
+    catalogue_item_properties = [
+        {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+        {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
+    ]
+    catalogue_category_post = {
+        **CATALOGUE_CATEGORY_POST_B,
+        "catalogue_item_properties": catalogue_item_properties,
+    }
+    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    catalogue_item_properties[1]["allowed_values"] = {
+        "type": "list",
+        "values": ["value1", "value2", "value3", "value2"],
+    }
+    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, allowed_values of type 'list' contains a duplicate value: value2"
     )
 
 
