@@ -19,6 +19,22 @@ from inventory_management_system_api.services import utils
 old_usage_statuses = {0: "New", 1: "Used", 2: "In Use", 3: "Scrapped"}
 
 
+class NewUsageStatusBase(BaseModel):
+    """
+    New database model for a UsageStatus
+    """
+
+    value: str
+    # Used for uniqueness checks (sanitised value)
+    code: str
+
+
+class NewUsageStatusIn(CreatedModifiedTimeInMixin, NewUsageStatusBase):
+    """
+    New input database model for a Usage status
+    """
+
+
 # pylint:disable=duplicate-code
 class OldItemBase(BaseModel):
     """
@@ -144,12 +160,12 @@ class Migration(BaseMigration):
         # Add in old usage statuses while keeping track of their ids
         usage_statuses = {}
         for old_usage_status, old_usage_status_string in old_usage_statuses.items():
+            new_usage_status = NewUsageStatusIn(
+                value=old_usage_status_string, code=utils.generate_code(old_usage_status_string, "usage status")
+            )
             # Insert and store in dict for looking up old usage status id
             result = self._usage_status_collection.insert_one(
-                {
-                    "value": old_usage_status_string,
-                    "code": utils.generate_code(old_usage_status_string, "usage status"),
-                },
+                new_usage_status.model_dump(),
                 session=session,
             )
             usage_statuses[old_usage_status] = self._usage_status_collection.find_one(
