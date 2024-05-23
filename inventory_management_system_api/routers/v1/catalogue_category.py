@@ -119,8 +119,8 @@ def create_catalogue_category(
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
             catalogue_category.catalogue_item_properties is not None
-            and any(str(property.unit_id) in str(exc) for property in catalogue_category.catalogue_item_properties)
-        ) or "units" in str(exc).lower():
+            and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.catalogue_item_properties)
+        ) or "unit" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
@@ -168,8 +168,8 @@ def partial_update_catalogue_category(
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         if (
             catalogue_category.catalogue_item_properties is not None
-            and any(str(property.unit_id) in str(exc) for property in catalogue_category.catalogue_item_properties)
-        ) or "units" in str(exc).lower():
+            and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.catalogue_item_properties)
+        ) or "unit" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc

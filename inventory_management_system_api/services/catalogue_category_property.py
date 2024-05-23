@@ -95,17 +95,13 @@ class CatalogueCategoryPropertyService:
         )
 
         # Obtain the specified unit if an id is given
-        unit = None
-        # pylint: disable=duplicate-code
+        unit_value = None
         if catalogue_item_property.unit_id is not None:
-            unit_id = catalogue_item_property.unit_id
-            unit = self._unit_repository.get(unit_id)
+            # Obtain the specified unit value if a unit ID is given
+            unit = self._unit_repository.get(catalogue_item_property.unit_id)
             if not unit:
-                raise MissingRecordError(f"No unit found with ID: {unit_id}")
-        # pylint: enable=duplicate-code
-
-        # Ensure that unit is not None before accessing its value
-        unit_value = unit.value if unit else None
+                raise MissingRecordError(f"No unit found with ID: {catalogue_item_property.unit_id}")
+            unit_value = unit.value
 
         catalogue_item_property_in = CatalogueItemPropertyIn(
             **{**catalogue_item_property.model_dump(), "unit": unit_value}
