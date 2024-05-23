@@ -38,7 +38,7 @@ def fixture_cleanup_database_collections():
     database.usage_statuses.delete_many({})
 
 
-def replace_unit_values_with_ids_in_properties(properties_without_ids: list, units: Optional[list]):
+def replace_unit_values_with_ids_in_properties(properties_without_ids: list[dict], units: Optional[list]) -> list[dict]:
     """
     Replaces unit values with unit IDs in the given properties based on matching unit values from a
     provided list of units. If a matching unit value is found in the units list, the corresponding unit

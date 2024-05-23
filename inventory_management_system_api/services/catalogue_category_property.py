@@ -94,7 +94,6 @@ class CatalogueCategoryPropertyService:
             stored_catalogue_category.catalogue_item_properties + [catalogue_item_property]
         )
 
-        # Obtain the specified unit if an id is given
         unit_value = None
         if catalogue_item_property.unit_id is not None:
             # Obtain the specified unit value if a unit ID is given

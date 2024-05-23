@@ -16,10 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfItemError,
 )
-from inventory_management_system_api.models.usage_status import (
-    UsageStatusIn,
-    UsageStatusOut,
-)
+from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 
 def test_create(test_helpers, database_mock, usage_status_repository):
@@ -245,4 +242,4 @@ def test_delete_usage_status_that_is_part_of_a_catalogue_item(test_helpers, data
     # pylint: enable=duplicate-code
     with pytest.raises(PartOfItemError) as exc:
         usage_status_repository.delete(usage_status_id)
-    assert str(exc.value) == f"The usage status with id {str(usage_status_id)} is a part of a Item"
+    assert str(exc.value) == f"The usage status with ID {str(usage_status_id)} is a part of an Item"

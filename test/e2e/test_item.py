@@ -130,15 +130,15 @@ def test_create_item(test_client):
     """
     Test creating an item.
     """
-    # pylint: disable=duplicate-code
 
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
     # pylint: disable=duplicate-code
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
@@ -150,13 +150,13 @@ def test_create_item(test_client):
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
 
-    # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,

@@ -545,7 +545,6 @@ def test_delete_system_with_child_item(test_client):
 
     # Create a child item
     # pylint: disable=duplicate-code
-    # units
     response = test_client.post("/v1/units", json=UNIT_POST_A)
     unit_mm = response.json()
 
