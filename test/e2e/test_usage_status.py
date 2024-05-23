@@ -14,12 +14,7 @@ from test.e2e.mock_schemas import (
     USAGE_STATUS_POST_D,
     USAGE_STATUS_POST_D_EXPECTED,
 )
-from test.e2e.test_item import (
-    CATALOGUE_CATEGORY_POST_A,
-    CATALOGUE_ITEM_POST_A,
-    ITEM_POST,
-    MANUFACTURER_POST,
-)
+from test.e2e.test_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A, ITEM_POST, MANUFACTURER_POST
 
 from bson import ObjectId
 

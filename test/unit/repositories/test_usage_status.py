@@ -16,10 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfItemError,
 )
-from inventory_management_system_api.models.usage_status import (
-    UsageStatusIn,
-    UsageStatusOut,
-)
+from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 
 def test_create(test_helpers, database_mock, usage_status_repository):

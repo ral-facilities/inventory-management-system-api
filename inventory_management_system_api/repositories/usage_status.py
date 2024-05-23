@@ -14,7 +14,6 @@ from pymongo.database import Database
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
-
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 

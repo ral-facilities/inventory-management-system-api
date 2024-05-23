@@ -2,8 +2,8 @@
 Unit tests for the `UsageStatusService` service
 """
 
-from unittest.mock import MagicMock
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from unittest.mock import MagicMock
 
 from bson import ObjectId
 
