@@ -187,7 +187,7 @@ def test_delete(test_helpers, database_mock, unit_repository):
 
     test_helpers.mock_delete_one(database_mock.units, 1)
 
-    # Mock `find_one` to return no child catalogue item document
+    # Mock `find_one` to return no catalogue categories containing the unit
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     unit_repository.delete(unit_id, session=session)
@@ -209,7 +209,8 @@ def test_delete_with_a_non_existent_id(test_helpers, database_mock, unit_reposit
     unit_id = str(ObjectId())
 
     test_helpers.mock_delete_one(database_mock.units, 0)
-    # Mock `find_one` to return no child catalogue item document
+
+    # Mock `find_one` to return no catalogue categories containing the unit
     test_helpers.mock_find_one(database_mock.catalogue_categories, None)
 
     with pytest.raises(MissingRecordError) as exc:
@@ -225,7 +226,7 @@ def test_delete_unit_that_is_part_of_a_catalogue_category(test_helpers, database
     catalogue_category_id = str(ObjectId())
 
     # pylint: disable=duplicate-code
-    # Mock find_one to return children catalogue category found
+    # Mock find_one to return a catalogue category containing the unit
     test_helpers.mock_find_one(
         database_mock.catalogue_categories,
         {

@@ -83,7 +83,7 @@ class UnitRepo:
 
     def delete(self, unit_id: str, session: ClientSession = None) -> None:
         """
-        Delete a unit by its ID from MongoDB database.
+        Delete a unit by its ID from a MongoDB database.
 
         Checks if unit is a part of a catalogue category, and does not delete if it is
 

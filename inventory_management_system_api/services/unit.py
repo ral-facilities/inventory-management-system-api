@@ -55,6 +55,6 @@ class UnitService:
         """
         Delete a unit by its ID
 
-        :param usage_status_id: The ID of the unit to delete
+        :param unit_id: The ID of the unit to delete
         """
         return self._unit_repository.delete(unit_id)
