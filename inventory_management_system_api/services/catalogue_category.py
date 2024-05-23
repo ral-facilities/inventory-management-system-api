@@ -16,7 +16,6 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
@@ -24,8 +23,8 @@ from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSc
 from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
+    CatalogueCategoryPostRequestPropertySchema,
     CatalogueCategoryPostRequestSchema,
-    CatalogueItemPropertyPostRequestSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -178,7 +177,7 @@ class CatalogueCategoryService:
 
     def _add_catalogue_item_property_unit_values(
         self,
-        catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema | CatalogueItemPropertyOut],
+        catalogue_item_properties: List[CatalogueCategoryPostRequestPropertySchema],
     ) -> List[dict[str, Any]]:
         """
         Adds the unit values to the catalogue item properties based on the provided unit IDs.
