@@ -246,4 +246,4 @@ def test_delete_unit_that_is_part_of_a_catalogue_category(test_helpers, database
     # pylint: enable=duplicate-code
     with pytest.raises(PartOfCatalogueCategoryError) as exc:
         unit_repository.delete(unit_id)
-    assert str(exc.value) == f"The unit with id {str(unit_id)} is a part of a Catalogue category"
+    assert str(exc.value) == f"The unit with ID {str(unit_id)} is a part of a Catalogue category"

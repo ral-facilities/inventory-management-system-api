@@ -85,15 +85,16 @@ class UnitRepo:
         """
         Delete a unit by its ID from MongoDB database.
 
-        Checks if unit is a part of an item, and does not delete if it is
+        Checks if unit is a part of a catalogue category, and does not delete if it is
 
         :param unit_id: The ID of the unit to delete
-        :raises PartOfCatalogueCategoryError: if unit is a part of a catalogue item
+        :param session: PyMongo ClientSession to use for database operations
+        :raises PartOfCatalogueCategoryError: if unit is part of a catalogue category
         :raises MissingRecordError: if supplied unit ID does not exist in the database
         """
         unit_id = CustomObjectId(unit_id)
         if self._is_unit_in_catalogue_category(str(unit_id), session=session):
-            raise PartOfCatalogueCategoryError(f"The unit with id {str(unit_id)} is a part of a Catalogue category")
+            raise PartOfCatalogueCategoryError(f"The unit with ID {str(unit_id)} is a part of a Catalogue category")
 
         logger.info("Deleting unit with ID %s from the database", unit_id)
         result = self._units_collection.delete_one({"_id": unit_id}, session=session)
@@ -112,16 +113,16 @@ class UnitRepo:
         return self._units_collection.find_one({"code": code}, session=session) is not None
 
     def _is_unit_in_catalogue_category(self, unit_id: str, session: ClientSession = None) -> bool:
-        """Checks if any documents in the database have a specific unit id
+        """
+        Checks if any catalogue categories in the database have a specific unit ID
 
         :param unit_id: The ID of the unit being looked for
-        :return: Returns True if 1 or more documents have the unit ID, false if none do
+        :param session: PyMongo ClientSession to use for database operations
+        :return: `True` if 1 or more catalogue categories have the unit ID, `False` otherwise
         """
-        # Convert unit_id to ObjectId
         unit_id = CustomObjectId(unit_id)
 
         # Query for documents where 'unit_id' exists in the nested 'catalogue_item_properties' list
         query = {"catalogue_item_properties.unit_id": unit_id}
 
-        # Check if any documents match the query
         return self._catalogue_categories_collection.find_one(query, session=session) is not None

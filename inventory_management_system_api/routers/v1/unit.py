@@ -83,16 +83,19 @@ def get_units(unit_service: Annotated[UnitService, Depends(UnitService)]) -> lis
     response_description="Unit deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
 )
-def delete_unit(unit_id: str, unit_service: UnitService = Depends()) -> None:
+def delete_unit(
+    unit_id: Annotated[str, Path(description="ID of the unit to delete")],
+    unit_service: Annotated[UnitService, Depends(UnitService)],
+) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting unit with ID: %s", unit_id)
     try:
         unit_service.delete(unit_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        logger.exception("The specified unit does not exist")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="The specified unit does not exist") from exc
+        message = "Unit not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfCatalogueCategoryError as exc:
-        logger.exception("The specified unit is a part of a Catalogue category")
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="The specified unit is a part of a Catalogue category"
-        ) from exc
+        message = "The specified unit is part of a Catalogue category"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
