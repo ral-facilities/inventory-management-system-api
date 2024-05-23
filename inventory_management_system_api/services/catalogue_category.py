@@ -3,18 +3,21 @@ Module for providing a service for managing catalogue categories using the `Cata
 """
 
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import Depends
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    DuplicateCatalogueItemPropertyNameError,
     LeafCategoryError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn,
+    CatalogueCategoryOut,
+    CatalogueItemPropertyOut,
+)
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -23,7 +26,6 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
-    CatalogueItemPropertySchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -70,7 +72,7 @@ class CatalogueCategoryService:
         if catalogue_category.catalogue_item_properties:
             utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
-            catalogue_item_properties = self._add_catalogue_item_property_units(
+            catalogue_item_properties = self._add_catalogue_item_property_unit_values(
                 catalogue_category.catalogue_item_properties
             )
 
@@ -165,7 +167,7 @@ class CatalogueCategoryService:
         if catalogue_category.catalogue_item_properties:
             utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
-            catalogue_item_properties = self._add_catalogue_item_property_units(
+            catalogue_item_properties = self._add_catalogue_item_property_unit_values(
                 catalogue_category.catalogue_item_properties
             )
             update_data["catalogue_item_properties"] = catalogue_item_properties
@@ -174,46 +176,26 @@ class CatalogueCategoryService:
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
 
-    def _check_duplicate_catalogue_item_property_names(
-        self, catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema]
-    ) -> None:
-        """
-        Go through all the catalogue item properties to check for any duplicate names.
-        :param catalogue_item_properties: The supplied catalogue item properties
-        :raises DuplicateCatalogueItemPropertyName: If a duplicate catalogue item property name is found.
-        """
-        logger.info("Checking for duplicate catalogue item property names")
-        seen_catalogue_item_property_names = set()
-        for catalogue_item_property in catalogue_item_properties:
-            catalogue_item_property_name = catalogue_item_property.name
-            if catalogue_item_property_name.lower().strip() in seen_catalogue_item_property_names:
-                raise DuplicateCatalogueItemPropertyNameError(
-                    f"Duplicate catalogue item property name: {catalogue_item_property_name.strip()}"
-                )
-            seen_catalogue_item_property_names.add(catalogue_item_property_name.lower().strip())
-
-    def _add_catalogue_item_property_units(
+    def _add_catalogue_item_property_unit_values(
         self,
-        catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema],
-    ) -> List[CatalogueItemPropertySchema]:
+        catalogue_item_properties: List[CatalogueItemPropertyPostRequestSchema | CatalogueItemPropertyOut],
+    ) -> List[dict[str, Any]]:
         """
-        Adds units to the catalogue item properties based on the provided unit IDs.
+        Adds the unit values to the catalogue item properties based on the provided unit IDs.
 
-        :param catalogue_item_properties: List of catalogue item properties to which units will be added.
-        :return: List of catalogue item properties with units added.
+        :param catalogue_item_properties: List of catalogue item properties to which unit values will be added.
+        :return: List of catalogue item properties with unit values added.
         :raises MissingRecordError: If a unit with the specified ID is not found.
         """
-        logger.info("Adding units to the catalogue item properties")
+        logger.info("Adding unit values to the catalogue item properties")
         catalogue_item_properties_with_units = []
         for catalogue_item_property in catalogue_item_properties:
-            # pylint: disable=duplicate-code
             if catalogue_item_property.unit_id is not None:
-                unit_id = catalogue_item_property.unit_id
-                unit = self._unit_repository.get(unit_id)
+                unit = self._unit_repository.get(catalogue_item_property.unit_id)
                 if not unit:
-                    raise MissingRecordError(f"No unit found with ID: {unit_id}")
-                # pylint: enable=duplicate-code
-                # Copy unit ID and value to catalogue item property
+                    raise MissingRecordError(f"No unit found with ID: {catalogue_item_property.unit_id}")
+
+                # Copy unit value to catalogue item property
                 catalogue_item_properties_with_units.append(
                     {**catalogue_item_property.model_dump(), "unit": unit.value}
                 )

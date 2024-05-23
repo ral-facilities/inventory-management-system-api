@@ -54,6 +54,7 @@ class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
 
     id: StringObjectIdField = Field(alias="_id")
     unit_id: Optional[StringObjectIdField] = None
+
     model_config = ConfigDict(populate_by_name=True)
 
     def is_equal_without_id(self, other: Any) -> bool:
@@ -109,21 +110,13 @@ class CatalogueCategoryBase(BaseModel):
         return catalogue_item_properties
 
 
-class CatalogueCategoryBaseOut(CatalogueCategoryBase):
-    """
-    Base database model for a catalogue category out.
-    """
-
-    catalogue_item_properties: List[CatalogueItemPropertyOut] = []
-
-
 class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBase):
     """
     Input database model for a catalogue category.
     """
 
 
-class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBaseOut):
+class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBase):
     """
     Output database model for a catalogue category.
     """
@@ -131,4 +124,5 @@ class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBaseOut
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
     catalogue_item_properties: List[CatalogueItemPropertyOut] = []
+
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

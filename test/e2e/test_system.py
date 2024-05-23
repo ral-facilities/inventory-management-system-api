@@ -3,6 +3,7 @@ End-to-End tests for the System router
 """
 
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import (
     CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
@@ -557,8 +558,8 @@ def test_delete_system_with_child_item(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
             ),
         },
     )

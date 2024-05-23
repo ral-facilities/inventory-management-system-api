@@ -3,6 +3,7 @@
 End-to-End tests for the catalogue item router.
 """
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import (
     CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
     CATALOGUE_ITEM_POST_ALLOWED_VALUES,
@@ -112,8 +113,8 @@ def _post_catalogue_category_with_units(test_client, catalogue_category):
         "/v1/catalogue-categories",
         json={
             **catalogue_category,
-            "catalogue_item_properties": add_ids_to_properties(
-                None, catalogue_category["catalogue_item_properties"], units
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                catalogue_category["catalogue_item_properties"], units
             ),
         },
     )

@@ -12,7 +12,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 class PropertyIn(BaseModel):
     """
-    Model representing a catalogue item property in.
+    Input database model for a catalogue item property
     """
 
     id: CustomObjectIdField = Field(serialization_alias="_id")
@@ -24,7 +24,7 @@ class PropertyIn(BaseModel):
 
 class PropertyOut(BaseModel):
     """
-    Model representing a catalogue item property out.
+    Output database model for a catalogue item property
     """
 
     id: StringObjectIdField = Field(alias="_id")
@@ -36,7 +36,7 @@ class PropertyOut(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class CatalogueItemBaseIn(BaseModel):
+class CatalogueItemBase(BaseModel):
     """
     Base database model for a catalogue item.
     """
@@ -86,21 +86,13 @@ class CatalogueItemBaseIn(BaseModel):
         return url if url is None else str(url)
 
 
-class CatalogueItemBaseOut(CatalogueItemBaseIn):
-    """
-    Base database model for a catalogue item.
-    """
-
-    properties: List[PropertyOut] = []
-
-
-class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBaseIn):
+class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBase):
     """
     Input database model for a catalogue item.
     """
 
 
-class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBaseOut):
+class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
     """
     Output database model for a catalogue item.
     """
@@ -110,4 +102,5 @@ class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBaseOut):
     manufacturer_id: StringObjectIdField
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     properties: List[PropertyOut] = []
+
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

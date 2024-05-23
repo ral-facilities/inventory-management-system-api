@@ -31,58 +31,40 @@ EXPIRED_ACCESS_TOKEN = (
 INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN + "1"
 
 
-def add_ids_to_properties(
-    properties_with_ids: Optional[list], properties_without_ids: list, units: Optional[list] = None
-):
+def add_ids_to_properties(properties_with_ids: Optional[list], properties_without_ids: list):
     """
     A tests method for adding the IDs from the properties in `properties_with_ids` as the IDs to the properties in
     `properties_without_ids` based on matching names. Unique IDs are generated for each property if no
-    `properties_with_ids` are provided. If units are provided, it matches and assigns unit IDs to properties
-    based on unit names.
+    `properties_with_ids` are provided. Additionally, unique IDs are generated for each unit if the unit value
+    is not None.
 
-    :param properties_with_ids: The list of properties with IDs. These are typically the catalogue category
-    properties.
+    :param properties_with_ids: The list of properties with IDs. These are typically the catalogue category properties.
     :param properties_without_ids: The list of properties without IDs. These can be catalogue category, catalogue item
-        or item properties.
-    :param units: The list of units used in the catalogue item properties
+                                   or item properties.
     :return: The list of properties with the added IDs.
     """
     properties = []
-    # pylint: disable=too-many-nested-blocks
     for property_without_id in properties_without_ids:
+        prop_id = None
+        unit_id = None
+
         if properties_with_ids:
-            prop_id = next(
-                (
-                    property_with_id["id"]
-                    for property_with_id in properties_with_ids
-                    if property_with_id["name"] == property_without_id["name"]
-                ),
-                (None),
-            )
+            # Match up property and unit ids
+            for property_with_id in properties_with_ids:
+                if property_with_id["name"] == property_without_id["name"]:
+                    prop_id = property_with_id["id"]
 
-            unit_id = next(
-                (
-                    property_with_id["unit_id"]
-                    for property_with_id in properties_with_ids
-                    if property_with_id.get("unit") == property_without_id.get("unit")
-                ),
-                (None),
-            )
+                if property_with_id.get("unit") == property_without_id.get("unit"):
+                    unit_id = property_with_id["unit_id"]
         else:
+            # Generate a new property id and lookup the unit id from the units list
             prop_id = str(ObjectId())
-            unit_id = None
 
-            if property_without_id.get("unit_id") is None:
-                if property_without_id.get("unit") is not None:
-                    if units is not None:
-                        for unit in units:
-                            if property_without_id.get("unit") == unit["value"]:
-                                unit_id = unit["id"]
-                    else:
-                        unit_id = str(ObjectId())
-            # pylint: enable=too-many-nested-blocks
-            else:
-                unit_id = property_without_id["unit_id"]
+            if property_without_id.get("unit") is not None:
+                if property_without_id.get("unit_id") is None:
+                    unit_id = str(ObjectId())
+                else:
+                    unit_id = property_without_id["unit_id"]
 
         properties.append({**property_without_id, "id": prop_id, "unit_id": unit_id})
 

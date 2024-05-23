@@ -16,7 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfCatalogueCategoryError,
 )
-from inventory_management_system_api.models.units import UnitIn, UnitOut
+from inventory_management_system_api.models.unit import UnitIn, UnitOut
 
 
 def test_create(test_helpers, database_mock, unit_repository):

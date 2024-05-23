@@ -94,21 +94,18 @@ class CatalogueCategoryPropertyService:
             stored_catalogue_category.catalogue_item_properties + [catalogue_item_property]
         )
 
-        # Check unit id exists in units collection
-        unit = None
-        # pylint: disable=duplicate-code
+        # Obtain the specified unit if an id is given
+        unit_value = None
         if catalogue_item_property.unit_id is not None:
-            unit_id = catalogue_item_property.unit_id
-            unit = self._unit_repository.get(unit_id)
+            # Obtain the specified unit value if a unit ID is given
+            unit = self._unit_repository.get(catalogue_item_property.unit_id)
             if not unit:
-                raise MissingRecordError(f"No unit found with ID: {unit_id}")
-        # pylint: enable=duplicate-code
+                raise MissingRecordError(f"No unit found with ID: {catalogue_item_property.unit_id}")
+            unit_value = unit.value
 
         catalogue_item_property_in = CatalogueItemPropertyIn(
-            **{**catalogue_item_property.model_dump(), "unit": unit.value}
+            **{**catalogue_item_property.model_dump(), "unit": unit_value}
         )
-
-        # print(catalogue_item_property_in)
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
@@ -118,13 +115,11 @@ class CatalogueCategoryPropertyService:
                     catalogue_category_id, catalogue_item_property_in, session=session
                 )
 
-                print(catalogue_item_property.unit_id)
-
                 property_in = PropertyIn(
                     id=str(catalogue_item_property_in.id),
                     name=catalogue_item_property_in.name,
                     value=catalogue_item_property.default_value,
-                    unit=unit.value,
+                    unit=unit_value,
                     unit_id=catalogue_item_property.unit_id,
                 )
 

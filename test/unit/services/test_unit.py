@@ -7,7 +7,7 @@ from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 
 from bson import ObjectId
 
-from inventory_management_system_api.models.units import UnitIn, UnitOut
+from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.unit import UnitPostRequestSchema
 
 

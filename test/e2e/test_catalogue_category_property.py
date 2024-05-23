@@ -3,6 +3,7 @@ End-to-End tests for the properties endpoint of the catalogue category router
 """
 
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_unit import UNIT_POST_A
 from typing import Optional
@@ -156,8 +157,8 @@ class CreateDSL:
             "/v1/catalogue-categories",
             json={
                 **CATALOGUE_CATEGORY_POST_A,
-                "catalogue_item_properties": add_ids_to_properties(
-                    None, CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], self.units
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], self.units
                 ),
             },
         )
@@ -212,7 +213,7 @@ class CreateDSL:
         self._catalogue_item_post_response = self.test_client.post(
             "/v1/catalogue-categories/"
             f"{catalogue_category_id if catalogue_category_id else self.catalogue_category['id']}/properties",
-            json=add_ids_to_properties(None, [catalogue_item_property_post], self.units)[0],
+            json=replace_unit_values_with_ids_in_properties([catalogue_item_property_post], self.units)[0],
         )
 
     def check_catalogue_item_property_post_response_success(self, catalogue_item_property_expected):
@@ -287,6 +288,22 @@ class TestCreate(CreateDSL):
         self.check_catalogue_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
 
+    def test_create_non_mandatory_property_with_no_unit(self):
+        """
+        Test adding a non-mandatory property to an already existing catalogue category, catalogue item and item
+        with no unit
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit": None})
+
+        self.check_catalogue_item_property_post_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY_EXPECTED, "unit": None}
+        )
+        self.check_catalogue_category_updated({**NEW_CATALOGUE_ITEM_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+        self.check_catalogue_item_updated({**NEW_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+        self.check_item_updated({**NEW_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+
     def test_create_mandatory_property(self):
         """
         Test adding a mandatory property to an already existing catalogue category, catalogue item and item
@@ -337,7 +354,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category_and_items()
 
         self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": "invalid"})
-        self.check_catalogue_item_property_post_response_failed_with_message(404, "The specified unit does not exist")
+        self.check_catalogue_item_property_post_response_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_property_with_non_existent_unit_id(self):
         """Test adding a property when the specified unit id is invalid"""
@@ -345,7 +362,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category_and_items()
 
         self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": str(ObjectId())})
-        self.check_catalogue_item_property_post_response_failed_with_message(404, "The specified unit does not exist")
+        self.check_catalogue_item_property_post_response_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_mandatory_property_without_default_value(self):
         """

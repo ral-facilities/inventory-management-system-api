@@ -184,10 +184,6 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
         description="Whether the category is a leaf or not. If it is then it can only have catalogue items as child "
         "elements but if it is not then it can only have catalogue categories as child elements.",
     )
-    parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    catalogue_item_properties: Optional[List[CatalogueCategoryPostRequestPropertySchema]] = Field(
-        default=None, description="The properties that the catalogue items in this category could/should have"
-    )
 
 
 class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
