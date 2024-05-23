@@ -8,7 +8,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status, HTTPException, Path
 
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidObjectIdError,
+    MissingRecordError,
+    PartOfItemError,
+)
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostRequestSchema, UsageStatusSchema
 from inventory_management_system_api.services.usage_status import UsageStatusService
 
@@ -73,3 +78,27 @@ def get_usage_statuses(
 
     usage_statuses = usage_status_service.list()
     return [UsageStatusSchema(**usage_status.model_dump()) for usage_status in usage_statuses]
+
+
+@router.delete(
+    path="/{usage_status_id}",
+    summary="Delete a usage status by its ID",
+    response_description="Usage status deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_usage_status(
+    usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],
+    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)],
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting usage status with ID: %s", usage_status_id)
+    try:
+        usage_status_service.delete(usage_status_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "Usage status not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except PartOfItemError as exc:
+        message = "The specified usage status is part of an Item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

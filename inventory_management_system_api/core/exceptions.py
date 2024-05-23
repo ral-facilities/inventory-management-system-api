@@ -70,6 +70,12 @@ class PartOfCatalogueItemError(DatabaseError):
     """
 
 
+class PartOfItemError(DatabaseError):
+    """
+    Exception raised when attempting to delete a usage status that is a part of an item
+    """
+
+
 class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been

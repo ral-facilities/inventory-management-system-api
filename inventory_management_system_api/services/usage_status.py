@@ -3,11 +3,12 @@ Module for providing a service for managing Usage statuses using the `UsageStatu
 """
 
 from typing import Optional
+
 from fastapi import Depends
+
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostRequestSchema
-
 from inventory_management_system_api.services import utils
 
 
@@ -27,6 +28,7 @@ class UsageStatusService:
     def create(self, usage_status: UsageStatusPostRequestSchema) -> UsageStatusOut:
         """
         Create a new usage status.
+
         :param usage_status: The usage status to be created.
         :return: The created usage status.
         """
@@ -36,6 +38,7 @@ class UsageStatusService:
     def get(self, usage_status_id: str) -> Optional[UsageStatusOut]:
         """
         Get usage status by its ID.
+
         :param: usage_status_id: The ID of the requested usage status
         :return: The retrieved usage status, or None if not found
         """
@@ -48,3 +51,11 @@ class UsageStatusService:
         :return: List of Usage statuses or an empty list if no Usage statuses are retrieved
         """
         return self._usage_status_repository.list()
+
+    def delete(self, usage_status_id: str) -> None:
+        """
+        Delete a usage status by its ID
+
+        :param usage_status_id: The ID of the usage status to delete
+        """
+        return self._usage_status_repository.delete(usage_status_id)

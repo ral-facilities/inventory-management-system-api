@@ -2,8 +2,8 @@
 Unit tests for the `UsageStatusService` service
 """
 
-from unittest.mock import MagicMock
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from unittest.mock import MagicMock
 
 from bson import ObjectId
 
@@ -89,3 +89,12 @@ def test_list(usage_status_repository_mock, usage_status_service):
 
     usage_status_repository_mock.list.assert_called_once_with()
     assert result == usage_status_repository_mock.list.return_value
+
+
+def test_delete(usage_status_repository_mock, usage_status_service):
+    """Test deleting a usage status"""
+    usage_status_id = str(ObjectId())
+
+    usage_status_service.delete(usage_status_id)
+
+    usage_status_repository_mock.delete.assert_called_once_with(usage_status_id)

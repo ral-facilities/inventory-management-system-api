@@ -2,7 +2,9 @@
 End-to-End tests for the Usage status router
 """
 
+from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import (
+    SYSTEM_POST_A,
     USAGE_STATUS_POST_A,
     USAGE_STATUS_POST_A_EXPECTED,
     USAGE_STATUS_POST_B,
@@ -12,7 +14,7 @@ from test.e2e.mock_schemas import (
     USAGE_STATUS_POST_D,
     USAGE_STATUS_POST_D_EXPECTED,
 )
-
+from test.e2e.test_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A, ITEM_POST, MANUFACTURER_POST
 
 from bson import ObjectId
 
@@ -94,3 +96,80 @@ def test_get_usage_status_with_nonexistent_id(test_client):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Usage status not found"
+
+
+def test_delete(test_client):
+    """Test deleting a usage status"""
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status = response.json()
+
+    response = test_client.delete(f"/v1/usage-statuses/{usage_status['id']}")
+    assert response.status_code == 204
+
+
+def test_delete_with_an_invalid_id(test_client):
+    """Test trying to delete a usage_status with an invalid ID"""
+
+    response = test_client.delete("/v1/usage-statuses/invalid")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Usage status not found"
+
+
+def test_delete_with_a_non_existent_id(test_client):
+    """Test trying to delete a usage status with a non-existent ID"""
+
+    response = test_client.delete(f"/v1/usage-statuses/{str(ObjectId())}")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Usage status not found"
+
+
+def test_delete_usage_status_that_is_a_part_of_item(test_client):
+    """Test trying to delete a usage status that is a part of an Item"""
+    # pylint: disable=duplicate-code
+    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    catalogue_category = response.json()
+
+    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    system_id = response.json()["id"]
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+
+    manufacturer_id = response.json()["id"]
+
+    catalogue_item_post = {
+        **CATALOGUE_ITEM_POST_A,
+        "catalogue_category_id": catalogue_category["id"],
+        "manufacturer_id": manufacturer_id,
+        "properties": add_ids_to_properties(
+            catalogue_category["catalogue_item_properties"],
+            [
+                {"name": "Property A", "value": 20},
+                {"name": "Property B", "value": False},
+                {"name": "Property C", "value": "20x15x10"},
+            ],
+        ),
+    }
+
+    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+    catalogue_item_id = response.json()["id"]
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
+
+    item_post = {
+        **ITEM_POST,
+        "catalogue_item_id": catalogue_item_id,
+        "system_id": system_id,
+        "usage_status_id": usage_status_id,
+        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+    }
+    # pylint: enable=duplicate-code
+    response = test_client.post("/v1/items", json=item_post)
+
+    response = test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "The specified usage status is part of an Item"
