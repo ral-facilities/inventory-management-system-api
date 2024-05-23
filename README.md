@@ -215,7 +215,7 @@ Then populate the database with the initial data using
 python ./scripts/dev_cli.py db-import
 ```
 
-You may also use `python ./scripts/dev_cli.py db-import -g` if you wish to import the generated mock data.
+You may also use `python ./scripts/dev_cli.py db-import` if you wish to import the generated mock data.
 
 #### Manually
 
