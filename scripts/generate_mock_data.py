@@ -27,6 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
+
 usage_statuses = ["New", "Used", "In Use", "Scrapped"]
 
 manufacturer_names = [
