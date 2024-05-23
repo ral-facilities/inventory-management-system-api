@@ -344,6 +344,7 @@ def test_create_catalogue_item_with_invalid_obsolete_replacement_catalogue_item_
     """
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -357,6 +358,7 @@ def test_create_catalogue_item_with_invalid_obsolete_replacement_catalogue_item_
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -424,7 +426,7 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     Test creating a catalogue item with missing mandatory catalogue item properties.
     """
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
@@ -437,6 +439,8 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
             [CATALOGUE_ITEM_POST_A["properties"][0], CATALOGUE_ITEM_POST_A["properties"][2]],
         ),
     }
+    # pylint: enable=duplicate-code
+
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 422
@@ -479,7 +483,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
     """
     Test creating a catalogue item with missing non-mandatory catalogue item properties.
     """
-
+    # pylint: disable=duplicate-code
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
@@ -493,6 +497,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]
         ),
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
     assert response.status_code == 201
@@ -1178,7 +1183,6 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
     specifying any new properties.
     """
     # pylint: disable=duplicate-code
-    # units
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     catalogue_category_b = _post_catalogue_category_with_units(
         test_client,
@@ -1375,7 +1379,6 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_
     Test moving a catalogue item to another catalogue category with missing non-mandatory catalogue item properties.
     """
     # pylint: disable=duplicate-code
-    # units
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category_b = response.json()
@@ -2232,6 +2235,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
     usage_status_id = response.json()["id"]
 
@@ -2243,6 +2247,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 

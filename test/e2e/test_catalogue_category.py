@@ -109,7 +109,7 @@ def _post_nested_catalogue_categories(test_client, entities: list[dict]):
 def _post_catalogue_categories(test_client):
     """Utility function for posting all mock systems defined at the top of this file"""
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -189,7 +189,7 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -225,7 +225,7 @@ def test_create_catalogue_category_with_duplicate_name_within_parent(test_client
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -266,7 +266,6 @@ def test_create_catalogue_category_with_non_existent_unit_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
-    # units
     unit_mm = {
         "id": str(ObjectId()),
         "value": "mm",
@@ -299,7 +298,6 @@ def test_create_catalogue_category_with_invalid_unit_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
-    # units
     unit_mm = {
         "id": "invalid",
         "value": "mm",
@@ -353,7 +351,7 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
     Test creating a catalogue category in a leaf parent catalogue category.
     """
 
-    # units
+    # Post units
     units, _ = _post_units(test_client)
 
     response = test_client.post(
@@ -379,7 +377,7 @@ def test_create_catalogue_category_with_invalid_catalogue_item_property_type(tes
     """
     Test creating a catalogue category with an invalid catalogue item property type.
     """
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -409,7 +407,7 @@ def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(
         ],
     }
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -434,7 +432,7 @@ def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalo
     Test creating a catalogue category when a unit is supplied for a boolean catalogue item property.
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
     catalogue_category = {
@@ -470,7 +468,7 @@ def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_
     """
     Test creating a non-leaf catalogue category with catalogue item properties.
     """
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -514,7 +512,7 @@ def test_create_catalogue_category_with_properties_with_allowed_values(test_clie
     """
     Test creating a catalogue category with specific allowed values given
     """
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -744,7 +742,7 @@ def test_delete_catalogue_category_with_child_catalogue_categories(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -772,7 +770,7 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
     """
     # pylint: disable=duplicate-code
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -817,7 +815,7 @@ def test_get_catalogue_category(test_client):
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
     parent_catalogue_category = response.json()
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -929,7 +927,7 @@ def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
     """
     Test getting the breadcrumbs for a catalogue category with no parents
     """
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -1042,7 +1040,7 @@ def test_partial_update_catalogue_category_change_name_duplicate(test_client):
     """
     test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -1088,7 +1086,7 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
     Test changing valid parameters of a catalogue category which has child catalogue items.
     """
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -1126,7 +1124,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
     Test changing a catalogue category from non-leaf to leaf.
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1304,7 +1302,7 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_a_id = response.json()["id"]
 
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
 
@@ -1495,7 +1493,7 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     """
     Test adding a catalogue item property.
     """
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1542,7 +1540,7 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     Test removing a catalogue item property.
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1588,7 +1586,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     Test modifying a catalogue item property.
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1634,7 +1632,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     Test modifying catalogue item properties to have a list of allowed values
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1674,7 +1672,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     Test modifying catalogue item properties to have a number property containing an allowed_values list with an
     invalid number
     """
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1707,7 +1705,7 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     Test modifying catalogue item properties to have a string property containing an allowed_values list with an
     invalid string
     """
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1799,7 +1797,7 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
     Test changing the catalogue item properties when a catalogue category has child catalogue items.
     """
     # pylint: disable=duplicate-code
-    # units
+    # Post units
 
     units, _ = _post_units(test_client)
     response = test_client.post(
@@ -1841,7 +1839,7 @@ def test_partial_update_catalogue_category_invalid_unit_id(test_client):
     Test modifying a catalogue item property when there is an invalid unit ID.
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1884,7 +1882,7 @@ def test_partial_update_catalogue_category_non_existent_unit_id(test_client):
     Test modifying a catalogue item property when there is an non existent unit ID.
     """
 
-    # units
+    # Post units
 
     _, unit_dict = _post_units(test_client)
 
@@ -1950,7 +1948,7 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
     """
     Test updating a catalogue category to have duplicate catalogue item property names
     """
-    # units
+    # Post units
 
     units, unit_dict = _post_units(test_client)
     response = test_client.post(
