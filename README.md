@@ -209,12 +209,6 @@ For development the easiest way to setup the database is to use the included dev
 python ./scripts/dev_cli.py db-init
 ```
 
-Then populate the database with the initial data using
-
-```bash
-python ./scripts/dev_cli.py db-import
-```
-
 #### Manually
 
 #### Initialising the replica set
@@ -242,19 +236,19 @@ docker exec -i mongodb_container mongosh --username 'root' --password 'example' 
 
 #### Populating the database
 
-The simplest way to populate the database with mock data is to use the already created database dump. If using docker you can use the command
-
-```bash
-docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
-```
-
-or
+The simplest way to populate the database with mock data is to use the already created database dump. If using docker for development you may use
 
 ```bash
 python ./scripts/dev_cli.py db-import
 ```
 
 to populate the database with mock data.
+
+If you wish to do this manually the full command is
+
+```bash
+docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
+```
 
 Otherwise there is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To use it from your development environment first ensure the API is running and then execute it with
 
