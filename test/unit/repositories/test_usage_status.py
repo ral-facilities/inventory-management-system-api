@@ -54,7 +54,13 @@ def test_create(test_helpers, database_mock, usage_status_repository):
     database_mock.usage_statuses.insert_one.assert_called_once_with(usage_status_info, session=session)
     database_mock.usage_statuses.find_one.assert_has_calls(
         [
-            call({"code": usage_status_out.code}, session=session),
+            call(
+                {
+                    "code": usage_status_out.code,
+                    "_id": {"$ne": None},
+                },
+                session=session,
+            ),
             call({"_id": CustomObjectId(usage_status_out.id)}, session=session),
         ]
     )
