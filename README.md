@@ -215,8 +215,6 @@ Then populate the database with the initial data using
 python ./scripts/dev_cli.py db-import
 ```
 
-You may also use `python ./scripts/dev_cli.py db-import` if you wish to import the generated mock data.
-
 #### Manually
 
 #### Initialising the replica set
@@ -248,6 +246,12 @@ The simplest way to populate the database with mock data is to use the already c
 
 ```bash
 docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
+```
+
+or
+
+```bash
+python ./scripts/dev_cli.py db-import
 ```
 
 to populate the database with mock data.

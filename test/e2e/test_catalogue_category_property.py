@@ -209,10 +209,13 @@ class CreateDSL:
     def post_catalogue_item_property(self, catalogue_item_property_post, catalogue_category_id: Optional[str] = None):
         """Posts a catalogue item property to the catalogue category"""
 
+        catalogue_item_property_post = replace_unit_values_with_ids_in_properties(
+            [catalogue_item_property_post], self.units
+        )[0]
         self._catalogue_item_post_response = self.test_client.post(
             "/v1/catalogue-categories/"
             f"{catalogue_category_id if catalogue_category_id else self.catalogue_category['id']}/properties",
-            json=replace_unit_values_with_ids_in_properties([catalogue_item_property_post], self.units)[0],
+            json=catalogue_item_property_post,
         )
 
     def check_catalogue_item_property_post_response_success(self, catalogue_item_property_expected):
