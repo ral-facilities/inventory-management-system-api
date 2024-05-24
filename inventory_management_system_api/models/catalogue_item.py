@@ -71,6 +71,7 @@ class CatalogueItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
+
     # pylint: enable=duplicate-code
 
     @field_serializer("drawing_link")

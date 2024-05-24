@@ -41,7 +41,8 @@ class CatalogueItemService:
         manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
     ) -> None:
         """
-        Initialise the `CatalogueItemService` with a `CatalogueItemRepo` and `CatalogueCategoryRepo` repos.
+        Initialise the `CatalogueItemService` with a `CatalogueItemRepo`, `CatalogueCategoryRepo`
+        and `ManufacturerRepo` repos.
 
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.

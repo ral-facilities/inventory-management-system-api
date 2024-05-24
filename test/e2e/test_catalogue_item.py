@@ -9,6 +9,8 @@ from test.e2e.mock_schemas import (
     CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
     CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
+    USAGE_STATUS_POST_A,
+    USAGE_STATUS_POST_B,
 )
 from test.e2e.test_item import ITEM_POST
 from unittest.mock import ANY
@@ -786,7 +788,10 @@ def test_delete_catalogue_item_with_child_items(test_client):
             catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
         ),
     }
-    # pylint: enable=duplicate-code
+
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
+
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
@@ -796,6 +801,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
@@ -1509,11 +1515,14 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
         ),
     }
 
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
     # child
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category_a["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
@@ -2107,6 +2116,9 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
     manufacturer_e_id = response.json()["id"]
 
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
+    usage_status_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
@@ -2117,13 +2129,13 @@ def test_partial_update_catalogue_item_properties_when_has_child_items(test_clie
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-
     # Child
     # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
@@ -2206,6 +2218,9 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_id = response.json()["id"]
 
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    usage_status_id = response.json()["id"]
+
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
@@ -2217,12 +2232,14 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     # Child
     # pylint: disable=duplicate-code
     item_post = {
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
+        "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
