@@ -184,6 +184,49 @@ def test_create_mandatory_property_without_default_value(
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
 
+def test_create_non_existent_unit_id(
+    test_helpers,
+    catalogue_category_repository_mock,
+    catalogue_item_repository_mock,
+    item_repository_mock,
+    unit_repository_mock,
+    catalogue_category_property_service,
+):
+    """
+    Test creating a property at the catalogue category with a non existent unit id
+    """
+    catalogue_category_id = str(ObjectId())
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
+    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
+        name="Property A", type="number", unit_id=unit.id, mandatory=False
+    )
+    stored_catalogue_category = CatalogueCategoryOut(
+        id=catalogue_category_id,
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+    )
+
+    # Mock the stored catalogue category to one without a property with the same name
+    test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
+
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, None)
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+    assert str(exc.value) == f"No unit found with ID: {unit.id}"
+
+    # Ensure no updates
+    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
+    catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
+    item_repository_mock.insert_property_to_all_in.assert_not_called()
+
+
 def test_create_mandatory_property_with_missing_catalogue_category(
     test_helpers,
     catalogue_category_repository_mock,
