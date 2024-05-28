@@ -161,8 +161,8 @@ def _post_units(test_client):
 
     units = [unit_mm]
 
-    unit_dict = {unit_mm["value"]: unit_mm["id"]}
-    return units, unit_dict
+    unit_value_to_id = {unit_mm["value"]: unit_mm["id"]}
+    return units, unit_value_to_id
 
 
 def test_create_catalogue_category(test_client):
@@ -371,12 +371,12 @@ def test_create_catalogue_category_with_invalid_catalogue_item_property_type(tes
     Test creating a catalogue category with an invalid catalogue item property type.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_C,
         "catalogue_item_properties": [
-            {"name": "Property A", "type": "invalid-type", "unit_id": unit_dict["mm"], "mandatory": False},
+            {"name": "Property A", "type": "invalid-type", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         ],
     }
 
@@ -422,11 +422,11 @@ def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalo
     Test creating a catalogue category when a unit is supplied for a boolean catalogue item property.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_C,
         "catalogue_item_properties": [
-            {"name": "Property A", "type": "boolean", "unit_id": unit_dict["mm"], "mandatory": False},
+            {"name": "Property A", "type": "boolean", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         ],
     }
 
@@ -1099,7 +1099,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
     Test changing a catalogue category from non-leaf to leaf.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_category_patch = {
         "is_leaf": True,
@@ -1107,7 +1107,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
             {
                 "name": "Property A",
                 "type": "number",
-                "unit_id": unit_dict["mm"],
+                "unit_id": unit_value_to_id["mm"],
                 "unit": "mm",
                 "mandatory": False,
                 "allowed_values": None,
@@ -1184,12 +1184,18 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf(test_cli
     """
     Test changing a catalogue category from leaf to non-leaf.
     """
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
         "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_dict["mm"], "mandatory": False}
+            {
+                "name": "Property A",
+                "type": "number",
+                "unit": "mm",
+                "unit_id": unit_value_to_id["mm"],
+                "mandatory": False,
+            }
         ],
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
@@ -1465,14 +1471,14 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     Test adding a catalogue item property.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
         {
             "name": "Property A",
             "type": "number",
             "unit": "mm",
-            "unit_id": unit_dict["mm"],
+            "unit_id": unit_value_to_id["mm"],
             "mandatory": False,
             "allowed_values": None,
         }
@@ -1510,14 +1516,14 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     Test removing a catalogue item property.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
         {
             "name": "Property A",
             "type": "number",
             "unit": "mm",
-            "unit_id": unit_dict["mm"],
+            "unit_id": unit_value_to_id["mm"],
             "mandatory": False,
             "allowed_values": None,
         },
@@ -1554,14 +1560,14 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     Test modifying a catalogue item property.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
         {
             "name": "Property A",
             "type": "number",
             "unit": "mm",
-            "unit_id": unit_dict["mm"],
+            "unit_id": unit_value_to_id["mm"],
             "mandatory": False,
             "allowed_values": None,
         },
@@ -1598,10 +1604,10 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     Test modifying catalogue item properties to have a list of allowed values
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_dict["mm"], "mandatory": False},
+        {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
@@ -1637,10 +1643,10 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     invalid number
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_dict["mm"], "mandatory": False},
+        {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
@@ -1669,10 +1675,10 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     invalid string
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
-        {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_dict["mm"], "mandatory": False},
+        {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
@@ -1800,14 +1806,14 @@ def test_partial_update_catalogue_category_invalid_unit_id(test_client):
     Test modifying a catalogue item property when there is an invalid unit ID.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
         {
             "name": "Property A",
             "type": "number",
             "unit": "mm",
-            "unit_id": unit_dict["mm"],
+            "unit_id": unit_value_to_id["mm"],
             "mandatory": False,
             "allowed_values": None,
         },
@@ -1841,14 +1847,14 @@ def test_partial_update_catalogue_category_non_existent_unit_id(test_client):
     Test modifying a catalogue item property when there is an non existent unit ID.
     """
 
-    _, unit_dict = _post_units(test_client)
+    _, unit_value_to_id = _post_units(test_client)
 
     catalogue_item_properties = [
         {
             "name": "Property A",
             "type": "number",
             "unit": "mm",
-            "unit_id": unit_dict["mm"],
+            "unit_id": unit_value_to_id["mm"],
             "mandatory": False,
             "allowed_values": None,
         },
@@ -1906,7 +1912,7 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
     Test updating a catalogue category to have duplicate catalogue item property names
     """
 
-    units, unit_dict = _post_units(test_client)
+    units, unit_value_to_id = _post_units(test_client)
     response = test_client.post(
         "/v1/catalogue-categories",
         json={
@@ -1920,7 +1926,7 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
 
     catalogue_category_patch = {
         "catalogue_item_properties": [
-            {"name": "Duplicate", "type": "number", "unit_id": unit_dict["mm"], "mandatory": False},
+            {"name": "Duplicate", "type": "number", "unit_id": unit_value_to_id["mm"], "mandatory": False},
             {"name": "Duplicate", "type": "boolean", "unit": None, "mandatory": True},
         ]
     }
