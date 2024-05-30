@@ -8,7 +8,6 @@ ENV PYTHONPATH="${PYTHONPATH}:/inventory-management-system-api-run"
 COPY README.md pyproject.toml ./
 # Copy inventory_management_system_api source files
 COPY inventory_management_system_api/ inventory_management_system_api/
-COPY logs/ logs/
 
 RUN set -eux; \
     \
@@ -20,12 +19,9 @@ RUN set -eux; \
     \
     # Create a non-root user to run as \
     addgroup -S inventory-management-system-api; \
-    adduser -S -D -G inventory-management-system-api -H -h /inventory-management-system-api-run inventory-management-system-api; \
-    \
-    # Change ownership of logs/ - app will need to write log files to it \
-    chown -R inventory-management-system-api:inventory-management-system-api logs/;
+    adduser -S -D -G inventory-management-system-api -H -h /inventory-management-system-api-run inventory-management-system-api;
 
 USER inventory-management-system-api
 
-CMD ["uvicorn", "inventory_management_system_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "inventory_management_system_api.main:app", "--app-dir", "/inventory-management-system-api-run", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
