@@ -24,5 +24,5 @@ RUN set -eux; \
 
 USER inventory-management-system-api
 
-CMD ["uvicorn", "inventory_management_system_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "inventory_management_system_api.main:app", "--app-dir", "/inventory-management-system-api-run", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
