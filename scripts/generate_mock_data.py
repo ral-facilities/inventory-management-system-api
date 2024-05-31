@@ -25,6 +25,9 @@ SEED = 0
 
 logging.basicConfig(level=logging.INFO)
 
+
+units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
+
 usage_statuses = ["New", "Used", "In Use", "Scrapped"]
 
 manufacturer_names = [
@@ -266,6 +269,12 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
     return category
 
 
+def generate_unit(value: str):
+    return {
+        "value": value,
+    }
+
+
 def generate_random_manufacturer():
     return {
         "name": fake.random.choice(manufacturer_names),
@@ -406,6 +415,10 @@ def create_manufacturer(manufacturer_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/manufacturers", field="name", json=manufacturer_data)
 
 
+def create_unit(unit_data: dict) -> dict[str, Any]:
+    return post_avoiding_duplicates(endpoint="/v1/units", field="value", json=unit_data)
+
+
 def create_usage_status(usage_status_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/usage-statuses", field="value", json=usage_status_data)
 
@@ -434,9 +447,13 @@ def populate_random_manufacturers() -> list[str]:
     return manufacturer_ids
 
 
-def populate_usage_statuses() -> list[str]:
-    # Usually faster than append
+def populate_units():
+    for i, unit in enumerate(units):
+        unit = generate_unit(unit)
+        create_unit(unit)
 
+
+def populate_usage_statuses():
     for i, usage_status in enumerate(usage_statuses):
         usage_status = generate_usage_status(usage_status)
         usage_status = create_usage_status(usage_status)
@@ -508,6 +525,8 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
 
 
 def generate_mock_data():
+    logging.info("Populating units...")
+    populate_units()
     logging.info("Populating usage statuses...")
     populate_usage_statuses()
     logging.info("Populating manufacturers...")

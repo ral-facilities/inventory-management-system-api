@@ -33,4 +33,5 @@ def fixture_cleanup_database_collections():
     database.items.delete_many({})
     database.manufacturers.delete_many({})
     database.systems.delete_many({})
+    database.units.delete_many({})
     database.usage_statuses.delete_many({})
