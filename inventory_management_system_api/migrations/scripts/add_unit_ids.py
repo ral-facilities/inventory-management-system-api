@@ -146,12 +146,23 @@ def add_unit_ids(
     # For easy look up turn into dict of dicts instead of list of dicts using name as key
     for i, prop in enumerate(properties):
         if prop["unit"] is not None:
+            unit = prop["unit"]
             unit_id = new_unit_ids.get(prop["unit"], None)
             if not unit_id:
-                raise ValueError(f"Could not find unit '{prop['unit']}' in list of new unit ids, could not migrate")
+                # This covers a case on dev machine where some units were given values of "" in the past
+                if unit == "":
+                    unit = None
+                else:
+                    raise ValueError(f"Could not find unit '{unit}' in list of new unit ids, could not migrate")
+            else:
+                unit_id = str(unit_id)
 
             properties[i] = new_property_in_type(
-                **{**old_property_out_type(**prop).model_dump(), "unit_id": str(unit_id)}
+                **{
+                    **old_property_out_type(**prop).model_dump(),
+                    "unit": unit,
+                    "unit_id": unit_id,
+                }
             ).model_dump()
         else:
             properties[i] = new_property_in_type(
