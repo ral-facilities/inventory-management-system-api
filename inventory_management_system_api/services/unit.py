@@ -50,3 +50,11 @@ class UnitService:
         :return: List of Units or an empty list if no Units are retrieved
         """
         return self._unit_repository.list()
+
+    def delete(self, unit_id: str) -> None:
+        """
+        Delete a unit by its ID
+
+        :param unit_id: The ID of the unit to delete
+        """
+        return self._unit_repository.delete(unit_id)

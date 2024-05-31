@@ -82,7 +82,7 @@ class UsageStatusRepo:
 
     def delete(self, usage_status_id: str, session: ClientSession = None) -> None:
         """
-        Delete a usage status by its ID from MongoDB database.
+        Delete a usage status by its ID from a MongoDB database.
 
         Checks if usage status is a part of an item, and does not delete if it is
 

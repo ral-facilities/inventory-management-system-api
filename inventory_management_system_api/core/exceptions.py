@@ -70,6 +70,12 @@ class PartOfCatalogueItemError(DatabaseError):
     """
 
 
+class PartOfCatalogueCategoryError(DatabaseError):
+    """
+    Exception raised when attempting to delete a unit that is a part of a catalogue category
+    """
+
+
 class PartOfItemError(DatabaseError):
     """
     Exception raised when attempting to delete a usage status that is a part of an item
