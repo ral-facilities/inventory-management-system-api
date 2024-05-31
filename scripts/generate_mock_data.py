@@ -233,6 +233,9 @@ generated_catalogue_items: dict[str, list[str]] = {}
 # So that systems can be assigned in items
 generated_system_ids: list[str] = []
 
+# Dictionary with key=id and value=list of dictionaries of the units
+generated_units: dict[str, list[dict]] = {}
+
 # Dictionary with key=id and value=list of dictionaries of the usage_status
 generated_usage_statuses: dict[str, list[dict]] = {}
 
@@ -258,6 +261,13 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
         if is_leaf and fake.random.random() < PROBABILITY_CATALOGUE_CATEGORY_HAS_EXTRA_FIELDS
         else None
     )
+
+    # Iterate over properties to add unit_id if a matching unit is found
+    if catalogue_item_properties:
+        for prop in catalogue_item_properties:
+            unit = generated_units.get(prop["unit"])
+            if unit is not None:
+                prop["unit_id"] = unit["id"]
 
     category: dict = {
         "name": f"{fake.random.choice(catalogue_category_names)}",
@@ -450,7 +460,8 @@ def populate_random_manufacturers() -> list[str]:
 def populate_units():
     for i, unit in enumerate(units):
         unit = generate_unit(unit)
-        create_unit(unit)
+        unit = create_unit(unit)
+        generated_units[unit["value"]] = unit
 
 
 def populate_usage_statuses():

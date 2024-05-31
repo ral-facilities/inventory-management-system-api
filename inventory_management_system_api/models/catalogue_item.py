@@ -12,23 +12,25 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 class PropertyIn(BaseModel):
     """
-    Model representing a catalogue item property.
+    Input database model for a catalogue item property
     """
 
     id: CustomObjectIdField = Field(serialization_alias="_id")
     name: str
     value: Any
+    unit_id: Optional[CustomObjectIdField] = None
     unit: Optional[str] = None
 
 
 class PropertyOut(BaseModel):
     """
-    Model representing a catalogue item property.
+    Output database model for a catalogue item property
     """
 
     id: StringObjectIdField = Field(alias="_id")
     name: str
     value: Any
+    unit_id: Optional[StringObjectIdField] = None
     unit: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)
@@ -100,4 +102,5 @@ class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
     manufacturer_id: StringObjectIdField
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     properties: List[PropertyOut] = []
+
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

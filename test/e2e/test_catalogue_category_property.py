@@ -3,7 +3,9 @@ End-to-End tests for the properties endpoint of the catalogue category router
 """
 
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
+from test.e2e.test_unit import UNIT_POST_A
 from typing import Optional
 from unittest.mock import ANY
 
@@ -128,6 +130,7 @@ class CreateDSL:
     catalogue_category: dict
     catalogue_item: dict
     item: dict
+    units: list[dict]
 
     _catalogue_item_post_response: Response
     catalogue_item_property: dict
@@ -137,12 +140,28 @@ class CreateDSL:
         """Setup fixtures"""
 
         self.test_client = test_client
+        self.units = []
 
     def post_catalogue_category_and_items(self):
         """Posts a catalogue category, catalogue item and item for create tests to act on"""
 
         # pylint:disable=duplicate-code
-        response = self.test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+
+        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
+        unit_mm = response.json()
+
+        self.units = [unit_mm]
+
+        response = self.test_client.post(
+            "/v1/catalogue-categories",
+            json={
+                **CATALOGUE_CATEGORY_POST_A,
+                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], self.units
+                ),
+            },
+        )
+
         self.catalogue_category = response.json()
 
         response = self.test_client.post("/v1/systems", json=SYSTEM_POST_A)
@@ -156,7 +175,8 @@ class CreateDSL:
             "catalogue_category_id": self.catalogue_category["id"],
             "manufacturer_id": manufacturer_id,
             "properties": add_ids_to_properties(
-                self.catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
+                self.catalogue_category["catalogue_item_properties"],
+                CATALOGUE_ITEM_POST_A["properties"],
             ),
         }
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -189,6 +209,9 @@ class CreateDSL:
     def post_catalogue_item_property(self, catalogue_item_property_post, catalogue_category_id: Optional[str] = None):
         """Posts a catalogue item property to the catalogue category"""
 
+        catalogue_item_property_post = replace_unit_values_with_ids_in_properties(
+            [catalogue_item_property_post], self.units
+        )[0]
         self._catalogue_item_post_response = self.test_client.post(
             "/v1/catalogue-categories/"
             f"{catalogue_category_id if catalogue_category_id else self.catalogue_category['id']}/properties",
@@ -200,7 +223,8 @@ class CreateDSL:
 
         assert self._catalogue_item_post_response.status_code == 201
         self.catalogue_item_property = self._catalogue_item_post_response.json()
-        assert self.catalogue_item_property == {**catalogue_item_property_expected, "id": ANY}
+
+        assert self.catalogue_item_property == {**catalogue_item_property_expected, "id": ANY, "unit_id": ANY}
 
     def check_catalogue_item_property_post_response_failed_with_message(self, status_code, detail):
         """Checks the response of posting a catalogue item property failed as expected"""
@@ -224,7 +248,10 @@ class CreateDSL:
 
         assert new_catalogue_category["catalogue_item_properties"] == add_ids_to_properties(
             [*self.catalogue_category["catalogue_item_properties"], self.catalogue_item_property],
-            [EXISTING_CATALOGUE_CATEGORY_PROPERTY_EXPECTED, catalogue_item_property_expected],
+            [
+                EXISTING_CATALOGUE_CATEGORY_PROPERTY_EXPECTED,
+                catalogue_item_property_expected,
+            ],
         )
 
     def check_catalogue_item_updated(self, property_expected):
@@ -263,6 +290,22 @@ class TestCreate(CreateDSL):
         self.check_catalogue_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
         self.check_item_updated(NEW_PROPERTY_NON_MANDATORY_EXPECTED)
 
+    def test_create_non_mandatory_property_with_no_unit(self):
+        """
+        Test adding a non-mandatory property to an already existing catalogue category, catalogue item and item
+        with no unit
+        """
+
+        self.post_catalogue_category_and_items()
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit": None})
+
+        self.check_catalogue_item_property_post_response_success(
+            {**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY_EXPECTED, "unit": None}
+        )
+        self.check_catalogue_category_updated({**NEW_CATALOGUE_ITEM_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+        self.check_catalogue_item_updated({**NEW_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+        self.check_item_updated({**NEW_PROPERTY_NON_MANDATORY_EXPECTED, "unit": None})
+
     def test_create_mandatory_property(self):
         """
         Test adding a mandatory property to an already existing catalogue category, catalogue item and item
@@ -296,7 +339,8 @@ class TestCreate(CreateDSL):
         """Test adding a property when the specified catalogue category id is invalid"""
 
         self.post_catalogue_item_property(
-            CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, catalogue_category_id=str(ObjectId())
+            CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY,
+            catalogue_category_id=str(ObjectId()),
         )
         self.check_catalogue_item_property_post_response_failed_with_message(404, "Catalogue category not found")
 
@@ -305,6 +349,22 @@ class TestCreate(CreateDSL):
 
         self.post_catalogue_item_property(CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, catalogue_category_id="invalid")
         self.check_catalogue_item_property_post_response_failed_with_message(404, "Catalogue category not found")
+
+    def test_create_property_with_invalid_unit_id(self):
+        """Test adding a property when given an invalid unit id"""
+
+        self.post_catalogue_category_and_items()
+
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": "invalid"})
+        self.check_catalogue_item_property_post_response_failed_with_message(422, "The specified unit does not exist")
+
+    def test_create_property_with_non_existent_unit_id(self):
+        """Test adding a property when the specified unit id is invalid"""
+
+        self.post_catalogue_category_and_items()
+
+        self.post_catalogue_item_property({**CATALOGUE_ITEM_PROPERTY_POST_NON_MANDATORY, "unit_id": str(ObjectId())})
+        self.check_catalogue_item_property_post_response_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_mandatory_property_without_default_value(self):
         """
@@ -377,7 +437,13 @@ class TestCreate(CreateDSL):
 
         self.post_catalogue_category_and_items()
         self.post_catalogue_item_property(
-            {"name": "Property B", "type": "number", "unit": "mm", "mandatory": True, "default_value": "wrong_type"}
+            {
+                "name": "Property B",
+                "type": "number",
+                "unit": "mm",
+                "mandatory": True,
+                "default_value": "wrong_type",
+            }
         )
         self.check_catalogue_item_property_post_response_failed_with_validation_message(
             422, "Value error, default_value must be the same type as the property itself"
@@ -535,7 +601,7 @@ class UpdateDSL(CreateDSL):
 
         assert self._catalogue_item_patch_response.status_code == 200
         self.catalogue_item_property = self._catalogue_item_patch_response.json()
-        assert self.catalogue_item_property == {**catalogue_item_property_expected, "id": ANY}
+        assert self.catalogue_item_property == {**catalogue_item_property_expected, "id": ANY, "unit_id": ANY}
 
     def check_catalogue_item_property_patch_response_failed_with_message(self, status_code, detail):
         """Checks the response of patching a catalogue item property failed as expected"""

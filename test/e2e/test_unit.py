@@ -16,12 +16,12 @@ UNIT_POST_A_EXPECTED = {
     "id": ANY,
 }
 
-UNIT_POST_B = {"value": "nm"}
+UNIT_POST_B = {"value": "cm"}
 
 UNIT_POST_B_EXPECTED = {
     **UNIT_POST_B,
     **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "nm",
+    "code": "cm",
     "id": ANY,
 }
 

@@ -3,6 +3,7 @@ Unit tests for the `CatalogueCategoryPropertyService` service.
 """
 
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from test.unit.services.test_catalogue_category import UNIT_A
 from unittest.mock import ANY, patch
 
 import pytest
@@ -16,6 +17,7 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueItemPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
+from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueItemPropertyPatchRequestSchema,
     CatalogueItemPropertyPostRequestSchema,
@@ -39,6 +41,7 @@ def test_create(
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
     item_repository_mock,
+    unit_repository_mock,
     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
     catalogue_category_property_service,
 ):
@@ -50,8 +53,9 @@ def test_create(
     property with a default value
     """
     catalogue_category_id = str(ObjectId())
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
-        name="Property A", type="number", unit="mm", mandatory=mandatory, default_value=default_value
+        name="Property A", type="number", unit_id=unit.id, mandatory=mandatory, default_value=default_value
     )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
@@ -67,6 +71,9 @@ def test_create(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, unit)
+
     created_catalogue_item_property = catalogue_category_property_service.create(
         catalogue_category_id, catalogue_item_property
     )
@@ -79,7 +86,9 @@ def test_create(
         session=session,
     )
 
-    expected_catalogue_item_property_in = CatalogueItemPropertyIn(**catalogue_item_property.model_dump())
+    expected_catalogue_item_property_in = CatalogueItemPropertyIn(
+        **{**catalogue_item_property.model_dump(), "unit": unit.value}
+    )
 
     # Catalogue item property insertion into catalogue category
     inserted_catalogue_item_property_in = (
@@ -95,7 +104,8 @@ def test_create(
         id=str(expected_catalogue_item_property_in.id),
         name=expected_catalogue_item_property_in.name,
         value=catalogue_item_property.default_value,
-        unit=expected_catalogue_item_property_in.unit,
+        unit=unit.value,
+        unit_id=unit.id,
     )
 
     # Catalogue items update
@@ -133,6 +143,7 @@ def test_create_mandatory_property_without_default_value(
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
     item_repository_mock,
+    unit_repository_mock,
     catalogue_category_property_service,
 ):
     """
@@ -142,8 +153,9 @@ def test_create_mandatory_property_without_default_value(
     doesn't have a default_value
     """
     catalogue_category_id = str(ObjectId())
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
-        name="Property A", type="number", unit="mm", mandatory=True
+        name="Property A", type="number", unit_id=unit.id, mandatory=True
     )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
@@ -159,9 +171,55 @@ def test_create_mandatory_property_without_default_value(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, unit)
+
     with pytest.raises(InvalidActionError) as exc:
         catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
     assert str(exc.value) == "Cannot add a mandatory property without a default value"
+
+    # Ensure no updates
+    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
+    catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
+    item_repository_mock.insert_property_to_all_in.assert_not_called()
+
+
+def test_create_non_existent_unit_id(
+    test_helpers,
+    catalogue_category_repository_mock,
+    catalogue_item_repository_mock,
+    item_repository_mock,
+    unit_repository_mock,
+    catalogue_category_property_service,
+):
+    """
+    Test creating a property at the catalogue category with a non existent unit id
+    """
+    catalogue_category_id = str(ObjectId())
+    unit_id = str(ObjectId())
+    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
+        name="Property A", type="number", unit_id=unit_id, mandatory=False
+    )
+    stored_catalogue_category = CatalogueCategoryOut(
+        id=catalogue_category_id,
+        name="Category A",
+        code="category-a",
+        is_leaf=True,
+        parent_id=None,
+        catalogue_item_properties=[],
+        created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+        modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
+    )
+
+    # Mock the stored catalogue category to one without a property with the same name
+    test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
+
+    # Mock `get` to not return a unit
+    test_helpers.mock_get(unit_repository_mock, None)
+
+    with pytest.raises(MissingRecordError) as exc:
+        catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+    assert str(exc.value) == f"No unit found with ID: {unit_id}"
 
     # Ensure no updates
     catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
@@ -174,6 +232,7 @@ def test_create_mandatory_property_with_missing_catalogue_category(
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
     item_repository_mock,
+    unit_repository_mock,
     catalogue_category_property_service,
 ):
     """
@@ -183,13 +242,17 @@ def test_create_mandatory_property_with_missing_catalogue_category(
     catalogue_category_id doesn't exist
     """
     catalogue_category_id = str(ObjectId())
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
-        name="Property A", type="number", unit="mm", mandatory=False
+        name="Property A", type="number", unit_id=unit.id, mandatory=False
     )
     stored_catalogue_category = None
 
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
+
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, unit)
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
@@ -206,6 +269,7 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
     item_repository_mock,
+    unit_repository_mock,
     catalogue_category_property_service,
 ):
     """
@@ -215,8 +279,9 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     is not a leaf
     """
     catalogue_category_id = str(ObjectId())
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
-        name="Property A", type="number", unit="mm", mandatory=False
+        name="Property A", type="number", unit_id=unit.id, mandatory=False
     )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
@@ -231,6 +296,9 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
 
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
+
+    # Mock `get` to return the unit
+    test_helpers.mock_get(unit_repository_mock, unit)
 
     with pytest.raises(InvalidActionError) as exc:
         catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
@@ -263,11 +331,13 @@ def test_update(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100]),
     )
@@ -338,11 +408,13 @@ def test_update_category_only(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100]),
     )
@@ -406,11 +478,13 @@ def test_update_with_no_changes_allowed_values_none(
     catalogue_category_id = str(ObjectId())
     catalogue_item_property_id = str(ObjectId())
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(allowed_values=None)
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=None,
     )
@@ -509,14 +583,18 @@ def test_update_with_missing_catalogue_item_property(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
+    # pylint: disable=duplicate-code
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=str(ObjectId()),
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100]),
     )
+    # pylint: enable=duplicate-code
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
         name="Category A",
@@ -562,11 +640,13 @@ def test_update_allowed_values_from_none_to_value(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=None,
     )
@@ -613,11 +693,13 @@ def test_update_allowed_values_from_value_to_none(
     catalogue_category_id = str(ObjectId())
     catalogue_item_property_id = str(ObjectId())
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(name="Property Name", allowed_values=None)
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100]),
     )
@@ -666,11 +748,13 @@ def test_update_allowed_values_removing_element(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000]}
     )
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100, 500, 1000, 2000]),
     )
@@ -722,11 +806,13 @@ def test_update_allowed_values_modifying_element(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100, 500, 1200, 2000]),
     )
@@ -779,11 +865,13 @@ def test_update_adding_allowed_values(
     catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000, 3000, 4000]}
     )
+    unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_catalogue_item_property = CatalogueItemPropertyOut(
         id=catalogue_item_property_id,
         name="Property A",
         type="number",
-        unit="mm",
+        unit_id=unit.id,
+        unit=unit.value,
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[100]),
     )

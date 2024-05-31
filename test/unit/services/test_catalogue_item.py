@@ -3,10 +3,9 @@
 Unit tests for the `CatalogueCategoryService` service.
 """
 from datetime import timedelta
-from unittest.mock import MagicMock, call
-
 from test.conftest import add_ids_to_properties
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from unittest.mock import MagicMock, call
 
 import pytest
 from bson import ObjectId
@@ -26,7 +25,6 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPatchRequestSchema,
     CatalogueItemPostRequestSchema,
 )
-
 
 FULL_CATALOGUE_CATEGORY_A_INFO = {
     "name": "Category A",
@@ -151,8 +149,7 @@ def test_create(
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
                 "catalogue_item_properties": add_ids_to_properties(
-                    catalogue_item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    catalogue_item_properties, FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"]
                 ),
             },
         ),
@@ -907,7 +904,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
     )
 
     current_catalogue_category_id = str(ObjectId())
-    current_catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
+    current_catalogue_item_properties = add_ids_to_properties(None, catalogue_item_properties)
     # Mock `get` to return a catalogue item
     test_helpers.mock_get(
         catalogue_item_repository_mock,
