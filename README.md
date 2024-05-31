@@ -75,13 +75,13 @@ production)!
    is only needed if JWT Auth is enabled):
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    or with values for the environment variables:
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    The microservice should now be running inside Docker at http://localhost:8000 and its Swagger UI could be accessed
@@ -93,35 +93,28 @@ production)!
 
 Use the `Dockerfile.prod` to run just the application itself in a container. This can be used for production.
 
-1. While in root of the project directory, change the permissions of the `logs` directory so that it is writable by
-   other users. This allows the container to save the application logs to it.
-
-   ```bash
-   sudo chmod -R 0777 logs/
-   ```
-
-2. Build an image using the `Dockerfile.prod` from the root of the project directory:
+1. Build an image using the `Dockerfile.prod` from the root of the project directory:
 
    ```bash
    docker build -f Dockerfile.prod -t inventory_management_system_api_image .
    ```
 
-3. Start the container using the image built and map it to port `8000` locally:
+2. Start the container using the image built and map it to port `8000` locally:
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    or with values for the environment variables:
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    The microservice should now be running inside Docker at http://localhost:8000 and its Swagger UI could be accessed
    at http://localhost:8000/docs.
 
-4. Follow the [post setup instructions](#post-setup-instructions)
+3. Follow the [post setup instructions](#post-setup-instructions)
 
 ### Local Setup
 
