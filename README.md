@@ -75,13 +75,13 @@ production)!
    is only needed if JWT Auth is enabled):
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    or with values for the environment variables:
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    The microservice should now be running inside Docker at http://localhost:8000 and its Swagger UI could be accessed
@@ -93,35 +93,28 @@ production)!
 
 Use the `Dockerfile.prod` to run just the application itself in a container. This can be used for production.
 
-1. While in root of the project directory, change the permissions of the `logs` directory so that it is writable by
-   other users. This allows the container to save the application logs to it.
-
-   ```bash
-   sudo chmod -R 0777 logs/
-   ```
-
-2. Build an image using the `Dockerfile.prod` from the root of the project directory:
+1. Build an image using the `Dockerfile.prod` from the root of the project directory:
 
    ```bash
    docker build -f Dockerfile.prod -t inventory_management_system_api_image .
    ```
 
-3. Start the container using the image built and map it to port `8000` locally:
+2. Start the container using the image built and map it to port `8000` locally:
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    or with values for the environment variables:
 
    ```bash
-   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub -v ./logs:/inventory-management-system-api-run/logs inventory_management_system_api_image
+   docker run -p 8000:8000 --name inventory_management_system_api_container --env DATABASE__NAME=test-ims -v ./keys/jwt-key.pub:/inventory-management-system-api-run/keys/jwt-key.pub inventory_management_system_api_image
    ```
 
    The microservice should now be running inside Docker at http://localhost:8000 and its Swagger UI could be accessed
    at http://localhost:8000/docs.
 
-4. Follow the [post setup instructions](#post-setup-instructions)
+3. Follow the [post setup instructions](#post-setup-instructions)
 
 ### Local Setup
 
@@ -209,12 +202,6 @@ For development the easiest way to setup the database is to use the included dev
 python ./scripts/dev_cli.py db-init
 ```
 
-Then populate the database with the initial data using
-
-```bash
-python ./scripts/dev_cli.py db-import
-```
-
 #### Manually
 
 #### Initialising the replica set
@@ -242,19 +229,19 @@ docker exec -i mongodb_container mongosh --username 'root' --password 'example' 
 
 #### Populating the database
 
-The simplest way to populate the database with mock data is to use the already created database dump. If using docker you can use the command
-
-```bash
-docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
-```
-
-or
+The simplest way to populate the database with mock data is to use the already created database dump. If using docker for development you may use
 
 ```bash
 python ./scripts/dev_cli.py db-import
 ```
 
 to populate the database with mock data.
+
+If you wish to do this manually the full command is
+
+```bash
+docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
+```
 
 Otherwise there is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To use it from your development environment first ensure the API is running and then execute it with
 
