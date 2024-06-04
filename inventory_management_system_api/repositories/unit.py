@@ -101,16 +101,18 @@ class UnitRepo:
         if result.deleted_count == 0:
             raise MissingRecordError(f"No unit found with ID: {str(unit_id)}")
 
-    def _is_duplicate_unit(self, code: str, session: ClientSession = None) -> bool:
+    def _is_duplicate_unit(self, code: str, unit_id: CustomObjectId = None, session: ClientSession = None) -> bool:
         """
         Check if a Unit with the same value already exists in the Units collection
 
         :param code: The code of the unit to check for duplicates.
+        :param unit_id: The ID of the unit to check if the duplicate unit found is itself.
         :param session: PyMongo ClientSession to use for database operations
         :return: `True` if a duplicate unit code is found, `False` otherwise
         """
         logger.info("Checking if unit with code '%s' already exists", code)
-        return self._units_collection.find_one({"code": code}, session=session) is not None
+        unit = self._units_collection.find_one({"code": code, "_id": {"$ne": unit_id}}, session=session)
+        return unit is not None
 
     def _is_unit_in_catalogue_category(self, unit_id: str, session: ClientSession = None) -> bool:
         """
