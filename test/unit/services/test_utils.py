@@ -19,13 +19,18 @@ from inventory_management_system_api.schemas.catalogue_item import PropertyPostR
 from inventory_management_system_api.services import utils
 
 DEFINED_PROPERTIES = [
-    CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="number", unit="mm", mandatory=False),
+    CatalogueItemPropertyOut(
+        id=str(ObjectId()), name="Property A", type="number", unit_id=str(ObjectId()), unit="mm", mandatory=False
+    ),
     CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-    CatalogueItemPropertyOut(id=str(ObjectId()), name="Property C", type="string", unit="cm", mandatory=True),
+    CatalogueItemPropertyOut(
+        id=str(ObjectId()), name="Property C", type="string", unit_id=str(ObjectId()), unit="cm", mandatory=True
+    ),
     CatalogueItemPropertyOut(
         id=str(ObjectId()),
         name="Property D",
         type="number",
+        unit_id=str(ObjectId()),
         unit="mm",
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[2, 4, 6]),
@@ -40,19 +45,43 @@ DEFINED_PROPERTIES = [
 ]
 
 SUPPLIED_PROPERTIES = [
-    PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
+    PropertyPostRequestSchema(
+        id=DEFINED_PROPERTIES[0].id, name="Property A", value=20, unit_id=DEFINED_PROPERTIES[0].unit_id
+    ),
     PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-    PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-    PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
+    PropertyPostRequestSchema(
+        id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10", unit_id=DEFINED_PROPERTIES[2].unit_id
+    ),
+    PropertyPostRequestSchema(
+        id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id
+    ),
     PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
 ]
 
 EXPECTED_PROCESSED_PROPERTIES = [
-    {"id": DEFINED_PROPERTIES[0].id, "name": "Property A", "value": 20, "unit": "mm"},
-    {"id": DEFINED_PROPERTIES[1].id, "name": "Property B", "value": False, "unit": None},
-    {"id": DEFINED_PROPERTIES[2].id, "name": "Property C", "value": "20x15x10", "unit": "cm"},
-    {"id": DEFINED_PROPERTIES[3].id, "name": "Property D", "value": 2, "unit": "mm"},
-    {"id": DEFINED_PROPERTIES[4].id, "name": "Property E", "value": "red", "unit": None},
+    {
+        "id": DEFINED_PROPERTIES[0].id,
+        "name": "Property A",
+        "value": 20,
+        "unit": "mm",
+        "unit_id": DEFINED_PROPERTIES[0].unit_id,
+    },
+    {"id": DEFINED_PROPERTIES[1].id, "name": "Property B", "value": False, "unit": None, "unit_id": None},
+    {
+        "id": DEFINED_PROPERTIES[2].id,
+        "name": "Property C",
+        "value": "20x15x10",
+        "unit": "cm",
+        "unit_id": DEFINED_PROPERTIES[2].unit_id,
+    },
+    {
+        "id": DEFINED_PROPERTIES[3].id,
+        "name": "Property D",
+        "value": 2,
+        "unit": "mm",
+        "unit_id": DEFINED_PROPERTIES[3].unit_id,
+    },
+    {"id": DEFINED_PROPERTIES[4].id, "name": "Property E", "value": "red", "unit": None, "unit_id": None},
 ]
 
 
@@ -133,19 +162,46 @@ class TestProcessCatalogueItemProperties:
         result = utils.process_catalogue_item_properties(
             DEFINED_PROPERTIES,
             [
-                PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=None),
+                PropertyPostRequestSchema(
+                    id=DEFINED_PROPERTIES[0].id, name="Property A", value=None, unit_id=DEFINED_PROPERTIES[0].unit_id
+                ),
                 PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-                PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-                PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
+                PropertyPostRequestSchema(
+                    id=DEFINED_PROPERTIES[2].id,
+                    name="Property C",
+                    value="20x15x10",
+                    unit_id=DEFINED_PROPERTIES[2].unit_id,
+                ),
+                PropertyPostRequestSchema(
+                    id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id
+                ),
                 PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value=None),
             ],
         )
         assert result == [
-            {"id": DEFINED_PROPERTIES[0].id, "name": "Property A", "value": None, "unit": "mm"},
-            {"id": DEFINED_PROPERTIES[1].id, "name": "Property B", "value": False, "unit": None},
-            {"id": DEFINED_PROPERTIES[2].id, "name": "Property C", "value": "20x15x10", "unit": "cm"},
-            {"id": DEFINED_PROPERTIES[3].id, "name": "Property D", "value": 2, "unit": "mm"},
-            {"id": DEFINED_PROPERTIES[4].id, "name": "Property E", "value": None, "unit": None},
+            {
+                "id": DEFINED_PROPERTIES[0].id,
+                "name": "Property A",
+                "value": None,
+                "unit": "mm",
+                "unit_id": DEFINED_PROPERTIES[0].unit_id,
+            },
+            {"id": DEFINED_PROPERTIES[1].id, "name": "Property B", "value": False, "unit": None, "unit_id": None},
+            {
+                "id": DEFINED_PROPERTIES[2].id,
+                "name": "Property C",
+                "value": "20x15x10",
+                "unit": "cm",
+                "unit_id": DEFINED_PROPERTIES[2].unit_id,
+            },
+            {
+                "id": DEFINED_PROPERTIES[3].id,
+                "name": "Property D",
+                "value": 2,
+                "unit": "mm",
+                "unit_id": DEFINED_PROPERTIES[3].unit_id,
+            },
+            {"id": DEFINED_PROPERTIES[4].id, "name": "Property E", "value": None, "unit": None, "unit_id": None},
         ]
 
     def test_process_catalogue_item_properties_with_supplied_properties_and_no_defined_properties(self):

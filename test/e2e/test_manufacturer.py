@@ -4,6 +4,7 @@ End-to-End tests for the manufacturer router.
 
 from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import CREATED_MODIFIED_VALUES_EXPECTED
+from test.e2e.test_unit import UNIT_POST_A
 from unittest.mock import ANY
 
 from bson import ObjectId
@@ -269,12 +270,15 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
     manufacturer_id = response.json()["id"]
 
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit_mm = response.json()
+
     # pylint: disable=duplicate-code
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
         "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_mm["id"], "mandatory": False},
             {"name": "Property B", "type": "boolean", "mandatory": True},
         ],
     }

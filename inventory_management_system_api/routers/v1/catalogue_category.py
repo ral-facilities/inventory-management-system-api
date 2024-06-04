@@ -117,6 +117,14 @@ def create_catalogue_category(
         catalogue_category = catalogue_category_service.create(catalogue_category)
         return CatalogueCategorySchema(**catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
+        if (
+            catalogue_category.catalogue_item_properties is not None
+            and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.catalogue_item_properties)
+        ) or "unit" in str(exc).lower():
+            message = "The specified unit does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
         message = "The specified parent catalogue category does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
@@ -156,6 +164,13 @@ def partial_update_catalogue_category(
             or "parent catalogue category" in str(exc).lower()
         ):
             message = "The specified parent catalogue category does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        if (
+            catalogue_category.catalogue_item_properties is not None
+            and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.catalogue_item_properties)
+        ) or "unit" in str(exc).lower():
+            message = "The specified unit does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
@@ -227,6 +242,14 @@ def create_catalogue_item_property(
             **catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
+        if (
+            catalogue_item_property.unit_id is not None
+            and catalogue_item_property.unit_id in str(exc)
+            or "unit" in str(exc).lower()
+        ):
+            message = "The specified unit does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
