@@ -1,4 +1,4 @@
-FROM python:3.12.3-alpine3.20@sha256:53cab1eabac71d6160eeabe09fd3144de789f75de62b9833e49f67534edc547e
+FROM python:3.12.3-alpine3.20@sha256:e3472f1ede4c2ebdd9963c76068046d28034294398ef26d0bf13e729a00ebc2f
 
 WORKDIR /inventory-management-system-api-run
 
