@@ -5,7 +5,7 @@ Module for the overall configuration for the application.
 from pathlib import Path
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
@@ -56,12 +56,12 @@ class DatabaseConfig(BaseModel):
     Configuration model for the database.
     """
 
-    protocol: str
-    username: str
-    password: str
-    hostname: str
-    port: int
-    name: str
+    protocol: SecretStr
+    username: SecretStr
+    password: SecretStr
+    hostname: SecretStr
+    port: SecretStr
+    name: SecretStr
 
 
 class Config(BaseSettings):
