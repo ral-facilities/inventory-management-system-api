@@ -5,7 +5,7 @@ Main module contains the API entrypoint.
 import logging
 
 from fastapi import Depends, FastAPI, Request, status
-from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,7 +19,7 @@ from inventory_management_system_api.routers.v1 import (
     manufacturer,
     system,
     unit,
-    usage_status
+    usage_status,
 )
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
@@ -44,7 +44,7 @@ async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONRe
 
 
 @app.exception_handler(RequestValidationError)
-async def custom_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def custom_validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
     """
     Custom exception handler for FastAPI to handle `RequestValidationError`.
 
@@ -52,12 +52,15 @@ async def custom_validation_exception_handler(request: Request, exc: RequestVali
     `RequestValidationError` is raised during request parsing or validation, this handler will be triggered to log the
     error and call `request_validation_exception_handler` to return an appropriate response.
 
-    :param request: The incoming HTTP request that caused the validation error.
+    :param _: Unused
     :param exc: The exception object representing the validation error.
     :return: A JSON response with validation error details.
     """
-    logger.exception(exc)
-    return await request_validation_exception_handler(request, exc)
+    # Exclude input as it may contain sensitive information which we do not want to log or return back to user
+    detail = {"detail": jsonable_encoder(exc.errors(), exclude={"input"})}
+    # The traceback here contains the exception message which includes the input hence it is been excluded.
+    logger.exception(detail, exc_info=False)
+    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=detail)
 
 
 def get_router_dependencies() -> list:
@@ -70,6 +73,7 @@ def get_router_dependencies() -> list:
     if config.authentication.enabled is True:
         # pylint:disable=import-outside-toplevel
         from inventory_management_system_api.auth.jwt_bearer import JWTBearer
+
         dependencies.append(Depends(JWTBearer()))
     return dependencies
 
