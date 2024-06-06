@@ -5,7 +5,7 @@ Module for the overall configuration for the application.
 from pathlib import Path
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from pydantic_core.core_schema import ValidationInfo
 from pydantic_settings import SettingsConfigDict, BaseSettings
 
@@ -63,6 +63,8 @@ class DatabaseConfig(BaseModel):
     port: SecretStr
     name: SecretStr
 
+    model_config = ConfigDict(hide_input_in_errors=True)
+
 
 class Config(BaseSettings):
     """
@@ -77,7 +79,10 @@ class Config(BaseSettings):
     authentication: AuthenticationConfig
     database: DatabaseConfig
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).parent.parent / ".env", env_file_encoding="utf-8", env_nested_delimiter="__"
+        env_file=Path(__file__).parent.parent / ".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        hide_input_in_errors=True,
     )
 
 
