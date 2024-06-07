@@ -5,7 +5,7 @@ Main module contains the API entrypoint.
 import logging
 
 from fastapi import Depends, FastAPI, Request, status
-from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -44,7 +44,7 @@ async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONRe
 
 
 @app.exception_handler(RequestValidationError)
-async def custom_validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+async def custom_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     """
     Custom exception handler for FastAPI to handle `RequestValidationError`.
 
@@ -52,15 +52,12 @@ async def custom_validation_exception_handler(_: Request, exc: RequestValidation
     `RequestValidationError` is raised during request parsing or validation, this handler will be triggered to log the
     error and call `request_validation_exception_handler` to return an appropriate response.
 
-    :param _: Unused
+    :param request: The incoming HTTP request that caused the validation error.
     :param exc: The exception object representing the validation error.
     :return: A JSON response with validation error details.
     """
-    # Exclude input as it may contain sensitive information which we do not want to log or return back to user
-    detail = {"detail": jsonable_encoder(exc.errors(), exclude={"input"})}
-    # The traceback here contains the exception message which includes the input hence it is been excluded.
-    logger.exception(detail, exc_info=False)
-    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=detail)
+    logger.exception(exc)
+    return await request_validation_exception_handler(request, exc)
 
 
 def get_router_dependencies() -> list:
