@@ -443,6 +443,18 @@ def test_partial_update_system_name(test_client):
     _test_partial_update_system(test_client, {"name": "Updated name"}, {"code": "updated-name"})
 
 
+def test_partial_update_capitalisation_of_system_name(test_client):
+    """
+    Test updating a capitalisation of the System's name
+    """
+    _test_partial_update_system(
+        test_client,
+        {
+            "name": "SyStEm A",
+        },
+    )
+
+
 def test_partial_update_all_other_fields(test_client):
     """
     Test updating the rest of a systems fields not tested above

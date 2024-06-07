@@ -195,6 +195,18 @@ def test_partial_address_update(test_client):
     }
 
 
+def test_partial_update_capitalisation_of_name(test_client):
+    """Test updating a manufacturer when the capitalisation of the name is different"""
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+
+    manufacturer_patch = {"name": "MaNuFaCtUrEr A"}
+    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
+
+    assert response.status_code == 200
+    assert response.json() == {**MANUFACTURER_A_POST_EXPECTED, **manufacturer_patch}
+
+
 def test_update_with_invalid_id(test_client):
     """Test trying to update a manufacturer with an invalid ID"""
 
