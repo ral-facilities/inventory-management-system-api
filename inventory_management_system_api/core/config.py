@@ -59,7 +59,7 @@ class DatabaseConfig(BaseModel):
     protocol: SecretStr
     username: SecretStr
     password: SecretStr
-    hostname: SecretStr
+    host_and_options: SecretStr
     port: SecretStr
     name: SecretStr
 
