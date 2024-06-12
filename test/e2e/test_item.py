@@ -993,9 +993,9 @@ def test_delete_with_invalid_id(test_client):
     assert response.json()["detail"] == "Item not found"
 
 
-def test_delete_catalogue_item_with_nonexistent_id(test_client):
+def test_delete_catalogue_item_with_non_existent_id(test_client):
     """
-    Test deleting an item with a nonexistent ID.
+    Test deleting an item with a non-existent ID.
     """
     response = test_client.delete(f"/v1/items/{str(ObjectId())}")
 
@@ -1062,9 +1062,9 @@ def test_get_item(test_client):
     }
 
 
-def test_get_item_with_nonexistent_id(test_client):
+def test_get_item_with_non_existent_id(test_client):
     """
-    Test getting an item with a nonexistent_id
+    Test getting an item with a non-existent id
     """
     response = test_client.get(f"/v1/items/{str(ObjectId())}")
 
@@ -1074,7 +1074,7 @@ def test_get_item_with_nonexistent_id(test_client):
 
 def test_get_item_with_invalid_id(test_client):
     """
-    Test getting an item with a nonexistent_id
+    Test getting an item with an invalid id
     """
     response = test_client.get("/v1/items/invalid")
 

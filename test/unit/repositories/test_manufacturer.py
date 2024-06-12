@@ -185,7 +185,7 @@ def test_list(test_helpers, database_mock, manufacturer_repository):
 
 
 def test_list_when_no_manufacturers(test_helpers, database_mock, manufacturer_repository):
-    """Test trying to get all manufacturers when there are none in the databse"""
+    """Test trying to get all manufacturers when there are none in the database"""
     test_helpers.mock_find(database_mock.manufacturers, [])
     retrieved_manufacturers = manufacturer_repository.list()
 
@@ -241,7 +241,7 @@ def test_get_with_invalid_id(manufacturer_repository):
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 
-def test_get_with_nonexistent_id(test_helpers, database_mock, manufacturer_repository):
+def test_get_with_non_existent_id(test_helpers, database_mock, manufacturer_repository):
     """
     Test getting a manufacturer with an ID that does not exist
     """
@@ -389,10 +389,10 @@ def test_update_with_invalid_id(manufacturer_repository):
     """Test trying to update with an invalid ID"""
 
     updated_manufacturer = MagicMock()
-    manufactuer_id = "invalid"
+    manufacturer_id = "invalid"
 
     with pytest.raises(InvalidObjectIdError) as exc:
-        manufacturer_repository.update(manufactuer_id, updated_manufacturer)
+        manufacturer_repository.update(manufacturer_id, updated_manufacturer)
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
 
 

@@ -240,7 +240,7 @@ def _merge_non_mandatory_catalogue_item_properties(
     :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
                                database.
     :param supplied_properties: The supplied catalogue item properties.
-    :return: The supplied properties combined with any unsupplied non mandatory properites (with a value of None) in
+    :return: The supplied properties combined with any unsupplied non mandatory properties (with a value of None) in
              the order they are defined.
     """
     logger.info("Merging any missing defined non-mandatory properties with the supplied properties")

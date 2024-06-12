@@ -187,14 +187,14 @@ def test_create(
     assert created_catalogue_item == catalogue_item
 
 
-def test_create_with_nonexistent_catalogue_category_id(
+def test_create_with_non_existent_catalogue_category_id(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test creating a catalogue item with a nonexistent catalogue category ID.
+    Test creating a catalogue item with a non-existent catalogue category ID.
 
-    Verify that the `create` method properly handles a catalogue item with a nonexistent catalogue category ID, does not
-    find a catalogue category with such ID, and does not create the catalogue item.
+    Verify that the `create` method properly handles a catalogue item with a non-existent catalogue category ID, does
+    not find a catalogue category with such ID, and does not create the catalogue item.
     """
     catalogue_category_id = str(ObjectId())
     catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
@@ -218,7 +218,7 @@ def test_create_with_nonexistent_catalogue_category_id(
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
 
 
-def test_create_with_nonexistent_manufacturer_id(
+def test_create_with_non_existent_manufacturer_id(
     test_helpers,
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
@@ -226,7 +226,7 @@ def test_create_with_nonexistent_manufacturer_id(
     catalogue_item_service,
 ):
     """
-    Test creating a catalogue item with a manufacturer id that is nonexistent
+    Test creating a catalogue item with a manufacturer id that is non-existent
     """
     catalogue_category_id = str(ObjectId())
     catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
@@ -390,9 +390,9 @@ def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test creating a catalogue item with a nonexistent obsolete replacement catalogue item ID.
+    Test creating a catalogue item with a non-existent obsolete replacement catalogue item ID.
 
-    Verify that the `create` method properly handles a catalogue item with a nonexistent obsolete replacement catalogue
+    Verify that the `create` method properly handles a catalogue item with a non-existent obsolete replacement catalogue
     item ID, does not find a catalogue item with such ID, and does not create the catalogue item.
     """
     catalogue_item_properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
@@ -748,7 +748,7 @@ def test_update_when_no_child_elements(
     """
     Test updating a catalogue item with child elements.
 
-    Verify that the `update` method properly handles the catalogue item to be updated when it doesnt have any
+    Verify that the `update` method properly handles the catalogue item to be updated when it doesn't have any
     children.
     """
     # pylint: disable=duplicate-code
@@ -864,7 +864,7 @@ def test_update_when_has_child_elements(
     assert updated_catalogue_item == catalogue_item
 
 
-def test_update_with_nonexistent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
+def test_update_with_non_existent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
     """
     Test updating a catalogue item with a non-existent ID.
 
@@ -1304,7 +1304,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
     assert updated_catalogue_item == catalogue_item
 
 
-def test_update_with_nonexistent_catalogue_category_id(
+def test_update_with_non_existent_catalogue_category_id(
     test_helpers,
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
@@ -1452,7 +1452,7 @@ def test_update_with_existent_manufacturer_id_when_has_child_elements(
     assert str(exc.value) == f"Catalogue item with ID {catalogue_item.id} has child elements and cannot be updated"
 
 
-def test_update_with_nonexistent_manufacturer_id(
+def test_update_with_non_existent_manufacturer_id(
     test_helpers,
     manufacturer_repository_mock,
     catalogue_item_repository_mock,

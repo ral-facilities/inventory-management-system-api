@@ -19,7 +19,7 @@ class AddressSchema(BaseModel):
 
 
 class AddressPatchRequestSchema(AddressSchema):
-    """Schema used for editting address, so that it allows to edit individual fields"""
+    """Schema used for editing address, so that it allows to edit individual fields"""
 
     address_line: Optional[str] = Field(default=None, description="The address line of the manufacturer")
     postcode: Optional[str] = Field(default=None, description="Post Code/Zip of manufacturer")
@@ -27,7 +27,7 @@ class AddressPatchRequestSchema(AddressSchema):
 
 
 class ManufacturerPostRequestSchema(BaseModel):
-    """Schema model for manufactuer creation request"""
+    """Schema model for manufacturer creation request"""
 
     name: str = Field(description="Name of manufacturer")
     url: Optional[HttpUrl] = Field(default=None, description="URL of manufacturer")

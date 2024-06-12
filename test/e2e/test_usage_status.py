@@ -89,8 +89,8 @@ def test_get_usage_status_with_invalid_id(test_client):
     assert response.json()["detail"] == "Usage status not found"
 
 
-def test_get_usage_status_with_nonexistent_id(test_client):
-    """Test getting a usage-statuses with an nonexistent id"""
+def test_get_usage_status_with_non_existent_id(test_client):
+    """Test getting a usage-statuses with an non-existent id"""
 
     response = test_client.get(f"/v1/usage-statuses/{str(ObjectId())}")
 
