@@ -59,8 +59,7 @@ class DatabaseConfig(BaseModel):
     protocol: SecretStr
     username: SecretStr
     password: SecretStr
-    hostname: SecretStr
-    port: SecretStr
+    host_and_options: SecretStr
     name: SecretStr
 
     model_config = ConfigDict(hide_input_in_errors=True)
