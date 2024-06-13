@@ -986,7 +986,7 @@ def test_update_with_invalid_id(catalogue_category_repository):
     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_category_id}'"
 
 
-def test_update_with_nonexistent_parent_id(test_helpers, database_mock, catalogue_category_repository):
+def test_update_with_non_existent_parent_id(test_helpers, database_mock, catalogue_category_repository):
     """
     Test updating a catalogue category with non-existent parent ID.
 

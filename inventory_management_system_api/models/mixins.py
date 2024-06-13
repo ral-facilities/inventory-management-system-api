@@ -11,7 +11,7 @@ from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 class CreatedModifiedTimeInMixin(BaseModel):
     """
-    Input model mixin that provides creation and modfied time fields
+    Input model mixin that provides creation and modified time fields
 
     For a create request an instance of the model should be created without supplying the `created_time` field
     as this will cause it to be assigned as the current time.
@@ -41,7 +41,7 @@ class CreatedModifiedTimeInMixin(BaseModel):
 
 class CreatedModifiedTimeOutMixin(BaseModel):
     """
-    Output model mixin that provides creation and modfied time fields
+    Output model mixin that provides creation and modified time fields
     """
 
     created_time: AwareDatetime

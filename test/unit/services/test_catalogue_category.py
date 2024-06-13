@@ -460,11 +460,11 @@ def test_get(test_helpers, catalogue_category_repository_mock, catalogue_categor
     assert retrieved_catalogue_category == catalogue_category
 
 
-def test_get_with_nonexistent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_get_with_non_existent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
-    Test getting a catalogue category with a nonexistent ID.
+    Test getting a catalogue category with a non-existent ID.
 
-    Verify that the `get` method properly handles the retrieval of a catalogue category with a nonexistent ID.
+    Verify that the `get` method properly handles the retrieval of a catalogue category with a non-existent ID.
     """
     catalogue_category_id = str(ObjectId())
 
@@ -635,7 +635,7 @@ def test_update_when_has_child_elements(
     assert updated_catalogue_category == catalogue_category
 
 
-def test_update_with_nonexistent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
+def test_update_with_non_existent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
     """
     Test updating a catalogue category with a non-existent ID.
 

@@ -191,5 +191,6 @@ class TestIsValidMoveResult:
         assert utils.is_valid_move_result(MOCK_MOVE_QUERY_RESULT_INVALID) is False
 
     def test_is_valid_move_result_when_entity_not_found(self):
-        """Test compute_breadcrumbs functions correctly when the entity ID doesnt exist in the database to begin with"""
+        """Test compute_breadcrumbs functions correctly when the entity ID doesn't exist in the database to begin
+        with"""
         assert utils.is_valid_move_result(MOCK_MOVE_QUERY_RESULT_NON_EXISTENT_ID) is False

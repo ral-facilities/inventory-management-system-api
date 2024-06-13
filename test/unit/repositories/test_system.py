@@ -97,7 +97,7 @@ def test_create(test_helpers, database_mock, system_repository):
     session = MagicMock()
     # pylint: enable=duplicate-code
 
-    # Mock `find_one` to return no duplicate systen found in parent system
+    # Mock `find_one` to return no duplicate system found in parent system
     test_helpers.mock_find_one(database_mock.systems, None)
     # Mock `insert_one` to return an object for the inserted system document
     test_helpers.mock_insert_one(database_mock.systems, CustomObjectId(system_out.id))
@@ -136,7 +136,7 @@ def test_create_with_parent_id(test_helpers, database_mock, system_repository):
         {**system_info, "_id": CustomObjectId(system_out.parent_id), "parent_id": None},
     )
     # pylint: enable=duplicate-code
-    # Mock `find_one` to return no duplicate systen found in parent system
+    # Mock `find_one` to return no duplicate system found in parent system
     test_helpers.mock_find_one(database_mock.systems, None)
     # Mock `insert_one` to return an object for the inserted system document
     test_helpers.mock_insert_one(database_mock.systems, CustomObjectId(system_out.id))
@@ -219,7 +219,7 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, s
         database_mock.systems,
         {**system_info, "_id": CustomObjectId(system_out.parent_id), "parent_id": str(ObjectId())},
     )
-    # Mock `find_one` to return duplicate systen found in parent system
+    # Mock `find_one` to return duplicate system found in parent system
     test_helpers.mock_find_one(
         database_mock.systems,
         {

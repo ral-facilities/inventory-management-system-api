@@ -616,7 +616,7 @@ def test_update(test_helpers, database_mock, item_repository):
 
 def test_update_with_invalid_id(item_repository):
     """
-    Test updating an item with Inavlid ID.
+    Test updating an item with an invalid ID.
 
     Verify that the `update` method properly handles the update of an item with an invalid ID.
     """

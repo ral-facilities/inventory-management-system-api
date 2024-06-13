@@ -93,7 +93,7 @@ def test_get(test_helpers, manufacturer_repository_mock, manufacturer_service):
     assert retrieved_manufacturer == manufacturer
 
 
-def test_get_with_nonexistent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
+def test_get_with_non_existent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
     """Test getting a manufacturer with an non-existent ID"""
     manufacturer_id = str(ObjectId())
     test_helpers.mock_get(manufacturer_repository_mock, None)
@@ -113,8 +113,8 @@ def test_list(manufacturer_repository_mock, manufacturer_service):
     assert result == manufacturer_repository_mock.list.return_value
 
 
-def test_update_with_nonexistent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
-    """Test updating a manufacturer with a nonexistent id"""
+def test_update_with_non_existent_id(test_helpers, manufacturer_repository_mock, manufacturer_service):
+    """Test updating a manufacturer with a non-existent id"""
     # pylint: disable=duplicate-code
     manufacturer = ManufacturerOut(
         _id=str(ObjectId()),

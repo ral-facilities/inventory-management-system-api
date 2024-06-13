@@ -1167,7 +1167,7 @@ def test_partial_update_catalogue_item_invalid_id(test_client):
 
 def test_partial_update_catalogue_item_non_existent_id(test_client):
     """
-    Test updating a catalogue item with a nonexistent ID.
+    Test updating a catalogue item with a non-existent ID.
     """
     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
 
@@ -2304,9 +2304,9 @@ def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_cl
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
-def test_partial_update_catalogue_item_change_manufacturer_id_nonexistent_id(test_client):
+def test_partial_update_catalogue_item_change_manufacturer_id_non_existent_id(test_client):
     """
-    Test changing the manufacturer ID of a catalogue item to a nonexistent ID.
+    Test changing the manufacturer ID of a catalogue item to a non-existent ID.
     """
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
     catalogue_category = response.json()

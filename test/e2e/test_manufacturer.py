@@ -89,7 +89,7 @@ def test_create_manufacturer_with_only_mandatory_fields(test_client):
 
 
 def test_check_duplicate_name_within_manufacturer(test_client):
-    """Test creating a manufactuer with a duplicate name"""
+    """Test creating a manufacturer with a duplicate name"""
 
     test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
 
@@ -117,7 +117,7 @@ def test_list(test_client):
 
 
 def test_list_when_no_manufacturers(test_client):
-    """Test trying to get all manufacturers when there are none in the databse"""
+    """Test trying to get all manufacturers when there are none in the database"""
 
     response = test_client.get("/v1/manufacturers")
 
@@ -145,8 +145,8 @@ def test_get_manufacturer_with_invalid_id(test_client):
     assert response.json()["detail"] == "Manufacturer not found"
 
 
-def test_get_manufactuer_with_nonexistent_id(test_client):
-    """Test getting a manufacturer with an nonexistent id"""
+def test_get_manufacturer_with_non_existent_id(test_client):
+    """Test getting a manufacturer with an non-existent id"""
 
     response = test_client.get(f"/v1/manufacturers/{str(ObjectId())}")
 
@@ -216,7 +216,7 @@ def test_update_with_invalid_id(test_client):
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
-def test_update_with_nonexistent_id(test_client):
+def test_update_with_non_existent_id(test_client):
     """Test trying to update a manufacturer with a non-existent ID"""
     response = test_client.patch(f"/v1/manufacturers/{str(ObjectId())}", json=MANUFACTURER_A_POST)
 
