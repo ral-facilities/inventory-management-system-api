@@ -3,6 +3,7 @@ End-to-End tests for the System router
 """
 
 from test.conftest import add_ids_to_properties
+from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import (
     CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
@@ -12,8 +13,9 @@ from test.e2e.mock_schemas import (
     SYSTEM_POST_C,
     USAGE_STATUS_POST_B,
 )
-from test.e2e.test_catalogue_item import CATALOGUE_ITEM_POST_A, CATALOGUE_CATEGORY_POST_A
+from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
+from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from typing import Any, Optional
 from unittest.mock import ANY
 
@@ -441,6 +443,18 @@ def test_partial_update_system_name(test_client):
     _test_partial_update_system(test_client, {"name": "Updated name"}, {"code": "updated-name"})
 
 
+def test_partial_update_capitalisation_of_system_name(test_client):
+    """
+    Test updating a capitalisation of the System's name
+    """
+    _test_partial_update_system(
+        test_client,
+        {
+            "name": "SyStEm A",
+        },
+    )
+
+
 def test_partial_update_all_other_fields(test_client):
     """
     Test updating the rest of a systems fields not tested above
@@ -543,7 +557,23 @@ def test_delete_system_with_child_item(test_client):
 
     # Create a child item
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit_mm = response.json()
+
+    response = test_client.post("/v1/units", json=UNIT_POST_B)
+    unit_cm = response.json()
+
+    units = [unit_mm, unit_cm]
+
+    response = test_client.post(
+        "/v1/catalogue-categories",
+        json={
+            **CATALOGUE_CATEGORY_POST_A,
+            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
+                CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
+            ),
+        },
+    )
     catalogue_category = response.json()
 
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)

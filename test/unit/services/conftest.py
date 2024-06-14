@@ -12,6 +12,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.system import SystemOut
+from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -102,31 +103,42 @@ def fixture_usage_status_repository_mock() -> Mock:
 
 
 @pytest.fixture(name="catalogue_category_service")
-def fixture_catalogue_category_service(catalogue_category_repository_mock: Mock) -> CatalogueCategoryService:
+def fixture_catalogue_category_service(
+    catalogue_category_repository_mock: Mock, unit_repository_mock: Mock
+) -> CatalogueCategoryService:
     """
-    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` dependency.
+    Fixture to create a `CatalogueCategoryService` instance with a mocked `CatalogueCategoryRepo` and `UnitRepo`
+    dependency.
 
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param unit_repository_mock: Mocked `UnitRepo` instance.
     :return: `CatalogueCategoryService` instance with the mocked dependency.
     """
-    return CatalogueCategoryService(catalogue_category_repository_mock)
+    return CatalogueCategoryService(catalogue_category_repository_mock, unit_repository_mock)
 
 
 @pytest.fixture(name="catalogue_category_property_service")
 def fixture_catalogue_category_property_service(
-    catalogue_category_repository_mock: Mock, catalogue_item_repository_mock: Mock, item_repository_mock: Mock
+    catalogue_category_repository_mock: Mock,
+    catalogue_item_repository_mock: Mock,
+    item_repository_mock: Mock,
+    unit_repository_mock: Mock,
 ) -> CatalogueCategoryPropertyService:
     """
     Fixture to create a `CatalogueCategoryPropertyService` instance with mocked `CatalogueCategoryRepo`,
-    `CatalogueItemRepo`, and `ItemRepo` dependencies.
+    `CatalogueItemRepo`, `ItemRepo` and `UnitRepo` dependencies.
 
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param item_repository_mock: Mocked `ItemRepo` instance.
+    :param unit_repository_mock: Mocked `UnitRepo` instance.
     :return: `CatalogueCategoryPropertyService` instance with the mocked dependencies.
     """
     return CatalogueCategoryPropertyService(
-        catalogue_category_repository_mock, catalogue_item_repository_mock, item_repository_mock
+        catalogue_category_repository_mock,
+        catalogue_item_repository_mock,
+        item_repository_mock,
+        unit_repository_mock,
     )
 
 
@@ -242,7 +254,8 @@ class ServiceTestHelpers:
 
     @staticmethod
     def mock_get(
-        repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, None]
+        repository_mock: Mock,
+        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, UnitOut, None],
     ) -> None:
         """
         Mock the `get` method of the repository mock to return a specific repository object.

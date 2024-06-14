@@ -3,7 +3,7 @@ Module for providing a service for managing catalogue categories using the `Cata
 """
 
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import Depends
 
@@ -13,12 +13,17 @@ from inventory_management_system_api.core.exceptions import (
     LeafCategoryError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn,
+    CatalogueCategoryOut,
+)
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchRequestSchema,
+    CatalogueCategoryPostRequestPropertySchema,
     CatalogueCategoryPostRequestSchema,
 )
 from inventory_management_system_api.services import utils
@@ -31,13 +36,19 @@ class CatalogueCategoryService:
     Service for managing catalogue categories.
     """
 
-    def __init__(self, catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo)) -> None:
+    def __init__(
+        self,
+        catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
+        unit_repository: UnitRepo = Depends(UnitRepo),
+    ) -> None:
         """
-        Initialise the `CatalogueCategoryService` with a `CatalogueCategoryRepo` repository.
+        Initialise the `CatalogueCategoryService` with a `CatalogueCategoryRepo` and `UnitRepo` repository.
 
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
+        :param unit_repository: The `UnitRepo` repository to use.
         """
         self._catalogue_category_repository = catalogue_category_repository
+        self._unit_repository = unit_repository
 
     def create(self, catalogue_category: CatalogueCategoryPostRequestSchema) -> CatalogueCategoryOut:
         """
@@ -56,12 +67,24 @@ class CatalogueCategoryService:
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
+        catalogue_item_properties = []
         if catalogue_category.catalogue_item_properties:
             utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
+            catalogue_item_properties = self._add_catalogue_item_property_unit_values(
+                catalogue_category.catalogue_item_properties
+            )
+
         code = utils.generate_code(catalogue_category.name, "catalogue category")
+
         return self._catalogue_category_repository.create(
-            CatalogueCategoryIn(**catalogue_category.model_dump(), code=code)
+            CatalogueCategoryIn(
+                **{
+                    **catalogue_category.model_dump(),
+                    "catalogue_item_properties": catalogue_item_properties,
+                    "code": code,
+                }
+            )
         )
 
     def delete(self, catalogue_category_id: str) -> None:
@@ -143,6 +166,38 @@ class CatalogueCategoryService:
         if catalogue_category.catalogue_item_properties:
             utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
 
+            catalogue_item_properties = self._add_catalogue_item_property_unit_values(
+                catalogue_category.catalogue_item_properties
+            )
+            update_data["catalogue_item_properties"] = catalogue_item_properties
+
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
+
+    def _add_catalogue_item_property_unit_values(
+        self,
+        catalogue_item_properties: List[CatalogueCategoryPostRequestPropertySchema],
+    ) -> List[dict[str, Any]]:
+        """
+        Adds the unit values to the catalogue item properties based on the provided unit IDs.
+
+        :param catalogue_item_properties: List of catalogue item properties to which unit values will be added.
+        :return: List of catalogue item properties with unit values added.
+        :raises MissingRecordError: If a unit with the specified ID is not found.
+        """
+        logger.info("Adding unit values to the catalogue item properties")
+        catalogue_item_properties_with_units = []
+        for catalogue_item_property in catalogue_item_properties:
+            if catalogue_item_property.unit_id is not None:
+                unit = self._unit_repository.get(catalogue_item_property.unit_id)
+                if not unit:
+                    raise MissingRecordError(f"No unit found with ID: {catalogue_item_property.unit_id}")
+
+                # Copy unit value to catalogue item property
+                catalogue_item_properties_with_units.append(
+                    {**catalogue_item_property.model_dump(), "unit": unit.value}
+                )
+            else:
+                catalogue_item_properties_with_units.append({**catalogue_item_property.model_dump(), "unit": None})
+        return catalogue_item_properties_with_units

@@ -134,7 +134,7 @@ class SystemRepo:
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
         if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(
-            parent_id, system.code, session=session
+            parent_id, system.code, system_id, session=session
         ):
             raise DuplicateRecordError("Duplicate System found within the parent System")
 
@@ -177,12 +177,15 @@ class SystemRepo:
         if result.deleted_count == 0:
             raise MissingRecordError(f"No System found with ID: {str(system_id)}")
 
-    def _is_duplicate_system(self, parent_id: Optional[str], code: str, session: ClientSession = None) -> bool:
+    def _is_duplicate_system(
+        self, parent_id: Optional[str], code: str, system_id: CustomObjectId = None, session: ClientSession = None
+    ) -> bool:
         """
         Check if a System with the same code already exists within the parent System
 
         :param parent_id: ID of the parent System which can also be `None`
         :param code: Code of the System to check for duplicates
+        :param system_id: The ID of the system to check if the duplicate system found is itself.
         :param session: PyMongo ClientSession to use for database operations
         :return: `True` if a duplicate System code is found under the given parent, `False` otherwise
         """
@@ -190,7 +193,10 @@ class SystemRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        return self._systems_collection.find_one({"parent_id": parent_id, "code": code}, session=session) is not None
+        system = self._systems_collection.find_one(
+            {"parent_id": parent_id, "code": code, "_id": {"$ne": system_id}}, session=session
+        )
+        return system is not None
 
     def _has_child_elements(self, system_id: CustomObjectId, session: ClientSession = None) -> bool:
         """

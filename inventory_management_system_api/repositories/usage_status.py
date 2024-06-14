@@ -82,7 +82,7 @@ class UsageStatusRepo:
 
     def delete(self, usage_status_id: str, session: ClientSession = None) -> None:
         """
-        Delete a usage status by its ID from MongoDB database.
+        Delete a usage status by its ID from a MongoDB database.
 
         Checks if usage status is a part of an item, and does not delete if it is
 
@@ -100,16 +100,22 @@ class UsageStatusRepo:
         if result.deleted_count == 0:
             raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
 
-    def _is_duplicate_usage_status(self, code: str, session: ClientSession = None) -> bool:
+    def _is_duplicate_usage_status(
+        self, code: str, usage_status_id: CustomObjectId = None, session: ClientSession = None
+    ) -> bool:
         """
         Check if usage status with the same name already exists in the usage statuses collection
 
         :param code: The code of the usage status to check for duplicates.
+        :param usage_status_id: The ID of the usage status to check if the duplicate usage status found is itself.
         :param session: PyMongo ClientSession to use for database operations
         :return: `True` if a duplicate usage status code is found, `False` otherwise
         """
         logger.info("Checking if usage status with code '%s' already exists", code)
-        return self._usage_statuses_collection.find_one({"code": code}, session=session) is not None
+        usage_status = self._usage_statuses_collection.find_one(
+            {"code": code, "_id": {"$ne": usage_status_id}}, session=session
+        )
+        return usage_status is not None
 
     def _is_usage_status_in_item(self, usage_status_id: str, session: ClientSession = None) -> bool:
         """Checks to see if any of the items in the database have a specific usage status ID

@@ -520,11 +520,11 @@ def test_get(test_helpers, item_repository_mock, item_service):
     assert retrieved_item == item
 
 
-def test_get_with_nonexistent_id(test_helpers, item_repository_mock, item_service):
+def test_get_with_non_existent_id(test_helpers, item_repository_mock, item_service):
     """
-    Test getting an item with a nonexsistent ID.
+    Test getting an item with a non-existent ID.
 
-    Verify the `get` method properly handles the retrieval of an item with a nonexistent ID.
+    Verify the `get` method properly handles the retrieval of an item with a non-existent ID.
     """
     item_id = str(ObjectId())
 
@@ -620,7 +620,7 @@ def test_update(
     assert updated_item == item
 
 
-def test_update_with_nonexistent_id(test_helpers, item_repository_mock, item_service):
+def test_update_with_non_existent_id(test_helpers, item_repository_mock, item_service):
     """
     Test updating an item with a non-existent ID.
 
@@ -758,7 +758,7 @@ def test_update_change_system_id(
     assert updated_item == item
 
 
-def test_update_with_nonexistent_system_id(test_helpers, system_repository_mock, item_repository_mock, item_service):
+def test_update_with_non_existent_system_id(test_helpers, system_repository_mock, item_repository_mock, item_service):
     """
     Test updating an item with a non-existent system ID.
     """

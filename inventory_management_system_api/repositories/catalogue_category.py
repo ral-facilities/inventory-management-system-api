@@ -166,7 +166,9 @@ class CatalogueCategoryRepo:
         moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
         if (
             catalogue_category.name != stored_catalogue_category.name or moving_catalogue_category
-        ) and self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
+        ) and self._is_duplicate_catalogue_category(
+            parent_id, catalogue_category.code, catalogue_category_id, session=session
+        ):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
 
         # Prevent a catalogue category from being moved to one of its own children
@@ -207,13 +209,19 @@ class CatalogueCategoryRepo:
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
 
     def _is_duplicate_catalogue_category(
-        self, parent_id: Optional[str], code: str, session: ClientSession = None
+        self,
+        parent_id: Optional[str],
+        code: str,
+        catalogue_category_id: CustomObjectId = None,
+        session: ClientSession = None,
     ) -> bool:
         """
         Check if a catalogue category with the same code already exists within the parent category.
 
         :param parent_id: The ID of the parent catalogue category which can also be `None`.
         :param code: The code of the catalogue category to check for duplicates.
+        :param catalogue_category_id: The ID of the catalogue category to check if the duplicate
+                                      catalogue category found is itself.
         :param session: PyMongo ClientSession to use for database operations
         :return: `True` if a duplicate catalogue category code is found, `False` otherwise.
         """
@@ -221,10 +229,11 @@ class CatalogueCategoryRepo:
         if parent_id:
             parent_id = CustomObjectId(parent_id)
 
-        return (
-            self._catalogue_categories_collection.find_one({"parent_id": parent_id, "code": code}, session=session)
-            is not None
+        catalogue_category = self._catalogue_categories_collection.find_one(
+            {"parent_id": parent_id, "code": code, "_id": {"$ne": catalogue_category_id}}, session=session
         )
+
+        return catalogue_category is not None
 
     def has_child_elements(self, catalogue_category_id: CustomObjectId, session: ClientSession = None) -> bool:
         """

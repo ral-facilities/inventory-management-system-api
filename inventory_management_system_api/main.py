@@ -19,7 +19,7 @@ from inventory_management_system_api.routers.v1 import (
     manufacturer,
     system,
     unit,
-    usage_status
+    usage_status,
 )
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
@@ -70,6 +70,7 @@ def get_router_dependencies() -> list:
     if config.authentication.enabled is True:
         # pylint:disable=import-outside-toplevel
         from inventory_management_system_api.auth.jwt_bearer import JWTBearer
+
         dependencies.append(Depends(JWTBearer()))
     return dependencies
 

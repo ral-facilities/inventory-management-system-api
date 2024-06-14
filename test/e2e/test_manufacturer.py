@@ -4,6 +4,7 @@ End-to-End tests for the manufacturer router.
 
 from test.conftest import add_ids_to_properties
 from test.e2e.mock_schemas import CREATED_MODIFIED_VALUES_EXPECTED
+from test.e2e.test_unit import UNIT_POST_A
 from unittest.mock import ANY
 
 from bson import ObjectId
@@ -88,7 +89,7 @@ def test_create_manufacturer_with_only_mandatory_fields(test_client):
 
 
 def test_check_duplicate_name_within_manufacturer(test_client):
-    """Test creating a manufactuer with a duplicate name"""
+    """Test creating a manufacturer with a duplicate name"""
 
     test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
 
@@ -116,7 +117,7 @@ def test_list(test_client):
 
 
 def test_list_when_no_manufacturers(test_client):
-    """Test trying to get all manufacturers when there are none in the databse"""
+    """Test trying to get all manufacturers when there are none in the database"""
 
     response = test_client.get("/v1/manufacturers")
 
@@ -144,8 +145,8 @@ def test_get_manufacturer_with_invalid_id(test_client):
     assert response.json()["detail"] == "Manufacturer not found"
 
 
-def test_get_manufactuer_with_nonexistent_id(test_client):
-    """Test getting a manufacturer with an nonexistent id"""
+def test_get_manufacturer_with_non_existent_id(test_client):
+    """Test getting a manufacturer with an non-existent id"""
 
     response = test_client.get(f"/v1/manufacturers/{str(ObjectId())}")
 
@@ -194,6 +195,18 @@ def test_partial_address_update(test_client):
     }
 
 
+def test_partial_update_capitalisation_of_name(test_client):
+    """Test updating a manufacturer when the capitalisation of the name is different"""
+
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+
+    manufacturer_patch = {"name": "MaNuFaCtUrEr A"}
+    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
+
+    assert response.status_code == 200
+    assert response.json() == {**MANUFACTURER_A_POST_EXPECTED, **manufacturer_patch}
+
+
 def test_update_with_invalid_id(test_client):
     """Test trying to update a manufacturer with an invalid ID"""
 
@@ -203,7 +216,7 @@ def test_update_with_invalid_id(test_client):
     assert response.json()["detail"] == "The specified manufacturer does not exist"
 
 
-def test_update_with_nonexistent_id(test_client):
+def test_update_with_non_existent_id(test_client):
     """Test trying to update a manufacturer with a non-existent ID"""
     response = test_client.patch(f"/v1/manufacturers/{str(ObjectId())}", json=MANUFACTURER_A_POST)
 
@@ -257,12 +270,15 @@ def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
     manufacturer_id = response.json()["id"]
 
+    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    unit_mm = response.json()
+
     # pylint: disable=duplicate-code
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
         "catalogue_item_properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
+            {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_mm["id"], "mandatory": False},
             {"name": "Property B", "type": "boolean", "mandatory": True},
         ],
     }

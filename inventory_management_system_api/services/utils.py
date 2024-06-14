@@ -142,8 +142,9 @@ def _add_catalogue_item_property_units(
     :param supplied_properties: The supplied catalogue item properties.
     """
     logger.info("Adding the units to the supplied properties")
-    for supplied_property_id, supplied_property in supplied_properties.items():
-        supplied_property["unit"] = defined_properties[supplied_property_id]["unit"]
+    for supplied_property_name, supplied_property in supplied_properties.items():
+        supplied_property["unit_id"] = defined_properties[supplied_property_name]["unit_id"]
+        supplied_property["unit"] = defined_properties[supplied_property_name]["unit"]
 
 
 def _validate_catalogue_item_property_value(defined_property: Dict, supplied_property: Dict) -> None:
@@ -239,7 +240,7 @@ def _merge_non_mandatory_catalogue_item_properties(
     :param defined_properties: The defined catalogue item properties stored as part of the catalogue category in the
                                database.
     :param supplied_properties: The supplied catalogue item properties.
-    :return: The supplied properties combined with any unsupplied non mandatory properites (with a value of None) in
+    :return: The supplied properties combined with any unsupplied non mandatory properties (with a value of None) in
              the order they are defined.
     """
     logger.info("Merging any missing defined non-mandatory properties with the supplied properties")
