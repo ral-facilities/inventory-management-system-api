@@ -332,12 +332,12 @@ def generate_random_catalogue_item(
         )
     )
 
-    properties = None
+    generated_properties = None
     if properties is not None:
-        properties = []
+        generated_properties = []
         for prop in properties:
             if prop["mandatory"] or fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD:
-                properties.append(generate_random_property(catalogue_category_property=prop))
+                generated_properties.append(generate_random_property(catalogue_category_property=prop))
 
     return {
         "catalogue_category_id": catalogue_category_id,
@@ -360,7 +360,7 @@ def generate_random_catalogue_item(
             "url": fake.url(),
         },
         "notes": optional_catalogue_item_field(lambda: fake.paragraph(nb_sentences=2)),
-        "properties": properties,
+        "properties": generated_properties,
     }
 
 
