@@ -20,11 +20,11 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueCategoryPatchRequestSchema,
-    CatalogueCategoryPostRequestSchema,
+    CatalogueCategoryPatchSchema,
+    CatalogueCategoryPostSchema,
     CatalogueCategorySchema,
-    CategoryPropertyPatchRequestSchema,
-    CategoryPropertyPostRequestSchema,
+    CategoryPropertyPatchSchema,
+    CategoryPropertyPostSchema,
     CategoryPropertySchema,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
@@ -107,7 +107,7 @@ def get_catalogue_category_breadcrumbs(
     status_code=status.HTTP_201_CREATED,
 )
 def create_catalogue_category(
-    catalogue_category: CatalogueCategoryPostRequestSchema,
+    catalogue_category: CatalogueCategoryPostSchema,
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> CatalogueCategorySchema:
     # pylint: disable=missing-function-docstring
@@ -147,7 +147,7 @@ def create_catalogue_category(
     response_description="Catalogue category updated successfully",
 )
 def partial_update_catalogue_category(
-    catalogue_category: CatalogueCategoryPatchRequestSchema,
+    catalogue_category: CatalogueCategoryPatchSchema,
     catalogue_category_id: str = Path(description="The ID of the catalogue category to update"),
     catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> CatalogueCategorySchema:
@@ -229,7 +229,7 @@ def delete_catalogue_category(
     status_code=status.HTTP_201_CREATED,
 )
 def create_property(
-    category_property: CategoryPropertyPostRequestSchema,
+    category_property: CategoryPropertyPostSchema,
     catalogue_category_id: str = Path(description="The ID of the catalogue category to add a property to"),
     catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
 ) -> CategoryPropertySchema:
@@ -268,7 +268,7 @@ def create_property(
     response_description="The updated property as defined at the catalogue category level",
 )
 def partial_update_property(
-    category_property: CategoryPropertyPatchRequestSchema,
+    category_property: CategoryPropertyPatchSchema,
     catalogue_category_id: str = Path(description="The ID of the catalogue category containing the property to patch"),
     property_id: str = Path(description="The ID of the property patch"),
     catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),

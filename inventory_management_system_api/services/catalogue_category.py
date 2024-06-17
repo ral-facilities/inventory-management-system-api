@@ -22,9 +22,9 @@ from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
-    CatalogueCategoryPatchRequestSchema,
+    CatalogueCategoryPatchSchema,
     CatalogueCategoryPostRequestPropertySchema,
-    CatalogueCategoryPostRequestSchema,
+    CatalogueCategoryPostSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -50,7 +50,7 @@ class CatalogueCategoryService:
         self._catalogue_category_repository = catalogue_category_repository
         self._unit_repository = unit_repository
 
-    def create(self, catalogue_category: CatalogueCategoryPostRequestSchema) -> CatalogueCategoryOut:
+    def create(self, catalogue_category: CatalogueCategoryPostSchema) -> CatalogueCategoryOut:
         """
         Create a new catalogue category.
 
@@ -121,7 +121,7 @@ class CatalogueCategoryService:
         return self._catalogue_category_repository.list(parent_id)
 
     def update(
-        self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchRequestSchema
+        self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchSchema
     ) -> CatalogueCategoryOut:
         """
         Update a catalogue category by its ID.

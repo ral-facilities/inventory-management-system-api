@@ -162,7 +162,7 @@ class CategoryPropertySchema(CatalogueCategoryPostRequestPropertySchema):
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
-class CatalogueCategoryPostRequestSchema(BaseModel):
+class CatalogueCategoryPostSchema(BaseModel):
     """
     Schema model for a catalogue category creation request.
     """
@@ -182,7 +182,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
 CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS = ["is_leaf", "properties"]
 
 
-class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
+class CatalogueCategoryPatchSchema(CatalogueCategoryPostSchema):
     """
     Schema model for a catalogue category update request.
     """
@@ -195,7 +195,7 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
+class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostSchema):
     """
     Schema model for a catalogue category response.
     """
@@ -207,7 +207,7 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostR
     )
 
 
-class CategoryPropertyPostRequestSchema(CatalogueCategoryPostRequestPropertySchema):
+class CategoryPropertyPostSchema(CatalogueCategoryPostRequestPropertySchema):
     """
     Schema model for a property creation request on a catalogue category
     """
@@ -249,7 +249,7 @@ class CategoryPropertyPostRequestSchema(CatalogueCategoryPostRequestPropertySche
         return default_value
 
 
-class CategoryPropertyPatchRequestSchema(BaseModel):
+class CategoryPropertyPatchSchema(BaseModel):
     """
     Schema model for a property patch request on a catalogue category
     """

@@ -8,7 +8,7 @@ from fastapi import Depends
 
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
-from inventory_management_system_api.schemas.usage_status import UsageStatusPostRequestSchema
+from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema
 from inventory_management_system_api.services import utils
 
 
@@ -25,7 +25,7 @@ class UsageStatusService:
         """
         self._usage_status_repository = usage_status_repository
 
-    def create(self, usage_status: UsageStatusPostRequestSchema) -> UsageStatusOut:
+    def create(self, usage_status: UsageStatusPostSchema) -> UsageStatusOut:
         """
         Create a new usage status.
 

@@ -23,8 +23,8 @@ from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.catalogue_category import (
     AllowedValuesSchema,
     CatalogueCategoryPostRequestPropertySchema,
-    CategoryPropertyPatchRequestSchema,
-    CategoryPropertyPostRequestSchema,
+    CategoryPropertyPatchSchema,
+    CategoryPropertyPostSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -60,7 +60,7 @@ class CatalogueCategoryPropertyService:
     def create(
         self,
         catalogue_category_id: str,
-        catalogue_category_property: CategoryPropertyPostRequestSchema,
+        catalogue_category_property: CategoryPropertyPostSchema,
     ) -> CatalogueCategoryPropertyOut:
         """Create a new property at the catalogue category level
 
@@ -178,7 +178,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_category_property_id: str,
-        category_property: CategoryPropertyPatchRequestSchema,
+        category_property: CategoryPropertyPatchSchema,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id

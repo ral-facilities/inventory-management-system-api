@@ -15,7 +15,7 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidPropertyTypeError,
 )
-from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema, ItemSchema
+from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
 
 logger = logging.getLogger()
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_item(
-    item: ItemPostRequestSchema,
+    item: ItemPostSchema,
     item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
@@ -131,7 +131,7 @@ def get_item(
     response_description="Item updated successfully",
 )
 def partial_update_item(
-    item: ItemPatchRequestSchema,
+    item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: Annotated[ItemService, Depends(ItemService)],
 ) -> ItemSchema:

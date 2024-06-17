@@ -13,8 +13,8 @@ from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.schemas.manufacturer import (
     AddressSchema,
-    ManufacturerPatchRequestSchema,
-    ManufacturerPostRequestSchema,
+    ManufacturerPatchSchema,
+    ManufacturerPostSchema,
 )
 
 
@@ -51,7 +51,7 @@ def test_create(
     test_helpers.mock_create(manufacturer_repository_mock, manufacturer)
 
     created_manufacturer = manufacturer_service.create(
-        ManufacturerPostRequestSchema(
+        ManufacturerPostSchema(
             name=manufacturer.name,
             url=manufacturer.url,
             address=manufacturer.address,
@@ -183,7 +183,7 @@ def test_partial_update_of_address(
 
     updated_manufacturer = manufacturer_service.update(
         manufacturer.id,
-        ManufacturerPatchRequestSchema(address={"address_line": "test"}),
+        ManufacturerPatchSchema(address={"address_line": "test"}),
     )
 
     manufacturer_repository_mock.update.assert_called_once_with(
@@ -230,7 +230,7 @@ def test_partial_update_of_manufacturer(
     # Mock `get` to return the updated manufacturer
     test_helpers.mock_update(manufacturer_repository_mock, manufacturer)
 
-    updated_manufacturer = manufacturer_service.update(manufacturer.id, ManufacturerPatchRequestSchema(name="test"))
+    updated_manufacturer = manufacturer_service.update(manufacturer.id, ManufacturerPatchSchema(name="test"))
 
     manufacturer_repository_mock.update.assert_called_once_with(
         manufacturer.id, ManufacturerIn(**full_manufacturer_info)

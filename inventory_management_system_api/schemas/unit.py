@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class UnitPostRequestSchema(BaseModel):
+class UnitPostSchema(BaseModel):
     """
     Schema model for a Unit post request
     """
@@ -15,7 +15,7 @@ class UnitPostRequestSchema(BaseModel):
     value: str = Field(description="Value of the Unit")
 
 
-class UnitSchema(CreatedModifiedSchemaMixin, UnitPostRequestSchema):
+class UnitSchema(CreatedModifiedSchemaMixin, UnitPostSchema):
     """
     Schema model for a Unit get request response
     """

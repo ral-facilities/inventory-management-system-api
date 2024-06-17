@@ -13,7 +13,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestPropertySchema
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
 logger = logging.getLogger()
 
@@ -56,7 +56,7 @@ def check_duplicate_property_names(
 
 def process_properties(
     defined_properties: List[CatalogueCategoryPropertyOut],
-    supplied_properties: List[PropertyPostRequestSchema],
+    supplied_properties: List[PropertyPostSchema],
 ) -> List[Dict]:
     """
     Process and validate supplied properties based on the defined properties. It checks for missing mandatory,
@@ -87,7 +87,7 @@ def process_properties(
 
 
 def _create_properties_dict(
-    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostRequestSchema]]
+    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]]
 ) -> Dict[str, Dict]:
     """
     Convert a list of property objects into a dictionary where the keys are the catalogue item

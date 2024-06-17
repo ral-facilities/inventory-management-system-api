@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from bson import ObjectId
 
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
-from inventory_management_system_api.schemas.usage_status import UsageStatusPostRequestSchema
+from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema
 
 
 def test_create(
@@ -35,7 +35,7 @@ def test_create(
     test_helpers.mock_create(usage_status_repository_mock, usage_status)
 
     created_usage_status = usage_status_service.create(
-        UsageStatusPostRequestSchema(
+        UsageStatusPostSchema(
             value=usage_status.value,
         )
     )

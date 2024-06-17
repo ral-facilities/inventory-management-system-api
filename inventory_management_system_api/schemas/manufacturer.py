@@ -18,7 +18,7 @@ class AddressSchema(BaseModel):
     postcode: str = Field(description="Post Code/Zip of manufacturer")
 
 
-class AddressPatchRequestSchema(AddressSchema):
+class AddressPatchSchema(AddressSchema):
     """Schema used for editing address, so that it allows to edit individual fields"""
 
     address_line: Optional[str] = Field(default=None, description="The address line of the manufacturer")
@@ -26,7 +26,7 @@ class AddressPatchRequestSchema(AddressSchema):
     country: Optional[str] = Field(default=None, description="Country of the manufacturer")
 
 
-class ManufacturerPostRequestSchema(BaseModel):
+class ManufacturerPostSchema(BaseModel):
     """Schema model for manufacturer creation request"""
 
     name: str = Field(description="Name of manufacturer")
@@ -35,14 +35,14 @@ class ManufacturerPostRequestSchema(BaseModel):
     telephone: Optional[str] = Field(default=None, description="Phone number of manufacturer")
 
 
-class ManufacturerPatchRequestSchema(ManufacturerPostRequestSchema):
+class ManufacturerPatchSchema(ManufacturerPostSchema):
     """Schema model for editing a manufacturer"""
 
     name: Optional[str] = None
-    address: Optional[AddressPatchRequestSchema] = None
+    address: Optional[AddressPatchSchema] = None
 
 
-class ManufacturerSchema(CreatedModifiedSchemaMixin, ManufacturerPostRequestSchema):
+class ManufacturerSchema(CreatedModifiedSchemaMixin, ManufacturerPostSchema):
     """Schema model for manufacturer response"""
 
     id: str = Field(description="The ID of manufacturer")

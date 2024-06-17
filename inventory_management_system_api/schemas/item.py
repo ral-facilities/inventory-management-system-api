@@ -6,11 +6,11 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field, AwareDatetime
 
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema, PropertySchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema, PropertySchema
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class ItemPostRequestSchema(BaseModel):
+class ItemPostSchema(BaseModel):
     """
     Schema model for an item creation request.
     """
@@ -25,14 +25,14 @@ class ItemPostRequestSchema(BaseModel):
     serial_number: Optional[str] = Field(default=None, description="The serial number of the item")
     delivered_date: Optional[AwareDatetime] = Field(default=None, description="The date the item was delivered")
     notes: Optional[str] = Field(default=None, description="Any notes about the item")
-    properties: Optional[List[PropertyPostRequestSchema]] = Field(
+    properties: Optional[List[PropertyPostSchema]] = Field(
         default=None,
         description="The properties specific to this item as defined in the corresponding catalogue category. All "
         "properties found in the catalogue item will be inherited if not explicitly provided.",
     )
 
 
-class ItemPatchRequestSchema(ItemPostRequestSchema):
+class ItemPatchSchema(ItemPostSchema):
     """
     Schema model for an item update request.
     """
@@ -46,14 +46,14 @@ class ItemPatchRequestSchema(ItemPostRequestSchema):
         default=None,
         description="The ID of the usage status of the item.",
     )
-    properties: Optional[List[PropertyPostRequestSchema]] = Field(
+    properties: Optional[List[PropertyPostSchema]] = Field(
         default=None,
         description="The properties specific to this item. Any properties not declared will be overwritten by "
         "the inherited properties from the catalogue item.",
     )
 
 
-class ItemSchema(CreatedModifiedSchemaMixin, ItemPostRequestSchema):
+class ItemSchema(CreatedModifiedSchemaMixin, ItemPostSchema):
     """
     Schema model for an item response.
     """

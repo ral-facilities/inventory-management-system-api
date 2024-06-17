@@ -21,8 +21,8 @@ from inventory_management_system_api.repositories.catalogue_item import Catalogu
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
-    CatalogueItemPatchRequestSchema,
-    CatalogueItemPostRequestSchema,
+    CatalogueItemPatchSchema,
+    CatalogueItemPostSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -52,7 +52,7 @@ class CatalogueItemService:
         self._catalogue_category_repository = catalogue_category_repository
         self._manufacturer_repository = manufacturer_repository
 
-    def create(self, catalogue_item: CatalogueItemPostRequestSchema) -> CatalogueItemOut:
+    def create(self, catalogue_item: CatalogueItemPostSchema) -> CatalogueItemOut:
         """
         Create a new catalogue item.
 
@@ -124,7 +124,7 @@ class CatalogueItemService:
         return self._catalogue_item_repository.list(catalogue_category_id)
 
     # pylint:disable=too-many-branches
-    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchRequestSchema) -> CatalogueItemOut:
+    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.
 

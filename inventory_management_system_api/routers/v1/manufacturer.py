@@ -14,8 +14,8 @@ from inventory_management_system_api.core.exceptions import (
 )
 
 from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchRequestSchema,
-    ManufacturerPostRequestSchema,
+    ManufacturerPatchSchema,
+    ManufacturerPostSchema,
     ManufacturerSchema,
 )
 from inventory_management_system_api.services.manufacturer import ManufacturerService
@@ -33,7 +33,7 @@ router = APIRouter(prefix="/v1/manufacturers", tags=["manufacturers"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_manufacturer(
-    manufacturer: ManufacturerPostRequestSchema,
+    manufacturer: ManufacturerPostSchema,
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
@@ -92,7 +92,7 @@ def get_one_manufacturer(
     response_description="Manufacturer updated successfully",
 )
 def edit_manufacturer(
-    manufacturer: ManufacturerPatchRequestSchema,
+    manufacturer: ManufacturerPatchSchema,
     manufacturer_id: str = Path(description="The ID of the manufacturer that is to be updated"),
     manufacturer_service: ManufacturerService = Depends(),
 ) -> ManufacturerSchema:

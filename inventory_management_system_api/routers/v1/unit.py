@@ -14,7 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfCatalogueCategoryError,
 )
-from inventory_management_system_api.schemas.unit import UnitPostRequestSchema, UnitSchema
+from inventory_management_system_api.schemas.unit import UnitPostSchema, UnitSchema
 from inventory_management_system_api.services.unit import UnitService
 
 logger = logging.getLogger()
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/v1/units", tags=["units"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_unit(
-    unit: UnitPostRequestSchema,
+    unit: UnitPostSchema,
     unit_service: Annotated[UnitService, Depends(UnitService)],
 ) -> UnitSchema:
     # pylint: disable=missing-function-docstring
