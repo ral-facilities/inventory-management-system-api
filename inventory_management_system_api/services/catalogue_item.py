@@ -84,9 +84,9 @@ class CatalogueItemService:
         ):
             raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
 
-        defined_properties = catalogue_category.catalogue_item_properties
+        defined_properties = catalogue_category.properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
-        supplied_properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
+        supplied_properties = utils.process_properties(defined_properties, supplied_properties)
 
         return self._catalogue_item_repository.create(
             CatalogueItemIn(
@@ -171,11 +171,11 @@ class CatalogueItemService:
 
                 old_to_new_id_map = {}
                 for current_catalogue_category_prop, catalogue_category_prop in zip(
-                    current_catalogue_category.catalogue_item_properties, catalogue_category.catalogue_item_properties
+                    current_catalogue_category.properties, catalogue_category.properties
                 ):
                     if not current_catalogue_category_prop.is_equal_without_id(catalogue_category_prop):
                         raise InvalidActionError(
-                            "Cannot move catalogue item to a category with different catalogue_item_properties without "
+                            "Cannot move catalogue item to a category with different properties without "
                             "specifying the new properties"
                         )
                     old_to_new_id_map[current_catalogue_category_prop.id] = catalogue_category_prop.id
@@ -205,9 +205,9 @@ class CatalogueItemService:
                     stored_catalogue_item.catalogue_category_id
                 )
 
-            defined_properties = catalogue_category.catalogue_item_properties
+            defined_properties = catalogue_category.properties
             supplied_properties = catalogue_item.properties
-            update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
+            update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
         return self._catalogue_item_repository.update(
             catalogue_item_id,

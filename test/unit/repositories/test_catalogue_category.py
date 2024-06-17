@@ -24,8 +24,8 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CatalogueItemPropertyIn,
-    CatalogueItemPropertyOut,
+    CategoryPropertyIn,
+    CategoryPropertyOut,
 )
 
 CATALOGUE_CATEGORY_INFO = {
@@ -33,7 +33,7 @@ CATALOGUE_CATEGORY_INFO = {
     "code": "category-a",
     "is_leaf": False,
     "parent_id": None,
-    "catalogue_item_properties": [],
+    "properties": [],
 }
 
 
@@ -50,7 +50,7 @@ def test_create(test_helpers, database_mock, catalogue_category_repository):
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
@@ -77,11 +77,9 @@ def test_create(test_helpers, database_mock, catalogue_category_repository):
     assert created_catalogue_category == catalogue_category_out
 
 
-def test_create_leaf_category_without_catalogue_item_properties(
-    test_helpers, database_mock, catalogue_category_repository
-):
+def test_create_leaf_category_without_properties(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test creating a leaf catalogue category without catalogue item properties.
+    Test creating a leaf catalogue category without .
 
     Verify that the `create` method properly handles the catalogue category to be created, checks that there is not a
     duplicate catalogue category, and creates the catalogue category.
@@ -92,7 +90,7 @@ def test_create_leaf_category_without_catalogue_item_properties(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
@@ -115,11 +113,9 @@ def test_create_leaf_category_without_catalogue_item_properties(
     assert created_catalogue_category == catalogue_category_out
 
 
-def test_create_leaf_category_with_catalogue_item_properties(
-    test_helpers, database_mock, catalogue_category_repository
-):
+def test_create_leaf_category_with_properties(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test creating a leaf catalogue category with catalogue item properties.
+    Test creating a leaf catalogue category with .
 
     Verify that the `create` method properly handles the catalogue category to be created, checks that there is not a
     duplicate catalogue category, and creates the catalogue category.
@@ -130,9 +126,9 @@ def test_create_leaf_category_with_catalogue_item_properties(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
+        properties=[
+            CategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
@@ -171,9 +167,9 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
         code="category-b",
         is_leaf=True,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[
-            CatalogueItemPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
+        properties=[
+            CategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
@@ -238,7 +234,7 @@ def test_create_with_non_existent_parent_id(test_helpers, database_mock, catalog
         code="category-a",
         is_leaf=False,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[],
+        properties=[],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
     catalogue_category_out = CatalogueCategoryOut(id=str(ObjectId()), **catalogue_category_info)
@@ -267,9 +263,9 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
         code="category-b",
         is_leaf=True,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[
-            CatalogueItemPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-            CatalogueItemPropertyIn(name="Property B", type="boolean", mandatory=True),
+        properties=[
+            CategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
@@ -434,7 +430,7 @@ def test_get(test_helpers, database_mock, catalogue_category_repository):
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     session = MagicMock()
@@ -450,7 +446,7 @@ def test_get(test_helpers, database_mock, catalogue_category_repository):
             "code": catalogue_category.code,
             "is_leaf": catalogue_category.is_leaf,
             "parent_id": catalogue_category.parent_id,
-            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+            "properties": catalogue_category.properties,
         },
     )
 
@@ -534,7 +530,7 @@ def test_list(test_helpers, database_mock, catalogue_category_repository):
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
 
@@ -544,7 +540,7 @@ def test_list(test_helpers, database_mock, catalogue_category_repository):
         code="category-b",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     session = MagicMock()
@@ -561,7 +557,7 @@ def test_list(test_helpers, database_mock, catalogue_category_repository):
                 "code": catalogue_category_a.code,
                 "is_leaf": catalogue_category_a.is_leaf,
                 "parent_id": catalogue_category_a.parent_id,
-                "catalogue_item_properties": catalogue_category_a.catalogue_item_properties,
+                "properties": catalogue_category_a.properties,
             },
             {
                 **MOCK_CREATED_MODIFIED_TIME,
@@ -570,7 +566,7 @@ def test_list(test_helpers, database_mock, catalogue_category_repository):
                 "code": catalogue_category_b.code,
                 "is_leaf": catalogue_category_b.is_leaf,
                 "parent_id": catalogue_category_b.parent_id,
-                "catalogue_item_properties": catalogue_category_b.catalogue_item_properties,
+                "properties": catalogue_category_b.properties,
             },
         ],
     )
@@ -595,7 +591,7 @@ def test_list_with_parent_id_filter(test_helpers, database_mock, catalogue_categ
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     session = MagicMock()
@@ -612,7 +608,7 @@ def test_list_with_parent_id_filter(test_helpers, database_mock, catalogue_categ
                 "code": catalogue_category.code,
                 "is_leaf": catalogue_category.is_leaf,
                 "parent_id": catalogue_category.parent_id,
-                "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+                "properties": catalogue_category.properties,
             }
         ],
     )
@@ -638,7 +634,7 @@ def test_list_with_null_parent_id_filter(test_helpers, database_mock, catalogue_
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
 
@@ -648,7 +644,7 @@ def test_list_with_null_parent_id_filter(test_helpers, database_mock, catalogue_
         code="category-b",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     session = MagicMock()
@@ -665,7 +661,7 @@ def test_list_with_null_parent_id_filter(test_helpers, database_mock, catalogue_
                 "code": catalogue_category_a.code,
                 "is_leaf": catalogue_category_a.is_leaf,
                 "parent_id": catalogue_category_a.parent_id,
-                "catalogue_item_properties": catalogue_category_a.catalogue_item_properties,
+                "properties": catalogue_category_a.properties,
             },
             {
                 **MOCK_CREATED_MODIFIED_TIME,
@@ -674,7 +670,7 @@ def test_list_with_null_parent_id_filter(test_helpers, database_mock, catalogue_
                 "code": catalogue_category_b.code,
                 "is_leaf": catalogue_category_b.is_leaf,
                 "parent_id": catalogue_category_b.parent_id,
-                "catalogue_item_properties": catalogue_category_b.catalogue_item_properties,
+                "properties": catalogue_category_b.properties,
             },
         ],
     )
@@ -734,7 +730,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
         code="category-b",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     session = MagicMock()
@@ -749,7 +745,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
             "_id": CustomObjectId(catalogue_category.id),
             "is_leaf": catalogue_category.is_leaf,
             "parent_id": catalogue_category.parent_id,
-            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+            "properties": catalogue_category.properties,
         },
     )
     # Mock `find_one` to return no duplicate catalogue categories found
@@ -764,7 +760,7 @@ def test_update(test_helpers, database_mock, catalogue_category_repository):
         code=catalogue_category.code,
         is_leaf=catalogue_category.is_leaf,
         parent_id=catalogue_category.parent_id,
-        catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        properties=catalogue_category.properties,
     )
     # pylint: enable=duplicate-code
     test_helpers.mock_find_one(
@@ -998,7 +994,7 @@ def test_update_with_non_existent_parent_id(test_helpers, database_mock, catalog
         code="category-a",
         is_leaf=False,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[],
+        properties=[],
     )
     # pylint: enable=duplicate-code
 
@@ -1023,7 +1019,7 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, catalo
         code="category-B",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     # pylint: enable=duplicate-code
@@ -1038,7 +1034,7 @@ def test_update_duplicate_name_within_parent(test_helpers, database_mock, catalo
             "_id": CustomObjectId(catalogue_category_id),
             "is_leaf": update_catalogue_category.is_leaf,
             "parent_id": update_catalogue_category.parent_id,
-            "catalogue_item_properties": update_catalogue_category.catalogue_item_properties,
+            "properties": update_catalogue_category.properties,
         },
     )
     # Mock `find_one` to return duplicate catalogue category found
@@ -1068,7 +1064,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
         code="category-a",
         is_leaf=True,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
 
@@ -1082,7 +1078,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
             "code": "category-b",
             "is_leaf": False,
             "parent_id": None,
-            "catalogue_item_properties": [],
+            "properties": [],
             **MOCK_CREATED_MODIFIED_TIME,
         },
     )
@@ -1097,7 +1093,7 @@ def test_update_duplicate_name_within_new_parent(test_helpers, database_mock, ca
             "code": update_catalogue_category.code,
             "is_leaf": update_catalogue_category.is_leaf,
             "parent_id": None,
-            "catalogue_item_properties": update_catalogue_category.catalogue_item_properties,
+            "properties": update_catalogue_category.properties,
             **MOCK_CREATED_MODIFIED_TIME,
         },
     )
@@ -1131,7 +1127,7 @@ def test_update_change_capitalisation_of_name_within_parent(test_helpers, databa
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         **MOCK_CREATED_MODIFIED_TIME,
     )
     session = MagicMock()
@@ -1146,7 +1142,7 @@ def test_update_change_capitalisation_of_name_within_parent(test_helpers, databa
             "_id": CustomObjectId(catalogue_category.id),
             "is_leaf": catalogue_category.is_leaf,
             "parent_id": catalogue_category.parent_id,
-            "catalogue_item_properties": catalogue_category.catalogue_item_properties,
+            "properties": catalogue_category.properties,
         },
     )
     # Mock `find_one` to return None as a duplicate was not found
@@ -1161,7 +1157,7 @@ def test_update_change_capitalisation_of_name_within_parent(test_helpers, databa
         code=catalogue_category.code,
         is_leaf=catalogue_category.is_leaf,
         parent_id=catalogue_category.parent_id,
-        catalogue_item_properties=catalogue_category.catalogue_item_properties,
+        properties=catalogue_category.properties,
     )
     # pylint: enable=duplicate-code
     test_helpers.mock_find_one(
@@ -1266,106 +1262,100 @@ def test_has_child_elements_with_child_catalogue_items(test_helpers, database_mo
 
 
 @patch("inventory_management_system_api.repositories.catalogue_category.datetime")
-def test_create_catalogue_item_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
+def test_create_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
     """
-    Test create_catalogue_item_property performs the correct database update query
+    Test create_property performs the correct database update query
     """
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_in = CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+    property_in = CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
 
     # Mock 'update_one'
     test_helpers.mock_update_one(database_mock.catalogue_categories)
 
-    result = catalogue_category_repository.create_catalogue_item_property(
-        catalogue_category_id, catalogue_item_property_in, session=session
-    )
+    result = catalogue_category_repository.create_property(catalogue_category_id, property_in, session=session)
 
     database_mock.catalogue_categories.update_one.assert_called_once_with(
         {"_id": CustomObjectId(catalogue_category_id)},
         {
-            "$push": {"catalogue_item_properties": catalogue_item_property_in.model_dump(by_alias=True)},
+            "$push": {"properties": property_in.model_dump(by_alias=True)},
             "$set": {"modified_time": datetime_mock.now.return_value},
         },
         session=session,
     )
-    assert result == CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump(by_alias=True))
+    assert result == CategoryPropertyOut(**property_in.model_dump(by_alias=True))
 
 
-def test_create_catalogue_item_property_with_invalid_id(database_mock, catalogue_category_repository):
+def test_create_property_with_invalid_id(database_mock, catalogue_category_repository):
     """
-    Test create_catalogue_item_property performs the correct database update query when given an invalid id
+    Test create_property performs the correct database update query when given an invalid id
     """
 
     with pytest.raises(InvalidObjectIdError) as exc:
-        catalogue_category_repository.create_catalogue_item_property(
-            "invalid", CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+        catalogue_category_repository.create_property(
+            "invalid", CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
 
 
 @patch("inventory_management_system_api.repositories.catalogue_category.datetime")
-def test_update_catalogue_item_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
+def test_update_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
     """
-    Test update_catalogue_item_property performs the correct database update query
+    Test update_property performs the correct database update query
     """
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property_in = CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+    property_id = str(ObjectId())
+    property_in = CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
 
     # Mock 'update_one'
     test_helpers.mock_update_one(database_mock.catalogue_categories)
 
-    result = catalogue_category_repository.update_catalogue_item_property(
-        catalogue_category_id, catalogue_item_property_id, catalogue_item_property_in, session=session
+    result = catalogue_category_repository.update_property(
+        catalogue_category_id, property_id, property_in, session=session
     )
 
     database_mock.catalogue_categories.update_one.assert_called_once_with(
         {
             "_id": CustomObjectId(catalogue_category_id),
-            "catalogue_item_properties._id": CustomObjectId(catalogue_item_property_id),
+            "properties._id": CustomObjectId(property_id),
         },
         {
             "$set": {
-                "catalogue_item_properties.$[elem]": catalogue_item_property_in.model_dump(by_alias=True),
+                "properties.$[elem]": property_in.model_dump(by_alias=True),
                 "modified_time": datetime_mock.now.return_value,
             },
         },
-        array_filters=[{"elem._id": CustomObjectId(catalogue_item_property_id)}],
+        array_filters=[{"elem._id": CustomObjectId(property_id)}],
         session=session,
     )
-    assert result == CatalogueItemPropertyOut(**catalogue_item_property_in.model_dump(by_alias=True))
+    assert result == CategoryPropertyOut(**property_in.model_dump(by_alias=True))
 
 
-def test_update_catalogue_item_property_with_invalid_catalogue_category_id(
-    database_mock, catalogue_category_repository
-):
+def test_update_property_with_invalid_catalogue_category_id(database_mock, catalogue_category_repository):
     """
-    Test update_catalogue_item_property performs the correct database update query when given an invalid catalogue
+    Test update_property performs the correct database update query when given an invalid catalogue
     category id
     """
 
     with pytest.raises(InvalidObjectIdError) as exc:
-        catalogue_category_repository.update_catalogue_item_property(
-            "invalid", str(ObjectId()), CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+        catalogue_category_repository.update_property(
+            "invalid", str(ObjectId()), CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
 
 
-def test_update_catalogue_item_property_with_invalid_catalogue_item_property_id(
-    database_mock, catalogue_category_repository
-):
+def test_update_property_with_invalid_property_id(database_mock, catalogue_category_repository):
     """
-    Test update_catalogue_item_property performs the correct database update query when given an invalid catalogue
+    Test update_property performs the correct database update query when given an invalid catalogue
     item property id
     """
 
     with pytest.raises(InvalidObjectIdError) as exc:
-        catalogue_category_repository.update_catalogue_item_property(
-            str(ObjectId()), "invalid", CatalogueItemPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+        catalogue_category_repository.update_property(
+            str(ObjectId()), "invalid", CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()

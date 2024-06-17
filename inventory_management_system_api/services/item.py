@@ -90,8 +90,8 @@ class ItemService:
         # Inherit the missing properties from the corresponding catalogue item
         supplied_properties = self._merge_missing_properties(catalogue_item.properties, supplied_properties)
 
-        defined_properties = catalogue_category.catalogue_item_properties
-        properties = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
+        defined_properties = catalogue_category.properties
+        properties = utils.process_properties(defined_properties, supplied_properties)
 
         return self._item_repository.create(
             ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
@@ -132,7 +132,7 @@ class ItemService:
         not. If the system ID is being updated, it checks if the system ID with such ID exists and raises
         a `MissingRecordError` if it does not. It raises a `ChildElementsExistError` if a catalogue item
         ID is supplied. When updating properties, existing properties must all be supplied, or they will
-        be overwritten by the catalogue item properties.
+        be overwritten by the .
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
@@ -173,37 +173,37 @@ class ItemService:
             except InvalidObjectIdError as exc:
                 raise DatabaseIntegrityError(str(exc)) from exc
 
-            defined_properties = catalogue_category.catalogue_item_properties
+            defined_properties = catalogue_category.properties
 
             # Inherit the missing properties from the corresponding catalogue item
             supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
 
-            update_data["properties"] = utils.process_catalogue_item_properties(defined_properties, supplied_properties)
+            update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
     def _merge_missing_properties(
-        self, catalogue_item_properties: List[PropertyOut], supplied_properties: List[PropertyPostRequestSchema]
+        self, properties: List[PropertyOut], supplied_properties: List[PropertyPostRequestSchema]
     ) -> List[PropertyPostRequestSchema]:
         """
         Merges the properties defined in a catalogue item with those that should be overriden for an item in
         the order they are defined in the catalogue item.
 
-        :param catalogue_item_properties: The list of property objects from the catalogue item.
+        :param properties: The list of property objects from the catalogue item.
         :param supplied_properties: The list of supplied property objects specific to the item.
         :return: A merged list of properties for the item
         """
         supplied_properties_dict = {
             supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
-        properties: List[PropertyPostRequestSchema] = []
+        merged_properties: List[PropertyPostRequestSchema] = []
 
         # Use the order of properties from the catalogue item, and append either the supplied property or
         # the catalogue item one where it is not found
-        for catalogue_item_property in catalogue_item_properties:
-            supplied_property = supplied_properties_dict.get(catalogue_item_property.id)
+        for prop in properties:
+            supplied_property = supplied_properties_dict.get(prop.id)
             if supplied_property is not None:
-                properties.append(supplied_property)
+                merged_properties.append(supplied_property)
             else:
-                properties.append(PropertyPostRequestSchema(**catalogue_item_property.model_dump()))
-        return properties
+                merged_properties.append(PropertyPostRequestSchema(**prop.model_dump()))
+        return merged_properties

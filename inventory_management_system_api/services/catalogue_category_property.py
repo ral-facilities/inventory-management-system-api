@@ -12,8 +12,8 @@ from inventory_management_system_api.core.database import mongodb_client
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
-    CatalogueItemPropertyIn,
-    CatalogueItemPropertyOut,
+    CategoryPropertyIn,
+    CategoryPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
@@ -23,8 +23,8 @@ from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.catalogue_category import (
     AllowedValuesSchema,
     CatalogueCategoryPostRequestPropertySchema,
-    CatalogueItemPropertyPatchRequestSchema,
-    CatalogueItemPropertyPostRequestSchema,
+    CategoryPropertyPatchRequestSchema,
+    CategoryPropertyPostRequestSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -60,24 +60,24 @@ class CatalogueCategoryPropertyService:
     def create(
         self,
         catalogue_category_id: str,
-        catalogue_item_property: CatalogueItemPropertyPostRequestSchema,
-    ) -> CatalogueItemPropertyOut:
+        category_property: CategoryPropertyPostRequestSchema,
+    ) -> CategoryPropertyOut:
         """Create a new property at the catalogue category level
 
         Property will be propagated down through catalogue items and items when there are children.
 
         :param catalogue_category_id: ID of the catalogue category to add the property to
-        :param catalogue_item_property: Property to add (with additional info on how to perform the migration if
+        :param category_property: Property to add (with additional info on how to perform the migration if
                                         necessary)
         :raises InvalidActionError: If attempting to add a mandatory property without a default_value being specified
                                     or if the catalogue category is not a leaf
         :raises MissingRecordError: If the catalogue category doesn't exist
-        :return: The created catalogue item property as defined at the catalogue category level
+        :return: The created property as defined at the catalogue category level
         """
 
         # Mandatory properties must have a default value that is not None as they would need to be
         # populated down the subtree
-        if catalogue_item_property.mandatory and catalogue_item_property.default_value is None:
+        if category_property.mandatory and category_property.default_value is None:
             raise InvalidActionError("Cannot add a mandatory property without a default value")
 
         # Obtain the existing catalogue category to validate against
@@ -90,36 +90,32 @@ class CatalogueCategoryPropertyService:
             raise InvalidActionError("Cannot add a property to a non-leaf catalogue category")
 
         # Ensure the property is actually valid
-        utils.check_duplicate_catalogue_item_property_names(
-            stored_catalogue_category.catalogue_item_properties + [catalogue_item_property]
-        )
+        utils.check_duplicate_property_names(stored_catalogue_category.properties + [category_property])
 
         unit_value = None
-        if catalogue_item_property.unit_id is not None:
+        if category_property.unit_id is not None:
             # Obtain the specified unit value if a unit ID is given
-            unit = self._unit_repository.get(catalogue_item_property.unit_id)
+            unit = self._unit_repository.get(category_property.unit_id)
             if not unit:
-                raise MissingRecordError(f"No unit found with ID: {catalogue_item_property.unit_id}")
+                raise MissingRecordError(f"No unit found with ID: {category_property.unit_id}")
             unit_value = unit.value
 
-        catalogue_item_property_in = CatalogueItemPropertyIn(
-            **{**catalogue_item_property.model_dump(), "unit": unit_value}
-        )
+        property_in = CategoryPropertyIn(**{**category_property.model_dump(), "unit": unit_value})
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
             with session.start_transaction():
                 # Firstly update the catalogue category
-                catalogue_item_property_out = self._catalogue_category_repository.create_catalogue_item_property(
-                    catalogue_category_id, catalogue_item_property_in, session=session
+                category_property_out = self._catalogue_category_repository.create_property(
+                    catalogue_category_id, property_in, session=session
                 )
 
                 property_in = PropertyIn(
-                    id=str(catalogue_item_property_in.id),
-                    name=catalogue_item_property_in.name,
-                    value=catalogue_item_property.default_value,
+                    id=str(property_in.id),
+                    name=property_in.name,
+                    value=category_property.default_value,
                     unit=unit_value,
-                    unit_id=catalogue_item_property.unit_id,
+                    unit_id=category_property.unit_id,
                 )
 
                 # Add property to all catalogue items of the catalogue category
@@ -134,7 +130,7 @@ class CatalogueCategoryPropertyService:
                 catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
                 self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
 
-        return catalogue_item_property_out
+        return category_property_out
 
     def _check_valid_allowed_values_update(
         self, existing_allowed_values: Optional[AllowedValues], new_allowed_values: Optional[AllowedValuesSchema]
@@ -157,17 +153,15 @@ class CatalogueCategoryPropertyService:
 
         # Prevent adding allowed_values to an existing property
         if existing_allowed_values is None and new_allowed_values is not None:
-            raise InvalidActionError("Cannot add allowed_values to an existing catalogue item property")
+            raise InvalidActionError("Cannot add allowed_values to an existing property")
 
         # Prevent removing allowed_values from an existing property
         if existing_allowed_values is not None and new_allowed_values is None:
-            raise InvalidActionError("Cannot remove allowed_values from an existing catalogue item property")
+            raise InvalidActionError("Cannot remove allowed_values from an existing property")
 
         # Prevent changing an allowed_values' type
         if existing_allowed_values.type != new_allowed_values.type:
-            raise InvalidActionError(
-                "Cannot modify a catalogue item properties' allowed_values to have a different type"
-            )
+            raise InvalidActionError("Cannot modify a ' allowed_values to have a different type")
 
         # Ensure that a list type adds to the existing values (order doesn't matter)
         if existing_allowed_values.type == "list":
@@ -181,9 +175,9 @@ class CatalogueCategoryPropertyService:
     def update(
         self,
         catalogue_category_id: str,
-        catalogue_item_property_id: str,
-        catalogue_item_property: CatalogueItemPropertyPatchRequestSchema,
-    ) -> CatalogueItemPropertyOut:
+        property_id: str,
+        category_property: CategoryPropertyPatchRequestSchema,
+    ) -> CategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
 
@@ -191,13 +185,13 @@ class CatalogueCategoryPropertyService:
         children
 
         :param catalogue_category_id: The ID of the catalogue category to update
-        :param catalogue_item_property_id: The ID of the catalogue item property within the category to update
-        :param catalogue_item_property: The property values to update
-        :raises MissingRecordError: If the catalogue category doesn't exist, or the catalogue item property doesn't
+        :param property_id: The ID of the property within the category to update
+        :param property: The property values to update
+        :raises MissingRecordError: If the catalogue category doesn't exist, or the property doesn't
                                     exist within the specified catalogue category
         """
 
-        update_data = catalogue_item_property.model_dump(exclude_unset=True)
+        update_data = category_property.model_dump(exclude_unset=True)
 
         # Obtain the existing catalogue category to validate against
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
@@ -205,47 +199,47 @@ class CatalogueCategoryPropertyService:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
         # Attempt to locate the property
-        existing_property_out: Optional[CatalogueItemPropertyOut] = None
-        for prop in stored_catalogue_category.catalogue_item_properties:
-            if prop.id == catalogue_item_property_id:
+        existing_property_out: Optional[CategoryPropertyOut] = None
+        for prop in stored_catalogue_category.properties:
+            if prop.id == property_id:
                 existing_property_out = prop
                 break
 
         if not existing_property_out:
-            raise MissingRecordError(f"No catalogue item property found with ID: {catalogue_item_property_id}")
+            raise MissingRecordError(f"No property found with ID: {property_id}")
 
         # Modify the name if necessary and check it doesn't cause a conflict
         updating_name = "name" in update_data and update_data["name"] != existing_property_out.name
         if updating_name:
             existing_property_out.name = update_data["name"]
-            utils.check_duplicate_catalogue_item_property_names(stored_catalogue_category.catalogue_item_properties)
+            utils.check_duplicate_property_names(stored_catalogue_category.properties)
 
         if "allowed_values" in update_data:
             self._check_valid_allowed_values_update(
-                existing_property_out.allowed_values, catalogue_item_property.allowed_values
+                existing_property_out.allowed_values, category_property.allowed_values
             )
 
         CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(
-            catalogue_item_property.allowed_values, existing_property_out.model_dump()
+            category_property.allowed_values, existing_property_out.model_dump()
         )
 
-        catalogue_item_property_in = CatalogueItemPropertyIn(**{**existing_property_out.model_dump(), **update_data})
+        property_in = CategoryPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with mongodb_client.start_session() as session:
             with session.start_transaction():
                 # Firstly update the catalogue category
-                catalogue_item_property_out = self._catalogue_category_repository.update_catalogue_item_property(
-                    catalogue_category_id, catalogue_item_property_id, catalogue_item_property_in, session=session
+                property_out = self._catalogue_category_repository.update_property(
+                    catalogue_category_id, property_id, property_in, session=session
                 )
 
                 # Avoid propagating changes unless absolutely necessary
                 if updating_name:
                     self._catalogue_item_repository.update_names_of_all_properties_with_id(
-                        catalogue_item_property_id, catalogue_item_property.name, session=session
+                        property_id, category_property.name, session=session
                     )
                     self._item_repository.update_names_of_all_properties_with_id(
-                        catalogue_item_property_id, catalogue_item_property.name, session=session
+                        property_id, category_property.name, session=session
                     )
 
-        return catalogue_item_property_out
+        return property_out

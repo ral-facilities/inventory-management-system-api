@@ -23,7 +23,7 @@ from bson import ObjectId
 CATALOGUE_CATEGORY_POST_A = {
     "name": "Category A",
     "is_leaf": True,
-    "catalogue_item_properties": [
+    "properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "mandatory": True},
         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
@@ -113,9 +113,7 @@ def _post_catalogue_category_with_units(test_client, catalogue_category):
         "/v1/catalogue-categories",
         json={
             **catalogue_category,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                catalogue_category["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(catalogue_category["properties"], units),
         },
     )
     catalogue_category = response.json()
@@ -146,7 +144,7 @@ def test_create_item(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -162,7 +160,7 @@ def test_create_item(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
     # pylint: enable=duplicate-code
@@ -178,7 +176,7 @@ def test_create_item(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_EXPECTED["properties"],
         ),
     }
@@ -233,7 +231,7 @@ def test_create_item_with_invalid_system_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -249,7 +247,7 @@ def test_create_item_with_invalid_system_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": "invalid",
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -272,7 +270,7 @@ def test_create_item_with_non_existent_system_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -288,7 +286,7 @@ def test_create_item_with_non_existent_system_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": str(ObjectId()),
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -313,7 +311,7 @@ def test_create_with_missing_existing_properties(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -328,7 +326,7 @@ def test_create_with_missing_existing_properties(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property B", "value": False},
                 {"name": "Property C", "value": "25x10x5"},
@@ -349,7 +347,7 @@ def test_create_with_missing_existing_properties(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 20, "unit": "mm"},
                 {"name": "Property B", "unit": None, "value": False},
@@ -379,7 +377,7 @@ def test_create_with_mandatory_properties_given_none(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -395,7 +393,7 @@ def test_create_with_mandatory_properties_given_none(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property B", "value": None},
                 {"name": "Property C", "value": None},
@@ -407,8 +405,8 @@ def test_create_with_mandatory_properties_given_none(test_client):
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
-    assert response.json()["detail"] == f"Mandatory catalogue item property with ID '{prop_id}' cannot be None."
+    prop_id = catalogue_category["properties"][1]["id"]
+    assert response.json()["detail"] == f"Mandatory property with ID '{prop_id}' cannot be None."
     # pylint: enable=duplicate-code
 
 
@@ -430,7 +428,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -446,7 +444,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": None},
                 {"name": "Property B", "value": False},
@@ -467,7 +465,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "unit": "mm", "value": None},
                 {"name": "Property B", "unit": None, "value": False},
@@ -496,7 +494,7 @@ def test_create_item_without_properties(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -527,7 +525,7 @@ def test_create_item_without_properties(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property A", "value": 20, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
         ),
     }
@@ -551,7 +549,7 @@ def test_create_item_with_invalid_usage_status_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -566,7 +564,7 @@ def test_create_item_with_invalid_usage_status_id(test_client):
         "system_id": system_id,
         "usage_status_id": "Invalid",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property C", "value": True}],
         ),
     }
@@ -594,7 +592,7 @@ def test_create_item_with_non_existent_usage_status_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -609,7 +607,7 @@ def test_create_item_with_non_existent_usage_status_id(test_client):
         "system_id": system_id,
         "usage_status_id": str(ObjectId()),
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property C", "value": True}],
         ),
     }
@@ -621,7 +619,7 @@ def test_create_item_with_non_existent_usage_status_id(test_client):
 
 def test_create_item_with_invalid_value_type_for_string_property(test_client):
     """
-    Test creating an item with invalid value type for a string catalogue item property.
+    Test creating an item with invalid value type for a string property.
     """
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
@@ -637,7 +635,7 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -653,7 +651,7 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property C", "value": True}],
         ),
     }
@@ -661,17 +659,14 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][2]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: string."
-    )
+    prop_id = catalogue_category["properties"][2]["id"]
+    assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: string."
     # pylint: enable=duplicate-code
 
 
 def test_create_item_with_invalid_value_type_for_number_property(test_client):
     """
-    Test creating an item with invalid value type for a number catalogue item property.
+    Test creating an item with invalid value type for a number property.
     """
     # pylint: disable=duplicate-code
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
@@ -687,7 +682,7 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -704,7 +699,7 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property A", "value": "20"}],
         ),
     }
@@ -712,17 +707,14 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: number."
-    )
+    prop_id = catalogue_category["properties"][0]["id"]
+    assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: number."
     # pylint: enable=duplicate-code
 
 
 def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     """
-    Test creating an item with invalid value type for a boolean catalogue item property.
+    Test creating an item with invalid value type for a boolean property.
     """
     # pylint: disable=duplicate-code
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
@@ -738,7 +730,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -754,7 +746,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property B", "value": "False"}],
         ),
     }
@@ -762,11 +754,8 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: boolean."
-    )
+    prop_id = catalogue_category["properties"][1]["id"]
+    assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: boolean."
     # pylint: enable=duplicate-code
 
 
@@ -790,7 +779,7 @@ def test_create_item_with_allowed_values(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -806,7 +795,7 @@ def test_create_item_with_allowed_values(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -823,7 +812,7 @@ def test_create_item_with_allowed_values(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_ALLOWED_VALUES_EXPECTED["properties"],
         ),
     }
@@ -848,7 +837,7 @@ def test_create_item_with_allowed_values_invalid_list_string(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -864,7 +853,7 @@ def test_create_item_with_allowed_values_invalid_list_string(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 4},
                 {"name": "Property B", "value": "blue"},
@@ -875,11 +864,8 @@ def test_create_item_with_allowed_values_invalid_list_string(test_client):
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of red, green."
-    )
+    prop_id = catalogue_category["properties"][1]["id"]
+    assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of red, green."
     # pylint: enable=duplicate-code
 
 
@@ -902,7 +888,7 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -918,7 +904,7 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 10},
                 {"name": "Property B", "value": "red"},
@@ -929,11 +915,8 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of 2, 4, 6."
-    )
+    prop_id = catalogue_category["properties"][0]["id"]
+    assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of 2, 4, 6."
     # pylint: enable=duplicate-code
 
 
@@ -954,7 +937,7 @@ def test_delete(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -968,7 +951,7 @@ def test_delete(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
 
     # pylint: enable=duplicate-code
@@ -1022,7 +1005,7 @@ def test_get_item(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1036,7 +1019,7 @@ def test_get_item(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     # pylint: enable=duplicate-code
 
@@ -1056,7 +1039,7 @@ def test_get_item(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_EXPECTED["properties"],
         ),
     }
@@ -1103,7 +1086,7 @@ def test_get_items(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1119,7 +1102,7 @@ def test_get_items(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id_a,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
 
     item_post_b = {**item_post_a, "system_id": system_id_b}
@@ -1134,7 +1117,7 @@ def test_get_items(test_client):
     items = response.json()
 
     properties_expected = add_ids_to_properties(
-        catalogue_category["catalogue_item_properties"],
+        catalogue_category["properties"],
         ITEM_POST_EXPECTED["properties"],
     )
     assert items == [
@@ -1175,7 +1158,7 @@ def test_get_items_with_system_id_filters(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1191,7 +1174,7 @@ def test_get_items_with_system_id_filters(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": None,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
 
     item_post_b = {**item_post_a, "system_id": system_id}
@@ -1213,7 +1196,7 @@ def test_get_items_with_system_id_filters(test_client):
             "usage_status_id": usage_status_id,
             "usage_status": "New",
             "properties": add_ids_to_properties(
-                catalogue_category["catalogue_item_properties"],
+                catalogue_category["properties"],
                 ITEM_POST_EXPECTED["properties"],
             ),
         }
@@ -1239,7 +1222,7 @@ def test_get_items_with_catalogue_id_filters(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1255,7 +1238,7 @@ def test_get_items_with_catalogue_id_filters(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
     # pylint: enable=duplicate-code
@@ -1274,7 +1257,7 @@ def test_get_items_with_catalogue_id_filters(test_client):
             "usage_status_id": usage_status_id,
             "usage_status": "New",
             "properties": add_ids_to_properties(
-                catalogue_category["catalogue_item_properties"],
+                catalogue_category["properties"],
                 ITEM_POST_EXPECTED["properties"],
             ),
         }
@@ -1300,7 +1283,7 @@ def test_get_items_with_no_matching_filters(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1313,7 +1296,7 @@ def test_get_items_with_no_matching_filters(test_client):
         **ITEM_POST,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     # pylint: enable=duplicate-code
 
@@ -1371,7 +1354,7 @@ def test_partial_update_item(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1386,7 +1369,7 @@ def test_partial_update_item(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -1405,7 +1388,7 @@ def test_partial_update_item(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_EXPECTED["properties"],
         ),
     }
@@ -1455,7 +1438,7 @@ def test_partial_update_change_catalogue_item_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1471,7 +1454,7 @@ def test_partial_update_change_catalogue_item_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -1503,7 +1486,7 @@ def test_partial_update_change_system_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1518,7 +1501,7 @@ def test_partial_update_change_system_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id_a,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -1537,7 +1520,7 @@ def test_partial_update_change_system_id(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_EXPECTED["properties"],
         ),
     }
@@ -1561,7 +1544,7 @@ def test_partial_update_change_non_existent_system_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1577,7 +1560,7 @@ def test_partial_update_change_non_existent_system_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -1606,7 +1589,7 @@ def test_partial_update_change_non_existent_usage_status_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1622,7 +1605,7 @@ def test_partial_update_change_non_existent_usage_status_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -1651,7 +1634,7 @@ def test_partial_update_change_invalid_usage_status_id(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1667,7 +1650,7 @@ def test_partial_update_change_invalid_usage_status_id(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
@@ -1696,7 +1679,7 @@ def test_partial_update_property_values(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1712,13 +1695,13 @@ def test_partial_update_property_values(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 12},
                 {"name": "Property B", "value": False},
@@ -1739,7 +1722,7 @@ def test_partial_update_property_values(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property A", "value": 12, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
         ),
     }
@@ -1765,7 +1748,7 @@ def test_partial_update_property_values_with_mandatory_properties_given_none(
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1781,13 +1764,13 @@ def test_partial_update_property_values_with_mandatory_properties_given_none(
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property B", "value": None},
                 {"name": "Property C", "value": None},
@@ -1798,8 +1781,8 @@ def test_partial_update_property_values_with_mandatory_properties_given_none(
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
-    assert response.json()["detail"] == f"Mandatory catalogue item property with ID '{prop_id}' cannot be None."
+    prop_id = catalogue_category["properties"][1]["id"]
+    assert response.json()["detail"] == f"Mandatory property with ID '{prop_id}' cannot be None."
     # pylint: enable=duplicate-code
 
 
@@ -1823,7 +1806,7 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -1839,13 +1822,13 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": None},
                 {"name": "Property B", "value": False},
@@ -1867,7 +1850,7 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "unit": "mm", "value": None},
                 {"name": "Property B", "unit": None, "value": False},
@@ -1896,7 +1879,7 @@ def test_partial_update_property_values_with_allowed_values(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -1913,7 +1896,7 @@ def test_partial_update_property_values_with_allowed_values(test_client):
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -1921,7 +1904,7 @@ def test_partial_update_property_values_with_allowed_values(test_client):
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 2},
                 {"name": "Property B", "value": "red"},
@@ -1941,7 +1924,7 @@ def test_partial_update_property_values_with_allowed_values(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "unit": "mm", "value": 2},
                 {"name": "Property B", "value": "red", "unit": None},
@@ -1971,7 +1954,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -1988,7 +1971,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -1996,7 +1979,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property B", "value": "blue"}],
         ),
     }
@@ -2004,11 +1987,8 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of red, green."
-    )
+    prop_id = catalogue_category["properties"][1]["id"]
+    assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of red, green."
     # pylint: enable=duplicate-code
 
 
@@ -2033,7 +2013,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -2050,7 +2030,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
         "system_id": system_id,
         "usage_status_id": usage_status_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             ITEM_POST_ALLOWED_VALUES["properties"],
         ),
     }
@@ -2058,7 +2038,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property A", "value": 10}],
         ),
     }
@@ -2066,11 +2046,8 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value for catalogue item property with ID '{prop_id}'. Expected one of 2, 4, 6."
-    )
+    prop_id = catalogue_category["properties"][0]["id"]
+    assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of 2, 4, 6."
     # pylint: enable=duplicate-code
 
 
@@ -2092,7 +2069,7 @@ def test_partial_update_with_missing_existing_properties(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -2108,13 +2085,13 @@ def test_partial_update_with_missing_existing_properties(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property B", "value": False},
                 {"name": "Property C", "value": "25x10x5"},
@@ -2134,7 +2111,7 @@ def test_partial_update_with_missing_existing_properties(test_client):
         "usage_status_id": usage_status_id,
         "usage_status": "New",
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 20, "unit": "mm"},
                 {"name": "Property B", "unit": None, "value": False},
@@ -2163,7 +2140,7 @@ def test_partial_update_item_change_value_for_string_property_invalid_type(test_
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -2179,13 +2156,13 @@ def test_partial_update_item_change_value_for_string_property_invalid_type(test_
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property C", "value": 21}],
         )
     }
@@ -2193,11 +2170,8 @@ def test_partial_update_item_change_value_for_string_property_invalid_type(test_
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][2]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: string."
-    )
+    prop_id = catalogue_category["properties"][2]["id"]
+    assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: string."
     # pylint: enable=duplicate-code
 
 
@@ -2219,7 +2193,7 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -2235,13 +2209,13 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property A", "value": "21"}],
         )
     }
@@ -2249,11 +2223,8 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][0]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: number."
-    )
+    prop_id = catalogue_category["properties"][0]["id"]
+    assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: number."
     # pylint: enable=duplicate-code
 
 
@@ -2279,7 +2250,7 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             CATALOGUE_ITEM_POST_A["properties"],
         ),
     }
@@ -2295,13 +2266,13 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     response = test_client.post("/v1/items", json=item_post)
 
     item_patch = {
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [{"name": "Property B", "value": 21}],
         )
     }
@@ -2309,9 +2280,6 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(
 
     # pylint: disable=duplicate-code
     assert response.status_code == 422
-    prop_id = catalogue_category["catalogue_item_properties"][1]["id"]
-    assert (
-        response.json()["detail"]
-        == f"Invalid value type for catalogue item property with ID '{prop_id}'. Expected type: boolean."
-    )
+    prop_id = catalogue_category["properties"][1]["id"]
+    assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: boolean."
     # pylint: enable=duplicate-code

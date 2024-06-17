@@ -11,9 +11,9 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
-    InvalidCatalogueItemPropertyTypeError,
+    InvalidPropertyTypeError,
     InvalidObjectIdError,
-    MissingMandatoryCatalogueItemProperty,
+    MissingMandatoryProperty,
     MissingRecordError,
     NonLeafCategoryError,
 )
@@ -84,7 +84,7 @@ def create_catalogue_item(
     try:
         catalogue_item = catalogue_item_service.create(catalogue_item)
         return CatalogueItemSchema(**catalogue_item.model_dump())
-    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -122,7 +122,7 @@ def partial_update_catalogue_item(
     try:
         updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
         return CatalogueItemSchema(**updated_catalogue_item.model_dump())
-    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:

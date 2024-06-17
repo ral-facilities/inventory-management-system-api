@@ -13,14 +13,14 @@ from inventory_management_system_api.core.exceptions import InvalidActionError, 
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
     CatalogueCategoryOut,
-    CatalogueItemPropertyIn,
-    CatalogueItemPropertyOut,
+    CategoryPropertyIn,
+    CategoryPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueItemPropertyPatchRequestSchema,
-    CatalogueItemPropertyPostRequestSchema,
+    CategoryPropertyPatchRequestSchema,
+    CategoryPropertyPostRequestSchema,
 )
 
 # pylint:disable=too-many-locals
@@ -54,7 +54,7 @@ def test_create(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
+    property_post = CategoryPropertyPostRequestSchema(
         name="Property A", type="number", unit_id=unit.id, mandatory=mandatory, default_value=default_value
     )
     stored_catalogue_category = CatalogueCategoryOut(
@@ -63,7 +63,7 @@ def test_create(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -74,36 +74,30 @@ def test_create(
     # Mock `get` to return the unit
     test_helpers.mock_get(unit_repository_mock, unit)
 
-    created_catalogue_item_property = catalogue_category_property_service.create(
-        catalogue_category_id, catalogue_item_property
-    )
+    created_property = catalogue_category_property_service.create(catalogue_category_id, property_post)
 
     # Start of transaction
     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-    catalogue_category_repository_mock.create_catalogue_item_property.assert_called_once_with(
+    catalogue_category_repository_mock.create_property.assert_called_once_with(
         catalogue_category_id,
         ANY,
         session=session,
     )
 
-    expected_catalogue_item_property_in = CatalogueItemPropertyIn(
-        **{**catalogue_item_property.model_dump(), "unit": unit.value}
-    )
+    expected_property_in = CategoryPropertyIn(**{**property_post.model_dump(), "unit": unit.value})
 
     # Catalogue item property insertion into catalogue category
-    inserted_catalogue_item_property_in = (
-        catalogue_category_repository_mock.create_catalogue_item_property.call_args_list[0][0][1]
-    )
-    assert inserted_catalogue_item_property_in.model_dump() == {
-        **expected_catalogue_item_property_in.model_dump(),
+    inserted_property_in = catalogue_category_repository_mock.create_property.call_args_list[0][0][1]
+    assert inserted_property_in.model_dump() == {
+        **expected_property_in.model_dump(),
         "id": ANY,
     }
 
     # Property
     expected_property_in = PropertyIn(
-        id=str(expected_catalogue_item_property_in.id),
-        name=expected_catalogue_item_property_in.name,
-        value=catalogue_item_property.default_value,
+        id=str(expected_property_in.id),
+        name=expected_property_in.name,
+        value=property_post.default_value,
         unit=unit.value,
         unit_id=unit.id,
     )
@@ -132,10 +126,7 @@ def test_create(
     }
 
     # Final output
-    assert (
-        created_catalogue_item_property
-        == catalogue_category_repository_mock.create_catalogue_item_property.return_value
-    )
+    assert created_property == catalogue_category_repository_mock.create_property.return_value
 
 
 def test_create_mandatory_property_without_default_value(
@@ -154,16 +145,14 @@ def test_create_mandatory_property_without_default_value(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
-        name="Property A", type="number", unit_id=unit.id, mandatory=True
-    )
+    property_post = CategoryPropertyPostRequestSchema(name="Property A", type="number", unit_id=unit.id, mandatory=True)
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
         name="Category A",
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -175,11 +164,11 @@ def test_create_mandatory_property_without_default_value(
     test_helpers.mock_get(unit_repository_mock, unit)
 
     with pytest.raises(InvalidActionError) as exc:
-        catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+        catalogue_category_property_service.create(catalogue_category_id, property_post)
     assert str(exc.value) == "Cannot add a mandatory property without a default value"
 
     # Ensure no updates
-    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.create_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
@@ -197,7 +186,7 @@ def test_create_non_existent_unit_id(
     """
     catalogue_category_id = str(ObjectId())
     unit_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
+    property_post = CategoryPropertyPostRequestSchema(
         name="Property A", type="number", unit_id=unit_id, mandatory=False
     )
     stored_catalogue_category = CatalogueCategoryOut(
@@ -206,7 +195,7 @@ def test_create_non_existent_unit_id(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -218,11 +207,11 @@ def test_create_non_existent_unit_id(
     test_helpers.mock_get(unit_repository_mock, None)
 
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+        catalogue_category_property_service.create(catalogue_category_id, property_post)
     assert str(exc.value) == f"No unit found with ID: {unit_id}"
 
     # Ensure no updates
-    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.create_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
@@ -243,7 +232,7 @@ def test_create_mandatory_property_with_missing_catalogue_category(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
+    property_post = CategoryPropertyPostRequestSchema(
         name="Property A", type="number", unit_id=unit.id, mandatory=False
     )
     stored_catalogue_category = None
@@ -255,11 +244,11 @@ def test_create_mandatory_property_with_missing_catalogue_category(
     test_helpers.mock_get(unit_repository_mock, unit)
 
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+        catalogue_category_property_service.create(catalogue_category_id, property_post)
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
     # Ensure no updates
-    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.create_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
@@ -280,7 +269,7 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    catalogue_item_property = CatalogueItemPropertyPostRequestSchema(
+    property_post = CategoryPropertyPostRequestSchema(
         name="Property A", type="number", unit_id=unit.id, mandatory=False
     )
     stored_catalogue_category = CatalogueCategoryOut(
@@ -289,7 +278,7 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -301,11 +290,11 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     test_helpers.mock_get(unit_repository_mock, unit)
 
     with pytest.raises(InvalidActionError) as exc:
-        catalogue_category_property_service.create(catalogue_category_id, catalogue_item_property)
+        catalogue_category_property_service.create(catalogue_category_id, property_post)
     assert str(exc.value) == "Cannot add a property to a non-leaf catalogue category"
 
     # Ensure no updates
-    catalogue_category_repository_mock.create_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.create_property.assert_not_called()
     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
@@ -327,13 +316,13 @@ def test_update(
     downwards through catalogue items (This test supplies both name and allowed_values)
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -347,7 +336,7 @@ def test_update(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -355,36 +344,29 @@ def test_update(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
-    updated_catalogue_item_property = catalogue_category_property_service.update(
-        catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-    )
+    updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
 
     # Start of transaction
     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_called_once_with(
+    catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
-        catalogue_item_property_id,
-        CatalogueItemPropertyIn(
-            **{**stored_catalogue_item_property.model_dump(), **catalogue_item_property.model_dump()}
-        ),
+        property_id,
+        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump()}),
         session=session,
     )
 
     # Catalogue items update
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_called_once_with(
-        catalogue_item_property_id, catalogue_item_property.name, session=session
+        property_id, property_patch.name, session=session
     )
 
     # Items update
     item_repository_mock.update_names_of_all_properties_with_id.assert_called_once_with(
-        catalogue_item_property_id, catalogue_item_property.name, session=session
+        property_id, property_patch.name, session=session
     )
 
     # Final output
-    assert (
-        updated_catalogue_item_property
-        == catalogue_category_repository_mock.update_catalogue_item_property.return_value
-    )
+    assert updated_property == catalogue_category_repository_mock.update_property.return_value
 
 
 @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
@@ -404,13 +386,13 @@ def test_update_category_only(
     catalogue items and items (in this case only modifying the allowed_values)
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -424,7 +406,7 @@ def test_update_category_only(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -432,18 +414,14 @@ def test_update_category_only(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
-    updated_catalogue_item_property = catalogue_category_property_service.update(
-        catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-    )
+    updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
 
     # Start of transaction
     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_called_once_with(
+    catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
-        catalogue_item_property_id,
-        CatalogueItemPropertyIn(
-            **{**stored_catalogue_item_property.model_dump(), **catalogue_item_property.model_dump(exclude_unset=True)}
-        ),
+        property_id,
+        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}),
         session=session,
     )
 
@@ -452,10 +430,7 @@ def test_update_category_only(
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
     # Final output
-    assert (
-        updated_catalogue_item_property
-        == catalogue_category_repository_mock.update_catalogue_item_property.return_value
-    )
+    assert updated_property == catalogue_category_repository_mock.update_property.return_value
 
 
 @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
@@ -476,11 +451,11 @@ def test_update_with_no_changes_allowed_values_none(
     model also uses None)
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(allowed_values=None)
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(allowed_values=None)
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -494,7 +469,7 @@ def test_update_with_no_changes_allowed_values_none(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -502,18 +477,14 @@ def test_update_with_no_changes_allowed_values_none(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
-    updated_catalogue_item_property = catalogue_category_property_service.update(
-        catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-    )
+    updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
 
     # Start of transaction
     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_called_once_with(
+    catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
-        catalogue_item_property_id,
-        CatalogueItemPropertyIn(
-            **{**stored_catalogue_item_property.model_dump(), **catalogue_item_property.model_dump(exclude_unset=True)}
-        ),
+        property_id,
+        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}),
         session=session,
     )
 
@@ -522,10 +493,7 @@ def test_update_with_no_changes_allowed_values_none(
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
     # Final output
-    assert (
-        updated_catalogue_item_property
-        == catalogue_category_repository_mock.update_catalogue_item_property.return_value
-    )
+    assert updated_property == catalogue_category_repository_mock.update_property.return_value
 
 
 def test_update_with_missing_catalogue_category(
@@ -543,8 +511,8 @@ def test_update_with_missing_catalogue_category(
     catalogue_category_id doesn't exist
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     stored_catalogue_category = None
@@ -553,18 +521,16 @@ def test_update_with_missing_catalogue_category(
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_category_property_service.update(
-            catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-        )
+        catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
     # Ensure no updates actually called
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.update_property.assert_not_called()
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
 
-def test_update_with_missing_catalogue_item_property(
+def test_update_with_missing_property(
     test_helpers,
     catalogue_category_repository_mock,
     catalogue_item_repository_mock,
@@ -575,17 +541,17 @@ def test_update_with_missing_catalogue_item_property(
     """
     Test updating a property at the catalogue category level
 
-    Verify that the `update` method raises a MissingRecordError when the catalogue item property with the given
-    catalogue_item_property_id doesn't exist
+    Verify that the `update` method raises a MissingRecordError when the property with the given
+    property_id doesn't exist
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     # pylint: disable=duplicate-code
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
+    stored_property = CategoryPropertyOut(
         id=str(ObjectId()),
         name="Property A",
         type="number",
@@ -601,7 +567,7 @@ def test_update_with_missing_catalogue_item_property(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -610,13 +576,11 @@ def test_update_with_missing_catalogue_item_property(
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_category_property_service.update(
-            catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-        )
-    assert str(exc.value) == f"No catalogue item property found with ID: {catalogue_item_property_id}"
+        catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
+    assert str(exc.value) == f"No property found with ID: {property_id}"
 
     # Ensure no updates actually called
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.update_property.assert_not_called()
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
@@ -636,13 +600,13 @@ def test_update_allowed_values_from_none_to_value(
     from None to a value
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -656,7 +620,7 @@ def test_update_allowed_values_from_none_to_value(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -665,13 +629,11 @@ def test_update_allowed_values_from_none_to_value(
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
     with pytest.raises(InvalidActionError) as exc:
-        catalogue_category_property_service.update(
-            catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-        )
-    assert str(exc.value) == "Cannot add allowed_values to an existing catalogue item property"
+        catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
+    assert str(exc.value) == "Cannot add allowed_values to an existing property"
 
     # Ensure no updates actually called
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.update_property.assert_not_called()
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
@@ -691,11 +653,11 @@ def test_update_allowed_values_from_value_to_none(
     from a value to None
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(name="Property Name", allowed_values=None)
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(name="Property Name", allowed_values=None)
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -709,7 +671,7 @@ def test_update_allowed_values_from_value_to_none(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -718,13 +680,11 @@ def test_update_allowed_values_from_value_to_none(
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
     with pytest.raises(InvalidActionError) as exc:
-        catalogue_category_property_service.update(
-            catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-        )
-    assert str(exc.value) == "Cannot remove allowed_values from an existing catalogue item property"
+        catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
+    assert str(exc.value) == "Cannot remove allowed_values from an existing property"
 
     # Ensure no updates actually called
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.update_property.assert_not_called()
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
@@ -744,13 +704,13 @@ def test_update_allowed_values_removing_element(
     to have one fewer element
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -764,7 +724,7 @@ def test_update_allowed_values_removing_element(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -773,16 +733,14 @@ def test_update_allowed_values_removing_element(
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
     with pytest.raises(InvalidActionError) as exc:
-        catalogue_category_property_service.update(
-            catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-        )
+        catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
     assert (
         str(exc.value)
         == "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
     )
 
     # Ensure no updates actually called
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.update_property.assert_not_called()
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
@@ -802,13 +760,13 @@ def test_update_allowed_values_modifying_element(
     by changing one element
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -822,7 +780,7 @@ def test_update_allowed_values_modifying_element(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -831,16 +789,14 @@ def test_update_allowed_values_modifying_element(
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
     with pytest.raises(InvalidActionError) as exc:
-        catalogue_category_property_service.update(
-            catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-        )
+        catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
     assert (
         str(exc.value)
         == "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
     )
 
     # Ensure no updates actually called
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_not_called()
+    catalogue_category_repository_mock.update_property.assert_not_called()
     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
@@ -861,13 +817,13 @@ def test_update_adding_allowed_values(
     Verify that the `update` method allows an allowed_values list to be extended
     """
     catalogue_category_id = str(ObjectId())
-    catalogue_item_property_id = str(ObjectId())
-    catalogue_item_property = CatalogueItemPropertyPatchRequestSchema(
+    property_id = str(ObjectId())
+    property_patch = CategoryPropertyPatchRequestSchema(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000, 3000, 4000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_catalogue_item_property = CatalogueItemPropertyOut(
-        id=catalogue_item_property_id,
+    stored_property = CategoryPropertyOut(
+        id=property_id,
         name="Property A",
         type="number",
         unit_id=unit.id,
@@ -881,7 +837,7 @@ def test_update_adding_allowed_values(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[stored_catalogue_item_property],
+        properties=[stored_property],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -889,18 +845,14 @@ def test_update_adding_allowed_values(
     # Mock the stored catalogue category to one without a property with the same name
     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
 
-    updated_catalogue_item_property = catalogue_category_property_service.update(
-        catalogue_category_id, catalogue_item_property_id, catalogue_item_property
-    )
+    updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
 
     # Start of transaction
     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-    catalogue_category_repository_mock.update_catalogue_item_property.assert_called_once_with(
+    catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
-        catalogue_item_property_id,
-        CatalogueItemPropertyIn(
-            **{**stored_catalogue_item_property.model_dump(), **catalogue_item_property.model_dump(exclude_unset=True)}
-        ),
+        property_id,
+        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}),
         session=session,
     )
 
@@ -909,7 +861,4 @@ def test_update_adding_allowed_values(
     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
 
     # Final output
-    assert (
-        updated_catalogue_item_property
-        == catalogue_category_repository_mock.update_catalogue_item_property.return_value
-    )
+    assert updated_property == catalogue_category_repository_mock.update_property.return_value

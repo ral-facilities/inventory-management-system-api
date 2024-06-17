@@ -21,21 +21,21 @@ class NonLeafCategoryError(Exception):
     """
 
 
-class DuplicateCatalogueItemPropertyNameError(Exception):
+class DuplicateCategoryPropertyNameError(Exception):
     """
-    Catalogue category is attempted to be created with duplicate catalogue item property names.
-    """
-
-
-class InvalidCatalogueItemPropertyTypeError(Exception):
-    """
-    The type of the provided value does not match the expected type of the catalogue item property.
+    Catalogue category is attempted to be created with duplicate property names.
     """
 
 
-class MissingMandatoryCatalogueItemProperty(Exception):
+class InvalidPropertyTypeError(Exception):
     """
-    A mandatory catalogue item property is missing when a catalogue item is attempted to be created.
+    The type of the provided value does not match the expected type of the property.
+    """
+
+
+class MissingMandatoryProperty(Exception):
+    """
+    A mandatory property is missing when a catalogue item is attempted to be created.
     """
 
 

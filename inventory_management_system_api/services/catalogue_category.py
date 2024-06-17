@@ -67,13 +67,11 @@ class CatalogueCategoryService:
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
-        catalogue_item_properties = []
-        if catalogue_category.catalogue_item_properties:
-            utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
+        properties = []
+        if catalogue_category.properties:
+            utils.check_duplicate_property_names(catalogue_category.properties)
 
-            catalogue_item_properties = self._add_catalogue_item_property_unit_values(
-                catalogue_category.catalogue_item_properties
-            )
+            properties = self._add_property_unit_values(catalogue_category.properties)
 
         code = utils.generate_code(catalogue_category.name, "catalogue category")
 
@@ -81,7 +79,7 @@ class CatalogueCategoryService:
             CatalogueCategoryIn(
                 **{
                     **catalogue_category.model_dump(),
-                    "catalogue_item_properties": catalogue_item_properties,
+                    "properties": properties,
                     "code": code,
                 }
             )
@@ -136,7 +134,7 @@ class CatalogueCategoryService:
         :param catalogue_category: The catalogue category containing the fields that need to be updated.
         :return: The updated catalogue category.
         :raises ChildElementsExistError: If the catalogue category has child elements and attempting to update
-                                    either any of the disallowed properties (is_leaf or catalogue_item_properties)
+                                    either any of the disallowed properties (is_leaf or properties)
         :raises MissingRecordError: If the catalogue category doesn't exist.
         :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
             moved is a leaf catalogue category.
@@ -163,41 +161,37 @@ class CatalogueCategoryService:
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
-        if catalogue_category.catalogue_item_properties:
-            utils.check_duplicate_catalogue_item_property_names(catalogue_category.catalogue_item_properties)
+        if catalogue_category.properties:
+            utils.check_duplicate_property_names(catalogue_category.properties)
 
-            catalogue_item_properties = self._add_catalogue_item_property_unit_values(
-                catalogue_category.catalogue_item_properties
-            )
-            update_data["catalogue_item_properties"] = catalogue_item_properties
+            properties = self._add_property_unit_values(catalogue_category.properties)
+            update_data["properties"] = properties
 
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
 
-    def _add_catalogue_item_property_unit_values(
+    def _add_property_unit_values(
         self,
-        catalogue_item_properties: List[CatalogueCategoryPostRequestPropertySchema],
+        properties: List[CatalogueCategoryPostRequestPropertySchema],
     ) -> List[dict[str, Any]]:
         """
-        Adds the unit values to the catalogue item properties based on the provided unit IDs.
+        Adds the unit values to the  based on the provided unit IDs.
 
-        :param catalogue_item_properties: List of catalogue item properties to which unit values will be added.
-        :return: List of catalogue item properties with unit values added.
+        :param properties: List of  to which unit values will be added.
+        :return: List of  with unit values added.
         :raises MissingRecordError: If a unit with the specified ID is not found.
         """
-        logger.info("Adding unit values to the catalogue item properties")
-        catalogue_item_properties_with_units = []
-        for catalogue_item_property in catalogue_item_properties:
-            if catalogue_item_property.unit_id is not None:
-                unit = self._unit_repository.get(catalogue_item_property.unit_id)
+        logger.info("Adding unit values to the ")
+        properties_with_units = []
+        for prop in properties:
+            if prop.unit_id is not None:
+                unit = self._unit_repository.get(prop.unit_id)
                 if not unit:
-                    raise MissingRecordError(f"No unit found with ID: {catalogue_item_property.unit_id}")
+                    raise MissingRecordError(f"No unit found with ID: {prop.unit_id}")
 
-                # Copy unit value to catalogue item property
-                catalogue_item_properties_with_units.append(
-                    {**catalogue_item_property.model_dump(), "unit": unit.value}
-                )
+                # Copy unit value to property
+                properties_with_units.append({**prop.model_dump(), "unit": unit.value})
             else:
-                catalogue_item_properties_with_units.append({**catalogue_item_property.model_dump(), "unit": None})
-        return catalogue_item_properties_with_units
+                properties_with_units.append({**prop.model_dump(), "unit": None})
+        return properties_with_units

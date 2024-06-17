@@ -12,14 +12,14 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    DuplicateCatalogueItemPropertyNameError,
+    DuplicateCategoryPropertyNameError,
     LeafCategoryError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CatalogueItemPropertyOut,
+    CategoryPropertyOut,
 )
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -54,7 +54,7 @@ def test_create(
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -67,7 +67,7 @@ def test_create(
         CatalogueCategoryPostRequestSchema(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
         )
     )
 
@@ -78,7 +78,7 @@ def test_create(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
         )
     )
     # pylint: enable=duplicate-code
@@ -107,8 +107,8 @@ def test_create_with_parent_id(
         code="category-b",
         is_leaf=True,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()),
                 name="Property A",
                 type="number",
@@ -116,7 +116,7 @@ def test_create_with_parent_id(
                 unit=unit.value,
                 mandatory=False,
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -133,7 +133,7 @@ def test_create_with_parent_id(
             code="category-a",
             is_leaf=False,
             parent_id=None,
-            catalogue_item_properties=[],
+            properties=[],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
@@ -151,7 +151,7 @@ def test_create_with_parent_id(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+            properties=[prop.model_dump() for prop in catalogue_category.properties],
         )
     )
 
@@ -168,12 +168,10 @@ def test_create_with_parent_id(
                 code=catalogue_category.code,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+                properties=[prop.model_dump() for prop in catalogue_category.properties],
             ).model_dump()
         ),
-        "catalogue_item_properties": [
-            {**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.catalogue_item_properties
-        ],
+        "properties": [{**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.properties],
     }
     # pylint: enable=duplicate-code
     assert created_catalogue_category == catalogue_category
@@ -200,11 +198,11 @@ def test_create_with_whitespace_name(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -221,7 +219,7 @@ def test_create_with_whitespace_name(
         CatalogueCategoryPostRequestSchema(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
-            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+            properties=[prop.model_dump() for prop in catalogue_category.properties],
         )
     )
 
@@ -238,12 +236,10 @@ def test_create_with_whitespace_name(
                 code=catalogue_category.code,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+                properties=[prop.model_dump() for prop in catalogue_category.properties],
             ).model_dump()
         ),
-        "catalogue_item_properties": [
-            {**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.catalogue_item_properties
-        ],
+        "properties": [{**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.properties],
     }
     # pylint: enable=duplicate-code
     assert created_catalogue_category == catalogue_category
@@ -264,7 +260,7 @@ def test_create_with_leaf_parent_catalogue_category(
         code="category-b",
         is_leaf=False,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -280,8 +276,8 @@ def test_create_with_leaf_parent_catalogue_category(
             code="category-a",
             is_leaf=True,
             parent_id=None,
-            catalogue_item_properties=[
-                CatalogueItemPropertyOut(
+            properties=[
+                CategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -289,7 +285,7 @@ def test_create_with_leaf_parent_catalogue_category(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -306,7 +302,7 @@ def test_create_with_leaf_parent_catalogue_category(
                 name=catalogue_category.name,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=catalogue_category.catalogue_item_properties,
+                properties=catalogue_category.properties,
             )
         )
     catalogue_category_repository_mock.create.assert_not_called()
@@ -317,7 +313,7 @@ def test_create_with_duplicate_property_names(
     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
 ):
     """
-    Test trying to create a catalogue category with duplicate catalogue item property names
+    Test trying to create a catalogue category with duplicate property names
     """
     # pylint: disable=duplicate-code
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
@@ -327,11 +323,11 @@ def test_create_with_duplicate_property_names(
         code="category-b",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -340,23 +336,21 @@ def test_create_with_duplicate_property_names(
     test_helpers.mock_get(unit_repository_mock, unit)
     # pylint: enable=duplicate-code
 
-    with pytest.raises(DuplicateCatalogueItemPropertyNameError) as exc:
+    with pytest.raises(DuplicateCategoryPropertyNameError) as exc:
         # pylint: disable=duplicate-code
         catalogue_category_service.create(
             CatalogueCategoryPostRequestSchema(
                 name=catalogue_category.name,
                 is_leaf=catalogue_category.is_leaf,
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+                properties=[prop.model_dump() for prop in catalogue_category.properties],
             )
         )
         # pylint: enable=duplicate-code
     catalogue_category_repository_mock.create.assert_not_called()
-    assert str(exc.value) == (
-        f"Duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
-    )
+    assert str(exc.value) == (f"Duplicate property name: {catalogue_category.properties[0].name}")
 
 
-def test_create_catalogue_item_properties_with_non_existent_unit_id(
+def test_create_properties_with_non_existent_unit_id(
     test_helpers,
     catalogue_category_repository_mock,
     unit_repository_mock,
@@ -376,8 +370,8 @@ def test_create_catalogue_item_properties_with_non_existent_unit_id(
         code="category-b",
         is_leaf=True,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()),
                 name="Property A",
                 type="number",
@@ -385,7 +379,7 @@ def test_create_catalogue_item_properties_with_non_existent_unit_id(
                 unit=unit.value,
                 mandatory=False,
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -402,7 +396,7 @@ def test_create_catalogue_item_properties_with_non_existent_unit_id(
             code="category-a",
             is_leaf=False,
             parent_id=None,
-            catalogue_item_properties=[],
+            properties=[],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
@@ -421,7 +415,7 @@ def test_create_catalogue_item_properties_with_non_existent_unit_id(
                 name=catalogue_category.name,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+                properties=[prop.model_dump() for prop in catalogue_category.properties],
             )
         )
     catalogue_category_repository_mock.create.assert_not_called()
@@ -528,7 +522,7 @@ def test_update_when_no_child_elements(
         code="category-b",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -542,7 +536,7 @@ def test_update_when_no_child_elements(
             code="category-a",
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -564,7 +558,7 @@ def test_update_when_no_child_elements(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
         ),
@@ -590,7 +584,7 @@ def test_update_when_has_child_elements(
         code="category-b",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -604,7 +598,7 @@ def test_update_when_has_child_elements(
             code="category-a",
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -626,7 +620,7 @@ def test_update_when_has_child_elements(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
         ),
@@ -646,9 +640,7 @@ def test_update_with_non_existent_id(test_helpers, catalogue_category_repository
 
     catalogue_category_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_category_service.update(
-            catalogue_category_id, CatalogueCategoryPatchRequestSchema(catalogue_item_properties=[])
-        )
+        catalogue_category_service.update(catalogue_category_id, CatalogueCategoryPatchRequestSchema(properties=[]))
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
@@ -669,7 +661,7 @@ def test_update_change_parent_id(
         code="category-b",
         is_leaf=False,
         parent_id=str(ObjectId()),
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -683,7 +675,7 @@ def test_update_change_parent_id(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=None,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -700,7 +692,7 @@ def test_update_change_parent_id(
             code="category-a",
             is_leaf=False,
             parent_id=None,
-            catalogue_item_properties=[],
+            properties=[],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
@@ -721,7 +713,7 @@ def test_update_change_parent_id(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
         ),
@@ -748,7 +740,7 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             code="category-b",
             is_leaf=False,
             parent_id=None,
-            catalogue_item_properties=[],
+            properties=[],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         ),
@@ -765,8 +757,8 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             code="category-a",
             is_leaf=True,
             parent_id=None,
-            catalogue_item_properties=[
-                CatalogueItemPropertyOut(
+            properties=[
+                CategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -774,7 +766,7 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -811,7 +803,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -826,8 +818,8 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             code=catalogue_category.code,
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[
-                CatalogueItemPropertyOut(
+            properties=[
+                CategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -835,7 +827,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
@@ -860,7 +852,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=catalogue_category.catalogue_item_properties,
+            properties=catalogue_category.properties,
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
         ),
@@ -868,7 +860,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
     assert updated_catalogue_category == catalogue_category
 
 
-def test_update_change_catalogue_item_properties_when_no_child_elements(
+def test_update_change_properties_when_no_child_elements(
     test_helpers,
     catalogue_category_repository_mock,
     unit_repository_mock,
@@ -888,11 +880,11 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -909,7 +901,7 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            properties=[catalogue_category.properties[1]],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -925,9 +917,7 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
 
     updated_catalogue_category = catalogue_category_service.update(
         catalogue_category.id,
-        CatalogueCategoryPatchRequestSchema(
-            catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
-        ),
+        CatalogueCategoryPatchRequestSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
     )
 
     # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
@@ -942,14 +932,12 @@ def test_update_change_catalogue_item_properties_when_no_child_elements(
                 code=catalogue_category.code,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties],
+                properties=[prop.model_dump() for prop in catalogue_category.properties],
                 created_time=catalogue_category.created_time,
                 modified_time=catalogue_category.modified_time,
             ).model_dump()
         ),
-        "catalogue_item_properties": [
-            {**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.catalogue_item_properties
-        ],
+        "properties": [{**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.properties],
     }
     assert updated_catalogue_category == catalogue_category
 
@@ -968,7 +956,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
         code="category-a",
         is_leaf=False,
         parent_id=None,
-        catalogue_item_properties=[],
+        properties=[],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
     )
@@ -983,8 +971,8 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
             code=catalogue_category.code,
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[
-                CatalogueItemPropertyOut(
+            properties=[
+                CategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -992,7 +980,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
@@ -1014,7 +1002,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
     )
 
 
-def test_update_change_catalogue_item_properties_when_has_child_elements(
+def test_update_change_properties_when_has_child_elements(
     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
 ):
     """
@@ -1030,11 +1018,11 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -1051,7 +1039,7 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            properties=[catalogue_category.properties[1]],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -1068,7 +1056,7 @@ def test_update_change_catalogue_item_properties_when_has_child_elements(
         catalogue_category_service.update(
             catalogue_category.id,
             CatalogueCategoryPatchRequestSchema(
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+                properties=[prop.model_dump() for prop in catalogue_category.properties]
             ),
         )
     catalogue_category_repository_mock.update.assert_not_called()
@@ -1082,7 +1070,7 @@ def test_update_properties_to_have_duplicate_names(
     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
 ):
     """
-    Test that checks that trying to update catalogue item properties so that the names are duplicated is not allowed
+    Test that checks that trying to update  so that the names are duplicated is not allowed
 
     Verify the `update` method properly handles the catalogue category to be updated
     """
@@ -1094,11 +1082,11 @@ def test_update_properties_to_have_duplicate_names(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()), name="Duplicate", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Duplicate", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Duplicate", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -1115,7 +1103,7 @@ def test_update_properties_to_have_duplicate_names(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            properties=[catalogue_category.properties[1]],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -1128,20 +1116,18 @@ def test_update_properties_to_have_duplicate_names(
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
-    with pytest.raises(DuplicateCatalogueItemPropertyNameError) as exc:
+    with pytest.raises(DuplicateCategoryPropertyNameError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
             CatalogueCategoryPatchRequestSchema(
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+                properties=[prop.model_dump() for prop in catalogue_category.properties]
             ),
         )
     catalogue_category_repository_mock.update.assert_not_called()
-    assert str(exc.value) == (
-        f"Duplicate catalogue item property name: {catalogue_category.catalogue_item_properties[0].name}"
-    )
+    assert str(exc.value) == (f"Duplicate property name: {catalogue_category.properties[0].name}")
 
 
-def test_update_change_catalogue_item_properties_with_non_existent_unit_id(
+def test_update_change_properties_with_non_existent_unit_id(
     test_helpers,
     catalogue_category_repository_mock,
     unit_repository_mock,
@@ -1159,11 +1145,11 @@ def test_update_change_catalogue_item_properties_with_non_existent_unit_id(
         code="category-a",
         is_leaf=True,
         parent_id=None,
-        catalogue_item_properties=[
-            CatalogueItemPropertyOut(
+        properties=[
+            CategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CatalogueItemPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -1180,7 +1166,7 @@ def test_update_change_catalogue_item_properties_with_non_existent_unit_id(
             code=catalogue_category.code,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
-            catalogue_item_properties=[catalogue_category.catalogue_item_properties[1]],
+            properties=[catalogue_category.properties[1]],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
         ),
@@ -1198,7 +1184,7 @@ def test_update_change_catalogue_item_properties_with_non_existent_unit_id(
         catalogue_category_service.update(
             catalogue_category.id,
             CatalogueCategoryPatchRequestSchema(
-                catalogue_item_properties=[prop.model_dump() for prop in catalogue_category.catalogue_item_properties]
+                properties=[prop.model_dump() for prop in catalogue_category.properties]
             ),
         )
     catalogue_category_repository_mock.update.assert_not_called()

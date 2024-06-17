@@ -23,14 +23,14 @@ CATALOGUE_CATEGORY_POST_A_EXPECTED = {
     "id": ANY,
     "code": "category-a",
     "parent_id": None,
-    "catalogue_item_properties": [],
+    "properties": [],
 }
 
 # To be posted as a child of the above - leaf with parent
 CATALOGUE_CATEGORY_POST_B = {
     "name": "Category B",
     "is_leaf": True,
-    "catalogue_item_properties": [
+    "properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "mandatory": True},
     ],
@@ -40,7 +40,7 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
     **CREATED_MODIFIED_VALUES_EXPECTED,
     "id": ANY,
     "code": "category-b",
-    "catalogue_item_properties": [
+    "properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
@@ -50,7 +50,7 @@ CATALOGUE_CATEGORY_POST_B_EXPECTED = {
 CATALOGUE_CATEGORY_POST_C = {
     "name": "Category C",
     "is_leaf": True,
-    "catalogue_item_properties": [
+    "properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
     ],
@@ -61,7 +61,7 @@ CATALOGUE_CATEGORY_POST_C_EXPECTED = {
     "id": ANY,
     "code": "category-c",
     "parent_id": None,
-    "catalogue_item_properties": [
+    "properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False, "allowed_values": None},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True, "allowed_values": None},
     ],
@@ -117,8 +117,8 @@ def _post_catalogue_categories(test_client):
             CATALOGUE_CATEGORY_POST_A,
             {
                 **CATALOGUE_CATEGORY_POST_B,
-                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
+                "properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_B["properties"], units
                 ),
             },
         ],
@@ -128,8 +128,8 @@ def _post_catalogue_categories(test_client):
         [
             {
                 **CATALOGUE_CATEGORY_POST_C,
-                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+                "properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_C["properties"], units
                 ),
             }
         ],
@@ -194,9 +194,7 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -206,9 +204,9 @@ def test_create_catalogue_category_with_valid_parent_id(test_client):
     assert catalogue_category == {
         **CATALOGUE_CATEGORY_POST_B_EXPECTED,
         "parent_id": parent_catalogue_category["id"],
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
-            CATALOGUE_CATEGORY_POST_B_EXPECTED["catalogue_item_properties"],
+        "properties": add_ids_to_properties(
+            catalogue_category["properties"],
+            CATALOGUE_CATEGORY_POST_B_EXPECTED["properties"],
         ),
     }
 
@@ -228,9 +226,7 @@ def test_create_catalogue_category_with_duplicate_name_within_parent(test_client
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -238,9 +234,7 @@ def test_create_catalogue_category_with_duplicate_name_within_parent(test_client
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -273,9 +267,7 @@ def test_create_catalogue_category_with_non_existent_unit_id(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -305,9 +297,7 @@ def test_create_catalogue_category_with_invalid_unit_id(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -351,9 +341,7 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_C["properties"], units),
         },
     )
     catalogue_category = response.json()
@@ -366,16 +354,16 @@ def test_create_catalogue_category_with_leaf_parent_catalogue_category(test_clie
     assert response.json()["detail"] == "Adding a catalogue category to a leaf parent catalogue category is not allowed"
 
 
-def test_create_catalogue_category_with_invalid_catalogue_item_property_type(test_client):
+def test_create_catalogue_category_with_invalid_property_type(test_client):
     """
-    Test creating a catalogue category with an invalid catalogue item property type.
+    Test creating a catalogue category with an invalid property type.
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_C,
-        "catalogue_item_properties": [
+        "properties": [
             {"name": "Property A", "type": "invalid-type", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         ],
     }
@@ -386,14 +374,14 @@ def test_create_catalogue_category_with_invalid_catalogue_item_property_type(tes
     assert response.json()["detail"][0]["msg"] == "Input should be 'string', 'number' or 'boolean'"
 
 
-def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(test_client):
+def test_create_catalogue_category_with_duplicate_property_names(test_client):
     """
-    Test creating a catalogue category with duplicate catalogue item property names.
+    Test creating a catalogue category with duplicate property names.
     """
 
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_C,
-        "catalogue_item_properties": [
+        "properties": [
             {"name": "Duplicate", "type": "number", "unit": "mm", "mandatory": False},
             {"name": "Duplicate", "type": "boolean", "mandatory": True},
         ],
@@ -405,27 +393,23 @@ def test_create_catalogue_category_with_duplicate_catalogue_item_property_names(
         "/v1/catalogue-categories",
         json={
             **catalogue_category,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                catalogue_category["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(catalogue_category["properties"], units),
         },
     )
 
     assert response.status_code == 422
-    assert response.json()["detail"] == (
-        f"Duplicate catalogue item property name: {catalogue_category['catalogue_item_properties'][0]['name']}"
-    )
+    assert response.json()["detail"] == (f"Duplicate property name: {catalogue_category['properties'][0]['name']}")
 
 
-def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalogue_item_property(test_client):
+def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_property(test_client):
     """
-    Test creating a catalogue category when a unit is supplied for a boolean catalogue item property.
+    Test creating a catalogue category when a unit is supplied for a boolean property.
     """
 
     _, unit_value_to_id = _post_units(test_client)
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_C,
-        "catalogue_item_properties": [
+        "properties": [
             {"name": "Property A", "type": "boolean", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         ],
     }
@@ -433,37 +417,32 @@ def test_create_catalogue_category_with_disallowed_unit_value_for_boolean_catalo
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
     assert response.status_code == 422
-    assert (
-        response.json()["detail"][0]["msg"]
-        == "Value error, Unit not allowed for boolean catalogue item property 'Property A'"
-    )
+    assert response.json()["detail"][0]["msg"] == "Value error, Unit not allowed for boolean property 'Property A'"
 
 
-def test_create_leaf_catalogue_category_without_catalogue_item_properties(test_client):
+def test_create_leaf_catalogue_category_without_properties(test_client):
     """
     Test creating a catalogue category.
     """
     catalogue_category = {**CATALOGUE_CATEGORY_POST_C}
-    del catalogue_category["catalogue_item_properties"]
+    del catalogue_category["properties"]
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
     assert response.status_code == 201
     catalogue_category = response.json()
-    assert catalogue_category == {**CATALOGUE_CATEGORY_POST_C_EXPECTED, "catalogue_item_properties": []}
+    assert catalogue_category == {**CATALOGUE_CATEGORY_POST_C_EXPECTED, "properties": []}
 
 
-def test_create_non_leaf_catalogue_category_with_catalogue_item_properties(test_client):
+def test_create_non_leaf_catalogue_category_with_properties(test_client):
     """
-    Test creating a non-leaf catalogue category with catalogue item properties.
+    Test creating a non-leaf catalogue category with .
     """
 
     units, _ = _post_units(test_client)
 
     catalogue_category = {
         **CATALOGUE_CATEGORY_POST_A,
-        "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-            CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-        ),
+        "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category)
 
@@ -480,7 +459,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "number",
@@ -507,8 +486,8 @@ def test_create_catalogue_category_with_properties_with_allowed_values(test_clie
         json={
             **{
                 **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["catalogue_item_properties"], units
+                "properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES["properties"], units
                 ),
             },
         },
@@ -519,9 +498,9 @@ def test_create_catalogue_category_with_properties_with_allowed_values(test_clie
     print(CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED)
     assert catalogue_category == {
         **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED,
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
-            CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED["catalogue_item_properties"],
+        "properties": add_ids_to_properties(
+            catalogue_category["properties"],
+            CATALOGUE_CATEGORY_POST_ALLOWED_VALUES_EXPECTED["properties"],
         ),
     }
 
@@ -535,7 +514,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "number",
@@ -562,7 +541,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "string",
@@ -589,7 +568,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "number",
@@ -616,7 +595,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "string",
@@ -642,7 +621,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "boolean",
@@ -656,7 +635,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_l
     assert response.status_code == 422
     assert (
         response.json()["detail"][0]["msg"]
-        == "Value error, allowed_values not allowed for a boolean catalogue item property 'Property A'"
+        == "Value error, allowed_values not allowed for a boolean property 'Property A'"
     )
 
 
@@ -668,7 +647,7 @@ def test_create_catalogue_category_with_properties_with_invalid_allowed_values_t
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "string",
@@ -735,9 +714,7 @@ def test_delete_catalogue_category_with_child_catalogue_categories(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -761,8 +738,8 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
         json={
             **{
                 **CATALOGUE_CATEGORY_POST_C,
-                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+                "properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_C["properties"], units
                 ),
             },
         },
@@ -776,9 +753,7 @@ def test_delete_catalogue_category_with_child_catalogue_items(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
     }
     # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -804,9 +779,7 @@ def test_get_catalogue_category(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
             "parent_id": parent_catalogue_category["id"],
         },
     )
@@ -817,9 +790,9 @@ def test_get_catalogue_category(test_client):
     assert catalogue_category == {
         **CATALOGUE_CATEGORY_POST_B_EXPECTED,
         "parent_id": parent_catalogue_category["id"],
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
-            CATALOGUE_CATEGORY_POST_B_EXPECTED["catalogue_item_properties"],
+        "properties": add_ids_to_properties(
+            catalogue_category["properties"],
+            CATALOGUE_CATEGORY_POST_B_EXPECTED["properties"],
         ),
     }
 
@@ -915,8 +888,8 @@ def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
         [
             {
                 **CATALOGUE_CATEGORY_POST_C,
-                "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
+                "properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_C["properties"], units
                 ),
             }
         ],
@@ -1041,9 +1014,7 @@ def test_partial_update_catalogue_category_change_name_duplicate(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_B,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
         },
     )
 
@@ -1085,9 +1056,7 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
         },
     )
 
@@ -1103,9 +1072,9 @@ def test_partial_update_catalogue_category_change_valid_when_has_child_catalogue
         **CATALOGUE_CATEGORY_POST_C_EXPECTED,
         **catalogue_category_patch,
         "code": "category-d",
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
-            CATALOGUE_CATEGORY_POST_C_EXPECTED["catalogue_item_properties"],
+        "properties": add_ids_to_properties(
+            catalogue_category["properties"],
+            CATALOGUE_CATEGORY_POST_C_EXPECTED["properties"],
         ),
     }
 
@@ -1119,7 +1088,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
 
     catalogue_category_patch = {
         "is_leaf": True,
-        "catalogue_item_properties": [
+        "properties": [
             {
                 "name": "Property A",
                 "type": "number",
@@ -1142,9 +1111,9 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
         **catalogue_category_post,
         **{
             **catalogue_category_patch,
-            "catalogue_item_properties": add_ids_to_properties(
-                catalogue_category["catalogue_item_properties"],
-                catalogue_category_patch["catalogue_item_properties"],
+            "properties": add_ids_to_properties(
+                catalogue_category["properties"],
+                catalogue_category_patch["properties"],
             ),
         },
         **CREATED_MODIFIED_VALUES_EXPECTED,
@@ -1154,9 +1123,9 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
     }
 
 
-def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_catalogue_item_properties(test_client):
+def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_properties(test_client):
     """
-    Test changing a catalogue category from non-leaf to leaf without supplying any catalogue item properties.
+    Test changing a catalogue category from non-leaf to leaf without supplying any .
     """
     catalogue_category_post = {"name": "Category A", "is_leaf": False}
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
@@ -1170,7 +1139,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_
         **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
-        "catalogue_item_properties": [],
+        "properties": [],
         "code": "category-a",
         "parent_id": None,
     }
@@ -1188,7 +1157,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_has_chil
 
     catalogue_category_patch = {
         "is_leaf": True,
-        "catalogue_item_properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
+        "properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
     }
     response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_patch)
 
@@ -1204,7 +1173,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf(test_cli
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": [
+        "properties": [
             {
                 "name": "Property A",
                 "type": "number",
@@ -1225,7 +1194,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf(test_cli
         **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
-        "catalogue_item_properties": [],
+        "properties": [],
         "code": "category-a",
         "parent_id": None,
     }
@@ -1246,9 +1215,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
     }
     # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -1260,20 +1227,20 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
     assert response.json()["detail"] == "Catalogue category has child elements and cannot be updated"
 
 
-def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_catalogue_item_properties(test_client):
+def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_properties(test_client):
     """
-    Test changing a catalogue category from leaf to non-leaf while also changing its catalogue item properties.
+    Test changing a catalogue category from leaf to non-leaf while also changing its .
     """
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
+        "properties": [{"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}],
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
     catalogue_category_patch = {
         "is_leaf": False,
-        "catalogue_item_properties": [{"name": "Property B", "type": "boolean", "mandatory": True}],
+        "properties": [{"name": "Property B", "type": "boolean", "mandatory": True}],
     }
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
@@ -1283,7 +1250,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_cat
         **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
         "id": ANY,
-        "catalogue_item_properties": [],
+        "properties": [],
         "code": "category-a",
         "parent_id": None,
     }
@@ -1303,9 +1270,7 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
         "name": "Category B",
         "is_leaf": True,
         "parent_id": catalogue_category_a_id,
-        "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-            [CATALOGUE_CATEGORY_POST_B["catalogue_item_properties"][0]], units
-        ),
+        "properties": replace_unit_values_with_ids_in_properties([CATALOGUE_CATEGORY_POST_B["properties"][0]], units),
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
     catalogue_category_b_id = response.json()["id"]
@@ -1318,9 +1283,9 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
     assert catalogue_category == {
         **{
             **catalogue_category_post,
-            "catalogue_item_properties": add_ids_to_properties(
-                catalogue_category["catalogue_item_properties"],
-                [CATALOGUE_CATEGORY_POST_B_EXPECTED["catalogue_item_properties"][0]],
+            "properties": add_ids_to_properties(
+                catalogue_category["properties"],
+                [CATALOGUE_CATEGORY_POST_B_EXPECTED["properties"][0]],
             ),
         },
         **catalogue_category_patch,
@@ -1366,7 +1331,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
         **catalogue_category_b_post,
         **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": [],
+        "properties": [],
         "id": ANY,
         "code": "category-b",
     }
@@ -1386,7 +1351,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
         "name": "Category C",
         "is_leaf": True,
         "parent_id": catalogue_category_b_id,
-        "catalogue_item_properties": [
+        "properties": [
             {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
             {"name": "Property B", "type": "boolean", "mandatory": True},
         ],
@@ -1405,7 +1370,7 @@ def test_partial_update_catalogue_category_change_parent_id_has_child_catalogue_
         **catalogue_category_b_post,
         **catalogue_category_patch,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": [],
+        "properties": [],
         "id": ANY,
         "code": "category-b",
     }
@@ -1482,14 +1447,14 @@ def test_partial_update_catalogue_category_change_parent_id_non_existent_id(test
     assert response.json()["detail"] == "The specified parent catalogue category does not exist"
 
 
-def test_partial_update_catalogue_category_add_catalogue_item_property(test_client):
+def test_partial_update_catalogue_category_add_property(test_client):
     """
-    Test adding a catalogue item property.
+    Test adding a property.
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {
             "name": "Property A",
             "type": "number",
@@ -1502,39 +1467,35 @@ def test_partial_update_catalogue_category_add_catalogue_item_property(test_clie
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties.append(
-        {"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None}
-    )
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties.append({"name": "Property B", "type": "boolean", "mandatory": True, "allowed_values": None})
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 200
-    catalogue_item_properties[1]["unit"] = None
+    properties[1]["unit"] = None
     catalogue_category = response.json()
     assert catalogue_category == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], catalogue_category_patch["catalogue_item_properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], catalogue_category_patch["properties"]),
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
     }
 
 
-def test_partial_update_catalogue_category_remove_catalogue_item_property(test_client):
+def test_partial_update_catalogue_category_remove_property(test_client):
     """
-    Test removing a catalogue item property.
+    Test removing a property.
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {
             "name": "Property A",
             "type": "number",
@@ -1548,37 +1509,35 @@ def test_partial_update_catalogue_category_remove_catalogue_item_property(test_c
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties.pop(0)
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties.pop(0)
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 200
-    catalogue_item_properties[0]["unit"] = None
+    properties[0]["unit"] = None
     catalogue_category = response.json()
     assert catalogue_category == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], catalogue_category_patch["catalogue_item_properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], catalogue_category_patch["properties"]),
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
     }
 
 
-def test_partial_update_catalogue_category_modify_catalogue_item_property(test_client):
+def test_partial_update_catalogue_category_modify_property(test_client):
     """
-    Test modifying a catalogue item property.
+    Test modifying a property.
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {
             "name": "Property A",
             "type": "number",
@@ -1592,49 +1551,47 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property(test_c
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties[1]["name"] = "Property C"
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[1]["name"] = "Property C"
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 200
-    catalogue_item_properties[1]["unit"] = None
+    properties[1]["unit"] = None
     catalogue_category = response.json()
     assert catalogue_category == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], catalogue_category_patch["catalogue_item_properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], catalogue_category_patch["properties"]),
         "id": ANY,
         "code": "category-a",
         "parent_id": None,
     }
 
 
-def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_allowed_values_list(test_client):
+def test_partial_update_catalogue_category_modify_property_to_have_allowed_values_list(test_client):
     """
-    Test modifying catalogue item properties to have a list of allowed values
+    Test modifying  to have a list of allowed values
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
         **CATALOGUE_CATEGORY_POST_B,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
-    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 200
@@ -1642,38 +1599,36 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     assert catalogue_category == {
         **catalogue_category_post,
         **CREATED_MODIFIED_VALUES_EXPECTED,
-        "catalogue_item_properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], catalogue_category_patch["catalogue_item_properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], catalogue_category_patch["properties"]),
         "id": ANY,
         "code": "category-b",
         "parent_id": None,
     }
 
 
-def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_invalid_allowed_values_list_number(
+def test_partial_update_catalogue_category_modify_property_to_have_invalid_allowed_values_list_number(
     test_client,
 ):
     """
-    Test modifying catalogue item properties to have a number property containing an allowed_values list with an
+    Test modifying  to have a number property containing an allowed_values list with an
     invalid number
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
         **CATALOGUE_CATEGORY_POST_B,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, "4", 6]}
-    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[0]["allowed_values"] = {"type": "list", "values": [2, "4", 6]}
+    properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
@@ -1683,29 +1638,29 @@ def test_partial_update_catalogue_category_modify_catalogue_item_property_to_hav
     )
 
 
-def test_partial_update_catalogue_category_modify_catalogue_item_property_to_have_invalid_allowed_values_list_string(
+def test_partial_update_catalogue_category_modify_property_to_have_invalid_allowed_values_list_string(
     test_client,
 ):
     """
-    Test modifying catalogue item properties to have a string property containing an allowed_values list with an
+    Test modifying  to have a string property containing an allowed_values list with an
     invalid string
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_value_to_id["mm"], "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
         **CATALOGUE_CATEGORY_POST_B,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
-    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green", 6]}
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green", 6]}
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
@@ -1719,22 +1674,22 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     test_client,
 ):
     """
-    Test modifying catalogue item properties to have a number property containing an allowed_values list with a
+    Test modifying  to have a number property containing an allowed_values list with a
     duplicate number value
     """
-    catalogue_item_properties = [
+    properties = [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
         **CATALOGUE_CATEGORY_POST_B,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [42, 10.2, 12, 42]}
-    catalogue_item_properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[0]["allowed_values"] = {"type": "list", "values": [42, 10.2, 12, 42]}
+    properties[1]["allowed_values"] = {"type": "list", "values": ["red", "green"]}
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
@@ -1748,25 +1703,25 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     test_client,
 ):
     """
-    Test modifying catalogue item properties to have a string property containing an allowed_values list with a
+    Test modifying  to have a string property containing an allowed_values list with a
     duplicate string value
     """
-    catalogue_item_properties = [
+    properties = [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "string", "unit": None, "mandatory": False},
     ]
     catalogue_category_post = {
         **CATALOGUE_CATEGORY_POST_B,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
-    catalogue_item_properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
-    catalogue_item_properties[1]["allowed_values"] = {
+    properties[0]["allowed_values"] = {"type": "list", "values": [2, 4, 6]}
+    properties[1]["allowed_values"] = {
         "type": "list",
         "values": ["value1", "value2", "value3", "value2"],
     }
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
@@ -1776,9 +1731,9 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     )
 
 
-def test_partial_update_catalogue_category_change_catalogue_item_properties_has_child_catalogue_items(test_client):
+def test_partial_update_catalogue_category_change_properties_has_child_catalogue_items(test_client):
     """
-    Test changing the catalogue item properties when a catalogue category has child catalogue items.
+    Test changing the  when a catalogue category has child catalogue items.
     """
     # pylint: disable=duplicate-code
 
@@ -1787,9 +1742,7 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_C["properties"], units),
         },
     )
     catalogue_category = response.json()
@@ -1801,16 +1754,12 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
     }
     # pylint: enable=duplicate-code
     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    catalogue_category_patch = {
-        "catalogue_item_properties": [{"name": "Property B", "type": "string", "mandatory": False}]
-    }
+    catalogue_category_patch = {"properties": [{"name": "Property B", "type": "string", "mandatory": False}]}
     response = test_client.patch(f"/v1/catalogue-categories/{catalogue_category['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 409
@@ -1819,12 +1768,12 @@ def test_partial_update_catalogue_category_change_catalogue_item_properties_has_
 
 def test_partial_update_catalogue_category_invalid_unit_id(test_client):
     """
-    Test modifying a catalogue item property when there is an invalid unit ID.
+    Test modifying a property when there is an invalid unit ID.
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {
             "name": "Property A",
             "type": "number",
@@ -1838,7 +1787,7 @@ def test_partial_update_catalogue_category_invalid_unit_id(test_client):
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
@@ -1849,9 +1798,9 @@ def test_partial_update_catalogue_category_invalid_unit_id(test_client):
         "code": "cm",
         **CREATED_MODIFIED_VALUES_EXPECTED,
     }
-    catalogue_item_properties[0]["unit_id"] = unit_cm["id"]
-    catalogue_item_properties[0]["unit"] = unit_cm["value"]
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[0]["unit_id"] = unit_cm["id"]
+    properties[0]["unit"] = unit_cm["value"]
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
@@ -1860,12 +1809,12 @@ def test_partial_update_catalogue_category_invalid_unit_id(test_client):
 
 def test_partial_update_catalogue_category_non_existent_unit_id(test_client):
     """
-    Test modifying a catalogue item property when there is an non existent unit ID.
+    Test modifying a property when there is an non existent unit ID.
     """
 
     _, unit_value_to_id = _post_units(test_client)
 
-    catalogue_item_properties = [
+    properties = [
         {
             "name": "Property A",
             "type": "number",
@@ -1879,7 +1828,7 @@ def test_partial_update_catalogue_category_non_existent_unit_id(test_client):
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
 
@@ -1890,9 +1839,9 @@ def test_partial_update_catalogue_category_non_existent_unit_id(test_client):
         "code": "cm",
         **CREATED_MODIFIED_VALUES_EXPECTED,
     }
-    catalogue_item_properties[0]["unit_id"] = unit_cm["id"]
-    catalogue_item_properties[0]["unit"] = unit_cm["value"]
-    catalogue_category_patch = {"catalogue_item_properties": catalogue_item_properties}
+    properties[0]["unit_id"] = unit_cm["id"]
+    properties[0]["unit"] = unit_cm["value"]
+    catalogue_category_patch = {"properties": properties}
     response = test_client.patch(f"/v1/catalogue-categories/{response.json()['id']}", json=catalogue_category_patch)
 
     assert response.status_code == 422
@@ -1925,7 +1874,7 @@ def test_partial_update_catalogue_category_non_existent_id(test_client):
 
 def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_client):
     """
-    Test updating a catalogue category to have duplicate catalogue item property names
+    Test updating a catalogue category to have duplicate property names
     """
 
     units, unit_value_to_id = _post_units(test_client)
@@ -1933,15 +1882,13 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_C,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_C["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_C["properties"], units),
         },
     )
     catalogue_category_id = response.json()["id"]
 
     catalogue_category_patch = {
-        "catalogue_item_properties": [
+        "properties": [
             {"name": "Duplicate", "type": "number", "unit_id": unit_value_to_id["mm"], "mandatory": False},
             {"name": "Duplicate", "type": "boolean", "unit": None, "mandatory": True},
         ]
@@ -1951,5 +1898,5 @@ def test_partial_update_catalogue_items_to_have_duplicate_property_names(test_cl
 
     assert response.status_code == 422
     assert response.json()["detail"] == (
-        f"Duplicate catalogue item property name: {catalogue_category_patch['catalogue_item_properties'][0]['name']}"
+        f"Duplicate property name: {catalogue_category_patch['properties'][0]['name']}"
     )
