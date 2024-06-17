@@ -13,8 +13,8 @@ from inventory_management_system_api.core.exceptions import InvalidActionError, 
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
     CatalogueCategoryOut,
-    CategoryPropertyIn,
-    CategoryPropertyOut,
+    CatalogueCategoryPropertyIn,
+    CatalogueCategoryPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.unit import UnitOut
@@ -84,7 +84,7 @@ def test_create(
         session=session,
     )
 
-    expected_property_in = CategoryPropertyIn(**{**property_post.model_dump(), "unit": unit.value})
+    expected_property_in = CatalogueCategoryPropertyIn(**{**property_post.model_dump(), "unit": unit.value})
 
     # Catalogue item property insertion into catalogue category
     inserted_property_in = catalogue_category_repository_mock.create_property.call_args_list[0][0][1]
@@ -321,7 +321,7 @@ def test_update(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -351,7 +351,7 @@ def test_update(
     catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
         property_id,
-        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump()}),
+        CatalogueCategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump()}),
         session=session,
     )
 
@@ -391,7 +391,7 @@ def test_update_category_only(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -421,7 +421,9 @@ def test_update_category_only(
     catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
         property_id,
-        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}),
+        CatalogueCategoryPropertyIn(
+            **{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}
+        ),
         session=session,
     )
 
@@ -454,7 +456,7 @@ def test_update_with_no_changes_allowed_values_none(
     property_id = str(ObjectId())
     property_patch = CategoryPropertyPatchRequestSchema(allowed_values=None)
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -484,7 +486,9 @@ def test_update_with_no_changes_allowed_values_none(
     catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
         property_id,
-        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}),
+        CatalogueCategoryPropertyIn(
+            **{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}
+        ),
         session=session,
     )
 
@@ -551,7 +555,7 @@ def test_update_with_missing_property(
     )
     # pylint: disable=duplicate-code
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=str(ObjectId()),
         name="Property A",
         type="number",
@@ -605,7 +609,7 @@ def test_update_allowed_values_from_none_to_value(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -656,7 +660,7 @@ def test_update_allowed_values_from_value_to_none(
     property_id = str(ObjectId())
     property_patch = CategoryPropertyPatchRequestSchema(name="Property Name", allowed_values=None)
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -709,7 +713,7 @@ def test_update_allowed_values_removing_element(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -765,7 +769,7 @@ def test_update_allowed_values_modifying_element(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -822,7 +826,7 @@ def test_update_adding_allowed_values(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000, 3000, 4000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    stored_property = CategoryPropertyOut(
+    stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
         name="Property A",
         type="number",
@@ -852,7 +856,9 @@ def test_update_adding_allowed_values(
     catalogue_category_repository_mock.update_property.assert_called_once_with(
         catalogue_category_id,
         property_id,
-        CategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}),
+        CatalogueCategoryPropertyIn(
+            **{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}
+        ),
         session=session,
     )
 

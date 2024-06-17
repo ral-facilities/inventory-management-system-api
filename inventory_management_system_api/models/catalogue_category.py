@@ -24,7 +24,7 @@ class AllowedValuesList(BaseModel):
 AllowedValues = Annotated[AllowedValuesList, Field(discriminator="type")]
 
 
-class CategoryPropertyBase(BaseModel):
+class CatalogueCategoryPropertyBase(BaseModel):
     """
     Base database model for a property defined within a catalogue category
     """
@@ -37,7 +37,7 @@ class CategoryPropertyBase(BaseModel):
     allowed_values: Optional[AllowedValues] = None
 
 
-class CategoryPropertyIn(CategoryPropertyBase):
+class CatalogueCategoryPropertyIn(CatalogueCategoryPropertyBase):
     """
     Input database model for a property defined within a catalogue category
     """
@@ -47,7 +47,7 @@ class CategoryPropertyIn(CategoryPropertyBase):
     id: CustomObjectIdField = Field(default_factory=ObjectId, serialization_alias="_id")
 
 
-class CategoryPropertyOut(CategoryPropertyBase):
+class CatalogueCategoryPropertyOut(CatalogueCategoryPropertyBase):
     """
     Output database model for a property defined within a catalogue category
     """
@@ -59,13 +59,13 @@ class CategoryPropertyOut(CategoryPropertyBase):
 
     def is_equal_without_id(self, other: Any) -> bool:
         """
-        Compare this instance with another instance of `CategoryPropertyOut` while ignoring the ID.
+        Compare this instance with another instance of `CatalogueCategoryPropertyOut` while ignoring the ID.
 
         :param other: An instance of a model to compare with.
         :return: `True` if the instances are of the same type and are equal when ignoring the ID field, `False`
             otherwise.
         """
-        if not isinstance(other, CategoryPropertyOut):
+        if not isinstance(other, CatalogueCategoryPropertyOut):
             return False
 
         return (
@@ -86,7 +86,7 @@ class CatalogueCategoryBase(BaseModel):
     code: str
     is_leaf: bool
     parent_id: Optional[CustomObjectIdField] = None
-    properties: List[CategoryPropertyIn] = []
+    properties: List[CatalogueCategoryPropertyIn] = []
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -121,6 +121,6 @@ class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBase):
 
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
-    properties: List[CategoryPropertyOut] = []
+    properties: List[CatalogueCategoryPropertyOut] = []
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

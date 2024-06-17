@@ -16,7 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
-    NonLeafCategoryError,
+    NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
@@ -282,7 +282,7 @@ def test_create_in_non_leaf_catalogue_category(
     # Mock `get` to return the catalogue category
     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
 
-    with pytest.raises(NonLeafCategoryError) as exc:
+    with pytest.raises(NonLeafCatalogueCategoryError) as exc:
         catalogue_item_service.create(
             CatalogueItemPostRequestSchema(
                 catalogue_category_id=catalogue_category.id,
@@ -1503,7 +1503,7 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
         CatalogueCategoryOut(id=catalogue_category_id, **FULL_CATALOGUE_CATEGORY_B_INFO),
     )
 
-    with pytest.raises(NonLeafCategoryError) as exc:
+    with pytest.raises(NonLeafCatalogueCategoryError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
             CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),

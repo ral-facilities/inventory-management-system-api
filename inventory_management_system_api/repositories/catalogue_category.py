@@ -22,8 +22,8 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CategoryPropertyIn,
-    CategoryPropertyOut,
+    CatalogueCategoryPropertyIn,
+    CatalogueCategoryPropertyOut,
 )
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -260,9 +260,9 @@ class CatalogueCategoryRepo:
     def create_property(
         self,
         catalogue_category_id: str,
-        property_in: CategoryPropertyIn,
+        property_in: CatalogueCategoryPropertyIn,
         session: ClientSession = None,
-    ) -> CategoryPropertyOut:
+    ) -> CatalogueCategoryPropertyOut:
         """
         Create a new a property within a catalogue category given its ID in a MongoDB database
 
@@ -288,15 +288,15 @@ class CatalogueCategoryRepo:
             },
             session=session,
         )
-        return CategoryPropertyOut(**property_data)
+        return CatalogueCategoryPropertyOut(**property_data)
 
     def update_property(
         self,
         catalogue_category_id: str,
         property_id: str,
-        property_in: CategoryPropertyIn,
+        property_in: CatalogueCategoryPropertyIn,
         session: ClientSession = None,
-    ) -> CategoryPropertyOut:
+    ) -> CatalogueCategoryPropertyOut:
         """
         Updates a property given its ID and the ID of the catalogue category it's in
 
@@ -328,4 +328,4 @@ class CatalogueCategoryRepo:
             array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
-        return CategoryPropertyOut(**property_data)
+        return CatalogueCategoryPropertyOut(**property_data)

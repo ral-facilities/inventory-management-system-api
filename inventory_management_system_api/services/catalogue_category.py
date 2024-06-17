@@ -10,7 +10,7 @@ from fastapi import Depends
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    LeafCategoryError,
+    LeafCatalogueCategoryError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import (
@@ -54,18 +54,18 @@ class CatalogueCategoryService:
         """
         Create a new catalogue category.
 
-        The method checks if the parent catalogue is a leaf catalogue category and raises a `LeafCategoryError` if it
-        is.
+        The method checks if the parent catalogue is a leaf catalogue category and raises a
+        `LeafCatalogueCategoryError` if it is.
 
         :param catalogue_category: The catalogue category to be created.
         :return: The created catalogue category.
-        :raises LeafCategoryError: If the parent catalogue category is a leaf catalogue category.
+        :raises LeafCatalogueCategoryError: If the parent catalogue category is a leaf catalogue category.
         """
         parent_id = catalogue_category.parent_id
         parent_catalogue_category = self.get(parent_id) if parent_id else None
 
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
-            raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+            raise LeafCatalogueCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         properties = []
         if catalogue_category.properties:
@@ -128,7 +128,7 @@ class CatalogueCategoryService:
 
         The method checks if a catalogue category with such ID exists and raises a `MissingRecordError` if it doesn't
         exist. If a category is attempted to be moved to a leaf parent catalogue category then it checks if the parent
-        is a leaf catalogue category and raises a `LeafCategoryError` if it is.
+        is a leaf catalogue category and raises a `LeafCatalogueCategoryError` if it is.
 
         :param catalogue_category_id: The ID of the catalogue category to update.
         :param catalogue_category: The catalogue category containing the fields that need to be updated.
@@ -136,8 +136,8 @@ class CatalogueCategoryService:
         :raises ChildElementsExistError: If the catalogue category has child elements and attempting to update
                                     either any of the disallowed properties (is_leaf or properties)
         :raises MissingRecordError: If the catalogue category doesn't exist.
-        :raises LeafCategoryError: If the parent catalogue category to which the catalogue category is attempted to be
-            moved is a leaf catalogue category.
+        :raises LeafCatalogueCategoryError: If the parent catalogue category to which the catalogue category is
+                                            attempted to be moved is a leaf catalogue category.
         """
         update_data = catalogue_category.model_dump(exclude_unset=True)
 
@@ -159,7 +159,7 @@ class CatalogueCategoryService:
             parent_catalogue_category = self.get(catalogue_category.parent_id) if catalogue_category.parent_id else None
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
-                raise LeafCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
+                raise LeafCatalogueCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
 
         if catalogue_category.properties:
             utils.check_duplicate_property_names(catalogue_category.properties)

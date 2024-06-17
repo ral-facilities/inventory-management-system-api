@@ -7,11 +7,11 @@ import re
 from typing import Dict, List, Union
 
 from inventory_management_system_api.core.exceptions import (
-    DuplicateCategoryPropertyNameError,
+    DuplicateCatalogueCategoryPropertyNameError,
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
-from inventory_management_system_api.models.catalogue_category import CategoryPropertyOut
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 
@@ -36,7 +36,7 @@ def generate_code(name: str, entity_type: str) -> str:
 
 
 def check_duplicate_property_names(
-    properties: list[CatalogueCategoryPostRequestPropertySchema | CategoryPropertyOut],
+    properties: list[CatalogueCategoryPostRequestPropertySchema | CatalogueCategoryPropertyOut],
 ) -> None:
     """
     Go through a list of  to check for any duplicate names during creation of a catalogue
@@ -50,12 +50,12 @@ def check_duplicate_property_names(
     for prop in properties:
         property_name = prop.name.lower().strip()
         if property_name in seen_property_names:
-            raise DuplicateCategoryPropertyNameError(f"Duplicate property name: {prop.name.strip()}")
+            raise DuplicateCatalogueCategoryPropertyNameError(f"Duplicate property name: {prop.name.strip()}")
         seen_property_names.add(property_name)
 
 
 def process_properties(
-    defined_properties: List[CategoryPropertyOut],
+    defined_properties: List[CatalogueCategoryPropertyOut],
     supplied_properties: List[PropertyPostRequestSchema],
 ) -> List[Dict]:
     """
@@ -87,7 +87,7 @@ def process_properties(
 
 
 def _create_properties_dict(
-    properties: Union[List[CategoryPropertyOut], List[PropertyPostRequestSchema]]
+    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostRequestSchema]]
 ) -> Dict[str, Dict]:
     """
     Convert a list of property objects into a dictionary where the keys are the catalogue item

@@ -11,11 +11,11 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
-    DuplicateCategoryPropertyNameError,
+    DuplicateCatalogueCategoryPropertyNameError,
     DuplicateRecordError,
     InvalidActionError,
     InvalidObjectIdError,
-    LeafCategoryError,
+    LeafCatalogueCategoryError,
     MissingRecordError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -132,11 +132,11 @@ def create_catalogue_category(
         message = "A catalogue category with the same name already exists within the parent catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except LeafCategoryError as exc:
+    except LeafCatalogueCategoryError as exc:
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except DuplicateCategoryPropertyNameError as exc:
+    except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
@@ -185,11 +185,11 @@ def partial_update_catalogue_category(
         message = "A catalogue category with the same name already exists within the parent catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except LeafCategoryError as exc:
+    except LeafCatalogueCategoryError as exc:
         message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except DuplicateCategoryPropertyNameError as exc:
+    except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except InvalidActionError as exc:
@@ -253,7 +253,7 @@ def create_property(
         message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DuplicateCategoryPropertyNameError as exc:
+    except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except InvalidActionError as exc:
@@ -295,7 +295,7 @@ def partial_update_property(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     # pylint:disable=duplicate-code
-    except DuplicateCategoryPropertyNameError as exc:
+    except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except InvalidActionError as exc:

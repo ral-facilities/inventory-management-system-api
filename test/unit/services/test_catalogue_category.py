@@ -12,14 +12,14 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    DuplicateCategoryPropertyNameError,
-    LeafCategoryError,
+    DuplicateCatalogueCategoryPropertyNameError,
+    LeafCatalogueCategoryError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CategoryPropertyOut,
+    CatalogueCategoryPropertyOut,
 )
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -108,7 +108,7 @@ def test_create_with_parent_id(
         is_leaf=True,
         parent_id=str(ObjectId()),
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()),
                 name="Property A",
                 type="number",
@@ -116,7 +116,7 @@ def test_create_with_parent_id(
                 unit=unit.value,
                 mandatory=False,
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -199,10 +199,10 @@ def test_create_with_whitespace_name(
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -277,7 +277,7 @@ def test_create_with_leaf_parent_catalogue_category(
             is_leaf=True,
             parent_id=None,
             properties=[
-                CategoryPropertyOut(
+                CatalogueCategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -285,7 +285,7 @@ def test_create_with_leaf_parent_catalogue_category(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -296,7 +296,7 @@ def test_create_with_leaf_parent_catalogue_category(
     # Mock `get` to return the unit
     test_helpers.mock_get(unit_repository_mock, unit)
 
-    with pytest.raises(LeafCategoryError) as exc:
+    with pytest.raises(LeafCatalogueCategoryError) as exc:
         catalogue_category_service.create(
             CatalogueCategoryPostRequestSchema(
                 name=catalogue_category.name,
@@ -324,10 +324,10 @@ def test_create_with_duplicate_property_names(
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -336,7 +336,7 @@ def test_create_with_duplicate_property_names(
     test_helpers.mock_get(unit_repository_mock, unit)
     # pylint: enable=duplicate-code
 
-    with pytest.raises(DuplicateCategoryPropertyNameError) as exc:
+    with pytest.raises(DuplicateCatalogueCategoryPropertyNameError) as exc:
         # pylint: disable=duplicate-code
         catalogue_category_service.create(
             CatalogueCategoryPostRequestSchema(
@@ -371,7 +371,7 @@ def test_create_properties_with_non_existent_unit_id(
         is_leaf=True,
         parent_id=str(ObjectId()),
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()),
                 name="Property A",
                 type="number",
@@ -379,7 +379,7 @@ def test_create_properties_with_non_existent_unit_id(
                 unit=unit.value,
                 mandatory=False,
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -758,7 +758,7 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
             is_leaf=True,
             parent_id=None,
             properties=[
-                CategoryPropertyOut(
+                CatalogueCategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -766,7 +766,7 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -777,7 +777,7 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
     # Mock `get` to return the unit
     test_helpers.mock_get(unit_repository_mock, unit)
 
-    with pytest.raises(LeafCategoryError) as exc:
+    with pytest.raises(LeafCatalogueCategoryError) as exc:
         catalogue_category_service.update(
             catalogue_category_b_id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category_a_id)
         )
@@ -819,7 +819,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
             properties=[
-                CategoryPropertyOut(
+                CatalogueCategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -827,7 +827,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.created_time,
@@ -881,10 +881,10 @@ def test_update_change_properties_when_no_child_elements(
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -972,7 +972,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
             is_leaf=True,
             parent_id=catalogue_category.parent_id,
             properties=[
-                CategoryPropertyOut(
+                CatalogueCategoryPropertyOut(
                     id=str(ObjectId()),
                     name="Property A",
                     type="number",
@@ -980,7 +980,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
                     unit=unit.value,
                     mandatory=False,
                 ),
-                CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+                CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
             ],
             created_time=catalogue_category.created_time,
             modified_time=catalogue_category.modified_time,
@@ -1019,10 +1019,10 @@ def test_update_change_properties_when_has_child_elements(
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -1083,10 +1083,10 @@ def test_update_properties_to_have_duplicate_names(
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()), name="Duplicate", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Duplicate", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Duplicate", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
@@ -1116,7 +1116,7 @@ def test_update_properties_to_have_duplicate_names(
     # Mock `update` to return the updated catalogue category
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
-    with pytest.raises(DuplicateCategoryPropertyNameError) as exc:
+    with pytest.raises(DuplicateCatalogueCategoryPropertyNameError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
             CatalogueCategoryPatchRequestSchema(
@@ -1146,10 +1146,10 @@ def test_update_change_properties_with_non_existent_unit_id(
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyOut(
+            CatalogueCategoryPropertyOut(
                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
             ),
-            CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
         ],
         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,

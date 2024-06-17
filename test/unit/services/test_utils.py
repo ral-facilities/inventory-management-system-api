@@ -7,26 +7,26 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    DuplicateCategoryPropertyNameError,
+    DuplicateCatalogueCategoryPropertyNameError,
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
-    CategoryPropertyOut,
+    CatalogueCategoryPropertyOut,
 )
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
 from inventory_management_system_api.services import utils
 
 DEFINED_PROPERTIES = [
-    CategoryPropertyOut(
+    CatalogueCategoryPropertyOut(
         id=str(ObjectId()), name="Property A", type="number", unit_id=str(ObjectId()), unit="mm", mandatory=False
     ),
-    CategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-    CategoryPropertyOut(
+    CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
+    CatalogueCategoryPropertyOut(
         id=str(ObjectId()), name="Property C", type="string", unit_id=str(ObjectId()), unit="cm", mandatory=True
     ),
-    CategoryPropertyOut(
+    CatalogueCategoryPropertyOut(
         id=str(ObjectId()),
         name="Property D",
         type="number",
@@ -35,7 +35,7 @@ DEFINED_PROPERTIES = [
         mandatory=True,
         allowed_values=AllowedValues(type="list", values=[2, 4, 6]),
     ),
-    CategoryPropertyOut(
+    CatalogueCategoryPropertyOut(
         id=str(ObjectId()),
         name="Property E",
         type="string",
@@ -108,7 +108,7 @@ class TestDuplicateCategoryPropertyNames:
     def test_with_duplicate_names(self):
         """Test `check_duplicate_property_names` works correctly when there are duplicate names given"""
 
-        with pytest.raises(DuplicateCategoryPropertyNameError) as exc:
+        with pytest.raises(DuplicateCatalogueCategoryPropertyNameError) as exc:
             utils.check_duplicate_property_names([*DEFINED_PROPERTIES, DEFINED_PROPERTIES[-1]])
         assert str(exc.value) == f"Duplicate property name: {DEFINED_PROPERTIES[-1].name}"
 
@@ -293,9 +293,7 @@ class TestProcessCatalogueItemProperties:
         with pytest.raises(InvalidPropertyTypeError) as exc:
             utils.process_properties(DEFINED_PROPERTIES, supplied_properties)
 
-        assert (
-            str(exc.value) == f"Mandatory property with ID '{supplied_properties[2].id}' cannot be None."
-        )
+        assert str(exc.value) == f"Mandatory property with ID '{supplied_properties[2].id}' cannot be None."
 
     def test_process_properties_with_invalid_allowed_value_list_number(self):
         """

@@ -13,7 +13,7 @@ from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
     MissingRecordError,
-    NonLeafCategoryError,
+    NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
@@ -57,13 +57,13 @@ class CatalogueItemService:
         Create a new catalogue item.
 
         The method checks if the catalogue category exists in the database and raises a `MissingRecordError` if it does
-        not. It also checks if the category is not a leaf category and raises a `NonLeafCategoryError` if it is. It then
-        processes the catalogue item properties.
+        not. It also checks if the category is not a leaf category and raises a `NonLeafCatalogueCategoryError` if it
+        is. It then processes the catalogue item properties.
 
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
-        :raises NonLeafCategoryError: If the catalogue category is not a leaf category.
+        :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
         """
         catalogue_category_id = catalogue_item.catalogue_category_id
         catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
@@ -71,7 +71,7 @@ class CatalogueItemService:
             raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
         if catalogue_category.is_leaf is False:
-            raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+            raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
         manufacturer_id = catalogue_item.manufacturer_id
         manufacturer = self._manufacturer_repository.get(manufacturer_id)
@@ -131,7 +131,8 @@ class CatalogueItemService:
         The method checks if the catalogue item exists in the database and raises a `MissingRecordError` if it does
         not. If the catalogue category ID is being updated, it checks if catalogue category with such ID exists and
         raises a MissingRecordError` if it does not. It also checks if the category is not a leaf category and raises a
-        `NonLeafCategoryError` if it is. If the catalogue item properties are being updated, it also processes them.
+        `NonLeafCatalogueCategoryError` if it is. If the catalogue item properties are being updated, it also processes
+        them.
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the fields that need to be updated.
@@ -160,7 +161,7 @@ class CatalogueItemService:
                 raise MissingRecordError(f"No catalogue category found with ID: {catalogue_item.catalogue_category_id}")
 
             if catalogue_category.is_leaf is False:
-                raise NonLeafCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+                raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
 
             # If the catalogue category ID is updated but no catalogue item properties are supplied then we
             # only allow the item to be moved provided that the two categories expect exactly the same properties

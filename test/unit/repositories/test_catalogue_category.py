@@ -24,8 +24,8 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
-    CategoryPropertyIn,
-    CategoryPropertyOut,
+    CatalogueCategoryPropertyIn,
+    CatalogueCategoryPropertyOut,
 )
 
 CATALOGUE_CATEGORY_INFO = {
@@ -127,8 +127,8 @@ def test_create_leaf_category_with_properties(test_helpers, database_mock, catal
         is_leaf=True,
         parent_id=None,
         properties=[
-            CategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-            CategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueCategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
@@ -168,8 +168,8 @@ def test_create_with_parent_id(test_helpers, database_mock, catalogue_category_r
         is_leaf=True,
         parent_id=str(ObjectId()),
         properties=[
-            CategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-            CategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueCategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
@@ -264,8 +264,8 @@ def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, c
         is_leaf=True,
         parent_id=str(ObjectId()),
         properties=[
-            CategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-            CategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
+            CatalogueCategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
+            CatalogueCategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
         ],
     )
     catalogue_category_info = catalogue_category_in.model_dump(by_alias=True)
@@ -1268,7 +1268,7 @@ def test_create_property(datetime_mock, test_helpers, database_mock, catalogue_c
     """
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
-    property_in = CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+    property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
 
     # Mock 'update_one'
     test_helpers.mock_update_one(database_mock.catalogue_categories)
@@ -1283,7 +1283,7 @@ def test_create_property(datetime_mock, test_helpers, database_mock, catalogue_c
         },
         session=session,
     )
-    assert result == CategoryPropertyOut(**property_in.model_dump(by_alias=True))
+    assert result == CatalogueCategoryPropertyOut(**property_in.model_dump(by_alias=True))
 
 
 def test_create_property_with_invalid_id(database_mock, catalogue_category_repository):
@@ -1293,7 +1293,7 @@ def test_create_property_with_invalid_id(database_mock, catalogue_category_repos
 
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.create_property(
-            "invalid", CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+            "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
@@ -1307,7 +1307,7 @@ def test_update_property(datetime_mock, test_helpers, database_mock, catalogue_c
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_in = CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+    property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
 
     # Mock 'update_one'
     test_helpers.mock_update_one(database_mock.catalogue_categories)
@@ -1330,7 +1330,7 @@ def test_update_property(datetime_mock, test_helpers, database_mock, catalogue_c
         array_filters=[{"elem._id": CustomObjectId(property_id)}],
         session=session,
     )
-    assert result == CategoryPropertyOut(**property_in.model_dump(by_alias=True))
+    assert result == CatalogueCategoryPropertyOut(**property_in.model_dump(by_alias=True))
 
 
 def test_update_property_with_invalid_catalogue_category_id(database_mock, catalogue_category_repository):
@@ -1341,7 +1341,7 @@ def test_update_property_with_invalid_catalogue_category_id(database_mock, catal
 
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.update_property(
-            "invalid", str(ObjectId()), CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+            "invalid", str(ObjectId()), CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
@@ -1355,7 +1355,7 @@ def test_update_property_with_invalid_property_id(database_mock, catalogue_categ
 
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.update_property(
-            str(ObjectId()), "invalid", CategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+            str(ObjectId()), "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()

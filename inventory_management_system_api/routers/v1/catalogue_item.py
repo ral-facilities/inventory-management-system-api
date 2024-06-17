@@ -15,7 +15,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingMandatoryProperty,
     MissingRecordError,
-    NonLeafCategoryError,
+    NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPatchRequestSchema,
@@ -100,7 +100,7 @@ def create_catalogue_item(
         message = "The specified replacement catalogue item does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except NonLeafCategoryError as exc:
+    except NonLeafCatalogueCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
@@ -154,7 +154,7 @@ def partial_update_catalogue_item(
         message = "Catalogue item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except NonLeafCategoryError as exc:
+    except NonLeafCatalogueCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
