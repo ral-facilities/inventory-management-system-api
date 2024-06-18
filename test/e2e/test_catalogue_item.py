@@ -374,7 +374,7 @@ def test_create_catalogue_item_with_non_existent_obsolete_replacement_catalogue_
 
 def test_create_catalogue_item_without_properties(test_client):
     """
-    Test creating a catalogue item in leaf catalogue category that does not have .
+    Test creating a catalogue item in leaf catalogue category that does not have properties.
     """
     catalogue_category_post = {**CATALOGUE_CATEGORY_POST_A, "properties": []}
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
@@ -405,7 +405,7 @@ def test_create_catalogue_item_without_properties(test_client):
 
 def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
     """
-    Test creating a catalogue item with missing mandatory .
+    Test creating a catalogue item with missing mandatory properties.
     """
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     # pylint: disable=duplicate-code
@@ -432,7 +432,7 @@ def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
 
 def test_create_catalogue_item_with_mandatory_properties_given_none(test_client):
     """
-    Test creating a catalogue item with mandatory  given as None
+    Test creating a catalogue item with mandatory properties given as None
     """
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
@@ -463,7 +463,7 @@ def test_create_catalogue_item_with_mandatory_properties_given_none(test_client)
 
 def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client):
     """
-    Test creating a catalogue item with missing non-mandatory .
+    Test creating a catalogue item with missing non-mandatory properties.
     """
     # pylint: disable=duplicate-code
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
@@ -497,7 +497,7 @@ def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client
 
 def test_create_catalogue_item_with_non_mandatory_properties_given_none(test_client):
     """
-    Test creating a catalogue item with non-mandatory  given as None
+    Test creating a catalogue item with non-mandatory properties given as None
     """
 
     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
@@ -1167,7 +1167,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id(test_client)
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_without_properties(test_client):
     """
-    Test moving a catalogue item to another catalogue category without supplying any .
+    Test moving a catalogue item to another catalogue category without supplying any properties.
     """
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
@@ -1197,7 +1197,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_without_prop
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_with_properties(test_client):
     """
-    Test moving a catalogue item to another catalogue category while supplying any new .
+    Test moving a catalogue item to another catalogue category while supplying any new properties.
     """
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
@@ -1237,7 +1237,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_propert
 def test_partial_update_catalogue_item_change_catalogue_category_id_with_different_properties_order(test_client):
     """
     Test moving a catalogue item to another catalogue category with the same properties but in a different order
-    without supplying the new .
+    without supplying the new properties.
     """
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
 
@@ -1275,7 +1275,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_with_differe
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mandatory_properties(test_client):
     """
-    Test moving a catalogue item to another catalogue category with missing mandatory .
+    Test moving a catalogue item to another catalogue category with missing mandatory properties.
     """
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
@@ -1307,7 +1307,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mand
 
 def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_mandatory_properties(test_client):
     """
-    Test moving a catalogue item to another catalogue category with missing non-mandatory .
+    Test moving a catalogue item to another catalogue category with missing non-mandatory properties.
     """
     # pylint: disable=duplicate-code
     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)

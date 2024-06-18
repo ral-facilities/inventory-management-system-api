@@ -485,7 +485,7 @@ def test_create_with_missing_mandatory_properties(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test creating a catalogue item with missing mandatory .
+    Test creating a catalogue item with missing mandatory properties.
 
     Verify that the `create` method properly handles a catalogue item with missing mandatory properties, checks that
     the catalogue category exists and that it is a leaf category, finds that there are missing mandatory catalogue item
@@ -966,7 +966,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
     catalogue_item_service,
 ):
     """
-    Test moving a catalogue item to another catalogue category that has the same defined  when
+    Test moving a catalogue item to another catalogue category that has the same defined properties when
     properties are supplied.
     """
     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
@@ -1055,7 +1055,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
     catalogue_item_service,
 ):
     """
-    Test moving a catalogue item to another catalogue category that has different defined  when
+    Test moving a catalogue item to another catalogue category that has different defined properties when
     no properties are supplied.
     """
     catalogue_item_id = str(ObjectId())
@@ -1201,7 +1201,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
     catalogue_item_service,
 ):
     """
-    Test moving a catalogue item to another catalogue category that has different defined  when
+    Test moving a catalogue item to another catalogue category that has different defined properties when
     properties are supplied.
     """
     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
