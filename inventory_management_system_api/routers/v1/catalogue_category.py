@@ -22,10 +22,10 @@ from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSc
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchRequestSchema,
     CatalogueCategoryPostRequestSchema,
+    CatalogueCategoryPropertyPatchRequestSchema,
+    CatalogueCategoryPropertyPostRequestSchema,
+    CatalogueCategoryPropertySchema,
     CatalogueCategorySchema,
-    CategoryPropertyPatchRequestSchema,
-    CategoryPropertyPostRequestSchema,
-    CategoryPropertySchema,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
@@ -229,22 +229,24 @@ def delete_catalogue_category(
     status_code=status.HTTP_201_CREATED,
 )
 def create_property(
-    category_property: CategoryPropertyPostRequestSchema,
+    catalogue_category_property: CatalogueCategoryPropertyPostRequestSchema,
     catalogue_category_id: str = Path(description="The ID of the catalogue category to add a property to"),
     catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
-) -> CategoryPropertySchema:
+) -> CatalogueCategoryPropertySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new property at the catalogue category level")
-    logger.debug("Catalogue item property data: %s", category_property)
+    logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
     try:
-        return CategoryPropertySchema(
-            **catalogue_category_property_service.create(catalogue_category_id, category_property).model_dump()
+        return CatalogueCategoryPropertySchema(
+            **catalogue_category_property_service.create(
+                catalogue_category_id, catalogue_category_property
+            ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
-            category_property.unit_id is not None
-            and category_property.unit_id in str(exc)
+            catalogue_category_property.unit_id is not None
+            and catalogue_category_property.unit_id in str(exc)
             or "unit" in str(exc).lower()
         ):
             message = "The specified unit does not exist"
@@ -268,28 +270,28 @@ def create_property(
     response_description="The updated property as defined at the catalogue category level",
 )
 def partial_update_property(
-    category_property: CategoryPropertyPatchRequestSchema,
+    catalogue_category_property: CatalogueCategoryPropertyPatchRequestSchema,
     catalogue_category_id: str = Path(description="The ID of the catalogue category containing the property to patch"),
-    property_id: str = Path(description="The ID of the property patch"),
+    property_id: str = Path(description="The ID of the property to patch"),
     catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
-) -> CategoryPropertySchema:
+) -> CatalogueCategoryPropertySchema:
     # pylint: disable=missing-function-docstring
     logger.info(
         "Partially updating catalogue category with ID %s's property with ID: %s",
         catalogue_category_id,
         property_id,
     )
-    logger.debug("Catalogue item property data: %s", category_property)
+    logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
     try:
-        return CategoryPropertySchema(
+        return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.update(
-                catalogue_category_id, property_id, category_property
+                catalogue_category_id, property_id, catalogue_category_property
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if property_id in str(exc):
-            message = "Catalogue item property not found"
+            message = "Catalogue category property not found"
         else:
             message = "Catalogue category not found"
         logger.exception(message)

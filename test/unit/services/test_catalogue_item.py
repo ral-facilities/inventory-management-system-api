@@ -532,10 +532,9 @@ def test_create_with_with_invalid_value_type_for_string_property(
     """
     Test creating a catalogue item with invalid value type for a string property.
 
-    Verify that the `create` method properly handles a catalogue item with invalid value type for a string catalogue
-    item property, checks that the catalogue category exists and that it is a leaf category, checks that there are no
-    missing mandatory , finds invalid value type for a string property, and does
-    not create the catalogue item.
+    Verify that the `create` method properly handles a catalogue item with invalid value type for a string property,
+    checks that the catalogue category exists and that it is a leaf category, checks that there are no missing mandatory
+    properties, finds invalid value type for a string property, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
@@ -581,9 +580,8 @@ def test_create_with_invalid_value_type_for_number_property(
     Test creating a catalogue item with invalid value type for a number property.
 
     Verify that the `create` method properly handles a catalogue item with invalid value type for a number catalogue
-    item property, checks that the catalogue category exists and that it is a leaf category, checks that there are no
-    missing mandatory , finds invalid value type for a number property, and does
-    not create the catalogue item.
+    property, checks that the catalogue category exists and that it is a leaf category, checks that there are no missing
+    mandatory properties, finds invalid value type for a number property, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
@@ -628,10 +626,9 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
     """
     Test creating a catalogue item with invalid value type for a boolean property.
 
-    Verify that the `create` method properly handles a catalogue item with invalid value type for a boolean catalogue
-    item property, checks that the catalogue category exists and that it is a leaf category, checks that there are no
-    missing mandatory , finds invalid value type for a boolean property, and
-    does not create the catalogue item.
+    Verify that the `create` method properly handles a catalogue item with invalid value type for a boolean property,
+    checks that the catalogue category exists and that it is a leaf category, checks that there are no missing
+    mandatory properties, finds invalid value type for a boolean property, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),

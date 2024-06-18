@@ -13,10 +13,7 @@ from inventory_management_system_api.core.exceptions import (
     LeafCatalogueCategoryError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -176,13 +173,13 @@ class CatalogueCategoryService:
         properties: List[CatalogueCategoryPostRequestPropertySchema],
     ) -> List[dict[str, Any]]:
         """
-        Adds the unit values to the  based on the provided unit IDs.
+        Adds the unit values to the properties based on the provided unit IDs.
 
-        :param properties: List of  to which unit values will be added.
-        :return: List of  with unit values added.
+        :param properties: List of properties to which unit values will be added.
+        :return: List of properties with unit values added.
         :raises MissingRecordError: If a unit with the specified ID is not found.
         """
-        logger.info("Adding unit values to the ")
+        logger.info("Adding unit values to the properties")
         properties_with_units = []
         for prop in properties:
             if prop.unit_id is not None:

@@ -713,7 +713,7 @@ class TestUpdate(UpdateDSL):
         self.patch_property(CATALOGUE_ITEM_PROPERTY_PATCH, property_id=str(ObjectId()))
 
         # Check
-        self.check_property_patch_response_failed_with_message(404, "Catalogue item property not found")
+        self.check_property_patch_response_failed_with_message(404, "Catalogue category property not found")
 
     def test_update_invalid_property_id(self):
         """
@@ -729,7 +729,7 @@ class TestUpdate(UpdateDSL):
         self.patch_property(CATALOGUE_ITEM_PROPERTY_PATCH, property_id="invalid")
 
         # Check
-        self.check_property_patch_response_failed_with_message(404, "Catalogue item property not found")
+        self.check_property_patch_response_failed_with_message(404, "Catalogue category property not found")
 
     def test_updating_property_to_have_duplicate_name(self):
         """

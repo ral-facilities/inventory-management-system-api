@@ -270,9 +270,9 @@ class CatalogueCategoryRepo:
         insert methods within the catalogue items and items repos if the catalogue category may have children.
 
         :param catalogue_category_id: The ID of the catalogue category to add the property to
-        :param property_in: The category property containing the property data
+        :param property_in: The property containing the property data
         :param session: PyMongo ClientSession to use for database operations
-        :return: The added catalogue category
+        :return: The added property
         """
 
         logger.info(

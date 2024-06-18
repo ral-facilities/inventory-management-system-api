@@ -132,7 +132,7 @@ class ItemService:
         not. If the system ID is being updated, it checks if the system ID with such ID exists and raises
         a `MissingRecordError` if it does not. It raises a `ChildElementsExistError` if a catalogue item
         ID is supplied. When updating properties, existing properties must all be supplied, or they will
-        be overwritten by the .
+        be overwritten by the properties.
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.

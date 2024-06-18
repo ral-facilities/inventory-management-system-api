@@ -1349,8 +1349,7 @@ def test_update_property_with_invalid_catalogue_category_id(database_mock, catal
 
 def test_update_property_with_invalid_property_id(database_mock, catalogue_category_repository):
     """
-    Test update_property performs the correct database update query when given an invalid catalogue
-    item property id
+    Test update_property performs the correct database update query when given an invalid property ID
     """
 
     with pytest.raises(InvalidObjectIdError) as exc:
