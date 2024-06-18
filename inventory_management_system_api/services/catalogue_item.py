@@ -58,7 +58,7 @@ class CatalogueItemService:
 
         The method checks if the catalogue category exists in the database and raises a `MissingRecordError` if it does
         not. It also checks if the category is not a leaf category and raises a `NonLeafCatalogueCategoryError` if it
-        is. It then processes the catalogue item properties.
+        is. It then processes the properties.
 
         :param catalogue_item: The catalogue item to be created.
         :return: The created catalogue item.
@@ -131,8 +131,7 @@ class CatalogueItemService:
         The method checks if the catalogue item exists in the database and raises a `MissingRecordError` if it does
         not. If the catalogue category ID is being updated, it checks if catalogue category with such ID exists and
         raises a MissingRecordError` if it does not. It also checks if the category is not a leaf category and raises a
-        `NonLeafCatalogueCategoryError` if it is. If the catalogue item properties are being updated, it also processes
-        them.
+        `NonLeafCatalogueCategoryError` if it is. If the properties are being updated, it also processes them.
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the fields that need to be updated.

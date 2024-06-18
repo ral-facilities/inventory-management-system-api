@@ -435,7 +435,7 @@ def test_create_leaf_catalogue_category_without_properties(test_client):
 
 def test_create_non_leaf_catalogue_category_with_properties(test_client):
     """
-    Test creating a non-leaf catalogue category with .
+    Test creating a non-leaf catalogue category with properties.
     """
 
     units, _ = _post_units(test_client)
@@ -1125,7 +1125,7 @@ def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf(test_cli
 
 def test_partial_update_catalogue_category_change_from_non_leaf_to_leaf_without_properties(test_client):
     """
-    Test changing a catalogue category from non-leaf to leaf without supplying any .
+    Test changing a catalogue category from non-leaf to leaf without supplying any properties.
     """
     catalogue_category_post = {"name": "Category A", "is_leaf": False}
     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
@@ -1229,7 +1229,7 @@ def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_has_chil
 
 def test_partial_update_catalogue_category_change_from_leaf_to_non_leaf_with_properties(test_client):
     """
-    Test changing a catalogue category from leaf to non-leaf while also changing its .
+    Test changing a catalogue category from leaf to non-leaf while also changing its properties.
     """
     catalogue_category_post = {
         "name": "Category A",
@@ -1574,7 +1574,7 @@ def test_partial_update_catalogue_category_modify_property(test_client):
 
 def test_partial_update_catalogue_category_modify_property_to_have_allowed_values_list(test_client):
     """
-    Test modifying  to have a list of allowed values
+    Test modifying properties to have a list of allowed values
     """
 
     _, unit_value_to_id = _post_units(test_client)
@@ -1610,7 +1610,7 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     test_client,
 ):
     """
-    Test modifying  to have a number property containing an allowed_values list with an
+    Test modifying properties to have a number property containing an allowed_values list with an
     invalid number
     """
 
@@ -1642,7 +1642,7 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     test_client,
 ):
     """
-    Test modifying  to have a string property containing an allowed_values list with an
+    Test modifying properties to have a string property containing an allowed_values list with an
     invalid string
     """
 
@@ -1674,7 +1674,7 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     test_client,
 ):
     """
-    Test modifying  to have a number property containing an allowed_values list with a
+    Test modifying properties to have a number property containing an allowed_values list with a
     duplicate number value
     """
     properties = [
@@ -1703,7 +1703,7 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
     test_client,
 ):
     """
-    Test modifying  to have a string property containing an allowed_values list with a
+    Test modifying properties to have a string property containing an allowed_values list with a
     duplicate string value
     """
     properties = [
@@ -1733,7 +1733,7 @@ def test_partial_update_catalogue_category_modify_property_to_have_invalid_allow
 
 def test_partial_update_catalogue_category_change_properties_has_child_catalogue_items(test_client):
     """
-    Test changing the  when a catalogue category has child catalogue items.
+    Test changing the properties when a catalogue category has child catalogue items.
     """
     # pylint: disable=duplicate-code
 

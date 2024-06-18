@@ -1068,7 +1068,7 @@ def test_update_properties_to_have_duplicate_names(
     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
 ):
     """
-    Test that checks that trying to update  so that the names are duplicated is not allowed
+    Test that checks that trying to update properties so that the names are duplicated is not allowed
 
     Verify the `update` method properly handles the catalogue category to be updated
     """
@@ -1131,7 +1131,7 @@ def test_update_change_properties_with_non_existent_unit_id(
     catalogue_category_service,
 ):
     """
-    Test updating a catalogue category's item properties when it an non existent unit ID.
+    Test updating a catalogue category's properties when it has a non existent unit ID.
     """
     # pylint: disable=duplicate-code
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)

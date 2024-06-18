@@ -12,9 +12,9 @@ from pydantic_core.core_schema import ValidationInfo
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class CategoryPropertyType(str, Enum):
+class CatalogueCategoryPropertyType(str, Enum):
     """
-    Enumeration for property types
+    Enumeration for catalogue category property types
     """
 
     STRING = "string"
@@ -35,13 +35,13 @@ class AllowedValuesListSchema(BaseModel):
 AllowedValuesSchema = Annotated[AllowedValuesListSchema, Field(discriminator="type")]
 
 
-class CatalogueCategoryPostRequestPropertySchema(BaseModel):
+class CatalogueCategoryPostPropertySchema(BaseModel):
     """
     Schema model for a property within a catalogue category creation request.
     """
 
     name: str = Field(description="The name of the property")
-    type: CategoryPropertyType = Field(description="The type of the property")
+    type: CatalogueCategoryPropertyType = Field(description="The type of the property")
     unit_id: Optional[str] = Field(default=None, description="The ID of the unit of the property")
     mandatory: bool = Field(description="Whether the property must be supplied when a catalogue item is created")
     allowed_values: Optional[AllowedValuesSchema] = Field(
@@ -51,9 +51,9 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
     )
 
     @classmethod
-    def is_valid_property_type(cls, expected_property_type: CategoryPropertyType, property_value: Any) -> bool:
+    def is_valid_property_type(cls, expected_property_type: CatalogueCategoryPropertyType, property_value: Any) -> bool:
         """
-        Validates a given value has a type matching a CategoryPropertyType and returns false if they don't
+        Validates a given value has a type matching a CatalogueCategoryPropertyType and returns false if they don't
 
         :param expected_property_type: Property type
         :param property_value: Value of the property being checked
@@ -61,14 +61,14 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         """
 
         # pylint: disable=unidiomatic-typecheck
-        if expected_property_type == CategoryPropertyType.STRING:
+        if expected_property_type == CatalogueCategoryPropertyType.STRING:
             return isinstance(property_value, str)
-        if expected_property_type == CategoryPropertyType.NUMBER:
+        if expected_property_type == CatalogueCategoryPropertyType.NUMBER:
             # Python cares if there is a decimal or not, so can't just use float for this check, even though
             # Pydantic & the FastAPI docs shows float as 'number'
             # Also boolean is a subtype of integer so have to use type here
             return isinstance(property_value, Number) and type(property_value) is not bool
-        if expected_property_type == CategoryPropertyType.BOOLEAN:
+        if expected_property_type == CatalogueCategoryPropertyType.BOOLEAN:
             return type(property_value) is bool
         # pylint: enable=unidiomatic-typecheck
         return False
@@ -87,7 +87,7 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         :raises ValueError: If `unit_id` is provided when `type` is set to `boolean`.
         :return: The value of the `unit_id` field.
         """
-        if "type" in info.data and info.data["type"] == CategoryPropertyType.BOOLEAN and unit_id is not None:
+        if "type" in info.data and info.data["type"] == CatalogueCategoryPropertyType.BOOLEAN and unit_id is not None:
             raise ValueError(f"Unit not allowed for boolean property '{info.data['name']}'")
         return unit_id
 
@@ -102,13 +102,13 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         :param property_data: Property data to validate the allowed values against.
         :raises ValueError:
             - If the allowed_values has been given a value and the property type is a `boolean`
-            - If the allowed_values is of type 'list' and 'values' contains any with a different type to the catalogue
-              item property type
+            - If the allowed_values is of type 'list' and 'values' contains any with a different type to the property
+              type
             - If the allowed_values is of type 'list' and 'values' contains any duplicates
         """
         if allowed_values is not None and "type" in property_data:
             # Ensure the type is not boolean
-            if property_data["type"] == CategoryPropertyType.BOOLEAN:
+            if property_data["type"] == CatalogueCategoryPropertyType.BOOLEAN:
                 raise ValueError("allowed_values not allowed for a boolean property " f"'{property_data['name']}'")
             # Check the type of allowed_values being used and validate them appropriately
             if isinstance(allowed_values, AllowedValuesListSchema):
@@ -117,7 +117,7 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
 
                 for allowed_value in allowed_values.values:
                     # Ensure the value is the correct type
-                    if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+                    if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
                         expected_property_type=property_data["type"], property_value=allowed_value
                     ):
                         raise ValueError(
@@ -127,7 +127,9 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
 
                     # Ensure the value isn't duplicated
                     seen_value = (
-                        allowed_value if property_data["type"] != CategoryPropertyType.STRING else allowed_value.lower()
+                        allowed_value
+                        if property_data["type"] != CatalogueCategoryPropertyType.STRING
+                        else allowed_value.lower()
                     )
                     if seen_value in seen_values:
                         raise ValueError(f"allowed_values of type 'list' contains a duplicate value: {allowed_value}")
@@ -148,12 +150,12 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         :return: The value of the `allowed_values` field.
         """
 
-        CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(allowed_values, info.data)
+        CatalogueCategoryPostPropertySchema.check_valid_allowed_values(allowed_values, info.data)
 
         return allowed_values
 
 
-class CategoryPropertySchema(CatalogueCategoryPostRequestPropertySchema):
+class CatalogueCategoryPropertySchema(CatalogueCategoryPostPropertySchema):
     """
     Schema model representing a property defined within a catalogue category
     """
@@ -173,7 +175,7 @@ class CatalogueCategoryPostSchema(BaseModel):
         "elements but if it is not then it can only have catalogue categories as child elements."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    properties: Optional[List[CatalogueCategoryPostRequestPropertySchema]] = Field(
+    properties: Optional[List[CatalogueCategoryPostPropertySchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
@@ -202,12 +204,12 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostS
 
     id: str = Field(description="The ID of the catalogue category")
     code: str = Field(description="The code of the catalogue category")
-    properties: Optional[List[CategoryPropertySchema]] = Field(
+    properties: Optional[List[CatalogueCategoryPropertySchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
 
-class CategoryPropertyPostSchema(CatalogueCategoryPostRequestPropertySchema):
+class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
     """
     Schema model for a property creation request on a catalogue category
     """
@@ -232,7 +234,7 @@ class CategoryPropertyPostSchema(CatalogueCategoryPostRequestPropertySchema):
         :return: The value of the `allowed_values` field.
         """
         if default_value is not None:
-            if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+            if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
                 expected_property_type=info.data["type"], property_value=default_value
             ):
                 raise ValueError("default_value must be the same type as the property itself")
@@ -249,7 +251,7 @@ class CategoryPropertyPostSchema(CatalogueCategoryPostRequestPropertySchema):
         return default_value
 
 
-class CategoryPropertyPatchSchema(BaseModel):
+class CatalogueCategoryPropertyPatchSchema(BaseModel):
     """
     Schema model for a property patch request on a catalogue category
     """

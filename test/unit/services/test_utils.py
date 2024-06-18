@@ -3,7 +3,6 @@ Unit tests for the `utils` in /services.
 """
 
 import pytest
-
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
@@ -11,10 +10,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    AllowedValues,
-    CatalogueCategoryPropertyOut,
-)
+from inventory_management_system_api.models.catalogue_category import AllowedValues, CatalogueCategoryPropertyOut
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.services import utils
 
@@ -109,7 +105,7 @@ class TestDuplicateCategoryPropertyNames:
         assert str(exc.value) == f"Duplicate property name: {DEFINED_PROPERTIES[-1].name}"
 
 
-class TestProcessCatalogueItemProperties:
+class TestProcessProperties:
     """
     Tests for the `process_properties` method.
     """
@@ -291,8 +287,8 @@ class TestProcessCatalogueItemProperties:
 
     def test_process_properties_with_invalid_allowed_value_list_number(self):
         """
-        Test `process_properties` works correctly when given an invalid value for a number catalogue
-        item property with a specific list of allowed values
+        Test `process_properties` works correctly when given an invalid value for a number property with a specific list
+        of allowed values
         """
         supplied_properties = [
             PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
@@ -311,8 +307,8 @@ class TestProcessCatalogueItemProperties:
 
     def test_process_properties_with_invalid_allowed_value_list_string(self):
         """
-        Test `process_properties` works correctly when given an invalid value for a string catalogue
-        item property with a specific list of allowed values
+        Test `process_properties` works correctly when given an invalid value for a string property with a specific
+        list of allowed values
         """
         supplied_properties = [
             PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),

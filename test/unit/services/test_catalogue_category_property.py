@@ -19,8 +19,8 @@ from inventory_management_system_api.models.catalogue_category import (
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
-    CategoryPropertyPatchSchema,
-    CategoryPropertyPostSchema,
+    CatalogueCategoryPropertyPatchSchema,
+    CatalogueCategoryPropertyPostSchema,
 )
 
 # pylint:disable=too-many-locals
@@ -54,7 +54,7 @@ def test_create(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    property_post = CategoryPropertyPostSchema(
+    property_post = CatalogueCategoryPropertyPostSchema(
         name="Property A", type="number", unit_id=unit.id, mandatory=mandatory, default_value=default_value
     )
     stored_catalogue_category = CatalogueCategoryOut(
@@ -86,7 +86,7 @@ def test_create(
 
     expected_property_in = CatalogueCategoryPropertyIn(**{**property_post.model_dump(), "unit": unit.value})
 
-    # Catalogue item property insertion into catalogue category
+    # Property insertion into catalogue category
     inserted_property_in = catalogue_category_repository_mock.create_property.call_args_list[0][0][1]
     assert inserted_property_in.model_dump() == {
         **expected_property_in.model_dump(),
@@ -145,7 +145,9 @@ def test_create_mandatory_property_without_default_value(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    property_post = CategoryPropertyPostSchema(name="Property A", type="number", unit_id=unit.id, mandatory=True)
+    property_post = CatalogueCategoryPropertyPostSchema(
+        name="Property A", type="number", unit_id=unit.id, mandatory=True
+    )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
         name="Category A",
@@ -186,7 +188,9 @@ def test_create_non_existent_unit_id(
     """
     catalogue_category_id = str(ObjectId())
     unit_id = str(ObjectId())
-    property_post = CategoryPropertyPostSchema(name="Property A", type="number", unit_id=unit_id, mandatory=False)
+    property_post = CatalogueCategoryPropertyPostSchema(
+        name="Property A", type="number", unit_id=unit_id, mandatory=False
+    )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
         name="Category A",
@@ -230,7 +234,9 @@ def test_create_mandatory_property_with_missing_catalogue_category(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    property_post = CategoryPropertyPostSchema(name="Property A", type="number", unit_id=unit.id, mandatory=False)
+    property_post = CatalogueCategoryPropertyPostSchema(
+        name="Property A", type="number", unit_id=unit.id, mandatory=False
+    )
     stored_catalogue_category = None
 
     # Mock the stored catalogue category to one without a property with the same name
@@ -265,7 +271,9 @@ def test_create_mandatory_property_with_non_leaf_catalogue_category(
     """
     catalogue_category_id = str(ObjectId())
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-    property_post = CategoryPropertyPostSchema(name="Property A", type="number", unit_id=unit.id, mandatory=False)
+    property_post = CatalogueCategoryPropertyPostSchema(
+        name="Property A", type="number", unit_id=unit.id, mandatory=False
+    )
     stored_catalogue_category = CatalogueCategoryOut(
         id=catalogue_category_id,
         name="Category A",
@@ -311,7 +319,7 @@ def test_update(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
@@ -381,7 +389,9 @@ def test_update_category_only(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(allowed_values={"type": "list", "values": [100, 500, 1000, 2000]})
+    property_patch = CatalogueCategoryPropertyPatchSchema(
+        allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
+    )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
@@ -446,7 +456,7 @@ def test_update_with_no_changes_allowed_values_none(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(allowed_values=None)
+    property_patch = CatalogueCategoryPropertyPatchSchema(allowed_values=None)
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
@@ -508,7 +518,7 @@ def test_update_with_missing_catalogue_category(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     stored_catalogue_category = None
@@ -542,7 +552,7 @@ def test_update_with_missing_property(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     # pylint: disable=duplicate-code
@@ -597,7 +607,7 @@ def test_update_allowed_values_from_none_to_value(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
@@ -650,7 +660,7 @@ def test_update_allowed_values_from_value_to_none(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(name="Property Name", allowed_values=None)
+    property_patch = CatalogueCategoryPropertyPatchSchema(name="Property Name", allowed_values=None)
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
     stored_property = CatalogueCategoryPropertyOut(
         id=property_id,
@@ -701,7 +711,7 @@ def test_update_allowed_values_removing_element(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
@@ -757,7 +767,7 @@ def test_update_allowed_values_modifying_element(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
@@ -814,7 +824,7 @@ def test_update_adding_allowed_values(
     """
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_patch = CategoryPropertyPatchSchema(
+    property_patch = CatalogueCategoryPropertyPatchSchema(
         allowed_values={"type": "list", "values": [100, 500, 1000, 2000, 3000, 4000]}
     )
     unit = UnitOut(id=str(ObjectId()), **UNIT_A)

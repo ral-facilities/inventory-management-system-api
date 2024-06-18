@@ -2,7 +2,7 @@
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
-from test.unit.repositories.mock_models import MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO, MOCK_CREATED_MODIFIED_TIME
+from test.unit.repositories.mock_models import MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO, MOCK_CREATED_MODIFIED_TIME
 from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
@@ -79,7 +79,7 @@ def test_create(test_helpers, database_mock, catalogue_category_repository):
 
 def test_create_leaf_category_without_properties(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test creating a leaf catalogue category without .
+    Test creating a leaf catalogue category without properties.
 
     Verify that the `create` method properly handles the catalogue category to be created, checks that there is not a
     duplicate catalogue category, and creates the catalogue category.
@@ -115,7 +115,7 @@ def test_create_leaf_category_without_properties(test_helpers, database_mock, ca
 
 def test_create_leaf_category_with_properties(test_helpers, database_mock, catalogue_category_repository):
     """
-    Test creating a leaf catalogue category with .
+    Test creating a leaf catalogue category with properties.
 
     Verify that the `create` method properly handles the catalogue category to be created, checks that there is not a
     duplicate catalogue category, and creates the catalogue category.
@@ -1268,7 +1268,7 @@ def test_create_property(datetime_mock, test_helpers, database_mock, catalogue_c
     """
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
-    property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+    property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
 
     # Mock 'update_one'
     test_helpers.mock_update_one(database_mock.catalogue_categories)
@@ -1293,7 +1293,7 @@ def test_create_property_with_invalid_id(database_mock, catalogue_category_repos
 
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.create_property(
-            "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+            "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
@@ -1307,7 +1307,7 @@ def test_update_property(datetime_mock, test_helpers, database_mock, catalogue_c
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
     property_id = str(ObjectId())
-    property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+    property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
 
     # Mock 'update_one'
     test_helpers.mock_update_one(database_mock.catalogue_categories)
@@ -1341,7 +1341,7 @@ def test_update_property_with_invalid_catalogue_category_id(database_mock, catal
 
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.update_property(
-            "invalid", str(ObjectId()), CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+            "invalid", str(ObjectId()), CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()
@@ -1349,13 +1349,12 @@ def test_update_property_with_invalid_catalogue_category_id(database_mock, catal
 
 def test_update_property_with_invalid_property_id(database_mock, catalogue_category_repository):
     """
-    Test update_property performs the correct database update query when given an invalid catalogue
-    item property id
+    Test update_property performs the correct database update query when given an invalid property ID
     """
 
     with pytest.raises(InvalidObjectIdError) as exc:
         catalogue_category_repository.update_property(
-            str(ObjectId()), "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_ITEM_PROPERTY_A_INFO)
+            str(ObjectId()), "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
         )
     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
     database_mock.catalogue_categories.update_one.assert_not_called()

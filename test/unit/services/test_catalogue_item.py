@@ -485,7 +485,7 @@ def test_create_with_missing_mandatory_properties(
     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
 ):
     """
-    Test creating a catalogue item with missing mandatory .
+    Test creating a catalogue item with missing mandatory properties.
 
     Verify that the `create` method properly handles a catalogue item with missing mandatory properties, checks that
     the catalogue category exists and that it is a leaf category, finds that there are missing mandatory catalogue item
@@ -532,10 +532,9 @@ def test_create_with_with_invalid_value_type_for_string_property(
     """
     Test creating a catalogue item with invalid value type for a string property.
 
-    Verify that the `create` method properly handles a catalogue item with invalid value type for a string catalogue
-    item property, checks that the catalogue category exists and that it is a leaf category, checks that there are no
-    missing mandatory , finds invalid value type for a string property, and does
-    not create the catalogue item.
+    Verify that the `create` method properly handles a catalogue item with invalid value type for a string property,
+    checks that the catalogue category exists and that it is a leaf category, checks that there are no missing mandatory
+    properties, finds invalid value type for a string property, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
@@ -581,9 +580,8 @@ def test_create_with_invalid_value_type_for_number_property(
     Test creating a catalogue item with invalid value type for a number property.
 
     Verify that the `create` method properly handles a catalogue item with invalid value type for a number catalogue
-    item property, checks that the catalogue category exists and that it is a leaf category, checks that there are no
-    missing mandatory , finds invalid value type for a number property, and does
-    not create the catalogue item.
+    property, checks that the catalogue category exists and that it is a leaf category, checks that there are no missing
+    mandatory properties, finds invalid value type for a number property, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
@@ -628,10 +626,9 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
     """
     Test creating a catalogue item with invalid value type for a boolean property.
 
-    Verify that the `create` method properly handles a catalogue item with invalid value type for a boolean catalogue
-    item property, checks that the catalogue category exists and that it is a leaf category, checks that there are no
-    missing mandatory , finds invalid value type for a boolean property, and
-    does not create the catalogue item.
+    Verify that the `create` method properly handles a catalogue item with invalid value type for a boolean property,
+    checks that the catalogue category exists and that it is a leaf category, checks that there are no missing
+    mandatory properties, finds invalid value type for a boolean property, and does not create the catalogue item.
     """
     catalogue_category = CatalogueCategoryOut(
         id=str(ObjectId()),
@@ -969,7 +966,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
     catalogue_item_service,
 ):
     """
-    Test moving a catalogue item to another catalogue category that has the same defined  when
+    Test moving a catalogue item to another catalogue category that has the same defined properties when
     properties are supplied.
     """
     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
@@ -1058,7 +1055,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
     catalogue_item_service,
 ):
     """
-    Test moving a catalogue item to another catalogue category that has different defined  when
+    Test moving a catalogue item to another catalogue category that has different defined properties when
     no properties are supplied.
     """
     catalogue_item_id = str(ObjectId())
@@ -1204,7 +1201,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
     catalogue_item_service,
 ):
     """
-    Test moving a catalogue item to another catalogue category that has different defined  when
+    Test moving a catalogue item to another catalogue category that has different defined properties when
     properties are supplied.
     """
     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])

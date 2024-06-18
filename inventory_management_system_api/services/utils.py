@@ -12,7 +12,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestPropertySchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
 logger = logging.getLogger()
@@ -36,13 +36,13 @@ def generate_code(name: str, entity_type: str) -> str:
 
 
 def check_duplicate_property_names(
-    properties: list[CatalogueCategoryPostRequestPropertySchema | CatalogueCategoryPropertyOut],
+    properties: list[CatalogueCategoryPostPropertySchema | CatalogueCategoryPropertyOut],
 ) -> None:
     """
-    Go through a list of  to check for any duplicate names during creation of a catalogue
+    Go through a list of properties to check for any duplicate names during creation of a catalogue
     category or an addition of a property later on.
 
-    :param properties: The supplied
+    :param properties: The supplied properties
     :raises DuplicateCategoryPropertyName: If a duplicate property name is found.
     """
     logger.info("Checking for duplicate property names")
@@ -59,8 +59,8 @@ def process_properties(
     supplied_properties: List[PropertyPostSchema],
 ) -> List[Dict]:
     """
-    Process and validate supplied properties based on the defined properties. It checks for missing mandatory,
-    filters the matching , adds the property units, and finally validates the property values.
+    Process and validate supplied properties based on the defined properties. It checks for missing mandatory, filters
+    the matching properties, adds the property units, and finally validates the property values.
 
     The `supplied_properties_dict` dictionary may get modified as part of the processing and validation.
 
@@ -72,15 +72,15 @@ def process_properties(
     defined_properties_dict = _create_properties_dict(defined_properties)
     supplied_properties_dict = _create_properties_dict(supplied_properties)
 
-    # Some mandatory  may not have been supplied
+    # Some mandatory properties may not have been supplied
     _check_missing_mandatory_properties(defined_properties_dict, supplied_properties_dict)
-    # Some non-mandatory  may not have been supplied
+    # Some non-mandatory properties may not have been supplied
     supplied_properties_dict = _merge_non_mandatory_properties(defined_properties_dict, supplied_properties_dict)
-    # Supplied  do not have names as we can't trust they would be correct
+    # Supplied properties do not have names as we can't trust they would be correct
     _add_property_names(defined_properties_dict, supplied_properties_dict)
-    # Supplied  do not have units as we can't trust they would be correct
+    # Supplied properties do not have units as we can't trust they would be correct
     _add_property_units(defined_properties_dict, supplied_properties_dict)
-    # The values of the supplied  may not be of the expected types
+    # The values of the supplied properties may not be of the expected types
     _validate_property_values(defined_properties_dict, supplied_properties_dict)
 
     return list(supplied_properties_dict.values())
@@ -95,9 +95,9 @@ def _create_properties_dict(
 
     :param properties: The list of property objects.
     :return: A dictionary where the keys are the property IDs and the values are the catalogue item
-        property dictionaries.
+             property dictionaries.
     """
-    return {property.id: property.model_dump() for property in properties}
+    return {prop.id: prop.model_dump() for prop in properties}
 
 
 def _add_property_names(
@@ -130,8 +130,8 @@ def _add_property_units(
     are added to the supplied properties. This means that this method modifies the `supplied_properties` dictionary.
 
     :param defined_properties: The defined properties stored as part of the catalogue category in the
-        database.
-    :param supplied_properties: The supplied .
+                               database.
+    :param supplied_properties: The supplied properties.
     """
     logger.info("Adding the units to the supplied properties")
     for supplied_property_name, supplied_property in supplied_properties.items():
@@ -162,7 +162,7 @@ def _validate_property_value(defined_property: Dict, supplied_property: Dict) ->
         if defined_property_mandatory:
             raise InvalidPropertyTypeError(f"Mandatory property with ID '{supplied_property_id}' cannot be None.")
     else:
-        if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+        if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
             defined_property_type, supplied_property_value
         ):
             raise InvalidPropertyTypeError(

@@ -22,9 +22,9 @@ from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.catalogue_category import (
     AllowedValuesSchema,
-    CatalogueCategoryPostRequestPropertySchema,
-    CategoryPropertyPatchSchema,
-    CategoryPropertyPostSchema,
+    CatalogueCategoryPostPropertySchema,
+    CatalogueCategoryPropertyPatchSchema,
+    CatalogueCategoryPropertyPostSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -60,7 +60,7 @@ class CatalogueCategoryPropertyService:
     def create(
         self,
         catalogue_category_id: str,
-        catalogue_category_property: CategoryPropertyPostSchema,
+        catalogue_category_property: CatalogueCategoryPropertyPostSchema,
     ) -> CatalogueCategoryPropertyOut:
         """Create a new property at the catalogue category level
 
@@ -178,7 +178,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_category_property_id: str,
-        category_property: CategoryPropertyPatchSchema,
+        catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -188,12 +188,12 @@ class CatalogueCategoryPropertyService:
 
         :param catalogue_category_id: The ID of the catalogue category to update
         :param catalogue_category_property_id: The ID of the property within the category to update
-        :param property: The property values to update
+        :param catalogue_category_property: The property values to update
         :raises MissingRecordError: If the catalogue category doesn't exist, or the property doesn't
                                     exist within the specified catalogue category
         """
 
-        update_data = category_property.model_dump(exclude_unset=True)
+        update_data = catalogue_category_property.model_dump(exclude_unset=True)
 
         # Obtain the existing catalogue category to validate against
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
@@ -218,11 +218,11 @@ class CatalogueCategoryPropertyService:
 
         if "allowed_values" in update_data:
             self._check_valid_allowed_values_update(
-                existing_property_out.allowed_values, category_property.allowed_values
+                existing_property_out.allowed_values, catalogue_category_property.allowed_values
             )
 
-        CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(
-            category_property.allowed_values, existing_property_out.model_dump()
+        CatalogueCategoryPostPropertySchema.check_valid_allowed_values(
+            catalogue_category_property.allowed_values, existing_property_out.model_dump()
         )
 
         property_in = CatalogueCategoryPropertyIn(**{**existing_property_out.model_dump(), **update_data})
@@ -238,10 +238,10 @@ class CatalogueCategoryPropertyService:
                 # Avoid propagating changes unless absolutely necessary
                 if updating_name:
                     self._catalogue_item_repository.update_names_of_all_properties_with_id(
-                        catalogue_category_property_id, category_property.name, session=session
+                        catalogue_category_property_id, catalogue_category_property.name, session=session
                     )
                     self._item_repository.update_names_of_all_properties_with_id(
-                        catalogue_category_property_id, category_property.name, session=session
+                        catalogue_category_property_id, catalogue_category_property.name, session=session
                     )
 
         return property_out

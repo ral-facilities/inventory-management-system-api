@@ -42,7 +42,7 @@ class CatalogueCategoryPropertyIn(CatalogueCategoryPropertyBase):
     Input database model for a property defined within a catalogue category
     """
 
-    # Because the  are stored in a list inside the catalogue categories and not in a separate
+    # Because the properties are stored in a list inside the catalogue categories and not in a separate
     # collection, it means that the IDs have to be manually generated here.
     id: CustomObjectIdField = Field(default_factory=ObjectId, serialization_alias="_id")
 
@@ -94,13 +94,13 @@ class CatalogueCategoryBase(BaseModel):
         """
         Validator for the `properties` field that runs after field assignment but before type validation.
 
-        If the value is `None`, it replaces it with an empty list allowing for catalogue categories without catalogue
-        item properties to be created. If the category is a non-leaf category and if are
-        supplied, it replaces it with an empty list because they cannot have properties.
+        If the value is `None`, it replaces it with an empty list allowing for catalogue categories without properties
+        to be created. If the category is a non-leaf category and if properties are supplied, it replaces it with an
+        empty list because they cannot have properties.
 
         :param properties: The list of properties.
         :param info: Validation info from pydantic.
-        :return: The list of  or an empty list.
+        :return: The list of properties or an empty list.
         """
         if properties is None or ("is_leaf" in info.data and info.data["is_leaf"] is False and properties):
             properties = []
