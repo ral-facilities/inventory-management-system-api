@@ -3,7 +3,7 @@ Module for providing a service for managing catalogue categories using the `Cata
 """
 
 import logging
-from typing import Any, List, Optional
+from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 
@@ -38,8 +38,8 @@ class CatalogueCategoryService:
 
     def __init__(
         self,
-        catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
-        unit_repository: UnitRepo = Depends(UnitRepo),
+        catalogue_category_repository: Annotated[CatalogueCategoryRepo, Depends(CatalogueCategoryRepo)],
+        unit_repository: Annotated[UnitRepo, Depends(UnitRepo)],
     ) -> None:
         """
         Initialise the `CatalogueCategoryService` with a `CatalogueCategoryRepo` and `UnitRepo` repository.

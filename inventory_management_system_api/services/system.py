@@ -3,7 +3,7 @@ Module for providing a service for managing Systems using the `SystemRepo` repos
 """
 
 import logging
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends
 
@@ -22,7 +22,7 @@ class SystemService:
     Service for managing Systems
     """
 
-    def __init__(self, system_repository: SystemRepo = Depends(SystemRepo)) -> None:
+    def __init__(self, system_repository: Annotated[SystemRepo, Depends(SystemRepo)]) -> None:
         """
         Initialise the `SystemService` with a `SystemRepo` repository
 

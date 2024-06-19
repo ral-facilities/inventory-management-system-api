@@ -4,7 +4,7 @@ repositories.
 """
 
 import logging
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
@@ -35,11 +35,11 @@ class ItemService:
 
     def __init__(
         self,
-        item_repository: ItemRepo = Depends(ItemRepo),
-        catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
-        catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
-        system_repository: SystemRepo = Depends(SystemRepo),
-        usage_status_repository: UsageStatusRepo = Depends(UsageStatusRepo),
+        item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
+        catalogue_category_repository: Annotated[CatalogueCategoryRepo, Depends(CatalogueCategoryRepo)],
+        catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
+        system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
+        usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)],
         # pylint: disable=too-many-arguments
     ) -> None:
         """
