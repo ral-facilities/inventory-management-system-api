@@ -28,10 +28,12 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
 
+CatalogueItemServiceDep = Annotated[CatalogueItemService, Depends(CatalogueItemService)]
+
 
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
 def get_catalogue_items(
-    catalogue_item_service: Annotated[CatalogueItemService, Depends(CatalogueItemService)],
+    catalogue_item_service: CatalogueItemServiceDep,
     catalogue_category_id: Annotated[
         Optional[str], Query(description="Filter catalogue items by catalogue category ID")
     ] = None,
@@ -54,7 +56,7 @@ def get_catalogue_items(
 )
 def get_catalogue_item(
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to get")],
-    catalogue_item_service: Annotated[CatalogueItemService, Depends(CatalogueItemService)],
+    catalogue_item_service: CatalogueItemServiceDep,
 ) -> CatalogueItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
@@ -76,8 +78,7 @@ def get_catalogue_item(
     status_code=status.HTTP_201_CREATED,
 )
 def create_catalogue_item(
-    catalogue_item: CatalogueItemPostRequestSchema,
-    catalogue_item_service: Annotated[CatalogueItemService, Depends(CatalogueItemService)],
+    catalogue_item: CatalogueItemPostRequestSchema, catalogue_item_service: CatalogueItemServiceDep
 ) -> CatalogueItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new catalogue item")
@@ -115,7 +116,7 @@ def create_catalogue_item(
 def partial_update_catalogue_item(
     catalogue_item: CatalogueItemPatchRequestSchema,
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to update")],
-    catalogue_item_service: Annotated[CatalogueItemService, Depends(CatalogueItemService)],
+    catalogue_item_service: CatalogueItemServiceDep,
 ) -> CatalogueItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating catalogue item with ID: %s", catalogue_item_id)
@@ -177,7 +178,7 @@ def partial_update_catalogue_item(
 )
 def delete_catalogue_item(
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to delete")],
-    catalogue_item_service: Annotated[CatalogueItemService, Depends(CatalogueItemService)],
+    catalogue_item_service: CatalogueItemServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
