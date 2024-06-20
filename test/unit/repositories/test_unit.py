@@ -239,7 +239,7 @@ def test_delete_unit_that_is_part_of_a_catalogue_category(test_helpers, database
             **CATALOGUE_CATEGORY_INFO,
             "_id": CustomObjectId(str(ObjectId())),
             "parent_id": catalogue_category_id,
-            "catalogue_item_properties": [
+            "properties": [
                 {
                     "name": "Property A",
                     "type": "number",

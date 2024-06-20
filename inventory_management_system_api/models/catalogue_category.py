@@ -13,7 +13,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 class AllowedValuesList(BaseModel):
     """
-    Model representing a list of allowed values for a catalogue item property
+    Model representing a list of allowed values for a property defined within a catalogue category
     """
 
     type: Literal["list"]
@@ -24,9 +24,9 @@ class AllowedValuesList(BaseModel):
 AllowedValues = Annotated[AllowedValuesList, Field(discriminator="type")]
 
 
-class CatalogueItemPropertyBase(BaseModel):
+class CatalogueCategoryPropertyBase(BaseModel):
     """
-    Base database model for a catalogue item property.
+    Base database model for a property defined within a catalogue category
     """
 
     name: str
@@ -37,19 +37,19 @@ class CatalogueItemPropertyBase(BaseModel):
     allowed_values: Optional[AllowedValues] = None
 
 
-class CatalogueItemPropertyIn(CatalogueItemPropertyBase):
+class CatalogueCategoryPropertyIn(CatalogueCategoryPropertyBase):
     """
-    Input database model for a catalogue item property.
+    Input database model for a property defined within a catalogue category
     """
 
-    # Because the catalogue item properties are stored in a list inside the catalogue categories and not in a separate
+    # Because the properties are stored in a list inside the catalogue categories and not in a separate
     # collection, it means that the IDs have to be manually generated here.
     id: CustomObjectIdField = Field(default_factory=ObjectId, serialization_alias="_id")
 
 
-class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
+class CatalogueCategoryPropertyOut(CatalogueCategoryPropertyBase):
     """
-    Output database model for a catalogue item property.
+    Output database model for a property defined within a catalogue category
     """
 
     id: StringObjectIdField = Field(alias="_id")
@@ -59,13 +59,13 @@ class CatalogueItemPropertyOut(CatalogueItemPropertyBase):
 
     def is_equal_without_id(self, other: Any) -> bool:
         """
-        Compare this instance with another instance of `CatalogueItemPropertyOut` while ignoring the ID.
+        Compare this instance with another instance of `CatalogueCategoryPropertyOut` while ignoring the ID.
 
         :param other: An instance of a model to compare with.
         :return: `True` if the instances are of the same type and are equal when ignoring the ID field, `False`
             otherwise.
         """
-        if not isinstance(other, CatalogueItemPropertyOut):
+        if not isinstance(other, CatalogueCategoryPropertyOut):
             return False
 
         return (
@@ -86,28 +86,26 @@ class CatalogueCategoryBase(BaseModel):
     code: str
     is_leaf: bool
     parent_id: Optional[CustomObjectIdField] = None
-    catalogue_item_properties: List[CatalogueItemPropertyIn] = []
+    properties: List[CatalogueCategoryPropertyIn] = []
 
-    @field_validator("catalogue_item_properties", mode="before")
+    @field_validator("properties", mode="before")
     @classmethod
-    def validate_catalogue_item_properties(cls, catalogue_item_properties: Any, info: ValidationInfo) -> Any:
+    def validate_properties(cls, properties: Any, info: ValidationInfo) -> Any:
         """
-        Validator for the `catalogue_item_properties` field that runs after field assignment but before type validation.
+        Validator for the `properties` field that runs after field assignment but before type validation.
 
-        If the value is `None`, it replaces it with an empty list allowing for catalogue categories without catalogue
-        item properties to be created. If the category is a non-leaf category and if catalogue item properties are
-        supplied, it replaces it with an empty list because they cannot have properties.
+        If the value is `None`, it replaces it with an empty list allowing for catalogue categories without properties
+        to be created. If the category is a non-leaf category and if properties are supplied, it replaces it with an
+        empty list because they cannot have properties.
 
-        :param catalogue_item_properties: The list of catalogue item properties.
+        :param properties: The list of properties.
         :param info: Validation info from pydantic.
-        :return: The list of catalogue item properties or an empty list.
+        :return: The list of properties or an empty list.
         """
-        if catalogue_item_properties is None or (
-            "is_leaf" in info.data and info.data["is_leaf"] is False and catalogue_item_properties
-        ):
-            catalogue_item_properties = []
+        if properties is None or ("is_leaf" in info.data and info.data["is_leaf"] is False and properties):
+            properties = []
 
-        return catalogue_item_properties
+        return properties
 
 
 class CatalogueCategoryIn(CreatedModifiedTimeInMixin, CatalogueCategoryBase):
@@ -123,6 +121,6 @@ class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBase):
 
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
-    catalogue_item_properties: List[CatalogueItemPropertyOut] = []
+    properties: List[CatalogueCategoryPropertyOut] = []
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

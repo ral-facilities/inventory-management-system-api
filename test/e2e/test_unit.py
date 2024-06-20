@@ -165,7 +165,7 @@ def test_delete_unit_that_is_a_part_of_catalogue_category(test_client):
     catalogue_category_post = {
         "name": "Category A",
         "is_leaf": True,
-        "catalogue_item_properties": [
+        "properties": [
             {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_mm["id"], "mandatory": False},
             {"name": "Property B", "type": "boolean", "mandatory": True},
         ],

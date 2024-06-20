@@ -11,11 +11,11 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
-    InvalidCatalogueItemPropertyTypeError,
+    InvalidPropertyTypeError,
     InvalidObjectIdError,
-    MissingMandatoryCatalogueItemProperty,
+    MissingMandatoryProperty,
     MissingRecordError,
-    NonLeafCategoryError,
+    NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPatchRequestSchema,
@@ -86,7 +86,7 @@ def create_catalogue_item(
     try:
         catalogue_item = catalogue_item_service.create(catalogue_item)
         return CatalogueItemSchema(**catalogue_item.model_dump())
-    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -102,7 +102,7 @@ def create_catalogue_item(
         message = "The specified replacement catalogue item does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except NonLeafCategoryError as exc:
+    except NonLeafCatalogueCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
@@ -124,7 +124,7 @@ def partial_update_catalogue_item(
     try:
         updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
         return CatalogueItemSchema(**updated_catalogue_item.model_dump())
-    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -156,7 +156,7 @@ def partial_update_catalogue_item(
         message = "Catalogue item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except NonLeafCategoryError as exc:
+    except NonLeafCatalogueCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

@@ -507,7 +507,7 @@ def test_list_ids(database_mock, catalogue_item_repository):
 @patch("inventory_management_system_api.repositories.catalogue_item.datetime")
 def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
     """
-    Test inserting a catalogue item property
+    Test inserting a property
 
     Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
     property

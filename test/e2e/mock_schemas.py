@@ -12,7 +12,7 @@ CREATED_MODIFIED_VALUES_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 CATALOGUE_CATEGORY_POST_ALLOWED_VALUES = {
     "name": "Category Allowed Values",
     "is_leaf": True,
-    "catalogue_item_properties": [
+    "properties": [
         {
             "name": "Property A",
             "type": "number",

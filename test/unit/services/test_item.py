@@ -14,7 +14,7 @@ from bson import ObjectId
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
-    InvalidCatalogueItemPropertyTypeError,
+    InvalidPropertyTypeError,
     InvalidObjectIdError,
     MissingRecordError,
 )
@@ -31,7 +31,7 @@ FULL_CATALOGUE_CATEGORY_A_INFO = {
     "code": "category-a",
     "is_leaf": True,
     "parent_id": None,
-    "catalogue_item_properties": [
+    "properties": [
         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
         {"name": "Property B", "type": "boolean", "unit": None, "mandatory": True},
         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
@@ -163,9 +163,9 @@ def test_create(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": add_ids_to_properties(
+                "properties": add_ids_to_properties(
                     item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
                 ),
             },
         ),
@@ -406,20 +406,16 @@ def test_create_without_properties(
     Testing creating an item without properties.
     """
     # pylint: disable=duplicate-code
-    catalogue_category_properties = add_ids_to_properties(
-        None, FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"]
-    )
+    catalogue_category_properties = add_ids_to_properties(None, FULL_CATALOGUE_CATEGORY_A_INFO["properties"])
 
-    catalogue_item_properties = add_ids_to_properties(
-        catalogue_category_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"]
-    )
+    properties = add_ids_to_properties(catalogue_category_properties, FULL_CATALOGUE_ITEM_A_INFO["properties"])
     item = ItemOut(
         id=str(ObjectId()),
         catalogue_item_id=str(ObjectId()),
         system_id=str(ObjectId()),
         usage_status_id=str(ObjectId()),
         usage_status="New",
-        **{**FULL_ITEM_INFO, "properties": catalogue_item_properties},
+        **{**FULL_ITEM_INFO, "properties": properties},
     )
     # pylint: enable=duplicate-code
 
@@ -434,7 +430,7 @@ def test_create_without_properties(
             manufacturer_id=manufacturer_id,
             **{
                 **FULL_CATALOGUE_ITEM_A_INFO,
-                "properties": catalogue_item_properties,
+                "properties": properties,
             },
         ),
     )
@@ -445,7 +441,7 @@ def test_create_without_properties(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": catalogue_category_properties,
+                "properties": catalogue_category_properties,
             },
         ),
     )
@@ -477,7 +473,7 @@ def test_create_without_properties(
             **{
                 **FULL_ITEM_INFO,
                 "properties": [
-                    *catalogue_item_properties,
+                    *properties,
                     *add_ids_to_properties(
                         catalogue_category_properties,
                         [FULL_ITEM_INFO["properties"][-1]],
@@ -961,9 +957,9 @@ def test_update_change_property_value(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": add_ids_to_properties(
+                "properties": add_ids_to_properties(
                     item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
                 ),
             },
         ),
@@ -1062,9 +1058,9 @@ def test_update_with_missing_existing_properties(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": add_ids_to_properties(
+                "properties": add_ids_to_properties(
                     item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
                 ),
             },
         ),
@@ -1147,9 +1143,9 @@ def test_update_change_value_for_string_property_invalid_type(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": add_ids_to_properties(
+                "properties": add_ids_to_properties(
                     item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
                 ),
             },
         ),
@@ -1157,15 +1153,14 @@ def test_update_change_value_for_string_property_invalid_type(
 
     properties = [{"id": prop.id, "value": prop.value} for prop in item.properties]
     properties[2]["value"] = True
-    with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
+    with pytest.raises(InvalidPropertyTypeError) as exc:
         item_service.update(
             item.id,
             ItemPatchRequestSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
     assert (
-        str(exc.value)
-        == f"Invalid value type for catalogue item property with ID '{item.properties[2].id}'. Expected type: string."
+        str(exc.value) == f"Invalid value type for property with ID '{item.properties[2].id}'. Expected type: string."
     )
 
 
@@ -1220,9 +1215,9 @@ def test_update_change_value_for_number_property_invalid_type(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": add_ids_to_properties(
+                "properties": add_ids_to_properties(
                     item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
                 ),
             },
         ),
@@ -1230,15 +1225,14 @@ def test_update_change_value_for_number_property_invalid_type(
 
     properties = [{"id": prop.id, "value": prop.value} for prop in item.properties]
     properties[0]["value"] = "20"
-    with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
+    with pytest.raises(InvalidPropertyTypeError) as exc:
         item_service.update(
             item.id,
             ItemPatchRequestSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
     assert (
-        str(exc.value)
-        == f"Invalid value type for catalogue item property with ID '{item.properties[0].id}'. Expected type: number."
+        str(exc.value) == f"Invalid value type for property with ID '{item.properties[0].id}'. Expected type: number."
     )
 
 
@@ -1291,9 +1285,9 @@ def test_update_change_value_for_boolean_property_invalid_type(
             id=catalogue_category_id,
             **{
                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-                "catalogue_item_properties": add_ids_to_properties(
+                "properties": add_ids_to_properties(
                     item_properties,
-                    FULL_CATALOGUE_CATEGORY_A_INFO["catalogue_item_properties"],
+                    FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
                 ),
             },
         ),
@@ -1301,13 +1295,12 @@ def test_update_change_value_for_boolean_property_invalid_type(
 
     properties = [{"id": prop.id, "value": prop.value} for prop in item.properties]
     properties[1]["value"] = "False"
-    with pytest.raises(InvalidCatalogueItemPropertyTypeError) as exc:
+    with pytest.raises(InvalidPropertyTypeError) as exc:
         item_service.update(
             item.id,
             ItemPatchRequestSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
     assert (
-        str(exc.value)
-        == f"Invalid value type for catalogue item property with ID '{item.properties[1].id}'. Expected type: boolean."
+        str(exc.value) == f"Invalid value type for property with ID '{item.properties[1].id}'. Expected type: boolean."
     )

@@ -122,7 +122,7 @@ class UnitRepo:
         """
         unit_id = CustomObjectId(unit_id)
 
-        # Query for documents where 'unit_id' exists in the nested 'catalogue_item_properties' list
-        query = {"catalogue_item_properties.unit_id": unit_id}
+        # Query for documents where 'unit_id' exists in the nested 'properties' list
+        query = {"properties.unit_id": unit_id}
 
         return self._catalogue_categories_collection.find_one(query, session=session) is not None
