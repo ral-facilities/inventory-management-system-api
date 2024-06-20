@@ -9,33 +9,33 @@ class DatabaseError(Exception):
     """
 
 
-class LeafCategoryError(Exception):
+class LeafCatalogueCategoryError(Exception):
     """
     Catalogue category is attempted to be added to a leaf parent catalogue category.
     """
 
 
-class NonLeafCategoryError(Exception):
+class NonLeafCatalogueCategoryError(Exception):
     """
     Catalogue item is attempted to be added to a non-leaf catalogue category.
     """
 
 
-class DuplicateCatalogueItemPropertyNameError(Exception):
+class DuplicateCatalogueCategoryPropertyNameError(Exception):
     """
-    Catalogue category is attempted to be created with duplicate catalogue item property names.
-    """
-
-
-class InvalidCatalogueItemPropertyTypeError(Exception):
-    """
-    The type of the provided value does not match the expected type of the catalogue item property.
+    Catalogue category is attempted to be created with duplicate property names.
     """
 
 
-class MissingMandatoryCatalogueItemProperty(Exception):
+class InvalidPropertyTypeError(Exception):
     """
-    A mandatory catalogue item property is missing when a catalogue item is attempted to be created.
+    The type of the provided value does not match the expected type of the property.
+    """
+
+
+class MissingMandatoryProperty(Exception):
+    """
+    A mandatory property is missing when a catalogue item or item is attempted to be created.
     """
 
 

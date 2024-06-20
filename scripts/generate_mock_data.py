@@ -83,7 +83,7 @@ class PropertyType(StrEnum):
     BOOLEAN = "boolean"
 
 
-available_catalogue_item_properties = [
+available_properties = [
     {
         "name": "Mirror diameter",
         "type": PropertyType.NUMBER,
@@ -253,9 +253,9 @@ def optional_item_field(function):
 
 
 def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
-    catalogue_item_properties = (
+    properties = (
         fake.random.sample(
-            available_catalogue_item_properties,
+            available_properties,
             fake.random.randint(1, MAX_EXTRA_CATALOGUE_CATEGORY_FIELDS),
         )
         if is_leaf and fake.random.random() < PROBABILITY_CATALOGUE_CATEGORY_HAS_EXTRA_FIELDS
@@ -263,8 +263,8 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
     )
 
     # Iterate over properties to add unit_id if a matching unit is found
-    if catalogue_item_properties:
-        for prop in catalogue_item_properties:
+    if properties:
+        for prop in properties:
             unit = generated_units.get(prop["unit"])
             if unit is not None:
                 prop["unit_id"] = unit["id"]
@@ -273,7 +273,7 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
         "name": f"{fake.random.choice(catalogue_category_names)}",
         "is_leaf": is_leaf,
         "parent_id": parent_id,
-        "catalogue_item_properties": catalogue_item_properties,
+        "properties": properties,
     }
 
     return category
@@ -306,7 +306,7 @@ def generate_usage_status(value: str):
     }
 
 
-def generate_random_catalogue_item_property(catalogue_category_property: dict):
+def generate_random_property(catalogue_category_property: dict):
     prop = {"id": catalogue_category_property["id"]}
 
     allowed_values = catalogue_category_property["allowed_values"]
@@ -324,7 +324,7 @@ def generate_random_catalogue_item_property(catalogue_category_property: dict):
 def generate_random_catalogue_item(
     catalogue_category_id: str,
     manufacturer_id: str,
-    catalogue_item_properties: Optional[list[dict]],
+    properties: Optional[list[dict]],
 ):
     obsolete_replacement_catalogue_item_id = optional_catalogue_item_field(
         lambda: (
@@ -332,12 +332,12 @@ def generate_random_catalogue_item(
         )
     )
 
-    properties = None
-    if catalogue_item_properties is not None:
-        properties = []
-        for prop in catalogue_item_properties:
+    generated_properties = None
+    if properties is not None:
+        generated_properties = []
+        for prop in properties:
             if prop["mandatory"] or fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD:
-                properties.append(generate_random_catalogue_item_property(catalogue_category_property=prop))
+                generated_properties.append(generate_random_property(catalogue_category_property=prop))
 
     return {
         "catalogue_category_id": catalogue_category_id,
@@ -360,19 +360,16 @@ def generate_random_catalogue_item(
             "url": fake.url(),
         },
         "notes": optional_catalogue_item_field(lambda: fake.paragraph(nb_sentences=2)),
-        "properties": properties,
+        "properties": generated_properties,
     }
 
 
 def generate_random_item(catalogue_item_id: str):
     properties = None
-    category_properties = generated_catalogue_categories[generated_catalogue_items[catalogue_item_id]][
-        "catalogue_item_properties"
-    ]
+    category_properties = generated_catalogue_categories[generated_catalogue_items[catalogue_item_id]]["properties"]
     if category_properties is not None:
         properties = [
-            generate_random_catalogue_item_property(catalogue_category_property)
-            for catalogue_category_property in category_properties
+            generate_random_property(catalogue_category_property) for catalogue_category_property in category_properties
         ]
 
     return {
@@ -489,9 +486,7 @@ def populate_random_catalogue_categories(
                 item = generate_random_catalogue_item(
                     catalogue_category_id=parent_id,
                     manufacturer_id=fake.random.choice(available_manufacturers),
-                    catalogue_item_properties=(
-                        parent_catalogue_category["catalogue_item_properties"] if parent_catalogue_category else None
-                    ),
+                    properties=(parent_catalogue_category["properties"] if parent_catalogue_category else None),
                 )
                 item_id = create_catalogue_item(item)["id"]
                 generated_catalogue_items[item_id] = parent_id

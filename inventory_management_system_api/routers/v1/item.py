@@ -10,10 +10,10 @@ from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
 from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     InvalidObjectIdError,
-    MissingMandatoryCatalogueItemProperty,
+    MissingMandatoryProperty,
     MissingRecordError,
     DatabaseIntegrityError,
-    InvalidCatalogueItemPropertyTypeError,
+    InvalidPropertyTypeError,
 )
 from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
@@ -39,7 +39,7 @@ def create_item(
     try:
         item = item_service.create(item)
         return ItemSchema(**item.model_dump())
-    except InvalidCatalogueItemPropertyTypeError as exc:
+    except InvalidPropertyTypeError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -141,7 +141,7 @@ def partial_update_item(
     try:
         updated_item = item_service.update(item_id, item)
         return ItemSchema(**updated_item.model_dump())
-    except (InvalidCatalogueItemPropertyTypeError, MissingMandatoryCatalogueItemProperty) as exc:
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:

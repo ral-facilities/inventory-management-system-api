@@ -569,9 +569,7 @@ def test_delete_system_with_child_item(test_client):
         "/v1/catalogue-categories",
         json={
             **CATALOGUE_CATEGORY_POST_A,
-            "catalogue_item_properties": replace_unit_values_with_ids_in_properties(
-                CATALOGUE_CATEGORY_POST_A["catalogue_item_properties"], units
-            ),
+            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_A["properties"], units),
         },
     )
     catalogue_category = response.json()
@@ -583,9 +581,7 @@ def test_delete_system_with_child_item(test_client):
         **CATALOGUE_ITEM_POST_A,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
-        "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"], CATALOGUE_ITEM_POST_A["properties"]
-        ),
+        "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
@@ -598,7 +594,7 @@ def test_delete_system_with_child_item(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     test_client.post("/v1/items", json=item_post)
     # pylint: enable=duplicate-code

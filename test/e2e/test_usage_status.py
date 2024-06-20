@@ -144,7 +144,7 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
-            catalogue_category["catalogue_item_properties"],
+            catalogue_category["properties"],
             [
                 {"name": "Property A", "value": 20},
                 {"name": "Property B", "value": False},
@@ -164,7 +164,7 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["catalogue_item_properties"], ITEM_POST["properties"]),
+        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)

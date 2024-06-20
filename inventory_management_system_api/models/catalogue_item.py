@@ -12,7 +12,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 class PropertyIn(BaseModel):
     """
-    Input database model for a catalogue item property
+    Input database model for a property defined within a catalogue item or item
     """
 
     id: CustomObjectIdField = Field(serialization_alias="_id")
@@ -24,7 +24,7 @@ class PropertyIn(BaseModel):
 
 class PropertyOut(BaseModel):
     """
-    Output database model for a catalogue item property
+    Output database model for a property defined within a catalogue item or item
     """
 
     id: StringObjectIdField = Field(alias="_id")

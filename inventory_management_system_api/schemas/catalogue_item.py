@@ -11,19 +11,19 @@ from inventory_management_system_api.schemas.mixins import CreatedModifiedSchema
 
 class PropertyPostRequestSchema(BaseModel):
     """
-    Schema model for a catalogue item property creation request.
+    Schema model for a property creation request.
     """
 
-    id: str = Field(description="The ID of the catalogue item property")
-    value: Any = Field(default=None, description="The value of the catalogue item property")
+    id: str = Field(description="The ID of the property")
+    value: Any = Field(default=None, description="The value of the property")
 
 
 class PropertySchema(PropertyPostRequestSchema):
     """
-    Schema model for a catalogue item property response.
+    Schema model for a property response.
     """
 
-    name: str = Field(description="The name of the catalogue item property")
+    name: str = Field(description="The name of the property")
     unit_id: Optional[str] = Field(default=None, description="The ID of the unit")
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
