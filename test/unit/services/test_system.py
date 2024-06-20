@@ -2,6 +2,7 @@
 Unit tests for the `SystemService` service
 """
 
+from test.unit.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
@@ -15,25 +16,6 @@ from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.system import SystemService
-
-# TODO: Move into common place? These are different to repo ones as these dont have code like the repo ones do
-SYSTEM_A_INFO = {
-    "name": "Test name a",
-    "location": "Test location",
-    "owner": "Test owner",
-    "importance": "low",
-    "description": "Test description",
-    "parent_id": None,
-}
-
-SYSTEM_B_INFO = {
-    "name": "Test name b",
-    "location": "Test location 2",
-    "owner": "Test owner 2",
-    "importance": "high",
-    "description": "Test description 2",
-    "parent_id": None,
-}
 
 
 class SystemServiceDSL:
@@ -51,7 +33,8 @@ class SystemServiceDSL:
         system_repository_mock,
         system_service,
         # Ensures all created and modified times are mocked throughout
-        model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+        # pylint: disable=unused-argument
+        model_mixins_datetime_now_mock,
     ):
         """Setup fixtures"""
 
@@ -68,20 +51,22 @@ class CreateDSL(SystemServiceDSL):
     """Base class for create tests"""
 
     _system_post: SystemPostSchema
-    _expected_system_in: dict
+    _expected_system_in: SystemIn
     _expected_system_out: SystemOut
     _created_system: SystemOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, system_data: dict):
+    def mock_create(self, system_post_data: dict):
         """Mocks repo methods appropriately to test the 'create' service method
 
-        :param system_data: Dictionary containing the basic system information (excluding id, code or creation and
-                            modified times as these will be automatically handled)
+        :param system_post_data: Dictionary containing the basic system data as would be required for a
+                                 SystemPostSchema (i.e. no id, code or created and modified times required)
         """
-        self._system_post = SystemPostSchema(**system_data)
+        self._system_post = SystemPostSchema(**system_post_data)
 
-        self._expected_system_in = SystemIn(**system_data, code=utils.generate_code(system_data["name"], "system"))
+        self._expected_system_in = SystemIn(
+            **system_post_data, code=utils.generate_code(system_post_data["name"], "system")
+        )
         self._expected_system_out = SystemOut(**self._expected_system_in.model_dump(), id=ObjectId())
 
         self.test_helpers.mock_create(self.mock_system_repository, self._expected_system_out)
@@ -106,14 +91,14 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating a System"""
 
-        self.mock_create(SYSTEM_A_INFO)
+        self.mock_create(SYSTEM_POST_DATA_NO_PARENT_A)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_parent_id(self):
         """Test creating a System with a parent ID"""
 
-        self.mock_create({**SYSTEM_A_INFO, "parent_id": str(ObjectId())})
+        self.mock_create({**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())})
         self.call_create()
         self.check_create_success()
 
@@ -246,38 +231,39 @@ class UpdateDSL(SystemServiceDSL):
     _updated_system: MagicMock
     _update_exception: pytest.ExceptionInfo
 
-    def mock_update(self, system_id: str, system_update_data: dict, stored_system_data: Optional[dict]):
+    def mock_update(self, system_id: str, system_patch_data: dict, stored_system_post_data: Optional[dict]):
         """Mocks repository methods appropriately to test the 'update' service method
 
         :param system_id: ID of the system that will be obtained
-        :param system_update_data: Dictionary containing the new basic system information (excluding id, code or
-                            creation and modified times as these will be automatically handled)
-        :param stored_system_data: Dictionary containing the existing stored basic system information
+        :param system_patch_data: Dictionary containing the patch data as would be required for a
+                                  SystemPatchSchema (i.e. no id, code or created and modified times required)
+        :param stored_system_post_data: Dictionary containing the system data for the existing stored System
+                                        as would be required for a SystemPostSchema (i.e. no id, code or created and
+                                        modified times required)
         """
 
         # Stored system
         self._stored_system = (
             SystemOut(
                 **SystemIn(
-                    **stored_system_data, code=utils.generate_code(stored_system_data["name"], "system")
+                    **stored_system_post_data, code=utils.generate_code(stored_system_post_data["name"], "system")
                 ).model_dump(),
                 id=CustomObjectId(system_id),
             )
-            if stored_system_data
+            if stored_system_post_data
             else None
         )
         self.test_helpers.mock_get(self.mock_system_repository, self._stored_system)
 
         # Patch schema
-        self._system_patch = SystemPatchSchema(**system_update_data)
+        self._system_patch = SystemPatchSchema(**system_patch_data)
 
         # Updated system
-        # TODO: Is this really necessary - can just use return value and then don't need this helper function
         self._expected_system_out = MagicMock()
         self.test_helpers.mock_update(self.mock_system_repository, self._expected_system_out)
 
         # Construct the expected input for the repository
-        merged_system_data = {**(stored_system_data or {}), **system_update_data}
+        merged_system_data = {**(stored_system_post_data or {}), **system_patch_data}
         self._expected_system_in = SystemIn(
             **merged_system_data,
             code=utils.generate_code(merged_system_data["name"], "system"),
@@ -331,7 +317,11 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_B_INFO, SYSTEM_A_INFO)
+        self.mock_update(
+            system_id,
+            system_patch_data=SYSTEM_POST_DATA_NO_PARENT_B,
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+        )
         self.call_update(system_id)
         self.check_update_success()
 
@@ -340,7 +330,11 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, {"description": "A new description"}, SYSTEM_A_INFO)
+        self.mock_update(
+            system_id,
+            system_patch_data={"description": "A new description"},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+        )
         self.call_update(system_id)
         self.check_update_success()
 
@@ -349,7 +343,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_B_INFO, None)
+        self.mock_update(system_id, system_patch_data=SYSTEM_POST_DATA_NO_PARENT_B, stored_system_post_data=None)
         self.call_update_expecting_error(system_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No System found with ID: {system_id}")
 

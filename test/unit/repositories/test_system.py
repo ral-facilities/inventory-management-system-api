@@ -2,6 +2,7 @@
 Unit tests for the `SystemRepo` repository
 """
 
+from test.unit.mock_data import SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
@@ -25,26 +26,6 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
-
-SYSTEM_A_INFO = {
-    "parent_id": None,
-    "name": "Test name a",
-    "description": "Test description",
-    "location": "Test location",
-    "owner": "Test owner",
-    "importance": "low",
-    "code": "test-name-a",
-}
-
-SYSTEM_B_INFO = {
-    "parent_id": None,
-    "name": "Test name b",
-    "description": "Test description",
-    "location": "Test location",
-    "owner": "Test owner",
-    "importance": "low",
-    "code": "test-name-b",
-}
 
 
 class SystemRepoDSL:
@@ -86,39 +67,44 @@ class CreateDSL(SystemRepoDSL):
 
     def mock_create(
         self,
-        system_data: dict,
-        parent_system_data: Optional[dict] = None,
-        duplicate_system_data: Optional[dict] = None,
+        system_in_data: dict,
+        parent_system_in_data: Optional[dict] = None,
+        duplicate_system_in_data: Optional[dict] = None,
     ):
         """Mocks database methods appropriately to test the 'create' repo method
 
-        :param system_data: Dictionary containing the basic system information (excluding id or creation and modified
-                            times as these will be automatically handled)
-        :param parent_system_data: Either None or a dictionary containing the basic parent system data
-        :param duplicate_system_data: Either None or a dictionary containing basic system data for a duplicate system
+        :param system_in_data: Dictionary containing the system data as would be required for a SystemIn database
+                               model (i.e. no id or created and modified times required)
+        :param parent_system_in_data: Either None or a dictionary containing the parent system data as would be
+                                      required for a SystemIn database model
+        :param duplicate_system_in_data: Either None or a dictionary containing system data for a duplicate system
         """
         inserted_system_id = CustomObjectId(str(ObjectId()))
 
         # Pass through system_in first as need creation and modified times
-        self._system_in = SystemIn(**system_data)
+        self._system_in = SystemIn(**system_in_data)
 
         self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=inserted_system_id)
 
         # When a parent_id is given, need to mock the find_one for it too
-        if system_data["parent_id"]:
+        if system_in_data["parent_id"]:
             # If parent_system_data is given as none, then it is intentionally supposed to be, otherwise
             # pass through SystemIn first to ensure it has creation and modified times
             self.test_helpers.mock_find_one(
                 self.systems_collection,
                 (
-                    {**SystemIn(**parent_system_data).model_dump(), "_id": system_data["parent_id"]}
-                    if parent_system_data
+                    {**SystemIn(**parent_system_in_data).model_dump(), "_id": system_in_data["parent_id"]}
+                    if parent_system_in_data
                     else None
                 ),
             )
         self.test_helpers.mock_find_one(
             self.systems_collection,
-            {**SystemIn(**duplicate_system_data).model_dump(), "_id": ObjectId()} if duplicate_system_data else None,
+            (
+                {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
+                if duplicate_system_in_data
+                else None
+            ),
         )
         self.test_helpers.mock_insert_one(self.systems_collection, inserted_system_id)
         self.test_helpers.mock_find_one(
@@ -185,14 +171,17 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating a System"""
 
-        self.mock_create(SYSTEM_A_INFO)
+        self.mock_create(SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_parent_id(self):
         """Test creating a System with a valid parent_id"""
 
-        self.mock_create({**SYSTEM_A_INFO, "parent_id": str(ObjectId())}, parent_system_data=SYSTEM_B_INFO)
+        self.mock_create(
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+        )
         self.call_create()
         self.check_create_success()
 
@@ -201,7 +190,7 @@ class TestCreate(CreateDSL):
 
         parent_id = str(ObjectId())
 
-        self.mock_create({**SYSTEM_A_INFO, "parent_id": parent_id}, parent_system_data=None)
+        self.mock_create({**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": parent_id}, parent_system_in_data=None)
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(f"No parent System found with ID: {parent_id}")
 
@@ -209,9 +198,9 @@ class TestCreate(CreateDSL):
         """Test creating a System with a duplicate system being found in the same parent system"""
 
         self.mock_create(
-            {**SYSTEM_A_INFO, "parent_id": str(ObjectId())},
-            parent_system_data=SYSTEM_B_INFO,
-            duplicate_system_data=SYSTEM_B_INFO,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
         )
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate System found within the parent System")
@@ -225,16 +214,18 @@ class GetDSL(SystemRepoDSL):
     _obtained_system: Optional[SystemOut]
     _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, system_id: str, system_data: Optional[dict]):
+    def mock_get(self, system_id: str, system_in_data: Optional[dict]):
         """Mocks database methods appropriately to test the 'get' repo method
 
         :param system_id: ID of the system that will be obtained
-        :param system_data: Dictionary containing the basic system information (excluding id or creation and modified
-                            times as these will be automatically handled)
+        :param system_in_data: Dictionary containing the system data as would be required for a SystemIn database
+                               model (i.e. No id or created and modified times required)
         """
 
         self._expected_system_out = (
-            SystemOut(**SystemIn(**system_data).model_dump(), id=CustomObjectId(system_id)) if system_data else None
+            SystemOut(**SystemIn(**system_in_data).model_dump(), id=CustomObjectId(system_id))
+            if system_in_data
+            else None
         )
 
         self.test_helpers.mock_find_one(
@@ -280,7 +271,7 @@ class TestGet(GetDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_get(system_id, SYSTEM_A_INFO)
+        self.mock_get(system_id, SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_get(system_id)
         self.check_get_success()
 
@@ -365,13 +356,14 @@ class ListDSL(SystemRepoDSL):
     _parent_id_filter: str
     _obtained_systems_out: list[SystemOut]
 
-    def mock_list(self, systems_data: list[dict]):
+    def mock_list(self, systems_in_data: list[dict]):
         """Mocks database methods appropriately to test the 'list' repo method
 
-        :param systems_data: List of system data to use within the mocked data"""
+        :param systems_data: List of dictionaries containing the system data as would be required for a
+                             SystemIn database model (i.e. no id or created and modified times required)"""
 
         self._expected_systems_out = [
-            SystemOut(**SystemIn(**system_data).model_dump(), id=ObjectId()) for system_data in systems_data
+            SystemOut(**SystemIn(**system_in_data).model_dump(), id=ObjectId()) for system_in_data in systems_in_data
         ]
 
         self.test_helpers.mock_find(
@@ -402,21 +394,21 @@ class TestList(ListDSL):
     def test_list(self):
         """Test listing all Systems"""
 
-        self.mock_list([SYSTEM_A_INFO, SYSTEM_B_INFO])
+        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
         self.call_list(parent_id=None)
         self.check_list_success()
 
     def test_list_with_parent_id_filter(self):
         """Test listing all Systems with a given parent_id"""
 
-        self.mock_list([SYSTEM_A_INFO, SYSTEM_B_INFO])
+        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
         self.call_list(parent_id=str(ObjectId()))
         self.check_list_success()
 
     def test_list_with_null_parent_id_filter(self):
         """Test listing all Systems with a 'null' parent_id"""
 
-        self.mock_list([SYSTEM_A_INFO, SYSTEM_B_INFO])
+        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
         self.call_list(parent_id="null")
         self.check_list_success()
 
@@ -450,42 +442,45 @@ class UpdateDSL(SystemRepoDSL):
     def mock_update(
         self,
         system_id: str,
-        new_system_data: dict,
-        stored_system_data: Optional[dict],
-        new_parent_system_data: Optional[dict] = None,
-        duplicate_system_data: Optional[dict] = None,
+        new_system_in_data: dict,
+        stored_system_in_data: Optional[dict],
+        new_parent_system_in_data: Optional[dict] = None,
+        duplicate_system_in_data: Optional[dict] = None,
         valid_move_result: bool = True,
     ):
         """Mocks database methods appropriately to test the 'update' repo method
 
         :param system_id: ID of the system that will be obtained
-        :param new_system_data: Dictionary containing the new basic system information (excluding id or creation and
-                                modified times as these will be automatically handled)
-        :param stored_system_data: Dictionary containing the existing stored basic system information
-        :param new_parent_system_data: Either None or a dictionary containing the basic parent system data
-        :param duplicate_system_data: Either None or a dictionary containing basic system data for a duplicate system
+        :param new_system_in_data: Dictionary containing the new system information as would be required for a SystemIn
+                               database model (i.e. no id or created and modified times required)
+        :param stored_system_in_data: Dictionary containing the system information for the existing stored System
+                                      as would be required for a SystemIn database model
+        :param new_parent_system_in_data: Either None or a dictionary containing the new parent system data as would be
+                                       required for a SystemIn database model
+        :param duplicate_system_in_data: Either None or a dictionary containing the data for a duplicate system as would
+                                      be required for a SystemIn database model
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
                                   moving the system one of its own children
         """
-        self.set_update_data(new_system_data)
+        self.set_update_data(new_system_in_data)
 
         # When a parent_id is given, need to mock the find_one for it too
-        if new_system_data["parent_id"]:
+        if new_system_in_data["parent_id"]:
             # If new_parent_system_data is given as none, then it is intentionally supposed to be, otherwise
             # pass through SystemIn first to ensure it has creation and modified times
             self.test_helpers.mock_find_one(
                 self.systems_collection,
                 (
-                    {**SystemIn(**new_parent_system_data).model_dump(), "_id": new_system_data["parent_id"]}
-                    if new_parent_system_data
+                    {**SystemIn(**new_parent_system_in_data).model_dump(), "_id": new_system_in_data["parent_id"]}
+                    if new_parent_system_in_data
                     else None
                 ),
             )
 
         # Stored system
         self._stored_system = (
-            SystemOut(**SystemIn(**stored_system_data).model_dump(), id=CustomObjectId(system_id))
-            if stored_system_data
+            SystemOut(**SystemIn(**stored_system_in_data).model_dump(), id=CustomObjectId(system_id))
+            if stored_system_in_data
             else None
         )
         self.test_helpers.mock_find_one(
@@ -493,13 +488,15 @@ class UpdateDSL(SystemRepoDSL):
         )
 
         # Duplicate check
-        self._moving_system = stored_system_data and (new_system_data["parent_id"] != stored_system_data["parent_id"])
-        if (stored_system_data and (self._system_in.name != self._stored_system.name)) or self._moving_system:
+        self._moving_system = stored_system_in_data and (
+            new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
+        )
+        if (stored_system_in_data and (self._system_in.name != self._stored_system.name)) or self._moving_system:
             self.test_helpers.mock_find_one(
                 self.systems_collection,
                 (
-                    {**SystemIn(**duplicate_system_data).model_dump(), "_id": ObjectId()}
-                    if duplicate_system_data
+                    {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
+                    if duplicate_system_in_data
                     else None
                 ),
             )
@@ -606,7 +603,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_A_INFO, SYSTEM_B_INFO)
+        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
         self.call_update(system_id)
         self.check_update_success()
 
@@ -615,7 +612,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = "invalid-id"
 
-        self.set_update_data(SYSTEM_A_INFO)
+        self.set_update_data(SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_update_expecting_error(system_id, InvalidObjectIdError)
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -624,7 +621,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_A_INFO, SYSTEM_A_INFO)
+        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
         self.call_update(system_id)
         self.check_update_success()
 
@@ -635,10 +632,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id=system_id,
-            new_system_data={**SYSTEM_A_INFO, "parent_id": str(ObjectId())},
-            stored_system_data=SYSTEM_A_INFO,
-            new_parent_system_data=SYSTEM_B_INFO,
-            duplicate_system_data=None,
+            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=None,
             valid_move_result=True,
         )
         self.call_update(system_id)
@@ -650,10 +647,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id=system_id,
-            new_system_data={**SYSTEM_A_INFO, "parent_id": str(ObjectId())},
-            stored_system_data=SYSTEM_A_INFO,
-            new_parent_system_data=SYSTEM_B_INFO,
-            duplicate_system_data=None,
+            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=None,
             valid_move_result=False,
         )
         self.call_update_expecting_error(system_id, InvalidActionError)
@@ -666,7 +663,10 @@ class TestUpdate(UpdateDSL):
         new_parent_id = str(ObjectId())
 
         self.mock_update(
-            system_id, {**SYSTEM_A_INFO, "parent_id": new_parent_id}, SYSTEM_A_INFO, new_parent_system_data=None
+            system_id,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": new_parent_id},
+            SYSTEM_IN_DATA_NO_PARENT_A,
+            new_parent_system_in_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No parent System found with ID: {new_parent_id}")
@@ -678,7 +678,10 @@ class TestUpdate(UpdateDSL):
         new_name = "New Duplicate Name"
 
         self.mock_update(
-            system_id, {**SYSTEM_A_INFO, "name": new_name}, SYSTEM_A_INFO, duplicate_system_data=SYSTEM_A_INFO
+            system_id,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": new_name},
+            SYSTEM_IN_DATA_NO_PARENT_A,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate System found within the parent System")
@@ -692,10 +695,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            {**SYSTEM_A_INFO, "parent_id": new_parent_id},
-            SYSTEM_A_INFO,
-            new_parent_system_data=SYSTEM_B_INFO,
-            duplicate_system_data=SYSTEM_A_INFO,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": new_parent_id},
+            SYSTEM_IN_DATA_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate System found within the parent System")
@@ -713,8 +716,8 @@ class DeleteDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the 'delete' repo method
 
         :param deleted_count: Number of documents deleted successfully
-        :param child_system_data: Dictionary containing a child system's basic system information (or None)
-        :param child_item_data: Dictionary containing a child items's basic system information (or None)
+        :param child_system_data: Dictionary containing a child system's data (or None)
+        :param child_item_data: Dictionary containing a child items's data (or None)
         """
 
         self.test_helpers.mock_find_one(self.systems_collection, child_system_data)
@@ -777,7 +780,7 @@ class TestDelete(DeleteDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_delete(deleted_count=1, child_system_data=SYSTEM_A_INFO)
+        self.mock_delete(deleted_count=1, child_system_data=SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_delete_expecting_error(system_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
