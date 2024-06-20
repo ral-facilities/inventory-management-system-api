@@ -4,7 +4,7 @@ propagation down through their child catalogue items and items using their respe
 """
 
 import logging
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends
 
@@ -38,10 +38,10 @@ class CatalogueCategoryPropertyService:
 
     def __init__(
         self,
-        catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
-        catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
-        item_repository: ItemRepo = Depends(ItemRepo),
-        unit_repository: UnitRepo = Depends(UnitRepo),
+        catalogue_category_repository: Annotated[CatalogueCategoryRepo, Depends(CatalogueCategoryRepo)],
+        catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
+        item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
+        unit_repository: Annotated[UnitRepo, Depends(UnitRepo)],
     ):
         """
         Initialise the `PropertyService` with a `CatalogueCategoryRepo`, `CatalogueItemRepo`,

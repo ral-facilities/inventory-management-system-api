@@ -4,7 +4,7 @@ Module for providing a service for managing manufacturers using the `Manufacture
 
 import logging
 
-from typing import List, Optional
+from typing import Annotated, List, Optional
 from fastapi import Depends
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
@@ -23,7 +23,7 @@ class ManufacturerService:
 
     def __init__(
         self,
-        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
+        manufacturer_repository: Annotated[ManufacturerRepo, Depends(ManufacturerRepo)],
     ) -> None:
         """
         Initialise the manufacturer service with a ManufacturerRepo

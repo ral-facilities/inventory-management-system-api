@@ -5,13 +5,11 @@ Module for providing a repository for managing Units in a MongoDB database
 import logging
 from typing import Optional
 
-from fastapi import Depends
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
-from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     MissingRecordError,
@@ -27,7 +25,7 @@ class UnitRepo:
     Repository for managing Units in a MongoDB database
     """
 
-    def __init__(self, database: Database = Depends(get_database)) -> None:
+    def __init__(self, database: DatabaseDep) -> None:
         """
         Initialise the `UnitRepo` with a MongoDB database instance
         :param database: Database to use

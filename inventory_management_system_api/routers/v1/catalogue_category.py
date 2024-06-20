@@ -34,11 +34,17 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/catalogue-categories", tags=["catalogue categories"])
 
+CatalogueCategoryServiceDep = Annotated[CatalogueCategoryService, Depends(CatalogueCategoryService)]
+
+CatalogueCategoryPropertyServiceDep = Annotated[
+    CatalogueCategoryPropertyService, Depends(CatalogueCategoryPropertyService)
+]
+
 
 @router.get(path="", summary="Get catalogue categories", response_description="List of catalogue categories")
 def get_catalogue_categories(
+    catalogue_category_service: CatalogueCategoryServiceDep,
     parent_id: Annotated[Optional[str], Query(description="Filter catalogue categories by parent ID")] = None,
-    catalogue_category_service: CatalogueCategoryService = Depends(),
 ) -> List[CatalogueCategorySchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue categories")
@@ -62,8 +68,8 @@ def get_catalogue_categories(
     response_description="Single catalogue category",
 )
 def get_catalogue_category(
-    catalogue_category_id: str = Path(description="The ID of the catalogue category to get"),
-    catalogue_category_service: CatalogueCategoryService = Depends(),
+    catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to get")],
+    catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
@@ -80,8 +86,10 @@ def get_catalogue_category(
 
 @router.get(path="/{catalogue_category_id}/breadcrumbs", summary="Get breadcrumbs data for a catalogue category")
 def get_catalogue_category_breadcrumbs(
-    catalogue_category_id: str = Path(description="The ID of the catalogue category to get the breadcrumbs for"),
-    catalogue_category_service: CatalogueCategoryService = Depends(),
+    catalogue_category_id: Annotated[
+        str, Path(description="The ID of the catalogue category to get the breadcrumbs for")
+    ],
+    catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
@@ -107,8 +115,7 @@ def get_catalogue_category_breadcrumbs(
     status_code=status.HTTP_201_CREATED,
 )
 def create_catalogue_category(
-    catalogue_category: CatalogueCategoryPostRequestSchema,
-    catalogue_category_service: CatalogueCategoryService = Depends(),
+    catalogue_category: CatalogueCategoryPostRequestSchema, catalogue_category_service: CatalogueCategoryServiceDep
 ) -> CatalogueCategorySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new catalogue category")
@@ -148,8 +155,8 @@ def create_catalogue_category(
 )
 def partial_update_catalogue_category(
     catalogue_category: CatalogueCategoryPatchRequestSchema,
-    catalogue_category_id: str = Path(description="The ID of the catalogue category to update"),
-    catalogue_category_service: CatalogueCategoryService = Depends(),
+    catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to update")],
+    catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating catalogue category with ID: %s", catalogue_category_id)
@@ -205,8 +212,8 @@ def partial_update_catalogue_category(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_catalogue_category(
-    catalogue_category_id: str = Path(description="The ID of the catalogue category to delete"),
-    catalogue_category_service: CatalogueCategoryService = Depends(),
+    catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to delete")],
+    catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
@@ -230,8 +237,8 @@ def delete_catalogue_category(
 )
 def create_property(
     catalogue_category_property: CatalogueCategoryPropertyPostRequestSchema,
-    catalogue_category_id: str = Path(description="The ID of the catalogue category to add a property to"),
-    catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
+    catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to add a property to")],
+    catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new property at the catalogue category level")
@@ -271,9 +278,11 @@ def create_property(
 )
 def partial_update_property(
     catalogue_category_property: CatalogueCategoryPropertyPatchRequestSchema,
-    catalogue_category_id: str = Path(description="The ID of the catalogue category containing the property to patch"),
-    property_id: str = Path(description="The ID of the property to patch"),
-    catalogue_category_property_service: CatalogueCategoryPropertyService = Depends(),
+    catalogue_category_id: Annotated[
+        str, Path(description="The ID of the catalogue category containing the property to patch")
+    ],
+    property_id: Annotated[str, Path(description="The ID of the property to patch")],
+    catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
     # pylint: disable=missing-function-docstring
     logger.info(

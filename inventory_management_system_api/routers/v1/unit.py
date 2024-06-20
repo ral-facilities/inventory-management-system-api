@@ -21,6 +21,8 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/units", tags=["units"])
 
+UnitServiceDep = Annotated[UnitService, Depends(UnitService)]
+
 
 @router.post(
     path="",
@@ -28,10 +30,7 @@ router = APIRouter(prefix="/v1/units", tags=["units"])
     response_description="The created unit",
     status_code=status.HTTP_201_CREATED,
 )
-def create_unit(
-    unit: UnitPostRequestSchema,
-    unit_service: Annotated[UnitService, Depends(UnitService)],
-) -> UnitSchema:
+def create_unit(unit: UnitPostRequestSchema, unit_service: UnitServiceDep) -> UnitSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)
@@ -51,8 +50,7 @@ def create_unit(
     response_description="Single unit",
 )
 def get_unit(
-    unit_id: Annotated[str, Path(description="The ID of the unit to be retrieved")],
-    unit_service: Annotated[UnitService, Depends(UnitService)],
+    unit_id: Annotated[str, Path(description="The ID of the unit to be retrieved")], unit_service: UnitServiceDep
 ) -> UnitSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting unit with ID %s", unit_id)
@@ -69,7 +67,7 @@ def get_unit(
 
 
 @router.get(path="", summary="Get Units", response_description="List of Units")
-def get_units(unit_service: Annotated[UnitService, Depends(UnitService)]) -> list[UnitSchema]:
+def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Units")
 
@@ -84,8 +82,7 @@ def get_units(unit_service: Annotated[UnitService, Depends(UnitService)]) -> lis
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_unit(
-    unit_id: Annotated[str, Path(description="ID of the unit to delete")],
-    unit_service: Annotated[UnitService, Depends(UnitService)],
+    unit_id: Annotated[str, Path(description="ID of the unit to delete")], unit_service: UnitServiceDep
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting unit with ID: %s", unit_id)

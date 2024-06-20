@@ -4,7 +4,7 @@ Module for providing an API router which defines routes for managing manufacture
 """
 
 import logging
-from typing import List
+from typing import Annotated, List
 from fastapi import APIRouter, status, Depends, HTTPException, Path
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -25,6 +25,8 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/manufacturers", tags=["manufacturers"])
 
+ManufacturerServiceDep = Annotated[ManufacturerService, Depends(ManufacturerService)]
+
 
 @router.post(
     path="",
@@ -33,8 +35,7 @@ router = APIRouter(prefix="/v1/manufacturers", tags=["manufacturers"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_manufacturer(
-    manufacturer: ManufacturerPostRequestSchema,
-    manufacturer_service: ManufacturerService = Depends(),
+    manufacturer: ManufacturerPostRequestSchema, manufacturer_service: ManufacturerServiceDep
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new manufacturer")
@@ -55,7 +56,7 @@ def create_manufacturer(
     summary="Get all manufacturers",
     response_description="List of manufacturers",
 )
-def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends()) -> List[ManufacturerSchema]:
+def get_all_manufacturers(manufacturer_service: ManufacturerServiceDep) -> List[ManufacturerSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturers")
 
@@ -69,8 +70,8 @@ def get_all_manufacturers(manufacturer_service: ManufacturerService = Depends())
     response_description="Single manufacturer",
 )
 def get_one_manufacturer(
-    manufacturer_id: str = Path(description="The ID of the manufacturer to be retrieved"),
-    manufacturer_service: ManufacturerService = Depends(),
+    manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer to be retrieved")],
+    manufacturer_service: ManufacturerServiceDep,
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturer with ID %s", manufacturer_id)
@@ -93,8 +94,8 @@ def get_one_manufacturer(
 )
 def edit_manufacturer(
     manufacturer: ManufacturerPatchRequestSchema,
-    manufacturer_id: str = Path(description="The ID of the manufacturer that is to be updated"),
-    manufacturer_service: ManufacturerService = Depends(),
+    manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer that is to be updated")],
+    manufacturer_service: ManufacturerServiceDep,
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Updating manufacturer with ID %s", manufacturer_id)
@@ -118,8 +119,8 @@ def edit_manufacturer(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_manufacturer(
-    manufacturer_id: str = Path(description="The ID of the manufacturer that is to be deleted"),
-    manufacturer_service: ManufacturerService = Depends(),
+    manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer that is to be deleted")],
+    manufacturer_service: ManufacturerServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting manufacturer with ID: %s", manufacturer_id)
