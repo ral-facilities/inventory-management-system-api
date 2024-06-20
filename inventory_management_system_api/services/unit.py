@@ -2,7 +2,7 @@
 Module for providing a service for managing Units using the `UnitRepo` repository
 """
 
-from typing import Optional
+from typing import Annotated, Optional
 from fastapi import Depends
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.repositories.unit import UnitRepo
@@ -16,7 +16,7 @@ class UnitService:
     Service for managing Units
     """
 
-    def __init__(self, unit_repository: UnitRepo = Depends(UnitRepo)) -> None:
+    def __init__(self, unit_repository: Annotated[UnitRepo, Depends(UnitRepo)]) -> None:
         """
         Initialise the `UnitService` with a `UnitRepo` repository
 

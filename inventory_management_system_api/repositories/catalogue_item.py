@@ -7,13 +7,11 @@ import logging
 from typing import List, Optional
 
 from bson import ObjectId
-from fastapi import Depends
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
-from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 
@@ -25,7 +23,7 @@ class CatalogueItemRepo:
     Repository for managing catalogue items in a MongoDB database.
     """
 
-    def __init__(self, database: Database = Depends(get_database)) -> None:
+    def __init__(self, database: DatabaseDep) -> None:
         """
         Initialize the `CatalogueItemRepo` with a MongoDB database instance.
 

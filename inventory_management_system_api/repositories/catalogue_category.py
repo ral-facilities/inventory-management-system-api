@@ -6,13 +6,11 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import Depends
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
-from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateRecordError,
@@ -36,7 +34,7 @@ class CatalogueCategoryRepo:
     Repository for managing catalogue categories in a MongoDB database.
     """
 
-    def __init__(self, database: Database = Depends(get_database)) -> None:
+    def __init__(self, database: DatabaseDep) -> None:
         """
         Initialize the `CatalogueCategoryRepo` with a MongoDB database instance.
 
