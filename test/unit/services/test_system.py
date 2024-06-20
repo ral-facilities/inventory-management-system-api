@@ -2,17 +2,21 @@
 Unit tests for the `SystemService` service
 """
 
-from datetime import timedelta
-from unittest.mock import MagicMock
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
+from test.unit.services.conftest import ServiceTestHelpers
+from typing import Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
+from inventory_management_system_api.services import utils
+from inventory_management_system_api.services.system import SystemService
 
+# TODO: Move into common place? These are different to repo ones as these dont have code like the repo ones do
 SYSTEM_A_INFO = {
     "name": "Test name a",
     "location": "Test location",
@@ -22,264 +26,356 @@ SYSTEM_A_INFO = {
     "parent_id": None,
 }
 
-SYSTEM_A_INFO_FULL = {
-    **SYSTEM_A_INFO,
-    "code": "test-name-a",
-    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-}
-
 SYSTEM_B_INFO = {
     "name": "Test name b",
-    "location": "Test location",
-    "owner": "Test owner",
+    "location": "Test location 2",
+    "owner": "Test owner 2",
     "importance": "high",
-    "description": "Test description",
+    "description": "Test description 2",
     "parent_id": None,
 }
 
-SYSTEM_B_INFO_FULL = {
-    **SYSTEM_A_INFO,
-    "code": "test-name-b",
-    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-}
 
+class SystemServiceDSL:
+    """Base class for SystemService unit tests"""
 
-def test_create(
-    test_helpers,
-    system_repository_mock,
-    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-    system_service,
-):
-    """
-    Test creating a System
+    test_helpers: ServiceTestHelpers
+    wrapped_utils: Mock
+    mock_system_repository: Mock
+    system_service: SystemService
 
-    Verify that the `create` method properly handles the System to be created, generates the code,
-    and calls the repository's create method
-    """
-    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO_FULL)
-
-    # Mock `create` to return the created System
-    test_helpers.mock_create(system_repository_mock, system)
-
-    created_system = system_service.create(SystemPostSchema(**SYSTEM_A_INFO))
-
-    system_repository_mock.create.assert_called_with(SystemIn(**SYSTEM_A_INFO_FULL))
-    assert created_system == system
-
-
-def test_create_with_parent_id(
-    test_helpers,
-    system_repository_mock,
-    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-    system_service,
-):
-    """
-    Test creating a System with a parent ID
-
-    Verify that the `create` method properly handles the System to be created when it has a parent ID
-    """
-    system_info = {
-        **SYSTEM_B_INFO,
-        "parent_id": str(ObjectId()),
-    }
-    full_system_info = {
-        **system_info,
-        "code": SYSTEM_B_INFO_FULL["code"],
-        "created_time": SYSTEM_B_INFO_FULL["created_time"],
-        "modified_time": SYSTEM_B_INFO_FULL["modified_time"],
-    }
-    system = SystemOut(id=str(ObjectId()), **full_system_info)
-
-    # Mock `get` to return the parent system
-    test_helpers.mock_get(
+    @pytest.fixture(autouse=True)
+    def setup(
+        self,
+        test_helpers,
         system_repository_mock,
-        SystemOut(id=system.parent_id, **SYSTEM_B_INFO_FULL),
-    )
+        system_service,
+        # Ensures all created and modified times are mocked throughout
+        model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
+    ):
+        """Setup fixtures"""
 
-    # Mock `create` to return the created System
-    test_helpers.mock_create(system_repository_mock, system)
+        self.test_helpers = test_helpers
+        self.mock_system_repository = system_repository_mock
+        self.system_service = system_service
 
-    created_system = system_service.create(SystemPostSchema(**system_info))
-
-    system_repository_mock.create.assert_called_with(SystemIn(**full_system_info))
-    assert created_system == system
-
-
-def test_create_with_whitespace_name(
-    test_helpers,
-    system_repository_mock,
-    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-    system_service,
-):
-    """
-    Test creating a System with a name containing leading/trailing/consecutive whitespaces
-
-    Verify that the `create` method trims the whitespace from the System name and handles
-    it correctly
-    """
-    system_info = {
-        **SYSTEM_A_INFO,
-        "name": "      Test    name         ",
-    }
-    full_system_info = {
-        **system_info,
-        "code": "test-name",
-        "created_time": SYSTEM_B_INFO_FULL["created_time"],
-        "modified_time": SYSTEM_B_INFO_FULL["modified_time"],
-    }
-    system = SystemOut(id=str(ObjectId()), **full_system_info)
-
-    # Mock `create` to return the created System
-    test_helpers.mock_create(system_repository_mock, system)
-
-    created_system = system_service.create(SystemPostSchema(**system_info))
-
-    system_repository_mock.create.assert_called_with(SystemIn(**full_system_info))
-    assert created_system == system
+        with patch("inventory_management_system_api.services.system.utils", wraps=utils) as wrapped_utils:
+            self.wrapped_utils = wrapped_utils
+            yield
 
 
-def test_get(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting a System
+class CreateDSL(SystemServiceDSL):
+    """Base class for create tests"""
 
-    Verify that the `get` method properly handles the retrieval of a System
-    """
+    _system_post: SystemPostSchema
+    _expected_system_in: dict
+    _expected_system_out: SystemOut
+    _created_system: SystemOut
+    _create_exception: pytest.ExceptionInfo
 
-    system_id = str(ObjectId())
-    system = MagicMock()
+    def mock_create(self, system_data: dict):
+        """Mocks repo methods appropriately to test the 'create' service method
 
-    # Mock `get` to return a System
-    test_helpers.mock_get(system_repository_mock, system)
+        :param system_data: Dictionary containing the basic system information (excluding id, code or creation and
+                            modified times as these will be automatically handled)
+        """
+        self._system_post = SystemPostSchema(**system_data)
 
-    retrieved_system = system_service.get(system_id)
+        self._expected_system_in = SystemIn(**system_data, code=utils.generate_code(system_data["name"], "system"))
+        self._expected_system_out = SystemOut(**self._expected_system_in.model_dump(), id=ObjectId())
 
-    system_repository_mock.get.assert_called_once_with(system_id)
-    assert retrieved_system == system
+        self.test_helpers.mock_create(self.mock_system_repository, self._expected_system_out)
 
+    def call_create(self):
+        """Calls the SystemService `create` method with the appropriate data from a prior call to `mock_create`"""
 
-def test_get_with_non_existent_id(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting a System with a non-existent ID
+        self._created_system = self.system_service.create(self._system_post)
 
-    Verify that the `get` method properly handles the retrieval of a System with a non-existent ID
-    """
-    system_id = str(ObjectId())
+    def check_create_success(self):
+        """Checks that a prior call to `call_create` worked as expected"""
 
-    # Mock `get` to not return a System
-    test_helpers.mock_get(system_repository_mock, None)
+        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_system_out.name, "system")
+        self.mock_system_repository.create.assert_called_once_with(self._expected_system_in)
 
-    retrieved_system = system_service.get(system_id)
-
-    system_repository_mock.get.assert_called_once_with(system_id)
-    assert retrieved_system is None
-
-
-def test_get_breadcrumbs(test_helpers, system_repository_mock, system_service):
-    """
-    Test getting breadcrumbs for a system
-
-    Verify that the `get_breadcrumbs` method properly handles the retrieval of a System
-    """
-    system_id = str(ObjectId())
-    breadcrumbs = MagicMock()
-
-    # Mock `get` to return breadcrumbs
-    test_helpers.mock_get_breadcrumbs(system_repository_mock, breadcrumbs)
-
-    retrieved_breadcrumbs = system_service.get_breadcrumbs(system_id)
-
-    system_repository_mock.get_breadcrumbs.assert_called_once_with(system_id)
-    assert retrieved_breadcrumbs == breadcrumbs
+        assert self._created_system == self._expected_system_out
 
 
-def test_list(system_repository_mock, system_service):
-    """
-    Test listing systems
+class TestCreate(CreateDSL):
+    """Tests for creating a System"""
 
-    Verify that the `list` method properly calls the repository function with any passed filters
-    """
+    def test_create(self):
+        """Test creating a System"""
 
-    parent_id = MagicMock()
+        self.mock_create(SYSTEM_A_INFO)
+        self.call_create()
+        self.check_create_success()
 
-    result = system_service.list(parent_id=parent_id)
+    def test_create_with_parent_id(self):
+        """Test creating a System with a parent ID"""
 
-    system_repository_mock.list.assert_called_once_with(parent_id)
-    assert result == system_repository_mock.list.return_value
-
-
-def test_update(
-    test_helpers,
-    system_repository_mock,
-    model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-    system_service,
-):
-    """
-    Test updating a System
-
-    Verify that the 'update' method properly handles the update of a System
-    """
-    system = SystemOut(
-        id=str(ObjectId()),
-        **{**SYSTEM_A_INFO_FULL, "created_time": SYSTEM_A_INFO_FULL["created_time"] - timedelta(days=5)},
-    )
-
-    # Mock `get` to return a System
-    test_helpers.mock_get(
-        system_repository_mock,
-        SystemOut(
-            id=system.id,
-            **{
-                **SYSTEM_A_INFO_FULL,
-                "name": "Different name",
-                "code": "different-name",
-                "created_time": system.created_time,
-                "modified_time": system.created_time,
-            },
-        ),
-    )
-    # Mock 'update' to return the updated System
-    test_helpers.mock_update(system_repository_mock, system)
-
-    updated_system = system_service.update(system.id, SystemPatchSchema(name=system.name))
-
-    system_repository_mock.update.assert_called_once_with(
-        system.id,
-        SystemIn(
-            **{
-                **SYSTEM_A_INFO_FULL,
-                "created_time": system.created_time,
-            }
-        ),
-    )
-    assert updated_system == system
+        self.mock_create({**SYSTEM_A_INFO, "parent_id": str(ObjectId())})
+        self.call_create()
+        self.check_create_success()
 
 
-def test_update_with_non_existent_id(test_helpers, system_repository_mock, system_service):
-    """
-    Test updating a System with a non-existent ID
+class GetDSL(SystemServiceDSL):
+    """Base class for get tests"""
 
-    Verify that the 'update' method properly handles the update of a System with a non-existent ID
-    """
-    # Mock `get` to not return a System
-    test_helpers.mock_get(system_repository_mock, None)
+    _obtained_system_id: str
+    _expected_system: MagicMock
+    _obtained_system: MagicMock
 
-    system_id = str(ObjectId())
-    with pytest.raises(MissingRecordError) as exc:
-        system_service.update(system_id, MagicMock())
-    system_repository_mock.update.assert_not_called()
-    assert str(exc.value) == f"No System found with ID: {system_id}"
+    def mock_get(self):
+        """Mocks repo methods appropriately to test the 'get' service method"""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_system = MagicMock()
+        self.test_helpers.mock_get(self.mock_system_repository, self._expected_system)
+
+    def call_get(self, system_id: str):
+        """Calls the SystemService `get` method"""
+
+        self._obtained_system_id = system_id
+        self._obtained_system = self.system_service.get(system_id)
+
+    def check_get_success(self):
+        """Checks that a prior call to `call_get` worked as expected"""
+
+        self.mock_system_repository.get.assert_called_once_with(self._obtained_system_id)
+
+        assert self._obtained_system == self._expected_system
 
 
-def test_delete(system_repository_mock, system_service):
-    """
-    Test deleting a System
+class TestGet(GetDSL):
+    """Tests for getting a System"""
 
-    Verify that the `delete` method properly handles the deletion of a System by ID
-    """
-    system_id = MagicMock()
+    def test_get(self):
+        """Test getting a System"""
 
-    system_service.delete(system_id)
+        self.mock_get()
+        self.call_get(str(ObjectId()))
+        self.check_get_success()
 
-    system_repository_mock.delete.assert_called_once_with(system_id)
+
+class GetBreadcrumbsDSL(SystemServiceDSL):
+    """Base class for get_breadcrumbs tests"""
+
+    _expected_breadcrumbs: MagicMock
+    _obtained_breadcrumbs: MagicMock
+    _obtained_system_id: str
+
+    def mock_get_breadcrumbs(self):
+        """Mocks repo methods appropriately to test the 'get_breadcrumbs' service method"""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_breadcrumbs = MagicMock()
+        self.test_helpers.mock_get_breadcrumbs(self.mock_system_repository, self._expected_breadcrumbs)
+
+    def call_get_breadcrumbs(self, system_id: str):
+        """Calls the SystemService `get` method"""
+
+        self._obtained_system_id = system_id
+        self._obtained_breadcrumbs = self.system_service.get_breadcrumbs(system_id)
+
+    def check_get_breadcrumbs_success(self):
+        """Checks that a prior call to `call_get` worked as expected"""
+
+        self.mock_system_repository.get_breadcrumbs.assert_called_once_with(self._obtained_system_id)
+
+        assert self._obtained_breadcrumbs == self._expected_breadcrumbs
+
+
+class TestGetBreadcrumbs(GetBreadcrumbsDSL):
+    """Tests for getting the breadcrumbs of a System"""
+
+    def test_get_breadcrumbs(self):
+        """Test getting a System's breadcrumbs"""
+
+        self.mock_get_breadcrumbs()
+        self.call_get_breadcrumbs(str(ObjectId()))
+        self.check_get_breadcrumbs_success()
+
+
+class ListDSL(SystemServiceDSL):
+    """Base class for list tests"""
+
+    _parent_id_filter: str
+    _expected_systems: MagicMock
+    _obtained_systems: MagicMock
+
+    def mock_list(self):
+        """Mocks repo methods appropriately to test the 'list' service method"""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_systems = MagicMock()
+        self.test_helpers.mock_list(self.mock_system_repository, self._expected_systems)
+
+    def call_list(self, parent_id: Optional[str]):
+        """Calls the SystemService `list` method"""
+
+        self._parent_id_filter = parent_id
+        self._obtained_systems = self.system_service.list(parent_id)
+
+    def check_list_success(self):
+        """Checks that a prior call to `call_list` worked as expected"""
+
+        self.mock_system_repository.list.assert_called_once_with(self._parent_id_filter)
+
+        assert self._obtained_systems == self._expected_systems
+
+
+class TestList(ListDSL):
+    """Tests for getting a System"""
+
+    def test_list(self):
+        """Test listing Systems"""
+
+        self.mock_list()
+        self.call_list(str(ObjectId()))
+        self.check_list_success()
+
+
+class UpdateDSL(SystemServiceDSL):
+    """Base class for update tests"""
+
+    _stored_system: Optional[SystemOut]
+    _system_patch: SystemPatchSchema
+    _expected_system_in: SystemIn
+    _expected_system_out: MagicMock
+    _updated_system_id: str
+    _updated_system: MagicMock
+    _update_exception: pytest.ExceptionInfo
+
+    def mock_update(self, system_id: str, system_update_data: dict, stored_system_data: Optional[dict]):
+        """Mocks repository methods appropriately to test the 'update' service method
+
+        :param system_id: ID of the system that will be obtained
+        :param system_update_data: Dictionary containing the new basic system information (excluding id, code or
+                            creation and modified times as these will be automatically handled)
+        :param stored_system_data: Dictionary containing the existing stored basic system information
+        """
+
+        # Stored system
+        self._stored_system = (
+            SystemOut(
+                **SystemIn(
+                    **stored_system_data, code=utils.generate_code(stored_system_data["name"], "system")
+                ).model_dump(),
+                id=CustomObjectId(system_id),
+            )
+            if stored_system_data
+            else None
+        )
+        self.test_helpers.mock_get(self.mock_system_repository, self._stored_system)
+
+        # Patch schema
+        self._system_patch = SystemPatchSchema(**system_update_data)
+
+        # Updated system
+        # TODO: Is this really necessary - can just use return value and then don't need this helper function
+        self._expected_system_out = MagicMock()
+        self.test_helpers.mock_update(self.mock_system_repository, self._expected_system_out)
+
+        # Construct the expected input for the repository
+        merged_system_data = {**(stored_system_data or {}), **system_update_data}
+        self._expected_system_in = SystemIn(
+            **merged_system_data,
+            code=utils.generate_code(merged_system_data["name"], "system"),
+        )
+
+    def call_update(self, system_id: str):
+        """Calls the SystemService `update` method with the appropriate data from a prior call to `mock_update`"""
+
+        self._updated_system_id = system_id
+        self._updated_system = self.system_service.update(system_id, self._system_patch)
+
+    def call_update_expecting_error(self, system_id: str, error_type: type):
+        """Calls the SystemService `update` method with the appropriate data from a prior call to `mock_update`
+        while expecting an error to be raised"""
+
+        with pytest.raises(error_type) as exc:
+            self.system_service.update(system_id, self._system_patch)
+        self._update_exception = exc
+
+    def check_update_success(self):
+        """Checks that a prior call to `call_update` worked as expected"""
+
+        # Ensure obtained old system
+        self.mock_system_repository.get.assert_called_once_with(self._updated_system_id)
+
+        # Ensure new code was obtained if patching name
+        if self._system_patch.name:
+            self.wrapped_utils.generate_code.assert_called_once_with(self._system_patch.name, "system")
+        else:
+            self.wrapped_utils.generate_code.assert_not_called()
+
+        # Ensure updated with expected data
+        self.mock_system_repository.update.assert_called_once_with(self._updated_system_id, self._expected_system_in)
+
+        assert self._updated_system == self._expected_system_out
+
+    def check_update_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.mock_system_repository.update.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a system"""
+
+    def test_update_all_fields(self):
+        """Test updating all fields of a System"""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(system_id, SYSTEM_B_INFO, SYSTEM_A_INFO)
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_description_field_only(self):
+        """Test updating System's description field only (code should not need regenerating as name doesn't change)"""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(system_id, {"description": "A new description"}, SYSTEM_A_INFO)
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_with_non_existent_id(self):
+        """Test updating a System with a non-existent ID"""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(system_id, SYSTEM_B_INFO, None)
+        self.call_update_expecting_error(system_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No System found with ID: {system_id}")
+
+
+class DeleteDSL(SystemServiceDSL):
+    """Base class for delete tests"""
+
+    _delete_system_id: str
+
+    def call_delete(self, system_id: str):
+        """Calls the SystemService `delete` method"""
+
+        self._delete_system_id = system_id
+        self.system_service.delete(system_id)
+
+    def check_delete_success(self):
+        """Checks that a prior call to `call_delete` worked as expected"""
+
+        self.mock_system_repository.delete.assert_called_once_with(self._delete_system_id)
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a System"""
+
+    def test_delete(self):
+        """Test deleting a System"""
+
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()

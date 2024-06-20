@@ -526,8 +526,8 @@ class UpdateDSL(SystemRepoDSL):
         self._updated_system = self.system_repository.update(system_id, self._system_in, session=self.mock_session)
 
     def call_update_expecting_error(self, system_id: str, error_type: type):
-        """Calls the SystemRepo `update` method with the appropriate data from a prior call to `mock_update`
-        while expecting an error to be raised"""
+        """Calls the SystemRepo `update` method with the appropriate data from a prior call to `mock_update` (or
+        `set_update_data`) while expecting an error to be raised"""
 
         with pytest.raises(error_type) as exc:
             self.system_repository.update(system_id, self._system_in)
