@@ -281,7 +281,7 @@ def partial_update_property(
     catalogue_category_id: Annotated[
         str, Path(description="The ID of the catalogue category containing the property to patch")
     ],
-    property_id: Annotated[str, Path(description="The ID of the property to patch")],,
+    property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
     # pylint: disable=missing-function-docstring
