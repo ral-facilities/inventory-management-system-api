@@ -23,7 +23,7 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
-from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
+from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
 
 # pylint: disable=duplicate-code
 FULL_CATALOGUE_CATEGORY_A_INFO = {
@@ -180,7 +180,7 @@ def test_create(
     )
 
     created_item = item_service.create(
-        ItemPostRequestSchema(
+        ItemPostSchema(
             catalogue_item_id=item.catalogue_item_id,
             system_id=item.system_id,
             usage_status_id=item.usage_status_id,
@@ -221,7 +221,7 @@ def test_create_with_non_existent_catalogue_item_id(
 
     with pytest.raises(MissingRecordError) as exc:
         item_service.create(
-            ItemPostRequestSchema(
+            ItemPostSchema(
                 catalogue_item_id=catalogue_item_id,
                 usage_status_id=str(ObjectId()),
                 system_id=str(ObjectId()),
@@ -249,7 +249,7 @@ def test_create_with_non_existent_usage_status_id(
 
     with pytest.raises(MissingRecordError) as exc:
         item_service.create(
-            ItemPostRequestSchema(
+            ItemPostSchema(
                 catalogue_item_id=str(ObjectId()),
                 usage_status_id=usage_status_id,
                 system_id=str(ObjectId()),
@@ -277,7 +277,7 @@ def test_create_with_invalid_usage_status_id(
 
     with pytest.raises(MissingRecordError) as exc:
         item_service.create(
-            ItemPostRequestSchema(
+            ItemPostSchema(
                 catalogue_item_id=str(ObjectId()),
                 usage_status_id=usage_status_id,
                 system_id=str(ObjectId()),
@@ -328,7 +328,7 @@ def test_create_with_invalid_catalogue_category_id(
 
     with pytest.raises(DatabaseIntegrityError) as exc:
         item_service.create(
-            ItemPostRequestSchema(
+            ItemPostSchema(
                 catalogue_item_id=catalogue_item_id,
                 system_id=str(ObjectId()),
                 usage_status_id=str(ObjectId()),
@@ -377,7 +377,7 @@ def test_create_with_non_existent_catalogue_category_id_in_catalogue_item(
 
     with pytest.raises(DatabaseIntegrityError) as exc:
         item_service.create(
-            ItemPostRequestSchema(
+            ItemPostSchema(
                 catalogue_item_id=catalogue_item_id,
                 system_id=str(ObjectId()),
                 usage_status_id=str(ObjectId()),
@@ -460,7 +460,7 @@ def test_create_without_properties(
         "usage_status_id": item.usage_status_id,
     }
     del item_post["properties"]
-    created_item = item_service.create(ItemPostRequestSchema(**item_post))
+    created_item = item_service.create(ItemPostSchema(**item_post))
 
     catalogue_item_repository_mock.get.assert_called_once_with(item.catalogue_item_id)
     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
@@ -596,7 +596,7 @@ def test_update(
     )
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(is_defective=item.is_defective, usage_status_id=item.usage_status_id),
+        ItemPatchSchema(is_defective=item.is_defective, usage_status_id=item.usage_status_id),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -627,7 +627,7 @@ def test_update_with_non_existent_id(test_helpers, item_repository_mock, item_se
 
     item_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
-        item_service.update(item_id, ItemPatchRequestSchema(properties=[]))
+        item_service.update(item_id, ItemPatchSchema(properties=[]))
     item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No item found with ID: {item_id}"
 
@@ -667,7 +667,7 @@ def test_update_change_catalogue_item_id(test_helpers, item_repository_mock, ite
     with pytest.raises(InvalidActionError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(catalogue_item_id=catalogue_item_id),
+            ItemPatchSchema(catalogue_item_id=catalogue_item_id),
         )
     item_repository_mock.update.assert_not_called()
     assert str(exc.value) == "Cannot change the catalogue item the item belongs to"
@@ -734,7 +734,7 @@ def test_update_change_system_id(
 
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(system_id=item.system_id),
+        ItemPatchSchema(system_id=item.system_id),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -792,7 +792,7 @@ def test_update_with_non_existent_system_id(test_helpers, system_repository_mock
     with pytest.raises(MissingRecordError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(system_id=system_id),
+            ItemPatchSchema(system_id=system_id),
         )
     item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No system found with ID: {system_id}"
@@ -838,7 +838,7 @@ def test_update_with_non_existent_usage_status(
     with pytest.raises(MissingRecordError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(usage_status_id=usage_status_id),
+            ItemPatchSchema(usage_status_id=usage_status_id),
         )
     item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No usage status found with ID: {usage_status_id}"
@@ -884,7 +884,7 @@ def test_update_with_invalid_usage_status(
     with pytest.raises(MissingRecordError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(usage_status_id=usage_status_id),
+            ItemPatchSchema(usage_status_id=usage_status_id),
         )
     item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No usage status found with ID: {usage_status_id}"
@@ -971,7 +971,7 @@ def test_update_change_property_value(
 
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties]),
+        ItemPatchSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties]),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -1072,7 +1072,7 @@ def test_update_with_missing_existing_properties(
 
     updated_item = item_service.update(
         item.id,
-        ItemPatchRequestSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties[-2:]]),
+        ItemPatchSchema(properties=[{"id": prop.id, "value": prop.value} for prop in item.properties[-2:]]),
     )
 
     item_repository_mock.update.assert_called_once_with(
@@ -1156,7 +1156,7 @@ def test_update_change_value_for_string_property_invalid_type(
     with pytest.raises(InvalidPropertyTypeError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(properties=properties),
+            ItemPatchSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
     assert (
@@ -1228,7 +1228,7 @@ def test_update_change_value_for_number_property_invalid_type(
     with pytest.raises(InvalidPropertyTypeError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(properties=properties),
+            ItemPatchSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
     assert (
@@ -1298,7 +1298,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
     with pytest.raises(InvalidPropertyTypeError) as exc:
         item_service.update(
             item.id,
-            ItemPatchRequestSchema(properties=properties),
+            ItemPatchSchema(properties=properties),
         )
     item_repository_mock.update.assert_not_called()
     assert (

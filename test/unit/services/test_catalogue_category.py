@@ -23,8 +23,8 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueCategoryPatchRequestSchema,
-    CatalogueCategoryPostRequestSchema,
+    CatalogueCategoryPatchSchema,
+    CatalogueCategoryPostSchema,
 )
 
 UNIT_A = {
@@ -64,7 +64,7 @@ def test_create(
     test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
 
     created_catalogue_category = catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(
+        CatalogueCategoryPostSchema(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
             properties=catalogue_category.properties,
@@ -147,7 +147,7 @@ def test_create_with_parent_id(
     test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
 
     created_catalogue_category = catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(
+        CatalogueCategoryPostSchema(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
             parent_id=catalogue_category.parent_id,
@@ -216,7 +216,7 @@ def test_create_with_whitespace_name(
     test_helpers.mock_get(unit_repository_mock, unit)
 
     created_catalogue_category = catalogue_category_service.create(
-        CatalogueCategoryPostRequestSchema(
+        CatalogueCategoryPostSchema(
             name=catalogue_category.name,
             is_leaf=catalogue_category.is_leaf,
             properties=[prop.model_dump() for prop in catalogue_category.properties],
@@ -298,7 +298,7 @@ def test_create_with_leaf_parent_catalogue_category(
 
     with pytest.raises(LeafCatalogueCategoryError) as exc:
         catalogue_category_service.create(
-            CatalogueCategoryPostRequestSchema(
+            CatalogueCategoryPostSchema(
                 name=catalogue_category.name,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
@@ -339,7 +339,7 @@ def test_create_with_duplicate_property_names(
     with pytest.raises(DuplicateCatalogueCategoryPropertyNameError) as exc:
         # pylint: disable=duplicate-code
         catalogue_category_service.create(
-            CatalogueCategoryPostRequestSchema(
+            CatalogueCategoryPostSchema(
                 name=catalogue_category.name,
                 is_leaf=catalogue_category.is_leaf,
                 properties=[prop.model_dump() for prop in catalogue_category.properties],
@@ -411,7 +411,7 @@ def test_create_properties_with_non_existent_unit_id(
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_service.create(
-            CatalogueCategoryPostRequestSchema(
+            CatalogueCategoryPostSchema(
                 name=catalogue_category.name,
                 is_leaf=catalogue_category.is_leaf,
                 parent_id=catalogue_category.parent_id,
@@ -547,7 +547,7 @@ def test_update_when_no_child_elements(
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
     updated_catalogue_category = catalogue_category_service.update(
-        catalogue_category.id, CatalogueCategoryPatchRequestSchema(name=catalogue_category.name)
+        catalogue_category.id, CatalogueCategoryPatchSchema(name=catalogue_category.name)
     )
 
     # pylint: disable=duplicate-code
@@ -609,7 +609,7 @@ def test_update_when_has_child_elements(
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
     updated_catalogue_category = catalogue_category_service.update(
-        catalogue_category.id, CatalogueCategoryPatchRequestSchema(name=catalogue_category.name)
+        catalogue_category.id, CatalogueCategoryPatchSchema(name=catalogue_category.name)
     )
 
     # pylint: disable=duplicate-code
@@ -640,7 +640,7 @@ def test_update_with_non_existent_id(test_helpers, catalogue_category_repository
 
     catalogue_category_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_category_service.update(catalogue_category_id, CatalogueCategoryPatchRequestSchema(properties=[]))
+        catalogue_category_service.update(catalogue_category_id, CatalogueCategoryPatchSchema(properties=[]))
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
@@ -702,7 +702,7 @@ def test_update_change_parent_id(
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
     updated_catalogue_category = catalogue_category_service.update(
-        catalogue_category.id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category.parent_id)
+        catalogue_category.id, CatalogueCategoryPatchSchema(parent_id=catalogue_category.parent_id)
     )
 
     # pylint: disable=duplicate-code
@@ -779,7 +779,7 @@ def test_update_change_parent_id_leaf_parent_catalogue_category(
 
     with pytest.raises(LeafCatalogueCategoryError) as exc:
         catalogue_category_service.update(
-            catalogue_category_b_id, CatalogueCategoryPatchRequestSchema(parent_id=catalogue_category_a_id)
+            catalogue_category_b_id, CatalogueCategoryPatchSchema(parent_id=catalogue_category_a_id)
         )
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
@@ -842,7 +842,7 @@ def test_update_change_from_leaf_to_non_leaf_when_no_child_elements(
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
     updated_catalogue_category = catalogue_category_service.update(
-        catalogue_category.id, CatalogueCategoryPatchRequestSchema(is_leaf=False)
+        catalogue_category.id, CatalogueCategoryPatchSchema(is_leaf=False)
     )
 
     catalogue_category_repository_mock.update.assert_called_once_with(
@@ -917,7 +917,7 @@ def test_update_change_properties_when_no_child_elements(
 
     updated_catalogue_category = catalogue_category_service.update(
         catalogue_category.id,
-        CatalogueCategoryPatchRequestSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
+        CatalogueCategoryPatchSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
     )
 
     # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
@@ -994,7 +994,7 @@ def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
 
     with pytest.raises(ChildElementsExistError) as exc:
-        catalogue_category_service.update(catalogue_category.id, CatalogueCategoryPatchRequestSchema(is_leaf=False))
+        catalogue_category_service.update(catalogue_category.id, CatalogueCategoryPatchSchema(is_leaf=False))
     catalogue_category_repository_mock.update.assert_not_called()
     assert (
         str(exc.value)
@@ -1055,9 +1055,7 @@ def test_update_change_properties_when_has_child_elements(
     with pytest.raises(ChildElementsExistError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
-            CatalogueCategoryPatchRequestSchema(
-                properties=[prop.model_dump() for prop in catalogue_category.properties]
-            ),
+            CatalogueCategoryPatchSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
         )
     catalogue_category_repository_mock.update.assert_not_called()
     assert (
@@ -1119,9 +1117,7 @@ def test_update_properties_to_have_duplicate_names(
     with pytest.raises(DuplicateCatalogueCategoryPropertyNameError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
-            CatalogueCategoryPatchRequestSchema(
-                properties=[prop.model_dump() for prop in catalogue_category.properties]
-            ),
+            CatalogueCategoryPatchSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
         )
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == (f"Duplicate property name: {catalogue_category.properties[0].name}")
@@ -1183,9 +1179,7 @@ def test_update_change_properties_with_non_existent_unit_id(
     with pytest.raises(MissingRecordError) as exc:
         catalogue_category_service.update(
             catalogue_category.id,
-            CatalogueCategoryPatchRequestSchema(
-                properties=[prop.model_dump() for prop in catalogue_category.properties]
-            ),
+            CatalogueCategoryPatchSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
         )
     catalogue_category_repository_mock.update.assert_not_called()
     assert str(exc.value) == (f"No unit found with ID: {unit.id}")

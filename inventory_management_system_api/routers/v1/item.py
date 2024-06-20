@@ -5,17 +5,17 @@ Module for providing an API router which defines routes for managing items using
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
+    DatabaseIntegrityError,
     InvalidActionError,
     InvalidObjectIdError,
+    InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
-    DatabaseIntegrityError,
-    InvalidPropertyTypeError,
 )
-from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema, ItemSchema
+from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
 
 logger = logging.getLogger()
@@ -31,7 +31,7 @@ ItemServiceDep = Annotated[ItemService, Depends(ItemService)]
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item: ItemPostRequestSchema, item_service: ItemServiceDep) -> ItemSchema:
+def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
@@ -128,7 +128,7 @@ def get_item(
     response_description="Item updated successfully",
 )
 def partial_update_item(
-    item: ItemPatchRequestSchema,
+    item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
 ) -> ItemSchema:

@@ -21,8 +21,8 @@ from inventory_management_system_api.repositories.catalogue_item import Catalogu
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
-from inventory_management_system_api.schemas.item import ItemPatchRequestSchema, ItemPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
+from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -58,7 +58,7 @@ class ItemService:
         self._system_repository = system_repository
         self._usage_status_repository = usage_status_repository
 
-    def create(self, item: ItemPostRequestSchema) -> ItemOut:
+    def create(self, item: ItemPostSchema) -> ItemOut:
         """
         Create a new item.
 
@@ -124,7 +124,7 @@ class ItemService:
         """
         return self._item_repository.get(item_id)
 
-    def update(self, item_id: str, item: ItemPatchRequestSchema) -> ItemOut:
+    def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
         """
         Update an item by its ID.
 
@@ -183,8 +183,8 @@ class ItemService:
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
     def _merge_missing_properties(
-        self, properties: List[PropertyOut], supplied_properties: List[PropertyPostRequestSchema]
-    ) -> List[PropertyPostRequestSchema]:
+        self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]
+    ) -> List[PropertyPostSchema]:
         """
         Merges the properties defined in a catalogue item with those that should be overriden for an item in
         the order they are defined in the catalogue item.
@@ -196,7 +196,7 @@ class ItemService:
         supplied_properties_dict = {
             supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
-        merged_properties: List[PropertyPostRequestSchema] = []
+        merged_properties: List[PropertyPostSchema] = []
 
         # Use the order of properties from the catalogue item, and append either the supplied property or
         # the catalogue item one where it is not found
@@ -205,5 +205,5 @@ class ItemService:
             if supplied_property is not None:
                 merged_properties.append(supplied_property)
             else:
-                merged_properties.append(PropertyPostRequestSchema(**prop.model_dump()))
+                merged_properties.append(PropertyPostSchema(**prop.model_dump()))
         return merged_properties

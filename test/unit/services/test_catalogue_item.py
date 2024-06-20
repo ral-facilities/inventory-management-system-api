@@ -22,8 +22,8 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.schemas.catalogue_item import (
-    CatalogueItemPatchRequestSchema,
-    CatalogueItemPostRequestSchema,
+    CatalogueItemPatchSchema,
+    CatalogueItemPostSchema,
 )
 
 FULL_CATALOGUE_CATEGORY_A_INFO = {
@@ -161,7 +161,7 @@ def test_create(
     test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
 
     created_catalogue_item = catalogue_item_service.create(
-        CatalogueItemPostRequestSchema(
+        CatalogueItemPostSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
             **{
@@ -202,7 +202,7 @@ def test_create_with_non_existent_catalogue_category_id(
 
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category_id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -252,7 +252,7 @@ def test_create_with_non_existent_manufacturer_id(
     manufacturer_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category_id,
                 manufacturer_id=manufacturer_id,
                 **{
@@ -284,7 +284,7 @@ def test_create_in_non_leaf_catalogue_category(
 
     with pytest.raises(NonLeafCatalogueCategoryError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category.id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -355,7 +355,7 @@ def test_create_with_obsolete_replacement_catalogue_item_id(
     test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
 
     created_catalogue_item = catalogue_item_service.create(
-        CatalogueItemPostRequestSchema(
+        CatalogueItemPostSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
             **{
@@ -415,7 +415,7 @@ def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(
     obsolete_replacement_catalogue_item_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category.id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -463,7 +463,7 @@ def test_create_without_properties(
     test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
 
     created_catalogue_item = catalogue_item_service.create(
-        CatalogueItemPostRequestSchema(
+        CatalogueItemPostSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             manufacturer_id=catalogue_item.manufacturer_id,
             **{**CATALOGUE_ITEM_A_INFO, "properties": []},
@@ -507,7 +507,7 @@ def test_create_with_missing_mandatory_properties(
 
     with pytest.raises(MissingMandatoryProperty) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category.id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -552,7 +552,7 @@ def test_create_with_with_invalid_value_type_for_string_property(
 
     with pytest.raises(InvalidPropertyTypeError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category.id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -599,7 +599,7 @@ def test_create_with_invalid_value_type_for_number_property(
 
     with pytest.raises(InvalidPropertyTypeError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category.id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -646,7 +646,7 @@ def test_create_with_with_invalid_value_type_for_boolean_property(
 
     with pytest.raises(InvalidPropertyTypeError) as exc:
         catalogue_item_service.create(
-            CatalogueItemPostRequestSchema(
+            CatalogueItemPostSchema(
                 catalogue_category_id=catalogue_category.id,
                 manufacturer_id=str(ObjectId()),
                 **{
@@ -776,7 +776,7 @@ def test_update_when_no_child_elements(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(name=catalogue_item.name, description=catalogue_item.description),
+        CatalogueItemPatchSchema(name=catalogue_item.name, description=catalogue_item.description),
     )
 
     catalogue_item_repository_mock.update.assert_called_once_with(
@@ -838,7 +838,7 @@ def test_update_when_has_child_elements(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(name=catalogue_item.name, description=catalogue_item.description),
+        CatalogueItemPatchSchema(name=catalogue_item.name, description=catalogue_item.description),
     )
 
     catalogue_item_repository_mock.update.assert_called_once_with(
@@ -867,7 +867,7 @@ def test_update_with_non_existent_id(test_helpers, catalogue_item_repository_moc
 
     catalogue_item_id = str(ObjectId())
     with pytest.raises(MissingRecordError) as exc:
-        catalogue_item_service.update(catalogue_item_id, CatalogueItemPatchRequestSchema(properties=[]))
+        catalogue_item_service.update(catalogue_item_id, CatalogueItemPatchSchema(properties=[]))
     catalogue_item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
 
@@ -940,7 +940,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_without_sup
     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
 
     updated_catalogue_item = catalogue_item_service.update(
-        catalogue_item.id, CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_item.catalogue_category_id)
+        catalogue_item.id, CatalogueItemPatchSchema(catalogue_category_id=catalogue_item.catalogue_category_id)
     )
 
     catalogue_item_repository_mock.update.assert_called_once_with(
@@ -1027,7 +1027,7 @@ def test_update_change_catalogue_category_id_same_defined_properties_with_suppli
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(
+        CatalogueItemPatchSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
         ),
@@ -1112,7 +1112,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_withou
     with pytest.raises(InvalidActionError) as exc:
         catalogue_item_service.update(
             catalogue_item_id,
-            CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),
+            CatalogueItemPatchSchema(catalogue_category_id=catalogue_category_id),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert (
@@ -1184,7 +1184,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_order_
     with pytest.raises(InvalidActionError) as exc:
         catalogue_item_service.update(
             catalogue_item_id,
-            CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),
+            CatalogueItemPatchSchema(catalogue_category_id=catalogue_category_id),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert (
@@ -1265,7 +1265,7 @@ def test_update_change_catalogue_category_id_different_defined_properties_with_s
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(
+        CatalogueItemPatchSchema(
             catalogue_category_id=catalogue_item.catalogue_category_id,
             properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
         ),
@@ -1316,7 +1316,7 @@ def test_update_with_non_existent_catalogue_category_id(
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),
+            CatalogueItemPatchSchema(catalogue_category_id=catalogue_category_id),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
@@ -1367,7 +1367,7 @@ def test_update_with_existent_manufacturer_id_when_has_no_child_elements(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(manufacturer_id=catalogue_item.manufacturer_id),
+        CatalogueItemPatchSchema(manufacturer_id=catalogue_item.manufacturer_id),
     )
 
     catalogue_item_repository_mock.update.assert_called_once_with(
@@ -1428,7 +1428,7 @@ def test_update_with_existent_manufacturer_id_when_has_child_elements(
     with pytest.raises(ChildElementsExistError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(manufacturer_id=catalogue_item.manufacturer_id),
+            CatalogueItemPatchSchema(manufacturer_id=catalogue_item.manufacturer_id),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"Catalogue item with ID {catalogue_item.id} has child elements and cannot be updated"
@@ -1464,7 +1464,7 @@ def test_update_with_non_existent_manufacturer_id(
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(manufacturer_id=manufacturer_id),
+            CatalogueItemPatchSchema(manufacturer_id=manufacturer_id),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
@@ -1503,7 +1503,7 @@ def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
     with pytest.raises(NonLeafCatalogueCategoryError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(catalogue_category_id=catalogue_category_id),
+            CatalogueItemPatchSchema(catalogue_category_id=catalogue_category_id),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert str(exc.value) == "Cannot add catalogue item to a non-leaf catalogue category"
@@ -1570,7 +1570,7 @@ def test_update_with_obsolete_replacement_catalogue_item_id(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(
+        CatalogueItemPatchSchema(
             is_obsolete=True, obsolete_replacement_catalogue_item_id=obsolete_replacement_catalogue_item_id
         ),
     )
@@ -1619,7 +1619,7 @@ def test_update_with_non_existent_obsolete_replacement_catalogue_item_id(
     with pytest.raises(MissingRecordError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(
+            CatalogueItemPatchSchema(
                 is_obsolete=True, obsolete_replacement_catalogue_item_id=obsolete_replacement_catalogue_item_id
             ),
         )
@@ -1687,7 +1687,7 @@ def test_update_add_non_mandatory_property(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(
+        CatalogueItemPatchSchema(
             properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties]
         ),
     )
@@ -1763,7 +1763,7 @@ def test_update_remove_non_mandatory_property(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(
+        CatalogueItemPatchSchema(
             properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties[-2:]]
         ),
     )
@@ -1828,7 +1828,7 @@ def test_update_remove_mandatory_property(
     with pytest.raises(MissingMandatoryProperty) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(
+            CatalogueItemPatchSchema(
                 properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties[:2]]
             ),
         )
@@ -1894,7 +1894,7 @@ def test_update_change_property_value(
 
     updated_catalogue_item = catalogue_item_service.update(
         catalogue_item.id,
-        CatalogueItemPatchRequestSchema(
+        CatalogueItemPatchSchema(
             properties=[{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties]
         ),
     )
@@ -1958,7 +1958,7 @@ def test_update_change_value_for_string_property_invalid_type(
     with pytest.raises(InvalidPropertyTypeError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(properties=properties),
+            CatalogueItemPatchSchema(properties=properties),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert (
@@ -2011,7 +2011,7 @@ def test_update_change_value_for_number_property_invalid_type(
     with pytest.raises(InvalidPropertyTypeError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(properties=properties),
+            CatalogueItemPatchSchema(properties=properties),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert (
@@ -2064,7 +2064,7 @@ def test_update_change_value_for_boolean_property_invalid_type(
     with pytest.raises(InvalidPropertyTypeError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(properties=properties),
+            CatalogueItemPatchSchema(properties=properties),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert (
@@ -2104,7 +2104,7 @@ def test_update_properties_when_has_child_elements(
     with pytest.raises(ChildElementsExistError) as exc:
         catalogue_item_service.update(
             catalogue_item.id,
-            CatalogueItemPatchRequestSchema(properties=[]),
+            CatalogueItemPatchSchema(properties=[]),
         )
     catalogue_item_repository_mock.update.assert_not_called()
     assert str(exc.value) == f"Catalogue item with ID {catalogue_item.id} has child elements and cannot be updated"

@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -14,7 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfItemError,
 )
-from inventory_management_system_api.schemas.usage_status import UsageStatusPostRequestSchema, UsageStatusSchema
+from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema, UsageStatusSchema
 from inventory_management_system_api.services.usage_status import UsageStatusService
 
 logger = logging.getLogger()
@@ -31,7 +31,7 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
     status_code=status.HTTP_201_CREATED,
 )
 def create_usage_status(
-    usage_status: UsageStatusPostRequestSchema, usage_status_service: UsageStatusServiceDep
+    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new usage status")

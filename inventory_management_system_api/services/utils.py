@@ -12,8 +12,8 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostRequestPropertySchema
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
 logger = logging.getLogger()
 
@@ -36,7 +36,7 @@ def generate_code(name: str, entity_type: str) -> str:
 
 
 def check_duplicate_property_names(
-    properties: list[CatalogueCategoryPostRequestPropertySchema | CatalogueCategoryPropertyOut],
+    properties: list[CatalogueCategoryPostPropertySchema | CatalogueCategoryPropertyOut],
 ) -> None:
     """
     Go through a list of properties to check for any duplicate names during creation of a catalogue
@@ -56,7 +56,7 @@ def check_duplicate_property_names(
 
 def process_properties(
     defined_properties: List[CatalogueCategoryPropertyOut],
-    supplied_properties: List[PropertyPostRequestSchema],
+    supplied_properties: List[PropertyPostSchema],
 ) -> List[Dict]:
     """
     Process and validate supplied properties based on the defined properties. It checks for missing mandatory, filters
@@ -87,7 +87,7 @@ def process_properties(
 
 
 def _create_properties_dict(
-    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostRequestSchema]]
+    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]]
 ) -> Dict[str, Dict]:
     """
     Convert a list of property objects into a dictionary where the keys are the catalogue item
@@ -162,7 +162,7 @@ def _validate_property_value(defined_property: Dict, supplied_property: Dict) ->
         if defined_property_mandatory:
             raise InvalidPropertyTypeError(f"Mandatory property with ID '{supplied_property_id}' cannot be None.")
     else:
-        if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+        if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
             defined_property_type, supplied_property_value
         ):
             raise InvalidPropertyTypeError(

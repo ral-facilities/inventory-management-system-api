@@ -11,7 +11,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import AllowedValues, CatalogueCategoryPropertyOut
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostRequestSchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.services import utils
 
 DEFINED_PROPERTIES = [
@@ -41,17 +41,13 @@ DEFINED_PROPERTIES = [
 ]
 
 SUPPLIED_PROPERTIES = [
-    PropertyPostRequestSchema(
-        id=DEFINED_PROPERTIES[0].id, name="Property A", value=20, unit_id=DEFINED_PROPERTIES[0].unit_id
-    ),
-    PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-    PropertyPostRequestSchema(
+    PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20, unit_id=DEFINED_PROPERTIES[0].unit_id),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+    PropertyPostSchema(
         id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10", unit_id=DEFINED_PROPERTIES[2].unit_id
     ),
-    PropertyPostRequestSchema(
-        id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id
-    ),
-    PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
 ]
 
 EXPECTED_PROCESSED_PROPERTIES = [
@@ -144,9 +140,7 @@ class TestProcessProperties:
         """
         Test `process_properties` works correctly with supplied properties that have not been defined.
         """
-        supplied_properties = SUPPLIED_PROPERTIES + [
-            PropertyPostRequestSchema(id=str(ObjectId()), name="Property F", value=1)
-        ]
+        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostSchema(id=str(ObjectId()), name="Property F", value=1)]
         result = utils.process_properties(DEFINED_PROPERTIES, supplied_properties)
         assert result == EXPECTED_PROCESSED_PROPERTIES
 
@@ -158,20 +152,20 @@ class TestProcessProperties:
         result = utils.process_properties(
             DEFINED_PROPERTIES,
             [
-                PropertyPostRequestSchema(
+                PropertyPostSchema(
                     id=DEFINED_PROPERTIES[0].id, name="Property A", value=None, unit_id=DEFINED_PROPERTIES[0].unit_id
                 ),
-                PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-                PropertyPostRequestSchema(
+                PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+                PropertyPostSchema(
                     id=DEFINED_PROPERTIES[2].id,
                     name="Property C",
                     value="20x15x10",
                     unit_id=DEFINED_PROPERTIES[2].unit_id,
                 ),
-                PropertyPostRequestSchema(
+                PropertyPostSchema(
                     id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id
                 ),
-                PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value=None),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value=None),
             ],
         )
         assert result == [
@@ -220,11 +214,11 @@ class TestProcessProperties:
         property.
         """
         supplied_properties = [
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=True),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=True),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -240,11 +234,11 @@ class TestProcessProperties:
         property.
         """
         supplied_properties = [
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value="20"),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value="20"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -260,11 +254,11 @@ class TestProcessProperties:
         property.
         """
         supplied_properties = [
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value="False"),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value="False"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -279,11 +273,11 @@ class TestProcessProperties:
         Test `process_properties` works correctly with a None value given for a mandatory property.
         """
         supplied_properties = [
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=None),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=None),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -297,11 +291,11 @@ class TestProcessProperties:
         of allowed values
         """
         supplied_properties = [
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=10),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=10),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -317,11 +311,11 @@ class TestProcessProperties:
         list of allowed values
         """
         supplied_properties = [
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=4),
-            PropertyPostRequestSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="invalid"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=4),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="invalid"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:

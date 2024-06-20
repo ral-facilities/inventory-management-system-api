@@ -10,8 +10,8 @@ from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchRequestSchema,
-    ManufacturerPostRequestSchema,
+    ManufacturerPatchSchema,
+    ManufacturerPostSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -33,7 +33,7 @@ class ManufacturerService:
 
         self._manufacturer_repository = manufacturer_repository
 
-    def create(self, manufacturer: ManufacturerPostRequestSchema) -> ManufacturerOut:
+    def create(self, manufacturer: ManufacturerPostSchema) -> ManufacturerOut:
         """
         Create a new manufacturer.
         :param manufacturer: The manufacturer to be created.
@@ -66,7 +66,7 @@ class ManufacturerService:
         """
         return self._manufacturer_repository.list()
 
-    def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchRequestSchema) -> ManufacturerOut:
+    def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema) -> ManufacturerOut:
         """Update a manufacturer by its ID
 
 

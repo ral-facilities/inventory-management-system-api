@@ -35,7 +35,7 @@ class AllowedValuesListSchema(BaseModel):
 AllowedValuesSchema = Annotated[AllowedValuesListSchema, Field(discriminator="type")]
 
 
-class CatalogueCategoryPostRequestPropertySchema(BaseModel):
+class CatalogueCategoryPostPropertySchema(BaseModel):
     """
     Schema model for a property within a catalogue category creation request.
     """
@@ -117,7 +117,7 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
 
                 for allowed_value in allowed_values.values:
                     # Ensure the value is the correct type
-                    if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+                    if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
                         expected_property_type=property_data["type"], property_value=allowed_value
                     ):
                         raise ValueError(
@@ -150,12 +150,12 @@ class CatalogueCategoryPostRequestPropertySchema(BaseModel):
         :return: The value of the `allowed_values` field.
         """
 
-        CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(allowed_values, info.data)
+        CatalogueCategoryPostPropertySchema.check_valid_allowed_values(allowed_values, info.data)
 
         return allowed_values
 
 
-class CatalogueCategoryPropertySchema(CatalogueCategoryPostRequestPropertySchema):
+class CatalogueCategoryPropertySchema(CatalogueCategoryPostPropertySchema):
     """
     Schema model representing a property defined within a catalogue category
     """
@@ -164,7 +164,7 @@ class CatalogueCategoryPropertySchema(CatalogueCategoryPostRequestPropertySchema
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
-class CatalogueCategoryPostRequestSchema(BaseModel):
+class CatalogueCategoryPostSchema(BaseModel):
     """
     Schema model for a catalogue category creation request.
     """
@@ -175,7 +175,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
         "elements but if it is not then it can only have catalogue categories as child elements."
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
-    properties: Optional[List[CatalogueCategoryPostRequestPropertySchema]] = Field(
+    properties: Optional[List[CatalogueCategoryPostPropertySchema]] = Field(
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
@@ -184,7 +184,7 @@ class CatalogueCategoryPostRequestSchema(BaseModel):
 CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS = ["is_leaf", "properties"]
 
 
-class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
+class CatalogueCategoryPatchSchema(CatalogueCategoryPostSchema):
     """
     Schema model for a catalogue category update request.
     """
@@ -197,7 +197,7 @@ class CatalogueCategoryPatchRequestSchema(CatalogueCategoryPostRequestSchema):
     )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostRequestSchema):
+class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostSchema):
     """
     Schema model for a catalogue category response.
     """
@@ -209,7 +209,7 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostR
     )
 
 
-class CatalogueCategoryPropertyPostRequestSchema(CatalogueCategoryPostRequestPropertySchema):
+class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
     """
     Schema model for a property creation request on a catalogue category
     """
@@ -234,7 +234,7 @@ class CatalogueCategoryPropertyPostRequestSchema(CatalogueCategoryPostRequestPro
         :return: The value of the `allowed_values` field.
         """
         if default_value is not None:
-            if not CatalogueCategoryPostRequestPropertySchema.is_valid_property_type(
+            if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
                 expected_property_type=info.data["type"], property_value=default_value
             ):
                 raise ValueError("default_value must be the same type as the property itself")
@@ -251,7 +251,7 @@ class CatalogueCategoryPropertyPostRequestSchema(CatalogueCategoryPostRequestPro
         return default_value
 
 
-class CatalogueCategoryPropertyPatchRequestSchema(BaseModel):
+class CatalogueCategoryPropertyPatchSchema(BaseModel):
     """
     Schema model for a property patch request on a catalogue category
     """

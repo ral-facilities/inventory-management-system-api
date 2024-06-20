@@ -22,9 +22,9 @@ from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.catalogue_category import (
     AllowedValuesSchema,
-    CatalogueCategoryPostRequestPropertySchema,
-    CatalogueCategoryPropertyPatchRequestSchema,
-    CatalogueCategoryPropertyPostRequestSchema,
+    CatalogueCategoryPostPropertySchema,
+    CatalogueCategoryPropertyPatchSchema,
+    CatalogueCategoryPropertyPostSchema,
 )
 from inventory_management_system_api.services import utils
 
@@ -60,7 +60,7 @@ class CatalogueCategoryPropertyService:
     def create(
         self,
         catalogue_category_id: str,
-        catalogue_category_property: CatalogueCategoryPropertyPostRequestSchema,
+        catalogue_category_property: CatalogueCategoryPropertyPostSchema,
     ) -> CatalogueCategoryPropertyOut:
         """Create a new property at the catalogue category level
 
@@ -178,7 +178,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_category_property_id: str,
-        catalogue_category_property: CatalogueCategoryPropertyPatchRequestSchema,
+        catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -221,7 +221,7 @@ class CatalogueCategoryPropertyService:
                 existing_property_out.allowed_values, catalogue_category_property.allowed_values
             )
 
-        CatalogueCategoryPostRequestPropertySchema.check_valid_allowed_values(
+        CatalogueCategoryPostPropertySchema.check_valid_allowed_values(
             catalogue_category_property.allowed_values, existing_property_out.model_dump()
         )
 

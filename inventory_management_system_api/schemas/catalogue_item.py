@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class PropertyPostRequestSchema(BaseModel):
+class PropertyPostSchema(BaseModel):
     """
     Schema model for a property creation request.
     """
@@ -18,7 +18,7 @@ class PropertyPostRequestSchema(BaseModel):
     value: Any = Field(default=None, description="The value of the property")
 
 
-class PropertySchema(PropertyPostRequestSchema):
+class PropertySchema(PropertyPostSchema):
     """
     Schema model for a property response.
     """
@@ -28,7 +28,7 @@ class PropertySchema(PropertyPostRequestSchema):
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
-class CatalogueItemPostRequestSchema(BaseModel):
+class CatalogueItemPostSchema(BaseModel):
     """
     Schema model for a catalogue item creation request.
     """
@@ -54,7 +54,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
         default=None, description="The ID of the catalogue item that replaces this catalogue item if obsolete"
     )
     notes: Optional[str] = Field(default=None, description="Any notes about the catalogue item")
-    properties: Optional[List[PropertyPostRequestSchema]] = Field(
+    properties: Optional[List[PropertyPostSchema]] = Field(
         default=None,
         description="The properties specific to this catalogue item as defined in the corresponding "
         "catalogue category",
@@ -65,7 +65,7 @@ class CatalogueItemPostRequestSchema(BaseModel):
 CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS = ["manufacturer_id", "properties"]
 
 
-class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
+class CatalogueItemPatchSchema(CatalogueItemPostSchema):
     """
     Schema model for a catalogue item update request.
     """
@@ -82,7 +82,7 @@ class CatalogueItemPatchRequestSchema(CatalogueItemPostRequestSchema):
     is_obsolete: Optional[bool] = Field(default=None, description="Whether the catalogue item is obsolete or not")
 
 
-class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostRequestSchema):
+class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostSchema):
     """
     Schema model for a catalogue item response.
     """

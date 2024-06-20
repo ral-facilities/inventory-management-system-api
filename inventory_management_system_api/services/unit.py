@@ -6,7 +6,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.repositories.unit import UnitRepo
-from inventory_management_system_api.schemas.unit import UnitPostRequestSchema
+from inventory_management_system_api.schemas.unit import UnitPostSchema
 
 from inventory_management_system_api.services import utils
 
@@ -24,7 +24,7 @@ class UnitService:
         """
         self._unit_repository = unit_repository
 
-    def create(self, unit: UnitPostRequestSchema) -> UnitOut:
+    def create(self, unit: UnitPostSchema) -> UnitOut:
         """
         Create a new Unit.
 

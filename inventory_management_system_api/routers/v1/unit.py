@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -14,7 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     PartOfCatalogueCategoryError,
 )
-from inventory_management_system_api.schemas.unit import UnitPostRequestSchema, UnitSchema
+from inventory_management_system_api.schemas.unit import UnitPostSchema, UnitSchema
 from inventory_management_system_api.services.unit import UnitService
 
 logger = logging.getLogger()
@@ -30,7 +30,7 @@ UnitServiceDep = Annotated[UnitService, Depends(UnitService)]
     response_description="The created unit",
     status_code=status.HTTP_201_CREATED,
 )
-def create_unit(unit: UnitPostRequestSchema, unit_service: UnitServiceDep) -> UnitSchema:
+def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep) -> UnitSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)

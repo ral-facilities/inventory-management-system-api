@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class UsageStatusPostRequestSchema(BaseModel):
+class UsageStatusPostSchema(BaseModel):
     """
     Schema model for a Usage status post request
     """
@@ -15,7 +15,7 @@ class UsageStatusPostRequestSchema(BaseModel):
     value: str = Field(description="Value of the Usage status")
 
 
-class UsageStatusSchema(CreatedModifiedSchemaMixin, UsageStatusPostRequestSchema):
+class UsageStatusSchema(CreatedModifiedSchemaMixin, UsageStatusPostSchema):
     """
     Schema model for a Usage status get request response
     """

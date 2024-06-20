@@ -11,15 +11,15 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
-    InvalidPropertyTypeError,
     InvalidObjectIdError,
+    InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
-    CatalogueItemPatchRequestSchema,
-    CatalogueItemPostRequestSchema,
+    CatalogueItemPatchSchema,
+    CatalogueItemPostSchema,
     CatalogueItemSchema,
 )
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
@@ -78,7 +78,7 @@ def get_catalogue_item(
     status_code=status.HTTP_201_CREATED,
 )
 def create_catalogue_item(
-    catalogue_item: CatalogueItemPostRequestSchema, catalogue_item_service: CatalogueItemServiceDep
+    catalogue_item: CatalogueItemPostSchema, catalogue_item_service: CatalogueItemServiceDep
 ) -> CatalogueItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new catalogue item")
@@ -114,7 +114,7 @@ def create_catalogue_item(
     response_description="Catalogue item updated successfully",
 )
 def partial_update_catalogue_item(
-    catalogue_item: CatalogueItemPatchRequestSchema,
+    catalogue_item: CatalogueItemPatchSchema,
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to update")],
     catalogue_item_service: CatalogueItemServiceDep,
 ) -> CatalogueItemSchema:

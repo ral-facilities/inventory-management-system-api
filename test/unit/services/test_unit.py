@@ -8,7 +8,7 @@ from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
 from bson import ObjectId
 
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
-from inventory_management_system_api.schemas.unit import UnitPostRequestSchema
+from inventory_management_system_api.schemas.unit import UnitPostSchema
 
 
 def test_create(
@@ -36,7 +36,7 @@ def test_create(
     test_helpers.mock_create(unit_repository_mock, unit)
 
     created_unit = unit_service.create(
-        UnitPostRequestSchema(
+        UnitPostSchema(
             value=unit.value,
         )
     )
