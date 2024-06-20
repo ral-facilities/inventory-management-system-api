@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -21,6 +21,8 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/usage-statuses", tags=["usage statuses"])
 
+UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService)]
+
 
 @router.post(
     path="",
@@ -29,8 +31,7 @@ router = APIRouter(prefix="/v1/usage-statuses", tags=["usage statuses"])
     status_code=status.HTTP_201_CREATED,
 )
 def create_usage_status(
-    usage_status: UsageStatusPostSchema,
-    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)],
+    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new usage status")
@@ -53,7 +54,7 @@ def create_usage_status(
 )
 def get_usage_status(
     usage_status_id: Annotated[str, Path(description="The ID of the usage status to be retrieved")],
-    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)],
+    usage_status_service: UsageStatusServiceDep,
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting usage status with ID %s", usage_status_id)
@@ -70,9 +71,7 @@ def get_usage_status(
 
 
 @router.get(path="", summary="Get usage statuses", response_description="List of usage statuses")
-def get_usage_statuses(
-    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)]
-) -> list[UsageStatusSchema]:
+def get_usage_statuses(usage_status_service: UsageStatusServiceDep) -> list[UsageStatusSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Usage statuses")
 
@@ -88,7 +87,7 @@ def get_usage_statuses(
 )
 def delete_usage_status(
     usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],
-    usage_status_service: Annotated[UsageStatusService, Depends(UsageStatusService)],
+    usage_status_service: UsageStatusServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting usage status with ID: %s", usage_status_id)

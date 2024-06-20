@@ -24,6 +24,8 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/systems", tags=["systems"])
 
+SystemServiceDep = Annotated[SystemService, Depends(SystemService)]
+
 
 @router.post(
     path="",
@@ -31,9 +33,7 @@ router = APIRouter(prefix="/v1/systems", tags=["systems"])
     response_description="The created System",
     status_code=status.HTTP_201_CREATED,
 )
-def create_system(
-    system: SystemPostSchema, system_service: Annotated[SystemService, Depends(SystemService)]
-) -> SystemSchema:
+def create_system(system: SystemPostSchema, system_service: SystemServiceDep) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new System")
     logger.debug("System data: %s", system)
@@ -52,7 +52,7 @@ def create_system(
 
 @router.get(path="", summary="Get Systems", response_description="List of Systems")
 def get_systems(
-    system_service: Annotated[SystemService, Depends(SystemService)],
+    system_service: SystemServiceDep,
     parent_id: Annotated[Optional[str], Query(description="Filter Systems by parent ID")] = None,
 ) -> list[SystemSchema]:
     # pylint: disable=missing-function-docstring
@@ -71,8 +71,7 @@ def get_systems(
 
 @router.get(path="/{system_id}", summary="Get a System by ID", response_description="Single System")
 def get_system(
-    system_id: Annotated[str, Path(description="ID of the System to get")],
-    system_service: Annotated[SystemService, Depends(SystemService)],
+    system_id: Annotated[str, Path(description="ID of the System to get")], system_service: SystemServiceDep
 ) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting System with ID: %s", system_service)
@@ -90,7 +89,7 @@ def get_system(
 @router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")
 def get_system_breadcrumbs(
     system_id: Annotated[str, Path(description="The ID of the system to get the breadcrumbs for")],
-    system_service: Annotated[SystemService, Depends(SystemService)],
+    system_service: SystemServiceDep,
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
     # pylint: disable=duplicate-code
@@ -112,9 +111,7 @@ def get_system_breadcrumbs(
 
 
 @router.patch(path="/{system_id}", summary="Update a System by ID", response_description="System updated successfully")
-def partial_update_system(
-    system_id: str, system: SystemPatchSchema, system_service: Annotated[SystemService, Depends(SystemService)]
-) -> SystemSchema:
+def partial_update_system(system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating system with ID: %s", system_id)
     logger.debug("System data: %s", system)
@@ -150,8 +147,7 @@ def partial_update_system(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_system(
-    system_id: Annotated[str, Path(description="ID of the system to delete")],
-    system_service: Annotated[SystemService, Depends(SystemService)],
+    system_id: Annotated[str, Path(description="ID of the system to delete")], system_service: SystemServiceDep
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)

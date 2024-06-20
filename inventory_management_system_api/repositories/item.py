@@ -7,13 +7,11 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
-from fastapi import Depends
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
-from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
@@ -26,7 +24,7 @@ class ItemRepo:
     Repository for managing items in a MongoDB database.
     """
 
-    def __init__(self, database: Database = Depends(get_database)) -> None:
+    def __init__(self, database: DatabaseDep) -> None:
         """
         Initialize the `ItemRepo` with a MongoDB database instance.
 

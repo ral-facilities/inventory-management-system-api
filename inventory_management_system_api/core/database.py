@@ -2,6 +2,9 @@
 Module for connecting to a MongoDB database.
 """
 
+from typing import Annotated
+
+from fastapi import Depends
 from pymongo import MongoClient
 from pymongo.database import Database
 
@@ -23,3 +26,6 @@ def get_database() -> Database:
     :return: The MongoDB database object.
     """
     return mongodb_client[db_config.name.get_secret_value()]
+
+
+DatabaseDep = Annotated[Database, Depends(get_database)]

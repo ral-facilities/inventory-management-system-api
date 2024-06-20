@@ -5,15 +5,15 @@ Module for providing an API router which defines routes for managing items using
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Query, status, HTTPException, Depends, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from inventory_management_system_api.core.exceptions import (
+    DatabaseIntegrityError,
     InvalidActionError,
     InvalidObjectIdError,
+    InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
-    DatabaseIntegrityError,
-    InvalidPropertyTypeError,
 )
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
@@ -22,6 +22,8 @@ logger = logging.getLogger()
 
 router = APIRouter(prefix="/v1/items", tags=["items"])
 
+ItemServiceDep = Annotated[ItemService, Depends(ItemService)]
+
 
 @router.post(
     path="",
@@ -29,10 +31,7 @@ router = APIRouter(prefix="/v1/items", tags=["items"])
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(
-    item: ItemPostSchema,
-    item_service: Annotated[ItemService, Depends(ItemService)],
-) -> ItemSchema:
+def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
@@ -68,8 +67,7 @@ def create_item(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_item(
-    item_id: Annotated[str, Path(description="The ID of the item to delete")],
-    item_service: Annotated[ItemService, Depends(ItemService)],
+    item_id: Annotated[str, Path(description="The ID of the item to delete")], item_service: ItemServiceDep
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting item with ID: %s", item_id)
@@ -83,7 +81,7 @@ def delete_item(
 
 @router.get(path="", summary="Get items", response_description="List of items")
 def get_items(
-    item_service: Annotated[ItemService, Depends(ItemService)],
+    item_service: ItemServiceDep,
     system_id: Annotated[Optional[str], Query(description="Filter items by system ID")] = None,
     catalogue_item_id: Annotated[Optional[str], Query(description="Filter items by catalogue item ID")] = None,
 ) -> List[ItemSchema]:
@@ -109,8 +107,7 @@ def get_items(
 
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
 def get_item(
-    item_id: Annotated[str, Path(description="The ID of the item to get")],
-    item_service: Annotated[ItemService, Depends(ItemService)],
+    item_id: Annotated[str, Path(description="The ID of the item to get")], item_service: ItemServiceDep
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
@@ -133,7 +130,7 @@ def get_item(
 def partial_update_item(
     item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
-    item_service: Annotated[ItemService, Depends(ItemService)],
+    item_service: ItemServiceDep,
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating item with ID: %s", item_id)

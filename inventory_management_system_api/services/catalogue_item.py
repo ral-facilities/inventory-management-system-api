@@ -4,7 +4,7 @@ repositories.
 """
 
 import logging
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
@@ -36,9 +36,9 @@ class CatalogueItemService:
 
     def __init__(
         self,
-        catalogue_item_repository: CatalogueItemRepo = Depends(CatalogueItemRepo),
-        catalogue_category_repository: CatalogueCategoryRepo = Depends(CatalogueCategoryRepo),
-        manufacturer_repository: ManufacturerRepo = Depends(ManufacturerRepo),
+        catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
+        catalogue_category_repository: Annotated[CatalogueCategoryRepo, Depends(CatalogueCategoryRepo)],
+        manufacturer_repository: Annotated[ManufacturerRepo, Depends(ManufacturerRepo)],
     ) -> None:
         """
         Initialise the `CatalogueItemService` with a `CatalogueItemRepo`, `CatalogueCategoryRepo`

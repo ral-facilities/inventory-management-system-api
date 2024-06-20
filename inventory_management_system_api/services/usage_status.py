@@ -2,7 +2,7 @@
 Module for providing a service for managing Usage statuses using the `UsageStatusRepo` repository
 """
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastapi import Depends
 
@@ -17,7 +17,7 @@ class UsageStatusService:
     Service for managing Usage statuses
     """
 
-    def __init__(self, usage_status_repository: UsageStatusRepo = Depends(UsageStatusRepo)) -> None:
+    def __init__(self, usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)]) -> None:
         """
         Initialise the `UsageStatusService` with a `UsageStatusRepo` repository
 

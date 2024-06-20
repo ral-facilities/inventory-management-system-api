@@ -5,14 +5,11 @@ Module for providing a repository for managing Usage statuses in a MongoDB datab
 import logging
 from typing import Optional
 
-from fastapi import Depends
-
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
-from pymongo.database import Database
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
@@ -25,7 +22,7 @@ class UsageStatusRepo:
     Repository for managing Usage statuses in a MongoDB database
     """
 
-    def __init__(self, database: Database = Depends(get_database)) -> None:
+    def __init__(self, database: DatabaseDep) -> None:
         """
         Initialise the `UsageStatusRepo` with a MongoDB database instance
 
