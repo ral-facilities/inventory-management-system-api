@@ -4,20 +4,17 @@ End-to-End tests for the System router
 
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import (
-    CREATED_MODIFIED_VALUES_EXPECTED,
-    SYSTEM_POST_A,
-    SYSTEM_POST_A_EXPECTED,
-    SYSTEM_POST_B,
-    SYSTEM_POST_B_EXPECTED,
-    SYSTEM_POST_C,
-    USAGE_STATUS_POST_B,
-)
+from test.e2e.mock_schemas import USAGE_STATUS_POST_B
 from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
 from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
-from typing import Any, Optional
-from unittest.mock import ANY
+from test.mock_data import (
+    SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
+    SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
+    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+)
+from typing import Optional
 
 import pytest
 from bson import ObjectId
@@ -25,40 +22,6 @@ from fastapi import Response
 from fastapi.testclient import TestClient
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
-
-# TODO: Unify with others - could perhaps even reuse here too
-SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY = {
-    "name": "System Test Required Values Only",
-    "importance": "low",
-}
-
-SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY = {
-    **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "parent_id": None,
-    "description": None,
-    "location": None,
-    "owner": None,
-    "code": "system-test-required-values-only",
-}
-
-SYSTEM_POST_DATA_ALL_VALUES = {
-    **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    "name": "System Test All Values",
-    "parent_id": None,
-    "description": "Test description",
-    "location": "Test location",
-    "owner": "Test owner",
-}
-
-SYSTEM_GET_DATA_ALL_VALUES = {
-    **SYSTEM_POST_DATA_ALL_VALUES,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "parent_id": None,
-    "code": "system-test-all-values",
-}
 
 
 class CreateDSL:
@@ -93,8 +56,8 @@ class CreateDSL:
         assert self._post_response.json()["detail"] == detail
 
     def check_post_system_failed_with_validation_message(self, status_code: int, message: str):
-        """Checks that a prior call to 'post_system' gave a failed response with the expected code and pydantic validation
-        error message"""
+        """Checks that a prior call to 'post_system' gave a failed response with the expected code and pydantic
+        validation error message"""
 
         assert self._post_response.status_code == status_code
         assert self._post_response.json()["detail"][0]["msg"] == message
@@ -112,35 +75,35 @@ class TestCreate(CreateDSL):
     def test_create_with_all_values_provided(self):
         """Test creating a System with all values provided"""
 
-        self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
-        self.check_post_system_success(SYSTEM_GET_DATA_ALL_VALUES)
+        self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.check_post_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_create_with_valid_parent_id(self):
         """Test creating a System with a valid parent id"""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "parent_id": parent_id})
-        self.check_post_system_success({**SYSTEM_GET_DATA_ALL_VALUES, "parent_id": parent_id})
+        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.check_post_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_create_with_non_existent_parent_id(self):
         """Test creating a System with a non-existent parent id"""
 
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "parent_id": str(ObjectId())})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": str(ObjectId())})
         self.check_post_system_failed_with_message(422, "The specified parent System does not exist")
 
     def test_create_with_invalid_parent_id(self):
         """Test creating a System with an invalid parent id"""
 
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "parent_id": "invalid-id"})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": "invalid-id"})
         self.check_post_system_failed_with_message(422, "The specified parent System does not exist")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a System with the same name as another within the same parent"""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         # 2nd post should be the duplicate
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "parent_id": parent_id})
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
         self.check_post_system_failed_with_message(
             409, "A System with the same name already exists within the same parent System"
         )
@@ -148,7 +111,7 @@ class TestCreate(CreateDSL):
     def test_create_with_invalid_importance(self):
         """Test creating a System with an invalid importance"""
 
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "importance": "invalid-importance"})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "importance": "invalid-importance"})
         self.check_post_system_failed_with_validation_message(422, "Input should be 'low', 'medium' or 'high'")
 
 
@@ -181,9 +144,9 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting a System"""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.get_system(system_id)
-        self.check_get_success(SYSTEM_GET_DATA_ALL_VALUES)
+        self.check_get_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_get_with_non_existent_id(self):
         """Test getting a System with a non-existent id"""
@@ -209,7 +172,9 @@ class GetBreadcrumbsDSL(CreateDSL):
 
         parent_id = None
         for i in range(0, number):
-            system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "name": f"System {i}", "parent_id": parent_id})
+            system_id = self.post_system(
+                {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": f"System {i}", "parent_id": parent_id}
+            )
             self._posted_systems_get_data.append(self._post_response.json())
             parent_id = system_id
 
@@ -226,7 +191,8 @@ class GetBreadcrumbsDSL(CreateDSL):
         self.get_system_breadcrumbs(self._posted_systems_get_data[-1]["id"])
 
     def check_get_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
-        """Checks that a prior call to 'get_system_breadcrumbs' gave a successful response with the expected data returned"""
+        """Checks that a prior call to 'get_system_breadcrumbs' gave a successful response with the expected data
+        returned"""
 
         assert self._get_response.status_code == 200
         assert self._get_response.json() == {
@@ -312,10 +278,10 @@ class ListDSL(CreateDSL):
     def post_test_system_with_child(self) -> list[dict]:
         """Posts a System with a single child and returns their expected responses when returned by the list endpoint"""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
 
-        return [SYSTEM_GET_DATA_ALL_VALUES, {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id}]
+        return [SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id}]
 
     def check_list_success(self, expected_systems_get_data: list[dict]):
         """Checks that a prior call to 'list' gave a successful response with the expected data returned"""
@@ -409,17 +375,17 @@ class TestUpdate(UpdateDSL):
         """Test updating every field of a System"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES)
-        self.check_patch_system_response_success(SYSTEM_GET_DATA_ALL_VALUES)
+        self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.check_patch_system_response_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_partial_update_parent_id(self):
         """Test updating the parent_id of a System"""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
         self.patch_system(system_id, {"parent_id": parent_id})
-        self.check_patch_system_response_success({**SYSTEM_GET_DATA_ALL_VALUES, "parent_id": parent_id})
+        self.check_patch_system_response_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
         """Test updating the parent_id of a System so that its name conflicts with one already in that other
@@ -429,7 +395,7 @@ class TestUpdate(UpdateDSL):
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Conflicting Name", "parent_id": parent_id})
 
-        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES, "name": "Conflicting Name"})
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": "Conflicting Name"})
 
         self.patch_system(system_id, {"parent_id": parent_id})
         self.check_patch_system_failed_with_message(
@@ -446,14 +412,14 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_parent_id_to_non_existent(self):
         """Test updating the parent_id of a System to a non-existent System"""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": str(ObjectId())})
         self.check_patch_system_failed_with_message(422, "The specified parent System does not exist")
 
     def test_partial_update_parent_id_to_invalid(self):
         """Test updating the parent_id of a System to an invalid id"""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": "invalid-id"})
         self.check_patch_system_failed_with_message(422, "The specified parent System does not exist")
 
@@ -461,14 +427,15 @@ class TestUpdate(UpdateDSL):
         """Test updating the name of a System to conflict with a pre-existing one"""
 
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"name": SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY["name"]})
         self.check_patch_system_failed_with_message(
             409, "A System with the same name already exists within the parent System"
         )
 
     def test_partial_update_name_capitalisation(self):
-        """Test updating the capitalisation of the name of a System (to ensure it the check doesn't confuse with duplicates)"""
+        """Test updating the capitalisation of the name of a System (to ensure it the check doesn't confuse with
+        duplicates)"""
 
         system_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Test system"})
         self.patch_system(system_id, {"name": "Test System"})
@@ -505,7 +472,8 @@ class DeleteDSL(CreateDSL):
         assert self._delete_response.status_code == 204
 
     def check_delete_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'delete_system' gave a failed response with the expected code and error message"""
+        """Checks that a prior call to 'delete_system' gave a failed response with the expected code and error
+        message"""
 
         assert self._delete_response.status_code == status_code
         assert self._delete_response.json()["detail"] == detail

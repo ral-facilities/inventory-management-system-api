@@ -2,7 +2,7 @@
 Unit tests for the `SystemService` service
 """
 
-from test.unit.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
+from test.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
