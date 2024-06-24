@@ -29,16 +29,21 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: Response
+    _post_response: list[Response]
 
     @pytest.fixture(autouse=True)
     def setup(self, test_client):
         """Setup fixtures"""
 
         self.test_client = test_client
+        self._post_response = []
 
     def post_system(self, system_post_data: dict) -> Optional[str]:
-        """Posts a System with the given data, returns the id of the created system if successful"""
+        """Posts a System with the given data, returns the id of the created system if successful
+
+        :param system_post_data: Dictionary containing the system data that should be posted
+        :return: ID of the created system (or None if not successful)
+        """
         self._post_response = self.test_client.post("/v1/systems", json=system_post_data)
 
         return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
@@ -125,13 +130,13 @@ class GetDSL(CreateDSL):
 
         self._get_response = self.test_client.get(f"/v1/systems/{system_id}")
 
-    def check_get_success(self, expected_system_get_data: dict):
+    def check_get_system_success(self, expected_system_get_data: dict):
         """Checks that a prior call to 'get_system' gave a successful response with the expected data returned"""
 
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_system_get_data
 
-    def check_get_failed_with_message(self, status_code: int, detail: str):
+    def check_get_system_failed_with_message(self, status_code: int, detail: str):
         """Checks that a prior call to 'get_system' gave a failed response with the expected code and error message"""
 
         assert self._get_response.status_code == status_code
@@ -146,25 +151,26 @@ class TestGet(GetDSL):
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.get_system(system_id)
-        self.check_get_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
+        self.check_get_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_get_with_non_existent_id(self):
         """Test getting a System with a non-existent id"""
 
         self.get_system(str(ObjectId()))
-        self.check_get_failed_with_message(404, "System not found")
+        self.check_get_system_failed_with_message(404, "System not found")
 
     def test_get_with_invalid_id(self):
         """Test getting a System with an invalid id"""
 
         self.get_system("invalid-id")
-        self.check_get_failed_with_message(404, "System not found")
+        self.check_get_system_failed_with_message(404, "System not found")
 
 
-class GetBreadcrumbsDSL(CreateDSL):
+class GetBreadcrumbsDSL(GetDSL):
     """Base class for breadcrumbs tests"""
 
     _get_response: Response
+
     _posted_systems_get_data: list[dict]
 
     @pytest.fixture(autouse=True)
@@ -173,8 +179,12 @@ class GetBreadcrumbsDSL(CreateDSL):
 
         self._posted_systems_get_data = []
 
-    def post_nested_systems(self, number: int) -> list[str]:
-        """Posts the given number of nested systems where each successive one has the previous as its parent"""
+    def post_nested_systems(self, number: int) -> list[Optional[str]]:
+        """Posts the given number of nested systems where each successive one has the previous as its parent
+
+        :param number: Number of Systems to create
+        :return: List of ids of the created Systems
+        """
 
         parent_id = None
         for i in range(0, number):
@@ -194,18 +204,18 @@ class GetBreadcrumbsDSL(CreateDSL):
     def get_last_system_breadcrumbs(self):
         """Gets the last System posted's breadcrumbs"""
 
-        self.get_system_breadcrumbs(self._posted_systems_get_data[-1]["id"])
+        self.get_system_breadcrumbs(self._post_response.json()["id"])
 
     def check_get_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
         """Checks that a prior call to 'get_system_breadcrumbs' gave a successful response with the expected data
-        returned"""
+        returned
+        """
 
         assert self._get_response.status_code == 200
         assert self._get_response.json() == {
             "trail": [
                 [system["id"], system["name"]]
                 # When the expected trail length is < the number of systems posted, only use the last
-                # few systems inside the trail
                 for system in self._posted_systems_get_data[
                     (len(self._posted_systems_get_data) - expected_trail_length) :
                 ]
@@ -271,12 +281,10 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         self.check_get_breadcrumbs_failed_with_message(404, "System not found")
 
 
-class ListDSL(CreateDSL):
+class ListDSL(GetBreadcrumbsDSL):
     """Base class for list tests"""
 
-    _get_response: Response
-
-    def list_systems(self, filters: dict):
+    def get_systems(self, filters: dict):
         """Gets a list Systems with the given filters"""
 
         self._get_response = self.test_client.get("/v1/systems", params=filters)
@@ -289,13 +297,13 @@ class ListDSL(CreateDSL):
 
         return [SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id}]
 
-    def check_list_success(self, expected_systems_get_data: list[dict]):
+    def check_get_systems_success(self, expected_systems_get_data: list[dict]):
         """Checks that a prior call to 'list' gave a successful response with the expected data returned"""
 
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_systems_get_data
 
-    def check_list_failed_with_message(self, status_code: int, detail: str):
+    def check_get_systems_failed_with_message(self, status_code: int, detail: str):
         """Checks that a prior call to 'list' gave a failed response with the expected code and error message"""
 
         assert self._get_response.status_code == status_code
@@ -312,8 +320,8 @@ class TestList(ListDSL):
         """
 
         systems = self.post_test_system_with_child()
-        self.list_systems(filters={})
-        self.check_list_success(systems)
+        self.get_systems(filters={})
+        self.check_get_systems_success(systems)
 
     def test_list_with_parent_id_filter(self):
         """Test getting a list of all Systems with a parent_id filter provided
@@ -323,8 +331,8 @@ class TestList(ListDSL):
         """
 
         systems = self.post_test_system_with_child()
-        self.list_systems(filters={"parent_id": systems[1]["parent_id"]})
-        self.check_list_success([systems[1]])
+        self.get_systems(filters={"parent_id": systems[1]["parent_id"]})
+        self.check_get_systems_success([systems[1]])
 
     def test_list_with_null_parent_id_filter(self):
         """Test getting a list of all Systems with a parent_id filter of "null" provided
@@ -334,23 +342,23 @@ class TestList(ListDSL):
         """
 
         systems = self.post_test_system_with_child()
-        self.list_systems(filters={"parent_id": "null"})
-        self.check_list_success([systems[0]])
+        self.get_systems(filters={"parent_id": "null"})
+        self.check_get_systems_success([systems[0]])
 
     def test_list_with_parent_id_filter_with_no_matching_results(self):
         """Test getting a list of all Systems with a parent_id filter that returns no results"""
 
-        self.list_systems(filters={"parent_id": str(ObjectId())})
-        self.check_list_success([])
+        self.get_systems(filters={"parent_id": str(ObjectId())})
+        self.check_get_systems_success([])
 
     def test_list_with_invalid_parent_id_filter(self):
         """Test getting a list of all Systems with an invalid parent_id filter returns no results"""
 
-        self.list_systems(filters={"parent_id": "invalid-id"})
-        self.check_list_success([])
+        self.get_systems(filters={"parent_id": "invalid-id"})
+        self.check_get_systems_success([])
 
 
-class UpdateDSL(GetBreadcrumbsDSL):
+class UpdateDSL(ListDSL):
     """Base class for update tests"""
 
     _patch_response: Response
@@ -461,7 +469,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_failed_with_message(404, "System not found")
 
 
-class DeleteDSL(GetDSL):
+class DeleteDSL(UpdateDSL):
     """Base class for delete tests"""
 
     _delete_response: Response
@@ -495,14 +503,13 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
         self.get_system(system_id)
-        self.check_get_failed_with_message(404, "System not found")
+        self.check_get_system_failed_with_message(404, "System not found")
 
     def test_delete_with_child_system(self):
         """Test deleting a System with a child system"""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": system_id})
-        self.delete_system(system_id)
+        system_ids = self.post_nested_systems(2)
+        self.delete_system(system_ids[0])
         self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
