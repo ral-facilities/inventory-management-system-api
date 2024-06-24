@@ -165,7 +165,13 @@ class GetBreadcrumbsDSL(CreateDSL):
     """Base class for breadcrumbs tests"""
 
     _get_response: Response
-    _posted_systems_get_data = []
+    _posted_systems_get_data: list[dict]
+
+    @pytest.fixture(autouse=True)
+    def setup_breadcrumbs_dsl(self):
+        """Setup fixtures"""
+
+        self._posted_systems_get_data = []
 
     def post_nested_systems(self, number: int) -> list[str]:
         """Posts the given number of nested systems where each successive one has the previous as its parent"""
@@ -344,7 +350,6 @@ class TestList(ListDSL):
         self.check_list_success([])
 
 
-# TODO: Put nested system stuff in create rather than get then change this to that
 class UpdateDSL(GetBreadcrumbsDSL):
     """Base class for update tests"""
 
@@ -456,7 +461,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_failed_with_message(404, "System not found")
 
 
-class DeleteDSL(CreateDSL):
+class DeleteDSL(GetDSL):
     """Base class for delete tests"""
 
     _delete_response: Response
@@ -489,6 +494,9 @@ class TestDelete(DeleteDSL):
         self.delete_system(system_id)
         self.check_delete_success()
 
+        self.get_system(system_id)
+        self.check_get_failed_with_message(404, "System not found")
+
     def test_delete_with_child_system(self):
         """Test deleting a System with a child system"""
 
@@ -500,7 +508,7 @@ class TestDelete(DeleteDSL):
     def test_delete_with_child_item(self):
         """Test deleting a System with a child system"""
 
-        # TODO: Cleanup in future
+        # THIS SHOULD BE CLEANED UP IN FUTURE
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": system_id})

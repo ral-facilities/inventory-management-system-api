@@ -118,21 +118,6 @@ SYSTEM_POST_B_EXPECTED = {
     "id": ANY,
     "code": "system-b",
 }
-
-SYSTEM_POST_C = {
-    "name": "System C",
-    "description": "System description",
-    "location": "Test location",
-    "owner": "Me",
-    "importance": "low",
-}
-SYSTEM_POST_C_EXPECTED = {
-    **SYSTEM_POST_C,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "parent_id": None,
-    "code": "system-c",
-}
 # pylint: enable=duplicate-code
 
 USAGE_STATUS_POST_A = {"value": "New"}
