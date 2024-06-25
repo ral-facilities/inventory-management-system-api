@@ -84,7 +84,7 @@ class CreateDSL(SystemRepoDSL):
         """
         inserted_system_id = CustomObjectId(str(ObjectId()))
 
-        # Pass through system_in first as need creation and modified times
+        # Pass through SystemIn first as need creation and modified times
         self._system_in = SystemIn(**system_in_data)
 
         self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=inserted_system_id)
@@ -221,8 +221,8 @@ class GetDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the 'get' repo method
 
         :param system_id: ID of the system that will be obtained
-        :param system_in_data: Dictionary containing the system data as would be required for a SystemIn database
-                               model (i.e. No id or created and modified times required)
+        :param system_in_data: Either None or a dictionary containing the system data as would be required for a
+                               SystemIn database model (i.e. No id or created and modified times required)
         """
 
         self._expected_system_out = (
@@ -250,7 +250,7 @@ class GetDSL(SystemRepoDSL):
         self._get_exception = exc
 
     def check_get_success(self):
-        """Checks that a prior call to `get_system` worked as expected"""
+        """Checks that a prior call to `call_get` worked as expected"""
 
         self.systems_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._obtained_system_id)}, session=self.mock_session
@@ -258,7 +258,7 @@ class GetDSL(SystemRepoDSL):
         assert self._obtained_system == self._expected_system_out
 
     def check_get_failed_with_exception(self, message: str):
-        """Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        """Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message"""
 
         self.systems_collection.find_one.assert_not_called()
@@ -344,7 +344,7 @@ class GetBreadcrumbsDSL(SystemRepoDSL):
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
     """Tests for getting the breadcrumbs of a System"""
 
-    def test_get_system_breadcrumbs(self):
+    def test_get_breadcrumbs(self):
         """Test getting a System's breadcrumbs"""
 
         self.mock_breadcrumbs(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH)
@@ -363,7 +363,8 @@ class ListDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the 'list' repo method
 
         :param systems_in_data: List of dictionaries containing the system data as would be required for a
-                                SystemIn database model (i.e. no id or created and modified times required)"""
+                                SystemIn database model (i.e. no id or created and modified times required)
+        """
 
         self._expected_systems_out = [
             SystemOut(**SystemIn(**system_in_data).model_dump(), id=ObjectId()) for system_in_data in systems_in_data
@@ -428,18 +429,19 @@ class UpdateDSL(SystemRepoDSL):
 
     # pylint:disable=too-many-instance-attributes
     _system_in: SystemIn
-    _stored_system: Optional[SystemOut]
+    _stored_system_out: Optional[SystemOut]
     _expected_system_out: SystemOut
     _updated_system_id: str
     _updated_system: SystemOut
     _moving_system: bool
     _update_exception: pytest.ExceptionInfo
 
-    def set_update_data(self, new_system_data: dict):
-        """Assigns the update data to use during a call to `update_system`
+    def set_update_data(self, new_system_in_data: dict):
+        """Assigns the update data to use during a call to `call_update`
 
-        :param new_system_data: New system data to supply to the SystemRepo `update` method"""
-        self._system_in = SystemIn(**new_system_data)
+        :param new_system_data: New system data as would be required for a SystemIn database model to supply to the
+                                SystemRepo `update` method"""
+        self._system_in = SystemIn(**new_system_in_data)
 
     # pylint:disable=too-many-arguments
     def mock_update(
@@ -454,14 +456,14 @@ class UpdateDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the 'update' repo method
 
         :param system_id: ID of the system that will be obtained
-        :param new_system_in_data: Dictionary containing the new system information as would be required for a SystemIn
-                               database model (i.e. no id or created and modified times required)
-        :param stored_system_in_data: Dictionary containing the system information for the existing stored System
+        :param new_system_in_data: Dictionary containing the new system data as would be required for a SystemIn
+                                   database model (i.e. no id or created and modified times required)
+        :param stored_system_in_data: Dictionary containing the system data for the existing stored system
                                       as would be required for a SystemIn database model
         :param new_parent_system_in_data: Either None or a dictionary containing the new parent system data as would be
-                                       required for a SystemIn database model
+                                          required for a SystemIn database model
         :param duplicate_system_in_data: Either None or a dictionary containing the data for a duplicate system as would
-                                      be required for a SystemIn database model
+                                         be required for a SystemIn database model
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
                                   moving the system one of its own children
         """
@@ -481,20 +483,20 @@ class UpdateDSL(SystemRepoDSL):
             )
 
         # Stored system
-        self._stored_system = (
+        self._stored_system_out = (
             SystemOut(**SystemIn(**stored_system_in_data).model_dump(), id=CustomObjectId(system_id))
             if stored_system_in_data
             else None
         )
         self.test_helpers.mock_find_one(
-            self.systems_collection, self._stored_system.model_dump() if self._stored_system else None
+            self.systems_collection, self._stored_system_out.model_dump() if self._stored_system_out else None
         )
 
         # Duplicate check
         self._moving_system = stored_system_in_data is not None and (
             new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
         )
-        if (self._stored_system and (self._system_in.name != self._stored_system.name)) or self._moving_system:
+        if (self._stored_system_out and (self._system_in.name != self._stored_system_out.name)) or self._moving_system:
             self.test_helpers.mock_find_one(
                 self.systems_collection,
                 (
@@ -552,7 +554,7 @@ class UpdateDSL(SystemRepoDSL):
         )
 
         # Duplicate check (which only runs if moving or changing the name)
-        if (self._stored_system and (self._system_in.name != self._stored_system.name)) or self._moving_system:
+        if (self._stored_system_out and (self._system_in.name != self._stored_system_out.name)) or self._moving_system:
             expected_find_one_calls.append(
                 call(
                     {
@@ -610,15 +612,6 @@ class TestUpdate(UpdateDSL):
         self.call_update(system_id)
         self.check_update_success()
 
-    def test_update_with_invalid_id(self):
-        """Test updating a System with an invalid id"""
-
-        system_id = "invalid-id"
-
-        self.set_update_data(SYSTEM_IN_DATA_NO_PARENT_A)
-        self.call_update_expecting_error(system_id, InvalidObjectIdError)
-        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
-
     def test_update_no_changes(self):
         """Test updating a System to have exactly the same contents"""
 
@@ -646,6 +639,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_parent_id_to_child_of_self(self):
         """Test updating a System's parent_id to a child of it self (should prevent this)"""
+
         system_id = str(ObjectId())
 
         self.mock_update(
@@ -705,6 +699,15 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate System found within the parent System")
+
+    def test_update_with_invalid_id(self):
+        """Test updating a System with an invalid id"""
+
+        system_id = "invalid-id"
+
+        self.set_update_data(SYSTEM_IN_DATA_NO_PARENT_A)
+        self.call_update_expecting_error(system_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
 class DeleteDSL(SystemRepoDSL):
@@ -779,7 +782,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
     def test_delete_with_child_system(self):
-        """Test deleting a System when it has a child system"""
+        """Test deleting a System when it has a child System"""
 
         system_id = str(ObjectId())
 
@@ -788,16 +791,18 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
-        """Test deleting a System when it has a child item"""
+        """Test deleting a System when it has a child Item"""
 
         system_id = str(ObjectId())
 
+        # pylint:disable=fixme
+        # TODO: Replace ITEM_INFO once item tests have been refactored
         self.mock_delete(deleted_count=1, child_item_data=ITEM_INFO)
         self.call_delete_expecting_error(system_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
     def test_delete_non_existent_id(self):
-        """Test deleting a System"""
+        """Test deleting a System with a non-existent id"""
 
         system_id = str(ObjectId())
 
@@ -808,7 +813,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_invalid_id(self):
-        """Test deleting a System"""
+        """Test deleting a System with an invalid id"""
 
         system_id = "invalid-id"
 

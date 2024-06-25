@@ -3,7 +3,6 @@ Unit tests for the `UnitRepo` repository
 """
 
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from test.unit.repositories.test_catalogue_category import CATALOGUE_CATEGORY_INFO
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -17,6 +16,14 @@ from inventory_management_system_api.core.exceptions import (
     PartOfCatalogueCategoryError,
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
+
+CATALOGUE_CATEGORY_INFO = {
+    "name": "Category A",
+    "code": "category-a",
+    "is_leaf": False,
+    "parent_id": None,
+    "properties": [],
+}
 
 
 def test_create(test_helpers, database_mock, unit_repository):
