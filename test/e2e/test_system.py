@@ -18,8 +18,8 @@ from typing import Optional
 
 import pytest
 from bson import ObjectId
-from fastapi import Response
 from fastapi.testclient import TestClient
+from httpx import Response
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
@@ -29,14 +29,13 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: list[Response]
+    _post_response: Response
 
     @pytest.fixture(autouse=True)
     def setup(self, test_client):
         """Setup fixtures"""
 
         self.test_client = test_client
-        self._post_response = []
 
     def post_system(self, system_post_data: dict) -> Optional[str]:
         """Posts a System with the given data, returns the id of the created system if successful

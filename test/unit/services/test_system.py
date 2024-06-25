@@ -184,7 +184,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 class ListDSL(SystemServiceDSL):
     """Base class for list tests"""
 
-    _parent_id_filter: str
+    _parent_id_filter: Optional[str]
     _expected_systems: MagicMock
     _obtained_systems: MagicMock
 
@@ -275,7 +275,7 @@ class UpdateDSL(SystemServiceDSL):
         self._updated_system_id = system_id
         self._updated_system = self.system_service.update(system_id, self._system_patch)
 
-    def call_update_expecting_error(self, system_id: str, error_type: type):
+    def call_update_expecting_error(self, system_id: str, error_type: type[BaseException]):
         """Calls the SystemService `update` method with the appropriate data from a prior call to `mock_update`
         while expecting an error to be raised"""
 

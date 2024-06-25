@@ -88,7 +88,7 @@ class CreateDSL(SystemRepoDSL):
 
         # When a parent_id is given, need to mock the find_one for it too
         if system_in_data["parent_id"]:
-            # If parent_system_data is given as none, then it is intentionally supposed to be, otherwise
+            # If parent_system_data is given as None, then it is intentionally supposed to be, otherwise
             # pass through SystemIn first to ensure it has creation and modified times
             self.test_helpers.mock_find_one(
                 self.systems_collection,
@@ -116,7 +116,7 @@ class CreateDSL(SystemRepoDSL):
 
         self._created_system = self.system_repository.create(self._system_in, session=self.mock_session)
 
-    def call_create_expecting_error(self, error_type: type):
+    def call_create_expecting_error(self, error_type: type[BaseException]):
         """Calls the SystemRepo `create` method with the appropriate data from a prior call to `mock_create`
         while expecting an error to be raised"""
 
@@ -210,7 +210,7 @@ class GetDSL(SystemRepoDSL):
     """Base class for get tests"""
 
     _obtained_system_id: str
-    _expected_system_out: SystemOut
+    _expected_system_out: Optional[SystemOut]
     _obtained_system: Optional[SystemOut]
     _get_exception: pytest.ExceptionInfo
 
@@ -238,7 +238,7 @@ class GetDSL(SystemRepoDSL):
         self._obtained_system_id = system_id
         self._obtained_system = self.system_repository.get(system_id, session=self.mock_session)
 
-    def call_get_expecting_error(self, system_id: str, error_type: type):
+    def call_get_expecting_error(self, system_id: str, error_type: type[BaseException]):
         """Calls the SystemRepo `get` method with the appropriate data from a prior call to `mock_get`
         while expecting an error to be raised"""
 
@@ -296,17 +296,17 @@ class TestGet(GetDSL):
 class GetBreadcrumbsDSL(SystemRepoDSL):
     """Base class for breadcrumbs tests"""
 
-    _breadcrumbs_query_result: dict
+    _breadcrumbs_query_result: list[dict]
     _mock_aggregation_pipeline = MagicMock()
     _expected_breadcrumbs: MagicMock
     _obtained_system_id: str
     _obtained_breadcrumbs: MagicMock
 
-    def mock_breadcrumbs(self, breadcrumbs_query_result: dict):
+    def mock_breadcrumbs(self, breadcrumbs_query_result: list[dict]):
         """Mocks database methods appropriately to test the 'get_breadcrumbs' repo method
 
-        :param breadcrumbs_query_result: Dictionary containing the breadcrumbs query result from the aggregation
-                                         pipeline
+        :param breadcrumbs_query_result: List of dictionaries containing the breadcrumbs query result from the
+                                         aggregation pipeline
         """
         self._breadcrumbs_query_result = breadcrumbs_query_result
         self._mock_aggregation_pipeline = MagicMock()
@@ -353,14 +353,14 @@ class ListDSL(SystemRepoDSL):
     """Base class for list tests"""
 
     _expected_systems_out: list[SystemOut]
-    _parent_id_filter: str
+    _parent_id_filter: Optional[str]
     _obtained_systems_out: list[SystemOut]
 
     def mock_list(self, systems_in_data: list[dict]):
         """Mocks database methods appropriately to test the 'list' repo method
 
-        :param systems_data: List of dictionaries containing the system data as would be required for a
-                             SystemIn database model (i.e. no id or created and modified times required)"""
+        :param systems_in_data: List of dictionaries containing the system data as would be required for a
+                                SystemIn database model (i.e. no id or created and modified times required)"""
 
         self._expected_systems_out = [
             SystemOut(**SystemIn(**system_in_data).model_dump(), id=ObjectId()) for system_in_data in systems_in_data
@@ -425,7 +425,7 @@ class UpdateDSL(SystemRepoDSL):
 
     # pylint:disable=too-many-instance-attributes
     _system_in: SystemIn
-    _stored_system: SystemOut
+    _stored_system: Optional[SystemOut]
     _expected_system_out: SystemOut
     _updated_system_id: str
     _updated_system: SystemOut
@@ -488,10 +488,10 @@ class UpdateDSL(SystemRepoDSL):
         )
 
         # Duplicate check
-        self._moving_system = stored_system_in_data and (
+        self._moving_system = stored_system_in_data is not None and (
             new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
         )
-        if (stored_system_in_data and (self._system_in.name != self._stored_system.name)) or self._moving_system:
+        if (self._stored_system and (self._system_in.name != self._stored_system.name)) or self._moving_system:
             self.test_helpers.mock_find_one(
                 self.systems_collection,
                 (
@@ -522,7 +522,7 @@ class UpdateDSL(SystemRepoDSL):
         self._updated_system_id = system_id
         self._updated_system = self.system_repository.update(system_id, self._system_in, session=self.mock_session)
 
-    def call_update_expecting_error(self, system_id: str, error_type: type):
+    def call_update_expecting_error(self, system_id: str, error_type: type[BaseException]):
         """Calls the SystemRepo `update` method with the appropriate data from a prior call to `mock_update` (or
         `set_update_data`) while expecting an error to be raised"""
 
@@ -549,7 +549,7 @@ class UpdateDSL(SystemRepoDSL):
         )
 
         # Duplicate check (which only runs if moving or changing the name)
-        if (self._system_in.name != self._stored_system.name) or self._moving_system:
+        if (self._stored_system and (self._system_in.name != self._stored_system.name)) or self._moving_system:
             expected_find_one_calls.append(
                 call(
                     {
@@ -730,7 +730,7 @@ class DeleteDSL(SystemRepoDSL):
         self._delete_system_id = system_id
         self.system_repository.delete(system_id, session=self.mock_session)
 
-    def call_delete_expecting_error(self, system_id: str, error_type: type):
+    def call_delete_expecting_error(self, system_id: str, error_type: type[BaseException]):
         """Calls the SystemRepo `delete` method while expecting an error to be raised"""
 
         self._delete_system_id = system_id
