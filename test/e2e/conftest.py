@@ -2,8 +2,8 @@
 Module providing test fixtures for the e2e tests.
 """
 
-from typing import Optional
 from test.conftest import VALID_ACCESS_TOKEN
+from typing import Optional
 
 import pytest
 from fastapi.testclient import TestClient

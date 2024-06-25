@@ -4,603 +4,579 @@ End-to-End tests for the System router
 
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import (
-    CREATED_MODIFIED_VALUES_EXPECTED,
-    SYSTEM_POST_A,
-    SYSTEM_POST_A_EXPECTED,
-    SYSTEM_POST_B,
-    SYSTEM_POST_B_EXPECTED,
-    SYSTEM_POST_C,
-    USAGE_STATUS_POST_B,
-)
+from test.e2e.mock_schemas import USAGE_STATUS_POST_B
 from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
 from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
-from typing import Any, Optional
-from unittest.mock import ANY
+from test.mock_data import (
+    SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
+    SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
+    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+)
+from typing import Optional
 
+import pytest
 from bson import ObjectId
+from fastapi.testclient import TestClient
+from httpx import Response
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
-SYSTEM_POST_REQUIRED_ONLY = {
-    "name": "System Test",
-    "importance": "low",
-}
 
-SYSTEM_POST_REQUIRED_ONLY_EXPECTED = {
-    **SYSTEM_POST_REQUIRED_ONLY,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "parent_id": None,
-    "description": None,
-    "location": None,
-    "owner": None,
-    "code": "system-test",
-}
+class CreateDSL:
+    """Base class for create tests"""
 
+    test_client: TestClient
 
-def _post_nested_systems(test_client, entities: list[dict]):
-    """Utility function for posting a set of mock systems where each successive entity should
-    be the parent of the next"""
+    _post_response: Response
 
-    systems = []
-    parent_id = None
-    for entity in entities:
-        system = test_client.post("/v1/systems", json={**entity, "parent_id": parent_id}).json()
-        parent_id = system["id"]
-        systems.append(system)
+    @pytest.fixture(autouse=True)
+    def setup(self, test_client):
+        """Setup fixtures"""
 
-    return (*systems,)
+        self.test_client = test_client
 
+    def post_system(self, system_post_data: dict) -> Optional[str]:
+        """Posts a System with the given data, returns the id of the created system if successful
 
-def _post_systems(test_client):
-    """Utility function for posting all mock systems defined at the top of this file"""
+        :param system_post_data: Dictionary containing the system data that should be posted
+        :return: ID of the created system (or None if not successful)
+        """
+        self._post_response = self.test_client.post("/v1/systems", json=system_post_data)
 
-    (system_a, system_b, *_) = _post_nested_systems(test_client, [SYSTEM_POST_A, SYSTEM_POST_B])
-    (system_c, *_) = _post_nested_systems(test_client, [SYSTEM_POST_C])
+        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
 
-    return system_a, system_b, system_c
+    def check_post_system_success(self, expected_system_get_data: dict):
+        """Checks that a prior call to 'post_system' gave a successful response with the expected data returned"""
 
+        assert self._post_response.status_code == 201
+        assert self._post_response.json() == expected_system_get_data
 
-def _post_n_systems(test_client, number):
-    """Utility function to post a given number of nested systems (all based on system A)"""
-    return _post_nested_systems(
-        test_client,
-        [
-            {
-                **SYSTEM_POST_A,
-                "name": f"System {i}",
-            }
-            for i in range(0, number)
-        ],
-    )
+    def check_post_system_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'post_system' gave a failed response with the expected code and error message"""
 
+        assert self._post_response.status_code == status_code
+        assert self._post_response.json()["detail"] == detail
 
-def _test_partial_update_system(
-    test_client, update_values: dict[str, Any], additional_expected_values: Optional[dict[str, Any]] = None
-):
-    """
-    Utility method that tests updating a system
+    def check_post_system_failed_with_validation_message(self, status_code: int, message: str):
+        """Checks that a prior call to 'post_system' gave a failed response with the expected code and pydantic
+        validation error message"""
 
-    :param update_values: Values to update
-    :param additional_expected_values: Any additional values expected from the output e.g. code
-    """
-    if additional_expected_values is None:
-        additional_expected_values = {}
+        assert self._post_response.status_code == status_code
+        assert self._post_response.json()["detail"][0]["msg"] == message
 
-    # Create one to update
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system = response.json()
 
-    # Update
-    response = test_client.patch(f"/v1/systems/{system['id']}", json=update_values)
+class TestCreate(CreateDSL):
+    """Tests for creating a System"""
 
-    assert response.status_code == 200
-    assert response.json() == {
-        **system,
-        **CREATED_MODIFIED_VALUES_EXPECTED,
-        **update_values,
-        **additional_expected_values,
-    }
+    def test_create_with_only_required_values_provided(self):
+        """Test creating a System with only required values provided"""
 
+        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_system_success(SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
-def test_create_system(test_client):
-    """
-    Test creating a System
-    """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
+    def test_create_with_all_values_provided(self):
+        """Test creating a System with all values provided"""
 
-    assert response.status_code == 201
+        self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.check_post_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
-    system = response.json()
+    def test_create_with_valid_parent_id(self):
+        """Test creating a System with a valid parent id"""
 
-    assert system == SYSTEM_POST_A_EXPECTED
+        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.check_post_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
+    def test_create_with_non_existent_parent_id(self):
+        """Test creating a System with a non-existent parent id"""
 
-def test_create_system_with_only_required_values_given(test_client):
-    """
-    Test creating a System when only the required values are given
-    """
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_REQUIRED_ONLY)
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": str(ObjectId())})
+        self.check_post_system_failed_with_message(422, "The specified parent System does not exist")
 
-    assert response.status_code == 201
+    def test_create_with_invalid_parent_id(self):
+        """Test creating a System with an invalid parent id"""
 
-    system = response.json()
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": "invalid-id"})
+        self.check_post_system_failed_with_message(422, "The specified parent System does not exist")
 
-    assert system == SYSTEM_POST_REQUIRED_ONLY_EXPECTED
+    def test_create_with_duplicate_name_within_parent(self):
+        """Test creating a System with the same name as another within the same parent"""
 
+        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        # 2nd post should be the duplicate
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.check_post_system_failed_with_message(
+            409, "A System with the same name already exists within the same parent System"
+        )
 
-def test_create_system_with_valid_parent_id(test_client):
-    """
-    Test creating a System with a valid parent ID
-    """
-    # Parent
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    parent_system = response.json()
+    def test_create_with_invalid_importance(self):
+        """Test creating a System with an invalid importance"""
 
-    # Child
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "importance": "invalid-importance"})
+        self.check_post_system_failed_with_validation_message(422, "Input should be 'low', 'medium' or 'high'")
 
-    assert response.status_code == 201
-    system = response.json()
-    assert system == {**SYSTEM_POST_B_EXPECTED, "parent_id": parent_system["id"]}
 
+class GetDSL(CreateDSL):
+    """Base class for get tests"""
 
-def test_create_system_with_duplicate_name_within_parent(test_client):
-    """
-    Test creating a System with a duplicate name within the parent System
-    """
-    # Parent
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    parent_system = response.json()
+    _get_response: Response
 
-    # Child - post twice as will have the same name
-    test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+    def get_system(self, system_id: str):
+        """Gets a System with the given id"""
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "A System with the same name already exists within the same parent System"
+        self._get_response = self.test_client.get(f"/v1/systems/{system_id}")
 
+    def check_get_system_success(self, expected_system_get_data: dict):
+        """Checks that a prior call to 'get_system' gave a successful response with the expected data returned"""
 
-def test_create_system_with_invalid_parent_id(test_client):
-    """
-    Test creating a System with an invalid parent ID
-    """
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_A, "parent_id": "invalid"})
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_system_get_data
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System does not exist"
+    def check_get_system_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'get_system' gave a failed response with the expected code and error message"""
 
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
 
-def test_create_system_with_non_existent_parent_id(test_client):
-    """
-    Test creating a System with a non-existent parent ID
-    """
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_A, "parent_id": str(ObjectId())})
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System does not exist"
+class TestGet(GetDSL):
+    """Tests for getting a System"""
 
+    def test_get(self):
+        """Test getting a System"""
 
-def test_create_system_with_invalid_importance(test_client):
-    """
-    Test creating a System with an invalid importance
-    """
-    response = test_client.post("/v1/systems", json={**SYSTEM_POST_A, "importance": "invalid"})
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.get_system(system_id)
+        self.check_get_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
-    assert response.status_code == 422
-    assert response.json()["detail"][0]["msg"] == "Input should be 'low', 'medium' or 'high'"
+    def test_get_with_non_existent_id(self):
+        """Test getting a System with a non-existent id"""
 
+        self.get_system(str(ObjectId()))
+        self.check_get_system_failed_with_message(404, "System not found")
 
-def test_get_systems(test_client):
-    """
-    Test getting a list of Systems
-    """
-    system_a, system_b, system_c = _post_systems(test_client)
+    def test_get_with_invalid_id(self):
+        """Test getting a System with an invalid id"""
 
-    # Get all systems (no filters)
-    response = test_client.get("/v1/systems")
+        self.get_system("invalid-id")
+        self.check_get_system_failed_with_message(404, "System not found")
 
-    assert response.status_code == 200
-    assert response.json() == [system_a, system_b, system_c]
 
+class GetBreadcrumbsDSL(GetDSL):
+    """Base class for breadcrumbs tests"""
 
-def test_get_systems_with_parent_id_filter(test_client):
-    """
-    Test getting a list of Systems with a parent_id filter
-    """
-    _, system_b, _ = _post_systems(test_client)
+    _get_response: Response
 
-    # Get only those with the given parent_id
-    response = test_client.get("/v1/systems", params={"parent_id": system_b["parent_id"]})
+    _posted_systems_get_data: list[dict]
 
-    assert response.status_code == 200
-    assert response.json() == [system_b]
+    @pytest.fixture(autouse=True)
+    def setup_breadcrumbs_dsl(self):
+        """Setup fixtures"""
 
+        self._posted_systems_get_data = []
 
-def test_get_systems_with_null_parent_id_filter(test_client):
-    """
-    Test getting a list of Systems with a parent_id filter of "null"
-    """
+    def post_nested_systems(self, number: int) -> list[Optional[str]]:
+        """Posts the given number of nested systems where each successive one has the previous as its parent
 
-    system_a, _, system_c = _post_systems(test_client)
+        :param number: Number of Systems to create
+        :return: List of ids of the created Systems
+        """
 
-    # Get only those with the given parent parent_id
-    response = test_client.get("/v1/systems", params={"parent_id": "null"})
+        parent_id = None
+        for i in range(0, number):
+            system_id = self.post_system(
+                {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": f"System {i}", "parent_id": parent_id}
+            )
+            self._posted_systems_get_data.append(self._post_response.json())
+            parent_id = system_id
 
-    assert response.status_code == 200
-    assert response.json() == [system_a, system_c]
+        return [system["id"] for system in self._posted_systems_get_data]
 
+    def get_system_breadcrumbs(self, system_id: str):
+        """Gets a System's breadcrumbs with the given id"""
 
-def test_get_systems_with_parent_id_filter_no_matching_results(test_client):
-    """
-    Test getting a list of Systems with a parent_id filter when there is no
-    matching results in the database
-    """
-    _, _, _ = _post_systems(test_client)
+        self._get_response = self.test_client.get(f"/v1/systems/{system_id}/breadcrumbs")
 
-    # Get only those with the given parent_id
-    response = test_client.get("/v1/systems", params={"parent_id": str(ObjectId())})
+    def get_last_system_breadcrumbs(self):
+        """Gets the last System posted's breadcrumbs"""
 
-    assert response.status_code == 200
-    assert response.json() == []
+        self.get_system_breadcrumbs(self._post_response.json()["id"])
 
+    def check_get_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
+        """Checks that a prior call to 'get_system_breadcrumbs' gave a successful response with the expected data
+        returned
+        """
 
-def test_get_systems_with_invalid_parent_id_filter(test_client):
-    """
-    Test getting a list of Systems when given invalid parent_id filter
-    """
-    response = test_client.get("/v1/systems", params={"parent_id": "invalid"})
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == {
+            "trail": [
+                [system["id"], system["name"]]
+                # When the expected trail length is < the number of systems posted, only use the last
+                for system in self._posted_systems_get_data[
+                    (len(self._posted_systems_get_data) - expected_trail_length) :
+                ]
+            ],
+            "full_trail": expected_full_trail,
+        }
 
-    assert response.status_code == 200
-    assert response.json() == []
+    def check_get_breadcrumbs_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'get_system_breadcrumbs' gave a failed response with the expected code and
+        error message"""
 
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
 
-def test_get_system(test_client):
-    """
-    Test getting a System
-    """
-    # Post one first
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system = response.json()
-    system_id = system["id"]
 
-    # Ensure can get it again
-    response = test_client.get(f"/v1/systems/{system_id}")
+class TestGetBreadcrumbs(GetBreadcrumbsDSL):
+    """Tests for getting a System's breadcrumbs"""
 
-    assert response.status_code == 200
-    assert response.json() == SYSTEM_POST_A_EXPECTED
+    def test_get_breadcrumbs_when_no_parent(self):
+        """Test getting a System's breadcrumbs when the system has no parent"""
 
+        self.post_nested_systems(1)
+        self.get_last_system_breadcrumbs()
+        self.check_get_breadcrumbs_success(expected_trail_length=1, expected_full_trail=True)
 
-def test_get_system_with_invalid_id(test_client):
-    """
-    Test getting a System with an invalid ID
-    """
-    response = test_client.get("/v1/systems/invalid")
+    def test_get_breadcrumbs_when_trail_length_less_than_maximum(self):
+        """Test getting a System's breadcrumbs when the full system trail should be less than the maximum trail
+        length"""
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+        self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
+        self.get_last_system_breadcrumbs()
+        self.check_get_breadcrumbs_success(
+            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH - 1, expected_full_trail=True
+        )
 
+    def test_get_breadcrumbs_when_trail_length_maximum(self):
+        """Test getting a System's breadcrumbs when the full system trail should be equal to the maximum trail
+        length"""
 
-def test_get_system_with_non_existent_id(test_client):
-    """
-    Test getting a System with a non-existent ID
-    """
-    response = test_client.get(f"/v1/systems/{str(ObjectId())}")
+        self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH)
+        self.get_last_system_breadcrumbs()
+        self.check_get_breadcrumbs_success(expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=True)
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+    def test_get_breadcrumbs_when_trail_length_greater_maximum(self):
+        """Test getting a System's breadcrumbs when the full system trail exceeds the maximum trail length"""
 
+        self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
+        self.get_last_system_breadcrumbs()
+        self.check_get_breadcrumbs_success(
+            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=False
+        )
 
-def test_get_system_breadcrumbs_when_no_parent(test_client):
-    """
-    Test getting the breadcrumbs for a system with no parents
-    """
-    (system_c, *_) = _post_nested_systems(test_client, [SYSTEM_POST_C])
+    def test_get_breadcrumbs_with_non_existent_id(self):
+        """Test getting a System's breadcrumbs when given a non-existent system id"""
 
-    response = test_client.get(f"/v1/systems/{system_c['id']}/breadcrumbs")
+        self.get_system_breadcrumbs(str(ObjectId()))
+        self.check_get_breadcrumbs_failed_with_message(404, "System not found")
 
-    assert response.status_code == 200
-    assert response.json() == {"trail": [[system_c["id"], system_c["name"]]], "full_trail": True}
+    def test_get_breadcrumbs_with_invalid_id(self):
+        """Test getting a System's breadcrumbs when given an invalid system id"""
 
+        self.get_system_breadcrumbs("invalid_id")
+        self.check_get_breadcrumbs_failed_with_message(404, "System not found")
 
-def test_get_system_breadcrumbs_when_trail_length_less_than_maximum(test_client):
-    """
-    Test getting the breadcrumbs for a system with less than the the maximum trail length
-    """
-    systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
 
-    # Get breadcrumbs for last added
-    response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
+class ListDSL(GetBreadcrumbsDSL):
+    """Base class for list tests"""
 
-    assert response.status_code == 200
-    assert response.json() == {"trail": [[system["id"], system["name"]] for system in systems], "full_trail": True}
+    def get_systems(self, filters: dict):
+        """Gets a list Systems with the given filters"""
 
+        self._get_response = self.test_client.get("/v1/systems", params=filters)
 
-def test_get_system_breadcrumbs_when_trail_length_maximum(test_client):
-    """
-    Test getting the breadcrumbs for a system with the maximum trail length
-    """
-    systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH)
+    def post_test_system_with_child(self) -> list[dict]:
+        """Posts a System with a single child and returns their expected responses when returned by the list endpoint"""
 
-    # Get breadcrumbs for last added
-    response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
+        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
 
-    assert response.status_code == 200
-    assert response.json() == {"trail": [[system["id"], system["name"]] for system in systems], "full_trail": True}
+        return [SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id}]
 
+    def check_get_systems_success(self, expected_systems_get_data: list[dict]):
+        """Checks that a prior call to 'list' gave a successful response with the expected data returned"""
 
-def test_get_system_breadcrumbs_when_trail_length_greater_than_maximum(test_client):
-    """
-    Test getting the breadcrumbs for a system with greater than the the maximum trail length
-    """
-    systems = _post_n_systems(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_systems_get_data
 
-    # Get breadcrumbs for last added
-    response = test_client.get(f"/v1/systems/{systems[-1]['id']}/breadcrumbs")
+    def check_get_systems_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'list' gave a failed response with the expected code and error message"""
 
-    assert response.status_code == 200
-    assert response.json() == {"trail": [[system["id"], system["name"]] for system in systems[1:]], "full_trail": False}
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
 
 
-def test_get_system_breadcrumbs_with_invalid_id(test_client):
-    """
-    Test getting the breadcrumbs for a system when the given id is invalid
-    """
-    response = test_client.get("/v1/systems/invalid/breadcrumbs")
+class TestList(ListDSL):
+    """Tests for getting a list of Systems"""
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+    def test_list_with_no_filters(self):
+        """Test getting a list of all Systems with no filters provided
 
+        Posts a system with a child and expects both to be returned.
+        """
 
-def test_get_system_breadcrumbs_with_non_existent_id(test_client):
-    """
-    Test getting the breadcrumbs for a non-existent system
-    """
-    response = test_client.get(f"/v1/systems/{str(ObjectId())}/breadcrumbs")
+        systems = self.post_test_system_with_child()
+        self.get_systems(filters={})
+        self.check_get_systems_success(systems)
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+    def test_list_with_parent_id_filter(self):
+        """Test getting a list of all Systems with a parent_id filter provided
 
+        Posts a system with a child and then filter using the parent_id expecting only the second system
+        to be returned.
+        """
 
-def test_partial_update_system_parent_id(test_client):
-    """
-    Test updating a System's parent_id
-    """
-    parent_system = test_client.post("/v1/systems", json=SYSTEM_POST_B).json()
+        systems = self.post_test_system_with_child()
+        self.get_systems(filters={"parent_id": systems[1]["parent_id"]})
+        self.check_get_systems_success([systems[1]])
 
-    _test_partial_update_system(test_client, {"parent_id": parent_system["id"]}, {})
+    def test_list_with_null_parent_id_filter(self):
+        """Test getting a list of all Systems with a parent_id filter of "null" provided
 
+        Posts a system with a child and then filter using a parent_id of "null" expecting only
+        the first parent system to be returned.
+        """
 
-def test_partial_update_system_parent_id_to_child_id(test_client):
-    """
-    Test updating a System's parent_id to be the id of one of its children
-    """
-    nested_systems = _post_n_systems(test_client, 4)
+        systems = self.post_test_system_with_child()
+        self.get_systems(filters={"parent_id": "null"})
+        self.check_get_systems_success([systems[0]])
 
-    # Attempt to move first into one of its children
-    response = test_client.patch(f"/v1/systems/{nested_systems[0]['id']}", json={"parent_id": nested_systems[3]["id"]})
+    def test_list_with_parent_id_filter_with_no_matching_results(self):
+        """Test getting a list of all Systems with a parent_id filter that returns no results"""
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "Cannot move a system to one of its own children"
+        self.get_systems(filters={"parent_id": str(ObjectId())})
+        self.check_get_systems_success([])
 
+    def test_list_with_invalid_parent_id_filter(self):
+        """Test getting a list of all Systems with an invalid parent_id filter returns no results"""
 
-def test_partial_update_system_invalid_parent_id(test_client):
-    """
-    Test updating a System's parent_id when the ID is invalid
-    """
-    # Create one to update
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system = response.json()
+        self.get_systems(filters={"parent_id": "invalid-id"})
+        self.check_get_systems_success([])
 
-    # Update
-    response = test_client.patch(f"/v1/systems/{system['id']}", json={"parent_id": "invalid"})
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System does not exist"
+class UpdateDSL(ListDSL):
+    """Base class for update tests"""
 
+    _patch_response: Response
 
-def test_partial_update_system_non_existent_parent_id(test_client):
-    """
-    Test updating a System's parent_id when the ID is non-existent
-    """
-    # Create one to update
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system = response.json()
+    def patch_system(self, system_id: str, system_patch_data: dict):
+        """Updates a System with the given id"""
 
-    # Update
-    response = test_client.patch(f"/v1/systems/{system['id']}", json={"parent_id": str(ObjectId())})
+        self._patch_response = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
-    assert response.status_code == 422
-    assert response.json()["detail"] == "The specified parent System does not exist"
+    def check_patch_system_response_success(self, expected_system_get_data: dict):
+        """Checks the response of patching a property succeeded as expected"""
 
+        assert self._patch_response.status_code == 200
+        assert self._patch_response.json() == expected_system_get_data
 
-def test_partial_update_system_parent_id_duplicate_name(test_client):
-    """
-    Test updating a System's parent_id when the new parent has a child with a duplicate name
-    """
-    # Parent to move to
-    parent_system = test_client.post("/v1/systems", json=SYSTEM_POST_A).json()
+    def check_patch_system_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'patch_system' gave a failed response with the expected code and error message"""
 
-    # Two identical systems, one already with a parent the other without
-    test_client.post(
-        "/v1/systems", json={**SYSTEM_POST_B, "name": "Duplicate name", "parent_id": parent_system["id"]}
-    ).json()
-    system = test_client.post("/v1/systems", json={**SYSTEM_POST_B, "name": "Duplicate name"}).json()
+        assert self._patch_response.status_code == status_code
+        assert self._patch_response.json()["detail"] == detail
 
-    # Change the parent of system to be the same as system1
-    response = test_client.patch(f"/v1/systems/{system['id']}", json={"parent_id": parent_system["id"]})
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "A System with the same name already exists within the parent System"
+class TestUpdate(UpdateDSL):
+    """Tests for updating a System"""
 
+    def test_partial_update_all_fields(self):
+        """Test updating every field of a System"""
 
-def test_partial_update_system_name(test_client):
-    """
-    Test updating a System's name
-    """
-    _test_partial_update_system(test_client, {"name": "Updated name"}, {"code": "updated-name"})
+        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.check_patch_system_response_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
+    def test_partial_update_parent_id(self):
+        """Test updating the parent_id of a System"""
 
-def test_partial_update_capitalisation_of_system_name(test_client):
-    """
-    Test updating a capitalisation of the System's name
-    """
-    _test_partial_update_system(
-        test_client,
-        {
-            "name": "SyStEm A",
-        },
-    )
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
+        self.patch_system(system_id, {"parent_id": parent_id})
+        self.check_patch_system_response_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
-def test_partial_update_all_other_fields(test_client):
-    """
-    Test updating the rest of a systems fields not tested above
-    """
-    _test_partial_update_system(
-        test_client,
-        {
-            "description": "Updated description",
-            "location": "Updated location",
-            "owner": "Updated owner",
-            "importance": "high",
-        },
-    )
+    def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
+        """Test updating the parent_id of a System so that its name conflicts with one already in that other
+        system"""
 
+        # System with child
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Conflicting Name", "parent_id": parent_id})
 
-def test_partial_update_system_invalid_id(test_client):
-    """
-    Test updating a System when the ID is invalid
-    """
-    response = test_client.patch("/v1/systems/invalid", json={"name": "Updated name"})
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": "Conflicting Name"})
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+        self.patch_system(system_id, {"parent_id": parent_id})
+        self.check_patch_system_failed_with_message(
+            409, "A System with the same name already exists within the parent System"
+        )
 
+    def test_partial_update_parent_id_to_child_of_self(self):
+        """Test updating the parent_id of a System to one of its own children"""
 
-def test_partial_update_system_non_existent_id(test_client):
-    """
-    Test updating a System when the ID is non-existent
-    """
-    response = test_client.patch(f"/v1/systems/{str(ObjectId())}", json={"name": "Updated name"})
+        system_ids = self.post_nested_systems(2)
+        self.patch_system(system_ids[0], {"parent_id": system_ids[1]})
+        self.check_patch_system_failed_with_message(422, "Cannot move a system to one of its own children")
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+    def test_partial_update_parent_id_to_non_existent(self):
+        """Test updating the parent_id of a System to a non-existent System"""
 
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"parent_id": str(ObjectId())})
+        self.check_patch_system_failed_with_message(422, "The specified parent System does not exist")
 
-def test_delete_system(test_client):
-    """
-    Test deleting a System
-    """
-    # Create one to delete
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system = response.json()
+    def test_partial_update_parent_id_to_invalid(self):
+        """Test updating the parent_id of a System to an invalid id"""
 
-    # Delete
-    response = test_client.delete(f"/v1/systems/{system['id']}")
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"parent_id": "invalid-id"})
+        self.check_patch_system_failed_with_message(422, "The specified parent System does not exist")
 
-    assert response.status_code == 204
-    response = test_client.get(f"/v1/systems/{system['id']}")
-    assert response.status_code == 404
+    def test_partial_update_name_to_duplicate(self):
+        """Test updating the name of a System to conflict with a pre-existing one"""
 
+        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"name": SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY["name"]})
+        self.check_patch_system_failed_with_message(
+            409, "A System with the same name already exists within the parent System"
+        )
 
-def test_delete_system_with_invalid_id(test_client):
-    """
-    Test deleting a System with an invalid ID
-    """
-    # Delete
-    response = test_client.delete("/v1/systems/invalid")
+    def test_partial_update_name_capitalisation(self):
+        """Test updating the capitalisation of the name of a System (to ensure it the check doesn't confuse with
+        duplicates)"""
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+        system_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Test system"})
+        self.patch_system(system_id, {"name": "Test System"})
+        self.check_patch_system_response_success(
+            {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "name": "Test System", "code": "test-system"}
+        )
 
+    def test_partial_update_with_non_existent_id(self):
+        """Test updating a non-existent System"""
 
-def test_delete_system_with_non_existent_id(test_client):
-    """
-    Test deleting a System with a non-existent ID
-    """
-    # Delete
-    response = test_client.delete(f"/v1/systems/{str(ObjectId())}")
+        self.patch_system(str(ObjectId()), {})
+        self.check_patch_system_failed_with_message(404, "System not found")
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "System not found"
+    def test_partial_update_invalid_id(self):
+        """Test updating a System with an invalid id"""
 
+        self.patch_system("invalid-id", {})
+        self.check_patch_system_failed_with_message(404, "System not found")
 
-def test_delete_system_with_child_system(test_client):
-    """
-    Test deleting a System that has subsystem
-    """
-    # Create one to delete
-    # Parent
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    parent_system = response.json()
 
-    # Child
-    test_client.post("/v1/systems", json={**SYSTEM_POST_B, "parent_id": parent_system["id"]})
+class DeleteDSL(UpdateDSL):
+    """Base class for delete tests"""
 
-    # Delete
-    response = test_client.delete(f"/v1/systems/{parent_system['id']}")
+    _delete_response: Response
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "System has child elements and cannot be deleted"
+    def delete_system(self, system_id: str):
+        """Deletes a System with the given id"""
 
+        self._delete_response = self.test_client.delete(f"/v1/systems/{system_id}")
 
-def test_delete_system_with_child_item(test_client):
-    """
-    Test deleting a System that contains an item
-    """
-    # Create one to delete
-    response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-    system_id = response.json()["id"]
+    def check_delete_success(self):
+        """Checks that a prior call to 'delete_system' gave a successful response with the expected data returned"""
 
-    # Create a child item
-    # pylint: disable=duplicate-code
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
+        assert self._delete_response.status_code == 204
 
-    response = test_client.post("/v1/units", json=UNIT_POST_B)
-    unit_cm = response.json()
+    def check_delete_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'delete_system' gave a failed response with the expected code and error
+        message"""
 
-    units = [unit_mm, unit_cm]
+        assert self._delete_response.status_code == status_code
+        assert self._delete_response.json()["detail"] == detail
 
-    response = test_client.post(
-        "/v1/catalogue-categories",
-        json={
-            **CATALOGUE_CATEGORY_POST_A,
-            "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_A["properties"], units),
-        },
-    )
-    catalogue_category = response.json()
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-    manufacturer_id = response.json()["id"]
+class TestDelete(DeleteDSL):
+    """Tests for deleting a System"""
 
-    catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_A,
-        "catalogue_category_id": catalogue_category["id"],
-        "manufacturer_id": manufacturer_id,
-        "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-    }
-    response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-    catalogue_item_id = response.json()["id"]
+    def test_delete(self):
+        """Test deleting a System"""
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
-    usage_status_id = response.json()["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.delete_system(system_id)
+        self.check_delete_success()
 
-    item_post = {
-        **ITEM_POST,
-        "catalogue_item_id": catalogue_item_id,
-        "system_id": system_id,
-        "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-    }
-    test_client.post("/v1/items", json=item_post)
-    # pylint: enable=duplicate-code
+        self.get_system(system_id)
+        self.check_get_system_failed_with_message(404, "System not found")
 
-    # Delete
-    response = test_client.delete(f"/v1/systems/{system_id}")
+    def test_delete_with_child_system(self):
+        """Test deleting a System with a child system"""
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "System has child elements and cannot be deleted"
+        system_ids = self.post_nested_systems(2)
+        self.delete_system(system_ids[0])
+        self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
+
+    def test_delete_with_child_item(self):
+        """Test deleting a System with a child system"""
+
+        # pylint:disable=fixme
+        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
+
+        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": system_id})
+
+        # Create a child item
+        # pylint: disable=duplicate-code
+        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
+        unit_mm = response.json()
+
+        response = self.test_client.post("/v1/units", json=UNIT_POST_B)
+        unit_cm = response.json()
+
+        units = [unit_mm, unit_cm]
+
+        response = self.test_client.post(
+            "/v1/catalogue-categories",
+            json={
+                **CATALOGUE_CATEGORY_POST_A,
+                "properties": replace_unit_values_with_ids_in_properties(
+                    CATALOGUE_CATEGORY_POST_A["properties"], units
+                ),
+            },
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_POST_A,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+            "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_POST,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+            "usage_status_id": usage_status_id,
+            "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
+        }
+        self.test_client.post("/v1/items", json=item_post)
+        # pylint: enable=duplicate-code
+
+        self.delete_system(system_id)
+        self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent System"""
+
+        self.delete_system(str(ObjectId()))
+        self.check_delete_failed_with_message(404, "System not found")
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting a System with an invalid id"""
+
+        self.delete_system("invalid_id")
+        self.check_delete_failed_with_message(404, "System not found")

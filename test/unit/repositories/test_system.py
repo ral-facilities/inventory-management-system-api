@@ -2,15 +2,16 @@
 Unit tests for the `SystemRepo` repository
 """
 
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
+from test.mock_data import SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
+from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
     MOCK_MOVE_QUERY_RESULT_INVALID,
     MOCK_MOVE_QUERY_RESULT_VALID,
 )
-
+from test.unit.services.test_item import ITEM_INFO
 from typing import Optional
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
@@ -24,779 +25,792 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.repositories.system import SystemRepo
 
 
-SYSTEM_A_INFO = {
-    "parent_id": None,
-    "name": "Test name a",
-    "description": "Test description",
-    "location": "Test location",
-    "owner": "Test owner",
-    "importance": "low",
-    "code": "test-name-a",
-}
+class SystemRepoDSL:
+    """Base class for SystemRepo unit tests"""
 
-SYSTEM_B_INFO = {
-    "parent_id": None,
-    "name": "Test name b",
-    "description": "Test description",
-    "location": "Test location",
-    "owner": "Test owner",
-    "importance": "low",
-    "code": "test-name-b",
-}
+    test_helpers: RepositoryTestHelpers
+    mock_database: Mock
+    mock_utils: Mock
+    system_repository: SystemRepo
+    systems_collection: Mock
+    items_collection: Mock
 
+    mock_session = MagicMock()
 
-def _test_list(test_helpers, database_mock, system_repository, parent_id: Optional[str]):
-    """
-    Utility method that tests getting Systems
+    @pytest.fixture(autouse=True)
+    def setup(self, test_helpers, database_mock):
+        """Setup fixtures"""
 
-    Verifies that the `list` method properly handles the retrieval of systems with the given filters
-    """
-    # pylint: disable=duplicate-code
-    system_a = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    system_b = SystemOut(id=str(ObjectId()), **SYSTEM_B_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    session = MagicMock()
-    # pylint: enable=duplicate-code
+        self.test_helpers = test_helpers
+        self.mock_database = database_mock
+        self.system_repository = SystemRepo(database_mock)
+        self.systems_collection = database_mock.systems
+        self.items_collection = database_mock.items
 
-    # Mock `find` to return a list of System documents
-    test_helpers.mock_find(
-        database_mock.systems,
-        [
-            {"_id": CustomObjectId(system_a.id), **SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME},
-            {"_id": CustomObjectId(system_b.id), **SYSTEM_B_INFO, **MOCK_CREATED_MODIFIED_TIME},
-        ],
-    )
+        self.mock_session = MagicMock()
 
-    retrieved_systems = system_repository.list(parent_id, session=session)
-
-    expected_filters = {}
-    if parent_id:
-        expected_filters["parent_id"] = None if parent_id == "null" else ObjectId(parent_id)
-
-    database_mock.systems.find.assert_called_once_with(expected_filters, session=session)
-    assert retrieved_systems == [system_a, system_b]
+        # Here we only wrap the utils so they keep their original functionality - this is done here
+        # to avoid having to mock the code generation function as the output will be passed to SystemOut
+        # with pydantic validation and so will error otherwise
+        with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
+            self.mock_utils = mock_utils
+            yield
 
 
-def test_create(test_helpers, database_mock, system_repository):
-    """
-    Test creating a System
+class CreateDSL(SystemRepoDSL):
+    """Base class for create tests"""
 
-    Verify that the `create` method properly handles the System to be created, checks that there is not
-    a duplicate System, and creates the System
-    """
-    # pylint: disable=duplicate-code
-    system_in = SystemIn(
-        **{
-            **SYSTEM_A_INFO,
-            "parent_id": None,
-        }
-    )
-    system_info = system_in.model_dump()
-    system_out = SystemOut(id=str(ObjectId()), **system_info)
-    session = MagicMock()
-    # pylint: enable=duplicate-code
+    _system_in: SystemIn
+    _expected_system_out: SystemOut
+    _created_system: SystemOut
+    _create_exception: pytest.ExceptionInfo
 
-    # Mock `find_one` to return no duplicate system found in parent system
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `insert_one` to return an object for the inserted system document
-    test_helpers.mock_insert_one(database_mock.systems, CustomObjectId(system_out.id))
-    # Mock `find_one` to return the inserted system document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system_info, "_id": CustomObjectId(system_out.id)},
-    )
+    def mock_create(
+        self,
+        system_in_data: dict,
+        parent_system_in_data: Optional[dict] = None,
+        duplicate_system_in_data: Optional[dict] = None,
+    ):
+        """Mocks database methods appropriately to test the 'create' repo method
 
-    created_system = system_repository.create(system_in, session=session)
+        :param system_in_data: Dictionary containing the system data as would be required for a SystemIn database
+                               model (i.e. no id or created and modified times required)
+        :param parent_system_in_data: Either None or a dictionary containing the parent system data as would be
+                                      required for a SystemIn database model
+        :param duplicate_system_in_data: Either None or a dictionary containing system data for a duplicate system
+        """
+        inserted_system_id = CustomObjectId(str(ObjectId()))
 
-    database_mock.systems.insert_one.assert_called_once_with(system_info, session=session)
-    assert created_system == system_out
+        # Pass through system_in first as need creation and modified times
+        self._system_in = SystemIn(**system_in_data)
 
+        self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=inserted_system_id)
 
-def test_create_with_parent_id(test_helpers, database_mock, system_repository):
-    """
-    Test creating a System with a parent ID
+        # When a parent_id is given, need to mock the find_one for it too
+        if system_in_data["parent_id"]:
+            # If parent_system_data is given as None, then it is intentionally supposed to be, otherwise
+            # pass through SystemIn first to ensure it has creation and modified times
+            self.test_helpers.mock_find_one(
+                self.systems_collection,
+                (
+                    {**SystemIn(**parent_system_in_data).model_dump(), "_id": system_in_data["parent_id"]}
+                    if parent_system_in_data
+                    else None
+                ),
+            )
+        self.test_helpers.mock_find_one(
+            self.systems_collection,
+            (
+                {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
+                if duplicate_system_in_data
+                else None
+            ),
+        )
+        self.test_helpers.mock_insert_one(self.systems_collection, inserted_system_id)
+        self.test_helpers.mock_find_one(
+            self.systems_collection, {**self._system_in.model_dump(), "_id": inserted_system_id}
+        )
 
-    Verify that the `create` method properly handles the creation of a System with a parent ID
-    """
-    # pylint: disable=duplicate-code
-    system_in = SystemIn(
-        **{
-            **SYSTEM_A_INFO,
-            "parent_id": str(ObjectId()),
-        }
-    )
-    system_info = system_in.model_dump()
-    system_out = SystemOut(id=str(ObjectId()), **system_info)
-    session = MagicMock()
+    def call_create(self):
+        """Calls the SystemRepo `create` method with the appropriate data from a prior call to `mock_create`"""
 
-    # Mock `find_one` to return the parent system document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system_info, "_id": CustomObjectId(system_out.parent_id), "parent_id": None},
-    )
-    # pylint: enable=duplicate-code
-    # Mock `find_one` to return no duplicate system found in parent system
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `insert_one` to return an object for the inserted system document
-    test_helpers.mock_insert_one(database_mock.systems, CustomObjectId(system_out.id))
-    # Mock `find_one` to return the inserted system document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system_info, "_id": CustomObjectId(system_out.id)},
-    )
+        self._created_system = self.system_repository.create(self._system_in, session=self.mock_session)
 
-    created_system = system_repository.create(system_in, session=session)
+    def call_create_expecting_error(self, error_type: type[BaseException]):
+        """Calls the SystemRepo `create` method with the appropriate data from a prior call to `mock_create`
+        while expecting an error to be raised"""
 
-    database_mock.systems.insert_one.assert_called_once_with(
-        {**system_info, "parent_id": CustomObjectId(system_out.parent_id)}, session=session
-    )
-    database_mock.systems.find_one.assert_has_calls(
-        [
-            call({"_id": CustomObjectId(system_out.parent_id)}, session=session),
+        with pytest.raises(error_type) as exc:
+            self.system_repository.create(self._system_in)
+        self._create_exception = exc
+
+    def check_create_success(self):
+        """Checks that a prior call to `call_create` worked as expected"""
+
+        system_in_data = self._system_in.model_dump()
+
+        # Obtain a list of expected find_one calls
+        expected_find_one_calls = []
+        # This is the check for parent existence
+        if self._system_in.parent_id:
+            expected_find_one_calls.append(call({"_id": self._system_in.parent_id}, session=self.mock_session))
+        # Also need checks for duplicate and the final newly inserted system get
+        expected_find_one_calls.append(
             call(
                 {
-                    "parent_id": CustomObjectId(system_out.parent_id),
-                    "code": system_out.code,
+                    "parent_id": self._system_in.parent_id,
+                    "code": self._system_in.code,
                     "_id": {"$ne": None},
                 },
-                session=session,
-            ),
-            call({"_id": CustomObjectId(system_out.id)}, session=session),
-        ]
-    )
-    assert created_system == system_out
-
-
-def test_create_with_non_existent_parent_id(test_helpers, database_mock, system_repository):
-    """
-    Test creating a System with a non-existent parent ID
-
-    Verify that the `create` method properly handles a System with a non-existent parent ID
-    and does not create it
-    """
-    # pylint: disable=duplicate-code
-    system_in = SystemIn(
-        **{
-            **SYSTEM_A_INFO,
-            "parent_id": str(ObjectId()),
-        }
-    )
-    system_info = system_in.model_dump()
-    system_out = SystemOut(id=str(ObjectId()), **system_info)
-    # pylint: enable=duplicate-code
-
-    # Mock `find_one` to not return a parent system document
-    test_helpers.mock_find_one(database_mock.systems, None)
-
-    with pytest.raises(MissingRecordError) as exc:
-        system_repository.create(system_in)
-
-    database_mock.systems.insert_one.assert_not_called()
-    assert str(exc.value) == f"No parent System found with ID: {system_out.parent_id}"
-
-
-def test_create_with_duplicate_name_within_parent(test_helpers, database_mock, system_repository):
-    """
-    Test creating a System with a duplicate name within the parent System
-
-    Verify that the `create` method properly handles a System with a duplicate name
-    and does not create it
-    """
-    # pylint: disable=duplicate-code
-    system_in = SystemIn(
-        **{
-            **SYSTEM_A_INFO,
-            "parent_id": str(ObjectId()),
-        }
-    )
-    system_info = system_in.model_dump()
-    system_out = SystemOut(id=str(ObjectId()), **system_info)
-    # pylint: enable=duplicate-code
-
-    # Mock `find_one` to return the parent system document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system_info, "_id": CustomObjectId(system_out.parent_id), "parent_id": str(ObjectId())},
-    )
-    # Mock `find_one` to return duplicate system found in parent system
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {
-            **system_info,
-            "_id": ObjectId(),
-        },
-    )
-
-    with pytest.raises(DuplicateRecordError) as exc:
-        system_repository.create(system_in)
-
-    database_mock.systems.insert_one.assert_not_called()
-    assert str(exc.value) == "Duplicate System found within the parent System"
-
-
-def test_get(test_helpers, database_mock, system_repository):
-    """
-    Test getting a System
-
-    Verify that the `get` method properly handles the retrieval of a System by ID
-    """
-    system_out = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    session = MagicMock()
-
-    # Mock `find_one` to return a system
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME, "_id": CustomObjectId(system_out.id)},
-    )
-
-    retrieved_system = system_repository.get(system_out.id, session=session)
-
-    database_mock.systems.find_one.assert_called_with({"_id": CustomObjectId(system_out.id)}, session=session)
-    assert retrieved_system == system_out
-
-
-def test_get_with_invalid_id(database_mock, system_repository):
-    """
-    Test getting a System with an invalid ID
-
-    Verify that the `get` method properly handles the retrieval of a System with an invalid ID
-    """
-
-    with pytest.raises(InvalidObjectIdError) as exc:
-        system_repository.get("invalid")
-    database_mock.systems.find_one.assert_not_called()
-    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-
-
-def test_get_with_non_existent_id(test_helpers, database_mock, system_repository):
-    """
-    Test getting a System with a non-existent ID
-
-    Verify that the `get` method properly handles the retrieval of a System with a non-existent ID
-    """
-    system_id = str(ObjectId())
-    session = MagicMock()
-
-    # Mock `find_one` to not return a system document
-    test_helpers.mock_find_one(database_mock.systems, None)
-
-    retrieved_system = system_repository.get(system_id, session=session)
-
-    database_mock.systems.find_one.assert_called_with({"_id": CustomObjectId(system_id)}, session=session)
-    assert retrieved_system is None
-
-
-@patch("inventory_management_system_api.repositories.system.utils")
-def test_get_breadcrumbs(mock_utils, database_mock, system_repository):
-    """
-    Test getting breadcrumbs for a specific system
-
-    Verify that the 'get_breadcrumbs' method properly handles the retrieval of breadcrumbs for a system
-    """
-    system_id = str(ObjectId())
-    mock_aggregation_pipeline = MagicMock()
-    mock_breadcrumbs = MagicMock()
-    session = MagicMock()
-
-    mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    mock_utils.compute_breadcrumbs.return_value = mock_breadcrumbs
-    database_mock.systems.aggregate.return_value = MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH
-
-    retrieved_breadcrumbs = system_repository.get_breadcrumbs(system_id, session=session)
-
-    database_mock.systems.aggregate.assert_called_once_with(mock_aggregation_pipeline, session=session)
-    mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
-        entity_id=system_id, collection_name="systems"
-    )
-    mock_utils.compute_breadcrumbs.assert_called_once_with(
-        list(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH),
-        entity_id=system_id,
-        collection_name="systems",
-    )
-    assert retrieved_breadcrumbs == mock_breadcrumbs
-
-
-def test_list(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems
-
-    Verify that the `list` method properly handles the retrieval of systems without filters
-    """
-    _test_list(test_helpers, database_mock, system_repository, None)
-
-
-def test_list_with_parent_id_filter(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems based on the provided parent_id filter
-
-    Verify that the `list` method properly handles the retrieval of systems based on the provided parent
-    parent_id filter
-    """
-    _test_list(test_helpers, database_mock, system_repository, str(ObjectId()))
-
-
-def test_list_with_null_parent_id_filter(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems when the provided parent_id filter is "null"
-
-    Verify that the `list` method properly handles the retrieval of systems based on the provided
-    parent_id filter
-    """
-    _test_list(test_helpers, database_mock, system_repository, "null")
-
-
-def test_list_with_parent_id_filter_no_matching_results(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems based on the provided parent_id filter when there are no matching results
-    in the database
-
-    Verify that the `list` method properly handles the retrieval of systems based on the provided
-    parent_id filter when there are no matching results in the database
-    """
-    session = MagicMock()
-
-    # Mock `find` to return a list of System documents
-    test_helpers.mock_find(database_mock.systems, [])
-
-    parent_id = ObjectId()
-    retrieved_systems = system_repository.list(str(parent_id), session=session)
-
-    database_mock.systems.find.assert_called_once_with({"parent_id": parent_id}, session=session)
-    assert retrieved_systems == []
-
-
-# pylint:disable=W0613
-def test_list_with_invalid_parent_id_filter(test_helpers, database_mock, system_repository):
-    """
-    Test getting Systems when given an invalid parent_id to filter on
-
-    Verify that the `list` method properly handles the retrieval of systems when given an invalid parent_id
-    filter
-    """
-    with pytest.raises(InvalidObjectIdError) as exc:
-        system_repository.list("invalid")
-    database_mock.systems.find.assert_not_called()
-    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-
-
-@patch("inventory_management_system_api.repositories.system.utils")
-def test_update(utils_mock, test_helpers, database_mock, system_repository):
-    """
-    Test updating a System
-
-    Verify that the `update` method properly handles the update of a System
-    """
-    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    session = MagicMock()
-
-    # Mock `find_one` to return the stored System document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        system.model_dump(),
-    )
-
-    # Mock `update_one` to return an object for the updated System document
-    test_helpers.mock_update_one(database_mock.systems)
-
-    # Mock `find_one` to return the updated System document
-    system_in = SystemIn(**SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    test_helpers.mock_find_one(database_mock.systems, {**system_in.model_dump(), "_id": CustomObjectId(system.id)})
-
-    updated_system = system_repository.update(system.id, system_in, session=session)
-
-    utils_mock.create_breadcrumbs_aggregation_pipeline.assert_not_called()
-    utils_mock.is_valid_move_result.assert_not_called()
-
-    database_mock.systems.update_one.assert_called_once_with(
-        {
-            "_id": CustomObjectId(system.id),
-        },
-        {
-            "$set": {
-                **system_in.model_dump(),
-            },
-        },
-        session=session,
-    )
-    database_mock.systems.find_one.assert_has_calls(
-        [
-            call({"_id": CustomObjectId(system.id)}, session=session),
-            call({"_id": CustomObjectId(system.id)}, session=session),
-        ]
-    )
-    assert updated_system == SystemOut(id=system.id, **system_in.model_dump())
-
-
-@patch("inventory_management_system_api.repositories.system.utils")
-def test_update_parent_id(utils_mock, test_helpers, database_mock, system_repository):
-    """
-    Test updating a System's parent_id
-
-    Verify that the `update` method properly handles the update of a System when the parent id changes
-    """
-    parent_system_id = str(ObjectId())
-    system = SystemOut(
-        id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id, **MOCK_CREATED_MODIFIED_TIME}
-    )
-    session = MagicMock()
-    new_parent_id = str(ObjectId())
-
-    # Mock `find_one` to return a parent System document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {
-            **SYSTEM_B_INFO,
-            **MOCK_CREATED_MODIFIED_TIME,
-            "_id": CustomObjectId(new_parent_id),
-        },
-    )
-
-    # Mock `find_one` to return the stored System document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        system.model_dump(),
-    )
-    # Mock `find_one` to return no duplicate systems found
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `update_one` to return an object for the updated System document
-    test_helpers.mock_update_one(database_mock.systems)
-    # Mock `find_one` to return the updated System document
-    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id, **MOCK_CREATED_MODIFIED_TIME})
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system_in.model_dump(), "_id": CustomObjectId(system.id)},
-    )
-
-    # Mock utils so not moving to a child of itself
-    mock_aggregation_pipeline = MagicMock()
-    utils_mock.create_move_check_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    utils_mock.is_valid_move_result.return_value = True
-    database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
-
-    updated_system = system_repository.update(system.id, system_in, session=session)
-
-    utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
-        entity_id=system.id, destination_id=new_parent_id, collection_name="systems"
-    )
-    database_mock.systems.aggregate.assert_called_once_with(mock_aggregation_pipeline, session=session)
-    utils_mock.is_valid_move_result.assert_called_once()
-
-    database_mock.systems.update_one.assert_called_once_with(
-        {
-            "_id": CustomObjectId(system.id),
-        },
-        {
-            "$set": {
-                **system_in.model_dump(),
-            },
-        },
-        session=session,
-    )
-    database_mock.systems.find_one.assert_has_calls(
-        [
-            call({"_id": CustomObjectId(new_parent_id)}, session=session),
-            call({"_id": CustomObjectId(system.id)}, session=session),
+                session=self.mock_session,
+            )
+        )
+        expected_find_one_calls.append(
             call(
-                {
-                    "parent_id": CustomObjectId(new_parent_id),
-                    "code": system.code,
-                    "_id": {"$ne": CustomObjectId(system.id)},
-                },
-                session=session,
-            ),
-            call({"_id": CustomObjectId(system.id)}, session=session),
+                {"_id": CustomObjectId(self._expected_system_out.id)},
+                session=self.mock_session,
+            )
+        )
+        self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
+
+        self.systems_collection.insert_one.assert_called_once_with(system_in_data, session=self.mock_session)
+        assert self._created_system == self._expected_system_out
+
+    def check_create_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.systems_collection.insert_one.assert_not_called()
+
+        assert str(self._create_exception.value) == message
+
+
+class TestCreate(CreateDSL):
+    """Tests for creating a System"""
+
+    def test_create(self):
+        """Test creating a System"""
+
+        self.mock_create(SYSTEM_IN_DATA_NO_PARENT_A)
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_parent_id(self):
+        """Test creating a System with a valid parent_id"""
+
+        self.mock_create(
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_non_existent_parent_id(self):
+        """Test creating a System with a non-existent parent_id"""
+
+        parent_id = str(ObjectId())
+
+        self.mock_create({**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": parent_id}, parent_system_in_data=None)
+        self.call_create_expecting_error(MissingRecordError)
+        self.check_create_failed_with_exception(f"No parent System found with ID: {parent_id}")
+
+    def test_create_with_duplicate_name_within_parent(self):
+        """Test creating a System with a duplicate system being found in the same parent system"""
+
+        self.mock_create(
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+        )
+        self.call_create_expecting_error(DuplicateRecordError)
+        self.check_create_failed_with_exception("Duplicate System found within the parent System")
+
+
+class GetDSL(SystemRepoDSL):
+    """Base class for get tests"""
+
+    _obtained_system_id: str
+    _expected_system_out: Optional[SystemOut]
+    _obtained_system: Optional[SystemOut]
+    _get_exception: pytest.ExceptionInfo
+
+    def mock_get(self, system_id: str, system_in_data: Optional[dict]):
+        """Mocks database methods appropriately to test the 'get' repo method
+
+        :param system_id: ID of the system that will be obtained
+        :param system_in_data: Dictionary containing the system data as would be required for a SystemIn database
+                               model (i.e. No id or created and modified times required)
+        """
+
+        self._expected_system_out = (
+            SystemOut(**SystemIn(**system_in_data).model_dump(), id=CustomObjectId(system_id))
+            if system_in_data
+            else None
+        )
+
+        self.test_helpers.mock_find_one(
+            self.systems_collection, self._expected_system_out.model_dump() if self._expected_system_out else None
+        )
+
+    def call_get(self, system_id: str):
+        """Calls the SystemRepo `get` method with the appropriate data from a prior call to `mock_get`"""
+
+        self._obtained_system_id = system_id
+        self._obtained_system = self.system_repository.get(system_id, session=self.mock_session)
+
+    def call_get_expecting_error(self, system_id: str, error_type: type[BaseException]):
+        """Calls the SystemRepo `get` method with the appropriate data from a prior call to `mock_get`
+        while expecting an error to be raised"""
+
+        with pytest.raises(error_type) as exc:
+            self.system_repository.get(system_id)
+        self._get_exception = exc
+
+    def check_get_success(self):
+        """Checks that a prior call to `get_system` worked as expected"""
+
+        self.systems_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._obtained_system_id)}, session=self.mock_session
+        )
+        assert self._obtained_system == self._expected_system_out
+
+    def check_get_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.systems_collection.find_one.assert_not_called()
+
+        assert str(self._get_exception.value) == message
+
+
+class TestGet(GetDSL):
+    """Tests for getting a System"""
+
+    def test_get(self):
+        """Test getting a System"""
+
+        system_id = str(ObjectId())
+
+        self.mock_get(system_id, SYSTEM_IN_DATA_NO_PARENT_A)
+        self.call_get(system_id)
+        self.check_get_success()
+
+    def test_get_with_non_existent_id(self):
+        """Test getting a System with a non-existent ID"""
+
+        system_id = str(ObjectId())
+
+        self.mock_get(system_id, None)
+        self.call_get(system_id)
+        self.check_get_success()
+
+    def test_get_with_invalid_id(self):
+        """Test getting a System with an invalid ID"""
+
+        system_id = "invalid-id"
+
+        self.call_get_expecting_error(system_id, InvalidObjectIdError)
+        self.check_get_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class GetBreadcrumbsDSL(SystemRepoDSL):
+    """Base class for breadcrumbs tests"""
+
+    _breadcrumbs_query_result: list[dict]
+    _mock_aggregation_pipeline = MagicMock()
+    _expected_breadcrumbs: MagicMock
+    _obtained_system_id: str
+    _obtained_breadcrumbs: MagicMock
+
+    def mock_breadcrumbs(self, breadcrumbs_query_result: list[dict]):
+        """Mocks database methods appropriately to test the 'get_breadcrumbs' repo method
+
+        :param breadcrumbs_query_result: List of dictionaries containing the breadcrumbs query result from the
+                                         aggregation pipeline
+        """
+        self._breadcrumbs_query_result = breadcrumbs_query_result
+        self._mock_aggregation_pipeline = MagicMock()
+        self._expected_breadcrumbs = MagicMock()
+
+        self.mock_utils.create_breadcrumbs_aggregation_pipeline.return_value = self._mock_aggregation_pipeline
+        self.systems_collection.aggregate.return_value = breadcrumbs_query_result
+        self.mock_utils.compute_breadcrumbs.return_value = self._expected_breadcrumbs
+
+    def call_get_breadcrumbs(self, system_id: str):
+        """Calls the SystemRepo `get_breadcrumbs` method"""
+
+        self._obtained_system_id = system_id
+        self._obtained_breadcrumbs = self.system_repository.get_breadcrumbs(system_id, session=self.mock_session)
+
+    def check_get_breadcrumbs_success(self):
+        """Checks that a prior call to `call_get_breadcrumbs` worked as expected"""
+
+        self.mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
+            entity_id=self._obtained_system_id, collection_name="systems"
+        )
+        self.systems_collection.aggregate.assert_called_once_with(
+            self._mock_aggregation_pipeline, session=self.mock_session
+        )
+        self.mock_utils.compute_breadcrumbs.assert_called_once_with(
+            list(self._breadcrumbs_query_result), entity_id=self._obtained_system_id, collection_name="systems"
+        )
+
+        assert self._obtained_breadcrumbs == self._expected_breadcrumbs
+
+
+class TestGetBreadcrumbs(GetBreadcrumbsDSL):
+    """Tests for getting the breadcrumbs of a System"""
+
+    def test_get_system_breadcrumbs(self):
+        """Test getting a System's breadcrumbs"""
+
+        self.mock_breadcrumbs(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH)
+        self.call_get_breadcrumbs(str(ObjectId()))
+        self.check_get_breadcrumbs_success()
+
+
+class ListDSL(SystemRepoDSL):
+    """Base class for list tests"""
+
+    _expected_systems_out: list[SystemOut]
+    _parent_id_filter: Optional[str]
+    _obtained_systems_out: list[SystemOut]
+
+    def mock_list(self, systems_in_data: list[dict]):
+        """Mocks database methods appropriately to test the 'list' repo method
+
+        :param systems_in_data: List of dictionaries containing the system data as would be required for a
+                                SystemIn database model (i.e. no id or created and modified times required)"""
+
+        self._expected_systems_out = [
+            SystemOut(**SystemIn(**system_in_data).model_dump(), id=ObjectId()) for system_in_data in systems_in_data
         ]
-    )
-    assert updated_system == SystemOut(id=system.id, **{**system_in.model_dump(), "parent_id": new_parent_id})
+
+        self.test_helpers.mock_find(
+            self.systems_collection, [system_out.model_dump() for system_out in self._expected_systems_out]
+        )
+
+    def call_list(self, parent_id: Optional[str]):
+        """Calls the SystemRepo `list` method"""
+
+        self._parent_id_filter = parent_id
+
+        self._obtained_systems_out = self.system_repository.list(parent_id=parent_id, session=self.mock_session)
+
+    def check_list_success(self):
+        """Checks that a prior call to 'call_list` worked as expected"""
+
+        self.mock_utils.list_query.assert_called_once_with(self._parent_id_filter, "systems")
+        self.systems_collection.find.assert_called_once_with(
+            self.mock_utils.list_query.return_value, session=self.mock_session
+        )
+
+        assert self._obtained_systems_out == self._expected_systems_out
 
 
-@patch("inventory_management_system_api.repositories.system.utils")
-def test_update_parent_id_moving_to_child(utils_mock, test_helpers, database_mock, system_repository):
-    """
-    Test updating a System's parent_id when moving to a child of itself
+class TestList(ListDSL):
+    """Tests for listing System's"""
 
-    Verify that the `update` method properly handles the update of a System when the new parent_id
-    is a child of itself
-    """
-    parent_system_id = str(ObjectId())
-    system = SystemOut(
-        id=str(ObjectId()), **{**SYSTEM_A_INFO, "parent_id": parent_system_id, **MOCK_CREATED_MODIFIED_TIME}
-    )
-    new_parent_id = str(ObjectId())
+    def test_list(self):
+        """Test listing all Systems"""
 
-    # Mock `find_one` to return a parent System document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {
-            **SYSTEM_B_INFO,
-            **MOCK_CREATED_MODIFIED_TIME,
-            "_id": CustomObjectId(new_parent_id),
-        },
-    )
+        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
+        self.call_list(parent_id=None)
+        self.check_list_success()
 
-    # Mock `find_one` to return the stored System document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        system.model_dump(),
-    )
-    # Mock `find_one` to return no duplicates found
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `update_one` to return an object for the updated System document
-    test_helpers.mock_update_one(database_mock.systems)
-    # Mock `find_one` to return the updated System document
-    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id, **MOCK_CREATED_MODIFIED_TIME})
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {**system_in.model_dump(), "_id": CustomObjectId(system.id)},
-    )
+    def test_list_with_parent_id_filter(self):
+        """Test listing all Systems with a given parent_id"""
 
-    # Mock utils so moving to a child of itself
-    mock_aggregation_pipeline = MagicMock()
-    utils_mock.create_move_check_aggregation_pipeline.return_value = mock_aggregation_pipeline
-    utils_mock.is_valid_move_result.return_value = False
-    database_mock.systems.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_INVALID
+        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
+        self.call_list(parent_id=str(ObjectId()))
+        self.check_list_success()
 
-    system_in = SystemIn(**{**SYSTEM_A_INFO, "parent_id": new_parent_id})
+    def test_list_with_null_parent_id_filter(self):
+        """Test listing all Systems with a 'null' parent_id"""
 
-    with pytest.raises(InvalidActionError) as exc:
-        system_repository.update(system.id, system_in)
-    assert str(exc.value) == "Cannot move a system to one of its own children"
+        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
+        self.call_list(parent_id="null")
+        self.check_list_success()
 
-    utils_mock.create_move_check_aggregation_pipeline.assert_called_once_with(
-        entity_id=system.id, destination_id=new_parent_id, collection_name="systems"
-    )
-    database_mock.systems.aggregate.assert_called_once_with(mock_aggregation_pipeline, session=None)
-    utils_mock.is_valid_move_result.assert_called_once()
+    def test_list_with_parent_id_with_no_results(self):
+        """Test listing all Systems with a parent_id filter returning no results"""
 
-    database_mock.systems.update_one.assert_not_called()
-    database_mock.systems.find_one.assert_has_calls(
-        [
-            call({"_id": CustomObjectId(new_parent_id)}, session=None),
-            call({"_id": CustomObjectId(system.id)}, session=None),
+        self.mock_list([])
+        self.call_list(parent_id=str(ObjectId()))
+        self.check_list_success()
+
+
+class UpdateDSL(SystemRepoDSL):
+    """Base class for update tests"""
+
+    # pylint:disable=too-many-instance-attributes
+    _system_in: SystemIn
+    _stored_system: Optional[SystemOut]
+    _expected_system_out: SystemOut
+    _updated_system_id: str
+    _updated_system: SystemOut
+    _moving_system: bool
+    _update_exception: pytest.ExceptionInfo
+
+    def set_update_data(self, new_system_data: dict):
+        """Assigns the update data to use during a call to `update_system`
+
+        :param new_system_data: New system data to supply to the SystemRepo `update` method"""
+        self._system_in = SystemIn(**new_system_data)
+
+    # pylint:disable=too-many-arguments
+    def mock_update(
+        self,
+        system_id: str,
+        new_system_in_data: dict,
+        stored_system_in_data: Optional[dict],
+        new_parent_system_in_data: Optional[dict] = None,
+        duplicate_system_in_data: Optional[dict] = None,
+        valid_move_result: bool = True,
+    ):
+        """Mocks database methods appropriately to test the 'update' repo method
+
+        :param system_id: ID of the system that will be obtained
+        :param new_system_in_data: Dictionary containing the new system information as would be required for a SystemIn
+                               database model (i.e. no id or created and modified times required)
+        :param stored_system_in_data: Dictionary containing the system information for the existing stored System
+                                      as would be required for a SystemIn database model
+        :param new_parent_system_in_data: Either None or a dictionary containing the new parent system data as would be
+                                       required for a SystemIn database model
+        :param duplicate_system_in_data: Either None or a dictionary containing the data for a duplicate system as would
+                                      be required for a SystemIn database model
+        :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
+                                  moving the system one of its own children
+        """
+        self.set_update_data(new_system_in_data)
+
+        # When a parent_id is given, need to mock the find_one for it too
+        if new_system_in_data["parent_id"]:
+            # If new_parent_system_data is given as none, then it is intentionally supposed to be, otherwise
+            # pass through SystemIn first to ensure it has creation and modified times
+            self.test_helpers.mock_find_one(
+                self.systems_collection,
+                (
+                    {**SystemIn(**new_parent_system_in_data).model_dump(), "_id": new_system_in_data["parent_id"]}
+                    if new_parent_system_in_data
+                    else None
+                ),
+            )
+
+        # Stored system
+        self._stored_system = (
+            SystemOut(**SystemIn(**stored_system_in_data).model_dump(), id=CustomObjectId(system_id))
+            if stored_system_in_data
+            else None
+        )
+        self.test_helpers.mock_find_one(
+            self.systems_collection, self._stored_system.model_dump() if self._stored_system else None
+        )
+
+        # Duplicate check
+        self._moving_system = stored_system_in_data is not None and (
+            new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
+        )
+        if (self._stored_system and (self._system_in.name != self._stored_system.name)) or self._moving_system:
+            self.test_helpers.mock_find_one(
+                self.systems_collection,
+                (
+                    {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
+                    if duplicate_system_in_data
+                    else None
+                ),
+            )
+
+        # Final system after update
+        self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=CustomObjectId(system_id))
+        self.test_helpers.mock_find_one(self.systems_collection, self._expected_system_out.model_dump())
+
+        if self._moving_system:
+            mock_aggregation_pipeline = MagicMock()
+            self.mock_utils.create_move_check_aggregation_pipeline.return_value = mock_aggregation_pipeline
+            if valid_move_result:
+                self.mock_utils.is_valid_move_result.return_value = True
+                self.systems_collection.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_VALID
+            else:
+                self.mock_utils.is_valid_move_result.return_value = False
+                self.systems_collection.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_INVALID
+
+    def call_update(self, system_id: str):
+        """Calls the SystemRepo `update` method with the appropriate data from a prior call to `mock_update` (or
+        `set_update_data`)"""
+
+        self._updated_system_id = system_id
+        self._updated_system = self.system_repository.update(system_id, self._system_in, session=self.mock_session)
+
+    def call_update_expecting_error(self, system_id: str, error_type: type[BaseException]):
+        """Calls the SystemRepo `update` method with the appropriate data from a prior call to `mock_update` (or
+        `set_update_data`) while expecting an error to be raised"""
+
+        with pytest.raises(error_type) as exc:
+            self.system_repository.update(system_id, self._system_in)
+        self._update_exception = exc
+
+    def check_update_success(self):
+        """Checks that a prior call to `call_update` worked as expected"""
+
+        # Obtain a list of expected find_one calls
+        expected_find_one_calls = []
+
+        # Parent existence check
+        if self._system_in.parent_id:
+            expected_find_one_calls.append(call({"_id": self._system_in.parent_id}, session=self.mock_session))
+
+        # Stored system
+        expected_find_one_calls.append(
             call(
-                {
-                    "parent_id": CustomObjectId(new_parent_id),
-                    "code": system.code,
-                    "_id": {"$ne": CustomObjectId(system.id)},
-                },
-                session=None,
-            ),
-        ]
-    )
+                {"_id": CustomObjectId(self._expected_system_out.id)},
+                session=self.mock_session,
+            )
+        )
 
+        # Duplicate check (which only runs if moving or changing the name)
+        if (self._stored_system and (self._system_in.name != self._stored_system.name)) or self._moving_system:
+            expected_find_one_calls.append(
+                call(
+                    {
+                        "parent_id": self._system_in.parent_id,
+                        "code": self._system_in.code,
+                        "_id": {"$ne": CustomObjectId(self._updated_system_id)},
+                    },
+                    session=self.mock_session,
+                )
+            )
+        self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
 
-def test_update_with_invalid_id(database_mock, system_repository):
-    """
-    Test updating a System with an invalid ID
+        if self._moving_system:
+            self.mock_utils.create_move_check_aggregation_pipeline.assert_called_once_with(
+                entity_id=self._updated_system_id,
+                destination_id=str(self._system_in.parent_id),
+                collection_name="systems",
+            )
+            self.systems_collection.aggregate.assert_called_once_with(
+                self.mock_utils.create_move_check_aggregation_pipeline.return_value, session=self.mock_session
+            )
 
-    Verify that the `update` method properly handles the update of a System with an invalid ID
-    """
-    system_id = "invalid"
-
-    with pytest.raises(InvalidObjectIdError) as exc:
-        system_repository.update(system_id, MagicMock())
-    assert str(exc.value) == f"Invalid ObjectId value '{system_id}'"
-
-    database_mock.systems.update_one.assert_not_called()
-    database_mock.systems.find_one.assert_not_called()
-
-
-def test_update_with_non_existent_parent_id(test_helpers, database_mock, system_repository):
-    """
-    Test updating a System with a non-existent parent ID
-
-    Verify that the `update` method properly handles the update of a System with a non-existent parent ID
-    """
-    system = SystemIn(**{**SYSTEM_A_INFO, "parent_id": str(ObjectId())})
-    system_id = str(ObjectId())
-
-    # Mock `find_one` to not return a parent System document
-    test_helpers.mock_find_one(database_mock.systems, None)
-
-    with pytest.raises(MissingRecordError) as exc:
-        system_repository.update(system_id, system)
-    assert str(exc.value) == f"No parent System found with ID: {system.parent_id}"
-
-    database_mock.systems.update_one.assert_not_called()
-    database_mock.systems.find_one.assert_called_once_with({"_id": system.parent_id}, session=None)
-
-
-def test_update_duplicate_name_within_parent(test_helpers, database_mock, system_repository):
-    """
-    Test updating a System with a duplicate name within the parent System
-
-    Verify that the `update` method properly handles the update of a System with a duplicate name in the
-    parent System
-    """
-    system = SystemIn(**SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    system_id = str(ObjectId())
-
-    # Mock `find_one` to return a parent System document
-    test_helpers.mock_find_one(
-        database_mock.systems, {**SYSTEM_B_INFO, "_id": CustomObjectId(system_id), **MOCK_CREATED_MODIFIED_TIME}
-    )
-    # Mock `find_one` to return duplicate system found in parent system
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        {
-            **SYSTEM_B_INFO,
-            **MOCK_CREATED_MODIFIED_TIME,
-            "_id": ObjectId(),
-        },
-    )
-
-    with pytest.raises(DuplicateRecordError) as exc:
-        system_repository.update(system_id, system)
-    assert str(exc.value) == "Duplicate System found within the parent System"
-
-    database_mock.systems.update_one.assert_not_called()
-
-
-@patch("inventory_management_system_api.repositories.system.utils")
-def test_update_change_capitalisation_of_name(utils_mock, test_helpers, database_mock, system_repository):
-    """
-    Test updating a System when the code is the same and the capitalisation of the name has changed.
-
-    Verify that the `update` method properly handles the update of a System
-    """
-    system = SystemOut(id=str(ObjectId()), **SYSTEM_A_INFO, **MOCK_CREATED_MODIFIED_TIME)
-    session = MagicMock()
-
-    # Mock `find_one` to return the stored System document
-    test_helpers.mock_find_one(
-        database_mock.systems,
-        system.model_dump(),
-    )
-
-    # Mock `find_one` to return None as a duplicate was not found
-    test_helpers.mock_find_one(database_mock.systems, None)
-
-    # Mock `update_one` to return an object for the updated System document
-    test_helpers.mock_update_one(database_mock.systems)
-
-    # Mock `find_one` to return the updated System document
-    system_in = SystemIn(**{**SYSTEM_A_INFO, "name": "TeSt NaMe A"}, **MOCK_CREATED_MODIFIED_TIME)
-    test_helpers.mock_find_one(database_mock.systems, {**system_in.model_dump(), "_id": CustomObjectId(system.id)})
-
-    updated_system = system_repository.update(system.id, system_in, session=session)
-
-    utils_mock.create_breadcrumbs_aggregation_pipeline.assert_not_called()
-    utils_mock.is_valid_move_result.assert_not_called()
-
-    database_mock.systems.update_one.assert_called_once_with(
-        {
-            "_id": CustomObjectId(system.id),
-        },
-        {
-            "$set": {
-                **system_in.model_dump(),
+        self.systems_collection.update_one.assert_called_once_with(
+            {
+                "_id": CustomObjectId(self._updated_system_id),
             },
-        },
-        session=session,
-    )
-    database_mock.systems.find_one.assert_has_calls(
-        [
-            call({"_id": CustomObjectId(system.id)}, session=session),
-        ]
-    )
-    assert updated_system == SystemOut(id=system.id, **system_in.model_dump())
+            {
+                "$set": {
+                    **self._system_in.model_dump(),
+                },
+            },
+            session=self.mock_session,
+        )
+
+        assert self._updated_system == self._expected_system_out
+
+    def check_update_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.systems_collection.update_one.assert_not_called()
+
+        assert str(self._update_exception.value) == message
 
 
-def test_delete(test_helpers, database_mock, system_repository):
-    """
-    Test deleting a System
+class TestUpdate(UpdateDSL):
+    """Tests for updating a System"""
 
-    Verify that the `delete` method properly handles the deletion of a System by its ID
-    """
-    system_id = str(ObjectId())
-    session = MagicMock()
+    def test_update(self):
+        """Test updating a System"""
 
-    # Mock `delete_one` to return that one document has been deleted
-    test_helpers.mock_delete_one(database_mock.systems, 1)
+        system_id = str(ObjectId())
 
-    # Mock `find_one` to return no systems
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `find_one` to return no items
-    test_helpers.mock_find_one(database_mock.items, None)
+        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
+        self.call_update(system_id)
+        self.check_update_success()
 
-    system_repository.delete(system_id, session=session)
+    def test_update_with_invalid_id(self):
+        """Test updating a System with an invalid id"""
 
-    database_mock.systems.delete_one.assert_called_once_with({"_id": CustomObjectId(system_id)}, session=session)
+        system_id = "invalid-id"
+
+        self.set_update_data(SYSTEM_IN_DATA_NO_PARENT_A)
+        self.call_update_expecting_error(system_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+    def test_update_no_changes(self):
+        """Test updating a System to have exactly the same contents"""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id(self):
+        """Test updating a System's parent_id to move it"""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id=system_id,
+            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=None,
+            valid_move_result=True,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_child_of_self(self):
+        """Test updating a System's parent_id to a child of it self (should prevent this)"""
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id=system_id,
+            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=None,
+            valid_move_result=False,
+        )
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot move a system to one of its own children")
+
+    def test_update_with_non_existent_parent_id(self):
+        """Test updating a System's parent_id to a non-existent System"""
+
+        system_id = str(ObjectId())
+        new_parent_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": new_parent_id},
+            SYSTEM_IN_DATA_NO_PARENT_A,
+            new_parent_system_in_data=None,
+        )
+        self.call_update_expecting_error(system_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No parent System found with ID: {new_parent_id}")
+
+    def test_update_name_to_duplicate_within_parent(self):
+        """Test updating a System's name to one that is a duplicate within the same parent System"""
+
+        system_id = str(ObjectId())
+        new_name = "New Duplicate Name"
+
+        self.mock_update(
+            system_id,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": new_name},
+            SYSTEM_IN_DATA_NO_PARENT_A,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+        )
+        self.call_update_expecting_error(system_id, DuplicateRecordError)
+        self.check_update_failed_with_exception("Duplicate System found within the parent System")
+
+    def test_update_parent_id_with_duplicate_within_parent(self):
+        """Test updating a System's parent-id to one contains a System with a duplicate name within the same parent
+        System"""
+
+        system_id = str(ObjectId())
+        new_parent_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": new_parent_id},
+            SYSTEM_IN_DATA_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+        )
+        self.call_update_expecting_error(system_id, DuplicateRecordError)
+        self.check_update_failed_with_exception("Duplicate System found within the parent System")
 
 
-def test_delete_with_child_systems(test_helpers, database_mock, system_repository):
-    """
-    Test deleting a System with child Systems
+class DeleteDSL(SystemRepoDSL):
+    """Base class for delete tests"""
 
-    Verify that the `delete` method properly handles the deletion of a System with child Systems
-    """
-    system_id = str(ObjectId())
+    _delete_system_id: str
+    _delete_exception: pytest.ExceptionInfo
 
-    # Mock `find_one` to return a system
-    test_helpers.mock_find_one(database_mock.systems, MagicMock())
-    # Mock `find_one` to return no items
-    test_helpers.mock_find_one(database_mock.items, None)
+    def mock_delete(
+        self, deleted_count: int, child_system_data: Optional[dict] = None, child_item_data: Optional[dict] = None
+    ):
+        """Mocks database methods appropriately to test the 'delete' repo method
 
-    with pytest.raises(ChildElementsExistError) as exc:
-        system_repository.delete(system_id)
+        :param deleted_count: Number of documents deleted successfully
+        :param child_system_data: Dictionary containing a child system's data (or None)
+        :param child_item_data: Dictionary containing a child items's data (or None)
+        """
 
-    database_mock.systems.delete_one.assert_not_called()
-    assert str(exc.value) == f"System with ID {system_id} has child elements and cannot be deleted"
+        self.test_helpers.mock_find_one(self.systems_collection, child_system_data)
+        self.test_helpers.mock_find_one(self.items_collection, child_item_data)
+        self.test_helpers.mock_delete_one(self.systems_collection, deleted_count)
+
+    def call_delete(self, system_id: str):
+        """Calls the SystemRepo `delete` method"""
+
+        self._delete_system_id = system_id
+        self.system_repository.delete(system_id, session=self.mock_session)
+
+    def call_delete_expecting_error(self, system_id: str, error_type: type[BaseException]):
+        """Calls the SystemRepo `delete` method while expecting an error to be raised"""
+
+        self._delete_system_id = system_id
+        with pytest.raises(error_type) as exc:
+            self.system_repository.delete(system_id)
+        self._delete_exception = exc
+
+    def check_delete_success(self):
+        """Checks that a prior call to `call_delete` worked as expected"""
+
+        self.systems_collection.find_one.assert_called_once_with(
+            {"parent_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
+        )
+        self.items_collection.find_one.assert_called_once_with(
+            {"system_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
+        )
+        self.systems_collection.delete_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str, expecting_delete_one_called: bool = False):
+        """Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        if not expecting_delete_one_called:
+            self.systems_collection.delete_one.assert_not_called()
+        else:
+            self.systems_collection.delete_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._delete_system_id)}, session=None
+            )
+
+        assert str(self._delete_exception.value) == message
 
 
-def test_delete_with_child_items(test_helpers, database_mock, system_repository):
-    """
-    Test deleting a System with child Items
+class TestDelete(DeleteDSL):
+    """Tests for deleting a System"""
 
-    Verify that the `delete` method properly handles the deletion of a System with child Items
-    """
-    system_id = str(ObjectId())
+    def test_delete(self):
+        """Test deleting a System"""
 
-    # Mock `find_one` to return a system
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `find_one` to return an item (child elements found)
-    test_helpers.mock_find_one(database_mock.items, MagicMock())
+        self.mock_delete(deleted_count=1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
 
-    with pytest.raises(ChildElementsExistError) as exc:
-        system_repository.delete(system_id)
+    def test_delete_with_child_system(self):
+        """Test deleting a System when it has a child system"""
 
-    database_mock.systems.delete_one.assert_not_called()
-    assert str(exc.value) == f"System with ID {system_id} has child elements and cannot be deleted"
+        system_id = str(ObjectId())
 
+        self.mock_delete(deleted_count=1, child_system_data=SYSTEM_IN_DATA_NO_PARENT_A)
+        self.call_delete_expecting_error(system_id, ChildElementsExistError)
+        self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
-def test_delete_with_invalid_id(database_mock, system_repository):
-    """
-    Test deleting a System with an invalid ID
+    def test_delete_with_child_item(self):
+        """Test deleting a System when it has a child item"""
 
-    Verify that the `delete` method properly handles the deletion of a System with an invalid ID
-    """
+        system_id = str(ObjectId())
 
-    with pytest.raises(InvalidObjectIdError) as exc:
-        system_repository.delete("invalid")
+        self.mock_delete(deleted_count=1, child_item_data=ITEM_INFO)
+        self.call_delete_expecting_error(system_id, ChildElementsExistError)
+        self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
-    database_mock.systems.delete_one.assert_not_called()
-    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+    def test_delete_non_existent_id(self):
+        """Test deleting a System"""
 
+        system_id = str(ObjectId())
 
-def test_delete_with_non_existent_id(test_helpers, database_mock, system_repository):
-    """
-    Test deleting a System with a non-existent ID
+        self.mock_delete(deleted_count=0)
+        self.call_delete_expecting_error(system_id, MissingRecordError)
+        self.check_delete_failed_with_exception(
+            f"No System found with ID: {system_id}", expecting_delete_one_called=True
+        )
 
-    Verify that the `delete` method properly handles the deletion of a System with a non-existant ID
-    """
-    system_id = str(ObjectId())
+    def test_delete_invalid_id(self):
+        """Test deleting a System"""
 
-    # Mock `delete_one` to return that no document has been deleted
-    test_helpers.mock_delete_one(database_mock.systems, 0)
+        system_id = "invalid-id"
 
-    # Mock `find_one` to return no systems
-    test_helpers.mock_find_one(database_mock.systems, None)
-    # Mock `find_one` to return no items
-    test_helpers.mock_find_one(database_mock.items, None)
-
-    with pytest.raises(MissingRecordError) as exc:
-        system_repository.delete(system_id)
-    assert str(exc.value) == f"No System found with ID: {system_id}"
-
-    database_mock.systems.delete_one.assert_called_once_with({"_id": CustomObjectId(system_id)}, session=None)
+        self.call_delete_expecting_error(system_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
