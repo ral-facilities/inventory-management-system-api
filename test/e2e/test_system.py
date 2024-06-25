@@ -514,7 +514,8 @@ class TestDelete(DeleteDSL):
     def test_delete_with_child_item(self):
         """Test deleting a System with a child system"""
 
-        # THIS SHOULD BE CLEANED UP IN FUTURE
+        # pylint:disable=fixme
+        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": system_id})
