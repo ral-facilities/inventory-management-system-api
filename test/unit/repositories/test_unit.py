@@ -17,6 +17,7 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 
+# pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_INFO = {
     "name": "Category A",
     "code": "category-a",
@@ -24,6 +25,7 @@ CATALOGUE_CATEGORY_INFO = {
     "parent_id": None,
     "properties": [],
 }
+# pylint: enable=duplicate-code
 
 
 def test_create(test_helpers, database_mock, unit_repository):

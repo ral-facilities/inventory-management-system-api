@@ -44,16 +44,30 @@ CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     "properties": [],
 }
 
+CATALOGUE_CATEGORY_PROPERTY_BOOLEAN_MANDATORY_WITHOUT_UNIT = {
+    "name": "Mandatory Boolean Property Without Unit",
+    "type": "boolean",
+    "mandatory": True,
+}
+
+CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT = {
+    "name": "Non Mandatory Number Property With Unit",
+    "type": "number",
+    "unit": "mm",
+    "mandatory": False,
+}
+
 CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES = {
     "name": "Leaf Category No Parent With Properties",
     "code": "leaf-category-no-parent-with-properties",
     "is_leaf": True,
     "parent_id": None,
     "properties": [
-        CatalogueCategoryPropertyIn(name="Property A", type="number", unit="mm", mandatory=False),
-        CatalogueCategoryPropertyIn(name="Property B", type="boolean", mandatory=True),
+        CatalogueCategoryPropertyIn(**CATALOGUE_CATEGORY_PROPERTY_BOOLEAN_MANDATORY_WITHOUT_UNIT),
+        CatalogueCategoryPropertyIn(**CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT),
     ],
 }
+
 
 # --------------------------------- SYSTEMS ---------------------------------
 
