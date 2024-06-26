@@ -31,6 +31,7 @@ from inventory_management_system_api.repositories.system import SystemRepo
 class SystemRepoDSL:
     """Base class for SystemRepo unit tests"""
 
+    # pylint:disable=too-many-instance-attributes
     test_helpers: RepositoryTestHelpers
     mock_database: Mock
     mock_utils: Mock
@@ -39,6 +40,10 @@ class SystemRepoDSL:
     items_collection: Mock
 
     mock_session = MagicMock()
+
+    # Internal data for utility functions
+    _mock_child_system_data: Optional[dict]
+    _mock_child_item_data: Optional[dict]
 
     @pytest.fixture(autouse=True)
     def setup(self, test_helpers, database_mock):
@@ -58,6 +63,67 @@ class SystemRepoDSL:
         with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
             self.mock_utils = mock_utils
             yield
+
+    def mock_has_child_elements(self, child_system_data: Optional[dict] = None, child_item_data: Optional[dict] = None):
+        """Mocks database methods appropriately for when the '_has_child_elements' repo method will be called
+
+        :param child_system_data: Dictionary containing a child System's data (or None)
+        :param child_catalogue_item_data: Dictionary containing a child Item's data (or None)
+        """
+
+        self._mock_child_system_data = child_system_data
+        self._mock_child_item_data = child_item_data
+
+        self.test_helpers.mock_find_one(self.systems_collection, child_system_data)
+        self.test_helpers.mock_find_one(self.items_collection, child_item_data)
+
+    def check_has_child_elements_performed_expected_calls(self, expected_system_id: str):
+        """Checks that a call to `_has_child_elements` performed the expected function calls
+
+        :param expected_system_id: Expected System id used in the database calls
+        """
+
+        self.systems_collection.find_one.assert_called_once_with(
+            {"parent_id": CustomObjectId(expected_system_id)}, session=self.mock_session
+        )
+        # Will only call the second one if the first doesn't return anything
+        if not self._mock_child_item_data:
+            self.items_collection.find_one.assert_called_once_with(
+                {"system_id": CustomObjectId(expected_system_id)}, session=self.mock_session
+            )
+
+    def mock_is_duplicate_system(self, duplicate_system_in_data: Optional[dict] = None):
+        """Mocks database methods appropriately for when the '_is_duplicate_system' repo method will be called
+
+        :param duplicate_system_in_data: Either None or a dictionary containing system data for a duplicate system
+        """
+
+        self.test_helpers.mock_find_one(
+            self.systems_collection,
+            (
+                {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
+                if duplicate_system_in_data
+                else None
+            ),
+        )
+
+    def get_is_duplicate_system_expected_find_one_call(
+        self, system_in: SystemIn, expected_system_id: Optional[CustomObjectId]
+    ):
+        """Returns the expected find_one calls from that should occur when `_is_duplicate_system` is called
+
+        :param system_in: SystemIn model containing the data about the system
+        :param expected_system_id: Expected system_id provided to `is_duplicate_system`
+        """
+
+        return call(
+            {
+                "parent_id": system_in.parent_id,
+                "code": system_in.code,
+                "_id": {"$ne": expected_system_id},
+            },
+            session=self.mock_session,
+        )
 
 
 class CreateDSL(SystemRepoDSL):
@@ -101,14 +167,7 @@ class CreateDSL(SystemRepoDSL):
                     else None
                 ),
             )
-        self.test_helpers.mock_find_one(
-            self.systems_collection,
-            (
-                {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
-                if duplicate_system_in_data
-                else None
-            ),
-        )
+        self.mock_is_duplicate_system(duplicate_system_in_data)
         self.test_helpers.mock_insert_one(self.systems_collection, inserted_system_id)
         self.test_helpers.mock_find_one(
             self.systems_collection, {**self._system_in.model_dump(), "_id": inserted_system_id}
@@ -138,16 +197,7 @@ class CreateDSL(SystemRepoDSL):
         if self._system_in.parent_id:
             expected_find_one_calls.append(call({"_id": self._system_in.parent_id}, session=self.mock_session))
         # Also need checks for duplicate and the final newly inserted system get
-        expected_find_one_calls.append(
-            call(
-                {
-                    "parent_id": self._system_in.parent_id,
-                    "code": self._system_in.code,
-                    "_id": {"$ne": None},
-                },
-                session=self.mock_session,
-            )
-        )
+        expected_find_one_calls.append(self.get_is_duplicate_system_expected_find_one_call(self._system_in, None))
         expected_find_one_calls.append(
             call(
                 {"_id": CustomObjectId(self._expected_system_out.id)},
@@ -497,14 +547,7 @@ class UpdateDSL(SystemRepoDSL):
             new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
         )
         if (self._stored_system_out and (self._system_in.name != self._stored_system_out.name)) or self._moving_system:
-            self.test_helpers.mock_find_one(
-                self.systems_collection,
-                (
-                    {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
-                    if duplicate_system_in_data
-                    else None
-                ),
-            )
+            self.mock_is_duplicate_system(duplicate_system_in_data)
 
         # Final system after update
         self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=CustomObjectId(system_id))
@@ -556,13 +599,8 @@ class UpdateDSL(SystemRepoDSL):
         # Duplicate check (which only runs if moving or changing the name)
         if (self._stored_system_out and (self._system_in.name != self._stored_system_out.name)) or self._moving_system:
             expected_find_one_calls.append(
-                call(
-                    {
-                        "parent_id": self._system_in.parent_id,
-                        "code": self._system_in.code,
-                        "_id": {"$ne": CustomObjectId(self._updated_system_id)},
-                    },
-                    session=self.mock_session,
+                self.get_is_duplicate_system_expected_find_one_call(
+                    self._system_in, CustomObjectId(self._updated_system_id)
                 )
             )
         self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
@@ -722,12 +760,11 @@ class DeleteDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the 'delete' repo method
 
         :param deleted_count: Number of documents deleted successfully
-        :param child_system_data: Dictionary containing a child system's data (or None)
-        :param child_item_data: Dictionary containing a child items's data (or None)
+        :param child_system_data: Dictionary containing a child System's data (or None)
+        :param child_item_data: Dictionary containing a child Items's data (or None)
         """
 
-        self.test_helpers.mock_find_one(self.systems_collection, child_system_data)
-        self.test_helpers.mock_find_one(self.items_collection, child_item_data)
+        self.mock_has_child_elements(child_system_data, child_item_data)
         self.test_helpers.mock_delete_one(self.systems_collection, deleted_count)
 
     def call_delete(self, system_id: str):
@@ -747,12 +784,7 @@ class DeleteDSL(SystemRepoDSL):
     def check_delete_success(self):
         """Checks that a prior call to `call_delete` worked as expected"""
 
-        self.systems_collection.find_one.assert_called_once_with(
-            {"parent_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
-        )
-        self.items_collection.find_one.assert_called_once_with(
-            {"system_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
-        )
+        self.check_has_child_elements_performed_expected_calls(self._delete_system_id)
         self.systems_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
         )
