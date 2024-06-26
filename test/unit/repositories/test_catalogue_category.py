@@ -10,6 +10,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
+from test.unit.repositories.mock_models import MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
     MOCK_MOVE_QUERY_RESULT_INVALID,
@@ -30,7 +31,12 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn,
+    CatalogueCategoryOut,
+    CatalogueCategoryPropertyIn,
+    CatalogueCategoryPropertyOut,
+)
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 
 
@@ -1027,100 +1033,196 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# @patch("inventory_management_system_api.repositories.catalogue_category.datetime")
-# def test_create_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
-#     """
-#     Test create_property performs the correct database update query
-#     """
-#     session = MagicMock()
-#     catalogue_category_id = str(ObjectId())
-#     property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+class CreatePropertyDSL(CatalogueCategoryRepoDSL):
+    """Base class for create property tests"""
 
-#     # Mock 'update_one'
-#     test_helpers.mock_update_one(database_mock.catalogue_categories)
+    _mock_datetime: Mock
+    _property_in: CatalogueCategoryPropertyIn
+    _expected_property_out: CatalogueCategoryPropertyOut
+    _created_property: CatalogueCategoryOut
+    _catalogue_category_id: str
+    _create_exception: pytest.ExceptionInfo
 
-#     result = catalogue_category_repository.create_property(catalogue_category_id, property_in, session=session)
+    @pytest.fixture(autouse=True)
+    def setup_create_property_dsl(self):
+        """Setup fixtures"""
 
-#     database_mock.catalogue_categories.update_one.assert_called_once_with(
-#         {"_id": CustomObjectId(catalogue_category_id)},
-#         {
-#             "$push": {"properties": property_in.model_dump(by_alias=True)},
-#             "$set": {"modified_time": datetime_mock.now.return_value},
-#         },
-#         session=session,
-#     )
-#     assert result == CatalogueCategoryPropertyOut(**property_in.model_dump(by_alias=True))
+        with patch("inventory_management_system_api.repositories.catalogue_category.datetime") as mock_datetime:
+            self._mock_datetime = mock_datetime
+            yield
 
+    def mock_create_property(self, property_in_data: dict):
+        """Mocks database methods appropriately to test the 'create_property' repo method
 
-# def test_create_property_with_invalid_id(database_mock, catalogue_category_repository):
-#     """
-#     Test create_property performs the correct database update query when given an invalid id
-#     """
+        :param property_in_data: Dictionary containing the catalogue category property data as would be required for a
+                                 CatalogueCategoryPropertyIn database model
+        """
 
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         catalogue_category_repository.create_property(
-#             "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
-#         )
-#     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-#     database_mock.catalogue_categories.update_one.assert_not_called()
+        self._property_in = CatalogueCategoryPropertyIn(**property_in_data)
+        self._expected_property_out = CatalogueCategoryPropertyOut(**self._property_in.model_dump(by_alias=True))
 
+        self.test_helpers.mock_update_one(self.catalogue_categories_collection)
 
-# @patch("inventory_management_system_api.repositories.catalogue_category.datetime")
-# def test_update_property(datetime_mock, test_helpers, database_mock, catalogue_category_repository):
-#     """
-#     Test update_property performs the correct database update query
-#     """
-#     session = MagicMock()
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_in = CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+    def call_create_property(self, catalogue_category_id: str):
+        """Calls the CatalogueCategoryRepo `create_property` method with the appropriate data from a prior call to
+        `mock_create_property`
+        """
 
-#     # Mock 'update_one'
-#     test_helpers.mock_update_one(database_mock.catalogue_categories)
+        self._catalogue_category_id = catalogue_category_id
+        self._created_property = self.catalogue_category_repository.create_property(
+            catalogue_category_id, self._property_in, session=self.mock_session
+        )
 
-#     result = catalogue_category_repository.update_property(
-#         catalogue_category_id, property_id, property_in, session=session
-#     )
+    def call_create_property_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
+        """Calls the CatalogueCategoryRepo `create_property` method with the appropriate data from a prior call to
+        `mock_create_property`
+        """
 
-#     database_mock.catalogue_categories.update_one.assert_called_once_with(
-#         {
-#             "_id": CustomObjectId(catalogue_category_id),
-#             "properties._id": CustomObjectId(property_id),
-#         },
-#         {
-#             "$set": {
-#                 "properties.$[elem]": property_in.model_dump(by_alias=True),
-#                 "modified_time": datetime_mock.now.return_value,
-#             },
-#         },
-#         array_filters=[{"elem._id": CustomObjectId(property_id)}],
-#         session=session,
-#     )
-#     assert result == CatalogueCategoryPropertyOut(**property_in.model_dump(by_alias=True))
+        self._catalogue_category_id = catalogue_category_id
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_repository.create_property(
+                catalogue_category_id, self._property_in, session=self.mock_session
+            )
+        self._create_exception = exc
 
+    def check_create_property_success(self):
+        """Checks that a prior call to `call_create_property` worked as expected"""
 
-# def test_update_property_with_invalid_catalogue_category_id(database_mock, catalogue_category_repository):
-#     """
-#     Test update_property performs the correct database update query when given an invalid catalogue
-#     category id
-#     """
+        self.catalogue_categories_collection.update_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._catalogue_category_id)},
+            {
+                "$push": {"properties": self._property_in.model_dump(by_alias=True)},
+                "$set": {"modified_time": self._mock_datetime.now.return_value},
+            },
+            session=self.mock_session,
+        )
+        assert self._created_property == self._expected_property_out
 
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         catalogue_category_repository.update_property(
-#             "invalid", str(ObjectId()), CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
-#         )
-#     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-#     database_mock.catalogue_categories.update_one.assert_not_called()
+    def check_create_property_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_create_property_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.catalogue_categories_collection.update_one.assert_not_called()
+
+        assert str(self._create_exception.value) == message
 
 
-# def test_update_property_with_invalid_property_id(database_mock, catalogue_category_repository):
-#     """
-#     Test update_property performs the correct database update query when given an invalid property ID
-#     """
+class TestCreateProperty(CreatePropertyDSL):
+    """Tests for creating a property"""
 
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         catalogue_category_repository.update_property(
-#             str(ObjectId()), "invalid", CatalogueCategoryPropertyIn(**MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
-#         )
-#     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-#     database_mock.catalogue_categories.update_one.assert_not_called()
+    def test_create_property(self):
+        """Test creating a property in an existing Catalogue Category"""
+
+        # TODO: Replace MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO with new value (and same for update)
+        self.mock_create_property(MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+        self.call_create_property(str(ObjectId()))
+        self.check_create_property_success()
+
+    def test_create_property_with_invalid_id(self):
+        """Test creating a property in a Catalogue Category with an invalid id"""
+
+        self.mock_create_property(MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+        self.call_create_property_expecting_error("invalid-id", InvalidObjectIdError)
+        self.check_create_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class UpdatePropertyDSL(CreatePropertyDSL):
+    """Base class for update property tests"""
+
+    _updated_property: CatalogueCategoryOut
+    _property_id: str
+    _update_exception: pytest.ExceptionInfo
+
+    def mock_update_property(self, property_in_data: dict):
+        """Mocks database methods appropriately to test the 'update_property' repo method
+
+        :param property_in_data: Dictionary containing the catalogue category property data as would be required for a
+                                 CatalogueCategoryPropertyIn database model
+        """
+
+        self._property_in = CatalogueCategoryPropertyIn(**property_in_data)
+        self._expected_property_out = CatalogueCategoryPropertyOut(**self._property_in.model_dump(by_alias=True))
+
+        self.test_helpers.mock_update_one(self.catalogue_categories_collection)
+
+    def call_update_property(self, catalogue_category_id: str, property_id: str):
+        """Calls the CatalogueCategoryRepo `update_property` method with the appropriate data from a prior call to
+        `mock_update_property`
+        """
+
+        self._catalogue_category_id = catalogue_category_id
+        self._property_id = property_id
+        self._updated_property = self.catalogue_category_repository.update_property(
+            catalogue_category_id, property_id, self._property_in, session=self.mock_session
+        )
+
+    def call_update_property_expecting_error(
+        self, catalogue_category_id: str, property_id: str, error_type: type[BaseException]
+    ):
+        """Calls the CatalogueCategoryRepo `update_property` method with the appropriate data from a prior call to
+        `mock_update_property`
+        """
+
+        self._catalogue_category_id = catalogue_category_id
+        self._property_id = property_id
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_repository.update_property(
+                catalogue_category_id, property_id, self._property_in, session=self.mock_session
+            )
+        self._update_exception = exc
+
+    def check_update_property_success(self):
+        """Checks that a prior call to `call_update_property` worked as expected"""
+
+        self.catalogue_categories_collection.update_one.assert_called_once_with(
+            {
+                "_id": CustomObjectId(self._catalogue_category_id),
+                "properties._id": CustomObjectId(self._property_id),
+            },
+            {
+                "$set": {
+                    "properties.$[elem]": self._property_in.model_dump(by_alias=True),
+                    "modified_time": self._mock_datetime.now.return_value,
+                },
+            },
+            array_filters=[{"elem._id": CustomObjectId(self._property_id)}],
+            session=self.mock_session,
+        )
+        assert self._updated_property == self._expected_property_out
+
+    def check_update_property_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_update_property_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.catalogue_categories_collection.update_one.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdateProperty(UpdatePropertyDSL):
+    """Tests for updating a property"""
+
+    def test_update_property(self):
+        """Test updating a property in an existing Catalogue Category"""
+
+        self.mock_update_property(MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+        self.call_update_property(catalogue_category_id=str(ObjectId()), property_id=str(ObjectId()))
+        self.check_update_property_success()
+
+    def test_update_property_with_invalid_catalogue_category_id(self):
+        """Test updating a property in a Catalogue Category with an invalid id"""
+
+        self.mock_update_property(MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+        self.call_update_property_expecting_error(
+            catalogue_category_id="invalid-id", property_id=str(ObjectId()), error_type=InvalidObjectIdError
+        )
+        self.check_update_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+    def test_update_property_with_invalid_property_id(self):
+        """Test updating a property with an invalid id in a Catalogue Category"""
+
+        self.mock_update_property(MOCK_CATALOGUE_CATEGORY_PROPERTY_A_INFO)
+        self.call_update_property_expecting_error(
+            catalogue_category_id=str(ObjectId()), property_id="invalid-id", error_type=InvalidObjectIdError
+        )
+        self.check_update_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
