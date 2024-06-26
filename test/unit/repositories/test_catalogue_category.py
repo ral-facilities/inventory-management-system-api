@@ -81,7 +81,7 @@ class CatalogueCategoryRepoDSL:
     ):
         """Mocks database methods appropriately for when the 'has_child_elements' repo method will be called
 
-        :param child_catalogue_category_data: Dictionary containing a child catalogue categories's data (or None)
+        :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or None)
         :param child_catalogue_item_data: Dictionary containing a child catalogue item's data (or None)
         """
 
@@ -442,7 +442,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
     """Tests for getting the breadcrumbs of a Catalogue Category"""
 
     def test_get_breadcrumbs(self):
-        """Test getting a Catalogue Categories's breadcrumbs"""
+        """Test getting a Catalogue Category's breadcrumbs"""
 
         self.mock_breadcrumbs(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH)
         self.call_get_breadcrumbs(str(ObjectId()))
@@ -946,7 +946,7 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
         """Mocks database methods appropriately to test the 'delete' repo method
 
         :param deleted_count: Number of documents deleted successfully
-        :param child_system_data: Dictionary containing a child catalogue categories's data (or None)
+        :param child_system_data: Dictionary containing a child catalogue category's data (or None)
         :param child_item_data: Dictionary containing a child catalogue item's data (or None)
         """
 
@@ -1146,7 +1146,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
     _update_exception: pytest.ExceptionInfo
 
     def mock_update_property(self, property_in_data: dict):
-        """Mocks database methods appropriately to test the 'update_property' repo method
+        """Mocks database methods appropriately to test the `update_property` repo method
 
         :param property_in_data: Dictionary containing the catalogue category property data as would be required for a
                                  CatalogueCategoryPropertyIn database model

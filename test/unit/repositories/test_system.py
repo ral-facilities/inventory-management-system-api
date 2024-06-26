@@ -761,7 +761,7 @@ class DeleteDSL(SystemRepoDSL):
 
         :param deleted_count: Number of documents deleted successfully
         :param child_system_data: Dictionary containing a child System's data (or None)
-        :param child_item_data: Dictionary containing a child Items's data (or None)
+        :param child_item_data: Dictionary containing a child Item's data (or None)
         """
 
         self.mock_has_child_elements(child_system_data, child_item_data)
