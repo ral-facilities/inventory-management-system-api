@@ -2,6 +2,7 @@
 End-to-End tests for the System router
 """
 
+from datetime import datetime
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
@@ -372,6 +373,17 @@ class UpdateDSL(ListDSL):
 
         assert self._patch_response.status_code == 200
         assert self._patch_response.json() == expected_system_get_data
+
+        # pylint:disable=fixme
+        # TODO: Move the below code into a utility or something later - will be wanted for other tests?
+        original_data = self._post_response.json()
+        new_data = self._patch_response.json()
+
+        # Created time should be unchanged, but new modified time should be greater than before
+        assert original_data["created_time"] == new_data["created_time"]
+        assert datetime.fromisoformat(new_data["modified_time"]) > datetime.fromisoformat(
+            original_data["modified_time"]
+        )
 
     def check_patch_system_failed_with_message(self, status_code: int, detail: str):
         """Checks that a prior call to 'patch_system' gave a failed response with the expected code and error message"""
