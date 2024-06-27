@@ -67,7 +67,7 @@ class SystemRepoDSL:
     def mock_has_child_elements(self, child_system_data: Optional[dict] = None, child_item_data: Optional[dict] = None):
         """Mocks database methods appropriately for when the '_has_child_elements' repo method will be called
 
-        :param child_system_data: Dictionary containing a child System's data (or None)
+        :param child_system_data: Dictionary containing a child system's data (or None)
         :param child_catalogue_item_data: Dictionary containing a child Item's data (or None)
         """
 
@@ -80,7 +80,7 @@ class SystemRepoDSL:
     def check_has_child_elements_performed_expected_calls(self, expected_system_id: str):
         """Checks that a call to `_has_child_elements` performed the expected function calls
 
-        :param expected_system_id: Expected System id used in the database calls
+        :param expected_system_id: Expected system id used in the database calls
         """
 
         self.systems_collection.find_one.assert_called_once_with(
@@ -219,17 +219,17 @@ class CreateDSL(SystemRepoDSL):
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a System"""
+    """Tests for creating a system"""
 
     def test_create(self):
-        """Test creating a System"""
+        """Test creating a system"""
 
         self.mock_create(SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_parent_id(self):
-        """Test creating a System with a valid parent_id"""
+        """Test creating a system with a valid parent_id"""
 
         self.mock_create(
             {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
@@ -239,16 +239,16 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_non_existent_parent_id(self):
-        """Test creating a System with a non-existent parent_id"""
+        """Test creating a system with a non-existent parent_id"""
 
         parent_id = str(ObjectId())
 
         self.mock_create({**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": parent_id}, parent_system_in_data=None)
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No parent System found with ID: {parent_id}")
+        self.check_create_failed_with_exception(f"No parent system found with ID: {parent_id}")
 
     def test_create_with_duplicate_name_within_parent(self):
-        """Test creating a System with a duplicate system being found in the same parent system"""
+        """Test creating a system with a duplicate system being found in the same parent system"""
 
         self.mock_create(
             {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
@@ -256,7 +256,7 @@ class TestCreate(CreateDSL):
             duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
         )
         self.call_create_expecting_error(DuplicateRecordError)
-        self.check_create_failed_with_exception("Duplicate System found within the parent System")
+        self.check_create_failed_with_exception("Duplicate system found within the parent system")
 
 
 class GetDSL(SystemRepoDSL):
@@ -317,10 +317,10 @@ class GetDSL(SystemRepoDSL):
 
 
 class TestGet(GetDSL):
-    """Tests for getting a System"""
+    """Tests for getting a system"""
 
     def test_get(self):
-        """Test getting a System"""
+        """Test getting a system"""
 
         system_id = str(ObjectId())
 
@@ -329,7 +329,7 @@ class TestGet(GetDSL):
         self.check_get_success()
 
     def test_get_with_non_existent_id(self):
-        """Test getting a System with a non-existent ID"""
+        """Test getting a system with a non-existent ID"""
 
         system_id = str(ObjectId())
 
@@ -338,7 +338,7 @@ class TestGet(GetDSL):
         self.check_get_success()
 
     def test_get_with_invalid_id(self):
-        """Test getting a System with an invalid ID"""
+        """Test getting a system with an invalid ID"""
 
         system_id = "invalid-id"
 
@@ -392,10 +392,10 @@ class GetBreadcrumbsDSL(SystemRepoDSL):
 
 
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
-    """Tests for getting the breadcrumbs of a System"""
+    """Tests for getting the breadcrumbs of a system"""
 
     def test_get_breadcrumbs(self):
-        """Test getting a System's breadcrumbs"""
+        """Test getting a system's breadcrumbs"""
 
         self.mock_breadcrumbs(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH)
         self.call_get_breadcrumbs(str(ObjectId()))
@@ -443,31 +443,31 @@ class ListDSL(SystemRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing System's"""
+    """Tests for listing system's"""
 
     def test_list(self):
-        """Test listing all Systems"""
+        """Test listing all systems"""
 
         self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
         self.call_list(parent_id=None)
         self.check_list_success()
 
     def test_list_with_parent_id_filter(self):
-        """Test listing all Systems with a given parent_id"""
+        """Test listing all systems with a given parent_id"""
 
         self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
         self.call_list(parent_id=str(ObjectId()))
         self.check_list_success()
 
     def test_list_with_null_parent_id_filter(self):
-        """Test listing all Systems with a 'null' parent_id"""
+        """Test listing all systems with a 'null' parent_id"""
 
         self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
         self.call_list(parent_id="null")
         self.check_list_success()
 
     def test_list_with_parent_id_with_no_results(self):
-        """Test listing all Systems with a parent_id filter returning no results"""
+        """Test listing all systems with a parent_id filter returning no results"""
 
         self.mock_list([])
         self.call_list(parent_id=str(ObjectId()))
@@ -639,10 +639,10 @@ class UpdateDSL(SystemRepoDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a System"""
+    """Tests for updating a system"""
 
     def test_update(self):
-        """Test updating a System"""
+        """Test updating a system"""
 
         system_id = str(ObjectId())
 
@@ -651,7 +651,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_no_changes(self):
-        """Test updating a System to have exactly the same contents"""
+        """Test updating a system to have exactly the same contents"""
 
         system_id = str(ObjectId())
 
@@ -660,7 +660,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id(self):
-        """Test updating a System's parent_id to move it"""
+        """Test updating a system's parent_id to move it"""
 
         system_id = str(ObjectId())
 
@@ -676,7 +676,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id_to_child_of_self(self):
-        """Test updating a System's parent_id to a child of it self (should prevent this)"""
+        """Test updating a system's parent_id to a child of it self (should prevent this)"""
 
         system_id = str(ObjectId())
 
@@ -692,7 +692,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Cannot move a system to one of its own children")
 
     def test_update_with_non_existent_parent_id(self):
-        """Test updating a System's parent_id to a non-existent System"""
+        """Test updating a system's parent_id to a non-existent system"""
 
         system_id = str(ObjectId())
         new_parent_id = str(ObjectId())
@@ -704,10 +704,10 @@ class TestUpdate(UpdateDSL):
             new_parent_system_in_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No parent System found with ID: {new_parent_id}")
+        self.check_update_failed_with_exception(f"No parent system found with ID: {new_parent_id}")
 
     def test_update_name_to_duplicate_within_parent(self):
-        """Test updating a System's name to one that is a duplicate within the same parent System"""
+        """Test updating a system's name to one that is a duplicate within the same parent system"""
 
         system_id = str(ObjectId())
         new_name = "New Duplicate Name"
@@ -719,11 +719,11 @@ class TestUpdate(UpdateDSL):
             duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate System found within the parent System")
+        self.check_update_failed_with_exception("Duplicate system found within the parent system")
 
     def test_update_parent_id_with_duplicate_within_parent(self):
-        """Test updating a System's parent-id to one contains a System with a duplicate name within the same parent
-        System"""
+        """Test updating a system's parent-id to one contains a system with a duplicate name within the same parent
+        system"""
 
         system_id = str(ObjectId())
         new_parent_id = str(ObjectId())
@@ -736,10 +736,10 @@ class TestUpdate(UpdateDSL):
             duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate System found within the parent System")
+        self.check_update_failed_with_exception("Duplicate system found within the parent system")
 
     def test_update_with_invalid_id(self):
-        """Test updating a System with an invalid id"""
+        """Test updating a system with an invalid id"""
 
         system_id = "invalid-id"
 
@@ -760,8 +760,8 @@ class DeleteDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the 'delete' repo method
 
         :param deleted_count: Number of documents deleted successfully
-        :param child_system_data: Dictionary containing a child System's data (or None)
-        :param child_item_data: Dictionary containing a child Item's data (or None)
+        :param child_system_data: Dictionary containing a child system's data (or None)
+        :param child_item_data: Dictionary containing a child item's data (or None)
         """
 
         self.mock_has_child_elements(child_system_data, child_item_data)
@@ -804,17 +804,17 @@ class DeleteDSL(SystemRepoDSL):
 
 
 class TestDelete(DeleteDSL):
-    """Tests for deleting a System"""
+    """Tests for deleting a system"""
 
     def test_delete(self):
-        """Test deleting a System"""
+        """Test deleting a system"""
 
         self.mock_delete(deleted_count=1)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
     def test_delete_with_child_system(self):
-        """Test deleting a System when it has a child System"""
+        """Test deleting a system when it has a child system"""
 
         system_id = str(ObjectId())
 
@@ -823,7 +823,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
-        """Test deleting a System when it has a child Item"""
+        """Test deleting a system when it has a child Item"""
 
         system_id = str(ObjectId())
 
@@ -834,18 +834,18 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
     def test_delete_non_existent_id(self):
-        """Test deleting a System with a non-existent id"""
+        """Test deleting a system with a non-existent id"""
 
         system_id = str(ObjectId())
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(system_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No System found with ID: {system_id}", expecting_delete_one_called=True
+            f"No system found with ID: {system_id}", expecting_delete_one_called=True
         )
 
     def test_delete_invalid_id(self):
-        """Test deleting a System with an invalid id"""
+        """Test deleting a system with an invalid id"""
 
         system_id = "invalid-id"
 

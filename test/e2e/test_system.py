@@ -1,5 +1,5 @@
 """
-End-to-End tests for the System router
+End-to-End tests for the system router
 """
 
 from datetime import datetime
@@ -39,7 +39,7 @@ class CreateDSL:
         self.test_client = test_client
 
     def post_system(self, system_post_data: dict) -> Optional[str]:
-        """Posts a System with the given data, returns the id of the created system if successful
+        """Posts a system with the given data, returns the id of the created system if successful
 
         :param system_post_data: Dictionary containing the system data that should be posted
         :return: ID of the created system (or None if not successful)
@@ -69,52 +69,52 @@ class CreateDSL:
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a System"""
+    """Tests for creating a system"""
 
     def test_create_with_only_required_values_provided(self):
-        """Test creating a System with only required values provided"""
+        """Test creating a system with only required values provided"""
 
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.check_post_system_success(SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
     def test_create_with_all_values_provided(self):
-        """Test creating a System with all values provided"""
+        """Test creating a system with all values provided"""
 
         self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.check_post_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_create_with_valid_parent_id(self):
-        """Test creating a System with a valid parent id"""
+        """Test creating a system with a valid parent id"""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
         self.check_post_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_create_with_non_existent_parent_id(self):
-        """Test creating a System with a non-existent parent id"""
+        """Test creating a system with a non-existent parent id"""
 
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": str(ObjectId())})
-        self.check_post_system_failed_with_message(422, "The specified parent System does not exist")
+        self.check_post_system_failed_with_message(422, "The specified parent system does not exist")
 
     def test_create_with_invalid_parent_id(self):
-        """Test creating a System with an invalid parent id"""
+        """Test creating a system with an invalid parent id"""
 
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": "invalid-id"})
-        self.check_post_system_failed_with_message(422, "The specified parent System does not exist")
+        self.check_post_system_failed_with_message(422, "The specified parent system does not exist")
 
     def test_create_with_duplicate_name_within_parent(self):
-        """Test creating a System with the same name as another within the same parent"""
+        """Test creating a system with the same name as another within the same parent"""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         # 2nd post should be the duplicate
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
         self.check_post_system_failed_with_message(
-            409, "A System with the same name already exists within the same parent System"
+            409, "A system with the same name already exists within the same parent system"
         )
 
     def test_create_with_invalid_importance(self):
-        """Test creating a System with an invalid importance"""
+        """Test creating a system with an invalid importance"""
 
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "importance": "invalid-importance"})
         self.check_post_system_failed_with_validation_message(422, "Input should be 'low', 'medium' or 'high'")
@@ -126,7 +126,7 @@ class GetDSL(CreateDSL):
     _get_response: Response
 
     def get_system(self, system_id: str):
-        """Gets a System with the given id"""
+        """Gets a system with the given id"""
 
         self._get_response = self.test_client.get(f"/v1/systems/{system_id}")
 
@@ -144,23 +144,23 @@ class GetDSL(CreateDSL):
 
 
 class TestGet(GetDSL):
-    """Tests for getting a System"""
+    """Tests for getting a system"""
 
     def test_get(self):
-        """Test getting a System"""
+        """Test getting a system"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.get_system(system_id)
         self.check_get_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_get_with_non_existent_id(self):
-        """Test getting a System with a non-existent id"""
+        """Test getting a system with a non-existent id"""
 
         self.get_system(str(ObjectId()))
         self.check_get_system_failed_with_message(404, "System not found")
 
     def test_get_with_invalid_id(self):
-        """Test getting a System with an invalid id"""
+        """Test getting a system with an invalid id"""
 
         self.get_system("invalid-id")
         self.check_get_system_failed_with_message(404, "System not found")
@@ -182,8 +182,8 @@ class GetBreadcrumbsDSL(GetDSL):
     def post_nested_systems(self, number: int) -> list[Optional[str]]:
         """Posts the given number of nested systems where each successive one has the previous as its parent
 
-        :param number: Number of Systems to create
-        :return: List of ids of the created Systems
+        :param number: Number of systems to create
+        :return: List of ids of the created systems
         """
 
         parent_id = None
@@ -197,12 +197,12 @@ class GetBreadcrumbsDSL(GetDSL):
         return [system["id"] for system in self._posted_systems_get_data]
 
     def get_system_breadcrumbs(self, system_id: str):
-        """Gets a System's breadcrumbs with the given id"""
+        """Gets a system's breadcrumbs with the given id"""
 
         self._get_response = self.test_client.get(f"/v1/systems/{system_id}/breadcrumbs")
 
     def get_last_system_breadcrumbs(self):
-        """Gets the last System posted's breadcrumbs"""
+        """Gets the last system posted's breadcrumbs"""
 
         self.get_system_breadcrumbs(self._post_response.json()["id"])
 
@@ -232,17 +232,17 @@ class GetBreadcrumbsDSL(GetDSL):
 
 
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
-    """Tests for getting a System's breadcrumbs"""
+    """Tests for getting a system's breadcrumbs"""
 
     def test_get_breadcrumbs_when_no_parent(self):
-        """Test getting a System's breadcrumbs when the system has no parent"""
+        """Test getting a system's breadcrumbs when the system has no parent"""
 
         self.post_nested_systems(1)
         self.get_last_system_breadcrumbs()
         self.check_get_breadcrumbs_success(expected_trail_length=1, expected_full_trail=True)
 
     def test_get_breadcrumbs_when_trail_length_less_than_maximum(self):
-        """Test getting a System's breadcrumbs when the full system trail should be less than the maximum trail
+        """Test getting a system's breadcrumbs when the full system trail should be less than the maximum trail
         length"""
 
         self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
@@ -252,7 +252,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         )
 
     def test_get_breadcrumbs_when_trail_length_maximum(self):
-        """Test getting a System's breadcrumbs when the full system trail should be equal to the maximum trail
+        """Test getting a system's breadcrumbs when the full system trail should be equal to the maximum trail
         length"""
 
         self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH)
@@ -260,7 +260,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         self.check_get_breadcrumbs_success(expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=True)
 
     def test_get_breadcrumbs_when_trail_length_greater_maximum(self):
-        """Test getting a System's breadcrumbs when the full system trail exceeds the maximum trail length"""
+        """Test getting a system's breadcrumbs when the full system trail exceeds the maximum trail length"""
 
         self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
         self.get_last_system_breadcrumbs()
@@ -269,13 +269,13 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         )
 
     def test_get_breadcrumbs_with_non_existent_id(self):
-        """Test getting a System's breadcrumbs when given a non-existent system id"""
+        """Test getting a system's breadcrumbs when given a non-existent system id"""
 
         self.get_system_breadcrumbs(str(ObjectId()))
         self.check_get_breadcrumbs_failed_with_message(404, "System not found")
 
     def test_get_breadcrumbs_with_invalid_id(self):
-        """Test getting a System's breadcrumbs when given an invalid system id"""
+        """Test getting a system's breadcrumbs when given an invalid system id"""
 
         self.get_system_breadcrumbs("invalid_id")
         self.check_get_breadcrumbs_failed_with_message(404, "System not found")
@@ -285,12 +285,12 @@ class ListDSL(GetBreadcrumbsDSL):
     """Base class for list tests"""
 
     def get_systems(self, filters: dict):
-        """Gets a list Systems with the given filters"""
+        """Gets a list systems with the given filters"""
 
         self._get_response = self.test_client.get("/v1/systems", params=filters)
 
     def post_test_system_with_child(self) -> list[dict]:
-        """Posts a System with a single child and returns their expected responses when returned by the list endpoint"""
+        """Posts a system with a single child and returns their expected responses when returned by the list endpoint"""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
@@ -311,10 +311,10 @@ class ListDSL(GetBreadcrumbsDSL):
 
 
 class TestList(ListDSL):
-    """Tests for getting a list of Systems"""
+    """Tests for getting a list of systems"""
 
     def test_list_with_no_filters(self):
-        """Test getting a list of all Systems with no filters provided
+        """Test getting a list of all systems with no filters provided
 
         Posts a system with a child and expects both to be returned.
         """
@@ -324,7 +324,7 @@ class TestList(ListDSL):
         self.check_get_systems_success(systems)
 
     def test_list_with_parent_id_filter(self):
-        """Test getting a list of all Systems with a parent_id filter provided
+        """Test getting a list of all systems with a parent_id filter provided
 
         Posts a system with a child and then filter using the parent_id expecting only the second system
         to be returned.
@@ -335,7 +335,7 @@ class TestList(ListDSL):
         self.check_get_systems_success([systems[1]])
 
     def test_list_with_null_parent_id_filter(self):
-        """Test getting a list of all Systems with a parent_id filter of "null" provided
+        """Test getting a list of all systems with a parent_id filter of "null" provided
 
         Posts a system with a child and then filter using a parent_id of "null" expecting only
         the first parent system to be returned.
@@ -346,13 +346,13 @@ class TestList(ListDSL):
         self.check_get_systems_success([systems[0]])
 
     def test_list_with_parent_id_filter_with_no_matching_results(self):
-        """Test getting a list of all Systems with a parent_id filter that returns no results"""
+        """Test getting a list of all systems with a parent_id filter that returns no results"""
 
         self.get_systems(filters={"parent_id": str(ObjectId())})
         self.check_get_systems_success([])
 
     def test_list_with_invalid_parent_id_filter(self):
-        """Test getting a list of all Systems with an invalid parent_id filter returns no results"""
+        """Test getting a list of all systems with an invalid parent_id filter returns no results"""
 
         self.get_systems(filters={"parent_id": "invalid-id"})
         self.check_get_systems_success([])
@@ -364,7 +364,7 @@ class UpdateDSL(ListDSL):
     _patch_response: Response
 
     def patch_system(self, system_id: str, system_patch_data: dict):
-        """Updates a System with the given id"""
+        """Updates a system with the given id"""
 
         self._patch_response = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
@@ -393,17 +393,17 @@ class UpdateDSL(ListDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a System"""
+    """Tests for updating a system"""
 
     def test_partial_update_all_fields(self):
-        """Test updating every field of a System"""
+        """Test updating every field of a system"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.check_patch_system_response_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_partial_update_parent_id(self):
-        """Test updating the parent_id of a System"""
+        """Test updating the parent_id of a system"""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
@@ -412,7 +412,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_response_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
-        """Test updating the parent_id of a System so that its name conflicts with one already in that other
+        """Test updating the parent_id of a system so that its name conflicts with one already in that other
         system"""
 
         # System with child
@@ -423,42 +423,42 @@ class TestUpdate(UpdateDSL):
 
         self.patch_system(system_id, {"parent_id": parent_id})
         self.check_patch_system_failed_with_message(
-            409, "A System with the same name already exists within the parent System"
+            409, "A system with the same name already exists within the parent system"
         )
 
     def test_partial_update_parent_id_to_child_of_self(self):
-        """Test updating the parent_id of a System to one of its own children"""
+        """Test updating the parent_id of a system to one of its own children"""
 
         system_ids = self.post_nested_systems(2)
         self.patch_system(system_ids[0], {"parent_id": system_ids[1]})
         self.check_patch_system_failed_with_message(422, "Cannot move a system to one of its own children")
 
     def test_partial_update_parent_id_to_non_existent(self):
-        """Test updating the parent_id of a System to a non-existent System"""
+        """Test updating the parent_id of a system to a non-existent system"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": str(ObjectId())})
-        self.check_patch_system_failed_with_message(422, "The specified parent System does not exist")
+        self.check_patch_system_failed_with_message(422, "The specified parent system does not exist")
 
     def test_partial_update_parent_id_to_invalid(self):
-        """Test updating the parent_id of a System to an invalid id"""
+        """Test updating the parent_id of a system to an invalid id"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": "invalid-id"})
-        self.check_patch_system_failed_with_message(422, "The specified parent System does not exist")
+        self.check_patch_system_failed_with_message(422, "The specified parent system does not exist")
 
     def test_partial_update_name_to_duplicate(self):
-        """Test updating the name of a System to conflict with a pre-existing one"""
+        """Test updating the name of a system to conflict with a pre-existing one"""
 
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"name": SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY["name"]})
         self.check_patch_system_failed_with_message(
-            409, "A System with the same name already exists within the parent System"
+            409, "A system with the same name already exists within the parent system"
         )
 
     def test_partial_update_name_capitalisation(self):
-        """Test updating the capitalisation of the name of a System (to ensure it the check doesn't confuse with
+        """Test updating the capitalisation of the name of a system (to ensure it the check doesn't confuse with
         duplicates)"""
 
         system_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Test system"})
@@ -468,13 +468,13 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_with_non_existent_id(self):
-        """Test updating a non-existent System"""
+        """Test updating a non-existent system"""
 
         self.patch_system(str(ObjectId()), {})
         self.check_patch_system_failed_with_message(404, "System not found")
 
     def test_partial_update_invalid_id(self):
-        """Test updating a System with an invalid id"""
+        """Test updating a system with an invalid id"""
 
         self.patch_system("invalid-id", {})
         self.check_patch_system_failed_with_message(404, "System not found")
@@ -486,7 +486,7 @@ class DeleteDSL(UpdateDSL):
     _delete_response: Response
 
     def delete_system(self, system_id: str):
-        """Deletes a System with the given id"""
+        """Deletes a system with the given id"""
 
         self._delete_response = self.test_client.delete(f"/v1/systems/{system_id}")
 
@@ -504,10 +504,10 @@ class DeleteDSL(UpdateDSL):
 
 
 class TestDelete(DeleteDSL):
-    """Tests for deleting a System"""
+    """Tests for deleting a system"""
 
     def test_delete(self):
-        """Test deleting a System"""
+        """Test deleting a system"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.delete_system(system_id)
@@ -517,18 +517,17 @@ class TestDelete(DeleteDSL):
         self.check_get_system_failed_with_message(404, "System not found")
 
     def test_delete_with_child_system(self):
-        """Test deleting a System with a child system"""
+        """Test deleting a system with a child system"""
 
         system_ids = self.post_nested_systems(2)
         self.delete_system(system_ids[0])
         self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
-        """Test deleting a System with a child system"""
+        """Test deleting a system with a child system"""
 
         # pylint:disable=fixme
         # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
-
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": system_id})
 
@@ -582,13 +581,13 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
 
     def test_delete_with_non_existent_id(self):
-        """Test deleting a non-existent System"""
+        """Test deleting a non-existent system"""
 
         self.delete_system(str(ObjectId()))
         self.check_delete_failed_with_message(404, "System not found")
 
     def test_delete_with_invalid_id(self):
-        """Test deleting a System with an invalid id"""
+        """Test deleting a system with an invalid id"""
 
         self.delete_system("invalid_id")
         self.check_delete_failed_with_message(404, "System not found")

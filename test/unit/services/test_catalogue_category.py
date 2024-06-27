@@ -475,7 +475,7 @@ def test_get_breadcrumbs(test_helpers, catalogue_category_repository_mock, catal
     """
     Test getting breadcrumbs for a catalogue category
 
-    Verify that the `get_breadcrumbs` method properly handles the retrieval of a System
+    Verify that the `get_breadcrumbs` method properly handles the retrieval of breadcrumbs for a catalogue category
     """
     catalogue_category_id = str(ObjectId())
     breadcrumbs = MagicMock()

@@ -29,31 +29,31 @@ SystemServiceDep = Annotated[SystemService, Depends(SystemService)]
 
 @router.post(
     path="",
-    summary="Create a new System",
-    response_description="The created System",
+    summary="Create a new system",
+    response_description="The created system",
     status_code=status.HTTP_201_CREATED,
 )
 def create_system(system: SystemPostSchema, system_service: SystemServiceDep) -> SystemSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Creating a new System")
+    logger.info("Creating a new system")
     logger.debug("System data: %s", system)
     try:
         system = system_service.create(system)
         return SystemSchema(**system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent System does not exist"
+        message = "The specified parent system does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
-        message = "A System with the same name already exists within the same parent System"
+        message = "A system with the same name already exists within the same parent system"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
-@router.get(path="", summary="Get Systems", response_description="List of Systems")
+@router.get(path="", summary="Get systems", response_description="List of systems")
 def get_systems(
     system_service: SystemServiceDep,
-    parent_id: Annotated[Optional[str], Query(description="Filter Systems by parent ID")] = None,
+    parent_id: Annotated[Optional[str], Query(description="Filter systems by parent ID")] = None,
 ) -> list[SystemSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting Systems")
@@ -69,12 +69,12 @@ def get_systems(
         return []
 
 
-@router.get(path="/{system_id}", summary="Get a System by ID", response_description="Single System")
+@router.get(path="/{system_id}", summary="Get a system by ID", response_description="Single system")
 def get_system(
-    system_id: Annotated[str, Path(description="ID of the System to get")], system_service: SystemServiceDep
+    system_id: Annotated[str, Path(description="ID of the system to get")], system_service: SystemServiceDep
 ) -> SystemSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Getting System with ID: %s", system_service)
+    logger.info("Getting system with ID: %s", system_service)
     message = "System not found"
     try:
         system = system_service.get(system_id)
@@ -110,7 +110,7 @@ def get_system_breadcrumbs(
     # pylint: enable=duplicate-code
 
 
-@router.patch(path="/{system_id}", summary="Update a System by ID", response_description="System updated successfully")
+@router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")
 def partial_update_system(system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating system with ID: %s", system_id)
@@ -121,7 +121,7 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
         return SystemSchema(**updated_system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
-            message = "The specified parent System does not exist"
+            message = "The specified parent system does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
@@ -129,7 +129,7 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateRecordError as exc:
-        message = "A System with the same name already exists within the parent System"
+        message = "A system with the same name already exists within the parent system"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     # pylint:disable=duplicate-code

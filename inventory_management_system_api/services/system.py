@@ -19,7 +19,7 @@ logger = logging.getLogger()
 
 class SystemService:
     """
-    Service for managing Systems
+    Service for managing systems
     """
 
     def __init__(self, system_repository: Annotated[SystemRepo, Depends(SystemRepo)]) -> None:
@@ -32,10 +32,10 @@ class SystemService:
 
     def create(self, system: SystemPostSchema) -> SystemOut:
         """
-        Create a new System
+        Create a new system
 
         :param system: System to be created
-        :return: Created System
+        :return: Created system
         """
         parent_id = system.parent_id
 
@@ -54,10 +54,10 @@ class SystemService:
 
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
-        Retrieve a System by its ID
+        Retrieve a system by its ID
 
-        :param system_id: ID of the System to retrieve
-        :return: Retrieved System or `None` if not found
+        :param system_id: ID of the system to retrieve
+        :return: Retrieved system or `None` if not found
         """
         return self._system_repository.get(system_id)
 
@@ -72,25 +72,25 @@ class SystemService:
 
     def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """
-        Retrieve Systems based on the provided filters
+        Retrieve systems based on the provided filters
 
-        :param parent_id: parent_id to filter Systems by
-        :return: List of Systems or an empty list if no Systems are retrieved
+        :param parent_id: parent_id to filter systems by
+        :return: List of systems or an empty list if no systems are retrieved
         """
         return self._system_repository.list(parent_id)
 
     def update(self, system_id: str, system: SystemPatchSchema) -> SystemOut:
         """
-        Update a System by its ID
+        Update a system by its ID
 
-        :param system_id: ID of the System to updated
+        :param system_id: ID of the system to updated
         :param system: System containing the fields to be updated
-        :raises MissingRecordError: When the System with the given ID doesn't exist
-        :return: The updated System
+        :raises MissingRecordError: When the system with the given ID doesn't exist
+        :return: The updated system
         """
         stored_system = self.get(system_id)
         if not stored_system:
-            raise MissingRecordError(f"No System found with ID: {system_id}")
+            raise MissingRecordError(f"No system found with ID: {system_id}")
 
         update_data = system.model_dump(exclude_unset=True)
 
@@ -101,8 +101,8 @@ class SystemService:
 
     def delete(self, system_id: str) -> None:
         """
-        Delete a System by its ID
+        Delete a system by its ID
 
-        :param system_id: ID of the System to delete
+        :param system_id: ID of the system to delete
         """
         return self._system_repository.delete(system_id)
