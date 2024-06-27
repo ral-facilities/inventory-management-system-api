@@ -6,9 +6,9 @@ Unit tests for the `CatalogueCategoryRepo` repository.
 from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES,
-    CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
-    CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
-    CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT,
+    CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+    CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
@@ -129,6 +129,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         :param duplicate_catalogue_category_in_data: Either None or a dictionary containing catalogue category data
                                                      for a duplicate catalogue category
         """
+
         inserted_catalogue_category_id = CustomObjectId(str(ObjectId()))
 
         # Pass through CatalogueCategoryIn first as need creation and modified times
@@ -139,15 +140,15 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         )
 
         # When a parent_id is given, need to mock the find_one for it too
-        if catalogue_category_in_data["parent_id"]:
+        if self._catalogue_category_in.parent_id:
             # If parent_catalogue_category_data is given as None, then it is intentionally supposed to be, otherwise
             # pass through CatalogueCategoryIn first to ensure it has creation and modified times
             RepositoryTestHelpers.mock_find_one(
                 self.catalogue_categories_collection,
                 (
                     {
-                        **CatalogueCategoryIn(**parent_catalogue_category_in_data).model_dump(),
-                        "_id": catalogue_category_in_data["parent_id"],
+                        **CatalogueCategoryIn(**parent_catalogue_category_in_data).model_dump(by_alias=True),
+                        "_id": self._catalogue_category_in.parent_id,
                     }
                     if parent_catalogue_category_in_data
                     else None
@@ -156,7 +157,10 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection,
             (
-                {**CatalogueCategoryIn(**duplicate_catalogue_category_in_data).model_dump(), "_id": ObjectId()}
+                {
+                    **CatalogueCategoryIn(**duplicate_catalogue_category_in_data).model_dump(by_alias=True),
+                    "_id": ObjectId(),
+                }
                 if duplicate_catalogue_category_in_data
                 else None
             ),
@@ -234,7 +238,7 @@ class TestCreate(CreateDSL):
     def test_create_non_leaf_without_parent(self):
         """Test creating a non-leaf catalogue category without a parent"""
 
-        self.mock_create(CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A)
+        self.mock_create(CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         self.call_create()
         self.check_create_success()
 
@@ -256,8 +260,8 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue category with a parent"""
 
         self.mock_create(
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "parent_id": str(ObjectId())},
-            parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": str(ObjectId())},
+            parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
         )
         self.call_create()
         self.check_create_success()
@@ -268,7 +272,7 @@ class TestCreate(CreateDSL):
         parent_id = str(ObjectId())
 
         self.mock_create(
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "parent_id": parent_id},
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": parent_id},
             parent_catalogue_category_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
@@ -279,9 +283,9 @@ class TestCreate(CreateDSL):
         catalogue category"""
 
         self.mock_create(
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "parent_id": str(ObjectId())},
-            parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": str(ObjectId())},
+            parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
         )
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception(
@@ -361,7 +365,7 @@ class TestGet(GetDSL):
 
         catalogue_category_id = str(ObjectId())
 
-        self.mock_get(catalogue_category_id, CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A)
+        self.mock_get(catalogue_category_id, CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         self.call_get(catalogue_category_id)
         self.check_get_success()
 
@@ -504,7 +508,10 @@ class TestList(ListDSL):
         """Test listing all Catalogue Categories"""
 
         self.mock_list(
-            [CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B]
+            [
+                CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+                CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            ]
         )
         self.call_list(parent_id=None)
         self.check_list_success()
@@ -513,7 +520,10 @@ class TestList(ListDSL):
         """Test listing all Catalogue Categories with a given parent_id"""
 
         self.mock_list(
-            [CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B]
+            [
+                CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+                CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            ]
         )
         self.call_list(parent_id=str(ObjectId()))
         self.check_list_success()
@@ -522,7 +532,10 @@ class TestList(ListDSL):
         """Test listing all Catalogue Categories with a 'null' parent_id"""
 
         self.mock_list(
-            [CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B]
+            [
+                CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+                CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            ]
         )
         self.call_list(parent_id="null")
         self.check_list_success()
@@ -754,8 +767,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
         )
         self.call_update(catalogue_category_id)
         self.check_update_success()
@@ -767,8 +780,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
         )
         self.call_update(catalogue_category_id)
         self.check_update_success()
@@ -781,11 +794,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             catalogue_category_id=catalogue_category_id,
             new_catalogue_category_in_data={
-                **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+                **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
                 "parent_id": str(ObjectId()),
             },
-            stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
-            new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
+            stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
             duplicate_catalogue_category_in_data=None,
             valid_move_result=True,
         )
@@ -800,11 +813,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             catalogue_category_id=catalogue_category_id,
             new_catalogue_category_in_data={
-                **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+                **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
                 "parent_id": str(ObjectId()),
             },
-            stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
-            new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
+            stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
             duplicate_catalogue_category_in_data=None,
             valid_move_result=False,
         )
@@ -819,8 +832,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "parent_id": new_parent_id},
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": new_parent_id},
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             new_parent_catalogue_category_in_data=None,
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
@@ -835,9 +848,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "name": new_name},
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "name": new_name},
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
         )
         self.call_update_expecting_error(catalogue_category_id, DuplicateRecordError)
         self.check_update_failed_with_exception(
@@ -853,10 +866,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "parent_id": new_parent_id},
-            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
-            new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": new_parent_id},
+            CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
         )
         self.call_update_expecting_error(catalogue_category_id, DuplicateRecordError)
         self.check_update_failed_with_exception(
@@ -868,7 +881,7 @@ class TestUpdate(UpdateDSL):
 
         catalogue_category_id = "invalid-id"
 
-        self.set_update_data(CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A)
+        self.set_update_data(CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         self.call_update_expecting_error(catalogue_category_id, InvalidObjectIdError)
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -912,7 +925,7 @@ class TestHasChildElements(HasChildElementsDSL):
         """Test `has_child_elements` when there is a child catalogue category but no child catalogue items"""
 
         self.mock_has_child_elements(
-            child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
+            child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             child_catalogue_item_data=None,
         )
         self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
@@ -1007,7 +1020,9 @@ class TestDelete(DeleteDSL):
 
         catalogue_category_id = str(ObjectId())
 
-        self.mock_delete(deleted_count=1, child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A)
+        self.mock_delete(
+            deleted_count=1, child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A
+        )
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
             f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
@@ -1126,14 +1141,14 @@ class TestCreateProperty(CreatePropertyDSL):
     def test_create_property(self):
         """Test creating a property in an existing catalogue category"""
 
-        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
         self.call_create_property(str(ObjectId()))
         self.check_create_property_success()
 
     def test_create_property_with_invalid_id(self):
         """Test creating a property in a catalogue category with an invalid id"""
 
-        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
         self.call_create_property_expecting_error("invalid-id", InvalidObjectIdError)
         self.check_create_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -1217,14 +1232,14 @@ class TestUpdateProperty(UpdatePropertyDSL):
     def test_update_property(self):
         """Test updating a property in an existing catalogue category"""
 
-        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
         self.call_update_property(catalogue_category_id=str(ObjectId()), property_id=str(ObjectId()))
         self.check_update_property_success()
 
     def test_update_property_with_invalid_catalogue_category_id(self):
         """Test updating a property in a catalogue category with an invalid id"""
 
-        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
         self.call_update_property_expecting_error(
             catalogue_category_id="invalid-id", property_id=str(ObjectId()), error_type=InvalidObjectIdError
         )
@@ -1233,7 +1248,7 @@ class TestUpdateProperty(UpdatePropertyDSL):
     def test_update_property_with_invalid_property_id(self):
         """Test updating a property with an invalid id in a catalogue category"""
 
-        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
         self.call_update_property_expecting_error(
             catalogue_category_id=str(ObjectId()), property_id="invalid-id", error_type=InvalidObjectIdError
         )
