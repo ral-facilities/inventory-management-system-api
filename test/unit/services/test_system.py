@@ -21,7 +21,6 @@ from inventory_management_system_api.services.system import SystemService
 class SystemServiceDSL:
     """Base class for SystemService unit tests"""
 
-    test_helpers: ServiceTestHelpers
     wrapped_utils: Mock
     mock_system_repository: Mock
     system_service: SystemService
@@ -29,7 +28,6 @@ class SystemServiceDSL:
     @pytest.fixture(autouse=True)
     def setup(
         self,
-        test_helpers,
         system_repository_mock,
         system_service,
         # Ensures all created and modified times are mocked throughout
@@ -38,7 +36,6 @@ class SystemServiceDSL:
     ):
         """Setup fixtures"""
 
-        self.test_helpers = test_helpers
         self.mock_system_repository = system_repository_mock
         self.system_service = system_service
 
@@ -62,6 +59,7 @@ class CreateDSL(SystemServiceDSL):
         :param system_post_data: Dictionary containing the basic system data as would be required for a
                                  SystemPostSchema (i.e. no id, code or created and modified times required)
         """
+
         self._system_post = SystemPostSchema(**system_post_data)
 
         self._expected_system_in = SystemIn(
@@ -69,7 +67,7 @@ class CreateDSL(SystemServiceDSL):
         )
         self._expected_system_out = SystemOut(**self._expected_system_in.model_dump(), id=ObjectId())
 
-        self.test_helpers.mock_create(self.mock_system_repository, self._expected_system_out)
+        ServiceTestHelpers.mock_create(self.mock_system_repository, self._expected_system_out)
 
     def call_create(self):
         """Calls the SystemService `create` method with the appropriate data from a prior call to `mock_create`"""
@@ -115,7 +113,7 @@ class GetDSL(SystemServiceDSL):
 
         # Simply a return currently, so no need to use actual data
         self._expected_system = MagicMock()
-        self.test_helpers.mock_get(self.mock_system_repository, self._expected_system)
+        ServiceTestHelpers.mock_get(self.mock_system_repository, self._expected_system)
 
     def call_get(self, system_id: str):
         """Calls the SystemService `get` method"""
@@ -154,7 +152,7 @@ class GetBreadcrumbsDSL(SystemServiceDSL):
 
         # Simply a return currently, so no need to use actual data
         self._expected_breadcrumbs = MagicMock()
-        self.test_helpers.mock_get_breadcrumbs(self.mock_system_repository, self._expected_breadcrumbs)
+        ServiceTestHelpers.mock_get_breadcrumbs(self.mock_system_repository, self._expected_breadcrumbs)
 
     def call_get_breadcrumbs(self, system_id: str):
         """Calls the SystemService `get` method"""
@@ -193,7 +191,7 @@ class ListDSL(SystemServiceDSL):
 
         # Simply a return currently, so no need to use actual data
         self._expected_systems = MagicMock()
-        self.test_helpers.mock_list(self.mock_system_repository, self._expected_systems)
+        ServiceTestHelpers.mock_list(self.mock_system_repository, self._expected_systems)
 
     def call_list(self, parent_id: Optional[str]):
         """Calls the SystemService `list` method"""
@@ -253,14 +251,14 @@ class UpdateDSL(SystemServiceDSL):
             if stored_system_post_data
             else None
         )
-        self.test_helpers.mock_get(self.mock_system_repository, self._stored_system)
+        ServiceTestHelpers.mock_get(self.mock_system_repository, self._stored_system)
 
         # Patch schema
         self._system_patch = SystemPatchSchema(**system_patch_data)
 
         # Updated system
         self._expected_system_out = MagicMock()
-        self.test_helpers.mock_update(self.mock_system_repository, self._expected_system_out)
+        ServiceTestHelpers.mock_update(self.mock_system_repository, self._expected_system_out)
 
         # Construct the expected input for the repository
         merged_system_data = {**(stored_system_post_data or {}), **system_patch_data}
