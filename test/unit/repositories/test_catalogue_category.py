@@ -44,7 +44,6 @@ class CatalogueCategoryRepoDSL:
     """Base class for CatalogueCategoryRepo unit tests"""
 
     # pylint:disable=too-many-instance-attributes
-    test_helpers: RepositoryTestHelpers
     mock_database: Mock
     mock_utils: Mock
     catalogue_category_repository: CatalogueCategoryRepo
@@ -58,10 +57,9 @@ class CatalogueCategoryRepoDSL:
     _mock_child_catalogue_item_data: Optional[dict]
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_helpers, database_mock):
+    def setup(self, database_mock):
         """Setup fixtures"""
 
-        self.test_helpers = test_helpers
         self.mock_database = database_mock
         self.catalogue_category_repository = CatalogueCategoryRepo(database_mock)
         self.catalogue_categories_collection = database_mock.catalogue_categories
@@ -88,8 +86,8 @@ class CatalogueCategoryRepoDSL:
         self._mock_child_catalogue_category_data = child_catalogue_category_data
         self._mock_child_catalogue_item_data = child_catalogue_item_data
 
-        self.test_helpers.mock_find_one(self.catalogue_categories_collection, child_catalogue_category_data)
-        self.test_helpers.mock_find_one(self.catalogue_items_collection, child_catalogue_item_data)
+        RepositoryTestHelpers.mock_find_one(self.catalogue_categories_collection, child_catalogue_category_data)
+        RepositoryTestHelpers.mock_find_one(self.catalogue_items_collection, child_catalogue_item_data)
 
     def check_has_child_elements_performed_expected_calls(self, expected_catalogue_category_id: str):
         """Checks that a call to `has_child_elements` performed the expected function calls
@@ -144,7 +142,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         if catalogue_category_in_data["parent_id"]:
             # If parent_catalogue_category_data is given as None, then it is intentionally supposed to be, otherwise
             # pass through CatalogueCategoryIn first to ensure it has creation and modified times
-            self.test_helpers.mock_find_one(
+            RepositoryTestHelpers.mock_find_one(
                 self.catalogue_categories_collection,
                 (
                     {
@@ -155,7 +153,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
                     else None
                 ),
             )
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection,
             (
                 {**CatalogueCategoryIn(**duplicate_catalogue_category_in_data).model_dump(), "_id": ObjectId()}
@@ -163,8 +161,8 @@ class CreateDSL(CatalogueCategoryRepoDSL):
                 else None
             ),
         )
-        self.test_helpers.mock_insert_one(self.catalogue_categories_collection, inserted_catalogue_category_id)
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_insert_one(self.catalogue_categories_collection, inserted_catalogue_category_id)
+        RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection,
             {**self._catalogue_category_in.model_dump(by_alias=True), "_id": inserted_catalogue_category_id},
         )
@@ -317,7 +315,7 @@ class GetDSL(CatalogueCategoryRepoDSL):
             else None
         )
 
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection,
             self._expected_catalogue_category_out.model_dump() if self._expected_catalogue_category_out else None,
         )
@@ -474,7 +472,7 @@ class ListDSL(CatalogueCategoryRepoDSL):
             for catalogue_category_in_data in catalogue_categories_in_data
         ]
 
-        self.test_helpers.mock_find(
+        RepositoryTestHelpers.mock_find(
             self.catalogue_categories_collection,
             [catalogue_category_out.model_dump() for catalogue_category_out in self._expected_catalogue_categories_out],
         )
@@ -595,7 +593,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         if new_catalogue_category_in_data["parent_id"]:
             # If new_parent_catalogue_category_data is given as none, then it is intentionally supposed to be, otherwise
             # pass through CatalogueCategoryIn first to ensure it has creation and modified times
-            self.test_helpers.mock_find_one(
+            RepositoryTestHelpers.mock_find_one(
                 self.catalogue_categories_collection,
                 (
                     {
@@ -616,7 +614,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
             if stored_catalogue_category_in_data
             else None
         )
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection,
             self._stored_catalogue_category_out.model_dump() if self._stored_catalogue_category_out else None,
         )
@@ -629,7 +627,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
             self._stored_catalogue_category_out
             and (self._catalogue_category_in.name != self._stored_catalogue_category_out.name)
         ) or self._moving_catalogue_category:
-            self.test_helpers.mock_find_one(
+            RepositoryTestHelpers.mock_find_one(
                 self.catalogue_categories_collection,
                 (
                     {
@@ -645,7 +643,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         self._expected_catalogue_category_out = CatalogueCategoryOut(
             **self._catalogue_category_in.model_dump(), id=CustomObjectId(catalogue_category_id)
         )
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection, self._expected_catalogue_category_out.model_dump()
         )
 
@@ -953,7 +951,7 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
         """
 
         self.mock_has_child_elements(child_catalogue_category_data, child_catalogue_item_data)
-        self.test_helpers.mock_delete_one(self.catalogue_categories_collection, deleted_count)
+        RepositoryTestHelpers.mock_delete_one(self.catalogue_categories_collection, deleted_count)
 
     def call_delete(self, catalogue_category_id: str):
         """Calls the CatalogueCategoryRepo `delete` method"""
@@ -1076,7 +1074,7 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
         self._property_in = CatalogueCategoryPropertyIn(**property_in_data)
         self._expected_property_out = CatalogueCategoryPropertyOut(**self._property_in.model_dump(by_alias=True))
 
-        self.test_helpers.mock_update_one(self.catalogue_categories_collection)
+        RepositoryTestHelpers.mock_update_one(self.catalogue_categories_collection)
 
     def call_create_property(self, catalogue_category_id: str):
         """Calls the CatalogueCategoryRepo `create_property` method with the appropriate data from a prior call to
@@ -1157,7 +1155,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
         self._property_in = CatalogueCategoryPropertyIn(**property_in_data)
         self._expected_property_out = CatalogueCategoryPropertyOut(**self._property_in.model_dump(by_alias=True))
 
-        self.test_helpers.mock_update_one(self.catalogue_categories_collection)
+        RepositoryTestHelpers.mock_update_one(self.catalogue_categories_collection)
 
     def call_update_property(self, catalogue_category_id: str, property_id: str):
         """Calls the CatalogueCategoryRepo `update_property` method with the appropriate data from a prior call to

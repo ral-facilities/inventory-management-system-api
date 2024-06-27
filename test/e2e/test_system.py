@@ -2,7 +2,6 @@
 End-to-End tests for the system router
 """
 
-from datetime import datetime
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B

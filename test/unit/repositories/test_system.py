@@ -32,7 +32,6 @@ class SystemRepoDSL:
     """Base class for SystemRepo unit tests"""
 
     # pylint:disable=too-many-instance-attributes
-    test_helpers: RepositoryTestHelpers
     mock_database: Mock
     mock_utils: Mock
     system_repository: SystemRepo
@@ -46,10 +45,9 @@ class SystemRepoDSL:
     _mock_child_item_data: Optional[dict]
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_helpers, database_mock):
+    def setup(self, database_mock):
         """Setup fixtures"""
 
-        self.test_helpers = test_helpers
         self.mock_database = database_mock
         self.system_repository = SystemRepo(database_mock)
         self.systems_collection = database_mock.systems
@@ -74,8 +72,8 @@ class SystemRepoDSL:
         self._mock_child_system_data = child_system_data
         self._mock_child_item_data = child_item_data
 
-        self.test_helpers.mock_find_one(self.systems_collection, child_system_data)
-        self.test_helpers.mock_find_one(self.items_collection, child_item_data)
+        RepositoryTestHelpers.mock_find_one(self.systems_collection, child_system_data)
+        RepositoryTestHelpers.mock_find_one(self.items_collection, child_item_data)
 
     def check_has_child_elements_performed_expected_calls(self, expected_system_id: str):
         """Checks that a call to `_has_child_elements` performed the expected function calls
@@ -98,7 +96,7 @@ class SystemRepoDSL:
         :param duplicate_system_in_data: Either None or a dictionary containing system data for a duplicate system
         """
 
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.systems_collection,
             (
                 {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
@@ -159,7 +157,7 @@ class CreateDSL(SystemRepoDSL):
         if system_in_data["parent_id"]:
             # If parent_system_data is given as None, then it is intentionally supposed to be, otherwise
             # pass through SystemIn first to ensure it has creation and modified times
-            self.test_helpers.mock_find_one(
+            RepositoryTestHelpers.mock_find_one(
                 self.systems_collection,
                 (
                     {**SystemIn(**parent_system_in_data).model_dump(), "_id": system_in_data["parent_id"]}
@@ -168,8 +166,8 @@ class CreateDSL(SystemRepoDSL):
                 ),
             )
         self.mock_is_duplicate_system(duplicate_system_in_data)
-        self.test_helpers.mock_insert_one(self.systems_collection, inserted_system_id)
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_insert_one(self.systems_collection, inserted_system_id)
+        RepositoryTestHelpers.mock_find_one(
             self.systems_collection, {**self._system_in.model_dump(), "_id": inserted_system_id}
         )
 
@@ -281,7 +279,7 @@ class GetDSL(SystemRepoDSL):
             else None
         )
 
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.systems_collection, self._expected_system_out.model_dump() if self._expected_system_out else None
         )
 
@@ -420,7 +418,7 @@ class ListDSL(SystemRepoDSL):
             SystemOut(**SystemIn(**system_in_data).model_dump(), id=ObjectId()) for system_in_data in systems_in_data
         ]
 
-        self.test_helpers.mock_find(
+        RepositoryTestHelpers.mock_find(
             self.systems_collection, [system_out.model_dump() for system_out in self._expected_systems_out]
         )
 
@@ -523,7 +521,7 @@ class UpdateDSL(SystemRepoDSL):
         if new_system_in_data["parent_id"]:
             # If new_parent_system_data is given as none, then it is intentionally supposed to be, otherwise
             # pass through SystemIn first to ensure it has creation and modified times
-            self.test_helpers.mock_find_one(
+            RepositoryTestHelpers.mock_find_one(
                 self.systems_collection,
                 (
                     {**SystemIn(**new_parent_system_in_data).model_dump(), "_id": new_system_in_data["parent_id"]}
@@ -538,7 +536,7 @@ class UpdateDSL(SystemRepoDSL):
             if stored_system_in_data
             else None
         )
-        self.test_helpers.mock_find_one(
+        RepositoryTestHelpers.mock_find_one(
             self.systems_collection, self._stored_system_out.model_dump() if self._stored_system_out else None
         )
 
@@ -551,7 +549,7 @@ class UpdateDSL(SystemRepoDSL):
 
         # Final system after update
         self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=CustomObjectId(system_id))
-        self.test_helpers.mock_find_one(self.systems_collection, self._expected_system_out.model_dump())
+        RepositoryTestHelpers.mock_find_one(self.systems_collection, self._expected_system_out.model_dump())
 
         if self._moving_system:
             mock_aggregation_pipeline = MagicMock()
@@ -765,7 +763,7 @@ class DeleteDSL(SystemRepoDSL):
         """
 
         self.mock_has_child_elements(child_system_data, child_item_data)
-        self.test_helpers.mock_delete_one(self.systems_collection, deleted_count)
+        RepositoryTestHelpers.mock_delete_one(self.systems_collection, deleted_count)
 
     def call_delete(self, system_id: str):
         """Calls the SystemRepo `delete` method"""

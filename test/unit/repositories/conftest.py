@@ -177,6 +177,8 @@ class RepositoryTestHelpers:
         collection_mock.update_many.return_value = update_many_result_mock
 
 
+# pylint:disable=fixme
+# TODO: Remove this once tests refactored - should be able to just use `RepositoryTestHelpers.`
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[RepositoryTestHelpers]:
     """
