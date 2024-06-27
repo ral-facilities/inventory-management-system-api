@@ -580,12 +580,13 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         :param stored_catalogue_category_in_data: Dictionary containing the catalogue category data for the existing
                                                   stored catalogue category as would be required for a SystemIn
                                                   database model
-        :param new_parent_catalogue_category_in_data: Either None or a dictionary containing the new parent system data
-                                                      as would be required for a SystemIn database model
+        :param new_parent_catalogue_category_in_data: Either None or a dictionary containing the new parent catalogue
+                                                      category data as would be required for a SystemIn database model
         :param duplicate_catalogue_category_in_data: Either None or a dictionary containing the data for a duplicate
-                                                     system as would be required for a SystemIn database model
+                                                     catalogue category as would be required for a SystemIn database
+                                                     model
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
-                                  moving the system one of its own children
+                                  moving the catalogue category to one of its own children
         """
         self.set_update_data(new_catalogue_category_in_data)
 
@@ -657,21 +658,21 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 self.mock_utils.is_valid_move_result.return_value = False
                 self.catalogue_categories_collection.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_INVALID
 
-    def call_update(self, system_id: str):
+    def call_update(self, catalogue_category_id: str):
         """Calls the CatalogueCategoryRepo `update` method with the appropriate data from a prior call to `mock_update`
         (or`set_update_data`)"""
 
-        self._updated_catalogue_category_id = system_id
+        self._updated_catalogue_category_id = catalogue_category_id
         self._updated_catalogue_category = self.catalogue_category_repository.update(
-            system_id, self._catalogue_category_in, session=self.mock_session
+            catalogue_category_id, self._catalogue_category_in, session=self.mock_session
         )
 
-    def call_update_expecting_error(self, system_id: str, error_type: type[BaseException]):
+    def call_update_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
         """Calls the CatalogueCategoryRepo `update` method with the appropriate data from a prior call to `mock_update`
         (or `set_update_data`) while expecting an error to be raised"""
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_category_repository.update(system_id, self._catalogue_category_in)
+            self.catalogue_category_repository.update(catalogue_category_id, self._catalogue_category_in)
         self._update_exception = exc
 
     def check_update_success(self):
@@ -686,7 +687,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 call({"_id": self._catalogue_category_in.parent_id}, session=self.mock_session)
             )
 
-        # Stored system
+        # Stored catalogue category
         expected_find_one_calls.append(
             call(
                 {"_id": CustomObjectId(self._expected_catalogue_category_out.id)},
@@ -946,25 +947,25 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
         """Mocks database methods appropriately to test the 'delete' repo method
 
         :param deleted_count: Number of documents deleted successfully
-        :param child_system_data: Dictionary containing a child catalogue category's data (or None)
+        :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or None)
         :param child_item_data: Dictionary containing a child catalogue item's data (or None)
         """
 
         self.mock_has_child_elements(child_catalogue_category_data, child_catalogue_item_data)
         self.test_helpers.mock_delete_one(self.catalogue_categories_collection, deleted_count)
 
-    def call_delete(self, system_id: str):
+    def call_delete(self, catalogue_category_id: str):
         """Calls the CatalogueCategoryRepo `delete` method"""
 
-        self._delete_catalogue_category_id = system_id
-        self.catalogue_category_repository.delete(system_id, session=self.mock_session)
+        self._delete_catalogue_category_id = catalogue_category_id
+        self.catalogue_category_repository.delete(catalogue_category_id, session=self.mock_session)
 
-    def call_delete_expecting_error(self, system_id: str, error_type: type[BaseException]):
+    def call_delete_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
         """Calls the CatalogueCategoryRepo `delete` method while expecting an error to be raised"""
 
-        self._delete_catalogue_category_id = system_id
+        self._delete_catalogue_category_id = catalogue_category_id
         with pytest.raises(error_type) as exc:
-            self.catalogue_category_repository.delete(system_id)
+            self.catalogue_category_repository.delete(catalogue_category_id)
         self._delete_exception = exc
 
     def check_delete_success(self):

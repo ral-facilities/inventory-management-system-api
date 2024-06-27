@@ -515,7 +515,7 @@ class UpdateDSL(SystemRepoDSL):
         :param duplicate_system_in_data: Either None or a dictionary containing the data for a duplicate system as would
                                          be required for a SystemIn database model
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
-                                  moving the system one of its own children
+                                  moving the system to one of its own children
         """
         self.set_update_data(new_system_in_data)
 
