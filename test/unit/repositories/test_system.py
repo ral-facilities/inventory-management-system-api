@@ -251,7 +251,7 @@ class TestCreate(CreateDSL):
         self.mock_create(
             {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
             parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
-            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
         )
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate system found within the parent system")

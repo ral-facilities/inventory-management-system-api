@@ -281,7 +281,7 @@ class TestCreate(CreateDSL):
         self.mock_create(
             {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A, "parent_id": str(ObjectId())},
             parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B,
+            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A,
         )
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception(
