@@ -154,13 +154,13 @@ class GetBreadcrumbsDSL(SystemServiceDSL):
         ServiceTestHelpers.mock_get_breadcrumbs(self.mock_system_repository, self._expected_breadcrumbs)
 
     def call_get_breadcrumbs(self, system_id: str):
-        """Calls the SystemService `get` method"""
+        """Calls the SystemService `get_breadcrumbs` method"""
 
         self._obtained_system_id = system_id
         self._obtained_breadcrumbs = self.system_service.get_breadcrumbs(system_id)
 
     def check_get_breadcrumbs_success(self):
-        """Checks that a prior call to `call_get` worked as expected"""
+        """Checks that a prior call to `call_get_breadcrumbs` worked as expected"""
 
         self.mock_system_repository.get_breadcrumbs.assert_called_once_with(self._obtained_system_id)
 
@@ -207,7 +207,7 @@ class ListDSL(SystemServiceDSL):
 
 
 class TestList(ListDSL):
-    """Tests for getting a system"""
+    """Tests for listing systems"""
 
     def test_list(self):
         """Test listing systems"""

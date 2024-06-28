@@ -123,8 +123,8 @@ class CreateDSL(CatalogueCategoryServiceDSL):
     ):
         """Mocks repo methods appropriately to test the 'create' service method
 
-        :param catalogue_category_data: Dictionary containing the basic system data as would be required for a
-                                        CatalogueCategoryPostSchema but without any unit_id's in its properties
+        :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
+                                        for a CatalogueCategoryPostSchema but without any unit_id's in its properties
                                         as they will be added automatically
         :param parent_catalogue_category_in_data: Either None or a dictionary containing the parent catalogue category
                                                   data as would be required for a CatalogueCategoryIn database model
@@ -217,8 +217,8 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         )
 
         if self._catalogue_category_post.properties:
-            # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
-            # be different
+            # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will
+            # always be different
             actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
             assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
             assert actual_catalogue_category_in.model_dump() == {
@@ -303,94 +303,161 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception("Cannot add catalogue category to a leaf parent catalogue category")
 
 
+class GetDSL(CatalogueCategoryServiceDSL):
+    """Base class for get tests"""
+
+    _obtained_catalogue_category_id: str
+    _expected_catalogue_category: MagicMock
+    _obtained_catalogue_category: MagicMock
+
+    def mock_get(self):
+        """Mocks repo methods appropriately to test the 'get' service method"""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_catalogue_category = MagicMock()
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._expected_catalogue_category)
+
+    def call_get(self, catalogue_category_id: str):
+        """Calls the CatalogueCategoryService `get` method"""
+
+        self._obtained_catalogue_category_id = catalogue_category_id
+        self._obtained_catalogue_category = self.catalogue_category_service.get(catalogue_category_id)
+
+    def check_get_success(self):
+        """Checks that a prior call to `call_get` worked as expected"""
+
+        self.mock_catalogue_category_repository.get.assert_called_once_with(self._obtained_catalogue_category_id)
+
+        assert self._obtained_catalogue_category == self._expected_catalogue_category
+
+
+class TestGet(GetDSL):
+    """Tests for getting a catalogue category"""
+
+    def test_get(self):
+        """Test getting a catalogue category"""
+
+        self.mock_get()
+        self.call_get(str(ObjectId()))
+        self.check_get_success()
+
+
+class GetBreadcrumbsDSL(CatalogueCategoryServiceDSL):
+    """Base class for get_breadcrumbs tests"""
+
+    _expected_breadcrumbs: MagicMock
+    _obtained_breadcrumbs: MagicMock
+    _obtained_catalogue_category_id: str
+
+    def mock_get_breadcrumbs(self):
+        """Mocks repo methods appropriately to test the 'get_breadcrumbs' service method"""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_breadcrumbs = MagicMock()
+        ServiceTestHelpers.mock_get_breadcrumbs(self.mock_catalogue_category_repository, self._expected_breadcrumbs)
+
+    def call_get_breadcrumbs(self, catalogue_category_id: str):
+        """Calls the CatalogueCategoryService `get_breadcrumbs` method"""
+
+        self._obtained_catalogue_category_id = catalogue_category_id
+        self._obtained_breadcrumbs = self.catalogue_category_service.get_breadcrumbs(catalogue_category_id)
+
+    def check_get_breadcrumbs_success(self):
+        """Checks that a prior call to `call_get_breadcrumbs` worked as expected"""
+
+        self.mock_catalogue_category_repository.get_breadcrumbs.assert_called_once_with(
+            self._obtained_catalogue_category_id
+        )
+
+        assert self._obtained_breadcrumbs == self._expected_breadcrumbs
+
+
+class TestGetBreadcrumbs(GetBreadcrumbsDSL):
+    """Tests for getting the breadcrumbs of a catalogue category"""
+
+    def test_get_breadcrumbs(self):
+        """Test getting a catalogue category's breadcrumbs"""
+
+        self.mock_get_breadcrumbs()
+        self.call_get_breadcrumbs(str(ObjectId()))
+        self.check_get_breadcrumbs_success()
+
+
+class ListDSL(CatalogueCategoryServiceDSL):
+    """Base class for list tests"""
+
+    _parent_id_filter: Optional[str]
+    _expected_catalogue_categories: MagicMock
+    _obtained_catalogue_categories: MagicMock
+
+    def mock_list(self):
+        """Mocks repo methods appropriately to test the 'list' service method"""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_catalogue_categories = MagicMock()
+        ServiceTestHelpers.mock_list(self.mock_catalogue_category_repository, self._expected_catalogue_categories)
+
+    def call_list(self, parent_id: Optional[str]):
+        """Calls the CatalogueCategoryService `list` method"""
+
+        self._parent_id_filter = parent_id
+        self._obtained_catalogue_categories = self.catalogue_category_service.list(parent_id)
+
+    def check_list_success(self):
+        """Checks that a prior call to `call_list` worked as expected"""
+
+        self.mock_catalogue_category_repository.list.assert_called_once_with(self._parent_id_filter)
+
+        assert self._obtained_catalogue_categories == self._expected_catalogue_categories
+
+
+class TestList(ListDSL):
+    """Tests for listing catalogue categories"""
+
+    def test_list(self):
+        """Test listing catalogue categories"""
+
+        self.mock_list()
+        self.call_list(str(ObjectId()))
+        self.check_list_success()
+
+
+# TODO: Add update tests
+
+
+class DeleteDSL(CatalogueCategoryServiceDSL):
+    """Base class for delete tests"""
+
+    _delete_catalogue_category_id: str
+
+    def call_delete(self, catalogue_category_id: str):
+        """Calls the CatalogueCategoryService `delete` method"""
+
+        self._delete_catalogue_category_id = catalogue_category_id
+        self.catalogue_category_service.delete(catalogue_category_id)
+
+    def check_delete_success(self):
+        """Checks that a prior call to `call_delete` worked as expected"""
+
+        self.mock_catalogue_category_repository.delete.assert_called_once_with(self._delete_catalogue_category_id)
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a catalogue category"""
+
+    def test_delete(self):
+        """Test deleting a catalogue category"""
+
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+
 # UNIT_A = {
 #     "value": "mm",
 #     "code": "mm",
 #     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
-
-
-# def test_delete(catalogue_category_repository_mock, catalogue_category_service):
-#     """
-#     Test deleting a catalogue category.
-
-#     Verify that the `delete` method properly handles the deletion of a catalogue category by ID.
-#     """
-#     catalogue_category_id = str(ObjectId())
-
-#     catalogue_category_service.delete(catalogue_category_id)
-
-#     catalogue_category_repository_mock.delete.assert_called_once_with(catalogue_category_id)
-
-
-# def test_get(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
-#     """
-#     Test getting a catalogue category.
-
-#     Verify that the `get` method properly handles the retrieval of a catalogue category by ID.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category_id = str(ObjectId())
-#     catalogue_category = MagicMock()
-
-#     # Mock `get` to return a catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
-
-#     retrieved_catalogue_category = catalogue_category_service.get(catalogue_category_id)
-
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
-#     assert retrieved_catalogue_category == catalogue_category
-
-
-# def test_get_with_non_existent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
-#     """
-#     Test getting a catalogue category with a non-existent ID.
-
-#     Verify that the `get` method properly handles the retrieval of a catalogue category with a non-existent ID.
-#     """
-#     catalogue_category_id = str(ObjectId())
-
-#     # Mock `get` to not return a catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, None)
-
-#     retrieved_catalogue_category = catalogue_category_service.get(catalogue_category_id)
-
-#     assert retrieved_catalogue_category is None
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category_id)
-
-
-# def test_get_breadcrumbs(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
-#     """
-#     Test getting breadcrumbs for a catalogue category
-
-#     Verify that the `get_breadcrumbs` method properly handles the retrieval of breadcrumbs for a catalogue category
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     breadcrumbs = MagicMock()
-
-#     # Mock `get` to return breadcrumbs
-#     test_helpers.mock_get_breadcrumbs(catalogue_category_repository_mock, breadcrumbs)
-
-#     retrieved_breadcrumbs = catalogue_category_service.get_breadcrumbs(catalogue_category_id)
-
-#     catalogue_category_repository_mock.get_breadcrumbs.assert_called_once_with(catalogue_category_id)
-#     assert retrieved_breadcrumbs == breadcrumbs
-
-
-# def test_list(catalogue_category_repository_mock, catalogue_category_service):
-#     """
-#     Test listing catalogue categories.
-
-#     Verify that the `list` method properly calls the repository function with any passed filters
-#     """
-
-#     parent_id = MagicMock()
-
-#     result = catalogue_category_service.list(parent_id=parent_id)
-
-#     catalogue_category_repository_mock.list.assert_called_once_with(parent_id)
-#     assert result == catalogue_category_repository_mock.list.return_value
 
 
 # def test_update_when_no_child_elements(

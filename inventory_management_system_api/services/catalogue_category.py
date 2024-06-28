@@ -82,14 +82,6 @@ class CatalogueCategoryService:
             )
         )
 
-    def delete(self, catalogue_category_id: str) -> None:
-        """
-        Delete a catalogue category by its ID.
-
-        :param catalogue_category_id: The ID of the catalogue category to delete.
-        """
-        return self._catalogue_category_repository.delete(catalogue_category_id)
-
     def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID.
@@ -167,6 +159,14 @@ class CatalogueCategoryService:
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
+
+    def delete(self, catalogue_category_id: str) -> None:
+        """
+        Delete a catalogue category by its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete.
+        """
+        return self._catalogue_category_repository.delete(catalogue_category_id)
 
     def _add_property_unit_values(
         self,
