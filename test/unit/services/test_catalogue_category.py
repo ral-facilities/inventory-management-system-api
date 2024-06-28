@@ -6,7 +6,10 @@ Unit tests for the `CatalogueCategoryService` service.
 from datetime import timedelta
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+    CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+    CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
     UNIT_IN_DATA_MM,
 )
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
@@ -45,7 +48,6 @@ class CatalogueCategoryServiceDSL:
     mock_catalogue_category_repository: Mock
     mock_unit_repository: Mock
     catalogue_category_service: CatalogueCategoryService
-    unit_value_id_dict: dict[str, str] = {}
 
     @pytest.fixture(autouse=True)
     def setup(
@@ -67,22 +69,24 @@ class CatalogueCategoryServiceDSL:
             self.wrapped_utils = wrapped_utils
             yield
 
-    def mock_add_property_unit_values(self, units_in_data: list[dict]):
+    def mock_add_property_unit_values(self, units_in_data: list[Optional[dict]], unit_value_id_dict: dict[str, str]):
         """Mocks database methods appropriately for when the `_add_property_unit_values` repo method will be called
 
         Also generates unit ids that are stored inside `unit_value_id_dict` for future lookups.
 
-        :param units_in_data: List of dictionaries containing the unit data as would be required for a UnitIn database
-                              model
+        :param units_in_data: List of dictionaries (or None) containing the unit data as would be
+                              required for a UnitIn database model. These values will be used for any unit look ups
+                              required by the given catalogue category properties.
+        :param unit_value_id_dict: List of unit value and id pairs for lookups
         """
 
         for unit_in_data in units_in_data:
-            unit_in = UnitIn(**unit_in_data)
-            unit_id = str(ObjectId())
+            unit_in = UnitIn(**unit_in_data) if unit_in_data else None
+            unit_id = unit_value_id_dict[unit_in.value] if unit_in_data else None
 
-            self.unit_value_id_dict[unit_in.value] = unit_id
-
-            ServiceTestHelpers.mock_get(self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id))
+            ServiceTestHelpers.mock_get(
+                self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id) if unit_in else None
+            )
 
     def check_add_property_unit_values_performed_expected_calls(
         self, expected_properties: list[CatalogueCategoryPostPropertySchema]
@@ -109,11 +113,13 @@ class CreateDSL(CatalogueCategoryServiceDSL):
     _created_catalogue_category: CatalogueCategoryOut
     _create_exception: pytest.ExceptionInfo
 
+    unit_value_id_dict: dict[str, str]
+
     def mock_create(
         self,
         catalogue_category_data: dict,
         parent_catalogue_category_in_data: Optional[dict] = None,
-        units_in_data: Optional[list[dict]] = None,
+        units_in_data: Optional[list[Optional[dict]]] = None,
     ):
         """Mocks repo methods appropriately to test the 'create' service method
 
@@ -122,9 +128,9 @@ class CreateDSL(CatalogueCategoryServiceDSL):
                                         as they will be added automatically
         :param parent_catalogue_category_in_data: Either None or a dictionary containing the parent catalogue category
                                                   data as would be required for a CatalogueCategoryIn database model
-        :param units_in_data: Either None or a list of dictionaries containing the unit data as would be required for
-                              a UnitIn database model. These values will be used for any unit look ups required by the
-                              given catalogue category properties
+        :param units_in_data: Either None or a list of dictionaries (or None) containing the unit data as would be
+                              required for a UnitIn database model. These values will be used for any unit look ups
+                              required by the given catalogue category properties.
         """
 
         # When a parent_id is given need to mock the get for it too
@@ -132,25 +138,34 @@ class CreateDSL(CatalogueCategoryServiceDSL):
             ServiceTestHelpers.mock_get(
                 self.mock_catalogue_category_repository,
                 CatalogueCategoryOut(
-                    **CatalogueCategoryIn(**parent_catalogue_category_in_data).model_dump(by_alias=True),
-                    id=str(ObjectId()),
+                    **{
+                        **CatalogueCategoryIn(**parent_catalogue_category_in_data).model_dump(by_alias=True),
+                        "_id": catalogue_category_data["parent_id"],
+                    },
                 ),
             )
 
         # When properties are given need to mock any units and need to ensure the expected data
-        # inserts the unit values as well
+        # inserts the unit ids as well
         property_post_schemas = []
         expected_properties_in = []
         if catalogue_category_data["properties"]:
-            self.mock_add_property_unit_values(units_in_data)
+            self.unit_value_id_dict = {}
 
             for prop in catalogue_category_data["properties"]:
                 unit_id = None
-                if "unit" in prop and prop["unit"]:
-                    unit_id = self.unit_value_id_dict.get(prop["unit"])
+                prop_without_unit = prop.copy()
 
-                property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop, unit_id=unit_id))
+                # Give units ids and remove the unit value from the prop for the post schema
+                if "unit" in prop and prop["unit"]:
+                    unit_id = str(ObjectId())
+                    self.unit_value_id_dict[prop["unit"]] = unit_id
+                    del prop_without_unit["unit"]
+
                 expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
+                property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
+
+            self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
 
         self._catalogue_category_post = CatalogueCategoryPostSchema(
             **{**catalogue_category_data, "properties": property_post_schemas}
@@ -171,6 +186,14 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         `mock_create`"""
 
         self._created_catalogue_category = self.catalogue_category_service.create(self._catalogue_category_post)
+
+    def call_create_expecting_error(self, error_type: type[BaseException]):
+        """Calls the CatalogueCategoryService `create` method with the appropriate data from a prior call to
+        `mock_create` while expecting an error to be raised"""
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_service.create(self._catalogue_category_post)
+        self._create_exception = exc
 
     def check_create_success(self):
         """Checks that a prior call to `call_create` worked as expected"""
@@ -193,9 +216,9 @@ class CreateDSL(CatalogueCategoryServiceDSL):
             self._expected_catalogue_category_out.name, "catalogue category"
         )
 
-        # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
-        # be different
         if self._catalogue_category_post.properties:
+            # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
+            # be different
             actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
             assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
             assert actual_catalogue_category_in.model_dump() == {
@@ -208,6 +231,14 @@ class CreateDSL(CatalogueCategoryServiceDSL):
             self.mock_catalogue_category_repository.create.assert_called_once_with(self._expected_catalogue_category_in)
 
         assert self._created_catalogue_category == self._expected_catalogue_category_out
+
+    def check_create_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.mock_catalogue_category_repository.create.assert_not_called()
+
+        assert str(self._create_exception.value) == message
 
 
 class TestCreate(CreateDSL):
@@ -227,6 +258,50 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
+    def test_create_with_duplicate_properties(self):
+        """Test creating a catalogue category with properties"""
+
+        self.mock_create(
+            {
+                **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+                "properties": [
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                ],
+            },
+        )
+        self.call_create_expecting_error(DuplicateCatalogueCategoryPropertyNameError)
+        self.check_create_failed_with_exception(
+            f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT['name']}"
+        )
+
+    def test_create_with_properties_with_non_existent_unit_id(self):
+        """Test creating a catalogue category with properties with a non-existent unit id"""
+
+        self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[None])
+        self.call_create_expecting_error(MissingRecordError)
+        self.check_create_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+
+    def test_create_with_non_leaf_parent(self):
+        """Test creating a catalogue category with a non-leaf parent catalogue category"""
+
+        self.mock_create(
+            CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            parent_catalogue_category_in_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_leaf_parent(self):
+        """Test creating a catalogue category with a leaf parent catalogue category"""
+
+        self.mock_create(
+            {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": str(ObjectId())},
+            parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+        )
+        self.call_create_expecting_error(LeafCatalogueCategoryError)
+        self.check_create_failed_with_exception("Cannot add catalogue category to a leaf parent catalogue category")
+
 
 # UNIT_A = {
 #     "value": "mm",
@@ -234,343 +309,6 @@ class TestCreate(CreateDSL):
 #     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
-
-
-# def test_create_with_parent_id(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     unit_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_service,
-# ):
-#     """
-#     Test creating a catalogue category with a parent ID.
-
-#     Verify that the `create` method properly handles a catalogue category with a parent ID.
-#     """
-
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-
-#     # pylint: disable=duplicate-code
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category B",
-#         code="category-b",
-#         is_leaf=True,
-#         parent_id=str(ObjectId()),
-#         properties=[
-#             CatalogueCategoryPropertyOut(
-#                 id=str(ObjectId()),
-#                 name="Property A",
-#                 type="number",
-#                 unit_id=unit.id,
-#                 unit=unit.value,
-#                 mandatory=False,
-#             ),
-#             CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#         ],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return the parent catalogue category
-#     # pylint: disable=duplicate-code
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.parent_id,
-#             name="Category A",
-#             code="category-a",
-#             is_leaf=False,
-#             parent_id=None,
-#             properties=[],
-#             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         ),
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     # Mock `create` to return the created catalogue category
-#     test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
-
-#     created_catalogue_category = catalogue_category_service.create(
-#         CatalogueCategoryPostSchema(
-#             name=catalogue_category.name,
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=[prop.model_dump() for prop in catalogue_category.properties],
-#         )
-#     )
-
-#     # pylint: disable=duplicate-code
-#     # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
-#     # be different
-#     catalogue_category_repository_mock.create.assert_called_once()
-#     create_catalogue_category_in = catalogue_category_repository_mock.create.call_args_list[0][0][0]
-#     assert isinstance(create_catalogue_category_in, CatalogueCategoryIn)
-#     assert create_catalogue_category_in.model_dump() == {
-#         **(
-#             CatalogueCategoryIn(
-#                 name=catalogue_category.name,
-#                 code=catalogue_category.code,
-#                 is_leaf=catalogue_category.is_leaf,
-#                 parent_id=catalogue_category.parent_id,
-#                 properties=[prop.model_dump() for prop in catalogue_category.properties],
-#             ).model_dump()
-#         ),
-#         "properties": [{**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.properties],
-#     }
-#     # pylint: enable=duplicate-code
-#     assert created_catalogue_category == catalogue_category
-
-
-# def test_create_with_whitespace_name(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     unit_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_service,
-# ):
-#     """
-#     Test creating a catalogue category name containing leading/trailing/consecutive whitespaces.
-
-#     Verify that the `create` method trims the whitespace from the category name and handles it correctly.
-#     """
-#     # pylint: disable=duplicate-code
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="    Category   A         ",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[
-#             CatalogueCategoryPropertyOut(
-#                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
-#             ),
-#             CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#         ],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `create` to return the created catalogue category
-#     test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     created_catalogue_category = catalogue_category_service.create(
-#         CatalogueCategoryPostSchema(
-#             name=catalogue_category.name,
-#             is_leaf=catalogue_category.is_leaf,
-#             properties=[prop.model_dump() for prop in catalogue_category.properties],
-#         )
-#     )
-
-#     # pylint: disable=duplicate-code
-#     # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
-#     # be different
-#     catalogue_category_repository_mock.create.assert_called_once()
-#     create_catalogue_category_in = catalogue_category_repository_mock.create.call_args_list[0][0][0]
-#     assert isinstance(create_catalogue_category_in, CatalogueCategoryIn)
-#     assert create_catalogue_category_in.model_dump() == {
-#         **(
-#             CatalogueCategoryIn(
-#                 name=catalogue_category.name,
-#                 code=catalogue_category.code,
-#                 is_leaf=catalogue_category.is_leaf,
-#                 parent_id=catalogue_category.parent_id,
-#                 properties=[prop.model_dump() for prop in catalogue_category.properties],
-#             ).model_dump()
-#         ),
-#         "properties": [{**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.properties],
-#     }
-#     # pylint: enable=duplicate-code
-#     assert created_catalogue_category == catalogue_category
-
-
-# def test_create_with_leaf_parent_catalogue_category(
-#     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
-# ):
-#     """
-#     Test creating a catalogue category in a leaf parent catalogue category.
-#     """
-#     # pylint: disable=duplicate-code
-
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category B",
-#         code="category-b",
-#         is_leaf=False,
-#         parent_id=str(ObjectId()),
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return the parent catalogue category
-#     # pylint: disable=duplicate-code
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.parent_id,
-#             name="Category A",
-#             code="category-a",
-#             is_leaf=True,
-#             parent_id=None,
-#             properties=[
-#                 CatalogueCategoryPropertyOut(
-#                     id=str(ObjectId()),
-#                     name="Property A",
-#                     type="number",
-#                     unit_id=unit.id,
-#                     unit=unit.value,
-#                     mandatory=False,
-#                 ),
-#                 CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#             ],
-#             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         ),
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     with pytest.raises(LeafCatalogueCategoryError) as exc:
-#         catalogue_category_service.create(
-#             CatalogueCategoryPostSchema(
-#                 name=catalogue_category.name,
-#                 is_leaf=catalogue_category.is_leaf,
-#                 parent_id=catalogue_category.parent_id,
-#                 properties=catalogue_category.properties,
-#             )
-#         )
-#     catalogue_category_repository_mock.create.assert_not_called()
-#     assert str(exc.value) == "Cannot add catalogue category to a leaf parent catalogue category"
-
-
-# def test_create_with_duplicate_property_names(
-#     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
-# ):
-#     """
-#     Test trying to create a catalogue category with duplicate property names
-#     """
-#     # pylint: disable=duplicate-code
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category B",
-#         code="category-b",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[
-#             CatalogueCategoryPropertyOut(
-#                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
-#             ),
-#             CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property A", type="boolean", mandatory=True),
-#         ],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-#     # pylint: enable=duplicate-code
-
-#     with pytest.raises(DuplicateCatalogueCategoryPropertyNameError) as exc:
-#         # pylint: disable=duplicate-code
-#         catalogue_category_service.create(
-#             CatalogueCategoryPostSchema(
-#                 name=catalogue_category.name,
-#                 is_leaf=catalogue_category.is_leaf,
-#                 properties=[prop.model_dump() for prop in catalogue_category.properties],
-#             )
-#         )
-#         # pylint: enable=duplicate-code
-#     catalogue_category_repository_mock.create.assert_not_called()
-#     assert str(exc.value) == (f"Duplicate property name: {catalogue_category.properties[0].name}")
-
-
-# def test_create_properties_with_non_existent_unit_id(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     unit_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_service,
-# ):
-#     """
-#     Test creating a catalogue category with a non existent unit ID.
-#     """
-
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-
-#     # pylint: disable=duplicate-code
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category B",
-#         code="category-b",
-#         is_leaf=True,
-#         parent_id=str(ObjectId()),
-#         properties=[
-#             CatalogueCategoryPropertyOut(
-#                 id=str(ObjectId()),
-#                 name="Property A",
-#                 type="number",
-#                 unit_id=unit.id,
-#                 unit=unit.value,
-#                 mandatory=False,
-#             ),
-#             CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#         ],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return the parent catalogue category
-#     # pylint: disable=duplicate-code
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.parent_id,
-#             name="Category A",
-#             code="category-a",
-#             is_leaf=False,
-#             parent_id=None,
-#             properties=[],
-#             created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#             modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         ),
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, None)
-
-#     # Mock `create` to return the created catalogue category
-#     test_helpers.mock_create(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_category_service.create(
-#             CatalogueCategoryPostSchema(
-#                 name=catalogue_category.name,
-#                 is_leaf=catalogue_category.is_leaf,
-#                 parent_id=catalogue_category.parent_id,
-#                 properties=[prop.model_dump() for prop in catalogue_category.properties],
-#             )
-#         )
-#     catalogue_category_repository_mock.create.assert_not_called()
-#     assert str(exc.value) == (f"No unit found with ID: {unit.id}")
 
 
 # def test_delete(catalogue_category_repository_mock, catalogue_category_service):

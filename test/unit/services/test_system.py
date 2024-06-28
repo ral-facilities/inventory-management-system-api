@@ -51,7 +51,6 @@ class CreateDSL(SystemServiceDSL):
     _expected_system_in: SystemIn
     _expected_system_out: SystemOut
     _created_system: SystemOut
-    _create_exception: pytest.ExceptionInfo
 
     def mock_create(self, system_post_data: dict):
         """Mocks repo methods appropriately to test the 'create' service method
