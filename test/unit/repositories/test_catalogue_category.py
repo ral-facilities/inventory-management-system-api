@@ -3,12 +3,15 @@
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-    CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES,
+    CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
@@ -252,7 +255,7 @@ class TestCreate(CreateDSL):
     def test_create_leaf_with_properties(self):
         """Test creating a leaf catalogue category with properties"""
 
-        self.mock_create(CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES)
+        self.mock_create(CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.call_create()
         self.check_create_success()
 
@@ -387,7 +390,6 @@ class TestGet(GetDSL):
         self.check_get_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# pylint: disable=duplicate-code
 class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
     """Base class for breadcrumbs tests"""
 
@@ -396,7 +398,6 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
     _expected_breadcrumbs: MagicMock
     _obtained_catalogue_category_id: str
     _obtained_breadcrumbs: MagicMock
-    # pylint: enable=duplicate-code
 
     def mock_breadcrumbs(self, breadcrumbs_query_result: list[dict]):
         """Mocks database methods appropriately to test the 'get_breadcrumbs' repo method
@@ -439,7 +440,6 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
         assert self._obtained_breadcrumbs == self._expected_breadcrumbs
 
 
-# pylint: disable=duplicate-code
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
     """Tests for getting the breadcrumbs of a catalogue category"""
 
@@ -449,9 +449,6 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         self.mock_breadcrumbs(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH)
         self.call_get_breadcrumbs(str(ObjectId()))
         self.check_get_breadcrumbs_success()
-
-
-# pylint: enable=duplicate-code
 
 
 class ListDSL(CatalogueCategoryRepoDSL):
@@ -540,15 +537,12 @@ class TestList(ListDSL):
         self.call_list(parent_id="null")
         self.check_list_success()
 
-    # pylint: disable=duplicate-code
     def test_list_with_parent_id_with_no_results(self):
         """Test listing all Catalogue Categories with a parent_id filter returning no results"""
 
         self.mock_list([])
         self.call_list(parent_id=str(ObjectId()))
         self.check_list_success()
-
-    # pylint: enable=duplicate-code
 
 
 class UpdateDSL(CatalogueCategoryRepoDSL):
@@ -842,13 +836,16 @@ class TestUpdate(UpdateDSL):
         Category"""
 
         catalogue_category_id = str(ObjectId())
-        new_name = "New Duplicate Name"
+        duplicate_name = "New Duplicate Name"
 
         self.mock_update(
             catalogue_category_id,
-            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "name": new_name},
+            {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "name": duplicate_name},
             CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            duplicate_catalogue_category_in_data={
+                **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+                "name": duplicate_name,
+            },
         )
         self.call_update_expecting_error(catalogue_category_id, DuplicateRecordError)
         self.check_update_failed_with_exception(
@@ -1000,7 +997,6 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
         assert str(self._delete_exception.value) == message
 
 
-# pylint: disable=duplicate-code
 class TestDelete(DeleteDSL):
     """Tests for deleting a catalogue category"""
 
@@ -1010,8 +1006,6 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=1)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
-
-    # pylint: enable=duplicate-code
 
     def test_delete_with_child_catalogue_category(self):
         """Test deleting a catalogue category when it has a child catalogue category"""
@@ -1139,14 +1133,14 @@ class TestCreateProperty(CreatePropertyDSL):
     def test_create_property(self):
         """Test creating a property in an existing catalogue category"""
 
-        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_create_property(str(ObjectId()))
         self.check_create_property_success()
 
     def test_create_property_with_invalid_id(self):
         """Test creating a property in a catalogue category with an invalid id"""
 
-        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_create_property_expecting_error("invalid-id", InvalidObjectIdError)
         self.check_create_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -1230,14 +1224,14 @@ class TestUpdateProperty(UpdatePropertyDSL):
     def test_update_property(self):
         """Test updating a property in an existing catalogue category"""
 
-        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property(catalogue_category_id=str(ObjectId()), property_id=str(ObjectId()))
         self.check_update_property_success()
 
     def test_update_property_with_invalid_catalogue_category_id(self):
         """Test updating a property in a catalogue category with an invalid id"""
 
-        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property_expecting_error(
             catalogue_category_id="invalid-id", property_id=str(ObjectId()), error_type=InvalidObjectIdError
         )
@@ -1246,7 +1240,7 @@ class TestUpdateProperty(UpdatePropertyDSL):
     def test_update_property_with_invalid_property_id(self):
         """Test updating a property with an invalid id in a catalogue category"""
 
-        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_UNIT)
+        self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property_expecting_error(
             catalogue_category_id=str(ObjectId()), property_id="invalid-id", error_type=InvalidObjectIdError
         )

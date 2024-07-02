@@ -2,6 +2,9 @@
 Unit tests for the `SystemService` service
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional

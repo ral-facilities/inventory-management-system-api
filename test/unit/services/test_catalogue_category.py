@@ -3,11 +3,12 @@
 Unit tests for the `CatalogueCategoryService` service.
 """
 
-from datetime import timedelta
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-    CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
@@ -16,7 +17,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
+from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import ANY, MagicMock, Mock, call, patch
 
@@ -34,7 +35,6 @@ from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
     CatalogueCategoryPropertyIn,
-    CatalogueCategoryPropertyOut,
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -159,8 +159,8 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         """Mocks repo methods appropriately to test the 'create' service method
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
-                                        for a CatalogueCategoryPostSchema but without any unit_id's in its properties
-                                        as they will be added automatically
+                                        for a CatalogueCategoryPostSchema but with any unit_id's replaced by the
+                                        'unit' value in its properties as the ids will be added automatically
         :param parent_catalogue_category_in_data: Either None or a dictionary containing the parent catalogue category
                                                   data as would be required for a CatalogueCategoryIn database model
         :param units_in_data: Either None or a list of dictionaries (or None) containing the unit data as would be
@@ -445,6 +445,7 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
+# pylint:disable=too-many-instance-attributes
 class UpdateDSL(CatalogueCategoryServiceDSL):
     """Base class for update tests"""
 
@@ -460,6 +461,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
     _moving_catalogue_category: bool
     unit_value_id_dict: dict[str, str]
 
+    # pylint:disable=too-many-arguments
     def mock_update(
         self,
         catalogue_category_id: str,
@@ -473,8 +475,8 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         :param catalogue_category_id: ID of the catalogue category that will be obtained
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
-                                               CatalogueCategoryPatchSchema but without any unit_id's in its properties
-                                               as they will be added automatically
+                                               CatalogueCategoryPatchSchema but with any unit_id's replaced by the
+                                               'unit' value in its properties as the ids will be added automatically
         :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
                                                stored catalogue category as would be required for a
                                                CatalogueCategoryPostSchema(i.e. no id, code or created and modified
@@ -488,14 +490,12 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                               required by the given catalogue category properties in the patch data.
         """
 
-        # TODO: Add extra not in systems
-
         # Stored catalogue category
         self._stored_catalogue_category = (
             CatalogueCategoryOut(
                 **CatalogueCategoryIn(
                     **stored_catalogue_category_post_data,
-                    code=utils.generate_code(stored_catalogue_category_post_data["name"], "system"),
+                    code=utils.generate_code(stored_catalogue_category_post_data["name"], "catalogue category"),
                 ).model_dump(),
                 id=CustomObjectId(catalogue_category_id),
             )
@@ -561,7 +561,8 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         )
 
     def call_update(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryService `update` method with the appropriate data from a prior call to `mock_update`"""
+        """Calls the CatalogueCategoryService `update` method with the appropriate data from a prior call to
+        `mock_update`"""
 
         self._updated_catalogue_category_id = catalogue_category_id
         self._updated_catalogue_category = self.catalogue_category_service.update(
@@ -569,8 +570,8 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         )
 
     def call_update_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
-        """Calls the CatalogueCategoryService `update` method with the appropriate data from a prior call to `mock_update`
-        while expecting an error to be raised"""
+        """Calls the CatalogueCategoryService `update` method with the appropriate data from a prior call to
+        `mock_update` while expecting an error to be raised"""
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_service.update(catalogue_category_id, self._catalogue_category_patch)
@@ -578,8 +579,6 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
     def check_update_success(self):
         """Checks that a prior call to `call_update` worked as expected"""
-
-        # TODO: Add extra not in systems
 
         # Obtain a list of expected get calls
         expected_get_calls = []

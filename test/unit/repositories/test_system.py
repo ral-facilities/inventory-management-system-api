@@ -2,6 +2,9 @@
 Unit tests for the `SystemRepo` repository
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
@@ -706,13 +709,13 @@ class TestUpdate(UpdateDSL):
         """Test updating a system's name to one that is a duplicate within the same parent system"""
 
         system_id = str(ObjectId())
-        new_name = "New Duplicate Name"
+        duplicate_name = "New Duplicate Name"
 
         self.mock_update(
             system_id,
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": new_name},
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": duplicate_name},
             SYSTEM_IN_DATA_NO_PARENT_A,
-            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            duplicate_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "name": duplicate_name},
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate system found within the parent system")
