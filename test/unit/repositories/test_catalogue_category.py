@@ -739,9 +739,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 "_id": CustomObjectId(self._updated_catalogue_category_id),
             },
             {
-                "$set": {
-                    **self._catalogue_category_in.model_dump(),
-                },
+                "$set": self._catalogue_category_in.model_dump(),
             },
             session=self.mock_session,
         )
@@ -858,8 +856,8 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_parent_id_with_duplicate_within_parent(self):
-        """Test updating a catalogue category's parent-id to one contains a catalogue category with a duplicate name
-        within the same parent catalogue category"""
+        """Test updating a catalogue category's parent_id to one that contains a catalogue category with a duplicate
+        name within the same parent catalogue category"""
 
         catalogue_category_id = str(ObjectId())
         new_parent_id = str(ObjectId())

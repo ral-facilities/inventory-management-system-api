@@ -618,9 +618,7 @@ class UpdateDSL(SystemRepoDSL):
                 "_id": CustomObjectId(self._updated_system_id),
             },
             {
-                "$set": {
-                    **self._system_in.model_dump(),
-                },
+                "$set": self._system_in.model_dump(),
             },
             session=self.mock_session,
         )
@@ -653,7 +651,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
+        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_update(system_id)
         self.check_update_success()
 
@@ -720,8 +718,8 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Duplicate system found within the parent system")
 
     def test_update_parent_id_with_duplicate_within_parent(self):
-        """Test updating a system's parent-id to one contains a system with a duplicate name within the same parent
-        system"""
+        """Test updating a system's parent_id to one that contains a system with a duplicate name within the same
+        parent system"""
 
         system_id = str(ObjectId())
         new_parent_id = str(ObjectId())
