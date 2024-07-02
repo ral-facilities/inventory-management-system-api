@@ -16,6 +16,45 @@ from unittest.mock import ANY
 # at runtime
 CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
+# --------------------------------- MANUFACTURERS ---------------------------------
+
+MANUFACTURER_POST_DATA_A = {
+    "name": "Manufacturer A",
+    "url": "http://testUrl.co.uk",
+    "address": {
+        "address_line": "1 Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "postcode": "OX1 2AB",
+        "country": "United Kingdom",
+    },
+    "telephone": "0932348348",
+}
+
+MANUFACTURER_POST_DATA_B = {
+    "name": "Manufacturer B",
+    "url": "http://example.co.uk",
+    "address": {
+        "address_line": "2 Example Street",
+        "town": "Oxford",
+        "county": "Oxfordshire",
+        "postcode": "OX1 2AB",
+        "country": "United Kingdom",
+    },
+    "telephone": "073434394",
+}
+
+MANUFACTURER_IN_DATA_A = {
+    **MANUFACTURER_POST_DATA_A,
+    "code": "manufacturer-a",
+}
+
+MANUFACTURER_IN_DATA_B = {
+    **MANUFACTURER_POST_DATA_B,
+    "code": "manufacturer-b",
+}
+
+# --------------------------------- SYSTEMS ---------------------------------
 
 SYSTEM_POST_DATA_NO_PARENT_A = {
     "parent_id": None,
