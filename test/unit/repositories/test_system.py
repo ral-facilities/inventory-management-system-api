@@ -128,7 +128,7 @@ class SystemRepoDSL:
 
 
 class CreateDSL(SystemRepoDSL):
-    """Base class for create tests"""
+    """Base class for `create` tests"""
 
     _system_in: SystemIn
     _expected_system_out: SystemOut
@@ -261,7 +261,7 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(SystemRepoDSL):
-    """Base class for get tests"""
+    """Base class for `get` tests"""
 
     _obtained_system_id: str
     _expected_system_out: Optional[SystemOut]
@@ -348,7 +348,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(SystemRepoDSL):
-    """Base class for breadcrumbs tests"""
+    """Base class for `get_breadcrumbs` tests"""
 
     _breadcrumbs_query_result: list[dict]
     _mock_aggregation_pipeline = MagicMock()
@@ -404,7 +404,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(SystemRepoDSL):
-    """Base class for list tests"""
+    """Base class for `list` tests"""
 
     _expected_systems_out: list[SystemOut]
     _parent_id_filter: Optional[str]
@@ -476,7 +476,7 @@ class TestList(ListDSL):
 
 
 class UpdateDSL(SystemRepoDSL):
-    """Base class for update tests"""
+    """Base class for `update` tests"""
 
     # pylint:disable=too-many-instance-attributes
     _system_in: SystemIn
@@ -748,7 +748,7 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(SystemRepoDSL):
-    """Base class for delete tests"""
+    """Base class for `delete` tests"""
 
     _delete_system_id: str
     _delete_exception: pytest.ExceptionInfo

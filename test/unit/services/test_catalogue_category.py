@@ -48,7 +48,7 @@ from inventory_management_system_api.services.catalogue_category import Catalogu
 
 
 class CatalogueCategoryServiceDSL:
-    """Base class for CatalogueCategoryService unit tests"""
+    """Base class for `CatalogueCategoryService` unit tests"""
 
     wrapped_utils: Mock
     mock_catalogue_category_repository: Mock
@@ -142,7 +142,7 @@ class CatalogueCategoryServiceDSL:
 
 
 class CreateDSL(CatalogueCategoryServiceDSL):
-    """Base class for create tests"""
+    """Base class for `create` tests"""
 
     _catalogue_category_post: CatalogueCategoryPostSchema
     _expected_catalogue_category_in: CatalogueCategoryIn
@@ -327,7 +327,7 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(CatalogueCategoryServiceDSL):
-    """Base class for get tests"""
+    """Base class for `get` tests"""
 
     _obtained_catalogue_category_id: str
     _expected_catalogue_category: MagicMock
@@ -366,7 +366,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(CatalogueCategoryServiceDSL):
-    """Base class for get_breadcrumbs tests"""
+    """Base class for `get_breadcrumbs` tests"""
 
     _expected_breadcrumbs: MagicMock
     _obtained_breadcrumbs: MagicMock
@@ -407,7 +407,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(CatalogueCategoryServiceDSL):
-    """Base class for list tests"""
+    """Base class for `list` tests"""
 
     _parent_id_filter: Optional[str]
     _expected_catalogue_categories: MagicMock
@@ -447,7 +447,7 @@ class TestList(ListDSL):
 
 # pylint:disable=too-many-instance-attributes
 class UpdateDSL(CatalogueCategoryServiceDSL):
-    """Base class for update tests"""
+    """Base class for `update` tests"""
 
     _stored_catalogue_category: Optional[CatalogueCategoryOut]
     _catalogue_category_patch: CatalogueCategoryPatchSchema
@@ -796,7 +796,7 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(CatalogueCategoryServiceDSL):
-    """Base class for delete tests"""
+    """Base class for `delete` tests"""
 
     _delete_catalogue_category_id: str
 

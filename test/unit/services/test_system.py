@@ -48,7 +48,7 @@ class SystemServiceDSL:
 
 
 class CreateDSL(SystemServiceDSL):
-    """Base class for create tests"""
+    """Base class for `create` tests"""
 
     _system_post: SystemPostSchema
     _expected_system_in: SystemIn
@@ -104,7 +104,7 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(SystemServiceDSL):
-    """Base class for get tests"""
+    """Base class for `get` tests"""
 
     _obtained_system_id: str
     _expected_system: MagicMock
@@ -143,7 +143,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(SystemServiceDSL):
-    """Base class for get_breadcrumbs tests"""
+    """Base class for `get_breadcrumbs` tests"""
 
     _expected_breadcrumbs: MagicMock
     _obtained_breadcrumbs: MagicMock
@@ -182,7 +182,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(SystemServiceDSL):
-    """Base class for list tests"""
+    """Base class for `list` tests"""
 
     _parent_id_filter: Optional[str]
     _expected_systems: MagicMock
@@ -221,7 +221,7 @@ class TestList(ListDSL):
 
 
 class UpdateDSL(SystemServiceDSL):
-    """Base class for update tests"""
+    """Base class for `update` tests"""
 
     _stored_system: Optional[SystemOut]
     _system_patch: SystemPatchSchema
@@ -349,7 +349,7 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(SystemServiceDSL):
-    """Base class for delete tests"""
+    """Base class for `delete` tests"""
 
     _delete_system_id: str
 

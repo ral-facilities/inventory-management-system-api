@@ -44,7 +44,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 
 
 class CatalogueCategoryRepoDSL:
-    """Base class for CatalogueCategoryRepo unit tests"""
+    """Base class for `CatalogueCategoryRepo` unit tests"""
 
     # pylint:disable=too-many-instance-attributes
     mock_database: Mock
@@ -109,7 +109,7 @@ class CatalogueCategoryRepoDSL:
 
 
 class CreateDSL(CatalogueCategoryRepoDSL):
-    """Base class for create tests"""
+    """Base class for `create` tests"""
 
     _catalogue_category_in: CatalogueCategoryIn
     _expected_catalogue_category_out: CatalogueCategoryOut
@@ -297,7 +297,7 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(CatalogueCategoryRepoDSL):
-    """Base class for get tests"""
+    """Base class for `get` tests"""
 
     _obtained_catalogue_category_id: str
     _expected_catalogue_category_out: Optional[CatalogueCategoryOut]
@@ -391,7 +391,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
-    """Base class for breadcrumbs tests"""
+    """Base class for `get_breadcrumbs` tests"""
 
     _breadcrumbs_query_result: list[dict]
     _mock_aggregation_pipeline = MagicMock()
@@ -452,7 +452,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(CatalogueCategoryRepoDSL):
-    """Base class for list tests"""
+    """Base class for `list` tests"""
 
     _expected_catalogue_categories_out: list[CatalogueCategoryOut]
     _parent_id_filter: Optional[str]
@@ -546,7 +546,7 @@ class TestList(ListDSL):
 
 
 class UpdateDSL(CatalogueCategoryRepoDSL):
-    """Base class for update tests"""
+    """Base class for `update` tests"""
 
     # pylint:disable=too-many-instance-attributes
     _catalogue_category_in: CatalogueCategoryIn
@@ -882,7 +882,7 @@ class TestUpdate(UpdateDSL):
 
 
 class HasChildElementsDSL(CatalogueCategoryRepoDSL):
-    """Base class for has_child_elements tests"""
+    """Base class for `has_child_elements` tests"""
 
     _has_child_elements_catalogue_category_id: str
     _has_child_elements_result: bool
@@ -940,7 +940,7 @@ class TestHasChildElements(HasChildElementsDSL):
 
 
 class DeleteDSL(CatalogueCategoryRepoDSL):
-    """Base class for delete tests"""
+    """Base class for `delete` tests"""
 
     _delete_catalogue_category_id: str
     _delete_exception: pytest.ExceptionInfo
@@ -1054,7 +1054,7 @@ class TestDelete(DeleteDSL):
 
 
 class CreatePropertyDSL(CatalogueCategoryRepoDSL):
-    """Base class for create property tests"""
+    """Base class for `create_property` tests"""
 
     _mock_datetime: Mock
     _property_in: CatalogueCategoryPropertyIn
@@ -1146,7 +1146,7 @@ class TestCreateProperty(CreatePropertyDSL):
 
 
 class UpdatePropertyDSL(CreatePropertyDSL):
-    """Base class for update property tests"""
+    """Base class for `update_property` tests"""
 
     _updated_property: CatalogueCategoryOut
     _property_id: str
