@@ -33,14 +33,12 @@ CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
     "name": "Category A",
     "is_leaf": False,
     "parent_id": None,
-    "properties": [],
 }
 
 CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
     "name": "Category B",
     "is_leaf": False,
     "parent_id": None,
-    "properties": [],
 }
 
 CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
@@ -96,8 +94,15 @@ CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
     ],
 }
 
+CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
+    "name": "Leaf Category No Parent No Properties",
+    "is_leaf": True,
+    "parent_id": None,
+    "properties": [],
+}
+
 CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
-    "name": "Category A",
+    "name": "Leaf Category No Parent With Properties",
     "is_leaf": True,
     "parent_id": None,
     "properties": [

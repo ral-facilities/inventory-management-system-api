@@ -7,9 +7,11 @@ from datetime import timedelta
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
@@ -19,6 +21,7 @@ from unittest.mock import ANY, MagicMock, Mock, call, patch
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateCatalogueCategoryPropertyNameError,
@@ -33,6 +36,7 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
+    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchSchema,
     CatalogueCategoryPostPropertySchema,
     CatalogueCategoryPostSchema,
@@ -149,7 +153,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         # inserts the unit ids as well
         property_post_schemas = []
         expected_properties_in = []
-        if catalogue_category_data["properties"]:
+        if "properties" in catalogue_category_data and catalogue_category_data["properties"]:
             self.unit_value_id_dict = {}
 
             for prop in catalogue_category_data["properties"]:
@@ -422,7 +426,285 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
-# TODO: Add update tests
+class UpdateDSL(CatalogueCategoryServiceDSL):
+    """Base class for update tests"""
+
+    _stored_catalogue_category: Optional[CatalogueCategoryOut]
+    _catalogue_category_patch: CatalogueCategoryPatchSchema
+    _expected_catalogue_category_in: CatalogueCategoryIn
+    _expected_catalogue_category_out: MagicMock
+    _updated_catalogue_category_id: str
+    _updated_catalogue_category: MagicMock
+    _update_exception: pytest.ExceptionInfo
+
+    _expect_child_check: bool
+    unit_value_id_dict: dict[str, str]
+
+    # TODO: Rename catalogue_category_patch_data ?
+    def mock_update(
+        self,
+        catalogue_category_id: str,
+        catalogue_category_patch_data: dict,
+        stored_catalogue_category_post_data: Optional[dict],
+        has_child_elements: bool = False,
+        units_in_data: Optional[list[Optional[dict]]] = None,
+    ):
+        """Mocks repository methods appropriately to test the 'update' service method
+
+        :param catalogue_category_id: ID of the catalogue category that will be obtained
+        :param catalogue_category_patch_data: Dictionary containing the basic patch data as would be required for a
+                                              CatalogueCategoryPatchSchema but without any unit_id's in its properties
+                                              as they will be added automatically
+        :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
+                                              stored catalogue category as would be required for a SystemPostSchema
+                                              (i.e. no id, code or created and modified times required)
+        :param has_child_elements: Boolean of whether the category being updated has child elements or not
+        :param units_in_data: Either None or a list of dictionaries (or None) containing the unit data as would be
+                              required for a UnitIn database model. These values will be used for any unit look ups
+                              required by the given catalogue category properties in the patch data.
+        """
+
+        # TODO: Add extra not in systems
+
+        # Stored catalogue category
+        self._stored_catalogue_category = (
+            CatalogueCategoryOut(
+                **CatalogueCategoryIn(
+                    **stored_catalogue_category_post_data,
+                    code=utils.generate_code(stored_catalogue_category_post_data["name"], "system"),
+                ).model_dump(),
+                id=CustomObjectId(catalogue_category_id),
+            )
+            if stored_catalogue_category_post_data
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category)
+
+        # Need to mock has_child_elements only if the check is required
+        self._expect_child_check = any(
+            key in catalogue_category_patch_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS
+        )
+        if self._expect_child_check:
+            self.mock_catalogue_category_repository.has_child_elements.return_value = has_child_elements
+
+        # TODO: This is identical to create - move to common function? - same for unit_value_id_dict variable above
+        # When properties are given need to mock any units and need to ensure the expected data
+        # inserts the unit ids as well
+        property_post_schemas = []
+        expected_properties_in = []
+        if "properties" in catalogue_category_patch_data and catalogue_category_patch_data["properties"]:
+            self.unit_value_id_dict = {}
+
+            for prop in catalogue_category_patch_data["properties"]:
+                unit_id = None
+                prop_without_unit = prop.copy()
+
+                # Give units ids and remove the unit value from the prop for the post schema
+                if "unit" in prop and prop["unit"]:
+                    unit_id = str(ObjectId())
+                    self.unit_value_id_dict[prop["unit"]] = unit_id
+                    del prop_without_unit["unit"]
+
+                expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
+                property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
+
+                catalogue_category_patch_data["properties"] = property_post_schemas
+
+            self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
+
+        # Updated catalogue category
+        self._expected_catalogue_category_out = MagicMock()
+        ServiceTestHelpers.mock_update(self.mock_catalogue_category_repository, self._expected_catalogue_category_out)
+
+        # Patch schema
+        self._catalogue_category_patch = CatalogueCategoryPatchSchema(**catalogue_category_patch_data)
+
+        # Construct the expected input for the repository
+        merged_catalogue_category_data = {
+            **(stored_catalogue_category_post_data or {}),
+            **catalogue_category_patch_data,
+        }
+        self._expected_catalogue_category_in = CatalogueCategoryIn(
+            **{**merged_catalogue_category_data, "properties": expected_properties_in},
+            code=utils.generate_code(merged_catalogue_category_data["name"], "catalogue category"),
+        )
+
+    def call_update(self, catalogue_category_id: str):
+        """Calls the CatalogueCategoryService `update` method with the appropriate data from a prior call to `mock_update`"""
+
+        self._updated_catalogue_category_id = catalogue_category_id
+        self._updated_catalogue_category = self.catalogue_category_service.update(
+            catalogue_category_id, self._catalogue_category_patch
+        )
+
+    def call_update_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
+        """Calls the CatalogueCategoryService `update` method with the appropriate data from a prior call to `mock_update`
+        while expecting an error to be raised"""
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_service.update(catalogue_category_id, self._catalogue_category_patch)
+        self._update_exception = exc
+
+    def check_update_success(self):
+        """Checks that a prior call to `call_update` worked as expected"""
+
+        # TODO: Add extra not in systems
+
+        # Ensure obtained old system
+        self.mock_catalogue_category_repository.get.assert_called_once_with(self._updated_catalogue_category_id)
+
+        # Ensure checking children if needed
+        if self._expect_child_check:
+            self.mock_catalogue_category_repository.has_child_elements.assert_called_once_with(
+                CustomObjectId(self._updated_catalogue_category_id)
+            )
+
+        # Ensure new code was obtained if patching name
+        if self._catalogue_category_patch.name:
+            self.wrapped_utils.generate_code.assert_called_once_with(
+                self._catalogue_category_patch.name, "catalogue category"
+            )
+        else:
+            self.wrapped_utils.generate_code.assert_not_called()
+
+        # TODO: This is also duplicated code - move?
+        # Ensure updated with expected data
+        if self._catalogue_category_patch.properties:
+            # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will
+            # always be different
+
+            # TODO: Check id is correct ([0][0][0])
+            actual_catalogue_category_in = self.mock_catalogue_category_repository.update.call_args_list[0][0][1]
+            assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
+            assert actual_catalogue_category_in.model_dump() == {
+                **self._expected_catalogue_category_in.model_dump(),
+                "properties": [
+                    {**prop.model_dump(), "id": ANY} for prop in self._expected_catalogue_category_in.properties
+                ],
+            }
+        else:
+            self.mock_catalogue_category_repository.update.assert_called_once_with(
+                self._updated_catalogue_category_id, self._expected_catalogue_category_in
+            )
+
+        assert self._updated_catalogue_category == self._expected_catalogue_category_out
+
+    def check_update_failed_with_exception(self, message: str):
+        """Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message"""
+
+        self.mock_catalogue_category_repository.update.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a catalogue category"""
+
+    def test_update_non_leaf_all_fields_except_parent_id_no_children(self):
+        """Test updating all fields of a non-leaf catalogue category except its parent id when it has no children"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+        )
+        self.call_update(catalogue_category_id)
+        self.check_update_success()
+
+    def test_update_all_fields_except_parent_id_with_children(self):
+        """Test updating all allowable fields of a catalogue category except its parent id when it has children
+        (leaf/non-leaf doesn't matter as properties can't be updated with children anyway)"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data={"name": "New name"},
+            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            has_child_elements=True,
+        )
+        self.call_update(catalogue_category_id)
+        self.check_update_success()
+
+    def test_update_is_leaf_only_without_children(self):
+        """Test updating a catalogue categories is_leaf field only when it doesn't have any children
+        (code should not need regenerating as name doesn't change)"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data={"is_leaf": True},
+            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+        )
+        self.call_update(catalogue_category_id)
+        self.check_update_success()
+
+    def test_update_is_leaf_only_with_children(self):
+        """Test updating a catalogue categories is_leaf field only when it has children
+        (code should not need regenerating as name doesn't change)"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data={"is_leaf": True},
+            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(catalogue_category_id, ChildElementsExistError)
+        self.check_update_failed_with_exception(
+            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+        )
+
+    def test_update_leaf_all_fields_except_parent_id_with_no_children(self):
+        """Test updating all fields of a leaf catalogue category except its parent id when it has no children"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data=CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            units_in_data=[UNIT_IN_DATA_MM],
+        )
+        self.call_update(catalogue_category_id)
+        self.check_update_success()
+
+    def test_update_leaf_properties_only_with_children(self):
+        """Test updating the properties of a leaf catalogue category when it has children"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data={
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]
+            },
+            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            units_in_data=[UNIT_IN_DATA_MM],
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(catalogue_category_id, ChildElementsExistError)
+        self.check_update_failed_with_exception(
+            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+        )
+
+    def test_update_with_non_existent_id(self):
+        """Test updating a catalogue category with a non-existent ID"""
+
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_id,
+            catalogue_category_patch_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            stored_catalogue_category_post_data=None,
+        )
+        self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
 
 
 class DeleteDSL(CatalogueCategoryServiceDSL):
@@ -458,147 +740,6 @@ class TestDelete(DeleteDSL):
 #     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
-
-
-# def test_update_when_no_child_elements(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_service,
-# ):
-#     """
-#     Test updating a catalogue category without child elements
-
-#     Verify that the `update` method properly handles the catalogue category to be updated when it doesn't have any
-#     child elements.
-#     """
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category B",
-#         code="category-b",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock `get` to return a catalogue category
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.id,
-#             name="Category A",
-#             code="category-a",
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=catalogue_category.properties,
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.created_time,
-#         ),
-#     )
-#     # Mock so child elements not found
-#     catalogue_category_repository_mock.has_child_elements.return_value = False
-#     # Mock `update` to return the updated catalogue category
-#     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
-
-#     updated_catalogue_category = catalogue_category_service.update(
-#         catalogue_category.id, CatalogueCategoryPatchSchema(name=catalogue_category.name)
-#     )
-
-#     # pylint: disable=duplicate-code
-#     catalogue_category_repository_mock.update.assert_called_once_with(
-#         catalogue_category.id,
-#         CatalogueCategoryIn(
-#             name=catalogue_category.name,
-#             code=catalogue_category.code,
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=catalogue_category.properties,
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.modified_time,
-#         ),
-#     )
-#     # pylint: enable=duplicate-code
-#     assert updated_catalogue_category == catalogue_category
-
-
-# def test_update_when_has_child_elements(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_service,
-# ):
-#     """
-#     Test updating a catalogue category when it has child elements
-
-#     Verify that the `update` method properly handles the catalogue category to be updated when it has children.
-#     """
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category B",
-#         code="category-b",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock `get` to return a catalogue category
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.id,
-#             name="Category A",
-#             code="category-a",
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=catalogue_category.properties,
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.created_time,
-#         ),
-#     )
-#     # Mock so child elements found
-#     catalogue_category_repository_mock.has_child_elements.return_value = True
-#     # Mock `update` to return the updated catalogue category
-#     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
-
-#     updated_catalogue_category = catalogue_category_service.update(
-#         catalogue_category.id, CatalogueCategoryPatchSchema(name=catalogue_category.name)
-#     )
-
-#     # pylint: disable=duplicate-code
-#     catalogue_category_repository_mock.update.assert_called_once_with(
-#         catalogue_category.id,
-#         CatalogueCategoryIn(
-#             name=catalogue_category.name,
-#             code=catalogue_category.code,
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=catalogue_category.properties,
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.modified_time,
-#         ),
-#     )
-#     # pylint: enable=duplicate-code
-#     assert updated_catalogue_category == catalogue_category
-
-
-# def test_update_with_non_existent_id(test_helpers, catalogue_category_repository_mock, catalogue_category_service):
-#     """
-#     Test updating a catalogue category with a non-existent ID.
-
-#     Verify that the `update` method properly handles the catalogue category to be updated with a non-existent ID.
-#     """
-#     # Mock `get` to not return a catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, None)
-
-#     catalogue_category_id = str(ObjectId())
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_category_service.update(catalogue_category_id, CatalogueCategoryPatchSchema(properties=[]))
-#     catalogue_category_repository_mock.update.assert_not_called()
-#     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
 
 # def test_update_change_parent_id(
@@ -814,210 +955,6 @@ class TestDelete(DeleteDSL):
 #         ),
 #     )
 #     assert updated_catalogue_category == catalogue_category
-
-
-# def test_update_change_properties_when_no_child_elements(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     unit_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_service,
-# ):
-#     """
-#     Test updating a catalogue category's item properties when it has no child elements.
-
-#     Verify that the `update` method properly handles the catalogue category to be updated.
-#     """
-#     # pylint: disable=duplicate-code
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[
-#             CatalogueCategoryPropertyOut(
-#                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
-#             ),
-#             CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#         ],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW - timedelta(days=5),
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return a catalogue category
-#     # pylint: disable=duplicate-code
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.id,
-#             name=catalogue_category.name,
-#             code=catalogue_category.code,
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=[catalogue_category.properties[1]],
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.created_time,
-#         ),
-#     )
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-#     # Mock so child elements not found
-#     catalogue_category_repository_mock.has_child_elements.return_value = False
-#     # pylint: enable=duplicate-code
-#     # Mock `update` to return the updated catalogue category
-#     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
-
-#     updated_catalogue_category = catalogue_category_service.update(
-#         catalogue_category.id,
-#         CatalogueCategoryPatchSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
-#     )
-
-#     # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will always
-#     # be different
-#     catalogue_category_repository_mock.update.assert_called_once_with(catalogue_category.id, ANY)
-#     update_catalogue_category_in = catalogue_category_repository_mock.update.call_args_list[0][0][1]
-#     assert isinstance(update_catalogue_category_in, CatalogueCategoryIn)
-#     assert update_catalogue_category_in.model_dump() == {
-#         **(
-#             CatalogueCategoryIn(
-#                 name=catalogue_category.name,
-#                 code=catalogue_category.code,
-#                 is_leaf=catalogue_category.is_leaf,
-#                 parent_id=catalogue_category.parent_id,
-#                 properties=[prop.model_dump() for prop in catalogue_category.properties],
-#                 created_time=catalogue_category.created_time,
-#                 modified_time=catalogue_category.modified_time,
-#             ).model_dump()
-#         ),
-#         "properties": [{**prop.model_dump(), "id": ANY, "unit_id": ANY} for prop in catalogue_category.properties],
-#     }
-#     assert updated_catalogue_category == catalogue_category
-
-
-# def test_update_change_from_leaf_to_non_leaf_when_has_child_elements(
-#     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
-# ):
-#     """
-#     Test changing a catalogue category from leaf to non-leaf when the category has child elements.
-#     """
-#     # pylint: disable=duplicate-code
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=False,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return a catalogue category
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.id,
-#             name=catalogue_category.name,
-#             code=catalogue_category.code,
-#             is_leaf=True,
-#             parent_id=catalogue_category.parent_id,
-#             properties=[
-#                 CatalogueCategoryPropertyOut(
-#                     id=str(ObjectId()),
-#                     name="Property A",
-#                     type="number",
-#                     unit_id=unit.id,
-#                     unit=unit.value,
-#                     mandatory=False,
-#                 ),
-#                 CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#             ],
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.modified_time,
-#         ),
-#     )
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-#     # Mock so child elements found
-#     catalogue_category_repository_mock.has_child_elements.return_value = True
-#     # Mock `update` to return the updated catalogue category
-#     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(ChildElementsExistError) as exc:
-#         catalogue_category_service.update(catalogue_category.id, CatalogueCategoryPatchSchema(is_leaf=False))
-#     catalogue_category_repository_mock.update.assert_not_called()
-#     assert (
-#         str(exc.value)
-#         == f"Catalogue category with ID {str(catalogue_category.id)} has child elements and cannot be updated"
-#     )
-
-
-# def test_update_change_properties_when_has_child_elements(
-#     test_helpers, catalogue_category_repository_mock, unit_repository_mock, catalogue_category_service
-# ):
-#     """
-#     Test updating a catalogue category's item properties when it has child elements.
-
-#     Verify that the `update` method properly handles the catalogue category to be updated.
-#     """
-#     # pylint: disable=duplicate-code
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[
-#             CatalogueCategoryPropertyOut(
-#                 id=str(ObjectId()), name="Property A", type="number", unit_id=unit.id, unit=unit.value, mandatory=False
-#             ),
-#             CatalogueCategoryPropertyOut(id=str(ObjectId()), name="Property B", type="boolean", mandatory=True),
-#         ],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return a catalogue category
-#     # pylint: disable=duplicate-code
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_category.id,
-#             name=catalogue_category.name,
-#             code=catalogue_category.code,
-#             is_leaf=catalogue_category.is_leaf,
-#             parent_id=catalogue_category.parent_id,
-#             properties=[catalogue_category.properties[1]],
-#             created_time=catalogue_category.created_time,
-#             modified_time=catalogue_category.created_time,
-#         ),
-#     )
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-#     # Mock so child elements found
-#     catalogue_category_repository_mock.has_child_elements.return_value = True
-#     # pylint: enable=duplicate-code
-#     # Mock `update` to return the updated catalogue category
-#     test_helpers.mock_update(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(ChildElementsExistError) as exc:
-#         catalogue_category_service.update(
-#             catalogue_category.id,
-#             CatalogueCategoryPatchSchema(properties=[prop.model_dump() for prop in catalogue_category.properties]),
-#         )
-#     catalogue_category_repository_mock.update.assert_not_called()
-#     assert (
-#         str(exc.value)
-#         == f"Catalogue category with ID {str(catalogue_category.id)} has child elements and cannot be updated"
-#     )
 
 
 # def test_update_properties_to_have_duplicate_names(

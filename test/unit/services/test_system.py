@@ -309,8 +309,8 @@ class UpdateDSL(SystemServiceDSL):
 class TestUpdate(UpdateDSL):
     """Tests for updating a system"""
 
-    def test_update_all_fields(self):
-        """Test updating all fields of a system"""
+    def test_update_all_fields_except_parent_id(self):
+        """Test updating all fields of a system except its parent id"""
 
         system_id = str(ObjectId())
 
@@ -322,7 +322,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(system_id)
         self.check_update_success()
 
-    def test_update_description_field_only(self):
+    def test_update_description_only(self):
         """Test updating system's description field only (code should not need regenerating as name doesn't change)"""
 
         system_id = str(ObjectId())
