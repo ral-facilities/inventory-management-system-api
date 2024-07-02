@@ -53,6 +53,8 @@ class CatalogueCategoryServiceDSL:
     mock_unit_repository: Mock
     catalogue_category_service: CatalogueCategoryService
 
+    unit_value_id_dict: dict[str, str]
+
     @pytest.fixture(autouse=True)
     def setup(
         self,
@@ -72,6 +74,35 @@ class CatalogueCategoryServiceDSL:
         with patch("inventory_management_system_api.services.catalogue_category.utils", wraps=utils) as wrapped_utils:
             self.wrapped_utils = wrapped_utils
             yield
+
+    def construct_properties_in_and_post_with_ids(self, catalogue_category_properties_data: list[dict]):
+        """Returns a list of property post schemas and expected property in models by adding
+        in unit ids. It also assigns `unit_value_id_dict` for looking up these ids.
+
+        :param catalogue_category_properties_data: List of dictionaries containing the data for each property as would
+                                                   be required for a CatalogueCategoryPostPropertySchema but without
+                                                   any unit_id's
+        """
+
+        property_post_schemas = []
+        expected_properties_in = []
+
+        self.unit_value_id_dict = {}
+
+        for prop in catalogue_category_properties_data:
+            unit_id = None
+            prop_without_unit = prop.copy()
+
+            # Give units ids and remove the unit value from the prop for the post schema
+            if "unit" in prop and prop["unit"]:
+                unit_id = str(ObjectId())
+                self.unit_value_id_dict[prop["unit"]] = unit_id
+                del prop_without_unit["unit"]
+
+            expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
+            property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
+
+        return expected_properties_in, property_post_schemas
 
     def mock_add_property_unit_values(self, units_in_data: list[Optional[dict]], unit_value_id_dict: dict[str, str]):
         """Mocks database methods appropriately for when the `_add_property_unit_values` repo method will be called
@@ -117,8 +148,6 @@ class CreateDSL(CatalogueCategoryServiceDSL):
     _created_catalogue_category: CatalogueCategoryOut
     _create_exception: pytest.ExceptionInfo
 
-    unit_value_id_dict: dict[str, str]
-
     def mock_create(
         self,
         catalogue_category_data: dict,
@@ -149,25 +178,13 @@ class CreateDSL(CatalogueCategoryServiceDSL):
                 ),
             )
 
-        # When properties are given need to mock any units and need to ensure the expected data
-        # inserts the unit ids as well
+        # When properties are given need to mock any units and ensure the expected data inserts the unit ids as well
         property_post_schemas = []
         expected_properties_in = []
         if "properties" in catalogue_category_data and catalogue_category_data["properties"]:
-            self.unit_value_id_dict = {}
-
-            for prop in catalogue_category_data["properties"]:
-                unit_id = None
-                prop_without_unit = prop.copy()
-
-                # Give units ids and remove the unit value from the prop for the post schema
-                if "unit" in prop and prop["unit"]:
-                    unit_id = str(ObjectId())
-                    self.unit_value_id_dict[prop["unit"]] = unit_id
-                    del prop_without_unit["unit"]
-
-                expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
-                property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
+            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
+                catalogue_category_data["properties"]
+            )
 
             self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
 
@@ -440,11 +457,10 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
     _expect_child_check: bool
     unit_value_id_dict: dict[str, str]
 
-    # TODO: Rename catalogue_category_patch_data ?
     def mock_update(
         self,
         catalogue_category_id: str,
-        catalogue_category_patch_data: dict,
+        catalogue_category_update_data: dict,
         stored_catalogue_category_post_data: Optional[dict],
         has_child_elements: bool = False,
         units_in_data: Optional[list[Optional[dict]]] = None,
@@ -452,9 +468,9 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         """Mocks repository methods appropriately to test the 'update' service method
 
         :param catalogue_category_id: ID of the catalogue category that will be obtained
-        :param catalogue_category_patch_data: Dictionary containing the basic patch data as would be required for a
-                                              CatalogueCategoryPatchSchema but without any unit_id's in its properties
-                                              as they will be added automatically
+        :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
+                                               CatalogueCategoryPatchSchema but without any unit_id's in its properties
+                                               as they will be added automatically
         :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
                                               stored catalogue category as would be required for a SystemPostSchema
                                               (i.e. no id, code or created and modified times required)
@@ -482,33 +498,18 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         # Need to mock has_child_elements only if the check is required
         self._expect_child_check = any(
-            key in catalogue_category_patch_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS
+            key in catalogue_category_update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS
         )
         if self._expect_child_check:
             self.mock_catalogue_category_repository.has_child_elements.return_value = has_child_elements
 
-        # TODO: This is identical to create - move to common function? - same for unit_value_id_dict variable above
-        # When properties are given need to mock any units and need to ensure the expected data
-        # inserts the unit ids as well
-        property_post_schemas = []
+        # When properties are given need to mock any units and ensure the expected data inserts the unit ids as well
         expected_properties_in = []
-        if "properties" in catalogue_category_patch_data and catalogue_category_patch_data["properties"]:
-            self.unit_value_id_dict = {}
-
-            for prop in catalogue_category_patch_data["properties"]:
-                unit_id = None
-                prop_without_unit = prop.copy()
-
-                # Give units ids and remove the unit value from the prop for the post schema
-                if "unit" in prop and prop["unit"]:
-                    unit_id = str(ObjectId())
-                    self.unit_value_id_dict[prop["unit"]] = unit_id
-                    del prop_without_unit["unit"]
-
-                expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
-                property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
-
-                catalogue_category_patch_data["properties"] = property_post_schemas
+        if "properties" in catalogue_category_update_data and catalogue_category_update_data["properties"]:
+            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
+                catalogue_category_update_data["properties"]
+            )
+            catalogue_category_update_data["properties"] = property_post_schemas
 
             self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
 
@@ -517,12 +518,12 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         ServiceTestHelpers.mock_update(self.mock_catalogue_category_repository, self._expected_catalogue_category_out)
 
         # Patch schema
-        self._catalogue_category_patch = CatalogueCategoryPatchSchema(**catalogue_category_patch_data)
+        self._catalogue_category_patch = CatalogueCategoryPatchSchema(**catalogue_category_update_data)
 
         # Construct the expected input for the repository
         merged_catalogue_category_data = {
             **(stored_catalogue_category_post_data or {}),
-            **catalogue_category_patch_data,
+            **catalogue_category_update_data,
         }
         self._expected_catalogue_category_in = CatalogueCategoryIn(
             **{**merged_catalogue_category_data, "properties": expected_properties_in},
@@ -567,14 +568,14 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         else:
             self.wrapped_utils.generate_code.assert_not_called()
 
-        # TODO: This is also duplicated code - move?
         # Ensure updated with expected data
         if self._catalogue_category_patch.properties:
             # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
 
-            # TODO: Check id is correct ([0][0][0])
-            actual_catalogue_category_in = self.mock_catalogue_category_repository.update.call_args_list[0][0][1]
+            update_call_args = self.mock_catalogue_category_repository.update.call_args_list[0][0]
+            assert update_call_args[0] == self._updated_catalogue_category_id
+            actual_catalogue_category_in = update_call_args[1]
             assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
             assert actual_catalogue_category_in.model_dump() == {
                 **self._expected_catalogue_category_in.model_dump(),
@@ -608,7 +609,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            catalogue_category_update_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
         )
         self.call_update(catalogue_category_id)
@@ -622,7 +623,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data={"name": "New name"},
+            catalogue_category_update_data={"name": "New name"},
             stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             has_child_elements=True,
         )
@@ -637,7 +638,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data={"is_leaf": True},
+            catalogue_category_update_data={"is_leaf": True},
             stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
         )
         self.call_update(catalogue_category_id)
@@ -651,7 +652,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data={"is_leaf": True},
+            catalogue_category_update_data={"is_leaf": True},
             stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             has_child_elements=True,
         )
@@ -667,7 +668,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data=CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+            catalogue_category_update_data=CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
             stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             units_in_data=[UNIT_IN_DATA_MM],
         )
@@ -681,7 +682,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data={
+            catalogue_category_update_data={
                 "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]
             },
             stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
@@ -700,7 +701,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_id,
-            catalogue_category_patch_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
+            catalogue_category_update_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
             stored_catalogue_category_post_data=None,
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
