@@ -47,7 +47,7 @@ class CreateDSL:
         self.test_client = test_client
         self.unit_value_id_dict = {}
 
-    def post_unit(self, unit_post_data: dict) -> Optional[str]:
+    def post_unit(self, unit_post_data: dict):
         """Posts a unit with the given data and stores the value and id in a dictionary for lookup later
 
         :param unit_post_data: Dictionary containing the unit data that should be posted
@@ -74,13 +74,17 @@ class CreateDSL:
 
         # Replace any unit values with unit ids
         if "properties" in catalogue_category_data and catalogue_category_data["properties"]:
+            new_properties = []
             for prop in catalogue_category_data["properties"]:
+                new_property = {**prop}
                 if "unit" in prop:
                     if prop["unit"] is not None:
-                        prop["unit_id"] = self.unit_value_id_dict[prop["unit"]]
+                        new_property["unit_id"] = self.unit_value_id_dict[prop["unit"]]
                     else:
-                        prop["unit_id"] = None
-                    del prop["unit"]
+                        new_property["unit_id"] = None
+                    del new_property["unit"]
+                new_properties.append(new_property)
+            catalogue_category_data = {**catalogue_category_data, "properties": new_properties}
 
         self._post_response = self.test_client.post("/v1/catalogue-categories", json=catalogue_category_data)
 
@@ -351,6 +355,348 @@ class TestCreate(CreateDSL):
         )
 
 
+class GetDSL(CreateDSL):
+    """Base class for get tests"""
+
+    _get_response: Response
+
+    def get_catalogue_category(self, catalogue_category_id: str):
+        """Gets a system with the given id"""
+
+        self._get_response = self.test_client.get(f"/v1/catalogue-categories/{catalogue_category_id}")
+
+    def check_get_catalogue_category_success(self, expected_catalogue_category_get_data: dict):
+        """Checks that a prior call to 'get_catalogue_category' gave a successful response with the expected data returned"""
+
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_catalogue_category_get_data
+
+    def check_get_catalogue_category_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'get_catalogue_category' gave a failed response with the expected code and error message"""
+
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
+
+
+class TestGet(GetDSL):
+    """Tests for getting a catalogue category"""
+
+    def test_get(self):
+        """Test getting a catalogue category"""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        self.get_catalogue_category(catalogue_category_id)
+        self.check_get_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+
+    def test_get_with_non_existent_id(self):
+        """Test getting a catalogue category with a non-existent id"""
+
+        self.get_catalogue_category(str(ObjectId()))
+        self.check_get_catalogue_category_failed_with_message(404, "Catalogue category not found")
+
+    def test_get_with_invalid_id(self):
+        """Test getting a catalogue category with an invalid id"""
+
+        self.get_catalogue_category("invalid-id")
+        self.check_get_catalogue_category_failed_with_message(404, "Catalogue category not found")
+
+
+# TODO: Abstract this and the following tests as they are the same for systems only with different names
+class GetBreadcrumbsDSL(GetDSL):
+    """Base class for breadcrumbs tests"""
+
+    _get_response: Response
+
+    _posted_catalogue_categories_get_data: list[dict]
+
+    @pytest.fixture(autouse=True)
+    def setup_breadcrumbs_dsl(self):
+        """Setup fixtures"""
+
+        self._posted_catalogue_categories_get_data = []
+
+    def post_nested_catalogue_categories(self, number: int) -> list[Optional[str]]:
+        """Posts the given number of nested catalogue categories where each successive one has the previous as its parent
+
+        :param number: Number of catalogue categories to create
+        :return: List of ids of the created catalogue categories
+        """
+
+        parent_id = None
+        for i in range(0, number):
+            catalogue_category_id = self.post_catalogue_category(
+                {
+                    **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
+                    "name": f"Catalogue Category {i}",
+                    "parent_id": parent_id,
+                }
+            )
+            self._posted_catalogue_categories_get_data.append(self._post_response.json())
+            parent_id = catalogue_category_id
+
+        return [catalogue_category["id"] for catalogue_category in self._posted_catalogue_categories_get_data]
+
+    def get_catalogue_category_breadcrumbs(self, catalogue_category_id: str):
+        """Gets a catalogue category's breadcrumbs with the given id"""
+
+        self._get_response = self.test_client.get(f"/v1/catalogue-categories/{catalogue_category_id}/breadcrumbs")
+
+    def get_last_catalogue_category_breadcrumbs(self):
+        """Gets the last catalogue category posted's breadcrumbs"""
+
+        self.get_catalogue_category_breadcrumbs(self._post_response.json()["id"])
+
+    def check_get_catalogue_categories_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
+        """Checks that a prior call to 'get_catalogue_category_breadcrumbs' gave a successful response with the
+        expected data returned
+        """
+
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == {
+            "trail": [
+                [catalogue_category["id"], catalogue_category["name"]]
+                # When the expected trail length is < the number of systems posted, only use the last
+                for catalogue_category in self._posted_catalogue_categories_get_data[
+                    (len(self._posted_catalogue_categories_get_data) - expected_trail_length) :
+                ]
+            ],
+            "full_trail": expected_full_trail,
+        }
+
+    def check_get_catalogue_categories_breadcrumbs_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'get_catalogue_category_breadcrumbs' gave a failed response with the expected
+        code and error message"""
+
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
+
+
+class TestGetBreadcrumbs(GetBreadcrumbsDSL):
+    """Tests for getting a system's breadcrumbs"""
+
+    def test_get_breadcrumbs_when_no_parent(self):
+        """Test getting a system's breadcrumbs when the system has no parent"""
+
+        self.post_nested_catalogue_categories(1)
+        self.get_last_catalogue_category_breadcrumbs()
+        self.check_get_catalogue_categories_breadcrumbs_success(expected_trail_length=1, expected_full_trail=True)
+
+    def test_get_breadcrumbs_when_trail_length_less_than_maximum(self):
+        """Test getting a system's breadcrumbs when the full system trail should be less than the maximum trail
+        length"""
+
+        self.post_nested_catalogue_categories(BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
+        self.get_last_catalogue_category_breadcrumbs()
+        self.check_get_catalogue_categories_breadcrumbs_success(
+            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH - 1, expected_full_trail=True
+        )
+
+    def test_get_breadcrumbs_when_trail_length_maximum(self):
+        """Test getting a system's breadcrumbs when the full system trail should be equal to the maximum trail
+        length"""
+
+        self.post_nested_catalogue_categories(BREADCRUMBS_TRAIL_MAX_LENGTH)
+        self.get_last_catalogue_category_breadcrumbs()
+        self.check_get_catalogue_categories_breadcrumbs_success(
+            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=True
+        )
+
+    def test_get_breadcrumbs_when_trail_length_greater_maximum(self):
+        """Test getting a system's breadcrumbs when the full system trail exceeds the maximum trail length"""
+
+        self.post_nested_catalogue_categories(BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
+        self.get_last_catalogue_category_breadcrumbs()
+        self.check_get_catalogue_categories_breadcrumbs_success(
+            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=False
+        )
+
+    def test_get_breadcrumbs_with_non_existent_id(self):
+        """Test getting a system's breadcrumbs when given a non-existent system id"""
+
+        self.get_catalogue_category_breadcrumbs(str(ObjectId()))
+        self.check_get_catalogue_categories_breadcrumbs_failed_with_message(404, "Catalogue category not found")
+
+    def test_get_breadcrumbs_with_invalid_id(self):
+        """Test getting a system's breadcrumbs when given an invalid system id"""
+
+        self.get_catalogue_category_breadcrumbs("invalid_id")
+        self.check_get_catalogue_categories_breadcrumbs_failed_with_message(404, "Catalogue category not found")
+
+
+class ListDSL(GetBreadcrumbsDSL):
+    """Base class for list tests"""
+
+    def get_catalogue_categories(self, filters: dict):
+        """Gets a list catalogue categories with the given filters"""
+
+        self._get_response = self.test_client.get("/v1/catalogue-categories", params=filters)
+
+    def post_test_catalogue_category_with_child(self) -> list[dict]:
+        """Posts a catalogue category with a single child and returns their expected responses when returned by the
+        list endpoint"""
+
+        parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_category(
+            {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": parent_id}
+        )
+
+        return [
+            CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
+            {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": parent_id},
+        ]
+
+    def check_get_catalogue_categories_success(self, expected_systems_get_data: list[dict]):
+        """Checks that a prior call to 'get_catalogue_categories' gave a successful response with the expected data
+        returned"""
+
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_systems_get_data
+
+
+class TestList(ListDSL):
+    """Tests for getting a list of catalogue categories"""
+
+    def test_list_with_no_filters(self):
+        """Test getting a list of all catalogue categories with no filters provided
+
+        Posts a catalogue category with a child and expects both to be returned.
+        """
+
+        catalogue_categories = self.post_test_catalogue_category_with_child()
+        self.get_catalogue_categories(filters={})
+        self.check_get_catalogue_categories_success(catalogue_categories)
+
+    def test_list_with_parent_id_filter(self):
+        """Test getting a list of all catalogue categories with a parent_id filter provided
+
+        Posts a catalogue category with a child and then filter using the parent_id expecting only the second
+        catalogue category to be returned.
+        """
+
+        catalogue_categories = self.post_test_catalogue_category_with_child()
+        self.get_catalogue_categories(filters={"parent_id": catalogue_categories[1]["parent_id"]})
+        self.check_get_catalogue_categories_success([catalogue_categories[1]])
+
+    def test_list_with_null_parent_id_filter(self):
+        """Test getting a list of all catalogue categories with a parent_id filter of "null" provided
+
+        Posts a catalogue category with a child and then filter using a parent_id of "null" expecting only
+        the first parent catalogue category to be returned.
+        """
+
+        catalogue_categories = self.post_test_catalogue_category_with_child()
+        self.get_catalogue_categories(filters={"parent_id": "null"})
+        self.check_get_catalogue_categories_success([catalogue_categories[0]])
+
+    def test_list_with_parent_id_filter_with_no_matching_results(self):
+        """Test getting a list of all systems with a parent_id filter that returns no results"""
+
+        self.get_catalogue_categories(filters={"parent_id": str(ObjectId())})
+        self.check_get_catalogue_categories_success([])
+
+    def test_list_with_invalid_parent_id_filter(self):
+        """Test getting a list of all systems with an invalid parent_id filter returns no results"""
+
+        self.get_catalogue_categories(filters={"parent_id": "invalid-id"})
+        self.check_get_catalogue_categories_success([])
+
+# TODO: Add update tests and use UpdateDSL here
+class DeleteDSL(GetBreadcrumbsDSL):
+    """Base class for delete tests"""
+
+    _delete_response: Response
+
+    def delete_catalogue_category(self, system_id: str):
+        """Deletes a catalogue_category with the given id"""
+
+        self._delete_response = self.test_client.delete(f"/v1/catalogue-categories/{system_id}")
+
+    def check_delete_catalogue_category_success(self):
+        """Checks that a prior call to 'delete_catalogue_category' gave a successful response with the expected data returned"""
+
+        assert self._delete_response.status_code == 204
+
+    def check_delete_catalogue_category_failed_with_message(self, status_code: int, detail: str):
+        """Checks that a prior call to 'delete_catalogue_category' gave a failed response with the expected code and error
+        message"""
+
+        assert self._delete_response.status_code == status_code
+        assert self._delete_response.json()["detail"] == detail
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a catalogue category"""
+
+    def test_delete(self):
+        """Test deleting a catalogue category"""
+
+        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
+        self.delete_catalogue_category(catalogue_category_id)
+        self.check_delete_catalogue_category_success()
+
+        self.get_catalogue_category(catalogue_category_id)
+        self.check_get_catalogue_category_failed_with_message(404, "Catalogue category not found")
+
+    def test_delete_with_child_catalogue_category(self):
+        """Test deleting a catalogue category with a child catalogue category"""
+
+        catalogue_category_ids = self.post_nested_catalogue_categories(2)
+        self.delete_catalogue_category(catalogue_category_ids[0])
+        # TODO: Should this be 409?
+        self.check_delete_catalogue_category_failed_with_message(409, "Catalogue category has child elements and cannot be deleted")
+
+    def test_delete_with_child_item(self):
+        """Test deleting a catalogue category with a child catalogue item"""
+
+        # pylint:disable=fixme
+        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
+        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
+
+        # Create a child catalogue item
+        # pylint: disable=duplicate-code
+        response = self.test_client.post("/v1/manufacturers", json={
+            "name": "Manufacturer D",
+            "url": "http://example.com/",
+            "address": {
+                "address_line": "1 Example Street",
+                "town": "Oxford",
+                "county": "Oxfordshire",
+                "country": "United Kingdom",
+                "postcode": "OX1 2AB",
+            },
+            "telephone": "0932348348",
+        })
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            "name": "Catalogue Item A",
+            "description": "This is Catalogue Item A",
+            "cost_gbp": 129.99,
+            "days_to_replace": 2.0,
+            "is_obsolete": False,
+            "catalogue_category_id": catalogue_category_id,
+            "manufacturer_id": manufacturer_id,
+            "properties": [],
+        }
+        self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        # pylint: enable=duplicate-code
+
+        self.delete_catalogue_category(catalogue_category_id)
+        # TODO: Should this be 409?
+        self.check_delete_catalogue_category_failed_with_message(409, "Catalogue category has child elements and cannot be deleted")
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent catalogue category"""
+
+        self.delete_catalogue_category(str(ObjectId()))
+        self.check_delete_catalogue_category_failed_with_message(404, "Catalogue category not found")
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting a catalogue category with an invalid id"""
+
+        self.delete_catalogue_category("invalid_id")
+        self.check_delete_catalogue_category_failed_with_message(404, "Catalogue category not found")
+
 # CATALOGUE_CATEGORY_POST_A = {"name": "Category A", "is_leaf": False}
 # CATALOGUE_CATEGORY_POST_A_EXPECTED = {
 #     **CATALOGUE_CATEGORY_POST_A,
@@ -498,310 +844,6 @@ class TestCreate(CreateDSL):
 
 #     unit_value_to_id = {unit_mm["value"]: unit_mm["id"]}
 #     return units, unit_value_to_id
-
-
-# def test_delete_catalogue_category(test_client):
-#     """
-#     Test deleting a catalogue category.
-#     """
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-#     catalogue_category = response.json()
-
-#     response = test_client.delete(f"/v1/catalogue-categories/{catalogue_category['id']}")
-
-#     assert response.status_code == 204
-#     response = test_client.get(f"/v1/catalogue-categories/{catalogue_category['id']}")
-#     assert response.status_code == 404
-
-
-# def test_delete_catalogue_category_with_invalid_id(test_client):
-#     """
-#     Test deleting a catalogue category with an invalid ID.
-#     """
-#     response = test_client.delete("/v1/catalogue-categories/invalid")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue category not found"
-
-
-# def test_delete_catalogue_category_with_non_existent_id(test_client):
-#     """
-#     Test deleting a catalogue category with a non-existent ID.
-#     """
-#     response = test_client.delete(f"/v1/catalogue-categories/{str(ObjectId())}")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue category not found"
-
-
-# def test_delete_catalogue_category_with_child_catalogue_categories(test_client):
-#     """
-#     Test deleting a catalogue category with child catalogue categories.
-#     """
-#     # Parent
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-#     parent_catalogue_category = response.json()
-
-#     units, _ = _post_units(test_client)
-
-#     # Child
-#     test_client.post(
-#         "/v1/catalogue-categories",
-#         json={
-#             **CATALOGUE_CATEGORY_POST_B,
-#             "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
-#             "parent_id": parent_catalogue_category["id"],
-#         },
-#     )
-
-#     response = test_client.delete(f"/v1/catalogue-categories/{parent_catalogue_category['id']}")
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Catalogue category has child elements and cannot be deleted"
-
-
-# def test_delete_catalogue_category_with_child_catalogue_items(test_client):
-#     """
-#     Test deleting a catalogue category with child catalogue items.
-#     """
-#     # pylint: disable=duplicate-code
-
-#     units, _ = _post_units(test_client)
-
-#     response = test_client.post(
-#         "/v1/catalogue-categories",
-#         json={
-#             **{
-#                 **CATALOGUE_CATEGORY_POST_C,
-#                 "properties": replace_unit_values_with_ids_in_properties(
-#                     CATALOGUE_CATEGORY_POST_C["properties"], units
-#                 ),
-#             },
-#         },
-#     )
-#     catalogue_category = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     # pylint: enable=duplicate-code
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     response = test_client.delete(f"/v1/catalogue-categories/{catalogue_category['id']}")
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Catalogue category has child elements and cannot be deleted"
-
-
-# def test_get_catalogue_category(test_client):
-#     """
-#     Test getting a catalogue category.
-#     """
-#     # Parent
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
-#     parent_catalogue_category = response.json()
-
-#     units, _ = _post_units(test_client)
-
-#     # Child
-#     response = test_client.post(
-#         "/v1/catalogue-categories",
-#         json={
-#             **CATALOGUE_CATEGORY_POST_B,
-#             "properties": replace_unit_values_with_ids_in_properties(CATALOGUE_CATEGORY_POST_B["properties"], units),
-#             "parent_id": parent_catalogue_category["id"],
-#         },
-#     )
-
-#     response = test_client.get(f"/v1/catalogue-categories/{response.json()['id']}")
-#     assert response.status_code == 200
-#     catalogue_category = response.json()
-#     assert catalogue_category == {
-#         **CATALOGUE_CATEGORY_POST_B_EXPECTED,
-#         "parent_id": parent_catalogue_category["id"],
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_CATEGORY_POST_B_EXPECTED["properties"],
-#         ),
-#     }
-
-
-# def test_get_catalogue_category_with_invalid_id(test_client):
-#     """
-#     Test getting a catalogue category with an invalid ID.
-#     """
-#     response = test_client.get("/v1/catalogue-categories/invalid")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue category not found"
-
-
-# def test_get_catalogue_category_with_non_existent_id(test_client):
-#     """
-#     Test getting a catalogue category with a non-existent ID.
-#     """
-#     response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue category not found"
-
-
-# def test_get_catalogue_categories(test_client):
-#     """
-#     Test getting catalogue categories.
-#     """
-#     category_a, category_b, category_c = _post_catalogue_categories(test_client)
-
-#     response = test_client.get("/v1/catalogue-categories")
-
-#     assert response.status_code == 200
-#     assert response.json() == [category_a, category_b, category_c]
-
-
-# def test_get_catalogue_categories_with_parent_id_filter(test_client):
-#     """
-#     Test getting catalogue categories based on the provided parent_id filter.
-#     """
-#     _, category_b, _ = _post_catalogue_categories(test_client)
-
-#     response = test_client.get("/v1/catalogue-categories", params={"parent_id": category_b["parent_id"]})
-
-#     assert response.status_code == 200
-#     assert response.json() == [category_b]
-
-
-# def test_get_catalogue_categories_with_null_parent_id_filter(test_client):
-#     """
-#     Test getting catalogue categories when given a parent_id filter of "null"
-#     """
-#     category_a, _, category_c = _post_catalogue_categories(test_client)
-
-#     response = test_client.get("/v1/catalogue-categories", params={"parent_id": "null"})
-
-#     assert response.status_code == 200
-#     assert response.json() == [category_a, category_c]
-
-
-# def test_get_catalogue_categories_with_parent_id_filter_no_matching_results(test_client):
-#     """
-#     Test getting catalogue categories based on the provided parent_id filter when there is no matching
-#     results in the database.
-#     """
-#     _, _, _ = _post_catalogue_categories(test_client)
-
-#     response = test_client.get("/v1/catalogue-categories", params={"parent_id": str(ObjectId())})
-
-#     assert response.status_code == 200
-#     assert response.json() == []
-
-
-# def test_get_catalogue_categories_with_invalid_parent_id_filter(test_client):
-#     """
-#     Test getting catalogue categories when given an invalid parent_id filter
-#     """
-#     response = test_client.get("/v1/catalogue-categories", params={"parent_id": "invalid"})
-
-#     assert response.status_code == 200
-#     assert response.json() == []
-
-
-# def test_get_catalogue_category_breadcrumbs_when_no_parent(test_client):
-#     """
-#     Test getting the breadcrumbs for a catalogue category with no parents
-#     """
-
-#     units, _ = _post_units(test_client)
-
-#     (category_c, *_) = _post_nested_catalogue_categories(
-#         test_client,
-#         [
-#             {
-#                 **CATALOGUE_CATEGORY_POST_C,
-#                 "properties": replace_unit_values_with_ids_in_properties(
-#                     CATALOGUE_CATEGORY_POST_C["properties"], units
-#                 ),
-#             }
-#         ],
-#     )
-
-#     response = test_client.get(f"/v1/catalogue-categories/{category_c['id']}/breadcrumbs")
-
-#     assert response.status_code == 200
-#     assert response.json() == {"trail": [[category_c["id"], category_c["name"]]], "full_trail": True}
-
-
-# def test_get_catalogue_category_when_trail_length_less_than_maximum(test_client):
-#     """
-#     Test getting the breadcrumbs for a catalogue category with less than the the maximum trail length
-#     """
-#     categories = _post_n_catalogue_categories(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
-
-#     # Get breadcrumbs for last added
-#     response = test_client.get(f"/v1/catalogue-categories/{categories[-1]['id']}/breadcrumbs")
-
-#     assert response.status_code == 200
-#     assert response.json() == {
-#         "trail": [[category["id"], category["name"]] for category in categories],
-#         "full_trail": True,
-#     }
-
-
-# def test_get_catalogue_category_when_trail_length_maximum(test_client):
-#     """
-#     Test getting the breadcrumbs for a catalogue category with the maximum trail length
-#     """
-#     categories = _post_n_catalogue_categories(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH)
-
-#     # Get breadcrumbs for last added
-#     response = test_client.get(f"/v1/catalogue-categories/{categories[-1]['id']}/breadcrumbs")
-
-#     assert response.status_code == 200
-#     assert response.json() == {
-#         "trail": [[category["id"], category["name"]] for category in categories],
-#         "full_trail": True,
-#     }
-
-
-# def test_get_catalogue_category_when_trail_length_greater_than_maximum(test_client):
-#     """
-#     Test getting the breadcrumbs for a catalogue category with greater than the the maximum trail length
-#     """
-#     categories = _post_n_catalogue_categories(test_client, BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
-
-#     # Get breadcrumbs for last added
-#     response = test_client.get(f"/v1/catalogue-categories/{categories[-1]['id']}/breadcrumbs")
-
-#     assert response.status_code == 200
-#     assert response.json() == {
-#         "trail": [[category["id"], category["name"]] for category in categories[1:]],
-#         "full_trail": False,
-#     }
-
-
-# def test_get_catalogue_category_breadcrumbs_with_invalid_id(test_client):
-#     """
-#     Test getting the breadcrumbs for a catalogue category when the given id is invalid
-#     """
-#     response = test_client.get("/v1/catalogue-categories/invalid/breadcrumbs")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue category not found"
-
-
-# def test_get_catalogue_category_breadcrumbs_with_non_existent_id(test_client):
-#     """
-#     Test getting the breadcrumbs for a non-existent catalogue category
-#     """
-#     response = test_client.get(f"/v1/catalogue-categories/{str(ObjectId())}/breadcrumbs")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue category not found"
 
 
 # def test_partial_update_catalogue_category_change_name(test_client):

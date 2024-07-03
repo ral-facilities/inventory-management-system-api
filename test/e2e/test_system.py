@@ -206,7 +206,7 @@ class GetBreadcrumbsDSL(GetDSL):
 
         self.get_system_breadcrumbs(self._post_response.json()["id"])
 
-    def check_get_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
+    def check_get_system_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
         """Checks that a prior call to 'get_system_breadcrumbs' gave a successful response with the expected data
         returned
         """
@@ -223,7 +223,7 @@ class GetBreadcrumbsDSL(GetDSL):
             "full_trail": expected_full_trail,
         }
 
-    def check_get_breadcrumbs_failed_with_message(self, status_code: int, detail: str):
+    def check_get_system_breadcrumbs_failed_with_message(self, status_code: int, detail: str):
         """Checks that a prior call to 'get_system_breadcrumbs' gave a failed response with the expected code and
         error message"""
 
@@ -239,7 +239,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
         self.post_nested_systems(1)
         self.get_last_system_breadcrumbs()
-        self.check_get_breadcrumbs_success(expected_trail_length=1, expected_full_trail=True)
+        self.check_get_system_breadcrumbs_success(expected_trail_length=1, expected_full_trail=True)
 
     def test_get_breadcrumbs_when_trail_length_less_than_maximum(self):
         """Test getting a system's breadcrumbs when the full system trail should be less than the maximum trail
@@ -247,7 +247,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
         self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
         self.get_last_system_breadcrumbs()
-        self.check_get_breadcrumbs_success(
+        self.check_get_system_breadcrumbs_success(
             expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH - 1, expected_full_trail=True
         )
 
@@ -257,14 +257,16 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
         self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH)
         self.get_last_system_breadcrumbs()
-        self.check_get_breadcrumbs_success(expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=True)
+        self.check_get_system_breadcrumbs_success(
+            expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=True
+        )
 
     def test_get_breadcrumbs_when_trail_length_greater_maximum(self):
         """Test getting a system's breadcrumbs when the full system trail exceeds the maximum trail length"""
 
         self.post_nested_systems(BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
         self.get_last_system_breadcrumbs()
-        self.check_get_breadcrumbs_success(
+        self.check_get_system_breadcrumbs_success(
             expected_trail_length=BREADCRUMBS_TRAIL_MAX_LENGTH, expected_full_trail=False
         )
 
@@ -272,13 +274,13 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         """Test getting a system's breadcrumbs when given a non-existent system id"""
 
         self.get_system_breadcrumbs(str(ObjectId()))
-        self.check_get_breadcrumbs_failed_with_message(404, "System not found")
+        self.check_get_system_breadcrumbs_failed_with_message(404, "System not found")
 
     def test_get_breadcrumbs_with_invalid_id(self):
         """Test getting a system's breadcrumbs when given an invalid system id"""
 
         self.get_system_breadcrumbs("invalid_id")
-        self.check_get_breadcrumbs_failed_with_message(404, "System not found")
+        self.check_get_system_breadcrumbs_failed_with_message(404, "System not found")
 
 
 class ListDSL(GetBreadcrumbsDSL):
@@ -298,16 +300,10 @@ class ListDSL(GetBreadcrumbsDSL):
         return [SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id}]
 
     def check_get_systems_success(self, expected_systems_get_data: list[dict]):
-        """Checks that a prior call to 'list' gave a successful response with the expected data returned"""
+        """Checks that a prior call to 'get_systems' gave a successful response with the expected data returned"""
 
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_systems_get_data
-
-    def check_get_systems_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'list' gave a failed response with the expected code and error message"""
-
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
 
 
 class TestList(ListDSL):
@@ -481,12 +477,12 @@ class DeleteDSL(UpdateDSL):
 
         self._delete_response = self.test_client.delete(f"/v1/systems/{system_id}")
 
-    def check_delete_success(self):
+    def check_delete_system_success(self):
         """Checks that a prior call to 'delete_system' gave a successful response with the expected data returned"""
 
         assert self._delete_response.status_code == 204
 
-    def check_delete_failed_with_message(self, status_code: int, detail: str):
+    def check_delete_system_failed_with_message(self, status_code: int, detail: str):
         """Checks that a prior call to 'delete_system' gave a failed response with the expected code and error
         message"""
 
@@ -502,7 +498,7 @@ class TestDelete(DeleteDSL):
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.delete_system(system_id)
-        self.check_delete_success()
+        self.check_delete_system_success()
 
         self.get_system(system_id)
         self.check_get_system_failed_with_message(404, "System not found")
@@ -512,7 +508,8 @@ class TestDelete(DeleteDSL):
 
         system_ids = self.post_nested_systems(2)
         self.delete_system(system_ids[0])
-        self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
+        # TODO: Should this be 409?
+        self.check_delete_system_failed_with_message(409, "System has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
         """Test deleting a system with a child system"""
@@ -520,7 +517,6 @@ class TestDelete(DeleteDSL):
         # pylint:disable=fixme
         # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": system_id})
 
         # Create a child item
         # pylint: disable=duplicate-code
@@ -569,16 +565,16 @@ class TestDelete(DeleteDSL):
         # pylint: enable=duplicate-code
 
         self.delete_system(system_id)
-        self.check_delete_failed_with_message(409, "System has child elements and cannot be deleted")
+        self.check_delete_system_failed_with_message(409, "System has child elements and cannot be deleted")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent system"""
 
         self.delete_system(str(ObjectId()))
-        self.check_delete_failed_with_message(404, "System not found")
+        self.check_delete_system_failed_with_message(404, "System not found")
 
     def test_delete_with_invalid_id(self):
         """Test deleting a system with an invalid id"""
 
         self.delete_system("invalid_id")
-        self.check_delete_failed_with_message(404, "System not found")
+        self.check_delete_system_failed_with_message(404, "System not found")

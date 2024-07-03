@@ -108,6 +108,7 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LI
     **CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     "id": ANY,
     "unit_id": ANY,
+    "unit": None,
 }
 
 # Put _MM at end to signify what units this data would require
