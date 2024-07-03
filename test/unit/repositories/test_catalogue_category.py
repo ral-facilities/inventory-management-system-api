@@ -282,7 +282,7 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(f"No parent catalogue category found with ID: {parent_id}")
 
     def test_create_with_duplicate_name_within_parent(self):
-        """Test creating a catalogue category with a duplicate catalogue category being found in the same parent
+        """Test creating a catalogue category with a duplicate catalogue category being found in the parent
         catalogue category"""
 
         self.mock_create(
@@ -832,8 +832,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception(f"No parent catalogue category found with ID: {new_parent_id}")
 
     def test_update_name_to_duplicate_within_parent(self):
-        """Test updating a catalogue category's name to one that is a duplicate within the same parent Catalogue
-        Category"""
+        """Test updating a catalogue category's name to one that is a duplicate within the parent catalogue category"""
 
         catalogue_category_id = str(ObjectId())
         duplicate_name = "New Duplicate Name"
@@ -854,7 +853,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_parent_id_with_duplicate_within_parent(self):
         """Test updating a catalogue category's parent_id to one that contains a catalogue category with a duplicate
-        name within the same parent catalogue category"""
+        name within the parent catalogue category"""
 
         catalogue_category_id = str(ObjectId())
         new_parent_id = str(ObjectId())

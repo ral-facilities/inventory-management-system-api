@@ -38,9 +38,10 @@ class CreateDSL:
         self.test_client = test_client
 
     def post_system(self, system_post_data: dict) -> Optional[str]:
-        """Posts a system with the given data, returns the id of the created system if successful
+        """Posts a system with the given data and returns the id of the created system if successful
 
-        :param system_post_data: Dictionary containing the system data that should be posted
+        :param system_post_data: Dictionary containing the basic system data as would be required for a
+                                 SystemPostSchema
         :return: ID of the created system (or None if not successful)
         """
         self._post_response = self.test_client.post("/v1/systems", json=system_post_data)
@@ -85,37 +86,37 @@ class TestCreate(CreateDSL):
     def test_create_with_valid_parent_id(self):
         """Test creating a system with a valid parent id"""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
-        self.check_post_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        self.check_post_system_success({**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
 
     def test_create_with_non_existent_parent_id(self):
         """Test creating a system with a non-existent parent id"""
 
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": str(ObjectId())})
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())})
         self.check_post_system_failed_with_message(422, "The specified parent system does not exist")
 
     def test_create_with_invalid_parent_id(self):
         """Test creating a system with an invalid parent id"""
 
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": "invalid-id"})
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"})
         self.check_post_system_failed_with_message(422, "The specified parent system does not exist")
 
     def test_create_with_duplicate_name_within_parent(self):
-        """Test creating a system with the same name as another within the same parent"""
+        """Test creating a system with the same name as another within the parent system"""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         # 2nd post should be the duplicate
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
         self.check_post_system_failed_with_message(
-            409, "A system with the same name already exists within the same parent system"
+            409, "A system with the same name already exists within the parent system"
         )
 
     def test_create_with_invalid_importance(self):
         """Test creating a system with an invalid importance"""
 
-        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "importance": "invalid-importance"})
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "importance": "invalid-importance"})
         self.check_post_system_failed_with_validation_message(422, "Input should be 'low', 'medium' or 'high'")
 
 

@@ -17,15 +17,15 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyIn
-
 # Used for _GET_DATA's as when comparing these will not be possible to know
 # at runtime
 CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 # --------------------------------- UNITS ---------------------------------
 
-UNIT_IN_DATA_MM = {"value": "mm", "code": "mm"}
+UNIT_POST_DATA_MM = {"value": "mm"}
+
+UNIT_IN_DATA_MM = {**UNIT_POST_DATA_MM, "code": "mm"}
 
 # --------------------------------- CATALOGUE CATEGORIES ---------------------------------
 
@@ -73,6 +73,13 @@ CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT = {
     "mandatory": False,
 }
 
+CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST = {
+    "name": "Non Mandatory String Property With Allowed Values",
+    "type": "string",
+    "mandatory": False,
+    "allowed_values": {"type": "list", "values": ["value1", "value2", "value3"]},
+}
+
 CATALOGUE_CATEGORY_PROPERTY_IN_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT = {
     **CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT
 }
@@ -82,6 +89,27 @@ CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT = {
     "unit_id": str(ObjectId()),
 }
 
+CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT = {
+    **CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+    "id": ANY,
+    "unit_id": ANY,
+    "unit": None,
+    "allowed_values": None,
+}
+
+CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT = {
+    **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    "id": ANY,
+    "unit_id": ANY,
+    "allowed_values": None,
+}
+
+CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST = {
+    **CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+    "id": ANY,
+    "unit_id": ANY,
+}
+
 # Put _MM at end to signify what units this data would require
 CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
     "name": "Leaf Category No Parent With Properties",
@@ -89,8 +117,8 @@ CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
     "is_leaf": True,
     "parent_id": None,
     "properties": [
-        CatalogueCategoryPropertyIn(**CATALOGUE_CATEGORY_PROPERTY_IN_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT),
-        CatalogueCategoryPropertyIn(**CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT),
+        CATALOGUE_CATEGORY_PROPERTY_IN_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+        CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     ],
 }
 
@@ -108,6 +136,58 @@ CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
     "properties": [
         CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
         CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    ],
+}
+
+CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
+    "name": "Non Leaf Catalogue Category Required Values Only",
+    "is_leaf": False,
+}
+
+CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
+    **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "parent_id": None,
+    "code": "non-leaf-catalogue-category-required-values-only",
+    "properties": [],
+}
+
+CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY = {
+    "name": "Leaf Catalogue Category Required Values Only",
+    "is_leaf": True,
+}
+
+CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY = {
+    **CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "parent_id": None,
+    "code": "leaf-catalogue-category-required-values-only",
+    "properties": [],
+}
+
+CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM = {
+    "name": "Catalogue Category With Properties",
+    "is_leaf": True,
+    "parent_id": None,
+    "properties": [
+        CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+        CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+        CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+    ],
+}
+
+CATALOGUE_CATEGORY_GET_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM = {
+    **CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "parent_id": None,
+    "code": "catalogue-category-with-properties",
+    "properties": [
+        CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+        CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+        CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     ],
 }
 
