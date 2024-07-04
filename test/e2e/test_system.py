@@ -2,6 +2,9 @@
 End-to-End tests for the system router
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
@@ -360,12 +363,17 @@ class UpdateDSL(ListDSL):
     _patch_response: Response
 
     def patch_system(self, system_id: str, system_patch_data: dict):
-        """Updates a system with the given id"""
+        """Updates a system with the given id
+
+        :param system_id: ID of the system to patch
+        :param system_patch_data: Dictionary containing the basic patch data as would be required for a
+                                  SystemPatchSchema
+        """
 
         self._patch_response = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
     def check_patch_system_response_success(self, expected_system_get_data: dict):
-        """Checks the response of patching a property succeeded as expected"""
+        """Checks that a prior call to 'patch_system' gave a successful response with the expected data returned"""
 
         assert self._patch_response.status_code == 200
         assert self._patch_response.json() == expected_system_get_data
@@ -427,7 +435,7 @@ class TestUpdate(UpdateDSL):
         self.patch_system(system_id, {"parent_id": str(ObjectId())})
         self.check_patch_system_failed_with_message(422, "The specified parent system does not exist")
 
-    def test_partial_update_parent_id_to_invalid(self):
+    def test_partial_update_parent_id_to_invalid_id(self):
         """Test updating the parent_id of a system to an invalid id"""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
@@ -508,16 +516,16 @@ class TestDelete(DeleteDSL):
 
         system_ids = self.post_nested_systems(2)
         self.delete_system(system_ids[0])
-        # TODO: Should this be 409?
+
         self.check_delete_system_failed_with_message(409, "System has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
         """Test deleting a system with a child system"""
 
-        # pylint:disable=fixme
-        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
 
+        # pylint:disable=fixme
+        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
         # Create a child item
         # pylint: disable=duplicate-code
         response = self.test_client.post("/v1/units", json=UNIT_POST_A)

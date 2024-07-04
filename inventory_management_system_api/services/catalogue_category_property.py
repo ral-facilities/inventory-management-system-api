@@ -163,7 +163,7 @@ class CatalogueCategoryPropertyService:
 
         # Prevent changing an allowed_values' type
         if existing_allowed_values.type != new_allowed_values.type:
-            raise InvalidActionError("Cannot modify a ' allowed_values to have a different type")
+            raise InvalidActionError("Cannot modify a properties' allowed_values to have a different type")
 
         # Ensure that a list type adds to the existing values (order doesn't matter)
         if existing_allowed_values.type == "list":
