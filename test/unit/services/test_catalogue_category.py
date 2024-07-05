@@ -13,7 +13,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
@@ -288,14 +288,14 @@ class TestCreate(CreateDSL):
             {
                 **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
                 "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
                 ],
             },
         )
         self.call_create_expecting_error(DuplicateCatalogueCategoryPropertyNameError)
         self.check_create_failed_with_exception(
-            f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT['name']}"
+            f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']}"
         )
 
     def test_create_with_properties_with_non_existent_unit_id(self):

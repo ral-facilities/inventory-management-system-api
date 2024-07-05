@@ -9,10 +9,10 @@ End-to-End tests for the catalogue category router.
 
 from test.e2e.conftest import E2ETestHelpers
 from test.mock_data import (
-    CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM,
+    CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY,
-    CATALOGUE_CATEGORY_GET_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM,
     CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
@@ -21,9 +21,9 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
-    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_POST_DATA_MM,
 )
@@ -142,7 +142,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category(
             {
                 **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT],
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
             }
         )
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
@@ -216,21 +216,21 @@ class TestCreate(CreateDSL):
         """Test creating a leaf catalogue category with some properties provided"""
 
         self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
-        self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
+        self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_create_leaf_with_properties_with_non_existent_unit_id(self):
         """Test creating a leaf catalogue category with a property with a non-existent unit id provided"""
 
         self.add_unit_value_and_id("mm", str(ObjectId()))
-        self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_leaf_with_properties_with_invalid_unit_id(self):
         """Test creating a leaf catalogue category with a property with an invalid unit id provided"""
 
         self.add_unit_value_and_id("mm", "invalid-id")
-        self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_leaf_with_duplicate_properties(self):
@@ -238,15 +238,15 @@ class TestCreate(CreateDSL):
 
         self.post_catalogue_category(
             {
-                **CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM,
+                **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
                 "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
                 ],
             }
         )
         self.check_post_catalogue_category_failed_with_message(
-            422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT["name"]}"
+            422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"]}"
         )
 
     def test_create_leaf_with_property_with_invalid_type(self):
@@ -254,10 +254,8 @@ class TestCreate(CreateDSL):
 
         self.post_catalogue_category(
             {
-                **CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM,
-                "properties": [
-                    {**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT, "type": "invalid-type"}
-                ],
+                **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+                "properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, "type": "invalid-type"}],
             }
         )
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -270,14 +268,14 @@ class TestCreate(CreateDSL):
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_catalogue_category(
             {
-                **CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM,
-                "properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT, "unit": "mm"}],
+                **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+                "properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, "unit": "mm"}],
             }
         )
         self.check_post_catalogue_category_failed_with_validation_message(
             422,
             "Value error, Unit not allowed for boolean property "
-            f"'{CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT['name']}'",
+            f"'{CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']}'",
         )
 
     def test_create_leaf_property_with_invalid_allowed_values_type(self):
@@ -385,9 +383,9 @@ class TestGet(GetDSL):
         """Test getting a catalogue category"""
 
         self.post_unit(UNIT_POST_DATA_MM)
-        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.get_catalogue_category(catalogue_category_id)
-        self.check_get_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        self.check_get_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_get_with_non_existent_id(self):
         """Test getting a catalogue category with a non-existent id"""
@@ -848,11 +846,11 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_category(
             catalogue_category_id,
-            {**CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM, "parent_id": new_parent_id},
+            {**CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, "parent_id": new_parent_id},
         )
 
         self.check_patch_catalogue_category_response_success(
-            {**CATALOGUE_CATEGORY_GET_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM, "parent_id": new_parent_id}
+            {**CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, "parent_id": new_parent_id}
         )
 
     def test_partial_update_non_leaf_to_leaf_without_properties(self):
@@ -900,7 +898,7 @@ class TestUpdate(UpdateDSL):
 
         self.post_unit(UNIT_POST_DATA_MM)
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
-        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
         # Properties not supplied, here, but they should have been removed in the end as going from leaf to non-leaf
         self.patch_catalogue_category(
@@ -958,14 +956,14 @@ class TestUpdate(UpdateDSL):
 
         self.post_unit(UNIT_POST_DATA_MM)
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
-        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM)
+        catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
         self.patch_catalogue_category(
             catalogue_category_id,
             {
                 **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
                 "parent_id": new_parent_id,
-                "properties": CATALOGUE_CATEGORY_DATA_LEAF_WITH_PROPERTIES_NO_PARENT_MM["properties"],
+                "properties": CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM["properties"],
             },
         )
 
@@ -1004,7 +1002,7 @@ class TestUpdate(UpdateDSL):
             catalogue_category_id,
             {
                 "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
                     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
                 ]
             },
@@ -1014,7 +1012,7 @@ class TestUpdate(UpdateDSL):
             {
                 **CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
                 "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY,
                     CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
                 ],
             }
@@ -1048,13 +1046,13 @@ class TestUpdate(UpdateDSL):
             catalogue_category_id,
             {
                 "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
                 ],
             },
         )
         self.check_patch_catalogue_category_failed_with_message(
-            422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT["name"]}"
+            422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"]}"
         )
 
     def test_partial_update_leaf_with_property_with_invalid_type(self):
@@ -1064,9 +1062,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(
             catalogue_category_id,
             {
-                "properties": [
-                    {**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT, "type": "invalid-type"}
-                ],
+                "properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, "type": "invalid-type"}],
             },
         )
         self.check_patch_catalogue_category_failed_with_validation_message(
@@ -1081,13 +1077,13 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(
             catalogue_category_id,
             {
-                "properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT, "unit": "mm"}],
+                "properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, "unit": "mm"}],
             },
         )
         self.check_patch_catalogue_category_failed_with_validation_message(
             422,
             "Value error, Unit not allowed for boolean property "
-            f"'{CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT['name']}'",
+            f"'{CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']}'",
         )
 
     def test_partial_update_leaf_property_with_invalid_allowed_values_type(self):
