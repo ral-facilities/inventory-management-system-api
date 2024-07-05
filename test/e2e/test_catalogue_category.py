@@ -23,8 +23,6 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY,
-    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_POST_DATA_MM,
 )
 from typing import Optional
@@ -236,14 +234,10 @@ class TestCreate(CreateDSL):
     def test_create_leaf_with_duplicate_properties(self):
         """Test creating a leaf catalogue category with duplicate properties provided"""
 
+        property_data = CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY
+
         self.post_catalogue_category(
-            {
-                **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
-                ],
-            }
+            {**CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, "properties": [property_data, property_data]}
         )
         self.check_post_catalogue_category_failed_with_message(
             422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"]}"
@@ -601,7 +595,7 @@ class TestList(ListDSL):
 
 
 # pylint:disable=fixme
-# TODO: Look into abstracting this? Its the same as systems except for the names
+# TODO: Look into abstracting this? It's the same as systems except for the names
 class UpdateDSL(ListDSL):
     """Base class for update tests"""
 
@@ -645,7 +639,7 @@ class UpdateDSL(ListDSL):
         """Utility method that posts a child catalogue item for the last catalogue category posted"""
 
         # pylint:disable=fixme
-        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
+        # TODO: This should be cleaned up in future
 
         # Create a child catalogue item
         # pylint: disable=duplicate-code
@@ -1000,21 +994,13 @@ class TestUpdate(UpdateDSL):
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_catalogue_category(
             catalogue_category_id,
-            {
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-                ]
-            },
+            {"properties": CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM["properties"]},
         )
 
         self.check_patch_catalogue_category_response_success(
             {
                 **CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY,
-                    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-                ],
+                "properties": CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM["properties"],
             }
         )
 
@@ -1041,16 +1027,10 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_leaf_with_duplicate_properties(self):
         """Test updating a leaf catalogue category with duplicate properties provided"""
 
+        property_data = CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY
+
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.patch_catalogue_category(
-            catalogue_category_id,
-            {
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
-                ],
-            },
-        )
+        self.patch_catalogue_category(catalogue_category_id, {"properties": [property_data, property_data]})
         self.check_patch_catalogue_category_failed_with_message(
             422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"]}"
         )

@@ -929,7 +929,7 @@ class TestHasChildElements(HasChildElementsDSL):
         """Test `has_child_elements` when there are no child catalogue categories but there is a child catalogue item"""
 
         # pylint:disable=fixme
-        # TODO: Replace CATALOGUE_ITEM_A_INFO once item tests have been refactored
+        # TODO: Replace CATALOGUE_ITEM_A_INFO once catalogue item tests have been refactored
         self.mock_has_child_elements(
             child_catalogue_category_data=None,
             child_catalogue_item_data=CATALOGUE_ITEM_A_INFO,

@@ -525,7 +525,7 @@ class TestDelete(DeleteDSL):
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
 
         # pylint:disable=fixme
-        # TODO: THIS SHOULD BE CLEANED UP IN FUTURE
+        # TODO: This should be cleaned up in future
         # Create a child item
         # pylint: disable=duplicate-code
         response = self.test_client.post("/v1/units", json=UNIT_POST_A)
