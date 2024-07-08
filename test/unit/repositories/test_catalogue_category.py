@@ -127,7 +127,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         """Mocks database methods appropriately to test the `create` repo method.
 
         :param catalogue_category_in_data: Dictionary containing the catalogue category data as would be required for
-                                           a `CatalogueCategoryIn` database model (i.e. no id or created and modified
+                                           a `CatalogueCategoryIn` database model (i.e. no ID or created and modified
                                            times required).
         :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
                                                   data as would be required for a `CatalogueCategoryIn` database model.
@@ -237,7 +237,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
-        :param message: Expected essage of the raised exception.
+        :param message: Expected message of the raised exception.
         """
 
         self.catalogue_categories_collection.insert_one.assert_not_called()
@@ -442,7 +442,7 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
         """
         Calls the `CatalogueCategoryRepo` `get_breadcrumbs` method.
 
-        :param system_id: ID of the system to obtain the breadcrumbs of.
+        :param catalogue_category_id: ID of the catalogue category to obtain the breadcrumbs of.
         """
 
         self._obtained_catalogue_category_id = catalogue_category_id
@@ -594,8 +594,8 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         Assigns the update data to use during a call to `call_update`.
 
         :param new_catalogue_category_in_data: New catalogue category data as would be required for a
-                                               `CatalogueCategoryIn` database model to supply to the `SystemRepo`
-                                               `update` method
+                         `CatalogueCategoryIn` database model to supply to the `CatalogueCategoryRepo`
+                         `update` method
         """
         self._catalogue_category_in = CatalogueCategoryIn(**new_catalogue_category_in_data)
 
@@ -614,7 +614,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
 
         :param catalogue_category_id: ID of the catalogue category that will be updated.
         :param new_catalogue_category_in_data: Dictionary containing the new catalogue category data as would be
-                                               required for a `CatalogueCategoryIn` database model (i.e. no id or
+                                               required for a `CatalogueCategoryIn` database model (i.e. no ID or
                                                created and modified times required).
         :param stored_catalogue_category_in_data: Dictionary containing the catalogue category data for the existing
                                                   stored catalogue category as would be required for a
@@ -1016,7 +1016,7 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
         """
         Calls the `CatalogueCategoryRepo` `delete` method.
 
-        :param system_id: ID of the system to be deleted.
+        :param catalogue_category_id: ID of the catalogue category to be deleted.
         """
 
         self._delete_catalogue_category_id = catalogue_category_id

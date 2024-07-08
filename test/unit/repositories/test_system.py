@@ -151,7 +151,7 @@ class CreateDSL(SystemRepoDSL):
         Mocks database methods appropriately to test the `create` repo method.
 
         :param system_in_data: Dictionary containing the system data as would be required for a `SystemIn` database
-                               model (i.e. no id or created and modified times required).
+                               model (i.e. no ID or created and modified times required).
         :param parent_system_in_data: Either `None` or a dictionary containing the parent system data as would be
                                       required for a `SystemIn` database model.
         :param duplicate_system_in_data: Either `None` or a dictionary containing system data for a duplicate system.
@@ -548,7 +548,7 @@ class UpdateDSL(SystemRepoDSL):
 
         :param system_id: ID of the system to be updated
         :param new_system_in_data: Dictionary containing the new system data as would be required for a SystemIn
-                                   database model (i.e. no id or created and modified times required)
+                                   database model (i.e. no ID or created and modified times required)
         :param stored_system_in_data: Dictionary containing the system data for the existing stored system
                                       as would be required for a `SystemIn` database model
         :param new_parent_system_in_data: Either `None` or a dictionary containing the new parent system data as would
