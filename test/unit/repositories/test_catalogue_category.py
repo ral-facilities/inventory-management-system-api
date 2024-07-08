@@ -44,7 +44,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 
 
 class CatalogueCategoryRepoDSL:
-    """Base class for `CatalogueCategoryRepo` unit tests"""
+    """Base class for `CatalogueCategoryRepo` unit tests."""
 
     # pylint:disable=too-many-instance-attributes
     mock_database: Mock
@@ -79,11 +79,12 @@ class CatalogueCategoryRepoDSL:
 
     def mock_has_child_elements(
         self, child_catalogue_category_data: Optional[dict] = None, child_catalogue_item_data: Optional[dict] = None
-    ):
-        """Mocks database methods appropriately for when the 'has_child_elements' repo method will be called
+    ) -> None:
+        """
+        Mocks database methods appropriately for when the `has_child_elements` repo method will be called.
 
-        :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or None)
-        :param child_catalogue_item_data: Dictionary containing a child catalogue item's data (or None)
+        :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or `None`)
+        :param child_catalogue_item_data: Dictionary containing a child catalogue item's data (or `None`)
         """
 
         self._mock_child_catalogue_category_data = child_catalogue_category_data
@@ -92,10 +93,11 @@ class CatalogueCategoryRepoDSL:
         RepositoryTestHelpers.mock_find_one(self.catalogue_categories_collection, child_catalogue_category_data)
         RepositoryTestHelpers.mock_find_one(self.catalogue_items_collection, child_catalogue_item_data)
 
-    def check_has_child_elements_performed_expected_calls(self, expected_catalogue_category_id: str):
-        """Checks that a call to `has_child_elements` performed the expected function calls
+    def check_has_child_elements_performed_expected_calls(self, expected_catalogue_category_id: str) -> None:
+        """
+        Checks that a call to `has_child_elements` performed the expected function calls.
 
-        :param expected_catalogue_category_id: Expected catalogue category id used in the database calls
+        :param expected_catalogue_category_id: Expected catalogue category id used in the database calls.
         """
 
         self.catalogue_categories_collection.find_one.assert_called_once_with(
@@ -109,7 +111,7 @@ class CatalogueCategoryRepoDSL:
 
 
 class CreateDSL(CatalogueCategoryRepoDSL):
-    """Base class for `create` tests"""
+    """Base class for `create` tests."""
 
     _catalogue_category_in: CatalogueCategoryIn
     _expected_catalogue_category_out: CatalogueCategoryOut
@@ -121,16 +123,16 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         catalogue_category_in_data: dict,
         parent_catalogue_category_in_data: Optional[dict] = None,
         duplicate_catalogue_category_in_data: Optional[dict] = None,
-    ):
-        """Mocks database methods appropriately to test the 'create' repo method
+    ) -> None:
+        """Mocks database methods appropriately to test the `create` repo method.
 
         :param catalogue_category_in_data: Dictionary containing the catalogue category data as would be required for
-                                           a CatalogueCategoryIn database model (i.e. no id or created and modified
-                                           times required)
-        :param parent_catalogue_category_in_data: Either None or a dictionary containing the parent catalogue category
-                                                  data as would be required for a CatalogueCategoryIn database model
-        :param duplicate_catalogue_category_in_data: Either None or a dictionary containing catalogue category data
-                                                     for a duplicate catalogue category
+                                           a `CatalogueCategoryIn` database model (i.e. no id or created and modified
+                                           times required).
+        :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
+                                                  data as would be required for a `CatalogueCategoryIn` database model.
+        :param duplicate_catalogue_category_in_data: Either `None` or a dictionary containing catalogue category data
+                                                     for a duplicate catalogue category.
         """
 
         inserted_catalogue_category_id = CustomObjectId(str(ObjectId()))
@@ -174,7 +176,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
             {**self._catalogue_category_in.model_dump(by_alias=True), "_id": inserted_catalogue_category_id},
         )
 
-    def call_create(self):
+    def call_create(self) -> None:
         """Calls the CatalogueCategoryRepo `create` method with the appropriate data from a prior call to
         `mock_create`"""
 
@@ -182,9 +184,13 @@ class CreateDSL(CatalogueCategoryRepoDSL):
             self._catalogue_category_in, session=self.mock_session
         )
 
-    def call_create_expecting_error(self, error_type: type[BaseException]):
-        """Calls the CatalogueCategoryRepo `create` method with the appropriate data from a prior call to `mock_create`
-        while expecting an error to be raised"""
+    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
+        """
+        Calls the CatalogueCategoryRepo `create` method with the appropriate data from a prior call to `mock_create`
+        while expecting an error to be raised
+
+        :param error_type: Expected exception to be raised.
+        """
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_repository.create(self._catalogue_category_in)
@@ -226,9 +232,13 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         )
         assert self._created_catalogue_category == self._expected_catalogue_category_out
 
-    def check_create_failed_with_exception(self, message: str):
-        """Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
-        with the correct message"""
+    def check_create_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected essage of the raised exception.
+        """
 
         self.catalogue_categories_collection.insert_one.assert_not_called()
 
@@ -236,31 +246,31 @@ class CreateDSL(CatalogueCategoryRepoDSL):
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a catalogue category"""
+    """Tests for creating a catalogue category."""
 
     def test_create_non_leaf_without_parent(self):
-        """Test creating a non-leaf catalogue category without a parent"""
+        """Test creating a non-leaf catalogue category without a parent."""
 
         self.mock_create(CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         self.call_create()
         self.check_create_success()
 
     def test_create_leaf_without_properties(self):
-        """Test creating a leaf catalogue category without properties"""
+        """Test creating a leaf catalogue category without properties."""
 
         self.mock_create(CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.call_create()
         self.check_create_success()
 
     def test_create_leaf_with_properties(self):
-        """Test creating a leaf catalogue category with properties"""
+        """Test creating a leaf catalogue category with properties."""
 
         self.mock_create(CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_parent(self):
-        """Test creating a catalogue category with a parent"""
+        """Test creating a catalogue category with a parent."""
 
         self.mock_create(
             {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": str(ObjectId())},
@@ -270,7 +280,7 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_non_existent_parent_id(self):
-        """Test creating a catalogue category with a non existent parent_id"""
+        """Test creating a catalogue category with a non existent parent_id."""
 
         parent_id = str(ObjectId())
 
@@ -283,7 +293,7 @@ class TestCreate(CreateDSL):
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a catalogue category with a duplicate catalogue category being found in the parent
-        catalogue category"""
+        catalogue category."""
 
         self.mock_create(
             {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": str(ObjectId())},
@@ -304,13 +314,13 @@ class GetDSL(CatalogueCategoryRepoDSL):
     _obtained_catalogue_category: Optional[CatalogueCategoryOut]
     _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, catalogue_category_id: str, catalogue_category_in_data: Optional[dict]):
-        """Mocks database methods appropriately to test the 'get' repo method
+    def mock_get(self, catalogue_category_id: str, catalogue_category_in_data: Optional[dict]) -> None:
+        """Mocks database methods appropriately to test the `get` repo method.
 
-        :param catalogue_category_id: ID of the catalogue category that will be obtained
-        :param catalogue_category_in_data: Either None or a Dictionary containing the catalogue category data as would
-                                           be required for a CatalogueCategoryIn database model (i.e. No id or created
-                                           and modified times required)
+        :param catalogue_category_id: ID of the catalogue category to be obtained.
+        :param catalogue_category_in_data: Either `None` or a Dictionary containing the catalogue category data as would
+                                           be required for a `CatalogueCategoryIn` database model (i.e. No id or created
+                                           and modified times required).
         """
 
         self._expected_catalogue_category_out = (
@@ -327,33 +337,46 @@ class GetDSL(CatalogueCategoryRepoDSL):
             self._expected_catalogue_category_out.model_dump() if self._expected_catalogue_category_out else None,
         )
 
-    def call_get(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryRepo `get` method with the appropriate data from a prior call to `mock_get`"""
+    def call_get(self, catalogue_category_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `get` method with the appropriate data from a prior call to `mock_get`.
+
+        :param catalogue_category_id: ID of the catalogue category to be obtained.
+        """
 
         self._obtained_catalogue_category_id = catalogue_category_id
         self._obtained_catalogue_category = self.catalogue_category_repository.get(
             catalogue_category_id, session=self.mock_session
         )
 
-    def call_get_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
-        """Calls the CatalogueCategoryRepo `get` method with the appropriate data from a prior call to `mock_get`
-        while expecting an error to be raised"""
+    def call_get_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `get` method with the appropriate data from a prior call to `mock_get`
+        while expecting an error to be raised.
+
+        :param catalogue_category_id: ID of the catalogue category to be obtained.
+        :param error_type: Expected exception to be raised.
+        """
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_repository.get(catalogue_category_id)
         self._get_exception = exc
 
-    def check_get_success(self):
-        """Checks that a prior call to `call_get` worked as expected"""
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
 
         self.catalogue_categories_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._obtained_catalogue_category_id)}, session=self.mock_session
         )
         assert self._obtained_catalogue_category == self._expected_catalogue_category_out
 
-    def check_get_failed_with_exception(self, message: str):
-        """Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
-        with the correct message"""
+    def check_get_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
 
         self.catalogue_categories_collection.find_one.assert_not_called()
 
@@ -361,10 +384,10 @@ class GetDSL(CatalogueCategoryRepoDSL):
 
 
 class TestGet(GetDSL):
-    """Tests for getting a catalogue category"""
+    """Tests for getting a catalogue category."""
 
     def test_get(self):
-        """Test getting a catalogue category"""
+        """Test getting a catalogue category."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -373,7 +396,7 @@ class TestGet(GetDSL):
         self.check_get_success()
 
     def test_get_with_non_existent_id(self):
-        """Test getting a catalogue category with a non-existent ID"""
+        """Test getting a catalogue category with a non-existent ID."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -382,7 +405,7 @@ class TestGet(GetDSL):
         self.check_get_success()
 
     def test_get_with_invalid_id(self):
-        """Test getting a catalogue category with an invalid ID"""
+        """Test getting a catalogue category with an invalid ID."""
 
         catalogue_category_id = "invalid-id"
 
@@ -391,7 +414,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
-    """Base class for `get_breadcrumbs` tests"""
+    """Base class for `get_breadcrumbs` tests."""
 
     _breadcrumbs_query_result: list[dict]
     _mock_aggregation_pipeline = MagicMock()
@@ -399,11 +422,12 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
     _obtained_catalogue_category_id: str
     _obtained_breadcrumbs: MagicMock
 
-    def mock_breadcrumbs(self, breadcrumbs_query_result: list[dict]):
-        """Mocks database methods appropriately to test the 'get_breadcrumbs' repo method
+    def mock_breadcrumbs(self, breadcrumbs_query_result: list[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `get_breadcrumbs` repo method.
 
         :param breadcrumbs_query_result: List of dictionaries containing the breadcrumbs query result from the
-                                         aggregation pipeline
+                                         aggregation pipeline.
         """
 
         self._breadcrumbs_query_result = breadcrumbs_query_result
@@ -414,16 +438,20 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
         self.catalogue_categories_collection.aggregate.return_value = breadcrumbs_query_result
         self.mock_utils.compute_breadcrumbs.return_value = self._expected_breadcrumbs
 
-    def call_get_breadcrumbs(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryRepo `get_breadcrumbs` method"""
+    def call_get_breadcrumbs(self, catalogue_category_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `get_breadcrumbs` method.
+
+        :param system_id: ID of the system to obtain the breadcrumbs of.
+        """
 
         self._obtained_catalogue_category_id = catalogue_category_id
         self._obtained_breadcrumbs = self.catalogue_category_repository.get_breadcrumbs(
             catalogue_category_id, session=self.mock_session
         )
 
-    def check_get_breadcrumbs_success(self):
-        """Checks that a prior call to `call_get_breadcrumbs` worked as expected"""
+    def check_get_breadcrumbs_success(self) -> None:
+        """Checks that a prior call to `call_get_breadcrumbs` worked as expected."""
 
         self.mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
             entity_id=self._obtained_catalogue_category_id, collection_name="catalogue_categories"
@@ -441,10 +469,10 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
 
 
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
-    """Tests for getting the breadcrumbs of a catalogue category"""
+    """Tests for getting the breadcrumbs of a catalogue category."""
 
     def test_get_breadcrumbs(self):
-        """Test getting a catalogue category's breadcrumbs"""
+        """Test getting a catalogue category's breadcrumbs."""
 
         self.mock_breadcrumbs(MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH)
         self.call_get_breadcrumbs(str(ObjectId()))
@@ -452,17 +480,17 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(CatalogueCategoryRepoDSL):
-    """Base class for `list` tests"""
+    """Base class for `list` tests."""
 
     _expected_catalogue_categories_out: list[CatalogueCategoryOut]
     _parent_id_filter: Optional[str]
     _obtained_catalogue_categories_out: list[CatalogueCategoryOut]
 
-    def mock_list(self, catalogue_categories_in_data: list[dict]):
-        """Mocks database methods appropriately to test the 'list' repo method
+    def mock_list(self, catalogue_categories_in_data: list[dict]) -> None:
+        """Mocks database methods appropriately to test the `list` repo method
 
         :param catalogue_categories_in_data: List of dictionaries containing the catalogue category data as would be
-                                             required for a CatalogueCategoryIn database model (i.e. no id or created
+                                             required for a `CatalogueCategoryIn` database model (i.e. no id or created
                                              and modified times required)
         """
 
@@ -478,8 +506,12 @@ class ListDSL(CatalogueCategoryRepoDSL):
             [catalogue_category_out.model_dump() for catalogue_category_out in self._expected_catalogue_categories_out],
         )
 
-    def call_list(self, parent_id: Optional[str]):
-        """Calls the CatalogueCategoryRepo `list` method"""
+    def call_list(self, parent_id: Optional[str]) -> None:
+        """
+        Calls the CatalogueCategoryRepo `list` method.
+
+        :param parent_id: ID of the parent catalogue category to query by, or `None`.
+        """
 
         self._parent_id_filter = parent_id
 
@@ -487,8 +519,8 @@ class ListDSL(CatalogueCategoryRepoDSL):
             parent_id=parent_id, session=self.mock_session
         )
 
-    def check_list_success(self):
-        """Checks that a prior call to 'call_list` worked as expected"""
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
 
         self.mock_utils.list_query.assert_called_once_with(self._parent_id_filter, "catalogue categories")
         self.catalogue_categories_collection.find.assert_called_once_with(
@@ -499,10 +531,10 @@ class ListDSL(CatalogueCategoryRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing Catalogue Categorie's"""
+    """Tests for listing Catalogue Category's."""
 
     def test_list(self):
-        """Test listing all Catalogue Categories"""
+        """Test listing all Catalogue Categories."""
 
         self.mock_list(
             [
@@ -514,7 +546,7 @@ class TestList(ListDSL):
         self.check_list_success()
 
     def test_list_with_parent_id_filter(self):
-        """Test listing all Catalogue Categories with a given parent_id"""
+        """Test listing all Catalogue Categories with a given parent_id."""
 
         self.mock_list(
             [
@@ -526,7 +558,7 @@ class TestList(ListDSL):
         self.check_list_success()
 
     def test_list_with_null_parent_id_filter(self):
-        """Test listing all Catalogue Categories with a 'null' parent_id"""
+        """Test listing all Catalogue Categories with a 'null' parent_id."""
 
         self.mock_list(
             [
@@ -538,7 +570,7 @@ class TestList(ListDSL):
         self.check_list_success()
 
     def test_list_with_parent_id_with_no_results(self):
-        """Test listing all Catalogue Categories with a parent_id filter returning no results"""
+        """Test listing all Catalogue Categories with a `parent_id` filter returning no results."""
 
         self.mock_list([])
         self.call_list(parent_id=str(ObjectId()))
@@ -546,7 +578,7 @@ class TestList(ListDSL):
 
 
 class UpdateDSL(CatalogueCategoryRepoDSL):
-    """Base class for `update` tests"""
+    """Base class for `update` tests."""
 
     # pylint:disable=too-many-instance-attributes
     _catalogue_category_in: CatalogueCategoryIn
@@ -558,10 +590,11 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
     _update_exception: pytest.ExceptionInfo
 
     def set_update_data(self, new_catalogue_category_in_data: dict):
-        """Assigns the update data to use during a call to `call_update`
+        """
+        Assigns the update data to use during a call to `call_update`.
 
         :param new_catalogue_category_in_data: New catalogue category data as would be required for a
-                                               CatalogueCategoryIn database model to supply to the SystemRepo
+                                               `CatalogueCategoryIn` database model to supply to the `SystemRepo`
                                                `update` method
         """
         self._catalogue_category_in = CatalogueCategoryIn(**new_catalogue_category_in_data)
@@ -575,24 +608,25 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         new_parent_catalogue_category_in_data: Optional[dict] = None,
         duplicate_catalogue_category_in_data: Optional[dict] = None,
         valid_move_result: bool = True,
-    ):
-        """Mocks database methods appropriately to test the 'update' repo method
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `update` repo method.
 
-        :param catalogue_category_id: ID of the catalogue category that will be obtained
+        :param catalogue_category_id: ID of the catalogue category that will be updated.
         :param new_catalogue_category_in_data: Dictionary containing the new catalogue category data as would be
-                                               required for a CatalogueCategoryIn database model (i.e. no id or
-                                               created and modified times required)
+                                               required for a `CatalogueCategoryIn` database model (i.e. no id or
+                                               created and modified times required).
         :param stored_catalogue_category_in_data: Dictionary containing the catalogue category data for the existing
                                                   stored catalogue category as would be required for a
-                                                  CatalogueCategoryIn database model
-        :param new_parent_catalogue_category_in_data: Either None or a dictionary containing the new parent catalogue
-                                                      category data as would be required for a CatalogueCategoryIn
-                                                      database model
-        :param duplicate_catalogue_category_in_data: Either None or a dictionary containing the data for a duplicate
-                                                     catalogue category as would be required for a CatalogueCategoryIn
-                                                     database model
+                                                  `CatalogueCategoryIn` database model.
+        :param new_parent_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
+                                                      category data as would be required for a `CatalogueCategoryIn`
+                                                      database model.
+        :param duplicate_catalogue_category_in_data: Either `None` or a dictionary containing the data for a duplicate
+                                                     catalogue category as would be required for a `CatalogueCategoryIn`
+                                                     database model.
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
-                                  moving the catalogue category to one of its own children
+                                  moving the catalogue category to one of its own children.
         """
         self.set_update_data(new_catalogue_category_in_data)
 
@@ -664,25 +698,34 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 self.mock_utils.is_valid_move_result.return_value = False
                 self.catalogue_categories_collection.aggregate.return_value = MOCK_MOVE_QUERY_RESULT_INVALID
 
-    def call_update(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryRepo `update` method with the appropriate data from a prior call to `mock_update`
-        (or`set_update_data`)"""
+    def call_update(self, catalogue_category_id: str) -> None:
+        """
+        Calls the CatalogueCategoryRepo `update` method with the appropriate data from a prior call to `mock_update`
+        (or`set_update_data`).
+
+        :param catalogue_category_id: ID of the catalogue category to be updated.
+        """
 
         self._updated_catalogue_category_id = catalogue_category_id
         self._updated_catalogue_category = self.catalogue_category_repository.update(
             catalogue_category_id, self._catalogue_category_in, session=self.mock_session
         )
 
-    def call_update_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
-        """Calls the CatalogueCategoryRepo `update` method with the appropriate data from a prior call to `mock_update`
-        (or `set_update_data`) while expecting an error to be raised"""
+    def call_update_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the CatalogueCategoryRepo `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`) while expecting an error to be raised.
+
+        :param catalogue_category_id: ID of the catalogue category to be updated.
+        :param error_type: Expected exception to be raised.
+        """
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_repository.update(catalogue_category_id, self._catalogue_category_in)
         self._update_exception = exc
 
-    def check_update_success(self):
-        """Checks that a prior call to `call_update` worked as expected"""
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
 
         # Obtain a list of expected find_one calls
         expected_find_one_calls = []
@@ -740,9 +783,13 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
 
         assert self._updated_catalogue_category == self._expected_catalogue_category_out
 
-    def check_update_failed_with_exception(self, message: str):
-        """Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
-        with the correct message"""
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
 
         self.catalogue_categories_collection.update_one.assert_not_called()
 
@@ -750,10 +797,10 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a catalogue category"""
+    """Tests for updating a catalogue category."""
 
     def test_update(self):
-        """Test updating a catalogue category"""
+        """Test updating a catalogue category."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -766,7 +813,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_no_changes(self):
-        """Test updating a catalogue category to have exactly the same contents"""
+        """Test updating a catalogue category to have exactly the same contents."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -779,7 +826,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id(self):
-        """Test updating a catalogue category's parent_id to move it"""
+        """Test updating a catalogue category's parent_id to move it."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -798,7 +845,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id_to_child_of_self(self):
-        """Test updating a catalogue category's parent_id to a child of it self (should prevent this)"""
+        """Test updating a catalogue category's parent_id to a child of it self (should prevent this)."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -817,7 +864,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Cannot move a catalogue category to one of its own children")
 
     def test_update_with_non_existent_parent_id(self):
-        """Test updating a catalogue category's parent_id to a non-existent catalogue category"""
+        """Test updating a catalogue category's parent_id to a non-existent catalogue category."""
 
         catalogue_category_id = str(ObjectId())
         new_parent_id = str(ObjectId())
@@ -832,7 +879,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception(f"No parent catalogue category found with ID: {new_parent_id}")
 
     def test_update_name_to_duplicate_within_parent(self):
-        """Test updating a catalogue category's name to one that is a duplicate within the parent catalogue category"""
+        """Test updating a catalogue category's name to one that is a duplicate within the parent catalogue category."""
 
         catalogue_category_id = str(ObjectId())
         duplicate_name = "New Duplicate Name"
@@ -853,7 +900,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_parent_id_with_duplicate_within_parent(self):
         """Test updating a catalogue category's parent_id to one that contains a catalogue category with a duplicate
-        name within the parent catalogue category"""
+        name within the parent catalogue category."""
 
         catalogue_category_id = str(ObjectId())
         new_parent_id = str(ObjectId())
@@ -871,7 +918,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_with_invalid_id(self):
-        """Test updating a catalogue category with an invalid id"""
+        """Test updating a catalogue category with an invalid id."""
 
         catalogue_category_id = "invalid-id"
 
@@ -886,15 +933,18 @@ class HasChildElementsDSL(CatalogueCategoryRepoDSL):
     _has_child_elements_catalogue_category_id: str
     _has_child_elements_result: bool
 
-    def call_has_child_elements(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryRepo `has_child_elements` method"""
+    def call_has_child_elements(self, catalogue_category_id: str) -> None:
+        """Calls the `CatalogueCategoryRepo` `has_child_elements` method.
+
+        :param catalogue_category_id: ID of the catalogue category to check.
+        """
 
         self._has_child_elements_catalogue_category_id = catalogue_category_id
         self._has_child_elements_result = self.catalogue_category_repository.has_child_elements(
             CustomObjectId(catalogue_category_id), session=self.mock_session
         )
 
-    def check_has_child_elements_success(self, expected_result: bool):
+    def check_has_child_elements_success(self, expected_result: bool) -> None:
         """Checks that a prior call to `call_has_child_elements` worked as expected
 
         :param expected_result: The expected result returned by `has_child_elements`
@@ -906,17 +956,17 @@ class HasChildElementsDSL(CatalogueCategoryRepoDSL):
 
 
 class TestHasChildElements(HasChildElementsDSL):
-    """Tests for `has_child_elements`"""
+    """Tests for `has_child_elements`."""
 
     def test_has_child_elements_with_no_children(self):
-        """Test `has_child_elements` when there are no child catalogue categories or catalogue items"""
+        """Test `has_child_elements` when there are no child catalogue categories or catalogue items."""
 
         self.mock_has_child_elements(child_catalogue_category_data=None, child_catalogue_item_data=None)
         self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
         self.check_has_child_elements_success(expected_result=False)
 
     def test_has_child_elements_with_child_catalogue_category(self):
-        """Test `has_child_elements` when there is a child catalogue category but no child catalogue items"""
+        """Test `has_child_elements` when there is a child catalogue category but no child catalogue items."""
 
         self.mock_has_child_elements(
             child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
@@ -926,7 +976,8 @@ class TestHasChildElements(HasChildElementsDSL):
         self.check_has_child_elements_success(expected_result=True)
 
     def test_has_child_elements_with_child_catalogue_catalogue_item(self):
-        """Test `has_child_elements` when there are no child catalogue categories but there is a child catalogue item"""
+        """Test `has_child_elements` when there are no child catalogue categories but there is a child catalogue
+        item."""
 
         # pylint:disable=fixme
         # TODO: Replace CATALOGUE_ITEM_A_INFO once catalogue item tests have been refactored
@@ -939,7 +990,7 @@ class TestHasChildElements(HasChildElementsDSL):
 
 
 class DeleteDSL(CatalogueCategoryRepoDSL):
-    """Base class for `delete` tests"""
+    """Base class for `delete` tests."""
 
     _delete_catalogue_category_id: str
     _delete_exception: pytest.ExceptionInfo
@@ -949,42 +1000,57 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
         deleted_count: int,
         child_catalogue_category_data: Optional[dict] = None,
         child_catalogue_item_data: Optional[dict] = None,
-    ):
-        """Mocks database methods appropriately to test the 'delete' repo method
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
 
-        :param deleted_count: Number of documents deleted successfully
-        :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or None)
-        :param child_item_data: Dictionary containing a child catalogue item's data (or None)
+        :param deleted_count: Number of documents deleted successfully.
+        :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or `None`).
+        :param child_item_data: Dictionary containing a child catalogue item's data (or `None`).
         """
 
         self.mock_has_child_elements(child_catalogue_category_data, child_catalogue_item_data)
         RepositoryTestHelpers.mock_delete_one(self.catalogue_categories_collection, deleted_count)
 
-    def call_delete(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryRepo `delete` method"""
+    def call_delete(self, catalogue_category_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `delete` method.
+
+        :param system_id: ID of the system to be deleted.
+        """
 
         self._delete_catalogue_category_id = catalogue_category_id
         self.catalogue_category_repository.delete(catalogue_category_id, session=self.mock_session)
 
-    def call_delete_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
-        """Calls the CatalogueCategoryRepo `delete` method while expecting an error to be raised"""
+    def call_delete_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the CatalogueCategoryRepo `delete` method while expecting an error to be raised.
+
+        :param catalogue_category_id: ID of the catalogue category to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
 
         self._delete_catalogue_category_id = catalogue_category_id
         with pytest.raises(error_type) as exc:
             self.catalogue_category_repository.delete(catalogue_category_id)
         self._delete_exception = exc
 
-    def check_delete_success(self):
-        """Checks that a prior call to `call_delete` worked as expected"""
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
 
         self.check_has_child_elements_performed_expected_calls(self._delete_catalogue_category_id)
         self.catalogue_categories_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_catalogue_category_id)}, session=self.mock_session
         )
 
-    def check_delete_failed_with_exception(self, message: str, expecting_delete_one_called: bool = False):
-        """Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
-        with the correct message"""
+    def check_delete_failed_with_exception(self, message: str, expecting_delete_one_called: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        :param expecting_delete_one_called: Whether the `delete_one` method is expected to be called or not.
+        """
 
         if not expecting_delete_one_called:
             self.catalogue_categories_collection.delete_one.assert_not_called()
@@ -997,17 +1063,17 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
 
 
 class TestDelete(DeleteDSL):
-    """Tests for deleting a catalogue category"""
+    """Tests for deleting a catalogue category."""
 
     def test_delete(self):
-        """Test deleting a catalogue category"""
+        """Test deleting a catalogue category."""
 
         self.mock_delete(deleted_count=1)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
     def test_delete_with_child_catalogue_category(self):
-        """Test deleting a catalogue category when it has a child catalogue category"""
+        """Test deleting a catalogue category when it has a child catalogue category."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -1020,7 +1086,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_with_child_catalogue_item(self):
-        """Test deleting a catalogue category when it has a child Catalogue Item"""
+        """Test deleting a catalogue category when it has a child Catalogue Item."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -1033,7 +1099,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_non_existent_id(self):
-        """Test deleting a catalogue category with a non-existent id"""
+        """Test deleting a catalogue category with a non-existent id."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -1044,7 +1110,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_invalid_id(self):
-        """Test deleting a catalogue category with an invalid id"""
+        """Test deleting a catalogue category with an invalid id."""
 
         catalogue_category_id = "invalid-id"
 
@@ -1070,11 +1136,12 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
             self._mock_datetime = mock_datetime
             yield
 
-    def mock_create_property(self, property_in_data: dict):
-        """Mocks database methods appropriately to test the 'create_property' repo method
+    def mock_create_property(self, property_in_data: dict) -> None:
+        """
+        Mocks database methods appropriately to test the `create_property` repo method
 
         :param property_in_data: Dictionary containing the catalogue category property data as would be required for a
-                                 CatalogueCategoryPropertyIn database model
+                                 `CatalogueCategoryPropertyIn` database model
         """
 
         self._property_in = CatalogueCategoryPropertyIn(**property_in_data)
@@ -1082,9 +1149,12 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
 
         RepositoryTestHelpers.mock_update_one(self.catalogue_categories_collection)
 
-    def call_create_property(self, catalogue_category_id: str):
-        """Calls the CatalogueCategoryRepo `create_property` method with the appropriate data from a prior call to
+    def call_create_property(self, catalogue_category_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `create_property` method with the appropriate data from a prior call to
         `mock_create_property`
+
+        :param catalogue_category_id: ID of the catalogue category to create the property in.
         """
 
         self._catalogue_category_id = catalogue_category_id
@@ -1092,9 +1162,13 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
             catalogue_category_id, self._property_in, session=self.mock_session
         )
 
-    def call_create_property_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]):
-        """Calls the CatalogueCategoryRepo `create_property` method with the appropriate data from a prior call to
+    def call_create_property_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `create_property` method with the appropriate data from a prior call to
         `mock_create_property`
+
+        :param catalogue_category_id: ID of the catalogue category to create the property in.
+        :param error_type: Expected exception to be raised.
         """
 
         self._catalogue_category_id = catalogue_category_id
@@ -1104,7 +1178,7 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
             )
         self._create_exception = exc
 
-    def check_create_property_success(self):
+    def check_create_property_success(self) -> None:
         """Checks that a prior call to `call_create_property` worked as expected"""
 
         self.catalogue_categories_collection.update_one.assert_called_once_with(
@@ -1117,9 +1191,13 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
         )
         assert self._created_property == self._expected_property_out
 
-    def check_create_property_failed_with_exception(self, message: str):
-        """Checks that a prior call to `call_create_property_expecting_error` worked as expected, raising an exception
-        with the correct message"""
+    def check_create_property_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_create_property_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
 
         self.catalogue_categories_collection.update_one.assert_not_called()
 
@@ -1127,17 +1205,17 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
 
 
 class TestCreateProperty(CreatePropertyDSL):
-    """Tests for creating a property"""
+    """Tests for creating a property."""
 
     def test_create_property(self):
-        """Test creating a property in an existing catalogue category"""
+        """Test creating a property in an existing catalogue category."""
 
         self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_create_property(str(ObjectId()))
         self.check_create_property_success()
 
     def test_create_property_with_invalid_id(self):
-        """Test creating a property in a catalogue category with an invalid id"""
+        """Test creating a property in a catalogue category with an invalid id."""
 
         self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_create_property_expecting_error("invalid-id", InvalidObjectIdError)
@@ -1145,17 +1223,18 @@ class TestCreateProperty(CreatePropertyDSL):
 
 
 class UpdatePropertyDSL(CreatePropertyDSL):
-    """Base class for `update_property` tests"""
+    """Base class for `update_property` tests."""
 
     _updated_property: CatalogueCategoryOut
     _property_id: str
     _update_exception: pytest.ExceptionInfo
 
-    def mock_update_property(self, property_in_data: dict):
-        """Mocks database methods appropriately to test the `update_property` repo method
+    def mock_update_property(self, property_in_data: dict) -> None:
+        """
+        Mocks database methods appropriately to test the `update_property` repo method.
 
         :param property_in_data: Dictionary containing the catalogue category property data as would be required for a
-                                 CatalogueCategoryPropertyIn database model
+                                 `CatalogueCategoryPropertyIn` database model.
         """
 
         self._property_in = CatalogueCategoryPropertyIn(**property_in_data)
@@ -1163,9 +1242,13 @@ class UpdatePropertyDSL(CreatePropertyDSL):
 
         RepositoryTestHelpers.mock_update_one(self.catalogue_categories_collection)
 
-    def call_update_property(self, catalogue_category_id: str, property_id: str):
-        """Calls the CatalogueCategoryRepo `update_property` method with the appropriate data from a prior call to
-        `mock_update_property`
+    def call_update_property(self, catalogue_category_id: str, property_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `update_property` method with the appropriate data from a prior call to
+        `mock_update_property`.
+
+        :param catalogue_category_id: ID of the catalogue category that will be updated.
+        :param property_id: ID of the property that will be updated.
         """
 
         self._catalogue_category_id = catalogue_category_id
@@ -1176,9 +1259,14 @@ class UpdatePropertyDSL(CreatePropertyDSL):
 
     def call_update_property_expecting_error(
         self, catalogue_category_id: str, property_id: str, error_type: type[BaseException]
-    ):
-        """Calls the CatalogueCategoryRepo `update_property` method with the appropriate data from a prior call to
-        `mock_update_property`
+    ) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `update_property` method with the appropriate data from a prior call to
+        `mock_update_property`.
+
+        :param catalogue_category_id: ID of the catalogue category to be updated.
+        :param property_id: ID of the property to be updated.
+        :param error_type: Expected exception to be raised.
         """
 
         self._catalogue_category_id = catalogue_category_id
@@ -1189,8 +1277,8 @@ class UpdatePropertyDSL(CreatePropertyDSL):
             )
         self._update_exception = exc
 
-    def check_update_property_success(self):
-        """Checks that a prior call to `call_update_property` worked as expected"""
+    def check_update_property_success(self) -> None:
+        """Checks that a prior call to `call_update_property` worked as expected."""
 
         self.catalogue_categories_collection.update_one.assert_called_once_with(
             {
@@ -1208,9 +1296,13 @@ class UpdatePropertyDSL(CreatePropertyDSL):
         )
         assert self._updated_property == self._expected_property_out
 
-    def check_update_property_failed_with_exception(self, message: str):
-        """Checks that a prior call to `call_update_property_expecting_error` worked as expected, raising an exception
-        with the correct message"""
+    def check_update_property_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_property_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
 
         self.catalogue_categories_collection.update_one.assert_not_called()
 
@@ -1218,17 +1310,17 @@ class UpdatePropertyDSL(CreatePropertyDSL):
 
 
 class TestUpdateProperty(UpdatePropertyDSL):
-    """Tests for updating a property"""
+    """Tests for updating a property."""
 
     def test_update_property(self):
-        """Test updating a property in an existing catalogue category"""
+        """Test updating a property in an existing catalogue category."""
 
         self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property(catalogue_category_id=str(ObjectId()), property_id=str(ObjectId()))
         self.check_update_property_success()
 
     def test_update_property_with_invalid_catalogue_category_id(self):
-        """Test updating a property in a catalogue category with an invalid id"""
+        """Test updating a property in a catalogue category with an invalid id."""
 
         self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property_expecting_error(
@@ -1237,7 +1329,7 @@ class TestUpdateProperty(UpdatePropertyDSL):
         self.check_update_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
     def test_update_property_with_invalid_property_id(self):
-        """Test updating a property with an invalid id in a catalogue category"""
+        """Test updating a property with an invalid id in a catalogue category."""
 
         self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property_expecting_error(
