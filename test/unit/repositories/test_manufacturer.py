@@ -27,7 +27,7 @@ from inventory_management_system_api.repositories.manufacturer import Manufactur
 
 class ManufacturerRepoDSL:
     """
-    Base class form `ManufacturerRepo` unit tests.
+    Base class for `ManufacturerRepo` unit tests.
     """
 
     mock_database: Mock
