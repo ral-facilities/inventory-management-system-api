@@ -36,7 +36,7 @@ from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LE
 
 
 class CreateDSL:
-    """Base class for create tests"""
+    """Base class for create tests."""
 
     test_client: TestClient
 
@@ -51,29 +51,35 @@ class CreateDSL:
         self.test_client = test_client
         self.unit_value_id_dict = {}
 
-    def post_unit(self, unit_post_data: dict):
-        """Posts a unit with the given data and stores the value and id in a dictionary for lookup later
+    def post_unit(self, unit_post_data: dict) -> None:
+        """Posts a unit with the given data and stores the value and id in a dictionary for lookup later.
 
-        :param unit_post_data: Dictionary containing the unit data that should be posted
+        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
         """
 
         post_response = self.test_client.post("/v1/units", json=unit_post_data)
         self.unit_value_id_dict[unit_post_data["value"]] = post_response.json()["id"]
 
-    def add_unit_value_and_id(self, unit_value: str, unit_id: str):
-        """Stores a unit value and id inside the `unit_value_id_dict` for tests that need to have a
-        non-existent or invalid unit id"""
+    def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
+        """
+        Stores a unit value and id inside the `unit_value_id_dict` for tests that need to have a
+        non-existent or invalid unit id.
+
+        :param unit_value: Value of the unit.
+        :param unit_id: ID of the unit.
+        """
 
         self.unit_value_id_dict[unit_value] = unit_id
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
-        """Posts a catalogue category with the given data and returns the id of the created catalogue category if
-        successful
+        """
+        Posts a catalogue category with the given data and returns the id of the created catalogue category if
+        successful.
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
-                                        for a CatalogueCategoryPostSchema but with any unit_id's replaced by the
-                                        'unit' value in its properties as the ids will be added automatically
-        :return: ID of the created catalogue category (or None if not successful)
+                                        for a `CatalogueCategoryPostSchema` but with any unit_id's replaced by the
+                                        'unit' value in its properties as the ids will be added automatically.
+        :return: ID of the created catalogue category (or None if not successful).
         """
 
         # Replace any unit values with unit ids
@@ -85,9 +91,17 @@ class CreateDSL:
 
         return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
 
-    def post_leaf_catalogue_category_with_allowed_values(self, property_type: str, allowed_values_post_data: dict):
-        """Utility method that posts a leaf catalogue category with a property named 'property' of a given type with
-        a given set of allowed values"""
+    def post_leaf_catalogue_category_with_allowed_values(
+        self, property_type: str, allowed_values_post_data: dict
+    ) -> None:
+        """
+        Utility method that posts a leaf catalogue category with a property named 'property' of a given type with
+        a given set of allowed values.
+
+        :param property_type: Type of the property to post.
+        :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
+                                         `AllowedValuesSchema`.
+        """
 
         self.post_catalogue_category(
             {
@@ -103,39 +117,54 @@ class CreateDSL:
             }
         )
 
-    def check_post_catalogue_category_success(self, expected_catalogue_category_get_data: dict):
-        """Checks that a prior call to 'post_catalogue_category' gave a successful response with the expected data
-        returned"""
+    def check_post_catalogue_category_success(self, expected_catalogue_category_get_data: dict) -> None:
+        """
+        Checks that a prior call to `post_catalogue_category` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
+                                                     be required for a `CatalogueCategoryGetSchema`.
+        """
 
         assert self._post_response.status_code == 201
         assert self._post_response.json() == expected_catalogue_category_get_data
 
-    def check_post_catalogue_category_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'post_catalogue_category' gave a failed response with the expected code and
-        error message"""
+    def check_post_catalogue_category_failed_with_message(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `post_catalogue_category` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
 
         assert self._post_response.status_code == status_code
         assert self._post_response.json()["detail"] == detail
 
-    def check_post_catalogue_category_failed_with_validation_message(self, status_code: int, message: str):
-        """Checks that a prior call to 'post_catalogue_category' gave a failed response with the expected code and
-        pydantic validation error message"""
+    def check_post_catalogue_category_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `post_catalogue_category` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
 
         assert self._post_response.status_code == status_code
         assert self._post_response.json()["detail"][0]["msg"] == message
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a catalogue category"""
+    """Tests for creating a catalogue category."""
 
     def test_create_non_leaf_with_only_required_values_provided(self):
-        """Test creating a non-leaf catalogue category with only required values provided"""
+        """Test creating a non-leaf catalogue category with only required values provided."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
 
     def test_create_non_leaf_with_properties(self):
-        """Test creating a non-leaf catalogue category with properties provided (ensures they are ignored)"""
+        """Test creating a non-leaf catalogue category with properties provided (ensures they are ignored)."""
 
         self.post_catalogue_category(
             {
@@ -146,7 +175,7 @@ class TestCreate(CreateDSL):
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
 
     def test_create_with_valid_parent_id(self):
-        """Test creating a catalogue category with a valid parent id"""
+        """Test creating a catalogue category with a valid parent id."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.post_catalogue_category(
@@ -157,7 +186,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_with_non_leaf_parent(self):
-        """Test creating a catalogue category with a non-leaf parent"""
+        """Test creating a catalogue category with a non-leaf parent."""
 
         parent_id = self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "is_leaf": True}
@@ -170,7 +199,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_with_non_existent_parent_id(self):
-        """Test creating a catalogue category with a non-existent parent id"""
+        """Test creating a catalogue category with a non-existent parent id."""
 
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())}
@@ -180,7 +209,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_with_invalid_parent_id(self):
-        """Test creating a catalogue category with an invalid parent id"""
+        """Test creating a catalogue category with an invalid parent id."""
 
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"}
@@ -190,7 +219,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_with_duplicate_name_within_parent(self):
-        """Test creating a catalogue category with the same name as another within the parent catalogue category"""
+        """Test creating a catalogue category with the same name as another within the parent catalogue category."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         # 2nd post should be the duplicate
@@ -205,34 +234,34 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_with_only_required_values_provided(self):
-        """Test creating a leaf catalogue category with only required values provided"""
+        """Test creating a leaf catalogue category with only required values provided."""
 
         self.post_catalogue_category({**CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY, "is_leaf": True})
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY)
 
     def test_create_leaf_with_properties(self):
-        """Test creating a leaf catalogue category with some properties provided"""
+        """Test creating a leaf catalogue category with some properties provided."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_create_leaf_with_properties_with_non_existent_unit_id(self):
-        """Test creating a leaf catalogue category with a property with a non-existent unit id provided"""
+        """Test creating a leaf catalogue category with a property with a non-existent unit id provided."""
 
         self.add_unit_value_and_id("mm", str(ObjectId()))
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_leaf_with_properties_with_invalid_unit_id(self):
-        """Test creating a leaf catalogue category with a property with an invalid unit id provided"""
+        """Test creating a leaf catalogue category with a property with an invalid unit id provided."""
 
         self.add_unit_value_and_id("mm", "invalid-id")
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_message(422, "The specified unit does not exist")
 
     def test_create_leaf_with_duplicate_properties(self):
-        """Test creating a leaf catalogue category with duplicate properties provided"""
+        """Test creating a leaf catalogue category with duplicate properties provided."""
 
         property_data = CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY
 
@@ -244,7 +273,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_with_property_with_invalid_type(self):
-        """Test creating a leaf catalogue category with a property with an invalid type provided"""
+        """Test creating a leaf catalogue category with a property with an invalid type provided."""
 
         self.post_catalogue_category(
             {
@@ -257,7 +286,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_with_boolean_property_with_unit(self):
-        """Test creating a leaf catalogue category with a boolean property with a unit"""
+        """Test creating a leaf catalogue category with a boolean property with a unit."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_catalogue_category(
@@ -273,7 +302,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_property_with_invalid_allowed_values_type(self):
-        """Test creating a leaf catalogue category with a property with an invalid allowed values type"""
+        """Test creating a leaf catalogue category with a property with an invalid allowed values type."""
 
         self.post_leaf_catalogue_category_with_allowed_values("string", {"type": "invalid-type"})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -282,7 +311,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_property_with_empty_allowed_values_list(self):
-        """Test creating a leaf catalogue category with a property with an allowed values list that is empty"""
+        """Test creating a leaf catalogue category with a property with an allowed values list that is empty."""
 
         self.post_leaf_catalogue_category_with_allowed_values("string", {"type": "list", "values": []})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -292,7 +321,7 @@ class TestCreate(CreateDSL):
 
     def test_create_leaf_with_string_property_with_allowed_values_list_invalid_value(self):
         """Test creating a leaf catalogue category with a string property with an allowed values list with an invalid
-        number value in it"""
+        number value in it."""
 
         self.post_leaf_catalogue_category_with_allowed_values("string", {"type": "list", "values": ["1", "2", 3, "4"]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -303,7 +332,7 @@ class TestCreate(CreateDSL):
 
     def test_create_leaf_with_string_property_with_allowed_values_list_duplicate_value(self):
         """Test creating a leaf catalogue category with a string property with an allowed values list with a duplicate
-        string value in it"""
+        string value in it."""
 
         # Capitalisation is different as it shouldn't matter for this test
         self.post_leaf_catalogue_category_with_allowed_values(
@@ -316,7 +345,7 @@ class TestCreate(CreateDSL):
 
     def test_create_leaf_with_number_property_with_allowed_values_list_invalid_value(self):
         """Test creating a leaf catalogue category with a number property with an allowed values list with an invalid
-        number value in it"""
+        number value in it."""
 
         self.post_leaf_catalogue_category_with_allowed_values("number", {"type": "list", "values": [1, 2, "3", 4]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -327,7 +356,7 @@ class TestCreate(CreateDSL):
 
     def test_create_leaf_with_number_property_with_allowed_values_list_duplicate_value(self):
         """Test creating a leaf catalogue category with a number property with an allowed values list with a duplicate
-        number value in it"""
+        number value in it."""
 
         self.post_leaf_catalogue_category_with_allowed_values("number", {"type": "list", "values": [1, 2, 1, 3]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -336,7 +365,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_with_boolean_property_with_allowed_values_list(self):
-        """Test creating a leaf catalogue category with a boolean property with an allowed values list"""
+        """Test creating a leaf catalogue category with a boolean property with an allowed values list."""
 
         self.post_leaf_catalogue_category_with_allowed_values("boolean", {"type": "list", "values": [True, False]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -346,35 +375,49 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(CreateDSL):
-    """Base class for get tests"""
+    """Base class for get tests."""
 
     _get_response: Response
 
-    def get_catalogue_category(self, catalogue_category_id: str):
-        """Gets a system with the given id"""
+    def get_catalogue_category(self, catalogue_category_id: str) -> None:
+        """
+        Gets a catalogue category with the given id.
+
+        :param catalogue_category_id: ID of the catalogue category to be obtained.
+        """
 
         self._get_response = self.test_client.get(f"/v1/catalogue-categories/{catalogue_category_id}")
 
-    def check_get_catalogue_category_success(self, expected_catalogue_category_get_data: dict):
-        """Checks that a prior call to 'get_catalogue_category' gave a successful response with the expected data
-        returned"""
+    def check_get_catalogue_category_success(self, expected_catalogue_category_get_data: dict) -> None:
+        """
+        Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
+                                                     be required for a `CatalogueCategoryGetSchema`.
+        """
 
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_catalogue_category_get_data
 
-    def check_get_catalogue_category_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'get_catalogue_category' gave a failed response with the expected code and error
-        message"""
+    def check_get_catalogue_category_failed_with_message(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `get_catalogue_category` gave a failed response with the expected code and error
+        message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
 
         assert self._get_response.status_code == status_code
         assert self._get_response.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
-    """Tests for getting a catalogue category"""
+    """Tests for getting a catalogue category."""
 
     def test_get(self):
-        """Test getting a catalogue category"""
+        """Test getting a catalogue category."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
@@ -382,20 +425,20 @@ class TestGet(GetDSL):
         self.check_get_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_get_with_non_existent_id(self):
-        """Test getting a catalogue category with a non-existent id"""
+        """Test getting a catalogue category with a non-existent id."""
 
         self.get_catalogue_category(str(ObjectId()))
         self.check_get_catalogue_category_failed_with_message(404, "Catalogue category not found")
 
     def test_get_with_invalid_id(self):
-        """Test getting a catalogue category with an invalid id"""
+        """Test getting a catalogue category with an invalid id."""
 
         self.get_catalogue_category("invalid-id")
         self.check_get_catalogue_category_failed_with_message(404, "Catalogue category not found")
 
 
 class GetBreadcrumbsDSL(GetDSL):
-    """Base class for breadcrumbs tests"""
+    """Base class for breadcrumbs tests."""
 
     _get_response: Response
 
@@ -409,10 +452,10 @@ class GetBreadcrumbsDSL(GetDSL):
 
     def post_nested_catalogue_categories(self, number: int) -> list[Optional[str]]:
         """Posts the given number of nested catalogue categories where each successive one has the previous as its
-        parent
+        parent.
 
-        :param number: Number of catalogue categories to create
-        :return: List of ids of the created catalogue categories
+        :param number: Number of catalogue categories to create.
+        :return: List of ids of the created catalogue categories.
         """
 
         parent_id = None
@@ -429,19 +472,29 @@ class GetBreadcrumbsDSL(GetDSL):
 
         return [catalogue_category["id"] for catalogue_category in self._posted_catalogue_categories_get_data]
 
-    def get_catalogue_category_breadcrumbs(self, catalogue_category_id: str):
-        """Gets a catalogue category's breadcrumbs with the given id"""
+    def get_catalogue_category_breadcrumbs(self, catalogue_category_id: str) -> None:
+        """
+        Gets a catalogue category's breadcrumbs with the given id.
+
+        :param catalogue_category_id: ID of the catalogue category to obtain the breadcrumbs of.
+        """
 
         self._get_response = self.test_client.get(f"/v1/catalogue-categories/{catalogue_category_id}/breadcrumbs")
 
-    def get_last_catalogue_category_breadcrumbs(self):
-        """Gets the last catalogue category posted's breadcrumbs"""
+    def get_last_catalogue_category_breadcrumbs(self) -> None:
+        """Gets the last catalogue category posted's breadcrumbs."""
 
         self.get_catalogue_category_breadcrumbs(self._post_response.json()["id"])
 
-    def check_get_catalogue_categories_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool):
-        """Checks that a prior call to 'get_catalogue_category_breadcrumbs' gave a successful response with the
-        expected data returned
+    def check_get_catalogue_categories_breadcrumbs_success(
+        self, expected_trail_length: int, expected_full_trail: bool
+    ) -> None:
+        """
+        Checks that a prior call to 'get_catalogue_category_breadcrumbs' gave a successful response with the
+        expected data returned.
+
+        :param expected_trail_length: Expected length of the breadcrumbs trail.
+        :param expected_full_trail: Whether the expected trail is a full trail or not.
         """
 
         assert self._get_response.status_code == 200
@@ -456,19 +509,23 @@ class GetBreadcrumbsDSL(GetDSL):
             "full_trail": expected_full_trail,
         }
 
-    def check_get_catalogue_categories_breadcrumbs_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'get_catalogue_category_breadcrumbs' gave a failed response with the expected
-        code and error message"""
+    def check_get_catalogue_categories_breadcrumbs_failed_with_message(self, status_code: int, detail: str) -> None:
+        """Checks that a prior call to `get_catalogue_category_breadcrumbs` gave a failed response with the expected
+        code and error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
 
         assert self._get_response.status_code == status_code
         assert self._get_response.json()["detail"] == detail
 
 
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
-    """Tests for getting a system's breadcrumbs"""
+    """Tests for getting a system's breadcrumbs."""
 
     def test_get_breadcrumbs_when_no_parent(self):
-        """Test getting a system's breadcrumbs when the system has no parent"""
+        """Test getting a system's breadcrumbs when the system has no parent."""
 
         self.post_nested_catalogue_categories(1)
         self.get_last_catalogue_category_breadcrumbs()
@@ -476,7 +533,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
     def test_get_breadcrumbs_when_trail_length_less_than_maximum(self):
         """Test getting a system's breadcrumbs when the full system trail should be less than the maximum trail
-        length"""
+        length."""
 
         self.post_nested_catalogue_categories(BREADCRUMBS_TRAIL_MAX_LENGTH - 1)
         self.get_last_catalogue_category_breadcrumbs()
@@ -486,7 +543,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
     def test_get_breadcrumbs_when_trail_length_maximum(self):
         """Test getting a system's breadcrumbs when the full system trail should be equal to the maximum trail
-        length"""
+        length."""
 
         self.post_nested_catalogue_categories(BREADCRUMBS_TRAIL_MAX_LENGTH)
         self.get_last_catalogue_category_breadcrumbs()
@@ -495,7 +552,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         )
 
     def test_get_breadcrumbs_when_trail_length_greater_maximum(self):
-        """Test getting a system's breadcrumbs when the full system trail exceeds the maximum trail length"""
+        """Test getting a system's breadcrumbs when the full system trail exceeds the maximum trail length."""
 
         self.post_nested_catalogue_categories(BREADCRUMBS_TRAIL_MAX_LENGTH + 1)
         self.get_last_catalogue_category_breadcrumbs()
@@ -504,29 +561,38 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         )
 
     def test_get_breadcrumbs_with_non_existent_id(self):
-        """Test getting a system's breadcrumbs when given a non-existent system id"""
+        """Test getting a system's breadcrumbs when given a non-existent system id."""
 
         self.get_catalogue_category_breadcrumbs(str(ObjectId()))
         self.check_get_catalogue_categories_breadcrumbs_failed_with_message(404, "Catalogue category not found")
 
     def test_get_breadcrumbs_with_invalid_id(self):
-        """Test getting a system's breadcrumbs when given an invalid system id"""
+        """Test getting a system's breadcrumbs when given an invalid system id."""
 
         self.get_catalogue_category_breadcrumbs("invalid_id")
         self.check_get_catalogue_categories_breadcrumbs_failed_with_message(404, "Catalogue category not found")
 
 
 class ListDSL(GetBreadcrumbsDSL):
-    """Base class for list tests"""
+    """Base class for list tests."""
 
-    def get_catalogue_categories(self, filters: dict):
-        """Gets a list catalogue categories with the given filters"""
+    def get_catalogue_categories(self, filters: dict) -> None:
+        """
+        Gets a list catalogue categories with the given filters.
+
+        :param filters: Filters to use in the request.
+        """
 
         self._get_response = self.test_client.get("/v1/catalogue-categories", params=filters)
 
     def post_test_catalogue_category_with_child(self) -> list[dict]:
-        """Posts a catalogue category with a single child and returns their expected responses when returned by the
-        list endpoint"""
+        """
+        Posts a catalogue category with a single child and returns their expected responses when returned by the
+        list endpoint.
+
+        :return: List of dictionaries containing the expected catalogue category data returned from a get endpoint in
+                 the form of a `CatalogueCategoryGetSchema`.
+        """
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.post_catalogue_category(
@@ -538,19 +604,25 @@ class ListDSL(GetBreadcrumbsDSL):
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": parent_id},
         ]
 
-    def check_get_catalogue_categories_success(self, expected_systems_get_data: list[dict]):
-        """Checks that a prior call to 'get_catalogue_categories' gave a successful response with the expected data
-        returned"""
+    def check_get_catalogue_categories_success(self, expected_catalogue_categories_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_catalogue_categories` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected system data
+                                                returned as would be required for `CatalogueCategoryGetSchema`'s.
+        """
 
         assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_systems_get_data
+        assert self._get_response.json() == expected_catalogue_categories_get_data
 
 
 class TestList(ListDSL):
-    """Tests for getting a list of catalogue categories"""
+    """Tests for getting a list of catalogue categories."""
 
     def test_list_with_no_filters(self):
-        """Test getting a list of all catalogue categories with no filters provided
+        """
+        Test getting a list of all catalogue categories with no filters provided.
 
         Posts a catalogue category with a child and expects both to be returned.
         """
@@ -560,7 +632,8 @@ class TestList(ListDSL):
         self.check_get_catalogue_categories_success(catalogue_categories)
 
     def test_list_with_parent_id_filter(self):
-        """Test getting a list of all catalogue categories with a parent_id filter provided
+        """
+        Test getting a list of all catalogue categories with a parent_id filter provided.
 
         Posts a catalogue category with a child and then filter using the parent_id expecting only the second
         catalogue category to be returned.
@@ -571,7 +644,8 @@ class TestList(ListDSL):
         self.check_get_catalogue_categories_success([catalogue_categories[1]])
 
     def test_list_with_null_parent_id_filter(self):
-        """Test getting a list of all catalogue categories with a parent_id filter of "null" provided
+        """
+        Test getting a list of all catalogue categories with a parent_id filter of "null" provided.
 
         Posts a catalogue category with a child and then filter using a parent_id of "null" expecting only
         the first parent catalogue category to be returned.
@@ -582,13 +656,13 @@ class TestList(ListDSL):
         self.check_get_catalogue_categories_success([catalogue_categories[0]])
 
     def test_list_with_parent_id_filter_with_no_matching_results(self):
-        """Test getting a list of all systems with a parent_id filter that returns no results"""
+        """Test getting a list of all systems with a parent_id filter that returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": str(ObjectId())})
         self.check_get_catalogue_categories_success([])
 
     def test_list_with_invalid_parent_id_filter(self):
-        """Test getting a list of all systems with an invalid parent_id filter returns no results"""
+        """Test getting a list of all systems with an invalid parent_id filter returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": "invalid-id"})
         self.check_get_catalogue_categories_success([])
@@ -597,17 +671,18 @@ class TestList(ListDSL):
 # pylint:disable=fixme
 # TODO: Look into abstracting this? It's the same as systems except for the names
 class UpdateDSL(ListDSL):
-    """Base class for update tests"""
+    """Base class for update tests."""
 
     _patch_response: Response
 
-    def patch_catalogue_category(self, catalogue_category_id: str, catalogue_category_update_data: dict):
-        """Updates a catalogue category with the given id
+    def patch_catalogue_category(self, catalogue_category_id: str, catalogue_category_update_data: dict) -> None:
+        """
+        Updates a catalogue category with the given id.
 
-        :param catalogue_category_id: ID of the catalogue category to patch
+        :param catalogue_category_id: ID of the catalogue category to patch.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
-                                               CatalogueCategoryPatchSchema but with any unit_id's replaced by the
-                                               'unit' value in its properties as the ids will be added automatically
+                                               `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
+                                               'unit' value in its properties as the ids will be added automatically.
         """
 
         # Replace any unit values with unit ids
@@ -619,8 +694,8 @@ class UpdateDSL(ListDSL):
             f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_update_data
         )
 
-    def post_child_catalogue_category(self):
-        """Utility method that posts a child catalogue category for the last catalogue category posted"""
+    def post_child_catalogue_category(self) -> None:
+        """Utility method that posts a child catalogue category for the last catalogue category posted."""
 
         # pylint:disable=fixme
         # TODO: Could change post_catalogue_category logic and use post_catalogue_category - right now a test like
@@ -635,8 +710,8 @@ class UpdateDSL(ListDSL):
             },
         )
 
-    def post_child_catalogue_item(self):
-        """Utility method that posts a child catalogue item for the last catalogue category posted"""
+    def post_child_catalogue_item(self) -> None:
+        """Utility method that posts a child catalogue item for the last catalogue category posted."""
 
         # pylint:disable=fixme
         # TODO: This should be cleaned up in future
@@ -673,9 +748,17 @@ class UpdateDSL(ListDSL):
         self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
         # pylint: enable=duplicate-code
 
-    def patch_properties_with_property_with_allowed_values(self, property_type: str, allowed_values_post_data: dict):
-        """Utility method that patches the last posted catalogue category to have a single property named 'property' of
-        a given type with a given set of allowed values"""
+    def patch_properties_with_property_with_allowed_values(
+        self, property_type: str, allowed_values_post_data: dict
+    ) -> None:
+        """
+        Utility method that patches the last posted catalogue category to have a single property named 'property' of
+        a given type with a given set of allowed values.
+
+        :param property_type: Type of the property to patch.
+        :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
+                                         `AllowedValuesSchema`.
+        """
 
         self.patch_catalogue_category(
             self._post_response.json()["id"],
@@ -691,35 +774,50 @@ class UpdateDSL(ListDSL):
             },
         )
 
-    def check_patch_catalogue_category_response_success(self, expected_catalogue_category_get_data: dict):
-        """Checks that a prior call to 'patch_catalogue_category' gave a successful response with the expected data
-        returned"""
+    def check_patch_catalogue_category_response_success(self, expected_catalogue_category_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_catalogue_category` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
+                                                     be required for a `CatalogueCategoryGetSchema`.
+        """
 
         assert self._patch_response.status_code == 200
         assert self._patch_response.json() == expected_catalogue_category_get_data
 
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(self._post_response, self._patch_response)
 
-    def check_patch_catalogue_category_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'patch_catalogue_category' gave a failed response with the expected code and
-        error message"""
+    def check_patch_catalogue_category_failed_with_message(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `patch_catalogue_category` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
 
         assert self._patch_response.status_code == status_code
         assert self._patch_response.json()["detail"] == detail
 
-    def check_patch_catalogue_category_failed_with_validation_message(self, status_code: int, message: str):
-        """Checks that a prior call to 'patch_catalogue_category' gave a failed response with the expected code and
-        pydantic validation error message"""
+    def check_patch_catalogue_category_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `patch_catalogue_category` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
 
         assert self._patch_response.status_code == status_code
         assert self._patch_response.json()["detail"][0]["msg"] == message
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a catalogue category"""
+    """Tests for updating a catalogue category."""
 
     def test_partial_update_name(self):
-        """Test updating every field of a system"""
+        """Test updating every field of a system."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"name": "New Name"})
@@ -728,7 +826,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id(self):
-        """Test updating the parent_id of a catalogue category"""
+        """Test updating the parent_id of a catalogue category."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         catalogue_category_id = self.post_catalogue_category(
@@ -742,7 +840,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
         """Test updating the parent_id of a catalogue category so that its name conflicts with one already in that
-        other catalogue category"""
+        other catalogue category."""
 
         # System with child
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
@@ -764,7 +862,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_child_of_self(self):
-        """Test updating the parent_id of a catalogue category to one of its own children"""
+        """Test updating the parent_id of a catalogue category to one of its own children."""
 
         catalogue_category_ids = self.post_nested_catalogue_categories(2)
         self.patch_catalogue_category(catalogue_category_ids[0], {"parent_id": catalogue_category_ids[1]})
@@ -773,7 +871,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_leaf(self):
-        """Test updating the parent_id of a catalogue category to the id of a leaf catalogue category"""
+        """Test updating the parent_id of a catalogue category to the id of a leaf catalogue category."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
@@ -784,7 +882,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_non_existent(self):
-        """Test updating the parent_id of a catalogue category to a non-existent catalogue category"""
+        """Test updating the parent_id of a catalogue category to a non-existent catalogue category."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": str(ObjectId())})
@@ -793,7 +891,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_invalid_id(self):
-        """Test updating the parent_id of a catalogue category to an invalid id"""
+        """Test updating the parent_id of a catalogue category to an invalid id."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": "invalid-id"})
@@ -802,7 +900,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_name_to_duplicate(self):
-        """Test updating the name of a catalogue category to conflict with a pre-existing one"""
+        """Test updating the name of a catalogue category to conflict with a pre-existing one."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         catalogue_category_id = self.post_catalogue_category(
@@ -817,7 +915,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_name_capitalisation(self):
         """Test updating the capitalisation of the name of a catalogue category (to ensure it the check doesn't
-        confuse with duplicates)"""
+        confuse with duplicates)."""
 
         catalogue_category_id = self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "name": "Test catalogue category"}
@@ -832,7 +930,8 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_non_leaf_all_valid_values_when_no_children(self):
-        """Test updating the all values of a non leaf catalogue category that can be modified when it has no children"""
+        """Test updating the all values of a non leaf catalogue category that can be modified when it has no
+        children."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
@@ -848,7 +947,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_non_leaf_to_leaf_without_properties(self):
-        """Test updating a non-leaf catalogue category to a leaf catalogue category without any properties provided"""
+        """Test updating a non-leaf catalogue category to a leaf catalogue category without any properties provided."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
@@ -861,7 +960,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_non_leaf_all_valid_values_when_has_child_catalogue_category(self):
         """Test updating the all values of a non leaf catalogue category that can be modified when it has a child
-        catalogue category"""
+        catalogue category."""
 
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
@@ -876,7 +975,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_non_leaf_to_leaf_when_has_child_catalogue_category(self):
-        """Test updating a non-leaf catalogue category to a leaf when it has a child catalogue category"""
+        """Test updating a non-leaf catalogue category to a leaf when it has a child catalogue category."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.post_child_catalogue_category()
@@ -888,7 +987,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_all_valid_values_when_no_children(self):
-        """Test updating the all values of a leaf catalogue category that can be modified when it has no children"""
+        """Test updating the all values of a leaf catalogue category that can be modified when it has no children."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
@@ -906,7 +1005,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_all_valid_values_when_has_child_catalogue_item(self):
         """Test updating the all values of a non leaf catalogue category that can be modified when it has a child
-        catalogue item"""
+        catalogue item."""
 
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
@@ -921,7 +1020,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_to_non_leaf_when_has_child_catalogue_item(self):
-        """Test updating a leaf catalogue category to a non-leaf when it has a child catalogue item"""
+        """Test updating a leaf catalogue category to a non-leaf when it has a child catalogue item."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.post_child_catalogue_item()
@@ -933,7 +1032,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_properties_when_has_child_catalogue_item(self):
-        """Test updating a leaf catalogue category's properties when it has a child catalogue item"""
+        """Test updating a leaf catalogue category's properties when it has a child catalogue item."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.post_child_catalogue_item()
@@ -946,7 +1045,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_to_non_leaf_with_properties(self):
         """Test updating a leaf catalogue category to a non-leaf catalogue category with properties provided (ensures
-        they are ignored)"""
+        they are ignored)."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         new_parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
@@ -966,7 +1065,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_is_leaf_no_children(self):
-        """Test updating the value of is_leaf for a catalogue category without any children"""
+        """Test updating the value of is_leaf for a catalogue category without any children."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"is_leaf": True})
@@ -975,7 +1074,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_is_leaf_with_child_catalogue_category(self):
-        """Test updating the value of is_leaf for a catalogue category with a child catalogue category"""
+        """Test updating the value of is_leaf for a catalogue category with a child catalogue category."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.post_catalogue_category(
@@ -988,7 +1087,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_properties(self):
-        """Test updating a leaf catalogue category's properties"""
+        """Test updating a leaf catalogue category's properties."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
@@ -1005,7 +1104,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_with_properties_with_non_existent_unit_id(self):
-        """Test updating a leaf catalogue category's properties to have a property with a non-existent unit id"""
+        """Test updating a leaf catalogue category's properties to have a property with a non-existent unit id."""
 
         self.add_unit_value_and_id("mm", str(ObjectId()))
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
@@ -1015,7 +1114,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_message(422, "The specified unit does not exist")
 
     def test_partial_update_leaf_with_properties_with_invalid_unit_id(self):
-        """Test updating a leaf catalogue category's properties to have a property with an invalid unit id provided"""
+        """Test updating a leaf catalogue category's properties to have a property with an invalid unit id provided."""
 
         self.add_unit_value_and_id("mm", "invalid-id")
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
@@ -1025,7 +1124,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_message(422, "The specified unit does not exist")
 
     def test_partial_update_leaf_with_duplicate_properties(self):
-        """Test updating a leaf catalogue category with duplicate properties provided"""
+        """Test updating a leaf catalogue category with duplicate properties provided."""
 
         property_data = CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY
 
@@ -1036,7 +1135,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_with_property_with_invalid_type(self):
-        """Test updating a leaf catalogue category's properties to have a property with an invalid type provided"""
+        """Test updating a leaf catalogue category's properties to have a property with an invalid type provided."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_catalogue_category(
@@ -1050,7 +1149,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_with_boolean_property_with_unit(self):
-        """Test updating a leaf catalogue category's properties to have a boolean property with a unit"""
+        """Test updating a leaf catalogue category's properties to have a boolean property with a unit."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
@@ -1068,7 +1167,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_property_with_invalid_allowed_values_type(self):
         """Test updating a leaf catalogue category's properties to have a property with an invalid allowed values
-        type"""
+        type."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_properties_with_property_with_allowed_values("string", {"type": "invalid-type"})
@@ -1079,7 +1178,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_property_with_empty_allowed_values_list(self):
         """Test updating a leaf catalogue category's properties to have a property with an allowed values list that is
-        empty"""
+        empty."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_properties_with_property_with_allowed_values("string", {"type": "list", "values": []})
@@ -1090,8 +1189,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_with_string_property_with_allowed_values_list_invalid_value(self):
         """Test updating a leaf catalogue category's properties to have a string property with an allowed values list
-        with an invalid
-        number value in it"""
+        with an invalid number value in it."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_properties_with_property_with_allowed_values(
@@ -1105,7 +1203,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_with_string_property_with_allowed_values_list_duplicate_value(self):
         """Test updating a leaf catalogue category's properties to have a string property with an allowed values list
-        with a duplicate string value in it"""
+        with a duplicate string value in it."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         # Capitalisation is different as it shouldn't matter for this test
@@ -1119,7 +1217,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_with_number_property_with_allowed_values_list_invalid_value(self):
         """Test updating a leaf catalogue category's properties to have a number property with an allowed values list
-        with an invalid number value in it"""
+        with an invalid number value in it."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_properties_with_property_with_allowed_values("number", {"type": "list", "values": [1, 2, "3", 4]})
@@ -1131,7 +1229,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_with_number_property_with_allowed_values_list_duplicate_value(self):
         """Test updating a leaf catalogue category's properties to have a number property with an allowed values list
-        with a duplicate number value in it"""
+        with a duplicate number value in it."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_properties_with_property_with_allowed_values("number", {"type": "list", "values": [1, 2, 1, 3]})
@@ -1142,7 +1240,7 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_leaf_with_boolean_property_with_allowed_values_list(self):
         """Test updating a leaf catalogue category's properties to have a boolean property with an allowed values
-        list"""
+        list."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_properties_with_property_with_allowed_values("boolean", {"type": "list", "values": [True, False]})
@@ -1152,47 +1250,56 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_with_non_existent_id(self):
-        """Test updating a non-existent catalogue category"""
+        """Test updating a non-existent catalogue category."""
 
         self.patch_catalogue_category(str(ObjectId()), {})
         self.check_patch_catalogue_category_failed_with_message(404, "Catalogue category not found")
 
     def test_partial_update_invalid_id(self):
-        """Test updating a catalogue category with an invalid id"""
+        """Test updating a catalogue category with an invalid id."""
 
         self.patch_catalogue_category("invalid-id", {})
         self.check_patch_catalogue_category_failed_with_message(404, "Catalogue category not found")
 
 
 class DeleteDSL(UpdateDSL):
-    """Base class for delete tests"""
+    """Base class for delete tests."""
 
     _delete_response: Response
 
-    def delete_catalogue_category(self, system_id: str):
-        """Deletes a catalogue_category with the given id"""
+    def delete_catalogue_category(self, catalogue_category_id: str) -> None:
+        """
+        Deletes a catalogue_category with the given id.
 
-        self._delete_response = self.test_client.delete(f"/v1/catalogue-categories/{system_id}")
+        :param catalogue_category_id: ID of the catalogue category to be deleted.
+        """
 
-    def check_delete_catalogue_category_success(self):
-        """Checks that a prior call to 'delete_catalogue_category' gave a successful response with the expected data
-        returned"""
+        self._delete_response = self.test_client.delete(f"/v1/catalogue-categories/{catalogue_category_id}")
+
+    def check_delete_catalogue_category_success(self) -> None:
+        """Checks that a prior call to `delete_catalogue_category` gave a successful response with the expected data
+        returned."""
 
         assert self._delete_response.status_code == 204
 
-    def check_delete_catalogue_category_failed_with_message(self, status_code: int, detail: str):
-        """Checks that a prior call to 'delete_catalogue_category' gave a failed response with the expected code and
-        error message"""
+    def check_delete_catalogue_category_failed_with_message(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `delete_catalogue_category` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
 
         assert self._delete_response.status_code == status_code
         assert self._delete_response.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
-    """Tests for deleting a catalogue category"""
+    """Tests for deleting a catalogue category."""
 
     def test_delete(self):
-        """Test deleting a catalogue category"""
+        """Test deleting a catalogue category."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.delete_catalogue_category(catalogue_category_id)
@@ -1202,7 +1309,7 @@ class TestDelete(DeleteDSL):
         self.check_get_catalogue_category_failed_with_message(404, "Catalogue category not found")
 
     def test_delete_with_child_catalogue_category(self):
-        """Test deleting a catalogue category with a child catalogue category"""
+        """Test deleting a catalogue category with a child catalogue category."""
 
         catalogue_category_ids = self.post_nested_catalogue_categories(2)
         self.delete_catalogue_category(catalogue_category_ids[0])
@@ -1211,7 +1318,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_with_child_item(self):
-        """Test deleting a catalogue category with a child catalogue item"""
+        """Test deleting a catalogue category with a child catalogue item."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
         self.post_child_catalogue_item()
@@ -1222,13 +1329,13 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_with_non_existent_id(self):
-        """Test deleting a non-existent catalogue category"""
+        """Test deleting a non-existent catalogue category."""
 
         self.delete_catalogue_category(str(ObjectId()))
         self.check_delete_catalogue_category_failed_with_message(404, "Catalogue category not found")
 
     def test_delete_with_invalid_id(self):
-        """Test deleting a catalogue category with an invalid id"""
+        """Test deleting a catalogue category with an invalid id."""
 
         self.delete_catalogue_category("invalid_id")
         self.check_delete_catalogue_category_failed_with_message(404, "Catalogue category not found")
