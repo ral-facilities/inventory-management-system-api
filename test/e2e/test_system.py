@@ -1,5 +1,5 @@
 """
-End-to-End tests for the system router
+End-to-End tests for the system router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
@@ -28,7 +28,7 @@ from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LE
 
 
 class CreateDSL:
-    """Base class for create tests"""
+    """Base class for create tests."""
 
     test_client: TestClient
 
@@ -48,8 +48,8 @@ class CreateDSL:
                                  `SystemPostSchema`.
         :return: ID of the created system (or `None` if not successful).
         """
-        self._post_response = self.test_client.post("/v1/systems", json=system_post_data)
 
+        self._post_response = self.test_client.post("/v1/systems", json=system_post_data)
         return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
 
     def check_post_system_success(self, expected_system_get_data: dict) -> None:
@@ -428,8 +428,7 @@ class UpdateDSL(ListDSL):
         Updates a system with the given id.
 
         :param system_id: ID of the system to patch.
-        :param system_patch_data: Dictionary containing the basic patch data as would be required for a
-                                  `SystemPatchSchema`.
+        :param system_patch_data: Dictionary containing the patch data as would be required for a `SystemPatchSchema`.
         """
 
         self._patch_response = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
