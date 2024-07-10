@@ -20,7 +20,7 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 MANUFACTURER_POST_DATA_A = {
     "name": "Manufacturer A",
-    "url": "http://testUrl.co.uk",
+    "url": "http://testurl.co.uk/",
     "address": {
         "address_line": "1 Example Street",
         "town": "Oxford",
@@ -33,7 +33,7 @@ MANUFACTURER_POST_DATA_A = {
 
 MANUFACTURER_POST_DATA_B = {
     "name": "Manufacturer B",
-    "url": "http://example.co.uk",
+    "url": "http://example.co.uk/",
     "address": {
         "address_line": "2 Example Street",
         "town": "Oxford",
@@ -52,6 +52,37 @@ MANUFACTURER_IN_DATA_A = {
 MANUFACTURER_IN_DATA_B = {
     **MANUFACTURER_POST_DATA_B,
     "code": "manufacturer-b",
+}
+
+MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY = {
+    "name": "Manufacturer Test Required Values Only",
+    "address": {
+        "address_line": "1 Example Street",
+        "country": "United Kingdom",
+        "postcode": "OX1 2AB",
+    },
+}
+
+MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY = {
+    **MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "address": {**MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["address"], "town": None, "county": None},
+    "id": ANY,
+    "code": "manufacturer-test-required-values-only",
+    "url": None,
+    "telephone": None,
+}
+
+MANUFACTURER_POST_DATA_ALL_VALUES = {
+    **MANUFACTURER_POST_DATA_A,
+    "name": "Manufacturer Test All Values",
+}
+
+MANUFACTURER_GET_DATA_ALL_VALUES = {
+    **MANUFACTURER_POST_DATA_ALL_VALUES,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "code": "manufacturer-test-all-values",
 }
 
 # --------------------------------- SYSTEMS ---------------------------------

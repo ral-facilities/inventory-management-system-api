@@ -2052,6 +2052,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_item
     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
     manufacturer_d_id = response.json()["id"]
 
+    # pylint: disable=duplicate-code
     manufacturer_e_post = {
         "name": "Manufacturer E",
         "url": "http://example.com/",
@@ -2064,6 +2065,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_item
         },
         "telephone": "07384723948",
     }
+    # pylint: enable=duplicate-code
     response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
     manufacturer_e_id = response.json()["id"]
 

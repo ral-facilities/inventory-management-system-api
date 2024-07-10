@@ -2,313 +2,336 @@
 End-to-End tests for the manufacturer router.
 """
 
-from test.conftest import add_ids_to_properties
-from test.e2e.mock_schemas import CREATED_MODIFIED_VALUES_EXPECTED
-from test.e2e.test_unit import UNIT_POST_A
-from unittest.mock import ANY
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
 
+from typing import Optional
+
+from test.mock_data import (
+    MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_ALL_VALUES,
+    MANUFACTURER_GET_DATA_ALL_VALUES,
+)
+
+import pytest
 from bson import ObjectId
-
-MANUFACTURER_A_POST = {
-    "name": "Manufacturer A",
-    "url": "http://example.com/",
-    "address": {
-        "address_line": "1 Example Street",
-        "town": "Oxford",
-        "county": "Oxfordshire",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    },
-    "telephone": "0932348348",
-}
-
-MANUFACTURER_A_POST_EXPECTED = {
-    **MANUFACTURER_A_POST,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "code": "manufacturer-a",
-}
-
-MANUFACTURER_B_POST = {
-    "name": "Manufacturer B",
-    "url": "http://example.com/",
-    "address": {
-        "address_line": "1 Example Street",
-        "town": "Oxford",
-        "county": "Oxfordshire",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    },
-    "telephone": "05940545",
-}
-
-MANUFACTURER_B_POST_EXPECTED = {
-    **MANUFACTURER_B_POST,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "code": "manufacturer-b",
-}
-
-MANUFACTURER_POST_REQUIRED_ONLY = {
-    "name": "Manufacturer A",
-    "address": {
-        "address_line": "1 Example Street",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    },
-}
-
-MANUFACTURER_POST_REQUIRED_ONLY_EXPECTED = {
-    **MANUFACTURER_POST_REQUIRED_ONLY,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "code": "manufacturer-a",
-    "url": None,
-    "address": {**MANUFACTURER_POST_REQUIRED_ONLY["address"], "town": None, "county": None},
-    "telephone": None,
-}
+from fastapi.testclient import TestClient
+from httpx import Response
 
 
-def test_create_manufacturer(test_client):
-    """Test creating a manufacturer"""
+class CreateDSL:
+    """Base class for create tests."""
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+    test_client: TestClient
 
-    assert response.status_code == 201
-    assert response.json() == MANUFACTURER_A_POST_EXPECTED
+    _post_response: Response
 
+    @pytest.fixture(autouse=True)
+    def setup(self, test_client):
+        """Setup fixtures"""
+        self.test_client = test_client
 
-def test_create_manufacturer_with_only_mandatory_fields(test_client):
-    """Test creating a manufacturer with only mandatory fields"""
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_REQUIRED_ONLY)
+    def post_manufacturer(self, manufacturer_post_data: dict) -> Optional[str]:
+        """
+        Posts a manufacturer with the given data, returns the ID of the created manufacturer if successful.
 
-    print(response.json())
+        :param manufacturer_post_data: Dictionary containing the manufacturer data that should be posted.
+        :return: ID of the created manufacturer (or `None` if not successful).
+        """
+        self._post_response = self.test_client.post("/v1/manufacturers", json=manufacturer_post_data)
+        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
 
-    assert response.status_code == 201
-    assert response.json() == MANUFACTURER_POST_REQUIRED_ONLY_EXPECTED
+    def check_post_manufacturer_success(self, expected_manufacturer_get_data: dict) -> None:
+        """
+        Checks that a prior call to `post_manufacturer` gave a successful response with the expected data returned.
 
+        :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data that should be
+            returned.
+        """
+        assert self._post_response.status_code == 201
+        assert self._post_response.json() == expected_manufacturer_get_data
 
-def test_check_duplicate_name_within_manufacturer(test_client):
-    """Test creating a manufacturer with a duplicate name"""
+    def check_post_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that prior call to `post_manufacturer` gave a failed response with the expected code and detail.
 
-    test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._post_response.status_code == status_code
+        assert self._post_response.json()["detail"] == detail
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+    def check_post_manufacturer_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `post_manufacturers` gave a failed response with the expected code and pydantic
+        validation error message.
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "A manufacturer with the same name has been found"
-
-
-def test_list(test_client):
-    """Test getting all manufacturers"""
-
-    test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
-    test_client.post("/v1/manufacturers", json=MANUFACTURER_B_POST)
-
-    response = test_client.get("/v1/manufacturers")
-
-    assert response.status_code == 200
-
-    manufacturers = list(response.json())
-
-    assert len(manufacturers) == 2
-    assert manufacturers[0] == MANUFACTURER_A_POST_EXPECTED
-    assert manufacturers[1] == MANUFACTURER_B_POST_EXPECTED
-
-
-def test_list_when_no_manufacturers(test_client):
-    """Test trying to get all manufacturers when there are none in the database"""
-
-    response = test_client.get("/v1/manufacturers")
-
-    assert response.status_code == 200
-    manufacturers = list(response.json())
-    assert not manufacturers
+        :param status_code: Expected status code to be returned.
+        :param message: Expected pydantic validation error message to be returned.
+        """
+        assert self._post_response.status_code == status_code
+        assert self._post_response.json()["detail"][0]["msg"] == message
 
 
-def test_get_manufacturer_with_id(test_client):
-    """Test getting a manufacturer by ID"""
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+class TestCreate(CreateDSL):
+    """Tests for creating a manufacturer."""
 
-    response = test_client.get(f"/v1/manufacturers/{response.json()['id']}")
+    def test_create_with_only_require_values_provided(self):
+        """Test creating a manufacturer with only required values provided."""
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_manufacturer_success(MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY)
 
-    assert response.status_code == 200
-    assert response.json() == MANUFACTURER_A_POST_EXPECTED
+    def test_create_with_all_values_provided(self):
+        """Test creating a manufacturer with all values provided."""
+        self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.check_post_manufacturer_success(MANUFACTURER_GET_DATA_ALL_VALUES)
 
-
-def test_get_manufacturer_with_invalid_id(test_client):
-    """Test getting a manufacturer with an invalid id"""
-
-    response = test_client.get("/v1/manufacturers/invalid")
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Manufacturer not found"
-
-
-def test_get_manufacturer_with_non_existent_id(test_client):
-    """Test getting a manufacturer with an non-existent id"""
-
-    response = test_client.get(f"/v1/manufacturers/{str(ObjectId())}")
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Manufacturer not found"
+    def test_create_with_duplicate_name(self):
+        """Test creating a manufacturer with the same name as another."""
+        self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.check_post_manufacturer_failed_with_detail(409, "A manufacturer with the same name already exists")
 
 
-def test_update(test_client):
-    """Test updating a manufacturer"""
+class GetDSL(CreateDSL):
+    """Base class for get tests."""
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+    _get_response = Response
 
-    manufacturer_patch = {
-        "name": "Manufacturer B",
-        "url": "http://test.co.uk/",
-        "address": {"address_line": "2 My Avenue"},
-        "telephone": "07569585584",
-    }
-    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
+    def get_manufacturer(self, manufacturer_id: str) -> None:
+        """
+        Gets a manufacturer with the given ID.
 
-    assert response.status_code == 200
-    assert response.json() == {
-        **MANUFACTURER_A_POST_EXPECTED,
-        **manufacturer_patch,
-        "address": {**MANUFACTURER_A_POST["address"], **manufacturer_patch["address"]},
-        "code": "manufacturer-b",
-    }
+        :param manufacturer_id: ID of the manufacturer to be obtained.
+        """
+        self._get_response = self.test_client.get(f"/v1/manufacturers/{manufacturer_id}")
+
+    def check_get_manufacturer_success(self, expected_manufacturer_get_data: dict) -> None:
+        """
+        Checks that a prior call to `get_manufacturer` gave a successful response with the expected data returned.
+
+        :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data that should be
+            returned.
+        """
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_manufacturer_get_data
+
+    def check_get_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that prior call to `get_manufacturer` gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
 
 
-def test_partial_address_update(test_client):
-    """Test updating a manufacturer's address"""
+class TestGet(GetDSL):
+    """Tests for getting a manufacturer."""
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
+    def test_get(self):
+        """Test getting a manufacturer."""
+        manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.get_manufacturer(manufacturer_id)
+        self.check_get_manufacturer_success(MANUFACTURER_GET_DATA_ALL_VALUES)
 
-    manufacturer_patch = {
-        "address": {
-            "town": "test",
+    def test_get_with_non_existent_id(self):
+        """Test getting a manufacturer with a non-existent ID."""
+        self.get_manufacturer(str(ObjectId()))
+        self.check_get_manufacturer_failed_with_detail(404, "Manufacturer not found")
+
+    def test_get_with_invalid_id(self):
+        """Test getting a manufacturer with an invalid ID."""
+        self.get_manufacturer("invalid-id")
+        self.check_get_manufacturer_failed_with_detail(404, "Manufacturer not found")
+
+
+class ListDSL(GetDSL):
+    """Base class for list tests."""
+
+    def get_manufacturers(self) -> None:
+        """Gets a list of manufacturers."""
+        self._get_response = self.test_client.get("/v1/manufacturers")
+
+    def check_get_manufacturers_success(self, expected_manufacturers_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_manufacturers` gave a successful response with the expected data returned.
+
+        :param expected_manufacturers_get_data: List of dictionaries containing the expected manufacturer data that
+            should be returned.
+        """
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_manufacturers_get_data
+
+
+class TestList(ListDSL):
+    """Tests for getting a list of manufacturers."""
+
+    def test_list(self):
+        """Test getting a list of all manufacturers."""
+        self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.get_manufacturers()
+        self.check_get_manufacturers_success(
+            [MANUFACTURER_GET_DATA_ALL_VALUES, MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY]
+        )
+
+    def test_list_no_manufacturers(self):
+        """Test getting a list of all manufacturers when there are no manufactuers."""
+        self.get_manufacturers()
+        self.check_get_manufacturers_success([])
+
+
+class UpdateDSL(ListDSL):
+    """Base class for update tests."""
+
+    _patch_response: Response
+
+    def patch_manufacturer(self, manufacturer_id: str, manufacturer_patch_data: dict) -> None:
+        """
+        Updates a manufacturer with the given ID.
+
+        :param manufacturer_id: ID of the manufacturer to be updated.
+        :param manufacturer_patch_data: Dictionary containing the manufacturer patch data.
+        """
+        self._patch_response = self.test_client.patch(
+            f"/v1/manufacturers/{manufacturer_id}", json=manufacturer_patch_data
+        )
+
+    def check_patch_manufacturer_success(self, expected_manufacturer_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_manufacturer` gave a successful response with the expected data returned.
+
+        :param expected_manufacturer_get_data: Dictionaries containing the expected manufacturer data that should be
+            returned.
+        """
+        assert self._patch_response.status_code == 200
+        assert self._patch_response.json() == expected_manufacturer_get_data
+
+    def check_patch_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that prior call to `patch_manufacturer` gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._patch_response.status_code == status_code
+        assert self._patch_response.json()["detail"] == detail
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a manufacturer."""
+
+    def test_partial_update_all_fields(self):
+        """Test updating every field of a manufacturer."""
+        manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.patch_manufacturer(manufacturer_id, MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.check_patch_manufacturer_success(MANUFACTURER_GET_DATA_ALL_VALUES)
+
+    def test_partial_update_name_to_duplicate(self):
+        """Test updating the name of a manufacturer to conflict with a pre-existing one."""
+
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.patch_manufacturer(system_id, {"name": MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["name"]})
+        self.check_patch_manufacturer_failed_with_detail(409, "A manufacturer with the same name already exists")
+
+    def test_partial_update_name_capitalisation(self):
+        """Test updating a manufacturer when the capitalisation of the name is different (to ensure it the check doesn't
+        confuse with duplicates)."""
+        manufacturer_id = self.post_manufacturer(
+            {**MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Test manufacturer"}
+        )
+        self.patch_manufacturer(manufacturer_id, {"name": "Test Manufacturer"})
+        self.check_patch_manufacturer_success(
+            {**MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY, "name": "Test Manufacturer", "code": "test-manufacturer"}
+        )
+
+    def test_partial_update_with_non_existent_id(self):
+        """Test updating a non-existent manufacturer."""
+
+        self.patch_manufacturer(str(ObjectId()), {})
+        self.check_patch_manufacturer_failed_with_detail(404, "Manufacturer not found")
+
+    def test_partial_update_invalid_id(self):
+        """Test updating a manufacturer with an invalid ID."""
+        self.patch_manufacturer("invalid-id", {})
+        self.check_patch_manufacturer_failed_with_detail(404, "Manufacturer not found")
+
+
+class DeleteDSL(UpdateDSL):
+    """Base class for delete tests."""
+
+    _delete_response: Response
+
+    def delete_manufacturer(self, manufacturer_id: str) -> None:
+        """
+        Delete a manufacturer with the given ID.
+
+        :param manufacturer_id: ID of the manufacturer to be deleted.
+        """
+        self._delete_response = self.test_client.delete(f"/v1/manufacturers/{manufacturer_id}")
+
+    def check_delete_manufacturer_success(self) -> None:
+        """Checks that a prior call to `delete_manufacturer` gave a successful response."""
+        assert self._delete_response.status_code == 204
+
+    def check_delete_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to 'delete_manufacturer' gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._delete_response.status_code == status_code
+        assert self._delete_response.json()["detail"] == detail
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a manufacturer."""
+
+    def test_delete(self):
+        """Test deleting a manufacturer."""
+        manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.delete_manufacturer(manufacturer_id)
+        self.check_delete_manufacturer_success()
+
+        self.get_manufacturer(manufacturer_id)
+        self.check_get_manufacturer_failed_with_detail(404, "Manufacturer not found")
+
+    def test_delete_when_part_of_catalogue_item(self):
+        """Test deleting a manufacturer when it is part of a catalogue item."""
+        manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        # pylint:disable=fixme
+        # TODO: Reuse catalogue category and item data once catalogue category and item tests have been refactored
+        catalogue_category_post = {"name": "Category A", "is_leaf": True, "properties": []}
+        response = self.test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+        catalogue_category_id = response.json()["id"]
+
+        catalogue_item_post = {
+            "name": "Catalogue Item A",
+            "catalogue_category_id": catalogue_category_id,
+            "cost_gbp": 129.99,
+            "days_to_replace": 2.0,
+            "is_obsolete": False,
+            "manufacturer_id": manufacturer_id,
         }
-    }
-    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
+        self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
 
-    assert response.status_code == 200
-    assert response.json() == {
-        **MANUFACTURER_A_POST_EXPECTED,
-        "address": {**MANUFACTURER_A_POST["address"], **manufacturer_patch["address"]},
-    }
+        self.delete_manufacturer(manufacturer_id)
+        self.check_delete_manufacturer_failed_with_detail(
+            409, "The specified manufacturer is a part of a catalogue item"
+        )
 
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent manufacturer."""
+        self.delete_manufacturer(str(ObjectId()))
+        self.check_delete_manufacturer_failed_with_detail(404, "Manufacturer not found")
 
-def test_partial_update_capitalisation_of_name(test_client):
-    """Test updating a manufacturer when the capitalisation of the name is different"""
-
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
-
-    manufacturer_patch = {"name": "MaNuFaCtUrEr A"}
-    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
-
-    assert response.status_code == 200
-    assert response.json() == {**MANUFACTURER_A_POST_EXPECTED, **manufacturer_patch}
-
-
-def test_update_with_invalid_id(test_client):
-    """Test trying to update a manufacturer with an invalid ID"""
-
-    response = test_client.patch("/v1/manufacturers/invalid", json=MANUFACTURER_A_POST)
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "The specified manufacturer does not exist"
-
-
-def test_update_with_non_existent_id(test_client):
-    """Test trying to update a manufacturer with a non-existent ID"""
-    response = test_client.patch(f"/v1/manufacturers/{str(ObjectId())}", json=MANUFACTURER_A_POST)
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "The specified manufacturer does not exist"
-
-
-def test_update_duplicate_name(test_client):
-    """Test updating a manufacturer with a duplicate name"""
-
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
-    test_client.post("/v1/manufacturers", json=MANUFACTURER_B_POST)
-
-    manufacturer_patch = {"name": "Manufacturer B"}
-    response = test_client.patch(f"/v1/manufacturers/{response.json()['id']}", json=manufacturer_patch)
-
-    assert response.status_code == 409
-    assert response.json()["detail"] == "A manufacturer with the same name has been found"
-
-
-def test_delete(test_client):
-    """Test deleting a manufacturer"""
-
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
-    manufacturer = response.json()
-
-    response = test_client.delete(f"/v1/manufacturers/{manufacturer['id']}")
-    assert response.status_code == 204
-
-
-def test_delete_with_an_invalid_id(test_client):
-    """Test trying to delete a manufacturer with an invalid ID"""
-
-    response = test_client.delete("/v1/manufacturers/invalid")
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "The specified manufacturer does not exist"
-
-
-def test_delete_with_a_non_existent_id(test_client):
-    """Test trying to delete a manufacturer with a non-existent ID"""
-
-    response = test_client.delete(f"/v1/manufacturers/{str(ObjectId())}")
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "The specified manufacturer does not exist"
-
-
-def test_delete_manufacturer_that_is_a_part_of_catalogue_item(test_client):
-    """Test trying to delete a manufacturer that is a part of a Catalogue Item"""
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_A_POST)
-    manufacturer_id = response.json()["id"]
-
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
-
-    # pylint: disable=duplicate-code
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_mm["id"], "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-        ],
-    }
-    # pylint: enable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
-    catalogue_category = response.json()
-
-    # pylint: disable=duplicate-code
-    catalogue_item_post = {
-        "name": "Catalogue Item A",
-        "catalogue_category_id": catalogue_category["id"],
-        "description": "This is Catalogue Item A",
-        "cost_gbp": 129.99,
-        "days_to_replace": 2.0,
-        "drawing_link": "https://drawing-link.com/",
-        "item_model_number": "abc123",
-        "is_obsolete": False,
-        "properties": add_ids_to_properties(
-            catalogue_category["properties"],
-            [
-                {"name": "Property A", "value": 20},
-                {"name": "Property B", "value": False},
-            ],
-        ),
-        "manufacturer_id": manufacturer_id,
-    }
-    # pylint: enable=duplicate-code
-    test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-    response = test_client.delete(f"/v1/manufacturers/{manufacturer_id}")
-
-    assert response.status_code == 409
-    assert response.json()["detail"] == "The specified manufacturer is a part of a Catalogue Item"
+    def test_delete_with_invalid_id(self):
+        """Test deleting a manufacturer with invalid ID."""
+        self.delete_manufacturer("invalid-id")
+        self.check_delete_manufacturer_failed_with_detail(404, "Manufacturer not found")
