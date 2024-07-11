@@ -1,6 +1,4 @@
-"""
-Unit tests for the `ManufacturerService` service.
-"""
+"""Unit tests for the `ManufacturerService` service."""
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
@@ -23,9 +21,7 @@ from inventory_management_system_api.services.manufacturer import ManufacturerSe
 
 
 class ManufacturerServiceDSL:
-    """
-    Base class for `ManufacturerService` unit tests.
-    """
+    """Base class for `ManufacturerService` unit tests."""
 
     wrapped_utils: Mock
     mock_manufacturer_repository: Mock
@@ -50,9 +46,7 @@ class ManufacturerServiceDSL:
 
 
 class CreateDSL(ManufacturerServiceDSL):
-    """
-    Base class for create tests.
-    """
+    """Base class for `create` tests."""
 
     _manufacturer_post: ManufacturerPostSchema
     _expected_manufacturer_in: ManufacturerIn
@@ -77,47 +71,36 @@ class CreateDSL(ManufacturerServiceDSL):
         ServiceTestHelpers.mock_create(self.mock_manufacturer_repository, self._expected_manufacturer_out)
 
     def call_create(self) -> None:
-        """
-        Calls the `ManufacturerService` `create` method with the appropriate data from a prior call to `mock_create`.
-        """
+        """Calls the `ManufacturerService` `create` method with the appropriate data from a prior call to
+        `mock_create`."""
         self._created_manufacturer = self.manufacturer_service.create(self._manufacturer_post)
 
     def check_create_success(self) -> None:
-        """
-        Checks that a prior call to `call_create` worked as expected.
-        """
+        """Checks that a prior call to `call_create` worked as expected."""
         self.wrapped_utils.generate_code.assert_called_once_with(self._expected_manufacturer_out.name, "manufacturer")
         self.mock_manufacturer_repository.create.assert_called_once_with(self._expected_manufacturer_in)
         assert self._created_manufacturer == self._expected_manufacturer_out
 
 
 class TestCreate(CreateDSL):
-    """
-    Tests for creating a manufacturer.
-    """
+    """Tests for creating a manufacturer."""
 
     def test_create(self):
-        """
-        Test creating a manufacturer.
-        """
+        """Test creating a manufacturer."""
         self.mock_create(MANUFACTURER_POST_DATA_A)
         self.call_create()
         self.check_create_success()
 
 
 class GetDSL(ManufacturerServiceDSL):
-    """
-    Base class for get tests.
-    """
+    """Base class for `get` tests."""
 
     _obtained_manufacturer_id: str
     _expected_manufacturer: MagicMock
     _obtained_manufacturer: MagicMock
 
     def mock_get(self) -> None:
-        """
-        Mocks repo methods appropriately to test the `get` service method.
-        """
+        """Mocks repo methods appropriately to test the `get` service method."""
         # Simply a return currently, so no need to use actual data
         self._expected_manufacturer = MagicMock()
         ServiceTestHelpers.mock_get(self.mock_manufacturer_repository, self._expected_manufacturer)
@@ -126,81 +109,61 @@ class GetDSL(ManufacturerServiceDSL):
         """
         Calls the `ManufacturerService` `get` method.
 
-        :param manufacturer_id: ID of the manufacturer that will be obtained.
+        :param manufacturer_id: ID of the manufacturer to be obtained.
         """
         self._obtained_manufacturer_id = manufacturer_id
         self._obtained_manufacturer = self.manufacturer_service.get(manufacturer_id)
 
     def check_get_success(self):
-        """
-        Checks that a prior call to `call_get` worked as expected.
-        """
+        """Checks that a prior call to `call_get` worked as expected."""
         self.mock_manufacturer_repository.get.assert_called_once_with(self._obtained_manufacturer_id)
         assert self._obtained_manufacturer == self._expected_manufacturer
 
 
 class TestGet(GetDSL):
-    """
-    Tests for getting a manufacturer.
-    """
+    """Tests for getting a manufacturer."""
 
     def test_get(self):
-        """
-        Test getting a manufacturer.
-        """
+        """Test getting a manufacturer."""
         self.mock_get()
         self.call_get(str(ObjectId()))
         self.check_get_success()
 
 
 class ListDSL(ManufacturerServiceDSL):
-    """
-    Base class for list tests.
-    """
+    """Base class for `list` tests."""
 
     _expected_manufacturers: MagicMock
     _obtained_manufacturers: MagicMock
 
     def mock_list(self) -> None:
-        """
-        Mocks repo methods appropriately to test the `list` service method.
-        """
+        """Mocks repo methods appropriately to test the `list` service method."""
         # Simply a return currently, so no need to use actual data
-        self._expected_manufacturers = [MagicMock()]
+        self._expected_manufacturers = MagicMock()
         ServiceTestHelpers.mock_list(self.mock_manufacturer_repository, self._expected_manufacturers)
 
     def call_list(self) -> None:
-        """
-        Calls the `ManufacturerService` `list` method.
-        """
+        """Calls the `ManufacturerService` `list` method."""
         self._obtained_manufacturers = self.manufacturer_service.list()
 
     def check_list_success(self) -> None:
-        """
-        Checks that a prior call to `call_list` worked as expected.
-        """
+        """Checks that a prior call to `call_list` worked as expected."""
         self.mock_manufacturer_repository.list.assert_called_once()
         assert self._obtained_manufacturers == self._expected_manufacturers
 
 
 class TestList(ListDSL):
-    """
-    Tests for listing manufacturers.
-    """
+    """Tests for listing manufacturers."""
 
     def test_list(self):
-        """
-        Test listing manufacturers.
-        """
+        """Test listing manufacturers."""
         self.mock_list()
         self.call_list()
         self.check_list_success()
 
 
 class UpdateDSL(ManufacturerServiceDSL):
-    """
-    Base class for update tests.
-    """
+    """Base class for `update` tests."""
 
     _stored_manufacturer: Optional[ManufacturerOut]
     _manufacturer_patch: ManufacturerPatchSchema
@@ -272,9 +235,7 @@ class UpdateDSL(ManufacturerServiceDSL):
         self._update_exception = exc
 
     def check_update_success(self) -> None:
-        """
-        Checks that a prior call to `call_update` worked as updated.
-        """
+        """Checks that a prior call to `call_update` worked as updated."""
         # Ensure obtained old manufacturer
         self.mock_manufacturer_repository.get.assert_called_once_with(self._updated_manufacturer_id)
 
@@ -296,21 +257,17 @@ class UpdateDSL(ManufacturerServiceDSL):
         Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception with the
         correct message.
 
-        :param message: Message of the raised exception.
+        :param message: Expected message of the raised exception.
         """
         self.mock_manufacturer_repository.update.assert_not_called()
         assert str(self._update_exception.value) == message
 
 
 class TestUpdate(UpdateDSL):
-    """
-    Tests for updating a manufacturer.
-    """
+    """Tests for updating a manufacturer."""
 
     def test_update(self):
-        """
-        Test updating all fields of a manufacturer.
-        """
+        """Test updating all fields of a manufacturer."""
         manufacturer_id = str(ObjectId())
 
         self.mock_update(
@@ -322,9 +279,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_address_only(self) -> None:
-        """
-        Test updating manufacturer's address only (code should not need regenerating as name doesn't change).
-        """
+        """Test updating manufacturer's address only (code should not need regenerating as name doesn't change)."""
         manufacturer_id = str(ObjectId())
 
         self.mock_update(
@@ -336,9 +291,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_with_non_existent_id(self):
-        """
-        Test updating a manufacturer with a non-existent ID.
-        """
+        """Test updating a manufacturer with a non-existent ID."""
         manufacturer_id = str(ObjectId())
 
         self.mock_update(
@@ -349,35 +302,28 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(ManufacturerServiceDSL):
-    """
-    Base class for delete tests.
-    """
+    """Base class for `delete` tests."""
 
     _delete_manufacturer_id: str
 
     def call_delete(self, manufacturer_id: str) -> None:
         """
         Calls the `ManufacturerService` `delete` method.
+
         :param manufacturer_id: ID of the manufacturer to be deleted.
         """
         self._delete_manufacturer_id = manufacturer_id
         self.manufacturer_service.delete(manufacturer_id)
 
     def check_delete_success(self) -> None:
-        """
-        Checks that a prior call to `call_delete` worked as expected.
-        """
+        """Checks that a prior call to `call_delete` worked as expected."""
         self.mock_manufacturer_repository.delete.assert_called_once_with(self._delete_manufacturer_id)
 
 
 class TestDelete(DeleteDSL):
-    """
-    Tests for deleting a manufacturer.
-    """
+    """Tests for deleting a manufacturer."""
 
     def test_delete(self):
-        """
-        Test deleting a manufacturer.
-        """
+        """Test deleting a manufacturer."""
         self.call_delete(str(ObjectId()))
         self.check_delete_success()

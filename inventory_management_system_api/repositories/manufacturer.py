@@ -21,9 +21,7 @@ logger = logging.getLogger()
 
 
 class ManufacturerRepo:
-    """
-    Repository for managing manufacturers in a MongoDb database.
-    """
+    """Repository for managing manufacturers in a MongoDb database."""
 
     def __init__(self, database: DatabaseDep) -> None:
         """
@@ -89,8 +87,8 @@ class ManufacturerRepo:
         :param manufacturer_id: The ID of the manufacturer to update.
         :param manufacturer: The manufacturer containing the update data.
         :param session: PyMongo ClientSession to use for database operations.
-        :raises: DuplicateRecordError: if a duplicate manufacturer is found.
-        :return: the updated manufacturer.
+        :raises DuplicateRecordError: If a duplicate manufacturer is found.
+        :return: The updated manufacturer.
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
 
@@ -111,13 +109,13 @@ class ManufacturerRepo:
         """
         Delete a manufacturer by its ID from a MongoDB database.
 
-        The method Checks if the manufacturer is part of a catalogue item, and raises a `PartOfCatalogueItemError` if it
+        The method checks if the manufacturer is part of a catalogue item, and raises a `PartOfCatalogueItemError` if it
         is.
 
         :param manufacturer_id: The ID of the manufacturer to delete.
         :param session: PyMongo ClientSession to use for database operations.
-        :raises PartOfCatalogueItemError: if the manufacturer is part of a catalogue item.
-        :raises MissingRecordError: if the manufacturer doesn't exist.
+        :raises PartOfCatalogueItemError: If the manufacturer is part of a catalogue item.
+        :raises MissingRecordError: If the manufacturer doesn't exist.
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         if self._is_manufacturer_in_catalogue_item(str(manufacturer_id), session=session):
@@ -137,7 +135,7 @@ class ManufacturerRepo:
         :param code: The code of the manufacturer to check for duplicates.
         :param manufacturer_id: The ID of the manufacturer to check if the duplicate manufacturer found is itself.
         :param session: PyMongo ClientSession to use for database operations.
-        :return `True` if a duplicate manufacturer is found, `False` otherwise.
+        :return: `True` if a duplicate manufacturer is found, `False` otherwise.
         """
         logger.info("Checking if manufacturer with code '%s' already exists", code)
         manufacturer = self._manufacturers_collection.find_one(
@@ -151,7 +149,7 @@ class ManufacturerRepo:
 
         :param manufacturer_id: The ID of the manufacturer to check.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: Returns `True` if the manufacturer is part of a catalogue item, `False` otherwise.
+        :return: `True` if the manufacturer is part of a catalogue item, `False` otherwise.
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         return (

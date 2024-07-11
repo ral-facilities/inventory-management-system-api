@@ -18,41 +18,7 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 # --------------------------------- MANUFACTURERS ---------------------------------
 
-MANUFACTURER_POST_DATA_A = {
-    "name": "Manufacturer A",
-    "url": "http://testurl.co.uk/",
-    "address": {
-        "address_line": "1 Example Street",
-        "town": "Oxford",
-        "county": "Oxfordshire",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    },
-    "telephone": "0932348348",
-}
-
-MANUFACTURER_POST_DATA_B = {
-    "name": "Manufacturer B",
-    "url": "http://example.co.uk/",
-    "address": {
-        "address_line": "2 Example Street",
-        "town": "Oxford",
-        "county": "Oxfordshire",
-        "country": "United Kingdom",
-        "postcode": "OX1 2AB",
-    },
-    "telephone": "073434394",
-}
-
-MANUFACTURER_IN_DATA_A = {
-    **MANUFACTURER_POST_DATA_A,
-    "code": "manufacturer-a",
-}
-
-MANUFACTURER_IN_DATA_B = {
-    **MANUFACTURER_POST_DATA_B,
-    "code": "manufacturer-b",
-}
+# Required values only
 
 MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY = {
     "name": "Manufacturer Test Required Values Only",
@@ -73,9 +39,14 @@ MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY = {
     "telephone": None,
 }
 
+# All values
+
 MANUFACTURER_POST_DATA_ALL_VALUES = {
-    **MANUFACTURER_POST_DATA_A,
+    **MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+    "address": {**MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["address"], "town": "Oxford", "county": "Oxfordshire"},
     "name": "Manufacturer Test All Values",
+    "url": "http://testurl.co.uk/",
+    "telephone": "0932348348",
 }
 
 MANUFACTURER_GET_DATA_ALL_VALUES = {
@@ -83,6 +54,29 @@ MANUFACTURER_GET_DATA_ALL_VALUES = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "code": "manufacturer-test-all-values",
+}
+
+MANUFACTURER_POST_DATA_A = {
+    **MANUFACTURER_POST_DATA_ALL_VALUES,
+    "name": "Manufacturer A",
+}
+
+MANUFACTURER_IN_DATA_A = {
+    **MANUFACTURER_POST_DATA_A,
+    "code": "manufacturer-a",
+}
+
+MANUFACTURER_POST_DATA_B = {
+    **MANUFACTURER_POST_DATA_ALL_VALUES,
+    "address": {**MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["address"], "address_line": "2 Example Street"},
+    "name": "Manufacturer B",
+    "url": "http://example.co.uk/",
+    "telephone": "073434394",
+}
+
+MANUFACTURER_IN_DATA_B = {
+    **MANUFACTURER_POST_DATA_B,
+    "code": "manufacturer-b",
 }
 
 # --------------------------------- SYSTEMS ---------------------------------

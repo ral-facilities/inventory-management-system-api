@@ -1,6 +1,4 @@
-"""
-Unit tests for the `ManufacturerRepo` repository.
-"""
+"""Unit tests for the `ManufacturerRepo` repository."""
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
@@ -26,9 +24,7 @@ from inventory_management_system_api.repositories.manufacturer import Manufactur
 
 
 class ManufacturerRepoDSL:
-    """
-    Base class for `ManufacturerRepo` unit tests.
-    """
+    """Base class for `ManufacturerRepo` unit tests."""
 
     mock_database: Mock
     manufacturer_repository: ManufacturerRepo
@@ -50,7 +46,7 @@ class ManufacturerRepoDSL:
 
     def mock_is_duplicate_manufacturer(self, duplicate_manufacturer_in_data: Optional[dict] = None) -> None:
         """
-        Mocks database methods appropriately for when the '_is_duplicate_manufacturer' repo method will be called.
+        Mocks database methods appropriately for when the `_is_duplicate_manufacturer` repo method will be called.
 
         :param duplicate_manufacturer_in_data: Either `None` or a dictionary containing manufacturer data for a
             duplicate manufacturer.
@@ -71,16 +67,14 @@ class ManufacturerRepoDSL:
         Returns the expected `find_one` calls that should occur when `_is_duplicate_manufacturer` is called.
 
         :param manufacturer_in: `ManufacturerIn` model containing the data about the manufacturer.
-        :param expected_manufacturer_id: Expected `manufacturer_id` provided to `_is_duplicate_manufacturer`
+        :param expected_manufacturer_id: Expected `manufacturer_id` provided to `_is_duplicate_manufacturer`.
         :return: Expected `find_one` calls.
         """
         return call({"code": manufacturer_in.code, "_id": {"$ne": expected_manufacturer_id}}, session=self.mock_session)
 
 
 class CreateDSL(ManufacturerRepoDSL):
-    """
-    Base class for create tests.
-    """
+    """Base class for `create` tests."""
 
     _manufacturer_in: ManufacturerIn
     _expected_manufacturer_out: ManufacturerOut
@@ -92,7 +86,7 @@ class CreateDSL(ManufacturerRepoDSL):
         Mocks database methods appropriately to test the `create` repo method.
 
         :param manufacturer_in_data: Dictionary containing the manufacturer data as would be required for a
-            `ManufacturerIn` database model (i.e. no id or created and modified times required).
+            `ManufacturerIn` database model (i.e. no ID or created and modified times required).
         :param duplicate_manufacturer_in_data: Either `None` or a dictionary containing manufacturer data for a
             duplicate manufacturer.
         """
@@ -106,17 +100,15 @@ class CreateDSL(ManufacturerRepoDSL):
         )
         #
         self.mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
-        # Mock 'insert one' to return object for inserted manufacturer
+        # Mock `insert one` to return object for inserted manufacturer
         RepositoryTestHelpers.mock_insert_one(self.manufacturers_collection, inserted_manufacturer_id)
-        # Mock 'find_one' to return the inserted manufacturer document
+        # Mock `find_one` to return the inserted manufacturer document
         RepositoryTestHelpers.mock_find_one(
             self.manufacturers_collection, {**self._manufacturer_in.model_dump(), "_id": inserted_manufacturer_id}
         )
 
     def call_create(self) -> None:
-        """
-        Calls the `ManufacturerRepo` `create` method with the appropriate data from a prior call to `mock_create`.
-        """
+        """Calls the `ManufacturerRepo` `create` method with the appropriate data from a prior call to `mock_create`."""
         self._created_manufacturer = self.manufacturer_repository.create(
             self._manufacturer_in, session=self.mock_session
         )
@@ -133,9 +125,7 @@ class CreateDSL(ManufacturerRepoDSL):
         self._create_exception = exc
 
     def check_create_success(self) -> None:
-        """
-        Checks that a prior call to `call_create` worked as expected.
-        """
+        """Checks that a prior call to `call_create` worked as expected."""
         manufacturer_in_data = self._manufacturer_in.model_dump()
 
         # Obtain a list of expected find_one calls
@@ -157,38 +147,30 @@ class CreateDSL(ManufacturerRepoDSL):
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception with the
         correct message.
 
-        :param message: Message of the raised exception.
+        :param message: Expected message of the raised exception.
         """
         self.manufacturers_collection.insert_one.assert_not_called()
         assert str(self._create_exception.value) == message
 
 
 class TestCreate(CreateDSL):
-    """
-    Tests for creating a manufacturer.
-    """
+    """Tests for creating a manufacturer."""
 
     def test_create(self):
-        """
-        Test creating a system.
-        """
+        """Test creating a manufacturer."""
         self.mock_create(MANUFACTURER_IN_DATA_A)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_duplicate_name(self):
-        """
-        Test creating a manufacturer with a duplicate manufacturer being found.
-        """
+        """Test creating a manufacturer with a duplicate manufacturer being found."""
         self.mock_create(MANUFACTURER_IN_DATA_A, duplicate_manufacturer_in_data=MANUFACTURER_IN_DATA_A)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate manufacturer found")
 
 
 class GetDSL(ManufacturerRepoDSL):
-    """
-    Base class for get tests.
-    """
+    """Base class for `get` tests."""
 
     _obtained_manufacturer_id: str
     _expected_manufacturer_out: Optional[ManufacturerOut]
@@ -199,7 +181,7 @@ class GetDSL(ManufacturerRepoDSL):
         """
         Mocks database methods appropriately to test the `get` repo method.
 
-        :param manufacturer_id: ID of the manufacturer that will be obtained.
+        :param manufacturer_id: ID of the manufacturer to be obtained.
         :param manufacturer_in_data: Either `None` or a dictionary containing the manufacturer data as would be required
             for a `ManufacturerIn` database model (i.e. no ID or created and modified times required).
         """
@@ -236,9 +218,7 @@ class GetDSL(ManufacturerRepoDSL):
         self._get_exception = exc
 
     def check_get_success(self) -> None:
-        """
-        Checks that a prior call to `call_get` worked as expected.
-        """
+        """Checks that a prior call to `call_get` worked as expected."""
         self.manufacturers_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._obtained_manufacturer_id)}, session=self.mock_session
         )
@@ -249,21 +229,17 @@ class GetDSL(ManufacturerRepoDSL):
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception with the correct
         message.
 
-        :param message: Message of the raised exception.
+        :param message: Expected message of the raised exception.
         """
         self.manufacturers_collection.find_one.assert_not_called()
         assert str(self._get_exception.value) == message
 
 
 class TestGet(GetDSL):
-    """
-    Tests for getting a manufacturer.
-    """
+    """Tests for getting a manufacturer."""
 
     def test_get(self):
-        """
-        Test getting a system.
-        """
+        """Test getting a system."""
         manufacturer_id = str(ObjectId())
 
         self.mock_get(manufacturer_id, MANUFACTURER_IN_DATA_A)
@@ -271,9 +247,7 @@ class TestGet(GetDSL):
         self.check_get_success()
 
     def test_get_with_non_existent_id(self):
-        """
-        Testing getting a manufacturer with a non-existent ID.
-        """
+        """Testing getting a manufacturer with a non-existent ID."""
         manufacturer_id = str(ObjectId())
 
         self.mock_get(manufacturer_id, None)
@@ -281,9 +255,7 @@ class TestGet(GetDSL):
         self.check_get_success()
 
     def test_get_with_invalid_id(self):
-        """
-        Test getting a manufacturer with an invalid ID.
-        """
+        """Test getting a manufacturer with an invalid ID."""
         manufacturer_id = "invalid-id"
 
         self.call_get_expecting_error(manufacturer_id, InvalidObjectIdError)
@@ -291,9 +263,7 @@ class TestGet(GetDSL):
 
 
 class ListDSL(ManufacturerRepoDSL):
-    """
-    Base class for list tests.
-    """
+    """Base class for `list` tests."""
 
     _expected_manufacturers_out: list[ManufacturerOut]
     _obtained_manufacturers_out: list[ManufacturerOut]
@@ -316,45 +286,33 @@ class ListDSL(ManufacturerRepoDSL):
         )
 
     def call_list(self) -> None:
-        """
-        Calls the `ManufacturerRepo` `list method` method.
-        """
+        """Calls the `ManufacturerRepo` `list method` method."""
         self._obtained_manufacturers_out = self.manufacturer_repository.list(session=self.mock_session)
 
     def check_list_success(self) -> None:
-        """
-        Checks that a prior call to `call_list` worked as expected.
-        """
+        """Checks that a prior call to `call_list` worked as expected."""
         self.manufacturers_collection.find.assert_called_once_with(session=self.mock_session)
         assert self._obtained_manufacturers_out == self._expected_manufacturers_out
 
 
 class TestList(ListDSL):
-    """
-    Tests for listing manufacturers.
-    """
+    """Tests for listing manufacturers."""
 
     def test_list(self):
-        """
-        Test listing all manufacturers.
-        """
+        """Test listing all manufacturers."""
         self.mock_list([MANUFACTURER_IN_DATA_A, MANUFACTURER_IN_DATA_B])
         self.call_list()
         self.check_list_success()
 
     def test_list_with_no_results(self):
-        """
-        Test listing all manufacturers returning no results.
-        """
+        """Test listing all manufacturers returning no results."""
         self.mock_list([])
         self.call_list()
         self.check_list_success()
 
 
 class UpdateDSL(ManufacturerRepoDSL):
-    """
-    Base class for update tests.
-    """
+    """Base class for `update` tests."""
 
     _manufacturer_in: ManufacturerIn
     _stored_manufacturer_out: Optional[ManufacturerOut]
@@ -366,6 +324,7 @@ class UpdateDSL(ManufacturerRepoDSL):
     def set_update_data(self, new_manufacturer_in_data: dict) -> None:
         """
         Assigns the update data to use during a call to `call_update`.
+
         :param new_manufacturer_in_data: New manufacturer data as would be required for a `ManufacturerIn` database
             model to supply to the `SystemRepo` `update` method.
         """
@@ -430,18 +389,16 @@ class UpdateDSL(ManufacturerRepoDSL):
         """
         Calls the `ManufacturerRepo` `update` method with the appropriate data from a prior call to `mock_update` (or
         `set_update_data`) while expecting an error to be raised.
+
         :param manufacturer_id: ID of the manufacturer to be updated.
         :param error_type: Expected exception to be raised.
         """
-
         with pytest.raises(error_type) as exc:
             self.manufacturer_repository.update(manufacturer_id, self._manufacturer_in)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
-        """
-        Checks that a prior call to `call_update` worked as expected.
-        """
+        """Checks that a prior call to `call_update` worked as expected."""
         # Obtain a list of expected `find_one` calls
         expected_find_one_calls = [
             # Stored manufacturer
@@ -472,21 +429,17 @@ class UpdateDSL(ManufacturerRepoDSL):
         Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception with the
         correct message.
 
-        :param message: Message of the raised exception.
+        :param message: Expected message of the raised exception.
         """
         self.manufacturers_collection.update_one.assert_not_called()
         assert str(self._update_exception.value) == message
 
 
 class TestUpdate(UpdateDSL):
-    """
-    Tests for updating a manufacturer.
-    """
+    """Tests for updating a manufacturer."""
 
     def test_update(self):
-        """
-        Test updating a manufacturer.
-        """
+        """Test updating a manufacturer."""
         manufacturer_id = str(ObjectId())
 
         self.mock_update(manufacturer_id, MANUFACTURER_IN_DATA_A, MANUFACTURER_IN_DATA_B)
@@ -494,9 +447,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_name_capitalisation(self):
-        """
-        Test updating the name capitalisation of a manufacturer.
-        """
+        """Test updating the name capitalisation of a manufacturer."""
         manufacturer_id = str(ObjectId())
         new_name = "manufacturer a"
 
@@ -505,9 +456,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_name_to_duplicate(self):
-        """
-        Test updating the name of a manufacturer to one that is a duplicate.
-        """
+        """Test updating the name of a manufacturer to one that is a duplicate."""
         manufacturer_id = str(ObjectId())
         duplicate_name = "Duplicate name"
 
@@ -519,9 +468,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_with_invalid_id(self):
-        """
-        Test updating a manufacturer with an invalid ID.
-        """
+        """Test updating a manufacturer with an invalid ID."""
         manufacturer_id = "invalid-id"
 
         self.set_update_data(MANUFACTURER_IN_DATA_A)
@@ -530,21 +477,18 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(ManufacturerRepoDSL):
-    """
-    Base class for delete tests.
-    """
+    """Base class for `delete` tests."""
 
     _delete_manufacturer_id: str
     _delete_exception: pytest.ExceptionInfo
     _mock_catalogue_item_data: Optional[dict]
 
-    def mock_delete(self, deleted_count: int, catalogue_item_data: Optional[dict] = None):
+    def mock_delete(self, deleted_count: int, catalogue_item_data: Optional[dict] = None) -> None:
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
         :param deleted_count: Number of documents deleted successfully.
         :param catalogue_item_data: Dictionary containing a catalogue item's data (or `None`).
-        :return:
         """
         self.mock_is_manufacturer_in_catalogue_item(catalogue_item_data)
         RepositoryTestHelpers.mock_delete_one(self.manufacturers_collection, deleted_count)
@@ -563,7 +507,7 @@ class DeleteDSL(ManufacturerRepoDSL):
         Calls the `ManufacturerRepo` `delete` method with the appropriate data from a prior call to `mock_delete` while
         expecting an error to be raised.
 
-        :param manufacturer_id: ID of the manufacturer to be obtained.
+        :param manufacturer_id: ID of the manufacturer to be deleted.
         :param error_type: Expected exception to be raised.
         """
         self._delete_manufacturer_id = manufacturer_id
@@ -572,9 +516,7 @@ class DeleteDSL(ManufacturerRepoDSL):
         self._delete_exception = exc
 
     def check_delete_success(self) -> None:
-        """
-        Checks that a prior call to `call_delete` worked as expected.
-        """
+        """Checks that a prior call to `call_delete` worked as expected."""
         self.check_is_manufacturer_in_catalogue_item_performed_expected_calls(self._delete_manufacturer_id)
         self.manufacturers_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_manufacturer_id)}, session=self.mock_session
@@ -585,10 +527,9 @@ class DeleteDSL(ManufacturerRepoDSL):
         Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception with the
         correct message.
 
-        :param message: Message of the raised exception.
+        :param message: Expected message of the raised exception.
         :param expecting_delete_one_called: Whether the `delete_one` method is expected to be called or not.
         """
-
         if not expecting_delete_one_called:
             self.manufacturers_collection.delete_one.assert_not_called()
         else:
@@ -600,10 +541,10 @@ class DeleteDSL(ManufacturerRepoDSL):
 
     def mock_is_manufacturer_in_catalogue_item(self, catalogue_item_data: Optional[dict] = None) -> None:
         """
-        Mocks database methods appropriately for when the '_is_manufacturer_in_catalogue_item' repo method will be
+        Mocks database methods appropriately for when the `_is_manufacturer_in_catalogue_item` repo method will be
         called.
 
-        :param catalogue_item_data: Dictionary containing a catalogue item's data (or `None`)
+        :param catalogue_item_data: Dictionary containing a catalogue item's data (or `None`).
         """
         self._mock_catalogue_item_data = catalogue_item_data
         RepositoryTestHelpers.mock_find_one(self.catalogue_items_collection, catalogue_item_data)
@@ -613,29 +554,22 @@ class DeleteDSL(ManufacturerRepoDSL):
 
         :param expected_manufacturer_id: Expected manufacturer ID used in the database calls.
         """
-
         self.catalogue_items_collection.find_one.assert_called_once_with(
             {"manufacturer_id": CustomObjectId(expected_manufacturer_id)}, session=self.mock_session
         )
 
 
 class TestDelete(DeleteDSL):
-    """
-    Tests for deleting a manufacturer.
-    """
+    """Tests for deleting a manufacturer."""
 
     def test_delete(self):
-        """
-        Test deleting a manufacturer.
-        """
+        """Test deleting a manufacturer."""
         self.mock_delete(deleted_count=1)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
     def test_delete_when_part_of_catalogue_item(self):
-        """
-        Test deleting a manufacturer when it is part of a catalogue item.
-        """
+        """Test deleting a manufacturer when it is part of a catalogue item."""
         manufacturer_id = str(ObjectId())
 
         # pylint:disable=fixme
@@ -652,9 +586,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"Manufacturer with ID '{manufacturer_id}' is part of a catalogue item")
 
     def test_delete_non_existent_id(self):
-        """
-        Test deleting a manufacturer with a non-existent ID.
-        """
+        """Test deleting a manufacturer with a non-existent ID."""
         manufacturer_id = str(ObjectId())
 
         self.mock_delete(deleted_count=0)
@@ -664,9 +596,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_with_invalid_id(self):
-        """
-        Test deleting a manufacturer with an invalid ID.
-        """
+        """Test deleting a manufacturer with an invalid ID."""
         manufacturer_id = "invalid-id"
 
         self.call_delete_expecting_error(manufacturer_id, InvalidObjectIdError)

@@ -1,6 +1,4 @@
-"""
-End-to-End tests for the manufacturer router.
-"""
+"""End-to-End tests for the manufacturer router."""
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
@@ -36,7 +34,8 @@ class CreateDSL:
         """
         Posts a manufacturer with the given data, returns the ID of the created manufacturer if successful.
 
-        :param manufacturer_post_data: Dictionary containing the manufacturer data that should be posted.
+        :param manufacturer_post_data: Dictionary containing the manufacturer data as would be required for a
+            `ManufacturerPostSchema`.
         :return: ID of the created manufacturer (or `None` if not successful).
         """
         self._post_response = self.test_client.post("/v1/manufacturers", json=manufacturer_post_data)
@@ -46,8 +45,8 @@ class CreateDSL:
         """
         Checks that a prior call to `post_manufacturer` gave a successful response with the expected data returned.
 
-        :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data that should be
-            returned.
+        :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data as would be required
+            for a `ManufacturerSchema`.
         """
         assert self._post_response.status_code == 201
         assert self._post_response.json() == expected_manufacturer_get_data
@@ -77,7 +76,7 @@ class CreateDSL:
 class TestCreate(CreateDSL):
     """Tests for creating a manufacturer."""
 
-    def test_create_with_only_require_values_provided(self):
+    def test_create_with_only_required_values_provided(self):
         """Test creating a manufacturer with only required values provided."""
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         self.check_post_manufacturer_success(MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY)
@@ -111,8 +110,8 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_manufacturer` gave a successful response with the expected data returned.
 
-        :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data that should be
-            returned.
+        :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data as would be required
+            for a `ManufacturerSchema`.
         """
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_manufacturer_get_data
@@ -159,8 +158,8 @@ class ListDSL(GetDSL):
         """
         Checks that a prior call to `get_manufacturers` gave a successful response with the expected data returned.
 
-        :param expected_manufacturers_get_data: List of dictionaries containing the expected manufacturer data that
-            should be returned.
+        :param expected_manufacturers_get_data: List of dictionaries containing the expected manufacturer data as would
+            be required for a `ManufacturerSchema`.
         """
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_manufacturers_get_data
@@ -194,7 +193,8 @@ class UpdateDSL(ListDSL):
         Updates a manufacturer with the given ID.
 
         :param manufacturer_id: ID of the manufacturer to be updated.
-        :param manufacturer_patch_data: Dictionary containing the manufacturer patch data.
+        :param manufacturer_patch_data: Dictionary containing the manufacturer patch data as would be required for a
+            `ManufacturerPatchSchema`.
         """
         self._patch_response = self.test_client.patch(
             f"/v1/manufacturers/{manufacturer_id}", json=manufacturer_patch_data
@@ -204,8 +204,8 @@ class UpdateDSL(ListDSL):
         """
         Checks that a prior call to `patch_manufacturer` gave a successful response with the expected data returned.
 
-        :param expected_manufacturer_get_data: Dictionaries containing the expected manufacturer data that should be
-            returned.
+        :param expected_manufacturer_get_data: Dictionaries containing the expected manufacturer data as would be
+            required for a `ManufacturerSchema`.
         """
         assert self._patch_response.status_code == 200
         assert self._patch_response.json() == expected_manufacturer_get_data
@@ -232,7 +232,6 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_name_to_duplicate(self):
         """Test updating the name of a manufacturer to conflict with a pre-existing one."""
-
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
         self.patch_manufacturer(system_id, {"name": MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["name"]})
@@ -251,7 +250,6 @@ class TestUpdate(UpdateDSL):
 
     def test_partial_update_with_non_existent_id(self):
         """Test updating a non-existent manufacturer."""
-
         self.patch_manufacturer(str(ObjectId()), {})
         self.check_patch_manufacturer_failed_with_detail(404, "Manufacturer not found")
 
@@ -280,7 +278,7 @@ class DeleteDSL(UpdateDSL):
 
     def check_delete_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
-        Checks that a prior call to 'delete_manufacturer' gave a failed response with the expected code and detail.
+        Checks that a prior call to `delete_manufacturer` gave a failed response with the expected code and detail.
 
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.

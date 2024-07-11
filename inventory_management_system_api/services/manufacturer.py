@@ -19,9 +19,7 @@ logger = logging.getLogger()
 
 
 class ManufacturerService:
-    """
-    Service for managing manufacturers.
-    """
+    """Service for managing manufacturers."""
 
     def __init__(
         self,
