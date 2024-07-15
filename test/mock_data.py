@@ -68,7 +68,7 @@ MANUFACTURER_IN_DATA_A = {
 
 MANUFACTURER_POST_DATA_B = {
     **MANUFACTURER_POST_DATA_ALL_VALUES,
-    "address": {**MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["address"], "address_line": "2 Example Street"},
+    "address": {**MANUFACTURER_POST_DATA_ALL_VALUES["address"], "address_line": "2 Example Street"},
     "name": "Manufacturer B",
     "url": "http://example.co.uk/",
     "telephone": "073434394",
