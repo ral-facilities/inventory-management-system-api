@@ -7,7 +7,7 @@ version = "0.0.1"
 
 dependencies = [
     "cryptography==42.0.8",
-    "fastapi[all]==0.111.0",
+    "fastapi[all]==0.111.1",
     "PyJWT==2.8.0",
     "pymongo==4.8.0",
     "uvicorn==0.30.1"
