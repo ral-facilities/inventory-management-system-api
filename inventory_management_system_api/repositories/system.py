@@ -202,7 +202,7 @@ class SystemRepo:
 
         :param system_id: ID of the system to check
         :param session: PyMongo ClientSession to use for database operations
-        :return: True if the system has child elements, False otherwise
+        :return: `True` if the system has child elements, `False` otherwise
         """
         logger.info("Checking if system with ID '%s' has child elements", str(system_id))
 

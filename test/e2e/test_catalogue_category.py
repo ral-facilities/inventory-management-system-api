@@ -842,7 +842,7 @@ class TestUpdate(UpdateDSL):
         """Test updating the parent_id of a catalogue category so that its name conflicts with one already in that
         other catalogue category."""
 
-        # System with child
+        # Catalogue category with child
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         self.post_catalogue_category(
             {

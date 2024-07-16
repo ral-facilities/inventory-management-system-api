@@ -170,7 +170,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
                                         for a `CatalogueCategoryPostSchema` but with any unit_id's replaced by the
                                         'unit' value in its properties as the ids will be added automatically.
-        :param parent_catalogue_category_in_data: Either None or a dictionary containing the parent catalogue category
+        :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
                                                   data as would be required for a `CatalogueCategoryIn` database model.
         :param units_in_data: Either `None` or a list of dictionaries (or `None`) containing the unit data as would be
                               required for a `UnitIn` database model. These values will be used for any unit look ups
@@ -506,7 +506,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                                                'unit' value in its properties as the ids will be added automatically.
         :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
                                                stored catalogue category as would be required for a
-                                               `CatalogueCategoryPostSchema` (i.e. no id, code or created and modified
+                                               `CatalogueCategoryPostSchema` (i.e. no ID, code or created and modified
                                                times required).
         :param has_child_elements: Boolean of whether the category being updated has child elements or not
         :param new_parent_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue

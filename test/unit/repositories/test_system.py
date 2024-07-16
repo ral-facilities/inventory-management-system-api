@@ -59,7 +59,7 @@ class SystemRepoDSL:
         self.mock_session = MagicMock()
 
         # Here we only wrap the utils so they keep their original functionality - this is done here
-        # to avoid having to mock the code generation function as the output will be passed to SystemOut
+        # to avoid having to mock the code generation function as the output will be passed to `SystemOut`
         # with pydantic validation and so will error otherwise
         with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
             self.mock_utils = mock_utils
@@ -71,8 +71,8 @@ class SystemRepoDSL:
         """
         Mocks database methods appropriately for when the `_has_child_elements` repo method will be called.
 
-        :param child_system_data: Dictionary containing a child system's data (or None).
-        :param child_catalogue_item_data: Dictionary containing a child Item's data (or None).
+        :param child_system_data: Dictionary containing a child system's data (or `None`).
+        :param child_catalogue_item_data: Dictionary containing a child Item's data (or `None`).
         """
 
         self._mock_child_system_data = child_system_data
@@ -85,7 +85,7 @@ class SystemRepoDSL:
         """
         Checks that a call to `_has_child_elements` performed the expected function calls.
 
-        :param expected_system_id: Expected system id used in the database calls.
+        :param expected_system_id: Expected `system_id` used in the database calls.
         """
 
         self.systems_collection.find_one.assert_called_once_with(
@@ -101,7 +101,7 @@ class SystemRepoDSL:
         """
         Mocks database methods appropriately for when the `_is_duplicate_system` repo method will be called.
 
-        :param duplicate_system_in_data: Either None or a dictionary containing system data for a duplicate system.
+        :param duplicate_system_in_data: Either `None` or a dictionary containing system data for a duplicate system.
         """
 
         RepositoryTestHelpers.mock_find_one(
@@ -117,10 +117,10 @@ class SystemRepoDSL:
         self, system_in: SystemIn, expected_system_id: Optional[CustomObjectId]
     ):
         """
-        Returns the expected find_one calls from that should occur when `_is_duplicate_system` is called.
+        Returns the expected `find_one` calls from that should occur when `_is_duplicate_system` is called.
 
         :param system_in: `SystemIn` model containing the data about the system.
-        :param expected_system_id: Expected system_id provided to `is_duplicate_system`.
+        :param expected_system_id: Expected `system_id` provided to `is_duplicate_system`.
         """
 
         return call(
@@ -158,7 +158,7 @@ class CreateDSL(SystemRepoDSL):
         """
         inserted_system_id = CustomObjectId(str(ObjectId()))
 
-        # Pass through SystemIn first as need creation and modified times
+        # Pass through `SystemIn` first as need creation and modified times
         self._system_in = SystemIn(**system_in_data)
 
         self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=inserted_system_id)
@@ -377,7 +377,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(SystemRepoDSL):
-    """Base class for `get_breadcrumbs` tests"""
+    """Base class for `get_breadcrumbs` tests."""
 
     _breadcrumbs_query_result: list[dict]
     _mock_aggregation_pipeline = MagicMock()
@@ -386,10 +386,10 @@ class GetBreadcrumbsDSL(SystemRepoDSL):
     _obtained_breadcrumbs: MagicMock
 
     def mock_breadcrumbs(self, breadcrumbs_query_result: list[dict]) -> None:
-        """Mocks database methods appropriately to test the `get_breadcrumbs` repo method
+        """Mocks database methods appropriately to test the `get_breadcrumbs` repo method.
 
         :param breadcrumbs_query_result: List of dictionaries containing the breadcrumbs query result from the
-                                         aggregation pipeline
+                                         aggregation pipeline.
         """
         self._breadcrumbs_query_result = breadcrumbs_query_result
         self._mock_aggregation_pipeline = MagicMock()
@@ -447,7 +447,7 @@ class ListDSL(SystemRepoDSL):
         """Mocks database methods appropriately to test the `list` repo method.
 
         :param systems_in_data: List of dictionaries containing the system data as would be required for a
-                                `SystemIn` database model (i.e. no id or created and modified times required).
+                                `SystemIn` database model (i.e. no ID or created and modified times required).
         """
 
         self._expected_systems_out = [
@@ -528,7 +528,7 @@ class UpdateDSL(SystemRepoDSL):
         """
         Assigns the update data to use during a call to `call_update`.
 
-        :param new_system_data: New system data as would be required for a SystemIn database model to supply to the
+        :param new_system_data: New system data as would be required for a `SystemIn` database model to supply to the
                                 `SystemRepo` `update` method.
         """
         self._system_in = SystemIn(**new_system_in_data)
@@ -544,19 +544,19 @@ class UpdateDSL(SystemRepoDSL):
         valid_move_result: bool = True,
     ) -> None:
         """
-        Mocks database methods appropriately to test the `update` repo method
+        Mocks database methods appropriately to test the `update` repo method.
 
-        :param system_id: ID of the system to be updated
-        :param new_system_in_data: Dictionary containing the new system data as would be required for a SystemIn
-                                   database model (i.e. no ID or created and modified times required)
+        :param system_id: ID of the system to be updated.
+        :param new_system_in_data: Dictionary containing the new system data as would be required for a `SystemIn`
+                                   database model (i.e. no ID or created and modified times required).
         :param stored_system_in_data: Dictionary containing the system data for the existing stored system
-                                      as would be required for a `SystemIn` database model
+                                      as would be required for a `SystemIn` database model.
         :param new_parent_system_in_data: Either `None` or a dictionary containing the new parent system data as would
-                                          be required for a `SystemIn` database model
+                                          be required for a `SystemIn` database model.
         :param duplicate_system_in_data: Either `None` or a dictionary containing the data for a duplicate system as
-                                         would be required for a `SystemIn` database model
-        :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when True will simulating
-                                  moving the system to one of its own children
+                                         would be required for a `SystemIn` database model.
+        :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when `True` will simulate
+                                  moving the system to one of its own children.
         """
         self.set_update_data(new_system_in_data)
 
