@@ -595,7 +595,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
 
         :param new_catalogue_category_in_data: New catalogue category data as would be required for a
                          `CatalogueCategoryIn` database model to supply to the `CatalogueCategoryRepo`
-                         `update` method
+                         `update` method.
         """
         self._catalogue_category_in = CatalogueCategoryIn(**new_catalogue_category_in_data)
 
@@ -1006,7 +1006,7 @@ class DeleteDSL(CatalogueCategoryRepoDSL):
 
         :param deleted_count: Number of documents deleted successfully.
         :param child_catalogue_category_data: Dictionary containing a child catalogue category's data (or `None`).
-        :param child_item_data: Dictionary containing a child catalogue item's data (or `None`).
+        :param child_catalogue_item_data: Dictionary containing a child catalogue item's data (or `None`).
         """
 
         self.mock_has_child_elements(child_catalogue_category_data, child_catalogue_item_data)
@@ -1086,7 +1086,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_with_child_catalogue_item(self):
-        """Test deleting a catalogue category when it has a child Catalogue Item."""
+        """Test deleting a catalogue category when it has a child catalogue item."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -1225,7 +1225,7 @@ class TestCreateProperty(CreatePropertyDSL):
 class UpdatePropertyDSL(CreatePropertyDSL):
     """Base class for `update_property` tests."""
 
-    _updated_property: CatalogueCategoryOut
+    _updated_property: CatalogueCategoryPropertyOut
     _property_id: str
     _update_exception: pytest.ExceptionInfo
 

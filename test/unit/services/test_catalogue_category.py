@@ -214,14 +214,14 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         ServiceTestHelpers.mock_create(self.mock_catalogue_category_repository, self._expected_catalogue_category_out)
 
     def call_create(self) -> None:
-        """Calls the CatalogueCategoryService `create` method with the appropriate data from a prior call to
+        """Calls the `CatalogueCategoryService` `create` method with the appropriate data from a prior call to
         `mock_create`."""
 
         self._created_catalogue_category = self.catalogue_category_service.create(self._catalogue_category_post)
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
-        Calls the CatalogueCategoryService `create` method with the appropriate data from a prior call to
+        Calls the `CatalogueCategoryService` `create` method with the appropriate data from a prior call to
         `mock_create` while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
@@ -358,7 +358,7 @@ class GetDSL(CatalogueCategoryServiceDSL):
 
     def call_get(self, catalogue_category_id: str) -> None:
         """
-        Calls the CatalogueCategoryService `get` method.
+        Calls the `CatalogueCategoryService` `get` method.
 
         :param catalogue_category_id: ID of the catalogue category to be obtained.
         """
@@ -444,7 +444,7 @@ class ListDSL(CatalogueCategoryServiceDSL):
 
     def call_list(self, parent_id: Optional[str]) -> None:
         """
-        Calls the CatalogueCategoryService `list` method.
+        Calls the `CatalogueCategoryService` `list` method.
 
         :param parent_id: ID of the parent catalogue category to query by, or `None`.
         """
@@ -842,7 +842,7 @@ class DeleteDSL(CatalogueCategoryServiceDSL):
 
     def call_delete(self, catalogue_category_id: str) -> None:
         """
-        Calls the CatalogueCategoryService `delete` method.
+        Calls the `CatalogueCategoryService` `delete` method.
 
         :param catalogue_category_id: ID of the catalogue category to be deleted.
         """
