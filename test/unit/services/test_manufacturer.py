@@ -1,4 +1,6 @@
-"""Unit tests for the `ManufacturerService` service."""
+"""
+Unit tests for the `ManufacturerService` service.
+"""
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code

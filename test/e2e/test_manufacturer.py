@@ -1,4 +1,6 @@
-"""End-to-End tests for the manufacturer router."""
+"""
+End-to-End tests for the manufacturer router.
+"""
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
