@@ -1,13 +1,25 @@
 version: 2
 updates:
-
-  # Maintain Dockerfile dependencies
+  # Maintain Dockerfile dependencies on the `develop` branch
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: daily
       time: "08:00"
       timezone: "Europe/London"
+    target-branch: "develop"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # Maintain Dockerfile dependencies on the `main` branch
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "08:00"
+      timezone: "Europe/London"
+    target-branch: "main"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
