@@ -98,7 +98,7 @@ jobs:
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Login to Harbor
-        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ${{ secrets.HARBOR_URL }}
           username: ${{ secrets.HARBOR_USERNAME }}
@@ -111,7 +111,7 @@ jobs:
           images: ${{ secrets.HARBOR_URL }}/ims-api
 
       - name: Build and push Docker image to Harbor
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
+        uses: docker/build-push-action@1ca370b3a9802c92e886402e0dd88098a2533b12 # v6.4.1
         with:
           context: .
           file: ./Dockerfile.prod
