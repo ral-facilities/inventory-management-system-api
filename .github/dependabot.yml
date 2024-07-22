@@ -24,12 +24,26 @@ updates:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
-  # Maintain dependencies for GitHub Actions
+  # Maintain dependencies for GitHub Actions on the `develop` branch
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       # Check for updates every week
       interval: "weekly"
+    target-branch: "develop"
+    # Update multiple dependencies at the same time
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for GitHub Actions on the `main` branch
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates every week
+      interval: "weekly"
+    target-branch: "main"
     # Update multiple dependencies at the same time
     groups:
       github-actions:
