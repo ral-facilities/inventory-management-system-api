@@ -11,6 +11,7 @@ import pytest
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.item import ItemOut
+from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
@@ -242,7 +243,8 @@ class ServiceTestHelpers:
 
     @staticmethod
     def mock_create(
-        repository_mock: Mock, repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut]
+        repository_mock: Mock,
+        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut],
     ) -> None:
         """
         Mock the `create` method of the repository mock to return a repository object.
@@ -255,7 +257,7 @@ class ServiceTestHelpers:
     @staticmethod
     def mock_get(
         repository_mock: Mock,
-        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, UnitOut, None],
+        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, None],
     ) -> None:
         """
         Mock the `get` method of the repository mock to return a specific repository object.
@@ -285,7 +287,9 @@ class ServiceTestHelpers:
     @staticmethod
     def mock_list(
         repository_mock: Mock,
-        repo_objs: List[Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, SystemOut, UsageStatusOut]],
+        repo_objs: List[
+            Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UsageStatusOut]
+        ],
     ) -> None:
         """
         Mock the `list` method of the repository mock to return a specific list of repository objects.
@@ -303,6 +307,7 @@ class ServiceTestHelpers:
             CatalogueCategoryOut,
             CatalogueItemOut,
             ItemOut,
+            ManufacturerOut,
             SystemOut,
         ],
     ) -> None:
