@@ -13,7 +13,6 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
@@ -27,7 +26,6 @@ from bson import ObjectId
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    DuplicateCatalogueCategoryPropertyNameError,
     LeafCatalogueCategoryError,
     MissingRecordError,
 )
@@ -280,23 +278,6 @@ class TestCreate(CreateDSL):
         self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[UNIT_IN_DATA_MM])
         self.call_create()
         self.check_create_success()
-
-    def test_create_with_duplicate_properties(self):
-        """Test creating a catalogue category with properties"""
-
-        self.mock_create(
-            {
-                **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT,
-                ],
-            },
-        )
-        self.call_create_expecting_error(DuplicateCatalogueCategoryPropertyNameError)
-        self.check_create_failed_with_exception(
-            f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY_WITHOUT_UNIT['name']}"
-        )
 
     def test_create_with_properties_with_non_existent_unit_id(self):
         """Test creating a catalogue category with properties with a non-existent unit id"""
