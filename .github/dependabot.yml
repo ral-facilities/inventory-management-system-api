@@ -1,23 +1,49 @@
 version: 2
 updates:
-
-  # Maintain Dockerfile dependencies
+  # Maintain Dockerfile dependencies on the `develop` branch
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: daily
       time: "08:00"
       timezone: "Europe/London"
+    target-branch: "develop"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
-  # Maintain dependencies for GitHub Actions
+  # Maintain Dockerfile dependencies on the `main` branch
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "08:00"
+      timezone: "Europe/London"
+    target-branch: "main"
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # Maintain dependencies for GitHub Actions on the `develop` branch
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       # Check for updates every week
       interval: "weekly"
+    target-branch: "develop"
+    # Update multiple dependencies at the same time
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for GitHub Actions on the `main` branch
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates every week
+      interval: "weekly"
+    target-branch: "main"
     # Update multiple dependencies at the same time
     groups:
       github-actions:
