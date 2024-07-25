@@ -6,7 +6,6 @@ from typing import Optional
 
 from bson import ObjectId
 
-
 VALID_ACCESS_TOKEN = (
     "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjoyNTM0MDIzMDA3OTl9.bagU2Wix8wKzydVU_L3Z"
     "ZuuMAxGxV4OTuZq_kS2Fuwm839_8UZOkICnPTkkpvsm1je0AWJaIXLGgwEa5zUjpG6lTrMMmzR9Zi63F0NXpJqQqoOZpTBMYBaggsXqFkdsv-yAKUZ"
@@ -49,7 +48,7 @@ def add_ids_to_properties(properties_with_ids: Optional[list], properties_withou
         unit_id = None
 
         if properties_with_ids:
-            # Match up property and unit ids
+            # Match up property and unit IDs
             for property_with_id in properties_with_ids:
                 if property_with_id["name"] == property_without_id["name"]:
                     prop_id = property_with_id["id"]

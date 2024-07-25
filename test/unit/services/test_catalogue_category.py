@@ -80,11 +80,11 @@ class CatalogueCategoryServiceDSL:
     ) -> tuple[list[CatalogueCategoryPropertyIn], list[CatalogueCategoryPostPropertySchema]]:
         """
         Returns a list of property post schemas and expected property in models by adding
-        in unit ids. It also assigns `unit_value_id_dict` for looking up these ids.
+        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
 
         :param catalogue_category_properties_data: List of dictionaries containing the data for each property as would
                                                    be required for a `CatalogueCategoryPostPropertySchema` but without
-                                                   any unit_id's.
+                                                   any `unit_id`'s.
         :returns: Tuple of lists. The first contains the expected `CatalogueCategoryPropertyIn` models and the second
                   the `CatalogueCategoryPostPropertySchema` schema's that should be posted in order to obtain them.
         """
@@ -98,7 +98,7 @@ class CatalogueCategoryServiceDSL:
             unit_id = None
             prop_without_unit = prop.copy()
 
-            # Give units ids and remove the unit value from the prop for the post schema
+            # Give unit IDs and remove the unit value from the prop for the post schema
             if "unit" in prop and prop["unit"]:
                 unit_id = str(ObjectId())
                 self.unit_value_id_dict[prop["unit"]] = unit_id
@@ -115,7 +115,7 @@ class CatalogueCategoryServiceDSL:
         """
         Mocks database methods appropriately for when the `_add_property_unit_values` repo method will be called.
 
-        Also generates unit ids that are stored inside `unit_value_id_dict` for future lookups.
+        Also generates unit IDs that are stored inside `unit_value_id_dict` for future lookups.
 
         :param units_in_data: List of dictionaries (or `None`) containing the unit data as would be required for a
                               `UnitIn` database model. These values will be used for any unit look ups required by
@@ -167,7 +167,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
                                         for a `CatalogueCategoryPostSchema` but with any unit_id's replaced by the
-                                        'unit' value in its properties as the ids will be added automatically.
+                                        'unit' value in its properties as the IDs will be added automatically.
         :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
                                                   data as would be required for a `CatalogueCategoryIn` database model.
         :param units_in_data: Either `None` or a list of dictionaries (or `None`) containing the unit data as would be
@@ -187,7 +187,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
                 ),
             )
 
-        # When properties are given need to mock any units and ensure the expected data inserts the unit ids as well
+        # When properties are given need to mock any units and ensure the expected data inserts the unit IDs as well
         property_post_schemas = []
         expected_properties_in = []
         if "properties" in catalogue_category_data and catalogue_category_data["properties"]:
@@ -251,7 +251,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         )
 
         if self._catalogue_category_post.properties:
-            # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will
+            # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
             actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
             assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
@@ -269,7 +269,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
     def check_create_failed_with_exception(self, message: str) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
-        with the correct message.]
+        with the correct message.
 
         :param message: Expected message of the raised exception.
         """
@@ -484,7 +484,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         :param catalogue_category_id: ID of the catalogue category that will be obtained.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
                                                `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
-                                               'unit' value in its properties as the ids will be added automatically.
+                                               'unit' value in its properties as the IDs will be added automatically.
         :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
                                                stored catalogue category as would be required for a
                                                `CatalogueCategoryPostSchema` (i.e. no ID, code or created and modified
@@ -541,7 +541,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                 ),
             )
 
-        # When properties are given need to mock any units and ensure the expected data inserts the unit ids as well
+        # When properties are given need to mock any units and ensure the expected data inserts the unit IDs as well
         expected_properties_in = []
         if "properties" in catalogue_category_update_data and catalogue_category_update_data["properties"]:
             expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
@@ -629,7 +629,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                 self._catalogue_category_patch.properties
             )
 
-            # To assert with property ids we must compare as dicts and use ANY here as otherwise the ObjectIds will
+            # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
 
             update_call_args = self.mock_catalogue_category_repository.update.call_args_list[0][0]

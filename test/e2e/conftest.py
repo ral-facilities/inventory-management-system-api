@@ -108,11 +108,11 @@ class E2ETestHelpers:
 
     @staticmethod
     def replace_unit_values_with_ids_in_properties(data: dict, unit_value_id_dict: dict[str, str]) -> dict:
-        """Inserts unit ids into some data that may have a 'properties' list within it
+        """Inserts unit IDs into some data that may have a 'properties' list within it
 
         :param data: Dictionary of data that could have a 'properties' value within it
         :param unit_value_id_dict: Dictionary of unit value and id pairs for unit id lookups
-        :return: The data with any needed unit ids inserted
+        :return: The data with any needed unit IDs inserted
         """
 
         if "properties" in data and data["properties"]:

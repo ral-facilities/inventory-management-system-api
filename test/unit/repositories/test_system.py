@@ -289,7 +289,7 @@ class GetDSL(SystemRepoDSL):
 
         :param system_id: ID of the system to be obtained.
         :param system_in_data: Either `None` or a dictionary containing the system data as would be required for a
-                               `SystemIn` database model (i.e. No id or created and modified times required).
+                               `SystemIn` database model (i.e. No ID or created and modified times required).
         """
 
         self._expected_system_out = (

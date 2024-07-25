@@ -77,12 +77,12 @@ class CreateDSL:
         successful.
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
-                                        for a `CatalogueCategoryPostSchema` but with any unit_id's replaced by the
-                                        'unit' value in its properties as the ids will be added automatically.
-        :return: ID of the created catalogue category (or None if not successful).
+                                        for a `CatalogueCategoryPostSchema` but with any `unit_id`'s replaced by the
+                                        'unit' value in its properties as the IDs will be added automatically.
+        :return: ID of the created catalogue category (or `None` if not successful).
         """
 
-        # Replace any unit values with unit ids
+        # Replace any unit values with unit IDs
         catalogue_category_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
             catalogue_category_data, self.unit_value_id_dict
         )
@@ -455,7 +455,7 @@ class GetBreadcrumbsDSL(GetDSL):
         parent.
 
         :param number: Number of catalogue categories to create.
-        :return: List of ids of the created catalogue categories.
+        :return: List of IDs of the created catalogue categories.
         """
 
         parent_id = None
