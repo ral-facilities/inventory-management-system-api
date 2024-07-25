@@ -775,7 +775,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
 
     def test_update_parent_id(self):
-        """Test updating a catalogue category's parent_id to move it."""
+        """Test updating a catalogue category's `parent_id` to move it."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -789,7 +789,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id_to_leaf(self):
-        """Test updating a catalogue category's parent_id to move it to a leaf catalogue category."""
+        """Test updating a catalogue category's `parent_id` to move it to a leaf catalogue category."""
 
         catalogue_category_id = str(ObjectId())
 

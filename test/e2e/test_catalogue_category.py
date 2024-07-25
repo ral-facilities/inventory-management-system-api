@@ -633,9 +633,9 @@ class TestList(ListDSL):
 
     def test_list_with_parent_id_filter(self):
         """
-        Test getting a list of all catalogue categories with a parent_id filter provided.
+        Test getting a list of all catalogue categories with a `parent_id` filter provided.
 
-        Posts a catalogue category with a child and then filter using the parent_id expecting only the second
+        Posts a catalogue category with a child and then filter using the `parent_id` expecting only the second
         catalogue category to be returned.
         """
 
@@ -645,9 +645,9 @@ class TestList(ListDSL):
 
     def test_list_with_null_parent_id_filter(self):
         """
-        Test getting a list of all catalogue categories with a parent_id filter of "null" provided.
+        Test getting a list of all catalogue categories with a `parent_id` filter of "null" provided.
 
-        Posts a catalogue category with a child and then filter using a parent_id of "null" expecting only
+        Posts a catalogue category with a child and then filter using a `parent_id` of "null" expecting only
         the first parent catalogue category to be returned.
         """
 
@@ -656,13 +656,13 @@ class TestList(ListDSL):
         self.check_get_catalogue_categories_success([catalogue_categories[0]])
 
     def test_list_with_parent_id_filter_with_no_matching_results(self):
-        """Test getting a list of all systems with a parent_id filter that returns no results."""
+        """Test getting a list of all systems with a `parent_id` filter that returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": str(ObjectId())})
         self.check_get_catalogue_categories_success([])
 
     def test_list_with_invalid_parent_id_filter(self):
-        """Test getting a list of all systems with an invalid parent_id filter returns no results."""
+        """Test getting a list of all systems with an invalid `parent_id` filter returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": "invalid-id"})
         self.check_get_catalogue_categories_success([])
@@ -826,7 +826,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id(self):
-        """Test updating the parent_id of a catalogue category."""
+        """Test updating the `parent_id` of a catalogue category."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A)
         catalogue_category_id = self.post_catalogue_category(
@@ -839,7 +839,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
-        """Test updating the parent_id of a catalogue category so that its name conflicts with one already in that
+        """Test updating the `parent_id` of a catalogue category so that its name conflicts with one already in that
         other catalogue category."""
 
         # Catalogue category with child
@@ -862,7 +862,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_child_of_self(self):
-        """Test updating the parent_id of a catalogue category to one of its own children."""
+        """Test updating the `parent_id` of a catalogue category to one of its own children."""
 
         catalogue_category_ids = self.post_nested_catalogue_categories(2)
         self.patch_catalogue_category(catalogue_category_ids[0], {"parent_id": catalogue_category_ids[1]})
@@ -871,7 +871,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_leaf(self):
-        """Test updating the parent_id of a catalogue category to the id of a leaf catalogue category."""
+        """Test updating the `parent_id` of a catalogue category to the id of a leaf catalogue category."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
@@ -882,7 +882,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_non_existent(self):
-        """Test updating the parent_id of a catalogue category to a non-existent catalogue category."""
+        """Test updating the `parent_id` of a catalogue category to a non-existent catalogue category."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": str(ObjectId())})
@@ -891,7 +891,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_invalid_id(self):
-        """Test updating the parent_id of a catalogue category to an invalid id."""
+        """Test updating the `parent_id` of a catalogue category to an invalid id."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": "invalid-id"})

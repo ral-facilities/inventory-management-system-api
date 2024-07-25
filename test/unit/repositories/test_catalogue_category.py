@@ -558,7 +558,7 @@ class TestList(ListDSL):
         self.check_list_success()
 
     def test_list_with_null_parent_id_filter(self):
-        """Test listing all catalogue categories with a 'null' parent_id."""
+        """Test listing all catalogue categories with a 'null' `parent_id`."""
 
         self.mock_list(
             [
@@ -826,7 +826,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id(self):
-        """Test updating a catalogue category's parent_id to move it."""
+        """Test updating a catalogue category's `parent_id` to move it."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -845,7 +845,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_parent_id_to_child_of_self(self):
-        """Test updating a catalogue category's parent_id to a child of it self (should prevent this)."""
+        """Test updating a catalogue category's `parent_id` to a child of it self (should prevent this)."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -864,7 +864,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Cannot move a catalogue category to one of its own children")
 
     def test_update_with_non_existent_parent_id(self):
-        """Test updating a catalogue category's parent_id to a non-existent catalogue category."""
+        """Test updating a catalogue category's `parent_id` to a non-existent catalogue category."""
 
         catalogue_category_id = str(ObjectId())
         new_parent_id = str(ObjectId())
@@ -899,7 +899,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_parent_id_with_duplicate_within_parent(self):
-        """Test updating a catalogue category's parent_id to one that contains a catalogue category with a duplicate
+        """Test updating a catalogue category's `parent_id` to one that contains a catalogue category with a duplicate
         name within the parent catalogue category."""
 
         catalogue_category_id = str(ObjectId())

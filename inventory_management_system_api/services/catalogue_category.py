@@ -104,7 +104,7 @@ class CatalogueCategoryService:
         """
         Retrieve catalogue categories based on the provided filters.
 
-        :param parent_id: The parent_id to filter catalogue categories by.
+        :param parent_id: The `parent_id` to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
         """
         return self._catalogue_category_repository.list(parent_id)
