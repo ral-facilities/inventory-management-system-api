@@ -296,7 +296,7 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_properties_with_non_existent_unit_id(self):
-        """Test creating a catalogue category with properties with a non-existent unit id."""
+        """Test creating a catalogue category with properties with a non-existent unit ID."""
 
         self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[None])
         self.call_create_expecting_error(MissingRecordError)
@@ -759,7 +759,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_leaf_properties_only_with_non_existent_unit_id(self):
         """Test updating the properties of a leaf catalogue category when given a property with an non-existent unit
-        id."""
+        ID."""
 
         catalogue_category_id = str(ObjectId())
 

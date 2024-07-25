@@ -120,7 +120,7 @@ class GetDSL(SystemServiceDSL):
 
     def call_get(self, system_id: str) -> None:
         """
-        Calls the SystemService `get` method.
+        Calls the `SystemService` `get` method.
 
         :param system_id: ID of the system to be obtained.
         """
@@ -162,7 +162,7 @@ class GetBreadcrumbsDSL(SystemServiceDSL):
 
     def call_get_breadcrumbs(self, system_id: str) -> None:
         """
-        Calls the SystemService `get_breadcrumbs` method.
+        Calls the `SystemService` `get_breadcrumbs` method.
 
         :param system_id: ID of the system to obtain the breadcrumbs of.
         """
@@ -337,7 +337,7 @@ class TestUpdate(UpdateDSL):
     """Tests for updating a system."""
 
     def test_update_all_fields_except_parent_id(self):
-        """Test updating all fields of a system except its parent id."""
+        """Test updating all fields of a system except its parent ID."""
 
         system_id = str(ObjectId())
 

@@ -103,20 +103,20 @@ class TestCreate(CreateDSL):
         self.check_post_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_create_with_valid_parent_id(self):
-        """Test creating a system with a valid parent id."""
+        """Test creating a system with a valid `parent_id`."""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
         self.check_post_system_success({**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
 
     def test_create_with_non_existent_parent_id(self):
-        """Test creating a system with a non-existent parent id."""
+        """Test creating a system with a non-existent `parent_id`."""
 
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())})
         self.check_post_system_failed_with_detail(422, "The specified parent system does not exist")
 
     def test_create_with_invalid_parent_id(self):
-        """Test creating a system with an invalid parent id."""
+        """Test creating a system with an invalid `parent_id`."""
 
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"})
         self.check_post_system_failed_with_detail(422, "The specified parent system does not exist")
@@ -146,7 +146,7 @@ class GetDSL(CreateDSL):
 
     def get_system(self, system_id: str):
         """
-        Gets a system with the given id.
+        Gets a system with the given ID.
 
         :param system_id: ID of the system to be obtained.
         """
@@ -187,13 +187,13 @@ class TestGet(GetDSL):
         self.check_get_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_get_with_non_existent_id(self):
-        """Test getting a system with a non-existent id."""
+        """Test getting a system with a non-existent ID."""
 
         self.get_system(str(ObjectId()))
         self.check_get_system_failed_with_detail(404, "System not found")
 
     def test_get_with_invalid_id(self):
-        """Test getting a system with an invalid id."""
+        """Test getting a system with an invalid ID."""
 
         self.get_system("invalid-id")
         self.check_get_system_failed_with_detail(404, "System not found")
@@ -232,7 +232,7 @@ class GetBreadcrumbsDSL(GetDSL):
 
     def get_system_breadcrumbs(self, system_id: str) -> None:
         """
-        Gets a system's breadcrumbs with the given id.
+        Gets a system's breadcrumbs with the given ID.
 
         :param system_id: ID of the system to obtain the breadcrumbs of.
         """
@@ -246,7 +246,7 @@ class GetBreadcrumbsDSL(GetDSL):
 
     def check_get_system_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool) -> None:
         """
-        Checks that a prior call to 'get_system_breadcrumbs' gave a successful response with the expected data
+        Checks that a prior call to `get_system_breadcrumbs` gave a successful response with the expected data
         returned.
 
         :param expected_trail_length: Expected length of the breadcrumbs trail.
@@ -318,13 +318,13 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         )
 
     def test_get_breadcrumbs_with_non_existent_id(self):
-        """Test getting a system's breadcrumbs when given a non-existent system id."""
+        """Test getting a system's breadcrumbs when given a non-existent system ID."""
 
         self.get_system_breadcrumbs(str(ObjectId()))
         self.check_get_system_breadcrumbs_failed_with_detail(404, "System not found")
 
     def test_get_breadcrumbs_with_invalid_id(self):
-        """Test getting a system's breadcrumbs when given an invalid system id."""
+        """Test getting a system's breadcrumbs when given an invalid system ID."""
 
         self.get_system_breadcrumbs("invalid_id")
         self.check_get_system_breadcrumbs_failed_with_detail(404, "System not found")
@@ -425,7 +425,7 @@ class UpdateDSL(ListDSL):
 
     def patch_system(self, system_id: str, system_patch_data: dict) -> None:
         """
-        Updates a system with the given id.
+        Updates a system with the given ID.
 
         :param system_id: ID of the system to patch.
         :param system_patch_data: Dictionary containing the patch data as would be required for a `SystemPatchSchema`.
@@ -507,7 +507,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_failed_with_detail(422, "The specified parent system does not exist")
 
     def test_partial_update_parent_id_to_invalid_id(self):
-        """Test updating the `parent_id` of a system to an invalid id."""
+        """Test updating the `parent_id` of a system to an invalid ID."""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": "invalid-id"})
@@ -540,7 +540,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_failed_with_detail(404, "System not found")
 
     def test_partial_update_invalid_id(self):
-        """Test updating a system with an invalid id."""
+        """Test updating a system with an invalid ID."""
 
         self.patch_system("invalid-id", {})
         self.check_patch_system_failed_with_detail(404, "System not found")
@@ -553,7 +553,7 @@ class DeleteDSL(UpdateDSL):
 
     def delete_system(self, system_id: str) -> None:
         """
-        Deletes a system with the given id.
+        Deletes a system with the given ID.
 
         :param system_id: ID of the system to be deleted.
         """
@@ -662,7 +662,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_system_failed_with_detail(404, "System not found")
 
     def test_delete_with_invalid_id(self):
-        """Test deleting a system with an invalid id."""
+        """Test deleting a system with an invalid ID."""
 
         self.delete_system("invalid_id")
         self.check_delete_system_failed_with_detail(404, "System not found")

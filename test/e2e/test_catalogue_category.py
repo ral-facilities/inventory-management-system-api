@@ -23,8 +23,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    UNIT_POST_DATA_MM,
-)
+    UNIT_POST_DATA_MM)
 from typing import Optional
 
 import pytest
@@ -32,7 +31,8 @@ from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.consts import \
+    BREADCRUMBS_TRAIL_MAX_LENGTH
 
 
 class CreateDSL:
@@ -63,7 +63,7 @@ class CreateDSL:
     def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
         Stores a unit value and id inside the `unit_value_id_dict` for tests that need to have a
-        non-existent or invalid unit id.
+        non-existent or invalid unit ID.
 
         :param unit_value: Value of the unit.
         :param unit_id: ID of the unit.
@@ -175,7 +175,7 @@ class TestCreate(CreateDSL):
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
 
     def test_create_with_valid_parent_id(self):
-        """Test creating a catalogue category with a valid parent id."""
+        """Test creating a catalogue category with a valid parent ID."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.post_catalogue_category(
@@ -199,7 +199,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_with_non_existent_parent_id(self):
-        """Test creating a catalogue category with a non-existent parent id."""
+        """Test creating a catalogue category with a non-existent parent ID."""
 
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())}
@@ -209,7 +209,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_with_invalid_parent_id(self):
-        """Test creating a catalogue category with an invalid parent id."""
+        """Test creating a catalogue category with an invalid parent ID."""
 
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"}
@@ -381,7 +381,7 @@ class GetDSL(CreateDSL):
 
     def get_catalogue_category(self, catalogue_category_id: str) -> None:
         """
-        Gets a catalogue category with the given id.
+        Gets a catalogue category with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to be obtained.
         """
@@ -425,13 +425,13 @@ class TestGet(GetDSL):
         self.check_get_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_get_with_non_existent_id(self):
-        """Test getting a catalogue category with a non-existent id."""
+        """Test getting a catalogue category with a non-existent ID."""
 
         self.get_catalogue_category(str(ObjectId()))
         self.check_get_catalogue_category_failed_with_detail(404, "Catalogue category not found")
 
     def test_get_with_invalid_id(self):
-        """Test getting a catalogue category with an invalid id."""
+        """Test getting a catalogue category with an invalid ID."""
 
         self.get_catalogue_category("invalid-id")
         self.check_get_catalogue_category_failed_with_detail(404, "Catalogue category not found")
@@ -474,7 +474,7 @@ class GetBreadcrumbsDSL(GetDSL):
 
     def get_catalogue_category_breadcrumbs(self, catalogue_category_id: str) -> None:
         """
-        Gets a catalogue category's breadcrumbs with the given id.
+        Gets a catalogue category's breadcrumbs with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to obtain the breadcrumbs of.
         """
@@ -561,13 +561,13 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
         )
 
     def test_get_breadcrumbs_with_non_existent_id(self):
-        """Test getting a system's breadcrumbs when given a non-existent system id."""
+        """Test getting a system's breadcrumbs when given a non-existent system ID."""
 
         self.get_catalogue_category_breadcrumbs(str(ObjectId()))
         self.check_get_catalogue_categories_breadcrumbs_failed_with_detail(404, "Catalogue category not found")
 
     def test_get_breadcrumbs_with_invalid_id(self):
-        """Test getting a system's breadcrumbs when given an invalid system id."""
+        """Test getting a system's breadcrumbs when given an invalid system ID."""
 
         self.get_catalogue_category_breadcrumbs("invalid_id")
         self.check_get_catalogue_categories_breadcrumbs_failed_with_detail(404, "Catalogue category not found")
@@ -677,7 +677,7 @@ class UpdateDSL(ListDSL):
 
     def patch_catalogue_category(self, catalogue_category_id: str, catalogue_category_update_data: dict) -> None:
         """
-        Updates a catalogue category with the given id.
+        Updates a catalogue category with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to patch.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
@@ -891,7 +891,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_invalid_id(self):
-        """Test updating the `parent_id` of a catalogue category to an invalid id."""
+        """Test updating the `parent_id` of a catalogue category to an invalid ID."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": "invalid-id"})
@@ -1104,7 +1104,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_leaf_with_properties_with_non_existent_unit_id(self):
-        """Test updating a leaf catalogue category's properties to have a property with a non-existent unit id."""
+        """Test updating a leaf catalogue category's properties to have a property with a non-existent unit ID."""
 
         self.add_unit_value_and_id("mm", str(ObjectId()))
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
@@ -1256,7 +1256,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(404, "Catalogue category not found")
 
     def test_partial_update_invalid_id(self):
-        """Test updating a catalogue category with an invalid id."""
+        """Test updating a catalogue category with an invalid ID."""
 
         self.patch_catalogue_category("invalid-id", {})
         self.check_patch_catalogue_category_failed_with_detail(404, "Catalogue category not found")
@@ -1269,7 +1269,7 @@ class DeleteDSL(UpdateDSL):
 
     def delete_catalogue_category(self, catalogue_category_id: str) -> None:
         """
-        Deletes a catalogue_category with the given id.
+        Deletes a catalogue_category with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to be deleted.
         """
@@ -1335,7 +1335,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_catalogue_category_failed_with_detail(404, "Catalogue category not found")
 
     def test_delete_with_invalid_id(self):
-        """Test deleting a catalogue category with an invalid id."""
+        """Test deleting a catalogue category with an invalid ID."""
 
         self.delete_catalogue_category("invalid_id")
         self.check_delete_catalogue_category_failed_with_detail(404, "Catalogue category not found")

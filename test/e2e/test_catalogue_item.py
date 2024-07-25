@@ -4,15 +4,12 @@ End-to-End tests for the catalogue item router.
 """
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import (
-    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-    CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-    CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
-    CREATED_MODIFIED_VALUES_EXPECTED,
-    SYSTEM_POST_A,
-    USAGE_STATUS_POST_A,
-    USAGE_STATUS_POST_B,
-)
+from test.e2e.mock_schemas import (CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
+                                   CATALOGUE_ITEM_POST_ALLOWED_VALUES,
+                                   CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
+                                   CREATED_MODIFIED_VALUES_EXPECTED,
+                                   SYSTEM_POST_A, USAGE_STATUS_POST_A,
+                                   USAGE_STATUS_POST_B)
 from test.e2e.test_item import ITEM_POST
 from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from unittest.mock import ANY
@@ -188,7 +185,7 @@ def test_create_catalogue_item(test_client):
 
 def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     """
-    Test creating a catalogue item with an invalid catalogue category id.
+    Test creating a catalogue item with an invalid catalogue category ID.
     """
 
     catalogue_item_post = {
@@ -205,7 +202,7 @@ def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
 
 def test_create_catalogue_item_with_non_existent_catalogue_category_id(test_client):
     """
-    Test creating a catalogue item with a non-existent catalogue category id.
+    Test creating a catalogue item with a non-existent catalogue category ID.
     """
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,

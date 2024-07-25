@@ -72,7 +72,7 @@ class SystemRepoDSL:
         Mocks database methods appropriately for when the `_has_child_elements` repo method will be called.
 
         :param child_system_data: Dictionary containing a child system's data (or `None`).
-        :param child_catalogue_item_data: Dictionary containing a child Item's data (or `None`).
+        :param child_item_data: Dictionary containing a child Item's data (or `None`).
         """
 
         self._mock_child_system_data = child_system_data
@@ -528,8 +528,8 @@ class UpdateDSL(SystemRepoDSL):
         """
         Assigns the update data to use during a call to `call_update`.
 
-        :param new_system_data: New system data as would be required for a `SystemIn` database model to supply to the
-                                `SystemRepo` `update` method.
+        :param new_system_in_data: New system data as would be required for a `SystemIn` database model to supply to
+                                   the `SystemRepo` `update` method.
         """
         self._system_in = SystemIn(**new_system_in_data)
 
@@ -791,7 +791,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Duplicate system found within the parent system")
 
     def test_update_with_invalid_id(self):
-        """Test updating a system with an invalid id."""
+        """Test updating a system with an invalid ID."""
 
         system_id = "invalid-id"
 
@@ -822,7 +822,7 @@ class DeleteDSL(SystemRepoDSL):
 
     def call_delete(self, system_id: str) -> None:
         """
-        Calls the SystemRepo `delete` method.
+        Calls the `SystemRepo` `delete` method.
 
         :param system_id: ID of the system to be deleted.
         """
@@ -832,7 +832,7 @@ class DeleteDSL(SystemRepoDSL):
 
     def call_delete_expecting_error(self, system_id: str, error_type: type[BaseException]) -> None:
         """
-        Calls the SystemRepo `delete` method while expecting an error to be raised.
+        Calls the `SystemRepo` `delete` method while expecting an error to be raised.
 
         :param system_id: ID of the system to be deleted.
         :param error_type: Expected exception to be raised.
@@ -890,7 +890,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
     def test_delete_with_child_item(self):
-        """Test deleting a system when it has a child Item."""
+        """Test deleting a system when it has a child item."""
 
         system_id = str(ObjectId())
 
@@ -901,7 +901,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 
     def test_delete_non_existent_id(self):
-        """Test deleting a system with a non-existent id."""
+        """Test deleting a system with a non-existent ID."""
 
         system_id = str(ObjectId())
 
@@ -912,7 +912,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_invalid_id(self):
-        """Test deleting a system with an invalid id."""
+        """Test deleting a system with an invalid ID."""
 
         system_id = "invalid-id"
 

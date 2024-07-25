@@ -2,7 +2,8 @@
 Unit tests for the `CatalogueItemRepo` repository.
 """
 
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
+from test.unit.repositories.mock_models import (MOCK_CREATED_MODIFIED_TIME,
+                                                MOCK_PROPERTY_A_INFO)
 from test.unit.repositories.test_item import FULL_ITEM_INFO
 from unittest.mock import MagicMock, patch
 
@@ -10,13 +11,12 @@ import pytest
 from bson import ObjectId
 from pymongo.cursor import Cursor
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.custom_object_id import \
+    CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    InvalidObjectIdError,
-    MissingRecordError,
-)
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
+    ChildElementsExistError, InvalidObjectIdError, MissingRecordError)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn, CatalogueItemOut, PropertyIn)
 
 FULL_CATALOGUE_ITEM_A_INFO = {
     "name": "Catalogue Item A",
@@ -534,7 +534,7 @@ def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_m
 @patch("inventory_management_system_api.repositories.catalogue_item.datetime")
 def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
     """
-    Test updating the names of all properties with a given id.
+    Test updating the names of all properties with a given ID.
 
     Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
     property names.

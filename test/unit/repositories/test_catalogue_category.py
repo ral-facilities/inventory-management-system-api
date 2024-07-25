@@ -11,14 +11,11 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-)
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
-    MOCK_MOVE_QUERY_RESULT_INVALID,
-    MOCK_MOVE_QUERY_RESULT_VALID,
-)
+    MOCK_MOVE_QUERY_RESULT_INVALID, MOCK_MOVE_QUERY_RESULT_VALID)
 from test.unit.services.test_catalogue_item import CATALOGUE_ITEM_A_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
@@ -26,21 +23,16 @@ from unittest.mock import MagicMock, Mock, call, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.custom_object_id import \
+    CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    DuplicateRecordError,
-    InvalidActionError,
-    InvalidObjectIdError,
-    MissingRecordError,
-)
+    ChildElementsExistError, DuplicateRecordError, InvalidActionError,
+    InvalidObjectIdError, MissingRecordError)
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-    CatalogueCategoryPropertyOut,
-)
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn,
+    CatalogueCategoryPropertyOut)
+from inventory_management_system_api.repositories.catalogue_category import \
+    CatalogueCategoryRepo
 
 
 class CatalogueCategoryRepoDSL:
@@ -187,7 +179,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
         Calls the `CatalogueCategoryRepo` `create` method with the appropriate data from a prior call to `mock_create`
-        while expecting an error to be raised
+        while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
         """
@@ -918,7 +910,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_with_invalid_id(self):
-        """Test updating a catalogue category with an invalid id."""
+        """Test updating a catalogue category with an invalid ID."""
 
         catalogue_category_id = "invalid-id"
 
@@ -1099,7 +1091,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_non_existent_id(self):
-        """Test deleting a catalogue category with a non-existent id."""
+        """Test deleting a catalogue category with a non-existent ID."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -1110,7 +1102,7 @@ class TestDelete(DeleteDSL):
         )
 
     def test_delete_invalid_id(self):
-        """Test deleting a catalogue category with an invalid id."""
+        """Test deleting a catalogue category with an invalid ID."""
 
         catalogue_category_id = "invalid-id"
 
@@ -1215,7 +1207,7 @@ class TestCreateProperty(CreatePropertyDSL):
         self.check_create_property_success()
 
     def test_create_property_with_invalid_id(self):
-        """Test creating a property in a catalogue category with an invalid id."""
+        """Test creating a property in a catalogue category with an invalid ID."""
 
         self.mock_create_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_create_property_expecting_error("invalid-id", InvalidObjectIdError)
@@ -1320,7 +1312,7 @@ class TestUpdateProperty(UpdatePropertyDSL):
         self.check_update_property_success()
 
     def test_update_property_with_invalid_catalogue_category_id(self):
-        """Test updating a property in a catalogue category with an invalid id."""
+        """Test updating a property in a catalogue category with an invalid ID."""
 
         self.mock_update_property(CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
         self.call_update_property_expecting_error(
