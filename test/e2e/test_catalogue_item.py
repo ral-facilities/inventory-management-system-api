@@ -188,7 +188,7 @@ def test_create_catalogue_item(test_client):
 
 def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
     """
-    Test creating a catalogue item with an invalid catalogue category id.
+    Test creating a catalogue item with an invalid catalogue category ID.
     """
 
     catalogue_item_post = {
@@ -205,7 +205,7 @@ def test_create_catalogue_item_with_invalid_catalogue_category_id(test_client):
 
 def test_create_catalogue_item_with_non_existent_catalogue_category_id(test_client):
     """
-    Test creating a catalogue item with a non-existent catalogue category id.
+    Test creating a catalogue item with a non-existent catalogue category ID.
     """
     catalogue_item_post = {
         **CATALOGUE_ITEM_POST_A,

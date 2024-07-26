@@ -45,7 +45,7 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
-        message = "A system with the same name already exists within the same parent system"
+        message = "A system with the same name already exists within the parent system"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 

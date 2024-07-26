@@ -459,7 +459,7 @@ def test_has_child_elements_with_no_child_items(test_helpers, database_mock, cat
 
 def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_item_repository):
     """
-    Test has_child_elements returns true when there are child items
+    Test has_child_elements returns true when there are child items.
     """
 
     catalogue_category_id = str(ObjectId())
@@ -483,9 +483,9 @@ def test_has_child_elements_with_child_items(test_helpers, database_mock, catalo
 
 def test_list_ids(database_mock, catalogue_item_repository):
     """
-    Test getting catalogue item ids.
+    Test getting catalogue item IDs.
 
-    Verify that the `list_ids` method properly handles the retrieval of catalogue item ids given a
+    Verify that the `list_ids` method properly handles the retrieval of catalogue item IDs given a
     catalogue_category_id to filter by.
     """
     session = MagicMock()
@@ -507,10 +507,10 @@ def test_list_ids(database_mock, catalogue_item_repository):
 @patch("inventory_management_system_api.repositories.catalogue_item.datetime")
 def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
     """
-    Test inserting a property
+    Test inserting a property.
 
     Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
-    property
+    property.
     """
     session = MagicMock()
     catalogue_category_id = str(ObjectId())
@@ -534,10 +534,10 @@ def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_m
 @patch("inventory_management_system_api.repositories.catalogue_item.datetime")
 def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
     """
-    Test updating the names of all properties with a given id
+    Test updating the names of all properties with a given ID.
 
     Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
-    property names
+    property names.
     """
     session = MagicMock()
     property_id = str(ObjectId())

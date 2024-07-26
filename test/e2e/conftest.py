@@ -105,3 +105,26 @@ class E2ETestHelpers:
         assert datetime.fromisoformat(updated_data["modified_time"]) > datetime.fromisoformat(
             original_data["modified_time"]
         )
+
+    @staticmethod
+    def replace_unit_values_with_ids_in_properties(data: dict, unit_value_id_dict: dict[str, str]) -> dict:
+        """Inserts unit IDs into some data that may have a 'properties' list within it
+
+        :param data: Dictionary of data that could have a 'properties' value within it
+        :param unit_value_id_dict: Dictionary of unit value and id pairs for unit id lookups
+        :return: The data with any needed unit IDs inserted
+        """
+
+        if "properties" in data and data["properties"]:
+            new_properties = []
+            for prop in data["properties"]:
+                new_property = {**prop}
+                if "unit" in prop:
+                    if prop["unit"] is not None:
+                        new_property["unit_id"] = unit_value_id_dict[prop["unit"]]
+                    else:
+                        new_property["unit_id"] = None
+                    del new_property["unit"]
+                new_properties.append(new_property)
+            return {**data, "properties": new_properties}
+        return data
