@@ -23,7 +23,8 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    UNIT_POST_DATA_MM)
+    UNIT_POST_DATA_MM,
+)
 from typing import Optional
 
 import pytest
@@ -31,8 +32,7 @@ from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from inventory_management_system_api.core.consts import \
-    BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
 
 class CreateDSL:
@@ -52,7 +52,7 @@ class CreateDSL:
         self.unit_value_id_dict = {}
 
     def post_unit(self, unit_post_data: dict) -> None:
-        """Posts a unit with the given data and stores the value and id in a dictionary for lookup later.
+        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
 
         :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
         """
@@ -62,7 +62,7 @@ class CreateDSL:
 
     def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
-        Stores a unit value and id inside the `unit_value_id_dict` for tests that need to have a
+        Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
         non-existent or invalid unit ID.
 
         :param unit_value: Value of the unit.
@@ -73,7 +73,7 @@ class CreateDSL:
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
-        Posts a catalogue category with the given data and returns the id of the created catalogue category if
+        Posts a catalogue category with the given data and returns the ID of the created catalogue category if
         successful.
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
@@ -185,8 +185,8 @@ class TestCreate(CreateDSL):
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": parent_id}
         )
 
-    def test_create_with_non_leaf_parent(self):
-        """Test creating a catalogue category with a non-leaf parent."""
+    def test_create_with_eaf_parent(self):
+        """Test creating a catalogue category with a leaf parent."""
 
         parent_id = self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "is_leaf": True}
@@ -247,14 +247,14 @@ class TestCreate(CreateDSL):
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_create_leaf_with_properties_with_non_existent_unit_id(self):
-        """Test creating a leaf catalogue category with a property with a non-existent unit id provided."""
+        """Test creating a leaf catalogue category with a property with a non-existent unit ID provided."""
 
         self.add_unit_value_and_id("mm", str(ObjectId()))
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
 
     def test_create_leaf_with_properties_with_invalid_unit_id(self):
-        """Test creating a leaf catalogue category with a property with an invalid unit id provided."""
+        """Test creating a leaf catalogue category with a property with an invalid unit ID provided."""
 
         self.add_unit_value_and_id("mm", "invalid-id")
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
@@ -390,8 +390,7 @@ class GetDSL(CreateDSL):
 
     def check_get_catalogue_category_success(self, expected_catalogue_category_get_data: dict) -> None:
         """
-        Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data
-        returned.
+        Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
                                                      be required for a `CatalogueCategoryGetSchema`.
@@ -871,7 +870,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_parent_id_to_leaf(self):
-        """Test updating the `parent_id` of a catalogue category to the id of a leaf catalogue category."""
+        """Test updating the `parent_id` of a catalogue category to the ID of a leaf catalogue category."""
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
@@ -1114,7 +1113,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
 
     def test_partial_update_leaf_with_properties_with_invalid_unit_id(self):
-        """Test updating a leaf catalogue category's properties to have a property with an invalid unit id provided."""
+        """Test updating a leaf catalogue category's properties to have a property with an invalid unit ID provided."""
 
         self.add_unit_value_and_id("mm", "invalid-id")
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
