@@ -2,6 +2,9 @@
 Unit tests for the `SystemService` service
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
@@ -45,13 +48,12 @@ class SystemServiceDSL:
 
 
 class CreateDSL(SystemServiceDSL):
-    """Base class for create tests"""
+    """Base class for `create` tests"""
 
     _system_post: SystemPostSchema
     _expected_system_in: SystemIn
     _expected_system_out: SystemOut
     _created_system: SystemOut
-    _create_exception: pytest.ExceptionInfo
 
     def mock_create(self, system_post_data: dict):
         """Mocks repo methods appropriately to test the 'create' service method
@@ -102,7 +104,7 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(SystemServiceDSL):
-    """Base class for get tests"""
+    """Base class for `get` tests"""
 
     _obtained_system_id: str
     _expected_system: MagicMock
@@ -141,7 +143,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(SystemServiceDSL):
-    """Base class for get_breadcrumbs tests"""
+    """Base class for `get_breadcrumbs` tests"""
 
     _expected_breadcrumbs: MagicMock
     _obtained_breadcrumbs: MagicMock
@@ -155,13 +157,13 @@ class GetBreadcrumbsDSL(SystemServiceDSL):
         ServiceTestHelpers.mock_get_breadcrumbs(self.mock_system_repository, self._expected_breadcrumbs)
 
     def call_get_breadcrumbs(self, system_id: str):
-        """Calls the SystemService `get` method"""
+        """Calls the SystemService `get_breadcrumbs` method"""
 
         self._obtained_system_id = system_id
         self._obtained_breadcrumbs = self.system_service.get_breadcrumbs(system_id)
 
     def check_get_breadcrumbs_success(self):
-        """Checks that a prior call to `call_get` worked as expected"""
+        """Checks that a prior call to `call_get_breadcrumbs` worked as expected"""
 
         self.mock_system_repository.get_breadcrumbs.assert_called_once_with(self._obtained_system_id)
 
@@ -180,7 +182,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(SystemServiceDSL):
-    """Base class for list tests"""
+    """Base class for `list` tests"""
 
     _parent_id_filter: Optional[str]
     _expected_systems: MagicMock
@@ -208,7 +210,7 @@ class ListDSL(SystemServiceDSL):
 
 
 class TestList(ListDSL):
-    """Tests for getting a system"""
+    """Tests for listing systems"""
 
     def test_list(self):
         """Test listing systems"""
@@ -219,7 +221,7 @@ class TestList(ListDSL):
 
 
 class UpdateDSL(SystemServiceDSL):
-    """Base class for update tests"""
+    """Base class for `update` tests"""
 
     _stored_system: Optional[SystemOut]
     _system_patch: SystemPatchSchema
@@ -310,8 +312,8 @@ class UpdateDSL(SystemServiceDSL):
 class TestUpdate(UpdateDSL):
     """Tests for updating a system"""
 
-    def test_update_all_fields(self):
-        """Test updating all fields of a system"""
+    def test_update_all_fields_except_parent_id(self):
+        """Test updating all fields of a system except its parent id"""
 
         system_id = str(ObjectId())
 
@@ -323,7 +325,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(system_id)
         self.check_update_success()
 
-    def test_update_description_field_only(self):
+    def test_update_description_only(self):
         """Test updating system's description field only (code should not need regenerating as name doesn't change)"""
 
         system_id = str(ObjectId())
@@ -347,7 +349,7 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(SystemServiceDSL):
-    """Base class for delete tests"""
+    """Base class for `delete` tests"""
 
     _delete_system_id: str
 

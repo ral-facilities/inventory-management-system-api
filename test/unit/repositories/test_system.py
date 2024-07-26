@@ -2,6 +2,9 @@
 Unit tests for the `SystemRepo` repository
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
@@ -125,7 +128,7 @@ class SystemRepoDSL:
 
 
 class CreateDSL(SystemRepoDSL):
-    """Base class for create tests"""
+    """Base class for `create` tests"""
 
     _system_in: SystemIn
     _expected_system_out: SystemOut
@@ -258,7 +261,7 @@ class TestCreate(CreateDSL):
 
 
 class GetDSL(SystemRepoDSL):
-    """Base class for get tests"""
+    """Base class for `get` tests"""
 
     _obtained_system_id: str
     _expected_system_out: Optional[SystemOut]
@@ -345,7 +348,7 @@ class TestGet(GetDSL):
 
 
 class GetBreadcrumbsDSL(SystemRepoDSL):
-    """Base class for breadcrumbs tests"""
+    """Base class for `get_breadcrumbs` tests"""
 
     _breadcrumbs_query_result: list[dict]
     _mock_aggregation_pipeline = MagicMock()
@@ -401,7 +404,7 @@ class TestGetBreadcrumbs(GetBreadcrumbsDSL):
 
 
 class ListDSL(SystemRepoDSL):
-    """Base class for list tests"""
+    """Base class for `list` tests"""
 
     _expected_systems_out: list[SystemOut]
     _parent_id_filter: Optional[str]
@@ -473,7 +476,7 @@ class TestList(ListDSL):
 
 
 class UpdateDSL(SystemRepoDSL):
-    """Base class for update tests"""
+    """Base class for `update` tests"""
 
     # pylint:disable=too-many-instance-attributes
     _system_in: SystemIn
@@ -618,9 +621,7 @@ class UpdateDSL(SystemRepoDSL):
                 "_id": CustomObjectId(self._updated_system_id),
             },
             {
-                "$set": {
-                    **self._system_in.model_dump(),
-                },
+                "$set": self._system_in.model_dump(),
             },
             session=self.mock_session,
         )
@@ -653,7 +654,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
+        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_A)
         self.call_update(system_id)
         self.check_update_success()
 
@@ -708,20 +709,20 @@ class TestUpdate(UpdateDSL):
         """Test updating a system's name to one that is a duplicate within the same parent system"""
 
         system_id = str(ObjectId())
-        new_name = "New Duplicate Name"
+        duplicate_name = "New Duplicate Name"
 
         self.mock_update(
             system_id,
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": new_name},
+            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": duplicate_name},
             SYSTEM_IN_DATA_NO_PARENT_A,
-            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            duplicate_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "name": duplicate_name},
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate system found within the parent system")
 
     def test_update_parent_id_with_duplicate_within_parent(self):
-        """Test updating a system's parent-id to one contains a system with a duplicate name within the same parent
-        system"""
+        """Test updating a system's parent_id to one that contains a system with a duplicate name within the same
+        parent system"""
 
         system_id = str(ObjectId())
         new_parent_id = str(ObjectId())
@@ -747,7 +748,7 @@ class TestUpdate(UpdateDSL):
 
 
 class DeleteDSL(SystemRepoDSL):
-    """Base class for delete tests"""
+    """Base class for `delete` tests"""
 
     _delete_system_id: str
     _delete_exception: pytest.ExceptionInfo

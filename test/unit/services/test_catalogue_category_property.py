@@ -3,7 +3,6 @@ Unit tests for the `CatalogueCategoryPropertyService` service.
 """
 
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW
-from test.unit.services.test_catalogue_category import UNIT_A
 from unittest.mock import ANY, patch
 
 import pytest
@@ -25,6 +24,13 @@ from inventory_management_system_api.schemas.catalogue_category import (
 
 # pylint:disable=too-many-locals
 # pylint:disable=too-many-arguments
+
+UNIT_A = {
+    "value": "mm",
+    "code": "mm",
+    "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+    "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
+}
 
 
 @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
