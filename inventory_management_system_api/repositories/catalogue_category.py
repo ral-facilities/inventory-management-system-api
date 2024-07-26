@@ -72,29 +72,6 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(result.inserted_id), session=session)
         return catalogue_category
 
-    def delete(self, catalogue_category_id: str, session: ClientSession = None) -> None:
-        """
-        Delete a catalogue category by its ID from a MongoDB database.
-
-        The method checks if the catalogue category has child elements and raises a `ChildElementsExistError` if it
-        does.
-
-        :param catalogue_category_id: The ID of the catalogue category to delete.
-        :param session: PyMongo ClientSession to use for database operations
-        :raises ChildElementsExistError: If the catalogue category has child elements.
-        :raises MissingRecordError: If the catalogue category doesn't exist.
-        """
-        catalogue_category_id = CustomObjectId(catalogue_category_id)
-        if self.has_child_elements(catalogue_category_id, session=session):
-            raise ChildElementsExistError(
-                f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be deleted"
-            )
-
-        logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
-        result = self._catalogue_categories_collection.delete_one({"_id": catalogue_category_id}, session=session)
-        if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
-
     def get(self, catalogue_category_id: str, session: ClientSession = None) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID from a MongoDB database.
@@ -133,6 +110,20 @@ class CatalogueCategoryRepo:
             entity_id=catalogue_category_id,
             collection_name="catalogue_categories",
         )
+
+    def list(self, parent_id: Optional[str], session: ClientSession = None) -> List[CatalogueCategoryOut]:
+        """
+        Retrieve catalogue categories from a MongoDB database based on the provided filters.
+
+        :param parent_id: The parent_id to filter catalogue categories by.
+        :param session: PyMongo ClientSession to use for database operations
+        :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
+                 database.
+        """
+        query = utils.list_query(parent_id, "catalogue categories")
+
+        catalogue_categories = self._catalogue_categories_collection.find(query, session=session)
+        return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
 
     def update(
         self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn, session: ClientSession = None
@@ -192,19 +183,28 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(catalogue_category_id), session=session)
         return catalogue_category
 
-    def list(self, parent_id: Optional[str], session: ClientSession = None) -> List[CatalogueCategoryOut]:
+    def delete(self, catalogue_category_id: str, session: ClientSession = None) -> None:
         """
-        Retrieve catalogue categories from a MongoDB database based on the provided filters.
+        Delete a catalogue category by its ID from a MongoDB database.
 
-        :param parent_id: The parent_id to filter catalogue categories by.
+        The method checks if the catalogue category has child elements and raises a `ChildElementsExistError` if it
+        does.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete.
         :param session: PyMongo ClientSession to use for database operations
-        :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
-                 database.
+        :raises ChildElementsExistError: If the catalogue category has child elements.
+        :raises MissingRecordError: If the catalogue category doesn't exist.
         """
-        query = utils.list_query(parent_id, "catalogue categories")
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        if self.has_child_elements(catalogue_category_id, session=session):
+            raise ChildElementsExistError(
+                f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be deleted"
+            )
 
-        catalogue_categories = self._catalogue_categories_collection.find(query, session=session)
-        return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
+        logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
+        result = self._catalogue_categories_collection.delete_one({"_id": catalogue_category_id}, session=session)
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
 
     def _is_duplicate_catalogue_category(
         self,

@@ -12,7 +12,6 @@ from pymongo.cursor import Cursor
 from pymongo.database import Database
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
@@ -36,17 +35,6 @@ def fixture_database_mock() -> Mock:
     database_mock.units = Mock(Collection)
     database_mock.usage_statuses = Mock(Collection)
     return database_mock
-
-
-@pytest.fixture(name="catalogue_category_repository")
-def fixture_catalogue_category_repository(database_mock: Mock) -> CatalogueCategoryRepo:
-    """
-    Fixture to create a `CatalogueCategoryRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `CatalogueCategoryRepo` instance with the mocked dependency.
-    """
-    return CatalogueCategoryRepo(database_mock)
 
 
 @pytest.fixture(name="catalogue_item_repository")
@@ -189,6 +177,8 @@ class RepositoryTestHelpers:
         collection_mock.update_many.return_value = update_many_result_mock
 
 
+# pylint:disable=fixme
+# TODO: Remove this once tests refactored - should be able to just use `RepositoryTestHelpers.`
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[RepositoryTestHelpers]:
     """

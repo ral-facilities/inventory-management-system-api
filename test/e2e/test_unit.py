@@ -156,7 +156,7 @@ def test_delete_with_a_non_existent_id(test_client):
 
 
 def test_delete_unit_that_is_a_part_of_catalogue_category(test_client):
-    """Test trying to delete a unit that is a part of a Catalogue Category"""
+    """Test trying to delete a unit that is a part of a catalogue category"""
 
     response = test_client.post("/v1/units", json=UNIT_POST_A)
     unit_mm = response.json()

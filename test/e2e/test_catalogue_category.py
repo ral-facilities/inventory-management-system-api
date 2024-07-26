@@ -1297,7 +1297,7 @@ def test_partial_update_catalogue_category_change_parent_id(test_client):
 
 def test_partial_update_catalogue_category_change_parent_id_to_child_id(test_client):
     """
-    Test updating a System's parent_id to be the id of one of its children
+    Test updating a catalogue categories's parent_id to be the id of one of its children
     """
     nested_categories = _post_n_catalogue_categories(test_client, 4)
 

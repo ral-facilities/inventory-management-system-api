@@ -321,6 +321,8 @@ class ServiceTestHelpers:
         repository_mock.update.return_value = repo_obj
 
 
+# pylint:disable=fixme
+# TODO: Remove this once tests refactored - should be able to just use `ServiceTestHelpers.`
 @pytest.fixture(name="test_helpers")
 def fixture_test_helpers() -> Type[ServiceTestHelpers]:
     """

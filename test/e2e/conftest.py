@@ -2,11 +2,13 @@
 Module providing test fixtures for the e2e tests.
 """
 
+from datetime import datetime
 from test.conftest import VALID_ACCESS_TOKEN
 from typing import Optional
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import Response
 
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.main import app
@@ -78,3 +80,28 @@ def replace_unit_values_with_ids_in_properties(properties_without_ids: list[dict
         properties.append(property_without_id)
 
     return properties
+
+
+class E2ETestHelpers:
+    """
+    A utility class containing common helper methods for e2e tests
+
+    This class provides a set of static methods that encapsulate common functionality frequently used in the e2e tests
+    """
+
+    @staticmethod
+    def check_created_and_modified_times_updated_correctly(post_response: Response, patch_response: Response):
+        """Checks that an updated entity has a created_time that is the same as its original, but an updated_time
+        that is newer
+
+        :param post_response: Original response for the entity post request
+        :param patch_response: Updated response for the entity patch request
+        """
+
+        original_data = post_response.json()
+        updated_data = patch_response.json()
+
+        assert original_data["created_time"] == updated_data["created_time"]
+        assert datetime.fromisoformat(updated_data["modified_time"]) > datetime.fromisoformat(
+            original_data["modified_time"]
+        )

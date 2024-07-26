@@ -12,9 +12,61 @@ _GET_DATA - Is for an entity schema - Used in assertions for e2e tests
 
 from unittest.mock import ANY
 
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyIn
+
 # Used for _GET_DATA's as when comparing these will not be possible to know
 # at runtime
 CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
+
+# --------------------------------- CATALOGUE CATEGORIES ---------------------------------
+
+CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_A = {
+    "name": "Category A",
+    "code": "category-a",
+    "is_leaf": False,
+    "parent_id": None,
+    "properties": [],
+}
+
+CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_B = {
+    "name": "Category B",
+    "code": "catagory-b",
+    "is_leaf": False,
+    "parent_id": None,
+    "properties": [],
+}
+
+CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
+    "name": "Leaf Category No Parent No Properties",
+    "code": "leaf-category-no-parent-no-properties",
+    "is_leaf": True,
+    "parent_id": None,
+    "properties": [],
+}
+
+CATALOGUE_CATEGORY_PROPERTY_BOOLEAN_MANDATORY_WITHOUT_UNIT = {
+    "name": "Mandatory Boolean Property Without Unit",
+    "type": "boolean",
+    "mandatory": True,
+}
+
+CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT = {
+    "name": "Non Mandatory Number Property With Unit",
+    "type": "number",
+    "unit": "mm",
+    "mandatory": False,
+}
+
+CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES = {
+    "name": "Leaf Category No Parent With Properties",
+    "code": "leaf-category-no-parent-with-properties",
+    "is_leaf": True,
+    "parent_id": None,
+    "properties": [
+        CatalogueCategoryPropertyIn(**CATALOGUE_CATEGORY_PROPERTY_BOOLEAN_MANDATORY_WITHOUT_UNIT),
+        CatalogueCategoryPropertyIn(**CATALOGUE_CATEGORY_PROPERTY_NUMBER_NON_MANDATORY_WITH_UNIT),
+    ],
+}
 
 # --------------------------------- MANUFACTURERS ---------------------------------
 
