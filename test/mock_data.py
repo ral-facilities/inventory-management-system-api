@@ -169,8 +169,6 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     "properties": [],
 }
 
-# --------------------------------- Properties ---------------------------------
-
 # Leaf, Required values only
 
 CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY = {
@@ -223,6 +221,18 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     ],
+}
+
+# --------------------------------- CATALOGUE ITEMS ---------------------------------
+
+# No properties
+CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY = {
+    "catalogue_category_id": str(ObjectId()),
+    "manufacturer_id": str(ObjectId()),
+    "name": "Catalogue Item Required Values Only",
+    "cost_gbp": 42,
+    "days_to_replace": 7,
+    "is_obsolete": False,
 }
 
 # --------------------------------- MANUFACTURERS ---------------------------------

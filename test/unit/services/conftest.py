@@ -7,9 +7,10 @@ from typing import List, Type, Union
 from unittest.mock import Mock, patch
 
 import pytest
+from bson import ObjectId
 
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut, CatalogueCategoryPropertyIn
+from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, PropertyIn
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.models.system import SystemOut
@@ -23,6 +24,8 @@ from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService

@@ -166,7 +166,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         Mocks repo methods appropriately to test the `create` service method.
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
-                                        for a `CatalogueCategoryPostSchema` but with any unit_id's replaced by the
+                                        for a `CatalogueCategoryPostSchema` but with any `unit_id`'s replaced by the
                                         'unit' value in its properties as the IDs will be added automatically.
         :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
                                                   data as would be required for a `CatalogueCategoryIn` database model.
