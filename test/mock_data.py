@@ -25,7 +25,13 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 UNIT_POST_DATA_MM = {"value": "mm"}
 
+UNIT_POST_DATA_CM = {"value": "cm"}
+
 UNIT_IN_DATA_MM = {**UNIT_POST_DATA_MM, "code": "mm"}
+
+UNIT_GET_DATA_MM = {**UNIT_IN_DATA_MM, **CREATED_MODIFIED_GET_DATA_EXPECTED, "id": ANY}
+
+UNIT_GET_DATA_CM = {**UNIT_POST_DATA_CM, **CREATED_MODIFIED_GET_DATA_EXPECTED, "id": ANY, "code": "cm"}
 
 # --------------------------------- CATALOGUE CATEGORY PROPERTIES ---------------------------------
 

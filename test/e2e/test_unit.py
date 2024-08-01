@@ -2,178 +2,234 @@
 End-to-End tests for the Unit router
 """
 
-from test.e2e.mock_schemas import CREATED_MODIFIED_VALUES_EXPECTED
-from unittest.mock import ANY
+from typing import Optional
 
 from bson import ObjectId
 
-UNIT_POST_A = {"value": "mm"}
-
-UNIT_POST_A_EXPECTED = {
-    **UNIT_POST_A,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "mm",
-    "id": ANY,
-}
-
-UNIT_POST_B = {"value": "cm"}
-
-UNIT_POST_B_EXPECTED = {
-    **UNIT_POST_B,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "cm",
-    "id": ANY,
-}
-
-UNIT_POST_C = {"value": "degrees"}
-
-UNIT_POST_C_EXPECTED = {
-    **UNIT_POST_C,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "degrees",
-    "id": ANY,
-}
-
-UNIT_POST_D = {"value": "J/cm²"}
-
-UNIT_POST_D_EXPECTED = {
-    **UNIT_POST_D,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "j/cm²",
-    "id": ANY,
-}
+import pytest
+from fastapi.testclient import TestClient
+from httpx import Response
+from test.mock_data import UNIT_GET_DATA_CM, UNIT_GET_DATA_MM, UNIT_POST_DATA_CM, UNIT_POST_DATA_MM
 
 
-UNITS_EXPECTED = [
-    UNIT_POST_A_EXPECTED,
-    UNIT_POST_B_EXPECTED,
-    UNIT_POST_C_EXPECTED,
-    UNIT_POST_D_EXPECTED,
-]
+class CreateDSL:
+    """Base class for create tests."""
+
+    test_client: TestClient
+
+    _post_response: Response
+
+    @pytest.fixture(autouse=True)
+    def setup(self, test_client):
+        """Setup fixtures"""
+        self.test_client = test_client
+
+    def post_unit(self, unit_post_data: dict) -> Optional[str]:
+        """
+        Posts a unit with the given data, returns the ID of the created unit if successful.
+
+        :param unit_post_data: Dictionary containing the unit data as would be required for a
+            `UnitPostSchema`.
+        :return: ID of the created unit (or `None` if not successful).
+        """
+        self._post_response = self.test_client.post("/v1/units", json=unit_post_data)
+        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+
+    def check_post_unit_success(self, expected_unit_get_data: dict) -> None:
+        """
+        Checks that a prior call to `post_unit` gave a successful response with the expected data returned.
+
+        :param expected_unit_get_data: Dictionary containing the expected unit data as would be required
+            for a `UnitSchema`.
+        """
+        assert self._post_response.status_code == 201
+        assert self._post_response.json() == expected_unit_get_data
+
+    def check_post_unit_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that prior call to `post_unit` gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._post_response.status_code == status_code
+        assert self._post_response.json()["detail"] == detail
+
+    def check_post_unit_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `post_unit` gave a failed response with the expected code and pydantic
+        validation error message.
+
+        :param status_code: Expected status code to be returned.
+        :param message: Expected pydantic validation error message to be returned.
+        """
+        assert self._post_response.status_code == status_code
+        assert self._post_response.json()["detail"][0]["msg"] == message
 
 
-def test_create_unit(test_client):
-    """Test creating a unit"""
+class TestCreate(CreateDSL):
+    """Tests for creating a unit."""
 
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
+    def test_create_unit(self):
+        """Test creating a unit"""
 
-    assert response.status_code == 201
-    assert response.json() == UNIT_POST_A_EXPECTED
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.check_post_unit_success(UNIT_GET_DATA_MM)
 
+    def test_create_unit_with_duplicate_name(self):
+        """Test creating a unit with a duplicate name"""
 
-def test_create_unit_with_duplicate_name(test_client):
-    """Test creating a unit with a duplicate name"""
-
-    test_client.post("/v1/units", json=UNIT_POST_A)
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-
-    assert response.status_code == 409
-    assert response.json()["detail"] == "A unit with the same value already exists"
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.check_post_unit_failed_with_detail(409, "A unit with the same value already exists")
 
 
-def test_get_units(test_client):
-    """
-    Test getting a list of units
-    """
+class GetDSL(CreateDSL):
+    """Base class for get tests"""
 
-    test_client.post("/v1/units", json=UNIT_POST_A)
-    test_client.post("/v1/units", json=UNIT_POST_B)
-    test_client.post("/v1/units", json=UNIT_POST_C)
-    test_client.post("/v1/units", json=UNIT_POST_D)
+    _get_response = Response
 
-    response = test_client.get("/v1/units")
+    def get_unit(self, unit_id: str) -> None:
+        """
+        Gets a unit with the given ID.
 
-    assert response.status_code == 200
-    assert response.json() == UNITS_EXPECTED
+        :param unit_id: ID of the unit to be obtained.
+        """
+        self._get_response = self.test_client.get(f"/v1/units/{unit_id}")
 
+    def check_get_unit_success(self, expected_unit_get_data: dict) -> None:
+        """
+        Checks that a prior call to `get_unit` gave a successful response with the expected data returned.
 
-def test_get_units_when_no_units(test_client):
-    """
-    Test getting a list of units
-    """
+        :param expected_unit_get_data: Dictionary containing the expected unit data as would be required
+            for a `UnitSchema`.
+        """
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_unit_get_data
 
-    response = test_client.get("/v1/units")
+    def check_get_unit_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that prior call to `get_unit` gave a failed response with the expected code and detail.
 
-    assert response.status_code == 200
-    assert response.json() == []
-
-
-def test_get_unit_with_id(test_client):
-    """Test getting a unit by ID"""
-
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-
-    response = test_client.get(f"/v1/units/{response.json()['id']}")
-
-    assert response.status_code == 200
-    assert response.json() == UNIT_POST_A_EXPECTED
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
 
 
-def test_get_unit_with_invalid_id(test_client):
-    """Test getting a unit with an invalid id"""
+class TestGet(GetDSL):
+    """Tests for getting a unit."""
 
-    response = test_client.get("/v1/units/invalid")
+    def test_get(self):
+        """Test getting a unit."""
+        unit_id = self.post_unit(UNIT_POST_DATA_MM)
+        self.get_unit(unit_id)
+        self.check_get_unit_success(UNIT_GET_DATA_MM)
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Unit not found"
+    def test_get_with_non_existent_id(self):
+        """Test getting a unit with a non-existent ID."""
+        self.get_unit(str(ObjectId()))
+        self.check_get_unit_failed_with_detail(404, "Unit not found")
 
-
-def test_get_unit_with_non_existent_id(test_client):
-    """Test getting a units with an non-existent id"""
-
-    response = test_client.get(f"/v1/units/{str(ObjectId())}")
-
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Unit not found"
-
-
-def test_delete(test_client):
-    """Test deleting a unit"""
-
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit = response.json()
-
-    response = test_client.delete(f"/v1/units/{unit['id']}")
-    assert response.status_code == 204
+    def test_get_with_invalid_id(self):
+        """Test getting a unit with an invalid ID."""
+        self.get_unit("invalid-id")
+        self.check_get_unit_failed_with_detail(404, "Unit not found")
 
 
-def test_delete_with_an_invalid_id(test_client):
-    """Test trying to delete a unit with an invalid ID"""
+class ListDSL(GetDSL):
+    """Base class for list tests."""
 
-    response = test_client.delete("/v1/units/invalid")
+    def get_units(self) -> None:
+        """Gets a list of units."""
+        self._get_response = self.test_client.get("/v1/units")
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Unit not found"
+    def check_get_units_success(self, expected_units_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_units` gave a successful response with the expected data returned.
+
+        :param expected_units_get_data: List of dictionaries containing the expected unit data as would
+            be required for a `UnitSchema`.
+        """
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_units_get_data
 
 
-def test_delete_with_a_non_existent_id(test_client):
-    """Test trying to delete a unit with a non-existent ID"""
+class TestList(ListDSL):
+    """Tests for getting a list of units."""
 
-    response = test_client.delete(f"/v1/units/{str(ObjectId())}")
+    def test_list(self):
+        """Test getting a list of all units."""
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_unit(UNIT_POST_DATA_CM)
+        self.get_units()
+        self.check_get_units_success([UNIT_GET_DATA_MM, UNIT_GET_DATA_CM])
 
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Unit not found"
+    def test_list_no_units(self):
+        """Test getting a list of all units when there are no units."""
+        self.get_units()
+        self.check_get_units_success([])
 
 
-def test_delete_unit_that_is_a_part_of_catalogue_category(test_client):
-    """Test trying to delete a unit that is a part of a catalogue category"""
+class DeleteDSL(ListDSL):
+    """Base class for delete tests."""
 
-    response = test_client.post("/v1/units", json=UNIT_POST_A)
-    unit_mm = response.json()
+    _delete_response: Response
 
-    # pylint: disable=duplicate-code
-    catalogue_category_post = {
-        "name": "Category A",
-        "is_leaf": True,
-        "properties": [
-            {"name": "Property A", "type": "number", "unit": "mm", "unit_id": unit_mm["id"], "mandatory": False},
-            {"name": "Property B", "type": "boolean", "mandatory": True},
-        ],
-    }
-    # pylint: enable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+    def delete_unit(self, unit_id: str) -> None:
+        """
+        Delete a unit with the given ID.
 
-    response = test_client.delete(f"/v1/units/{unit_mm['id']}")
+        :param unit_id: ID of the unit to be deleted.
+        """
+        self._delete_response = self.test_client.delete(f"/v1/units/{unit_id}")
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "The specified unit is part of a Catalogue category"
+    def check_delete_unit_success(self) -> None:
+        """Checks that a prior call to `delete_unit` gave a successful response."""
+        assert self._delete_response.status_code == 204
+
+    def check_delete_unit_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `delete_unit` gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._delete_response.status_code == status_code
+        assert self._delete_response.json()["detail"] == detail
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a unit."""
+
+    def test_delete(self):
+        """Test deleting a unit."""
+        unit_id = self.post_unit(UNIT_POST_DATA_MM)
+        self.delete_unit(unit_id)
+        self.check_delete_unit_success()
+
+        self.get_unit(unit_id)
+        self.check_get_unit_failed_with_detail(404, "Unit not found")
+
+    def test_delete_when_part_of_catalogue_category(self):
+        """Test deleting a unit when it is part of a catalogue item."""
+        unit_id = self.post_unit(UNIT_POST_DATA_MM)
+
+        # pylint:disable=fixme
+        # TODO: Reuse catalogue category data once catalogue category tests have been refactored
+        catalogue_category_post = {"name": "Category A", "is_leaf": True, "properties": []}
+        response = self.test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+
+        self.delete_unit(unit_id)
+        self.check_delete_unit_failed_with_detail(409, "The specified unit is a part of a catalogue category")
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent unit."""
+        self.delete_unit(str(ObjectId()))
+        self.check_delete_unit_failed_with_detail(404, "Unit not found")
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting a unit with invalid ID."""
+        self.delete_unit("invalid-id")
+        self.check_delete_unit_failed_with_detail(404, "Unit not found")
