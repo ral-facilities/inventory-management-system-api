@@ -185,7 +185,7 @@ class TestCreate(CreateDSL):
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": parent_id}
         )
 
-    def test_create_with_eaf_parent(self):
+    def test_create_with_leaf_parent(self):
         """Test creating a catalogue category with a leaf parent."""
 
         parent_id = self.post_catalogue_category(

@@ -5,14 +5,18 @@ Unit tests for the `CatalogueCategoryService` service.
 from datetime import timedelta
 from test.conftest import add_ids_to_properties
 from test.mock_data import (
+    BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY,
-    CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    MANUFACTURER_IN_DATA_A,
-)
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
+    CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+    CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, MANUFACTURER_IN_DATA_A)
+from test.unit.services.conftest import (MODEL_MIXINS_FIXED_DATETIME_NOW,
+                                         ServiceTestHelpers)
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -20,24 +24,23 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    InvalidActionError,
-    InvalidPropertyTypeError,
-    MissingMandatoryProperty,
-    MissingRecordError,
-    NonLeafCatalogueCategoryError,
-)
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
-from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
+    ChildElementsExistError, InvalidActionError, InvalidPropertyTypeError,
+    MissingMandatoryProperty, MissingRecordError,
+    NonLeafCatalogueCategoryError)
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn, CatalogueItemOut, PropertyIn)
+from inventory_management_system_api.models.manufacturer import (
+    ManufacturerIn, ManufacturerOut)
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
+from inventory_management_system_api.schemas.catalogue_category import \
+    CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import (
-    CatalogueItemPatchSchema,
-    CatalogueItemPostSchema,
-    PropertyPostSchema,
-)
+    CatalogueItemPatchSchema, CatalogueItemPostSchema, PropertyPostSchema)
 from inventory_management_system_api.services import utils
-from inventory_management_system_api.services.catalogue_item import CatalogueItemService
+from inventory_management_system_api.services.catalogue_item import \
+    CatalogueItemService
 
 
 class CatalogueItemServiceDSL:
@@ -76,25 +79,50 @@ class CatalogueItemServiceDSL:
             self.wrapped_utils = wrapped_utils
             yield
 
-    def check_add_property_unit_values_performed_expected_calls(
-        self, expected_properties: list[PropertyPostSchema]
-    ) -> None:
-        """Checks that a call to `add_property_unit_values` performed the expected function calls.
+    def construct_properties_in_and_post_with_ids(
+        self,
+        catalogue_category_properties_in: list[CatalogueCategoryPropertyIn],
+        catalogue_items_properties_data: list[dict],
+    ) -> tuple[list[PropertyIn], list[PropertyPostSchema]]:
+        """
+        Returns a list of property post schemas and expected property in models by adding
+        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
 
-        :param expected_properties: Expected properties the function would have been called with.
+        :param catalogue_category_properties_in: List of `CatalogueCategoryPropertyIn`'s as would be found in the
+                                                 catalogue category.
+        :param catalogue_items_properties_data: List of dictionaries containing the data for each property as would
+                                                   be required for a `PropertyPostSchema` but without any `id`'s.
+        :returns: Tuple of lists. The first contains the expected `PropertyIn` models and the second the
+                  `PropertyPostSchema` schema's that should be posted in order to obtain them.
         """
 
-        expected_unit_repo_calls = []
-        for prop in expected_properties:
-            if prop.unit_id:
-                expected_unit_repo_calls.append(call(prop.unit_id))
+        property_post_schemas = []
+        expected_properties_in = []
 
-        self.mock_unit_repository.get.assert_has_calls(expected_unit_repo_calls)
+        self.property_name_id_dict = {}
+
+        for prop in catalogue_items_properties_data:
+            prop_id = None
+            prop_without_name = prop.copy()
+
+            # Find the corresponding catalogue category property with the same name
+            for found_prop in catalogue_category_properties_in:
+                if found_prop.name == prop["name"]:
+                    prop_id = str(found_prop.id)
+                    self.property_name_id_dict["name"] = prop_id
+                    del prop_without_name["name"]
+                    break
+
+            expected_properties_in.append(PropertyIn(**prop, id=prop_id))
+            property_post_schemas.append(PropertyPostSchema(**prop_without_name, id=prop_id))
+
+        return expected_properties_in, property_post_schemas
 
 
 class CreateDSL(CatalogueItemServiceDSL):
     """Base class for `create` tests."""
 
+    _catalogue_category_out: Optional[CatalogueCategoryOut]
     _catalogue_item_post: CatalogueItemPostSchema
     _expected_catalogue_item_in: CatalogueItemIn
     _expected_catalogue_item_out: CatalogueItemOut
@@ -112,8 +140,8 @@ class CreateDSL(CatalogueItemServiceDSL):
         Mocks repo methods appropriately to test the `create` service method.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
-                                    `CatalogueItemPostSchema` but with any `unit_id`'s replaced by the 'unit' value in
-                                    its properties as the IDs will be added automatically.
+                                    `CatalogueItemPostSchema` but with any mandatory IDs missing as they will be added
+                                    automatically.
         :param catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data as would
                                            be required for a `CatalogueCategoryIn` database model.
         :param manufacturer_in_data: Either `None` or a dictionary containing the manufacturer data as would be required
@@ -124,36 +152,38 @@ class CreateDSL(CatalogueItemServiceDSL):
                                      added automatically.
         """
 
-        # TODO: Cleanup?
+        # Generate mandatory IDs to be inserted where needed
+        catalogue_category_id = str(ObjectId())
+        manufacturer_id = str(ObjectId())
 
-        catalogue_category_in_dump = {}
+        ids_to_insert = {"catalogue_category_id": catalogue_category_id, "manufacturer_id": manufacturer_id}
+
+        # Catalogue category
+        catalogue_category_in = None
         if catalogue_category_in_data:
             catalogue_category_in = CatalogueCategoryIn(**catalogue_category_in_data)
-            self.property_name_id_dict = {prop.name: prop.id for prop in catalogue_category_in.properties}
 
-            catalogue_category_in_dump = catalogue_category_in.model_dump(by_alias=True)
-
-        ServiceTestHelpers.mock_get(
-            self.mock_catalogue_category_repository,
-            (
-                CatalogueCategoryOut(
-                    **{
-                        **catalogue_category_in_dump,
-                        "_id": catalogue_item_data["catalogue_category_id"],
-                    },
-                )
-                if catalogue_category_in_data
-                else None
-            ),
+        self._catalogue_category_out = (
+            CatalogueCategoryOut(
+                **{
+                    **catalogue_category_in.model_dump(by_alias=True),
+                    "_id": catalogue_category_id,
+                },
+            )
+            if catalogue_category_in
+            else None
         )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._catalogue_category_out)
 
+        # TODO: Could this be simplified? - similar logic elsewhere and in the catalogue category service tests
+        # Manufacturer
         ServiceTestHelpers.mock_get(
             self.mock_manufacturer_repository,
             (
                 ManufacturerOut(
                     **{
                         **ManufacturerIn(**manufacturer_in_data).model_dump(),
-                        "_id": catalogue_item_data["manufacturer_id"],
+                        "_id": manufacturer_id,
                     },
                 )
                 if manufacturer_in_data
@@ -161,12 +191,13 @@ class CreateDSL(CatalogueItemServiceDSL):
             ),
         )
 
+        # Obsolete replacement catalogue item (Use the same mandatory IDs as the item for simplicity)
         ServiceTestHelpers.mock_get(
             self.mock_catalogue_item_repository,
             (
                 CatalogueItemOut(
                     **{
-                        **CatalogueItemIn(**obsolete_replacement_catalogue_item_data).model_dump(),
+                        **CatalogueItemIn(**obsolete_replacement_catalogue_item_data, **ids_to_insert).model_dump(),
                         "_id": catalogue_item_data["obsolete_replacement_catalogue_item_id"],
                     },
                 )
@@ -176,19 +207,26 @@ class CreateDSL(CatalogueItemServiceDSL):
         )
 
         # TODO: Go over catalogue categories and check if should use this method instead of current
+
+        # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
+        property_post_schemas = []
         expected_properties_in = []
-        if "properties" in catalogue_item_data:
-            expected_properties_in = add_ids_to_properties(
-                catalogue_category_in_dump["properties"], catalogue_item_data["properties"]
+        if "properties" in catalogue_item_data and catalogue_item_data["properties"]:
+            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
+                catalogue_category_in.properties, catalogue_item_data["properties"]
+            )
+            expected_properties_in = utils.process_properties(
+                self._catalogue_category_out.properties, property_post_schemas
             )
 
         self._catalogue_item_post = CatalogueItemPostSchema(
-            **{**catalogue_item_data, "properties": expected_properties_in}
+            **{**catalogue_item_data, **ids_to_insert, "properties": property_post_schemas}
         )
 
         self._expected_catalogue_item_in = CatalogueItemIn(
             **{
                 **catalogue_item_data,
+                **ids_to_insert,
                 "properties": expected_properties_in,
             }
         )
@@ -233,23 +271,11 @@ class CreateDSL(CatalogueItemServiceDSL):
                 self._catalogue_item_post.obsolete_replacement_catalogue_item_id
             )
 
-        # TODO: Process properties
+        self.wrapped_utils.process_properties.assert_called_once_with(
+            self._catalogue_category_out.properties, self._catalogue_item_post.properties
+        )
 
-        if self._catalogue_item_post.properties:
-            pass
-            # TODO: Implement properties check
-            # # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
-            # # always be different
-            # actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
-            # assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
-            # assert actual_catalogue_category_in.model_dump() == {
-            #     **self._expected_catalogue_category_in.model_dump(),
-            #     "properties": [
-            #         {**prop.model_dump(), "id": ANY} for prop in self._expected_catalogue_category_in.properties
-            #     ],
-            # }
-        else:
-            self.mock_catalogue_item_repository.create.assert_called_once_with(self._expected_catalogue_item_in)
+        self.mock_catalogue_item_repository.create.assert_called_once_with(self._expected_catalogue_item_in)
 
         assert self._created_catalogue_item == self._expected_catalogue_item_out
 
@@ -272,8 +298,20 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue item without any properties in the catalogue category or catalogue item."""
 
         self.mock_create(
-            CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY,
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_in_data=MANUFACTURER_IN_DATA_A,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_all_properties(self):
+        """Test creating a catalogue item with all properties present in the catalogue category are defined in the
+        catalogue item."""
+
+        self.mock_create(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+            catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
         )
         self.call_create()
@@ -283,7 +321,7 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue item with a non-existent catalogue category ID."""
 
         self.mock_create(
-            CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY,
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=None,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
         )
@@ -296,7 +334,7 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue item with a non-leaf catalogue category."""
 
         self.mock_create(
-            CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY,
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
         )
@@ -307,7 +345,7 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue item with a non-existent manufacturer ID."""
 
         self.mock_create(
-            CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY,
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             manufacturer_in_data=None,
         )
@@ -316,22 +354,36 @@ class TestCreate(CreateDSL):
             f"No manufacturer found with ID: {self._catalogue_item_post.manufacturer_id}"
         )
 
+    def test_create_with_obsolete_replacement_catalogue_item(self):
+        """Test creating a catalogue item with an obsolete replacement catalogue item."""
+
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
+
+        self.mock_create(
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            },
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_in_data=MANUFACTURER_IN_DATA_A,
+            obsolete_replacement_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+        )
+        self.call_create()
+        self.check_create_success()
+
     def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(self):
         """Test creating a catalogue item with a non-existent obsolete replacement catalogue item ID."""
 
-        obsolete_replacement_catalogue_item_id = str(ObjectId())
         self.mock_create(
-            {
-                **CATALOGUE_ITEM_POST_DATA_REQUIRED_VALUES_ONLY,
-                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-            },
+            CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
             obsolete_replacement_catalogue_item_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
+            f"No catalogue item found with ID: "
+            f"{CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES["obsolete_replacement_catalogue_item_id"]}"
         )
 
 
@@ -420,400 +472,6 @@ class TestCreate(CreateDSL):
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
 # # pylint: enable=duplicate-code
-
-
-# def test_create(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     catalogue_category_repository_mock,
-#     manufacturer_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):  # pylint: disable=too-many-arguments
-#     """
-#     Test creating a catalogue item.
-
-#     Verify that the `create` method properly handles the catalogue item to be created, checks that the catalogue
-#     category exists and that it is a leaf category, checks for missing mandatory , filters the
-#     matching , adds the units to the supplied properties, and validates the property values.
-#     """
-#     # pylint: disable=duplicate-code
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "properties": properties,
-#         },
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return a catalogue category
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_item.catalogue_category_id,
-#             **{
-#                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-#                 "properties": add_ids_to_properties(properties, FULL_CATALOGUE_CATEGORY_A_INFO["properties"]),
-#             },
-#         ),
-#     )
-#     # Mock `get` to return a manufacturer
-#     test_helpers.mock_get(
-#         manufacturer_repository_mock,
-#         ManufacturerOut(id=catalogue_item.manufacturer_id, **FULL_MANUFACTURER_INFO),
-#     )
-#     # Mock `create` to return the created catalogue item
-#     test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
-
-#     created_catalogue_item = catalogue_item_service.create(
-#         CatalogueItemPostSchema(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **CATALOGUE_ITEM_A_INFO,
-#                 "properties": [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
-#             },
-#         )
-#     )
-
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_item.catalogue_category_id)
-#     catalogue_item_repository_mock.create.assert_called_once_with(
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "properties": properties,
-#             },
-#         )
-#     )
-#     assert created_catalogue_item == catalogue_ite
-
-
-# def test_create_with_obsolete_replacement_catalogue_item_id(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):
-#     """
-#     Test creating a catalogue item with an obsolete replacement catalogue item ID.
-#     """
-#     obsolete_replacement_catalogue_item_id = str(ObjectId())
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "is_obsolete": True,
-#             "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-#             "properties": properties,
-#         },
-#     )
-
-#     # Mock `get` to return a catalogue category
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_item.catalogue_category_id,
-#             **{
-#                 **FULL_CATALOGUE_CATEGORY_A_INFO,
-#                 "properties": add_ids_to_properties(
-#                     properties,
-#                     FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
-#                 ),
-#             },
-#         ),
-#     )
-#     # Mock `get` to return a replacement catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             id=obsolete_replacement_catalogue_item_id,
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "name": "Catalogue Item B",
-#                 "description": "This is Catalogue Item B",
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     # Mock `create` to return the created catalogue item
-#     test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
-
-#     created_catalogue_item = catalogue_item_service.create(
-#         CatalogueItemPostSchema(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **CATALOGUE_ITEM_A_INFO,
-#                 "is_obsolete": True,
-#                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-#                 "properties": [{"id": prop.id, "value": prop.value} for prop in catalogue_item.properties],
-#             },
-#         )
-#     )
-
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_item.catalogue_category_id)
-#     catalogue_item_repository_mock.get.assert_called_once_with(obsolete_replacement_catalogue_item_id)
-#     catalogue_item_repository_mock.create.assert_called_once_with(
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "is_obsolete": True,
-#                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-#                 "properties": properties,
-#             },
-#         )
-#     )
-#     assert created_catalogue_item == catalogue_item
-
-
-# def test_create_without_properties(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     catalogue_category_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):
-#     """
-#     Test creating a catalogue item without properties.
-
-#     Verify that the `create` method properly handles the catalogue item to be created without properties.
-#     """
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{**FULL_CATALOGUE_ITEM_A_INFO, "properties": []},
-#     )
-
-#     # Mock `get` to return the catalogue category
-#     test_helpers.mock_get(
-#         catalogue_category_repository_mock,
-#         CatalogueCategoryOut(
-#             id=catalogue_item.catalogue_category_id,
-#             **{**FULL_CATALOGUE_CATEGORY_A_INFO, "properties": []},
-#         ),
-#     )
-#     # Mock `create` to return the created catalogue item
-#     test_helpers.mock_create(catalogue_item_repository_mock, catalogue_item)
-
-#     created_catalogue_item = catalogue_item_service.create(
-#         CatalogueItemPostSchema(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{**CATALOGUE_ITEM_A_INFO, "properties": []},
-#         )
-#     )
-
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_item.catalogue_category_id)
-#     catalogue_item_repository_mock.create.assert_called_once_with(
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{**FULL_CATALOGUE_ITEM_A_INFO, "properties": []},
-#         )
-#     )
-#     assert created_catalogue_item == catalogue_item
-
-
-# def test_create_with_missing_mandatory_properties(
-#     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
-# ):
-#     """
-#     Test creating a catalogue item with missing mandatory properties.
-
-#     Verify that the `create` method properly handles a catalogue item with missing mandatory properties, checks that
-#     the catalogue category exists and that it is a leaf category, finds that there are missing mandatory catalogue item
-#     properties, and does not create the catalogue item.
-#     """
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_CATEGORY_A_INFO,
-#             "properties": add_ids_to_properties(
-#                 None,
-#                 FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
-#             ),
-#         },
-#     )
-
-#     # Mock `get` to return the catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(MissingMandatoryProperty) as exc:
-#         catalogue_item_service.create(
-#             CatalogueItemPostSchema(
-#                 catalogue_category_id=catalogue_category.id,
-#                 manufacturer_id=str(ObjectId()),
-#                 **{
-#                     **CATALOGUE_ITEM_A_INFO,
-#                     "properties": [
-#                         {
-#                             "id": catalogue_category.properties[2].id,
-#                             "value": "20x15x10",
-#                         },
-#                     ],
-#                 },
-#             ),
-#         )
-#     assert str(exc.value) == f"Missing mandatory property with ID: '{catalogue_category.properties[1].id}'"
-#     catalogue_item_repository_mock.create.assert_not_called()
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
-
-
-# def test_create_with_with_invalid_value_type_for_string_property(
-#     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
-# ):
-#     """
-#     Test creating a catalogue item with invalid value type for a string property.
-
-#     Verify that the `create` method properly handles a catalogue item with invalid value type for a string property,
-#     checks that the catalogue category exists and that it is a leaf category, checks that there are no missing mandatory
-#     properties, finds invalid value type for a string property, and does not create the catalogue item.
-#     """
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_CATEGORY_A_INFO,
-#             "properties": add_ids_to_properties(
-#                 None,
-#                 FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
-#             ),
-#         },
-#     )
-
-#     # Mock `get` to return the catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(InvalidPropertyTypeError) as exc:
-#         catalogue_item_service.create(
-#             CatalogueItemPostSchema(
-#                 catalogue_category_id=catalogue_category.id,
-#                 manufacturer_id=str(ObjectId()),
-#                 **{
-#                     **CATALOGUE_ITEM_A_INFO,
-#                     "properties": [
-#                         {"id": catalogue_category.properties[0].id, "value": 20},
-#                         {"id": catalogue_category.properties[1].id, "value": False},
-#                         {"id": catalogue_category.properties[2].id, "value": True},
-#                     ],
-#                 },
-#             ),
-#         )
-#     catalogue_item_repository_mock.create.assert_not_called()
-#     assert (
-#         str(exc.value) == "Invalid value type for property with ID "
-#         f"'{catalogue_category.properties[2].id}'. Expected type: string."
-#     )
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
-
-
-# def test_create_with_invalid_value_type_for_number_property(
-#     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
-# ):
-#     """
-#     Test creating a catalogue item with invalid value type for a number property.
-
-#     Verify that the `create` method properly handles a catalogue item with invalid value type for a number catalogue
-#     property, checks that the catalogue category exists and that it is a leaf category, checks that there are no missing
-#     mandatory properties, finds invalid value type for a number property, and does not create the catalogue item.
-#     """
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_CATEGORY_A_INFO,
-#             "properties": add_ids_to_properties(
-#                 None,
-#                 FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
-#             ),
-#         },
-#     )
-
-#     # Mock `get` to return the catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(InvalidPropertyTypeError) as exc:
-#         catalogue_item_service.create(
-#             CatalogueItemPostSchema(
-#                 catalogue_category_id=catalogue_category.id,
-#                 manufacturer_id=str(ObjectId()),
-#                 **{
-#                     **CATALOGUE_ITEM_A_INFO,
-#                     "properties": [
-#                         {"id": catalogue_category.properties[0].id, "value": "20"},
-#                         {"id": catalogue_category.properties[1].id, "value": False},
-#                         {"id": catalogue_category.properties[2].id, "value": "20x15x10"},
-#                     ],
-#                 },
-#             )
-#         )
-#     catalogue_item_repository_mock.create.assert_not_called()
-#     assert (
-#         str(exc.value) == "Invalid value type for property with ID "
-#         f"'{catalogue_category.properties[0].id}'. Expected type: number."
-#     )
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
-
-
-# def test_create_with_with_invalid_value_type_for_boolean_property(
-#     test_helpers, catalogue_category_repository_mock, catalogue_item_repository_mock, catalogue_item_service
-# ):
-#     """
-#     Test creating a catalogue item with invalid value type for a boolean property.
-
-#     Verify that the `create` method properly handles a catalogue item with invalid value type for a boolean property,
-#     checks that the catalogue category exists and that it is a leaf category, checks that there are no missing
-#     mandatory properties, finds invalid value type for a boolean property, and does not create the catalogue item.
-#     """
-#     catalogue_category = CatalogueCategoryOut(
-#         id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_CATEGORY_A_INFO,
-#             "properties": add_ids_to_properties(
-#                 None,
-#                 FULL_CATALOGUE_CATEGORY_A_INFO["properties"],
-#             ),
-#         },
-#     )
-
-#     # Mock `get` to return the catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, catalogue_category)
-
-#     with pytest.raises(InvalidPropertyTypeError) as exc:
-#         catalogue_item_service.create(
-#             CatalogueItemPostSchema(
-#                 catalogue_category_id=catalogue_category.id,
-#                 manufacturer_id=str(ObjectId()),
-#                 **{
-#                     **CATALOGUE_ITEM_A_INFO,
-#                     "properties": [
-#                         {"id": catalogue_category.properties[0].id, "value": 20},
-#                         {"id": catalogue_category.properties[1].id, "value": "False"},
-#                         {"id": catalogue_category.properties[2].id, "value": "20x15x10"},
-#                     ],
-#                 },
-#             )
-#         )
-#     catalogue_item_repository_mock.create.assert_not_called()
-#     assert (
-#         str(exc.value) == "Invalid value type for property with ID "
-#         f"'{catalogue_category.properties[1].id}'. Expected type: boolean."
-#     )
-
-#     catalogue_category_repository_mock.get.assert_called_once_with(catalogue_category.id)
 
 
 # def test_delete(catalogue_item_repository_mock, catalogue_item_service):

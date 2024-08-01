@@ -251,6 +251,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         )
 
         if self._catalogue_category_post.properties:
+            # TODO: Compare with catalogue items, is this really needed?
             # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
             actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
