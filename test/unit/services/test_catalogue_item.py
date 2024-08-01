@@ -2,6 +2,10 @@
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
+
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from datetime import timedelta
 from test.conftest import add_ids_to_properties
 from test.mock_data import (
@@ -14,40 +18,36 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-    MANUFACTURER_IN_DATA_A,
-)
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
+    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, MANUFACTURER_IN_DATA_A)
+from test.unit.services.conftest import (MODEL_MIXINS_FIXED_DATETIME_NOW,
+                                         ServiceTestHelpers)
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import \
+    CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    InvalidActionError,
-    InvalidPropertyTypeError,
-    MissingMandatoryProperty,
-    MissingRecordError,
-    NonLeafCatalogueCategoryError,
-)
+    ChildElementsExistError, InvalidActionError, InvalidPropertyTypeError,
+    MissingMandatoryProperty, MissingRecordError,
+    NonLeafCatalogueCategoryError)
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-)
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
-from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
+    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn, CatalogueItemOut, PropertyIn)
+from inventory_management_system_api.models.manufacturer import (
+    ManufacturerIn, ManufacturerOut)
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
+from inventory_management_system_api.schemas.catalogue_category import \
+    CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import (
-    CatalogueItemPatchSchema,
-    CatalogueItemPostSchema,
-    PropertyPostSchema,
-)
+    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS, CatalogueItemPatchSchema,
+    CatalogueItemPostSchema, PropertyPostSchema)
 from inventory_management_system_api.services import utils
-from inventory_management_system_api.services.catalogue_item import CatalogueItemService
+from inventory_management_system_api.services.catalogue_item import \
+    CatalogueItemService
 
 
 class CatalogueItemServiceDSL:
@@ -482,6 +482,351 @@ class TestList(ListDSL):
 # TODO: Update tests
 
 
+# pylint:disable=too-many-instance-attributes
+class UpdateDSL(CatalogueItemServiceDSL):
+    """Base class for `update` tests."""
+
+    _stored_catalogue_item: Optional[CatalogueItemOut]
+    _catalogue_item_patch: CatalogueItemPatchSchema
+    _expected_catalogue_item_in: CatalogueItemIn
+    _expected_catalogue_item_out: MagicMock
+    _updated_catalogue_item_id: str
+    _updated_catalogue_item: MagicMock
+    _update_exception: pytest.ExceptionInfo
+
+    _expect_child_check: bool
+    _moving_catalogue_item: bool
+    _updating_manufacturer: bool
+    _updating_obsolete_replacement_catalogue_item: bool
+    unit_value_id_dict: dict[str, str]
+
+    # TODO: Update comment and parameters
+    # pylint:disable=too-many-arguments
+    def mock_update(
+        self,
+        catalogue_item_id: str,
+        catalogue_item_update_data: dict,
+        stored_catalogue_item_data: Optional[dict],
+        new_catalogue_category_in_data: Optional[dict] = None,
+        new_manufacturer_in_data: Optional[dict] = None,
+        new_obsolete_replacement_catalogue_item_data: Optional[dict] = None,
+        has_child_elements: bool = False,
+        units_in_data: Optional[list[Optional[dict]]] = None,
+    ) -> None:
+        """
+        Mocks repository methods appropriately to test the `update` service method.
+
+        :param catalogue_item_id: ID of the catalogue category that will be obtained.
+        :param catalogue_item_update_data: Dictionary containing the basic patch data as would be required for a
+                                               `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
+                                               'unit' value in its properties as the IDs will be added automatically.
+        :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
+                                               stored catalogue category as would be required for a
+                                               `CatalogueCategoryPostSchema` (i.e. no ID, code or created and modified
+                                               times required).
+        :param has_child_elements: Boolean of whether the category being updated has child elements or not
+        :param new_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
+                                               category data as would be required for a `CatalogueCategoryIn` database
+                                               model.
+        :param units_in_data: Either `None` or a list of dictionaries (or `None`) containing the unit data as would be
+                              required for a `UnitIn` database model. These values will be used for any unit look ups
+                              required by the given catalogue category properties in the patch data.
+        """
+
+        # Stored catalogue item
+        self._stored_catalogue_item = (
+            CatalogueItemOut(
+                **CatalogueItemIn(
+                    **stored_catalogue_item_data,
+                    code=utils.generate_code(stored_catalogue_item_data["name"], "catalogue item"),
+                    catalogue_category_id=str(ObjectId()),
+                    manufacturer_id=str(ObjectId()),
+                ).model_dump(),
+                id=CustomObjectId(catalogue_item_id),
+            )
+            if stored_catalogue_item_data
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._stored_catalogue_item)
+
+        # Need to mock has_child_elements only if the check is required
+        self._expect_child_check = any(
+            key in catalogue_item_update_data for key in CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS
+        )
+        if self._expect_child_check:
+            self.mock_catalogue_item_repository.has_child_elements.return_value = has_child_elements
+
+        # When moving i.e. changing the catalogue category id, the data for the new catalogue category needs to be
+        # mocked
+        self._moving_catalogue_item = (
+            "parent_id" in catalogue_item_update_data
+            and new_catalogue_category_in_data is not None
+            and new_catalogue_category_in_data["parent_id"] != catalogue_item_update_data["parent_id"]
+        )
+
+        if self._moving_catalogue_item and catalogue_item_update_data["parent_id"]:
+            ServiceTestHelpers.mock_get(
+                self.mock_catalogue_item_repository,
+                (
+                    CatalogueCategoryOut(
+                        **{
+                            **CatalogueCategoryIn(**new_catalogue_category_in_data).model_dump(by_alias=True),
+                            "_id": catalogue_item_update_data["parent_id"],
+                        }
+                    )
+                    if new_catalogue_category_in_data
+                    else None
+                ),
+            )
+
+            # TODO: Deal with properties in the above?
+
+        self._updating_manufacturer = (
+            "manufacturer_id" in catalogue_item_update_data
+            and catalogue_item_update_data["manufacturer_id"] != self._stored_catalogue_item.manufacturer_id
+        )
+        if self._updating_manufacturer:
+            ServiceTestHelpers.mock_get(
+                self.mock_manufacturer_repository,
+                (
+                    ManufacturerOut(
+                        **{
+                            **ManufacturerIn(**new_manufacturer_in_data).model_dump(),
+                            "_id": new_manufacturer_in_data,
+                        },
+                    )
+                    if new_manufacturer_in_data
+                    else None
+                ),
+            )
+
+        self._updating_obsolete_replacement_catalogue_item = (
+            "obsolete_replacement_catalogue_item_id" in catalogue_item_update_data
+            and catalogue_item_update_data["obsolete_replacement_catalogue_item_id"]
+            != self._stored_catalogue_item.obsolete_replacement_catalogue_item_id
+        )
+        if self._updating_obsolete_replacement_catalogue_item:
+            # Obsolete replacement catalogue item (Use the same mandatory IDs as the item for simplicity)
+            ServiceTestHelpers.mock_get(
+                self.mock_catalogue_item_repository,
+                (
+                    CatalogueItemOut(
+                        **{
+                            **CatalogueItemIn(
+                                **new_obsolete_replacement_catalogue_item_data,
+                                catalogue_category_id=str(ObjectId()),
+                                manufacturer_id=str(ObjectId()),
+                            ).model_dump(),
+                            "_id": catalogue_item_update_data["obsolete_replacement_catalogue_item_id"],
+                        },
+                    )
+                    if new_obsolete_replacement_catalogue_item_data
+                    else None
+                ),
+            )
+
+        # TODO: Deal with process properties
+
+        # TODO: Move this to the top? Same for catalogue categories
+        # Patch schema
+        self._catalogue_item_patch = CatalogueItemPatchSchema(**catalogue_item_update_data)
+
+    def call_update(self, catalogue_item_id: str) -> None:
+        """
+        Calls the `CatalogueItemService` `update` method with the appropriate data from a prior call to
+        `mock_update`.
+
+        :param catalogue_item_id: ID of the catalogue item to be updated.
+        """
+
+        self._updated_catalogue_item_id = catalogue_item_id
+        self._updated_catalogue_item = self.catalogue_item_service.update(catalogue_item_id, self._catalogue_item_patch)
+
+    def call_update_expecting_error(self, catalogue_item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueItemService` `update` method with the appropriate data from a prior call to
+        `mock_update` while expecting an error to be raised.
+
+        :param catalogue_item_id: ID of the catalogue item to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_item_service.update(catalogue_item_id, self._catalogue_item_patch)
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+
+        # Obtain a list of expected catalogue item get calls
+        expected_catalogue_item_get_calls = []
+
+        # Ensure obtained old catalogue item
+        expected_catalogue_item_get_calls.append(call(self._updated_catalogue_item_id))
+
+        # Ensure checking children if needed
+        if self._expect_child_check:
+            self.mock_catalogue_item_repository.has_child_elements.assert_called_once_with(
+                CustomObjectId(self._updated_catalogue_item_id)
+            )
+
+        # Ensure obtained new catalogue category if moving
+        if self._moving_catalogue_item and self._catalogue_item_patch.catalogue_category_id:
+            self.mock_catalogue_category_repository.get.assert_called_once_with(
+                self._catalogue_item_patch.catalogue_category_id
+            )
+
+        # Ensure obtained new manufacturer if needed
+        if self._updating_manufacturer and self._catalogue_item_patch.manufacturer_id:
+            self.mock_manufacturer_repository.get.assert_called_once_with(self._catalogue_item_patch.manufacturer_id)
+
+        self.mock_catalogue_item_repository.get.assert_has_calls(expected_catalogue_item_get_calls)
+
+        # TODO: Implement
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_catalogue_item_repository.update.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a catalogue item."""
+
+    def test_update_all_fields_except_ids_or_properties_with_no_children(self):
+        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when there
+        are no child items."""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+        )
+        self.call_update(catalogue_item_id)
+        self.check_update_success()
+
+    def test_update_all_fields_except_ids_or_properties_with_children(self):
+        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when there
+        are child items."""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            has_child_elements=True,
+        )
+        self.call_update(catalogue_item_id)
+        self.check_update_success()
+
+    # TODO: Implement more tests
+
+    def test_update_manufacturer_id_with_no_children(self):
+        """Test updating the catalogue item's `manufacturer_id`"""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data={"manufacturer_id": str(ObjectId())},
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            new_manufacturer_in_data=MANUFACTURER_IN_DATA_A,
+        )
+        self.call_update(catalogue_item_id)
+        self.check_update_success()
+
+    def test_update_manufacturer_id_with_children(self):
+        """Test updating the catalogue item's `manufacturer_id`"""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data={"manufacturer_id": str(ObjectId())},
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            new_manufacturer_in_data=MANUFACTURER_IN_DATA_A,
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
+        self.check_update_failed_with_exception(
+            f"Catalogue item with ID {str(catalogue_item_id)} has child elements " "and cannot be updated"
+        )
+
+    def test_update_with_non_existent_manufacturer_id(self):
+        """Test updating the catalogue item's `manufacturer_id` to a non-existent manufacturer."""
+
+        catalogue_item_id = str(ObjectId())
+        manufacturer_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data={"manufacturer_id": manufacturer_id},
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            new_manufacturer_in_data=None,
+        )
+        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No manufacturer found with ID: {manufacturer_id}")
+
+    def test_update_obsolete_replacement_catalogue_item_id(self):
+        """Test updating the catalogue item's `obsolete_replacement_catalogue_item_id`"""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data={"obsolete_replacement_catalogue_item_id": str(ObjectId())},
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            new_obsolete_replacement_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+        )
+        self.call_update(catalogue_item_id)
+        self.check_update_success()
+
+    def test_update_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test updating the catalogue item's `obsolete_replacement_catalogue_item_id` to a non-existent catalogue
+        item."""
+
+        catalogue_item_id = str(ObjectId())
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data={
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id
+            },
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            new_obsolete_replacement_catalogue_item_data=None,
+        )
+        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
+        self.check_update_failed_with_exception(
+            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
+        )
+
+    # TODO: Implement more tests
+
+    def test_update_with_non_existent_id(self):
+        """Test updating a catalogue item with a non-existent ID."""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_catalogue_item_data=None,
+        )
+        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No catalogue item found with ID: {catalogue_item_id}")
+
+
 class DeleteDSL(CatalogueItemServiceDSL):
     """Base class for `delete` tests."""
 
@@ -598,147 +943,6 @@ class TestDelete(DeleteDSL):
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
 # # pylint: enable=duplicate-code
-
-
-# def test_update_when_no_child_elements(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):
-#     """
-#     Test updating a catalogue item with child elements.
-
-#     Verify that the `update` method properly handles the catalogue item to be updated when it doesn't have any
-#     children.
-#     """
-#     # pylint: disable=duplicate-code
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
-#             "properties": properties,
-#         },
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             **{
-#                 **catalogue_item.model_dump(),
-#                 "name": "Catalogue Item B",
-#                 "description": "This is Catalogue Item B",
-#                 "modified_time": catalogue_item.created_time,
-#             },
-#         ),
-#     )
-#     # Mock so no child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = False
-#     # Mock `update` to return the updated catalogue item
-#     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
-
-#     updated_catalogue_item = catalogue_item_service.update(
-#         catalogue_item.id,
-#         CatalogueItemPatchSchema(name=catalogue_item.name, description=catalogue_item.description),
-#     )
-
-#     catalogue_item_repository_mock.update.assert_called_once_with(
-#         catalogue_item.id,
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "created_time": catalogue_item.created_time,
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     assert updated_catalogue_item == catalogue_item
-
-
-# def test_update_when_has_child_elements(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):
-#     """
-#     Test updating a catalogue item with child elements.
-
-#     Verify that the `update` method properly handles the catalogue item to be updated when it has children.
-#     """
-#     # pylint: disable=duplicate-code
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
-#             "properties": properties,
-#         },
-#     )
-#     # pylint: enable=duplicate-code
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             **{
-#                 **catalogue_item.model_dump(),
-#                 "name": "Catalogue Item B",
-#                 "description": "This is Catalogue Item B",
-#                 "modified_time": catalogue_item.created_time,
-#             },
-#         ),
-#     )
-#     # Mock so child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = True
-#     # Mock `update` to return the updated catalogue item
-#     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
-
-#     updated_catalogue_item = catalogue_item_service.update(
-#         catalogue_item.id,
-#         CatalogueItemPatchSchema(name=catalogue_item.name, description=catalogue_item.description),
-#     )
-
-#     catalogue_item_repository_mock.update.assert_called_once_with(
-#         catalogue_item.id,
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "created_time": catalogue_item.created_time,
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     assert updated_catalogue_item == catalogue_item
-
-
-# def test_update_with_non_existent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
-#     """
-#     Test updating a catalogue item with a non-existent ID.
-
-#     Verify that the `update` method properly handles the catalogue category to be updated with a non-existent ID.
-#     """
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(catalogue_item_repository_mock, None)
-
-#     catalogue_item_id = str(ObjectId())
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_item_service.update(catalogue_item_id, CatalogueItemPatchSchema(properties=[]))
-#     catalogue_item_repository_mock.update.assert_not_called()
-#     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
 
 
 # def test_update_change_catalogue_category_id_same_defined_properties_without_supplied_properties(
@@ -1191,154 +1395,6 @@ class TestDelete(DeleteDSL):
 #     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
 
 
-# def test_update_with_existent_manufacturer_id_when_has_no_child_elements(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     manufacturer_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):
-#     """
-#     Test updating manufacturer id to an existing id when the catalogue item has no child elements
-#     """
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
-#             "properties": properties,
-#         },
-#     )
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             **{
-#                 **catalogue_item.model_dump(),
-#                 "manufacturer_id": str(ObjectId()),
-#                 "modified_time": catalogue_item.created_time,
-#             }
-#         ),
-#     )
-#     # Mock so no child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = False
-#     # Mock `get` to return a manufacturer
-#     test_helpers.mock_get(
-#         manufacturer_repository_mock,
-#         ManufacturerOut(id=catalogue_item.manufacturer_id, **FULL_MANUFACTURER_INFO),
-#     )
-#     # Mock `update` to return the updated catalogue item
-#     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
-
-#     updated_catalogue_item = catalogue_item_service.update(
-#         catalogue_item.id,
-#         CatalogueItemPatchSchema(manufacturer_id=catalogue_item.manufacturer_id),
-#     )
-
-#     catalogue_item_repository_mock.update.assert_called_once_with(
-#         catalogue_item.id,
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "created_time": catalogue_item.created_time,
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     assert updated_catalogue_item == catalogue_item
-
-
-# def test_update_with_existent_manufacturer_id_when_has_child_elements(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     manufacturer_repository_mock,
-#     catalogue_item_service,
-# ):
-#     """
-#     Test updating manufacturer id to an existing id when the catalogue item has child elements
-#     """
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "properties": properties,
-#         },
-#     )
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             **{
-#                 **catalogue_item.model_dump(),
-#                 "manufacturer_id": str(ObjectId()),
-#             }
-#         ),
-#     )
-#     # Mock so no child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = True
-#     # Mock `get` to return a manufacturer
-#     test_helpers.mock_get(
-#         manufacturer_repository_mock,
-#         ManufacturerOut(id=catalogue_item.manufacturer_id, **FULL_MANUFACTURER_INFO),
-#     )
-#     # Mock `update` to return the updated catalogue item
-#     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
-
-#     with pytest.raises(ChildElementsExistError) as exc:
-#         catalogue_item_service.update(
-#             catalogue_item.id,
-#             CatalogueItemPatchSchema(manufacturer_id=catalogue_item.manufacturer_id),
-#         )
-#     catalogue_item_repository_mock.update.assert_not_called()
-#     assert str(exc.value) == f"Catalogue item with ID {catalogue_item.id} has child elements and cannot be updated"
-
-
-# def test_update_with_non_existent_manufacturer_id(
-#     test_helpers,
-#     manufacturer_repository_mock,
-#     catalogue_item_repository_mock,
-#     catalogue_item_service,
-# ):
-#     """
-#     Test updating a catalogue item with a non-existent manufacturer id
-#     """
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
-#         },
-#     )
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(catalogue_item_repository_mock, catalogue_item)
-#     # Mock so no child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = False
-#     # Mock `get` to not return a manufacturer
-#     test_helpers.mock_get(manufacturer_repository_mock, None)
-
-#     manufacturer_id = str(ObjectId())
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_item_service.update(
-#             catalogue_item.id,
-#             CatalogueItemPatchSchema(manufacturer_id=manufacturer_id),
-#         )
-#     catalogue_item_repository_mock.update.assert_not_called()
-#     assert str(exc.value) == f"No manufacturer found with ID: {manufacturer_id}"
-
-
 # def test_update_change_catalogue_category_id_non_leaf_catalogue_category(
 #     test_helpers,
 #     catalogue_category_repository_mock,
@@ -1376,127 +1432,6 @@ class TestDelete(DeleteDSL):
 #         )
 #     catalogue_item_repository_mock.update.assert_not_called()
 #     assert str(exc.value) == "Cannot add catalogue item to a non-leaf catalogue category"
-
-
-# def test_update_with_obsolete_replacement_catalogue_item_id(
-#     test_helpers,
-#     catalogue_item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_item_service,
-# ):
-#     """
-#     Test updating a catalogue item with an obsolete replacement catalogue item ID.
-#     """
-#     obsolete_replacement_catalogue_item_id = str(ObjectId())
-#     properties = add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"])
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "is_obsolete": True,
-#             "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-#             "created_time": FULL_CATALOGUE_ITEM_A_INFO["created_time"] - timedelta(days=5),
-#             "properties": properties,
-#         },
-#     )
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             id=catalogue_item.id,
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "created_time": catalogue_item.created_time,
-#                 "modified_time": catalogue_item.created_time,
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     # Mock so no child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = False
-#     # Mock `get` to return a replacement catalogue item
-#     test_helpers.mock_get(
-#         catalogue_item_repository_mock,
-#         CatalogueItemOut(
-#             id=obsolete_replacement_catalogue_item_id,
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "name": "Catalogue Item B",
-#                 "description": "This is Catalogue Item B",
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     # Mock `update` to return the updated catalogue item
-#     test_helpers.mock_update(catalogue_item_repository_mock, catalogue_item)
-
-#     updated_catalogue_item = catalogue_item_service.update(
-#         catalogue_item.id,
-#         CatalogueItemPatchSchema(
-#             is_obsolete=True, obsolete_replacement_catalogue_item_id=obsolete_replacement_catalogue_item_id
-#         ),
-#     )
-
-#     catalogue_item_repository_mock.update.assert_called_once_with(
-#         catalogue_item.id,
-#         CatalogueItemIn(
-#             catalogue_category_id=catalogue_item.catalogue_category_id,
-#             manufacturer_id=catalogue_item.manufacturer_id,
-#             **{
-#                 **FULL_CATALOGUE_ITEM_A_INFO,
-#                 "is_obsolete": True,
-#                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-#                 "created_time": catalogue_item.created_time,
-#                 "properties": properties,
-#             },
-#         ),
-#     )
-#     assert updated_catalogue_item == catalogue_item
-
-
-# def test_update_with_non_existent_obsolete_replacement_catalogue_item_id(
-#     test_helpers, catalogue_item_repository_mock, catalogue_item_service
-# ):
-#     """
-#     Test updating a catalogue item with a non-existent obsolete replacement catalogue item ID.
-#     """
-#     catalogue_item = CatalogueItemOut(
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#         **{
-#             **FULL_CATALOGUE_ITEM_A_INFO,
-#             "properties": add_ids_to_properties(None, FULL_CATALOGUE_ITEM_A_INFO["properties"]),
-#         },
-#     )
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(catalogue_item_repository_mock, catalogue_item)
-#     # Mock so no child elements found
-#     catalogue_item_repository_mock.has_child_elements.return_value = False
-#     # Mock `get` to not return a replacement catalogue item
-#     test_helpers.mock_get(catalogue_item_repository_mock, None)
-
-#     obsolete_replacement_catalogue_item_id = str(ObjectId())
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_item_service.update(
-#             catalogue_item.id,
-#             CatalogueItemPatchSchema(
-#                 is_obsolete=True, obsolete_replacement_catalogue_item_id=obsolete_replacement_catalogue_item_id
-#             ),
-#         )
-#     catalogue_item_repository_mock.update.assert_not_called()
-#     assert str(exc.value) == f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
-#     catalogue_item_repository_mock.get.assert_has_calls(
-#         [call(catalogue_item.id), call(obsolete_replacement_catalogue_item_id)]
-#     )
 
 
 # def test_update_add_non_mandatory_property(
