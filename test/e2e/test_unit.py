@@ -9,7 +9,13 @@ from bson import ObjectId
 import pytest
 from fastapi.testclient import TestClient
 from httpx import Response
-from test.mock_data import UNIT_GET_DATA_CM, UNIT_GET_DATA_MM, UNIT_POST_DATA_CM, UNIT_POST_DATA_MM
+from test.mock_data import (
+    CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+    UNIT_GET_DATA_CM,
+    UNIT_GET_DATA_MM,
+    UNIT_POST_DATA_CM,
+    UNIT_POST_DATA_MM,
+)
 
 
 class CreateDSL:
@@ -216,10 +222,9 @@ class TestDelete(DeleteDSL):
         """Test deleting a unit when it is part of a catalogue item."""
         unit_id = self.post_unit(UNIT_POST_DATA_MM)
 
-        # pylint:disable=fixme
-        # TODO: Reuse catalogue category data once catalogue category tests have been refactored
-        catalogue_category_post = {"name": "Category A", "is_leaf": True, "properties": []}
-        response = self.test_client.post("/v1/catalogue-categories", json=catalogue_category_post)
+        self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
+        )
 
         self.delete_unit(unit_id)
         self.check_delete_unit_failed_with_detail(409, "The specified unit is a part of a catalogue category")
