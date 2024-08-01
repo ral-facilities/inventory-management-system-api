@@ -14,9 +14,10 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, MANUFACTURER_IN_DATA_A)
-from test.unit.services.conftest import (MODEL_MIXINS_FIXED_DATETIME_NOW,
-                                         ServiceTestHelpers)
+    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+    MANUFACTURER_IN_DATA_A,
+)
+from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -24,23 +25,29 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError, InvalidActionError, InvalidPropertyTypeError,
-    MissingMandatoryProperty, MissingRecordError,
-    NonLeafCatalogueCategoryError)
+    ChildElementsExistError,
+    InvalidActionError,
+    InvalidPropertyTypeError,
+    MissingMandatoryProperty,
+    MissingRecordError,
+    NonLeafCatalogueCategoryError,
+)
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn)
-from inventory_management_system_api.models.catalogue_item import (
-    CatalogueItemIn, CatalogueItemOut, PropertyIn)
-from inventory_management_system_api.models.manufacturer import (
-    ManufacturerIn, ManufacturerOut)
+    CatalogueCategoryIn,
+    CatalogueCategoryOut,
+    CatalogueCategoryPropertyIn,
+)
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
+from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
-from inventory_management_system_api.schemas.catalogue_category import \
-    CatalogueCategoryPostPropertySchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import (
-    CatalogueItemPatchSchema, CatalogueItemPostSchema, PropertyPostSchema)
+    CatalogueItemPatchSchema,
+    CatalogueItemPostSchema,
+    PropertyPostSchema,
+)
 from inventory_management_system_api.services import utils
-from inventory_management_system_api.services.catalogue_item import \
-    CatalogueItemService
+from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 
 class CatalogueItemServiceDSL:
@@ -387,6 +394,125 @@ class TestCreate(CreateDSL):
         )
 
 
+class GetDSL(CatalogueItemServiceDSL):
+    """Base class for `get` tests."""
+
+    _obtained_catalogue_item_id: str
+    _expected_catalogue_item: MagicMock
+    _obtained_catalogue_item: MagicMock
+
+    def mock_get(self) -> None:
+        """Mocks repo methods appropriately to test the `get` service method."""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_catalogue_item = MagicMock()
+        ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._expected_catalogue_item)
+
+    def call_get(self, catalogue_item_id: str) -> None:
+        """
+        Calls the `CatalogueItemService` `get` method.
+
+        :param catalogue_item_id: ID of the catalogue item to be obtained.
+        """
+
+        self._obtained_catalogue_item_id = catalogue_item_id
+        self._obtained_catalogue_item = self.catalogue_item_service.get(catalogue_item_id)
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+
+        self.mock_catalogue_item_repository.get.assert_called_once_with(self._obtained_catalogue_item_id)
+        assert self._obtained_catalogue_item == self._expected_catalogue_item
+
+
+class TestGet(GetDSL):
+    """Tests for getting a catalogue item."""
+
+    def test_get(self):
+        """Test getting a catalogue item."""
+
+        self.mock_get()
+        self.call_get(str(ObjectId()))
+        self.check_get_success()
+
+
+class ListDSL(CatalogueItemServiceDSL):
+    """Base class for `list` tests"""
+
+    _catalogue_category_id_filter: Optional[str]
+    _expected_catalogue_items: MagicMock
+    _obtained_catalogue_items: MagicMock
+
+    def mock_list(self) -> None:
+        """Mocks repo methods appropriately to test the `list` service method."""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_catalogue_items = MagicMock()
+        ServiceTestHelpers.mock_list(self.mock_catalogue_item_repository, self._expected_catalogue_items)
+
+    def call_list(self, catalogue_category_id: Optional[str]) -> None:
+        """
+        Calls the `CatalogueItemService` `list` method.
+
+        :param catalogue_category_id: ID of the catalogue category to query by, or `None`.
+        """
+
+        self._catalogue_category_id_filter = catalogue_category_id
+        self._obtained_catalogue_items = self.catalogue_item_service.list(catalogue_category_id)
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+
+        self.mock_catalogue_item_repository.list.assert_called_once_with(self._catalogue_category_id_filter)
+
+        assert self._obtained_catalogue_items == self._expected_catalogue_items
+
+
+class TestList(ListDSL):
+    """Tests for listing catalogue items."""
+
+    def test_list(self):
+        """Test listing catalogue items."""
+
+        self.mock_list()
+        self.call_list(str(ObjectId()))
+        self.check_list_success()
+
+
+# TODO: Update tests
+
+
+class DeleteDSL(CatalogueItemServiceDSL):
+    """Base class for `delete` tests."""
+
+    _delete_catalogue_item_id: str
+
+    def call_delete(self, catalogue_item_id: str) -> None:
+        """
+        Calls the `CatalogueItemService` `delete` method.
+
+        :param catalogue_item_id: ID of the catalogue item to be deleted.
+        """
+
+        self._delete_catalogue_item_id = catalogue_item_id
+        self.catalogue_item_service.delete(catalogue_item_id)
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.mock_catalogue_item_repository.delete.assert_called_once_with(self._delete_catalogue_item_id)
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a catalogue item."""
+
+    def test_delete(self):
+        """Test deleting a catalogue item."""
+
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+
 # FULL_CATALOGUE_CATEGORY_A_INFO = {
 #     "name": "Category A",
 #     "code": "category-a",
@@ -472,69 +598,6 @@ class TestCreate(CreateDSL):
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
 # # pylint: enable=duplicate-code
-
-
-# def test_delete(catalogue_item_repository_mock, catalogue_item_service):
-#     """
-#     Test deleting a catalogue item.
-
-#     Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
-#     """
-#     catalogue_item_id = str(ObjectId())
-
-#     catalogue_item_service.delete(catalogue_item_id)
-
-#     catalogue_item_repository_mock.delete.assert_called_once_with(catalogue_item_id)
-
-
-# def test_get(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
-#     """
-#     Test getting a catalogue item.
-
-#     Verify that the `get` method properly handles the retrieval of a catalogue item by ID.
-#     """
-#     catalogue_item_id = str(ObjectId())
-#     catalogue_item = MagicMock()
-
-#     # Mock `get` to return a catalogue item
-#     test_helpers.mock_get(catalogue_item_repository_mock, catalogue_item)
-
-#     retrieved_catalogue_item = catalogue_item_service.get(catalogue_item_id)
-
-#     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
-#     assert retrieved_catalogue_item == catalogue_item
-
-
-# def test_get_with_non_existent_id(test_helpers, catalogue_item_repository_mock, catalogue_item_service):
-#     """
-#     Test getting a catalogue item with a non-existent ID.
-
-#     Verify that the `get` method properly handles the retrieval of a catalogue item with a non-existent ID.
-#     """
-#     catalogue_item_id = str(ObjectId())
-
-#     # Mock `get` to not return a catalogue item
-#     test_helpers.mock_get(catalogue_item_repository_mock, None)
-
-#     retrieved_catalogue_item = catalogue_item_service.get(catalogue_item_id)
-
-#     assert retrieved_catalogue_item is None
-#     catalogue_item_repository_mock.get.assert_called_once_with(catalogue_item_id)
-
-
-# def test_list(catalogue_item_repository_mock, catalogue_item_service):
-#     """
-#     Test listing catalogue items
-
-#     Verify that the `list` method properly calls the repository function with any passed filters
-#     """
-
-#     catalogue_category_id = str(ObjectId())
-
-#     result = catalogue_item_service.list(catalogue_category_id=catalogue_category_id)
-
-#     catalogue_item_repository_mock.list.assert_called_once_with(catalogue_category_id)
-#     assert result == catalogue_item_repository_mock.list.return_value
 
 
 # def test_update_when_no_child_elements(
