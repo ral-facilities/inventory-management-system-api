@@ -169,8 +169,6 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     "properties": [],
 }
 
-# --------------------------------- Properties ---------------------------------
-
 # Leaf, Required values only
 
 CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY = {
@@ -224,6 +222,71 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     ],
 }
+
+# --------------------------------- PROPERTIES ---------------------------------
+
+PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"],
+    "value": True,
+}
+
+PROPERTY_DATA_NUMBER_NON_MANDATORY_42 = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"],
+    "value": 42,
+}
+
+PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1 = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["name"],
+    "value": "value1",
+}
+
+# --------------------------------- CATALOGUE ITEMS ---------------------------------
+
+# This is the base catalogue category to be used in tests with properties
+BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES = CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
+
+# No properties
+CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY = {
+    "name": "Catalogue Item Required Values Only",
+    "cost_gbp": 42,
+    "days_to_replace": 7,
+    "is_obsolete": False,
+}
+
+# Not obsolete, No properties
+CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
+    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "name": "Catalogue Item Not Obsolete No Properties",
+    "description": "Some description",
+    "cost_to_rework": 9001,
+    "days_to_rework": 3,
+    "drawing_number": "12345-1",
+    "drawing_link": "http://example.com",
+    "item_model_number": "123456-1",
+    "is_obsolete": False,
+    "notes": "Some notes",
+}
+
+# Obsolete, No properties
+CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES = {
+    **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+    "name": "Catalogue Item Obsolete No Properties",
+    "is_obsolete": True,
+    "obsolete_reason": "Manufacturer no longer exists",
+    "obsolete_replacement_catalogue_item_id": str(ObjectId()),
+}
+
+# Properties
+CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES = {
+    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "name": "Catalogue Item With All Properties",
+    "properties": [
+        PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+        PROPERTY_DATA_NUMBER_NON_MANDATORY_42,
+        PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+    ],
+}
+
 
 # --------------------------------- MANUFACTURERS ---------------------------------
 
