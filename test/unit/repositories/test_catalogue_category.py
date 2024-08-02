@@ -178,7 +178,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
 
     def call_create(self) -> None:
         """Calls the `CatalogueCategoryRepo` `create` method with the appropriate data from a prior call to
-        `mock_create`"""
+        `mock_create`."""
 
         self._created_catalogue_category = self.catalogue_category_repository.create(
             self._catalogue_category_in, session=self.mock_session
@@ -197,7 +197,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         self._create_exception = exc
 
     def check_create_success(self):
-        """Checks that a prior call to `call_create` worked as expected"""
+        """Checks that a prior call to `call_create` worked as expected."""
 
         catalogue_category_in_data = self._catalogue_category_in.model_dump(by_alias=True)
 
@@ -319,7 +319,7 @@ class GetDSL(CatalogueCategoryRepoDSL):
 
         :param catalogue_category_id: ID of the catalogue category to be obtained.
         :param catalogue_category_in_data: Either `None` or a Dictionary containing the catalogue category data as would
-                                           be required for a `CatalogueCategoryIn` database model (i.e. No id or created
+                                           be required for a `CatalogueCategoryIn` database model (i.e. No ID or created
                                            and modified times required).
         """
 
@@ -531,7 +531,7 @@ class ListDSL(CatalogueCategoryRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing Catalogue Category's."""
+    """Tests for listing catalogue categorys."""
 
     def test_list(self):
         """Test listing all catalogue categories."""

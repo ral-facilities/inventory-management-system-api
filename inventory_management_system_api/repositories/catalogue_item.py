@@ -2,8 +2,8 @@
 Module for providing a repository for managing catalogue items in a MongoDB database.
 """
 
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
@@ -46,25 +46,6 @@ class CatalogueItemRepo:
         catalogue_item = self.get(str(result.inserted_id), session=session)
         return catalogue_item
 
-    def delete(self, catalogue_item_id: str, session: ClientSession = None) -> None:
-        """
-        Delete a catalogue item by its ID from a MongoDB database.
-
-        :param catalogue_item_id: The ID of the catalogue item to delete.
-        :param session: PyMongo ClientSession to use for database operations
-        :raises MissingRecordError: If the catalogue item doesn't exist.
-        """
-        catalogue_item_id = CustomObjectId(catalogue_item_id)
-        if self.has_child_elements(catalogue_item_id, session=session):
-            raise ChildElementsExistError(
-                f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
-            )
-
-        logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
-        result = self._catalogue_items_collection.delete_one({"_id": catalogue_item_id}, session=session)
-        if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID: {str(catalogue_item_id)}")
-
     def get(self, catalogue_item_id: str, session: ClientSession = None) -> Optional[CatalogueItemOut]:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
@@ -79,26 +60,6 @@ class CatalogueItemRepo:
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
         return None
-
-    def update(
-        self, catalogue_item_id: str, catalogue_item: CatalogueItemIn, session: ClientSession = None
-    ) -> CatalogueItemOut:
-        """
-        Update a catalogue item by its ID in a MongoDB database.
-
-        :param catalogue_item_id: The ID of the catalogue item to update.
-        :param catalogue_item: The catalogue item containing the update data.
-        :param session: PyMongo ClientSession to use for database operations
-        :return: The updated catalogue item.
-        """
-        catalogue_item_id = CustomObjectId(catalogue_item_id)
-
-        logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
-        self._catalogue_items_collection.update_one(
-            {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
-        )
-        catalogue_item = self.get(str(catalogue_item_id), session=session)
-        return catalogue_item
 
     def list(self, catalogue_category_id: Optional[str], session: ClientSession = None) -> List[CatalogueItemOut]:
         """
@@ -122,6 +83,45 @@ class CatalogueItemRepo:
 
         catalogue_items = self._catalogue_items_collection.find(query, session=session)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
+
+    def delete(self, catalogue_item_id: str, session: ClientSession = None) -> None:
+        """
+        Delete a catalogue item by its ID from a MongoDB database.
+
+        :param catalogue_item_id: The ID of the catalogue item to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the catalogue item doesn't exist.
+        """
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+        if self.has_child_elements(catalogue_item_id, session=session):
+            raise ChildElementsExistError(
+                f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
+            )
+
+        logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
+        result = self._catalogue_items_collection.delete_one({"_id": catalogue_item_id}, session=session)
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No catalogue item found with ID: {str(catalogue_item_id)}")
+
+    def update(
+        self, catalogue_item_id: str, catalogue_item: CatalogueItemIn, session: ClientSession = None
+    ) -> CatalogueItemOut:
+        """
+        Update a catalogue item by its ID in a MongoDB database.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item: The catalogue item containing the update data.
+        :param session: PyMongo ClientSession to use for database operations
+        :return: The updated catalogue item.
+        """
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+
+        logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
+        self._catalogue_items_collection.update_one(
+            {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
+        )
+        catalogue_item = self.get(str(catalogue_item_id), session=session)
+        return catalogue_item
 
     def has_child_elements(self, catalogue_item_id: CustomObjectId, session: ClientSession = None) -> bool:
         """

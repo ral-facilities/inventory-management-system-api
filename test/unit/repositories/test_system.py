@@ -481,7 +481,7 @@ class ListDSL(SystemRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing system's."""
+    """Tests for listing systems."""
 
     def test_list(self):
         """Test listing all systems."""
