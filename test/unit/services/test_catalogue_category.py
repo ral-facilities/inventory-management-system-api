@@ -251,7 +251,6 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         )
 
         if self._catalogue_category_post.properties:
-            # TODO: Compare with catalogue items, is this really needed?
             # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
             actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
@@ -490,7 +489,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                                                stored catalogue category as would be required for a
                                                `CatalogueCategoryPostSchema` (i.e. no ID, code or created and modified
                                                times required).
-        :param has_child_elements: Boolean of whether the category being updated has child elements or not
+        :param has_child_elements: Boolean of whether the catalogue category being updated has child elements or not
         :param new_parent_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
                                                category data as would be required for a `CatalogueCategoryIn` database
                                                model.

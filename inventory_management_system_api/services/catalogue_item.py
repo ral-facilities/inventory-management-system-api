@@ -124,6 +124,7 @@ class CatalogueItemService:
         return self._catalogue_item_repository.list(catalogue_category_id)
 
     # pylint:disable=too-many-branches
+    # pylint:disable=too-many-locals
     def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.

@@ -245,7 +245,6 @@ PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1 = {
 # This is the base catalogue category to be used in tests with properties
 BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES = CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
 
-# TODO: Don't think having ids inside here will actually work for e2e tests
 # No properties
 CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY = {
     "name": "Catalogue Item Required Values Only",

@@ -6,17 +6,12 @@ Unit tests for the `CatalogueCategoryService` service.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from datetime import timedelta
-from test.conftest import add_ids_to_properties
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
-    CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-    CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -24,7 +19,7 @@ from test.mock_data import (
     MANUFACTURER_IN_DATA_A,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_42,
 )
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
+from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -35,8 +30,6 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
-    InvalidPropertyTypeError,
-    MissingMandatoryProperty,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
@@ -47,8 +40,6 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
-from inventory_management_system_api.models.unit import UnitIn, UnitOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
@@ -71,6 +62,7 @@ class CatalogueItemServiceDSL:
 
     property_name_id_dict: dict[str, str]
 
+    # pylint:disable=too-many-arguments
     @pytest.fixture(autouse=True)
     def setup(
         self,
@@ -191,7 +183,6 @@ class CreateDSL(CatalogueItemServiceDSL):
         )
         ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._catalogue_category_out)
 
-        # TODO: Could this be simplified? - similar logic elsewhere and in the catalogue category service tests
         # Manufacturer
         ServiceTestHelpers.mock_get(
             self.mock_manufacturer_repository,
@@ -221,8 +212,6 @@ class CreateDSL(CatalogueItemServiceDSL):
                 else None
             ),
         )
-
-        # TODO: Go over catalogue categories and check if should use this method instead of current
 
         # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
         property_post_schemas = []
@@ -398,8 +387,8 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No catalogue item found with ID: "
-            f"{CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES["obsolete_replacement_catalogue_item_id"]}"
+            "No catalogue item found with ID: "
+            f"{CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES['obsolete_replacement_catalogue_item_id']}"
         )
 
 
@@ -488,14 +477,10 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
-# TODO: Update tests
-
-
 # pylint:disable=too-many-instance-attributes
 class UpdateDSL(CatalogueItemServiceDSL):
     """Base class for `update` tests."""
 
-    # TODO: Remove unused parameters that were copied (e.g. unit_value_id_dict?)
     _stored_catalogue_item: Optional[CatalogueItemOut]
     _stored_catalogue_category_in: Optional[CatalogueCategoryIn]
     _stored_catalogue_category_out: Optional[CatalogueCategoryOut]
@@ -513,9 +498,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
     _updating_manufacturer: bool
     _updating_obsolete_replacement_catalogue_item: bool
     _updating_properties: bool
-    unit_value_id_dict: dict[str, str]
 
-    # TODO: Update comment and parameters
     # pylint:disable=too-many-arguments
     def mock_update(
         self,
@@ -527,26 +510,29 @@ class UpdateDSL(CatalogueItemServiceDSL):
         new_manufacturer_in_data: Optional[dict] = None,
         new_obsolete_replacement_catalogue_item_data: Optional[dict] = None,
         has_child_elements: bool = False,
-        units_in_data: Optional[list[Optional[dict]]] = None,
     ) -> None:
         """
         Mocks repository methods appropriately to test the `update` service method.
 
-        :param catalogue_item_id: ID of the catalogue category that will be obtained.
+        :param catalogue_item_id: ID of the catalogue item that will be obtained.
         :param catalogue_item_update_data: Dictionary containing the basic patch data as would be required for a
-                                               `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
-                                               'unit' value in its properties as the IDs will be added automatically.
-        :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
-                                               stored catalogue category as would be required for a
-                                               `CatalogueCategoryPostSchema` (i.e. no ID, code or created and modified
-                                               times required).
-        :param has_child_elements: Boolean of whether the category being updated has child elements or not
-        :param new_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
-                                               category data as would be required for a `CatalogueCategoryIn` database
-                                               model.
-        :param units_in_data: Either `None` or a list of dictionaries (or `None`) containing the unit data as would be
-                              required for a `UnitIn` database model. These values will be used for any unit look ups
-                              required by the given catalogue category properties in the patch data.
+                                          `CatalogueItemPatchSchema` but without any mandatory IDs or property IDs.
+        :param stored_catalogue_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item
+                                           data for the existing stored catalogue item as would be required for a
+                                           `CatalogueItemPostSchema` but without any mandatory IDs or property IDs.
+        :param stored_catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data
+                                                  for the existing stored catalogue category as would be required for a
+                                                  `CatalogueCategoryIn` database model.
+        :param new_catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data for
+                                               the new stored catalogue category as would be required for a
+                                               `CatalogueCategoryIn` database model.
+        :param new_manufacturer_in_data: Either `None` or a dictionary containing the manufacturer data for the new
+                                         stored manufacturer as would be required for a `ManufacturerIn` database model.
+        :param new_obsolete_replacement_catalogue_item_data: Either `None` or a dictionary containing the basic
+                                         catalogue item data for the new stored obsolete replacement catalogue item as
+                                         would be required for a `CatalogueItemPostSchema` but without any mandatory IDs
+                                         or property IDs.
+        :param has_child_elements: Boolean of whether the catalogue item being updated has child elements or not
         """
 
         # Add property ids to the stored catalogue item if needed
@@ -638,8 +624,6 @@ class UpdateDSL(CatalogueItemServiceDSL):
                     ),
                 )
 
-            # TODO: Deal with properties in the above?
-
         self._updating_manufacturer = (
             "manufacturer_id" in catalogue_item_update_data
             and catalogue_item_update_data["manufacturer_id"] != self._stored_catalogue_item.manufacturer_id
@@ -719,7 +703,6 @@ class UpdateDSL(CatalogueItemServiceDSL):
         self._expected_catalogue_item_out = MagicMock()
         ServiceTestHelpers.mock_update(self.mock_catalogue_item_repository, self._expected_catalogue_item_out)
 
-        # TODO: Move this to the top? Same for catalogue categories
         # Patch schema
         self._catalogue_item_patch = CatalogueItemPatchSchema(**catalogue_item_update_data)
 
@@ -789,9 +772,10 @@ class UpdateDSL(CatalogueItemServiceDSL):
 
         self.mock_catalogue_item_repository.get.assert_has_calls(expected_catalogue_item_get_calls)
 
-        # TODO: This is different to catalogue category tests - use self._catalogue_category_post.properties there
         if self._updating_properties:
-            # TODO: Implement
+            if self._moving_catalogue_item:
+                expected_catalogue_category_get_calls.append(call(self._stored_catalogue_item.catalogue_category_id))
+
             self.wrapped_utils.process_properties.assert_called_once_with(
                 (
                     self._new_catalogue_category_out.properties
@@ -803,7 +787,6 @@ class UpdateDSL(CatalogueItemServiceDSL):
         else:
             self.wrapped_utils.process_properties.assert_not_called()
 
-        # TODO: Implement
         assert self._updated_catalogue_item == self._expected_catalogue_item_out
 
     def check_update_failed_with_exception(self, message: str) -> None:
@@ -819,6 +802,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
         assert str(self._update_exception.value) == message
 
 
+# pylint: disable=too-many-public-methods
 class TestUpdate(UpdateDSL):
     """Tests for updating a catalogue item."""
 
@@ -1171,8 +1155,6 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception(
             f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
         )
-
-    # TODO: Implement more tests
 
     def test_update_with_non_existent_id(self):
         """Test updating a catalogue item with a non-existent ID."""
