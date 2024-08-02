@@ -169,15 +169,20 @@ class CatalogueItemService:
                     stored_catalogue_item.catalogue_category_id
                 )
 
+                # Ensure the properties are the same in every way ignoring the ids
+                invalid_action_error_message = (
+                    "Cannot move catalogue item to a category with different properties without "
+                    "specifying the new properties"
+                )
+                if len(current_catalogue_category.properties) != len(catalogue_category.properties):
+                    raise InvalidActionError(invalid_action_error_message)
+
                 old_to_new_id_map = {}
                 for current_catalogue_category_prop, catalogue_category_prop in zip(
                     current_catalogue_category.properties, catalogue_category.properties
                 ):
                     if not current_catalogue_category_prop.is_equal_without_id(catalogue_category_prop):
-                        raise InvalidActionError(
-                            "Cannot move catalogue item to a category with different properties without "
-                            "specifying the new properties"
-                        )
+                        raise InvalidActionError(invalid_action_error_message)
                     old_to_new_id_map[current_catalogue_category_prop.id] = catalogue_category_prop.id
 
                 # The IDs of the properties need to be updated to those of the new catalogue category
