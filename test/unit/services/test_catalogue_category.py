@@ -505,7 +505,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                 **CatalogueCategoryIn(
                     **stored_catalogue_category_post_data,
                     code=utils.generate_code(stored_catalogue_category_post_data["name"], "catalogue category"),
-                ).model_dump(),
+                ).model_dump(by_alias=True),
                 id=CustomObjectId(catalogue_category_id),
             )
             if stored_catalogue_category_post_data
@@ -522,9 +522,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         # When moving i.e. changing the parent id, the data for the new parent needs to be mocked
         self._moving_catalogue_category = (
-            "parent_id" in catalogue_category_update_data
-            and stored_catalogue_category_post_data is not None
-            and stored_catalogue_category_post_data["parent_id"] != catalogue_category_update_data["parent_id"]
+            "parent_id" in catalogue_category_update_data and stored_catalogue_category_post_data is not None
         )
 
         if self._moving_catalogue_category and catalogue_category_update_data["parent_id"]:
