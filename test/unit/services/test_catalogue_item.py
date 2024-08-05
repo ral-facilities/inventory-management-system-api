@@ -156,7 +156,7 @@ class CreateDSL(CatalogueItemServiceDSL):
                                      for a `ManufacturerIn` database model.
         :param obsolete_replacement_catalogue_item_data: Dictionary containing the basic catalogue item data for the
                                      obsolete replacement as would be required for a `CatalogueItemPostSchema` but with
-                                     any `unit_id`'s replaced by the 'unit' value in its properties as the IDs will be
+                                     any `unit_id`'s replaced by the `unit` value in its properties as the IDs will be
                                      added automatically.
         """
 
@@ -311,7 +311,7 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_all_properties(self):
-        """Test creating a catalogue item with all properties present in the catalogue category are defined in the
+        """Test creating a catalogue item when all properties present in the catalogue category are defined in the
         catalogue item."""
 
         self.mock_create(
@@ -363,7 +363,6 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue item with an obsolete replacement catalogue item."""
 
         obsolete_replacement_catalogue_item_id = str(ObjectId())
-
         self.mock_create(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
@@ -379,16 +378,19 @@ class TestCreate(CreateDSL):
     def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(self):
         """Test creating a catalogue item with a non-existent obsolete replacement catalogue item ID."""
 
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
         self.mock_create(
-            CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            },
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
             obsolete_replacement_catalogue_item_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            "No catalogue item found with ID: "
-            f"{CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES['obsolete_replacement_catalogue_item_id']}"
+            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
         )
 
 

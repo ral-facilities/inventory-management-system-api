@@ -57,7 +57,7 @@ class CreateDSL:
         Checks that a prior call to `post_system` gave a successful response with the expected data returned.
 
         :param expected_system_get_data: Dictionary containing the expected system data returned as would be required
-                                         for a `SystemGetSchema`.
+                                         for a `SystemSchema`.
         """
 
         assert self._post_response.status_code == 201
@@ -158,7 +158,7 @@ class GetDSL(CreateDSL):
         Checks that a prior call to `get_system` gave a successful response with the expected data returned.
 
         :param expected_system_get_data: Dictionary containing the expected system data returned as would be required
-                                         for a `SystemGetSchema`.
+                                         for a `SystemSchema`.
         """
 
         assert self._get_response.status_code == 200
@@ -347,7 +347,7 @@ class ListDSL(GetBreadcrumbsDSL):
         Posts a system with a single child and returns their expected responses when returned by the list endpoint.
 
         :return: List of dictionaries containing the expected system data returned from a get endpoint in the form of a
-                 `SystemGetSchema`.
+                 `SystemSchema`.
         """
 
         parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
@@ -360,7 +360,7 @@ class ListDSL(GetBreadcrumbsDSL):
         Checks that a prior call to `get_systems` gave a successful response with the expected data returned.
 
         :param expected_systems_get_data: List of dictionaries containing the expected system data returned as would be
-                                          required for `SystemGetSchema`'s.
+                                          required for `SystemSchema`'s.
         """
 
         assert self._get_response.status_code == 200
@@ -438,7 +438,7 @@ class UpdateDSL(ListDSL):
         Checks that a prior call to `patch_system` gave a successful response with the expected data returned.
 
         :param expected_system_get_data: Dictionary containing the expected system data returned as would be required
-                                         for a `SystemGetSchema`.
+                                         for a `SystemSchema`.
         """
 
         assert self._patch_response.status_code == 200

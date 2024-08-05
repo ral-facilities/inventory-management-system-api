@@ -78,7 +78,7 @@ class CreateDSL:
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
                                         for a `CatalogueCategoryPostSchema` but with any `unit_id`'s replaced by the
-                                        'unit' value in its properties as the IDs will be added automatically.
+                                        `unit` value in its properties as the IDs will be added automatically.
         :return: ID of the created catalogue category (or `None` if not successful).
         """
 
@@ -122,8 +122,8 @@ class CreateDSL:
         Checks that a prior call to `post_catalogue_category` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategoryGetSchema`.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
+                                                     as would be required for a `CatalogueCategorySchema`.
         """
 
         assert self._post_response.status_code == 201
@@ -393,7 +393,7 @@ class GetDSL(CreateDSL):
         Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategoryGetSchema`.
+                                                     be required for a `CatalogueCategorySchema`.
         """
 
         assert self._get_response.status_code == 200
@@ -590,7 +590,7 @@ class ListDSL(GetBreadcrumbsDSL):
         list endpoint.
 
         :return: List of dictionaries containing the expected catalogue category data returned from a get endpoint in
-                 the form of a `CatalogueCategoryGetSchema`.
+                 the form of a `CatalogueCategorySchema`.
         """
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
@@ -609,7 +609,7 @@ class ListDSL(GetBreadcrumbsDSL):
         returned.
 
         :param expected_catalogue_categories_get_data: List of dictionaries containing the expected system data
-                                                returned as would be required for `CatalogueCategoryGetSchema`'s.
+                                                returned as would be required for `CatalogueCategorySchema`'s.
         """
 
         assert self._get_response.status_code == 200
@@ -681,7 +681,7 @@ class UpdateDSL(ListDSL):
         :param catalogue_category_id: ID of the catalogue category to patch.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
                                                `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
-                                               'unit' value in its properties as the ids will be added automatically.
+                                               `unit` value in its properties as the ids will be added automatically.
         """
 
         # Replace any unit values with unit ids
@@ -779,7 +779,7 @@ class UpdateDSL(ListDSL):
         returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategoryGetSchema`.
+                                                     be required for a `CatalogueCategorySchema`.
         """
 
         assert self._patch_response.status_code == 200

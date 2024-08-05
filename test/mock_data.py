@@ -1,17 +1,21 @@
 """
-Mock data for use in unit tests
+Mock data for use in unit tests.
 
 Names should ideally be descriptive enough to recognise what they are without looking at the data itself.
 Letters may be appended in places to indicate the data is of the same type, but has different specific values
 to others.
 
-_POST_DATA - Is for a `PostSchema` schema
-_IN_DATA - Is for an `In` model
-_GET_DATA - Is for an entity schema - Used in assertions for e2e tests
+_POST_DATA - Is for a `PostSchema` schema.
+_IN_DATA - Is for an `In` model.
+_GET_DATA - Is for an entity schema - Used in assertions for e2e tests. May have IDs missing where they are possible
+            to be known e.g. `manufacturer_id` in a catalogue item.
 _DATA - Is none of the above - likely to be used in post requests as they are likely identical, only
         with some ids missing so that they can be added later e.g. for pairing up units that aren't
-        known before hand
+        known before hand.
 """
+
+# TODO: Not sure about _GET_DATA anymore if going with _POST_DATA vs _DATA distinction, _GET_DATA can now have missing
+# IDs
 
 from unittest.mock import ANY
 
@@ -39,6 +43,7 @@ CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY = {
 
 CATALOGUE_CATEGORY_PROPERTY_IN_DATA_BOOLEAN_MANDATORY = {**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY}
 
+# TODO: Unit ids should be known so ideally should be inserted I think - check for other ANY's like this
 CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY = {
     **CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     "id": ANY,
@@ -259,15 +264,31 @@ CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     "manufacturer_id": str(ObjectId()),
 }
 
+CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
+    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "description": None,
+    "cost_to_rework_gbp": None,
+    "days_to_rework": None,
+    "drawing_number": None,
+    "drawing_link": None,
+    "item_model_number": None,
+    "obsolete_reason": None,
+    "obsolete_replacement_catalogue_item_id": None,
+    "notes": None,
+    "properties": [],
+}
+
 # Not obsolete, No properties
 CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     "name": "Catalogue Item Not Obsolete No Properties",
     "description": "Some description",
-    "cost_to_rework": 9001,
+    "cost_to_rework_gbp": 9001,
     "days_to_rework": 3,
     "drawing_number": "12345-1",
-    "drawing_link": "http://example.com",
+    "drawing_link": "http://example.com/",
     "item_model_number": "123456-1",
     "is_obsolete": False,
     "notes": "Some notes",
@@ -279,13 +300,28 @@ CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "manufacturer_id": str(ObjectId()),
 }
 
+CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
+    **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "obsolete_reason": None,
+    "obsolete_replacement_catalogue_item_id": None,
+    "properties": [],
+}
+
 # Obsolete, No properties
 CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES = {
     **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     "name": "Catalogue Item Obsolete No Properties",
     "is_obsolete": True,
     "obsolete_reason": "Manufacturer no longer exists",
-    "obsolete_replacement_catalogue_item_id": str(ObjectId()),
+}
+
+CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES = {
+    **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "properties": [],
 }
 
 # Properties
