@@ -2,19 +2,21 @@
 Unit tests for the `CatalogueItemRepo` repository.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from test.unit.repositories.test_item import FULL_ITEM_INFO
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bson import ObjectId
-from pymongo.cursor import Cursor
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -60,7 +62,7 @@ class CatalogueItemRepoDSL:
 
         self._mock_child_item_data = child_item_data
 
-        RepositoryTestHelpers.mock_find_one(self.catalogue_items_collection, child_item_data)
+        RepositoryTestHelpers.mock_find_one(self.items_collection, child_item_data)
 
     def check_has_child_elements_performed_expected_calls(self, expected_catalogue_item_id: str) -> None:
         """
@@ -355,308 +357,427 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
-# FULL_CATALOGUE_ITEM_A_INFO = {
-#     "name": "Catalogue Item A",
-#     "description": "This is Catalogue Item A",
-#     "cost_gbp": 129.99,
-#     "cost_to_rework_gbp": None,
-#     "days_to_replace": 2.0,
-#     "days_to_rework": None,
-#     "drawing_number": None,
-#     "drawing_link": "https://drawing-link.com/",
-#     "item_model_number": "abc123",
-#     "is_obsolete": False,
-#     "obsolete_reason": None,
-#     "obsolete_replacement_catalogue_item_id": None,
-#     "notes": None,
-#     "properties": [
-#         {"id": str(ObjectId()), "name": "Property A", "value": 20, "unit": "mm"},
-#         {"id": str(ObjectId()), "name": "Property B", "value": False, "unit": None},
-#         {"id": str(ObjectId()), "name": "Property C", "value": "20x15x10", "unit": "cm"},
-#     ],
-# }
+class UpdateDSL(CatalogueItemRepoDSL):
+    """Base class for `update` tests."""
 
-# # pylint: disable=duplicate-code
-# FULL_CATALOGUE_ITEM_B_INFO = {
-#     "name": "Catalogue Item B",
-#     "description": "This is Catalogue Item B",
-#     "cost_gbp": 300.00,
-#     "cost_to_rework_gbp": 120.99,
-#     "days_to_replace": 1.5,
-#     "days_to_rework": 3.0,
-#     "drawing_number": "789xyz",
-#     "drawing_link": None,
-#     "item_model_number": None,
-#     "is_obsolete": False,
-#     "obsolete_reason": None,
-#     "obsolete_replacement_catalogue_item_id": None,
-#     "notes": "Some extra information",
-#     "properties": [{"id": str(ObjectId()), "name": "Property A", "value": True, "unit": None}],
-# }
-# # pylint: enable=duplicate-code
+    _catalogue_item_in: CatalogueItemIn
+    _expected_catalogue_item_out: CatalogueItemOut
+    _updated_catalogue_item_id: str
+    _updated_catalogue_item: CatalogueItemOut
+    _update_exception: pytest.ExceptionInfo
 
+    def set_update_data(self, new_catalogue_item_in_data: dict):
+        """
+        Assigns the update data to use during a call to `call_update`.
 
-# def test_delete(test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test deleting a catalogue item.
+        :param new_catalogue_item_in_data: New catalogue item data as would be required for a `CatalogueItemIn` database
+                                           model to supply to the `CatalogueItemRepo` `update` method.
+        """
+        self._catalogue_item_in = CatalogueItemIn(**new_catalogue_item_in_data)
 
-#     Verify that the `delete` method properly handles the deletion of a catalogue item by ID.
-#     """
-#     catalogue_item_id = str(ObjectId())
-#     session = MagicMock()
+    # pylint:disable=too-many-arguments
+    def mock_update(
+        self,
+        catalogue_item_id: str,
+        new_catalogue_item_in_data: dict,
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `update` repo method.
 
-#     # Mock `delete_one` to return that one document has been deleted
-#     test_helpers.mock_delete_one(database_mock.catalogue_items, 1)
+        :param catalogue_item_id: ID of the catalogue item that will be updated.
+        :param new_catalogue_item_in_data: Dictionary containing the new catalogue item data as would be required for a
+                                           `CatalogueItemIn` database model (i.e. no ID or created and modified times
+                                           required).
+        """
+        self.set_update_data(new_catalogue_item_in_data)
 
-#     # Mock `find_one` to return no child item document
-#     test_helpers.mock_find_one(database_mock.items, None)
+        # Final catalogue item after update
+        self._expected_catalogue_item_out = CatalogueItemOut(
+            **self._catalogue_item_in.model_dump(), id=CustomObjectId(catalogue_item_id)
+        )
+        RepositoryTestHelpers.mock_find_one(
+            self.catalogue_items_collection, self._expected_catalogue_item_out.model_dump()
+        )
 
-#     catalogue_item_repository.delete(catalogue_item_id, session=session)
+    def call_update(self, catalogue_item_id: str) -> None:
+        """
+        Calls the `CatalogueItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or`set_update_data`).
 
-#     database_mock.catalogue_items.delete_one.assert_called_once_with(
-#         {"_id": CustomObjectId(catalogue_item_id)}, session=session
-#     )
+        :param catalogue_item_id: ID of the catalogue item to be updated.
+        """
 
+        self._updated_catalogue_item_id = catalogue_item_id
+        self._updated_catalogue_item = self.catalogue_item_repository.update(
+            catalogue_item_id, self._catalogue_item_in, session=self.mock_session
+        )
 
-# def test_delete_with_child_items(test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test deleting a catalogue item with child items.
+    def call_update_expecting_error(self, catalogue_item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`) while expecting an error to be raised.
 
-#     Verify that the `delete` method properly handles the deletion of a catalogue item with child items.
-#     """
-#     catalogue_item_id = str(ObjectId())
+        :param catalogue_item_id: ID of the catalogue item to be updated.
+        :param error_type: Expected exception to be raised.
+        """
 
-#     # Mock `find_one` to return the child item document
-#     test_helpers.mock_find_one(
-#         database_mock.items,
-#         {
-#             "_id": CustomObjectId(str(ObjectId())),
-#             "catalogue_item_id": CustomObjectId(catalogue_item_id),
-#             **FULL_ITEM_INFO,
-#         },
-#     )
+        with pytest.raises(error_type) as exc:
+            self.catalogue_item_repository.update(catalogue_item_id, self._catalogue_item_in)
+        self._update_exception = exc
 
-#     with pytest.raises(ChildElementsExistError) as exc:
-#         catalogue_item_repository.delete(catalogue_item_id)
-#     assert str(exc.value) == f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
 
+        self.catalogue_items_collection.update_one.assert_called_once_with(
+            {
+                "_id": CustomObjectId(self._updated_catalogue_item_id),
+            },
+            {
+                "$set": self._catalogue_item_in.model_dump(),
+            },
+            session=self.mock_session,
+        )
 
-# def test_delete_with_invalid_id(catalogue_item_repository):
-#     """
-#     Test deleting a catalogue item with an invalid ID.
+        assert self._updated_catalogue_item == self._expected_catalogue_item_out
 
-#     Verify that the `delete` method properly handles the deletion of a catalogue item with an invalid ID.
-#     """
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         catalogue_item_repository.delete("invalid")
-#     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
 
+        :param message: Expected message of the raised exception.
+        """
 
-# def test_delete_with_non_existent_id(test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test deleting a catalogue item with a non-existent ID.
+        self.catalogue_items_collection.update_one.assert_not_called()
 
-#     Verify that the `delete` method properly handles the deletion of a catalogue item with a non-existent ID.
-#     """
-#     catalogue_item_id = str(ObjectId())
-
-#     # Mock `delete_one` to return that no document has been deleted
-#     test_helpers.mock_delete_one(database_mock.catalogue_items, 0)
-
-#     # Mock `find_one` to return no child item document
-#     test_helpers.mock_find_one(database_mock.items, None)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_item_repository.delete(catalogue_item_id)
-#     assert str(exc.value) == f"No catalogue item found with ID: {catalogue_item_id}"
-#     database_mock.catalogue_items.delete_one.assert_called_once_with(
-#         {"_id": CustomObjectId(catalogue_item_id)}, session=None
-#     )
+        assert str(self._update_exception.value) == message
 
 
-# def test_update(test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test updating a catalogue item.
+class TestUpdate(UpdateDSL):
+    """Tests for updating a catalogue item."""
 
-#     Verify that the `update` method properly handles the catalogue item to be updated.
-#     """
-#     catalogue_item_info = {
-#         **FULL_CATALOGUE_ITEM_A_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         "name": "Catalogue Item B",
-#         "description": "This is Catalogue Item B",
-#     }
-#     # pylint: disable=duplicate-code
-#     catalogue_item = CatalogueItemOut(
-#         **catalogue_item_info,
-#         id=str(ObjectId()),
-#         catalogue_category_id=str(ObjectId()),
-#         manufacturer_id=str(ObjectId()),
-#     )
-#     session = MagicMock()
-#     # pylint: enable=duplicate-code
+    def test_update(self):
+        """Test updating a catalogue item."""
 
-#     # Mock `update_one` to return an object for the updated catalogue item document
-#     test_helpers.mock_update_one(database_mock.catalogue_items)
-#     # Mock `find_one` to return the updated catalogue item document
-#     test_helpers.mock_find_one(
-#         database_mock.catalogue_items,
-#         {
-#             "_id": CustomObjectId(catalogue_item.id),
-#             "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-#             "manufacturer_id": CustomObjectId(catalogue_item.manufacturer_id),
-#             **catalogue_item_info,
-#         },
-#     )
+        catalogue_item_id = str(ObjectId())
 
-#     # Mock `find_one` to return no child item document
-#     test_helpers.mock_find_one(database_mock.items, None)
+        self.mock_update(
+            catalogue_item_id,
+            CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+        )
+        self.call_update(catalogue_item_id)
+        self.check_update_success()
 
-#     catalogue_item_in = CatalogueItemIn(
-#         **catalogue_item_info,
-#         catalogue_category_id=catalogue_item.catalogue_category_id,
-#         manufacturer_id=catalogue_item.manufacturer_id,
-#     )
-#     updated_catalogue_item = catalogue_item_repository.update(catalogue_item.id, catalogue_item_in, session=session)
+    def test_update_with_invalid_id(self):
+        """Test updating a catalogue item with an invalid ID."""
 
-#     database_mock.catalogue_items.update_one.assert_called_once_with(
-#         {"_id": CustomObjectId(catalogue_item.id)},
-#         {
-#             "$set": {
-#                 "catalogue_category_id": CustomObjectId(catalogue_item.catalogue_category_id),
-#                 **catalogue_item_in.model_dump(by_alias=True),
-#             }
-#         },
-#         session=session,
-#     )
-#     database_mock.catalogue_items.find_one.assert_called_once_with(
-#         {"_id": CustomObjectId(catalogue_item.id)}, session=session
-#     )
-#     assert updated_catalogue_item == catalogue_item
+        catalogue_item_id = "invalid-id"
+
+        self.set_update_data(CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.call_update_expecting_error(catalogue_item_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# def test_update_with_invalid_id(catalogue_item_repository):
-#     """
-#     Test updating a catalogue category with invalid ID.
+class DeleteDSL(CatalogueItemRepoDSL):
+    """Base class for `delete` tests."""
 
-#     Verify that the `update` method properly handles the update of a catalogue category with an invalid ID.
-#     """
-#     update_catalogue_item = MagicMock()
-#     catalogue_item_id = "invalid"
+    _delete_catalogue_item_id: str
+    _delete_exception: pytest.ExceptionInfo
 
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         catalogue_item_repository.update(catalogue_item_id, update_catalogue_item)
-#     assert str(exc.value) == f"Invalid ObjectId value '{catalogue_item_id}'"
+    def mock_delete(
+        self,
+        deleted_count: int,
+        child_item_data: Optional[dict] = None,
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
 
+        :param deleted_count: Number of documents deleted successfully.
+        :param child_item_data: Dictionary containing a child item's data (or `None`).
+        """
 
-# def test_has_child_elements_with_no_child_items(test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test has_child_elements returns false when there are no child items
-#     """
-#     # Mock `find_one` to return no child items category document
-#     test_helpers.mock_find_one(database_mock.items, None)
+        self.mock_has_child_elements(child_item_data)
+        RepositoryTestHelpers.mock_delete_one(self.catalogue_items_collection, deleted_count)
 
-#     result = catalogue_item_repository.has_child_elements(ObjectId())
+    def call_delete(self, catalogue_item_id: str) -> None:
+        """
+        Calls the `CatalogueItemRepo` `delete` method.
 
-#     assert not result
+        :param catalogue_item_id: ID of the catalogue item to be deleted.
+        """
 
+        self._delete_catalogue_item_id = catalogue_item_id
+        self.catalogue_item_repository.delete(catalogue_item_id, session=self.mock_session)
 
-# def test_has_child_elements_with_child_items(test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test has_child_elements returns true when there are child items.
-#     """
+    def call_delete_expecting_error(self, catalogue_item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueItemRepo` `delete` method while expecting an error to be raised.
 
-#     catalogue_category_id = str(ObjectId())
+        :param catalogue_item_id: ID of the catalogue item to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
 
-#     # Mock find_one to return 1 (child items found)
-#     test_helpers.mock_find_one(
-#         database_mock.catalogue_categories,
-#         {
-#             **FULL_ITEM_INFO,
-#             "_id": CustomObjectId(str(ObjectId())),
-#             "catalogue_item_id": catalogue_category_id,
-#         },
-#     )
-#     # Mock find_one to return 0 (child items not found)
-#     test_helpers.mock_find_one(database_mock.catalogue_items, None)
+        self._delete_catalogue_item_id = catalogue_item_id
+        with pytest.raises(error_type) as exc:
+            self.catalogue_item_repository.delete(catalogue_item_id)
+        self._delete_exception = exc
 
-#     result = catalogue_item_repository.has_child_elements(catalogue_category_id)
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
 
-#     assert result
+        self.check_has_child_elements_performed_expected_calls(self._delete_catalogue_item_id)
+        self.catalogue_items_collection.delete_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._delete_catalogue_item_id)}, session=self.mock_session
+        )
 
+    def check_delete_failed_with_exception(self, message: str, expecting_delete_one_called: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
 
-# def test_list_ids(database_mock, catalogue_item_repository):
-#     """
-#     Test getting catalogue item IDs.
+        :param message: Expected message of the raised exception.
+        :param expecting_delete_one_called: Whether the `delete_one` method is expected to be called or not.
+        """
 
-#     Verify that the `list_ids` method properly handles the retrieval of catalogue item IDs given a
-#     catalogue_category_id to filter by.
-#     """
-#     session = MagicMock()
-#     catalogue_category_id = str(ObjectId())
-#     find_cursor_mock = MagicMock(Cursor)
+        if not expecting_delete_one_called:
+            self.catalogue_items_collection.delete_one.assert_not_called()
+        else:
+            self.catalogue_items_collection.delete_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._delete_catalogue_item_id)}, session=None
+            )
 
-#     # Mock `find` to return the cursor mock so we can check distinct is used correctly
-#     database_mock.catalogue_items.find.return_value = find_cursor_mock
-
-#     retrieved_catalogue_items = catalogue_item_repository.list_ids(catalogue_category_id, session=session)
-
-#     database_mock.catalogue_items.find.assert_called_once_with(
-#         {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, {"_id": 1}, session=session
-#     )
-#     find_cursor_mock.distinct.assert_called_once_with("_id")
-#     assert retrieved_catalogue_items == find_cursor_mock.distinct.return_value
+        assert str(self._delete_exception.value) == message
 
 
-# @patch("inventory_management_system_api.repositories.catalogue_item.datetime")
-# def test_insert_property_to_all_matching(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test inserting a property.
+class TestDelete(DeleteDSL):
+    """Tests for deleting a catalogue item."""
 
-#     Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
-#     property.
-#     """
-#     session = MagicMock()
-#     catalogue_category_id = str(ObjectId())
-#     property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
+    def test_delete(self):
+        """Test deleting a catalogue item."""
 
-#     # Mock 'update_many'
-#     test_helpers.mock_update_many(database_mock.catalogue_items)
+        self.mock_delete(deleted_count=1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
 
-#     catalogue_item_repository.insert_property_to_all_matching(catalogue_category_id, property_in, session=session)
+    def test_delete_with_child_item(self):
+        """Test deleting a catalogue item when it has a child item."""
 
-#     database_mock.catalogue_items.update_many.assert_called_once_with(
-#         {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
-#         {
-#             "$push": {"properties": property_in.model_dump(by_alias=True)},
-#             "$set": {"modified_time": datetime_mock.now.return_value},
-#         },
-#         session=session,
-#     )
+        catalogue_item_id = str(ObjectId())
+
+        # pylint:disable=fixme
+        # TODO: Replace FULL_ITEM_INFO once items has been refactored
+        self.mock_delete(deleted_count=1, child_item_data=FULL_ITEM_INFO)
+        self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
+        self.check_delete_failed_with_exception(
+            f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+        )
+
+    def test_delete_non_existent_id(self):
+        """Test deleting a catalogue item with a non-existent ID."""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_delete(deleted_count=0)
+        self.call_delete_expecting_error(catalogue_item_id, MissingRecordError)
+        self.check_delete_failed_with_exception(
+            f"No catalogue item found with ID: {catalogue_item_id}", expecting_delete_one_called=True
+        )
+
+    def test_delete_invalid_id(self):
+        """Test deleting a catalogue item with an invalid ID."""
+
+        catalogue_item_id = "invalid-id"
+
+        self.call_delete_expecting_error(catalogue_item_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# @patch("inventory_management_system_api.repositories.catalogue_item.datetime")
-# def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, catalogue_item_repository):
-#     """
-#     Test updating the names of all properties with a given ID.
+class HasChildElementsDSL(CatalogueItemRepoDSL):
+    """Base class for `has_child_elements` tests"""
 
-#     Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
-#     property names.
-#     """
-#     session = MagicMock()
-#     property_id = str(ObjectId())
-#     new_property_name = "new property name"
+    _has_child_elements_catalogue_item_id: str
+    _has_child_elements_result: bool
 
-#     # Mock 'update_many'
-#     test_helpers.mock_update_many(database_mock.catalogue_items)
+    def call_has_child_elements(self, catalogue_item_id: str) -> None:
+        """Calls the `CatalogueItemRepo` `has_child_elements` method.
 
-#     catalogue_item_repository.update_names_of_all_properties_with_id(property_id, new_property_name, session=session)
+        :param catalogue_item_id: ID of the catalogue item to check.
+        """
 
-#     database_mock.catalogue_items.update_many.assert_called_once_with(
-#         {"properties._id": CustomObjectId(property_id)},
-#         {
-#             "$set": {"properties.$[elem].name": new_property_name, "modified_time": datetime_mock.now.return_value},
-#         },
-#         array_filters=[{"elem._id": CustomObjectId(property_id)}],
-#         session=session,
-#     )
+        self._has_child_elements_catalogue_item_id = catalogue_item_id
+        self._has_child_elements_result = self.catalogue_item_repository.has_child_elements(
+            CustomObjectId(catalogue_item_id), session=self.mock_session
+        )
+
+    def check_has_child_elements_success(self, expected_result: bool) -> None:
+        """Checks that a prior call to `call_has_child_elements` worked as expected
+
+        :param expected_result: The expected result returned by `has_child_elements`
+        """
+
+        self.check_has_child_elements_performed_expected_calls(self._has_child_elements_catalogue_item_id)
+
+        assert self._has_child_elements_result == expected_result
+
+
+class TestHasChildElements(HasChildElementsDSL):
+    """Tests for `has_child_elements`."""
+
+    def test_has_child_elements_with_no_children(self):
+        """Test `has_child_elements` when there are no child items."""
+
+        self.mock_has_child_elements(child_item_data=None)
+        self.call_has_child_elements(catalogue_item_id=str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=False)
+
+    def test_has_child_elements_with_child_item(self):
+        """Test `has_child_elements` when there is a child item."""
+
+        # pylint:disable=fixme
+        # TODO: Replace FULL_ITEM_INFO once items has been refactored
+        self.mock_has_child_elements(
+            child_item_data=FULL_ITEM_INFO,
+        )
+        self.call_has_child_elements(catalogue_item_id=str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=True)
+
+
+class ListIDsDSL(CatalogueItemRepoDSL):
+    """Base class for `list_ids` tests"""
+
+    _list_ids_catalogue_category_id: str
+    _list_ids_result: bool
+
+    def call_list_ids(self, catalogue_category_id: str) -> None:
+        """Calls the `CatalogueItemRepo` `list_ids` method.
+
+        :param catalogue_category_id: ID of the catalogue category.
+        """
+
+        self._list_ids_catalogue_category_id = catalogue_category_id
+        self._list_ids_result = self.catalogue_item_repository.list_ids(
+            catalogue_category_id, session=self.mock_session
+        )
+
+    def check_list_ids_success(self) -> None:
+        """Checks that a prior call to `call_list_ids` worked as expected
+
+        :param expected_result: The expected result returned by `list_ids`
+        """
+
+        self.catalogue_items_collection.find.assert_called_once_with(
+            {"catalogue_category_id": CustomObjectId(self._list_ids_catalogue_category_id)},
+            {"_id": 1},
+            session=self.mock_session,
+        )
+        self.catalogue_items_collection.find.return_value.distinct.assert_called_once_with("_id")
+
+        assert self._list_ids_result == self.catalogue_items_collection.find.return_value.distinct.return_value
+
+
+class TestListIDs(ListIDsDSL):
+    """Tests for `list_ids`."""
+
+    def test_list_ids(self):
+        """Test `list_ids`."""
+
+        self.call_list_ids(str(ObjectId()))
+        self.check_list_ids_success()
+
+
+class InsertPropertyToAllMatchingDSL(CatalogueItemRepoDSL):
+    """Base class for `insert_property_to_all_matching` tests"""
+
+    _mock_datetime: Mock
+    _insert_property_to_all_matching_catalogue_category_id: str
+    _property_in: PropertyIn
+
+    @pytest.fixture(autouse=True)
+    def setup_insert_property_to_all_matching_dsl(self):
+        """Setup fixtures"""
+
+        with patch("inventory_management_system_api.repositories.catalogue_item.datetime") as mock_datetime:
+            self._mock_datetime = mock_datetime
+            yield
+
+    def call_insert_property_to_all_matching(self, catalogue_category_id: str, property_data: dict) -> None:
+        """Calls the `CatalogueItemRepo` `insert_property_to_all_matching` method.
+
+        :param catalogue_category_id: ID of the catalogue category.
+        :param property_data: Data of the property to insert as would be required for a `PropertyPostSchema` schema but
+                        without an `id`.
+        """
+
+        self._property_in = PropertyIn(**property_data, id=str(ObjectId()))
+
+        self._insert_property_to_all_matching_catalogue_category_id = catalogue_category_id
+        self.catalogue_item_repository.insert_property_to_all_matching(
+            catalogue_category_id, self._property_in, session=self.mock_session
+        )
+
+    def check_insert_property_to_all_matching_success(self) -> None:
+        """Checks that a prior call to `call_insert_property_to_all_matching` worked as expected"""
+
+        self.catalogue_items_collection.update_many.assert_called_once_with(
+            {"catalogue_category_id": CustomObjectId(self._insert_property_to_all_matching_catalogue_category_id)},
+            {
+                "$push": {"properties": self._property_in.model_dump(by_alias=True)},
+                "$set": {"modified_time": self._mock_datetime.now.return_value},
+            },
+            session=self.mock_session,
+        )
+
+
+class TestInsertPropertyToAllMatching(InsertPropertyToAllMatchingDSL):
+    """Tests for `insert_property_to_all_matching`."""
+
+    def test_insert_property_to_all_matching(self):
+        """Test `insert_property_to_all_matching`."""
+
+        self.call_insert_property_to_all_matching(str(ObjectId()), PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE)
+        self.check_insert_property_to_all_matching_success()
+
+
+class UpdateNamesOfAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL):
+    """Base class for `update_names_of_all_properties_with_id` tests"""
+
+    _update_names_of_all_properties_with_id_property_id: str
+    _update_names_of_all_properties_with_id_new_property_name: str
+
+    def call_update_names_of_all_properties_with_id(self, property_id: str, new_property_name: str) -> None:
+        """Calls the `CatalogueItemRepo` `update_names_of_all_properties_with_id` method.
+
+        :param property_id: ID of the property.
+        :param new_property_name: New property name.
+        """
+
+        self._update_names_of_all_properties_with_id_property_id = property_id
+        self._update_names_of_all_properties_with_id_new_property_name = new_property_name
+        self.catalogue_item_repository.update_names_of_all_properties_with_id(
+            property_id, new_property_name, session=self.mock_session
+        )
+
+    def check_update_names_of_all_properties_with_id(self) -> None:
+        """Checks that a prior call to `update_names_of_all_properties_with_id` worked as expected"""
+
+        self.catalogue_items_collection.update_many.assert_called_once_with(
+            {"properties._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)},
+            {
+                "$set": {
+                    "properties.$[elem].name": self._update_names_of_all_properties_with_id_new_property_name,
+                    "modified_time": self._mock_datetime.now.return_value,
+                }
+            },
+            array_filters=[{"elem._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)}],
+            session=self.mock_session,
+        )
+
+
+class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
+    """Tests for `update_names_of_all_properties_with_id`."""
+
+    def test_update_names_of_all_properties_with_id(self):
+        """Test `update_names_of_all_properties_with_id`."""
+
+        self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
+        self.check_update_names_of_all_properties_with_id()
