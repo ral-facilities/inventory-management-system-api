@@ -72,7 +72,7 @@ class SystemRepoDSL:
         Mocks database methods appropriately for when the `_has_child_elements` repo method will be called.
 
         :param child_system_data: Dictionary containing a child system's data (or `None`).
-        :param child_item_data: Dictionary containing a child Item's data (or `None`).
+        :param child_item_data: Dictionary containing a child item's data (or `None`).
         """
 
         self._mock_child_system_data = child_system_data
@@ -481,7 +481,7 @@ class ListDSL(SystemRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing system's."""
+    """Tests for listing systems."""
 
     def test_list(self):
         """Test listing all systems."""

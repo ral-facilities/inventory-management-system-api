@@ -253,6 +253,12 @@ CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY = {
     "is_obsolete": False,
 }
 
+CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
+    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "catalogue_category_id": str(ObjectId()),
+    "manufacturer_id": str(ObjectId()),
+}
+
 # Not obsolete, No properties
 CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -265,6 +271,12 @@ CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "item_model_number": "123456-1",
     "is_obsolete": False,
     "notes": "Some notes",
+}
+
+CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
+    **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+    "catalogue_category_id": str(ObjectId()),
+    "manufacturer_id": str(ObjectId()),
 }
 
 # Obsolete, No properties

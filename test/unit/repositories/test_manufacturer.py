@@ -5,12 +5,11 @@ Unit tests for the `ManufacturerRepo` repository.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from typing import Optional
-from unittest.mock import MagicMock, call, Mock
-
-from test.mock_data import MANUFACTURER_IN_DATA_A, MANUFACTURER_IN_DATA_B
+from test.mock_data import CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY, MANUFACTURER_IN_DATA_A, MANUFACTURER_IN_DATA_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.test_catalogue_item import FULL_CATALOGUE_ITEM_A_INFO
+from typing import Optional
+from unittest.mock import MagicMock, Mock, call
+
 import pytest
 from bson import ObjectId
 
@@ -422,8 +421,6 @@ class UpdateDSL(ManufacturerRepoDSL):
             session=self.mock_session,
         )
 
-        print(self._updated_manufacturer)
-        print(self._expected_manufacturer_out)
         assert self._updated_manufacturer == self._expected_manufacturer_out
 
     def check_update_failed_with_exception(self, message: str) -> None:
@@ -574,15 +571,9 @@ class TestDelete(DeleteDSL):
         """Test deleting a manufacturer when it is part of a catalogue item."""
         manufacturer_id = str(ObjectId())
 
-        # pylint:disable=fixme
-        # TODO: Replace FULL_CATALOGUE_ITEM_A_INFO once catalogue item tests have been refactored
         self.mock_delete(
             deleted_count=1,
-            catalogue_item_data={
-                **FULL_CATALOGUE_ITEM_A_INFO,
-                "catalogue_category_id": str(ObjectId()),
-                "manufacturer_id": manufacturer_id,
-            },
+            catalogue_item_data=CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_delete_expecting_error(manufacturer_id, PartOfCatalogueItemError)
         self.check_delete_failed_with_exception(f"Manufacturer with ID '{manufacturer_id}' is part of a catalogue item")
