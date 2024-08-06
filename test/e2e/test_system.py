@@ -6,12 +6,13 @@ End-to-End tests for the system router.
 # pylint: disable=duplicate-code
 
 from test.conftest import add_ids_to_properties
-from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
+from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
-from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
-from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
-from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
+from test.e2e.test_item import ITEM_POST
 from test.mock_data import (
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
@@ -608,33 +609,18 @@ class TestDelete(DeleteDSL):
         # TODO: This should be cleaned up in future
         # Create a child item
         # pylint: disable=duplicate-code
-        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
-        unit_mm = response.json()
-
-        response = self.test_client.post("/v1/units", json=UNIT_POST_B)
-        unit_cm = response.json()
-
-        units = [unit_mm, unit_cm]
-
         response = self.test_client.post(
-            "/v1/catalogue-categories",
-            json={
-                **CATALOGUE_CATEGORY_POST_A,
-                "properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_A["properties"], units
-                ),
-            },
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
         )
         catalogue_category = response.json()
 
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         manufacturer_id = response.json()["id"]
 
         catalogue_item_post = {
-            **CATALOGUE_ITEM_POST_A,
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_category_id": catalogue_category["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
         }
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
         catalogue_item_id = response.json()["id"]

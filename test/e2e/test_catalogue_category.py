@@ -23,6 +23,8 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     UNIT_POST_DATA_MM,
 )
 from typing import Optional
@@ -712,40 +714,19 @@ class UpdateDSL(ListDSL):
     def post_child_catalogue_item(self) -> None:
         """Utility method that posts a child catalogue item for the last catalogue category posted."""
 
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-
         # Create a child catalogue item
-        # pylint: disable=duplicate-code
         response = self.test_client.post(
             "/v1/manufacturers",
-            json={
-                "name": "Manufacturer D",
-                "url": "http://example.com/",
-                "address": {
-                    "address_line": "1 Example Street",
-                    "town": "Oxford",
-                    "county": "Oxfordshire",
-                    "country": "United Kingdom",
-                    "postcode": "OX1 2AB",
-                },
-                "telephone": "0932348348",
-            },
+            json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
         )
         manufacturer_id = response.json()["id"]
 
         catalogue_item_post = {
-            "name": "Catalogue Item A",
-            "description": "This is Catalogue Item A",
-            "cost_gbp": 129.99,
-            "days_to_replace": 2.0,
-            "is_obsolete": False,
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_category_id": self._post_response.json()["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": [],
         }
         self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        # pylint: enable=duplicate-code
 
     def patch_properties_with_property_with_allowed_values(
         self, property_type: str, allowed_values_post_data: dict
