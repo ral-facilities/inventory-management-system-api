@@ -50,6 +50,7 @@ from unittest.mock import ANY
 
 import pytest
 from bson import ObjectId
+from httpx import Response
 
 
 # TODO: Should this be inherited or should there be a base test client for it? Also need manufacturer and system
@@ -73,6 +74,29 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         self.manufacturer_id = None
 
         self._unit_data_lookup_dict = {}
+
+    def add_ids_to_expected_catalogue_item_get_data(self, expected_catalogue_item_get_data) -> dict:
+        """
+        Adds required IDs to some expected catalogue item get data based on what has already been posted.
+
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
+                                                 would be required for a `CatalogueItemSchema`. Does not need mandatory
+                                                 IDs (e.g. manufacturer_id) as they will be added here.
+        """
+        # Where there are properties add the property ID, unit ID and unit value
+        expected_catalogue_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
+            expected_catalogue_item_get_data, self.property_name_id_dict
+        )
+        properties = []
+        for prop in expected_catalogue_item_get_data["properties"]:
+            properties.append({**prop, **self._unit_data_lookup_dict[prop["id"]]})
+        expected_catalogue_item_get_data["properties"] = properties
+
+        return {
+            **expected_catalogue_item_get_data,
+            "catalogue_category_id": self.catalogue_category_id,
+            "manufacturer_id": self.manufacturer_id,
+        }
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
@@ -183,21 +207,10 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
                                                  expected.
         """
 
-        # Where there are properties the property ID, unit ID and unit value
-        expected_catalogue_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
-            expected_catalogue_item_get_data, self.property_name_id_dict
-        )
-        properties = []
-        for prop in expected_catalogue_item_get_data["properties"]:
-            properties.append({**prop, **self._unit_data_lookup_dict[prop["id"]]})
-        expected_catalogue_item_get_data["properties"] = properties
-
         assert self._post_response.status_code == 201
-        assert self._post_response.json() == {
-            **expected_catalogue_item_get_data,
-            "catalogue_category_id": self.catalogue_category_id,
-            "manufacturer_id": self.manufacturer_id,
-        }
+        assert self._post_response.json() == self.add_ids_to_expected_catalogue_item_get_data(
+            expected_catalogue_item_get_data
+        )
 
     def check_post_catalogue_item_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -548,6 +561,275 @@ class TestCreate(CreateDSL):
         self.check_post_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
 
 
+class GetDSL(CreateDSL):
+    """Base class for get tests."""
+
+    _get_response: Response
+
+    def get_catalogue_item(self, catalogue_item_id: str) -> None:
+        """
+        Gets a catalogue item with the given ID.
+
+        :param catalogue_item_id: ID of the catalogue item to be obtained.
+        """
+
+        self._get_response = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
+
+    def check_get_catalogue_item_success(self, expected_catalogue_item_get_data: dict) -> None:
+        """
+        Checks that a prior call to `get_catalogue_item` gave a successful response with the expected data returned.
+
+        :param expected_catalogue_item_get_data: Dictionary containing the expected system data returned as would be
+                                                 required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
+                                                 manufacturer_id) as they will be added automatically to check they are
+                                                 as expected.
+        """
+
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == self.add_ids_to_expected_catalogue_item_get_data(
+            expected_catalogue_item_get_data
+        )
+
+    def check_get_catalogue_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `get_catalogue_item` gave a failed response with the expected code and error
+        message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._get_response.status_code == status_code
+        assert self._get_response.json()["detail"] == detail
+
+
+class TestGet(GetDSL):
+    """Tests for getting a catalogue item."""
+
+    def test_get(self):
+        """Test getting a catalogue item."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.get_catalogue_item(catalogue_item_id)
+        self.check_get_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+
+    def test_get_with_non_existent_id(self):
+        """Test getting a catalogue item with a non-existent ID."""
+
+        self.get_catalogue_item(str(ObjectId()))
+        self.check_get_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+    def test_get_with_invalid_id(self):
+        """Test getting a catalogue item with an invalid ID."""
+
+        self.get_catalogue_item("invalid-id")
+        self.check_get_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+
+class ListDSL(GetDSL):
+    """Base class for list tests."""
+
+    def get_catalogue_items(self, filters: dict) -> None:
+        """
+        Gets a list catalogue items with the given filters.
+
+        :param filters: Filters to use in the request.
+        """
+
+        self._get_response = self.test_client.get("/v1/catalogue-items", params=filters)
+
+    def post_test_catalogue_items(self) -> list[dict]:
+        """
+        Posts two catalogue items each in a separate catalogue category and returns their expected responses when
+        returned by the ist endpoint.
+
+        :return: List of dictionaries containing the expected catalogue category data returned from a get endpoint in
+                 the form of a `CatalogueItemSchema`.
+        """
+
+        first_catalogue_category_id = self.post_catalogue_category(
+            CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        second_catalogue_category_id = self.post_catalogue_category(
+            {**CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES, "name": "Another category"}
+        )
+        self.post_catalogue_item(CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+
+        return [
+            {
+                **CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": first_catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            },
+            {
+                **CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": second_catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            },
+        ]
+
+    def check_get_catalogue_items_success(self, expected_catalogue_items_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_catalogue_items` gave a successful response with the expected data returned.
+
+        :param expected_catalogue_items_get_data: List of dictionaries containing the expected system data
+                                                  returned as would be required for `CatalogueItemSchema`'s.
+        """
+
+        assert self._get_response.status_code == 200
+        assert self._get_response.json() == expected_catalogue_items_get_data
+
+
+class TestList(ListDSL):
+    """Tests for getting a list of catalogue items."""
+
+    def test_list_with_no_filters(self):
+        """
+        Test getting a list of all catalogue items with no filters provided.
+
+        Posts two catalogue items in different catalogue categories and expects both to be returned.
+        """
+
+        catalogue_items = self.post_test_catalogue_items()
+        self.get_catalogue_items(filters={})
+        self.check_get_catalogue_items_success(catalogue_items)
+
+    def test_list_with_catalogue_category_id_filter(self):
+        """
+        Test getting a list of all catalogue items with a `catalogue_category_id` filter provided.
+
+        Posts two catalogue items in different catalogue categories and then filter using the `catalogue_category_id`
+        expecting only the second catalogue item to be returned.
+        """
+
+        catalogue_items = self.post_test_catalogue_items()
+        self.get_catalogue_items(filters={"catalogue_category_id": catalogue_items[1]["catalogue_category_id"]})
+        self.check_get_catalogue_items_success([catalogue_items[1]])
+
+    def test_list_with_catalogue_category_id_filter_with_no_matching_results(self):
+        """Test getting a list of all catalogue items with a `catalogue_category_id` filter that returns no results."""
+
+        self.get_catalogue_items(filters={"catalogue_category_id": str(ObjectId())})
+        self.check_get_catalogue_items_success([])
+
+    def test_list_with_invalid_catalogue_category_id_filter(self):
+        """Test getting a list of all catalogue items with an invalid `catalogue_category_id` filter returns no
+        results."""
+
+        self.get_catalogue_items(filters={"catalogue_category_id": "invalid-id"})
+        self.check_get_catalogue_items_success([])
+
+
+# TODO: Update tests
+
+
+# TODO: Inherit from UpdateDSL
+class DeleteDSL(ListDSL):
+    """Base class for delete tests."""
+
+    _delete_response: Response
+
+    # TODO: Move into UpdateDSL? (like post_child_item in catalogue category tests - depends if needed there or not)
+    def post_child_item(self) -> None:
+        """Utility method that posts a child item for the last catalogue item posted."""
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+
+        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_A)
+        system_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            "is_defective": False,
+            "warranty_end_date": "2015-11-15T23:59:59Z",
+            "serial_number": "xyz123",
+            "delivered_date": "2012-12-05T12:00:00Z",
+            "notes": "Test notes",
+            "catalogue_item_id": self._post_response.json()["id"],
+            "system_id": system_id,
+            "usage_status_id": usage_status_id,
+            "properties": [],
+        }
+        self.test_client.post("/v1/items", json=item_post)
+
+    def delete_catalogue_item(self, catalogue_item_id: str) -> None:
+        """
+        Deletes a catalogue item with the given ID.
+
+        :param catalogue_item_id: ID of the catalogue item to be deleted.
+        """
+
+        self._delete_response = self.test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
+
+    def check_delete_catalogue_item_success(self) -> None:
+        """Checks that a prior call to `delete_catalogue_item` gave a successful response with the expected data
+        returned."""
+
+        assert self._delete_response.status_code == 204
+
+    def check_delete_catalogue_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `delete_catalogue_item` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._delete_response.status_code == status_code
+        assert self._delete_response.json()["detail"] == detail
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a catalogue item."""
+
+    def test_delete(self):
+        """Test deleting a catalogue item."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.delete_catalogue_item(catalogue_item_id)
+        self.check_delete_catalogue_item_success()
+
+        self.get_catalogue_item(catalogue_item_id)
+        self.check_get_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+    def test_delete_with_child_item(self):
+        """Test deleting a catalogue category with a child catalogue item."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_child_item()
+
+        self.delete_catalogue_item(catalogue_item_id)
+        self.check_delete_catalogue_item_failed_with_detail(
+            409, "Catalogue item has child elements and cannot be deleted"
+        )
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent catalogue item."""
+
+        self.delete_catalogue_item(str(ObjectId()))
+        self.check_delete_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting a catalogue item with an invalid ID."""
+
+        self.delete_catalogue_item("invalid_id")
+        self.check_delete_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+
 # # pylint: disable=duplicate-code
 # CATALOGUE_CATEGORY_POST_A = {
 #     "name": "Category A",
@@ -638,346 +920,6 @@ class TestCreate(CreateDSL):
 #     "obsolete_replacement_catalogue_item_id": None,
 #     "properties": [{"name": "Property A", "value": True, "unit": None}],
 # }
-
-
-# # pylint: disable=duplicate-code
-# def _post_units(test_client):
-#     """Utility function for posting all mock units defined at the top of this file"""
-
-#     response = test_client.get("/v1/units")
-#     units = response.json()
-
-#     if response.json() == []:
-
-#         response = test_client.post("/v1/units", json=UNIT_POST_A)
-#         unit_mm = response.json()
-
-#         response = test_client.post("/v1/units", json=UNIT_POST_B)
-#         unit_cm = response.json()
-
-#         units = [unit_mm, unit_cm]
-
-#     return units
-
-
-# def _post_catalogue_category_with_units(test_client, catalogue_category):
-#     """Utility function for posting Catalogue category a defined at the top of this file"""
-
-#     units = _post_units(test_client)
-
-#     response = test_client.post(
-#         "/v1/catalogue-categories",
-#         json={
-#             **catalogue_category,
-#             "properties": replace_unit_values_with_ids_in_properties(catalogue_category["properties"], units),
-#         },
-#     )
-#     catalogue_category = response.json()
-
-#     return catalogue_category
-
-
-# # pylint: enable=duplicate-code
-
-
-# def test_delete_catalogue_item(test_client):
-#     """
-#     Test deleting a catalogue item.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
-
-#     assert response.status_code == 204
-#     response = test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
-#     assert response.status_code == 404
-
-
-# def test_delete_catalogue_item_with_invalid_id(test_client):
-#     """
-#     Test deleting a catalogue item with an invalid ID.
-#     """
-#     response = test_client.delete("/v1/catalogue-items/invalid")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue item not found"
-
-
-# def test_delete_catalogue_item_with_non_existent_id(test_client):
-#     """
-#     Test deleting a catalogue item with a non-existent ID.
-#     """
-#     response = test_client.delete(f"/v1/catalogue-items/{str(ObjectId())}")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue item not found"
-
-
-# def test_delete_catalogue_item_with_child_items(test_client):
-#     """
-#     Test deleting a catalogue item with child items.
-#     """
-#     # pylint: disable=duplicate-code
-#     # Parent
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     # child
-#     # pylint: disable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     test_client.post("/v1/items", json=item_post)
-#     # pylint: enable=duplicate-code
-
-#     response = test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Catalogue item has child elements and cannot be deleted"
-
-
-# def test_get_catalogue_item(test_client):
-#     """
-#     Test getting a catalogue item.
-#     """
-#     # pylint: disable=duplicate-code
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item["id"] == catalogue_item_id
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_get_catalogue_item_with_invalid_id(test_client):
-#     """
-#     Test getting a catalogue item with an invalid ID.
-#     """
-#     response = test_client.get("/v1/catalogue-items/invalid")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue item not found"
-
-
-# def test_get_catalogue_item_with_non_existent_id(test_client):
-#     """
-#     Test getting a catalogue item with a non-existent ID.
-#     """
-#     response = test_client.get(f"/v1/catalogue-items/{str(ObjectId())}")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue item not found"
-
-
-# def test_get_catalogue_items(test_client):
-#     """
-#     Test getting catalogue items.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-#     # pylint: enable=duplicate-code
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post_a = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
-
-#     catalogue_item_post_b = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
-
-#     response = test_client.get("/v1/catalogue-items")
-
-#     assert response.status_code == 200
-
-#     catalogue_items = response.json()
-
-#     assert catalogue_items == [
-#         {
-#             **CATALOGUE_ITEM_POST_A_EXPECTED,
-#             "catalogue_category_id": catalogue_category_a["id"],
-#             "manufacturer_id": manufacturer_id,
-#             "properties": add_ids_to_properties(
-#                 catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#             ),
-#         },
-#         {
-#             **CATALOGUE_ITEM_POST_B_EXPECTED,
-#             "catalogue_category_id": catalogue_category_b["id"],
-#             "manufacturer_id": manufacturer_id,
-#             "properties": add_ids_to_properties(
-#                 catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
-#             ),
-#         },
-#     ]
-
-
-# def test_get_catalogue_items_with_catalogue_category_id_filter(test_client):
-#     """
-#     Test getting catalogue items based on the provided catalogue category ID filter.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post_a = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
-
-#     catalogue_item_post_b = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
-
-#     response = test_client.get("/v1/catalogue-items", params={"catalogue_category_id": catalogue_category_b["id"]})
-
-#     assert response.status_code == 200
-
-#     catalogue_items = response.json()
-
-#     assert catalogue_items == [
-#         {
-#             **CATALOGUE_ITEM_POST_B_EXPECTED,
-#             "catalogue_category_id": catalogue_category_b["id"],
-#             "manufacturer_id": manufacturer_id,
-#             "properties": add_ids_to_properties(
-#                 catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
-#             ),
-#         }
-#     ]
-
-
-# def test_get_catalogue_items_with_catalogue_category_id_filter_no_matching_results(test_client):
-#     """
-#     Test getting catalogue items based on the provided catalogue category ID filter.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post_a = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
-
-#     catalogue_item_post_b = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
-
-#     response = test_client.get("/v1/catalogue-items", params={"catalogue_category_id": str(ObjectId())})
-
-#     assert response.status_code == 200
-
-#     catalogue_items = response.json()
-
-#     assert len(catalogue_items) == 0
-
-
-# def test_get_catalogue_items_with_invalid_catalogue_category_id_filter(test_client):
-#     """
-#     Test getting catalogue items based on the provided catalogue category ID filter.
-#     """
-#     response = test_client.get("/v1/catalogue-items", params={"catalogue_category_id": "invalid"})
-
-#     assert response.status_code == 200
-
-#     catalogue_items = response.json()
-
-#     assert len(catalogue_items) == 0
-
 
 # def test_partial_update_catalogue_item_when_no_child_items(test_client):
 #     """

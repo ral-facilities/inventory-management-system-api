@@ -655,13 +655,13 @@ class TestList(ListDSL):
         self.check_get_catalogue_categories_success([catalogue_categories[0]])
 
     def test_list_with_parent_id_filter_with_no_matching_results(self):
-        """Test getting a list of all systems with a `parent_id` filter that returns no results."""
+        """Test getting a list of all catalogue categories with a `parent_id` filter that returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": str(ObjectId())})
         self.check_get_catalogue_categories_success([])
 
     def test_list_with_invalid_parent_id_filter(self):
-        """Test getting a list of all systems with an invalid `parent_id` filter returns no results."""
+        """Test getting a list of all categories with an invalid `parent_id` filter returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": "invalid-id"})
         self.check_get_catalogue_categories_success([])
@@ -1268,7 +1268,7 @@ class DeleteDSL(UpdateDSL):
 
     def delete_catalogue_category(self, catalogue_category_id: str) -> None:
         """
-        Deletes a catalogue_category with the given ID.
+        Deletes a catalogue category with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to be deleted.
         """
