@@ -108,11 +108,11 @@ class E2ETestHelpers:
 
     @staticmethod
     def replace_unit_values_with_ids_in_properties(data: dict, unit_value_id_dict: dict[str, str]) -> dict:
-        """Inserts unit IDs into some data that may have a 'properties' list within it
+        """Inserts unit IDs into some data that may have a 'properties' list within it.
 
-        :param data: Dictionary of data that could have a 'properties' value within it
-        :param unit_value_id_dict: Dictionary of unit value and ID pairs for unit ID lookups
-        :return: The data with any needed unit IDs inserted
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param unit_value_id_dict: Dictionary of unit value and ID pairs for unit ID lookups.
+        :return: The data with any needed unit IDs inserted.
         """
 
         if "properties" in data and data["properties"]:
@@ -131,11 +131,11 @@ class E2ETestHelpers:
 
     @staticmethod
     def replace_property_names_with_ids_in_properties(data: dict, property_name_id_dict: dict[str, str]) -> dict:
-        """Inserts property IDs into some data that may have a 'properties' list within it
+        """Inserts property IDs into some data that may have a 'properties' list within it.
 
-        :param data: Dictionary of data that could have a 'properties' value within it
-        :param property_name_id_dict: Dictionary of property name and ID pairs for property ID lookups
-        :return: The data with any needed property IDs inserted
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param property_name_id_dict: Dictionary of property name and ID pairs for property ID lookups.
+        :return: The data with any needed property IDs inserted.
         """
 
         if "properties" in data and data["properties"]:
@@ -144,6 +144,24 @@ class E2ETestHelpers:
                 new_property = {**prop}
                 new_property["id"] = property_name_id_dict[prop["name"]]
                 del new_property["name"]
+                new_properties.append(new_property)
+            return {**data, "properties": new_properties}
+        return data
+
+    @staticmethod
+    def add_property_ids_to_properties(data: dict, property_name_id_dict: dict[str, str]) -> dict:
+        """Inserts property IDs into some data that may have a 'properties' list within it.
+
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param property_name_id_dict: Dictionary of property name and ID pairs for property ID lookups.
+        :return: The data with any needed property IDs inserted.
+        """
+
+        if "properties" in data and data["properties"]:
+            new_properties = []
+            for prop in data["properties"]:
+                new_property = {**prop}
+                new_property["id"] = property_name_id_dict[prop["name"]]
                 new_properties.append(new_property)
             return {**data, "properties": new_properties}
         return data

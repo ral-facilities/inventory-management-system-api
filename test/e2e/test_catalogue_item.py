@@ -23,17 +23,29 @@ from test.e2e.test_item import ITEM_POST
 from test.e2e.test_manufacturer import CreateDSL as ManufacturerCreateDSL
 from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from test.mock_data import (
+    BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY,
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+    CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
     CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+    CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+    CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+    PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
+    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
+    UNIT_POST_DATA_MM,
 )
-from typing import Optional
+from typing import Any, Optional
 from unittest.mock import ANY
 
 import pytest
@@ -48,6 +60,10 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     manufacturer_id: Optional[str]
     property_name_id_dict: dict[str, str]
 
+    # Key of property name, and value a dictionary containing the `unit` and `unit_id` as would
+    # be expected inside a property response
+    _unit_data_lookup_dict: dict[str, dict]
+
     @pytest.fixture(autouse=True)
     def setup_catalogue_item_create_dsl(self):
         """Setup fixtures"""
@@ -55,6 +71,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         self.property_name_id_dict = {}
         self.catalogue_category_id = None
         self.manufacturer_id = None
+
+        self._unit_data_lookup_dict = {}
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
@@ -74,6 +92,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
             catalogue_category_data = self._post_response.json()
             for prop in catalogue_category_data["properties"]:
                 self.property_name_id_dict[prop["name"]] = prop["id"]
+                self._unit_data_lookup_dict[prop["id"]] = {"unit_id": prop["unit_id"], "unit": prop["unit"]}
 
         return self.catalogue_category_id
 
@@ -118,6 +137,41 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
         return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
 
+    def post_catalogue_item_and_prerequisites_with_allowed_values(
+        self, property_type: str, allowed_values_post_data: dict, property_value: Any
+    ) -> None:
+        """
+        Utility method that posts a catalogue item with a property named 'property' of a given type with a given set of
+        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer)
+
+        :param property_type: Type of the property to post.
+        :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
+                                         `AllowedValuesSchema` to be posted with the catalogue category.
+        :param property_value: Value of the property to post for the item.
+        """
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [
+                    {
+                        "name": "property",
+                        "type": property_type,
+                        "mandatory": False,
+                        "allowed_values": allowed_values_post_data,
+                    }
+                ],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "properties": [
+                    {"name": "property", "value": property_value},
+                ],
+            }
+        )
+
     def check_post_catalogue_item_success(self, expected_catalogue_item_get_data: dict) -> None:
         """
         Checks that a prior call to `post_catalogue_item` gave a successful response with the expected data
@@ -128,6 +182,15 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
                                                  IDs (e.g. manufacturer_id) as they will be to check they are as
                                                  expected.
         """
+
+        # Where there are properties the property ID, unit ID and unit value
+        expected_catalogue_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
+            expected_catalogue_item_get_data, self.property_name_id_dict
+        )
+        properties = []
+        for prop in expected_catalogue_item_get_data["properties"]:
+            properties.append({**prop, **self._unit_data_lookup_dict[prop["id"]]})
+        expected_catalogue_item_get_data["properties"] = properties
 
         assert self._post_response.status_code == 201
         assert self._post_response.json() == {
@@ -235,6 +298,206 @@ class TestCreate(CreateDSL):
 
         self.check_post_catalogue_item_failed_with_detail(
             422, "The specified replacement catalogue item does not exist"
+        )
+
+    def test_create_with_all_properties_defined(self):
+        """Test creating a catalogue item with all properties within the catalogue category being defined."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+
+    def test_create_with_mandatory_properties_only(self):
+        """Test creating a catalogue item with only mandatory properties defined."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
+
+        self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
+
+    def test_create_with_mandatory_properties_given_none(self):
+        """Test creating a catalogue item when mandatory properties are given a value of `None`."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}],
+            }
+        )
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            f"Mandatory property with ID '{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}' "
+            "cannot be None.",
+        )
+
+    def test_create_with_missing_mandatory_properties(self):
+        """Test creating a catalogue item when missing mandatory properties."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item({**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []})
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            "Missing mandatory property with ID: "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+        )
+
+    def test_create_with_non_mandatory_properties_given_none(self):
+        """Test creating a catalogue item when non-mandatory properties are given a value of `None`."""
+
+        # TODO: Have a post for base catalogue category with properties/manufacturer or something to reduce lines
+        # repeated
+        self.post_unit(UNIT_POST_DATA_MM)
+        # TODO: Should BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES have _MM?
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "properties": [
+                    PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
+                ],
+            }
+        )
+
+        self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
+
+    def test_create_with_string_property_with_invalid_value_type(self):
+        """Test creating a catalogue item with an invalid value type for a string property."""
+
+        # TODO: Add utility function just for adding with specific properties?
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "properties": [
+                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42},
+                ],
+            }
+        )
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY['name']]}'. "
+            "Expected type: string.",
+        )
+
+    def test_create_with_number_property_with_invalid_value_type(self):
+        """Test creating a catalogue item with an invalid value type for a number property."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "properties": [
+                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"], "value": "42"},
+                ],
+            }
+        )
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID '"
+            f"{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT['name']]}"
+            "'. Expected type: number.",
+        )
+
+    def test_create_with_boolean_property_with_invalid_value_type(self):
+        """Test creating a catalogue item with an invalid value type for a boolean property."""
+
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "properties": [
+                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "42"},
+                ],
+            }
+        )
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID '"
+            f"{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}"
+            "'. Expected type: boolean.",
+        )
+
+    def test_create_with_invalid_string_allowed_values_list_value(self):
+        """Test creating a catalogue item with an invalid value for a string property with an allowed values list."""
+
+        self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1"]}, "value2"
+        )
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected one of value1.",
+        )
+
+    def test_create_with_invalid_string_allowed_values_list_type(self):
+        """Test creating a catalogue item with an invalid type for a string property with an allowed values list."""
+
+        self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1"]}, 42
+        )
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: string.",
+        )
+
+    def test_create_with_invalid_number_allowed_values_list_value(self):
+        """Test creating a catalogue item with an invalid value for a number property with an allowed values list."""
+
+        self.post_catalogue_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]}, 2)
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1.",
+        )
+
+    def test_create_with_invalid_number_allowed_values_list_type(self):
+        """Test creating a catalogue item with an invalid type for a number property with an allowed values list."""
+
+        self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "number", {"type": "list", "values": [1]}, "test"
+        )
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: number.",
         )
 
     def test_create_in_non_leaf_catalogue_category(self):
@@ -415,359 +678,6 @@ class TestCreate(CreateDSL):
 
 
 # # pylint: enable=duplicate-code
-
-
-# def test_create_catalogue_item(test_client):
-#     """
-#     Test creating a catalogue item.
-#     """
-#     # pylint: disable=duplicate-code
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     assert response.status_code == 201
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_create_catalogue_item_with_missing_mandatory_properties(test_client):
-#     """
-#     Test creating a catalogue item with missing mandatory properties.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [CATALOGUE_ITEM_POST_A["properties"][0], CATALOGUE_ITEM_POST_A["properties"][2]],
-#         ),
-#     }
-#     # pylint: enable=duplicate-code
-
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Missing mandatory property with ID: '{prop_id}'"
-
-
-# def test_create_catalogue_item_with_mandatory_properties_given_none(test_client):
-#     """
-#     Test creating a catalogue item with mandatory properties given as None
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 CATALOGUE_ITEM_POST_A["properties"][0],
-#                 {**CATALOGUE_ITEM_POST_A["properties"][1], "value": None},
-#                 {**CATALOGUE_ITEM_POST_A["properties"][2], "value": None},
-#             ],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Mandatory property with ID '{prop_id}' cannot be None."
-#     # pylint: enable=duplicate-code
-
-
-# def test_create_catalogue_item_with_missing_non_mandatory_properties(test_client):
-#     """
-#     Test creating a catalogue item with missing non-mandatory properties.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     assert response.status_code == 201
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "unit": "mm", "value": None}, *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:]],
-#         ),
-#     }
-
-
-# def test_create_catalogue_item_with_non_mandatory_properties_given_none(test_client):
-#     """
-#     Test creating a catalogue item with non-mandatory properties given as None
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{**CATALOGUE_ITEM_POST_A["properties"][0], "value": None}, *CATALOGUE_ITEM_POST_A["properties"][1:]],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     assert response.status_code == 201
-#     catalogue_item = response.json()
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {**CATALOGUE_ITEM_POST_A_EXPECTED["properties"][0], "value": None},
-#                 *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][1:],
-#             ],
-#         ),
-#     }
-
-
-# def test_create_catalogue_item_with_invalid_value_type_for_string_property(test_client):
-#     """
-#     Test creating a catalogue item with invalid value type for a string property.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 20},
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": True},
-#             ],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][2]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: string."
-#     # pylint: enable=duplicate-code
-
-
-# def test_create_catalogue_item_with_invalid_value_type_for_number_property(test_client):
-#     """
-#     Test creating a catalogue item with invalid value type for a number property.
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": "20"},
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": "20x15x10"},
-#             ],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][0]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: number."
-#     # pylint: enable=duplicate-code
-
-
-# def test_create_catalogue_item_with_invalid_value_type_for_boolean_property(test_client):
-#     """
-#     Test creating a catalogue item with invalid value type for a boolean property.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 20},
-#                 {"name": "Property B", "value": "False"},
-#                 {"name": "Property C", "value": "20x15x10"},
-#             ],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: boolean."
-#     # pylint: enable=duplicate-code
-
-
-# def test_create_catalogue_item_with_allowed_values(test_client):
-#     """
-#     Test creating a catalogue item when using allowed_values in the properties.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
-#         ),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     assert response.status_code == 201
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_create_catalogue_item_with_allowed_values_invalid_list_string(test_client):
-#     """
-#     Test creating a catalogue item when giving a string property a value that is not within
-#     the defined allowed_values list
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "blue"}],
-#         ),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of red, green."
-#     # pylint: enable=duplicate-code
-
-
-# def test_create_catalogue_item_with_allowed_values_invalid_list_number(test_client):
-#     """
-#     Test creating a catalogue item when giving a number property a value that is not within
-#     the defined allowed_values list
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 10}, {"name": "Property B", "value": "red"}],
-#         ),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][0]["id"]
-#     assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of 2, 4, 6."
-#     # pylint: enable=duplicate-code
 
 
 # def test_delete_catalogue_item(test_client):
