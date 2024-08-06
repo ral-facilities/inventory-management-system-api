@@ -43,21 +43,6 @@ CATALOGUE_ITEM_POST_ALLOWED_VALUES = {
     "properties": [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "red"}],
 }
 
-CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED = {
-    **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "drawing_link": None,
-    "item_model_number": None,
-    "obsolete_reason": None,
-    "obsolete_replacement_catalogue_item_id": None,
-    "notes": None,
-    "properties": [
-        {"name": "Property A", "unit": "mm", "value": 4},
-        {"name": "Property B", "value": "red", "unit": None},
-    ],
-}
-
 ITEM_POST_ALLOWED_VALUES = {
     "is_defective": False,
     "warranty_end_date": "2015-11-15T23:59:59Z",
@@ -88,13 +73,6 @@ SYSTEM_POST_A = {
     "owner": "Me",
     "importance": "low",
 }
-SYSTEM_POST_A_EXPECTED = {
-    **SYSTEM_POST_A,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "parent_id": None,
-    "code": "system-a",
-}
 
 # To be posted as a child of the above
 SYSTEM_POST_B = {
@@ -103,12 +81,6 @@ SYSTEM_POST_B = {
     "location": "Test location",
     "owner": "Me",
     "importance": "low",
-}
-SYSTEM_POST_B_EXPECTED = {
-    **SYSTEM_POST_B,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "id": ANY,
-    "code": "system-b",
 }
 # pylint: enable=duplicate-code
 

@@ -7,28 +7,20 @@ End-to-End tests for the catalogue item router.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
-from test.conftest import add_ids_to_properties
-from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import (
-    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-    CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-    CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
-    CREATED_MODIFIED_VALUES_EXPECTED,
-    SYSTEM_POST_A,
-    USAGE_STATUS_POST_A,
-    USAGE_STATUS_POST_B,
-)
+from test.e2e.conftest import E2ETestHelpers
+from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
-from test.e2e.test_item import ITEM_POST
 from test.e2e.test_manufacturer import CreateDSL as ManufacturerCreateDSL
-from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -39,14 +31,21 @@ from test.mock_data import (
     CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    MANUFACTURER_POST_DATA_ALL_VALUES,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_42,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+    PROPERTY_DATA_STRING_MANDATORY_TEXT,
     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
+    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_42,
+    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     UNIT_POST_DATA_MM,
 )
 from typing import Any, Optional
-from unittest.mock import ANY
 
 import pytest
 from bson import ObjectId
@@ -61,6 +60,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     manufacturer_id: Optional[str]
     property_name_id_dict: dict[str, str]
 
+    _post_response_catalogue_item: Response
+
     # Key of property name, and value a dictionary containing the `unit` and `unit_id` as would
     # be expected inside a property response
     _unit_data_lookup_dict: dict[str, dict]
@@ -70,6 +71,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """Setup fixtures"""
 
         self.property_name_id_dict = {}
+        # TODO: Look up from response instead of storing/overriding?
         self.catalogue_category_id = None
         self.manufacturer_id = None
 
@@ -90,7 +92,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         properties = []
         for prop in expected_catalogue_item_get_data["properties"]:
             properties.append({**prop, **self._unit_data_lookup_dict[prop["id"]]})
-        expected_catalogue_item_get_data["properties"] = properties
+        expected_catalogue_item_get_data = {**expected_catalogue_item_get_data, "properties": properties}
 
         return {
             **expected_catalogue_item_get_data,
@@ -113,7 +115,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         # Assign the property name id dict for any properties
         if self.catalogue_category_id:
             self.property_name_id_dict = {}
-            catalogue_category_data = self._post_response.json()
+            catalogue_category_data = self._post_response_catalogue_category.json()
             for prop in catalogue_category_data["properties"]:
                 self.property_name_id_dict[prop["name"]] = prop["id"]
                 self._unit_data_lookup_dict[prop["id"]] = {"unit_id": prop["unit_id"], "unit": prop["unit"]}
@@ -144,26 +146,31 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """
 
         # Replace any unit values with unit IDs
-        catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
-            catalogue_item_data, self.unit_value_id_dict
+        full_catalogue_item_data = catalogue_item_data.copy()
+        full_catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
+            full_catalogue_item_data, self.unit_value_id_dict
         )
-        catalogue_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
-            catalogue_item_data, self.property_name_id_dict
+        full_catalogue_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+            full_catalogue_item_data, self.property_name_id_dict
         )
 
         # Insert mandatory IDs if they have been created
         if self.catalogue_category_id:
-            catalogue_item_data["catalogue_category_id"] = self.catalogue_category_id
+            full_catalogue_item_data["catalogue_category_id"] = self.catalogue_category_id
         if self.manufacturer_id:
-            catalogue_item_data["manufacturer_id"] = self.manufacturer_id
+            full_catalogue_item_data["manufacturer_id"] = self.manufacturer_id
 
-        self._post_response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_data)
+        self._post_response_catalogue_item = self.test_client.post("/v1/catalogue-items", json=full_catalogue_item_data)
 
-        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+        return (
+            self._post_response_catalogue_item.json()["id"]
+            if self._post_response_catalogue_item.status_code == 201
+            else None
+        )
 
     def post_catalogue_item_and_prerequisites_with_allowed_values(
         self, property_type: str, allowed_values_post_data: dict, property_value: Any
-    ) -> None:
+    ) -> Optional[str]:
         """
         Utility method that posts a catalogue item with a property named 'property' of a given type with a given set of
         allowed values as well as any prerequisite entities (a catalogue category and a manufacturer)
@@ -172,6 +179,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
                                          `AllowedValuesSchema` to be posted with the catalogue category.
         :param property_value: Value of the property to post for the item.
+        :return: ID of the created catalogue item (or `None` if not successful).
         """
         self.post_catalogue_category(
             {
@@ -187,7 +195,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
             }
         )
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
+        return self.post_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
                 "properties": [
@@ -207,8 +215,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
                                                  expected.
         """
 
-        assert self._post_response.status_code == 201
-        assert self._post_response.json() == self.add_ids_to_expected_catalogue_item_get_data(
+        assert self._post_response_catalogue_item.status_code == 201
+        assert self._post_response_catalogue_item.json() == self.add_ids_to_expected_catalogue_item_get_data(
             expected_catalogue_item_get_data
         )
 
@@ -221,8 +229,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"] == detail
+        assert self._post_response_catalogue_item.status_code == status_code
+        assert self._post_response_catalogue_item.json()["detail"] == detail
 
     def check_post_catalogue_item_failed_with_validation_message(self, status_code: int, message: str) -> None:
         """
@@ -233,8 +241,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         :param message: Expected validation error message given in the response.
         """
 
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"][0]["msg"] == message
+        assert self._post_response_catalogue_item.status_code == status_code
+        assert self._post_response_catalogue_item.json()["detail"][0]["msg"] == message
 
 
 class TestCreate(CreateDSL):
@@ -372,7 +380,7 @@ class TestCreate(CreateDSL):
         # TODO: Have a post for base catalogue category with properties/manufacturer or something to reduce lines
         # repeated
         self.post_unit(UNIT_POST_DATA_MM)
-        # TODO: Should BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES have _MM?
+        # TODO: Should BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES have _MM? at least _DATA?
         self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_catalogue_item(
@@ -456,7 +464,7 @@ class TestCreate(CreateDSL):
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
                 "properties": [
-                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "42"},
+                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "True"},
                 ],
             }
         )
@@ -726,15 +734,30 @@ class TestList(ListDSL):
 
 
 # TODO: Update tests
+class UpdateDSL(ListDSL):
+    """Base class for update tests."""
 
+    _patch_response_catalogue_item: Response
 
-# TODO: Inherit from UpdateDSL
-class DeleteDSL(ListDSL):
-    """Base class for delete tests."""
+    def patch_catalogue_item(self, catalogue_item_id: str, catalogue_item_update_data: dict) -> None:
+        """
+        Updates a catalogue item with the given ID.
 
-    _delete_response: Response
+        :param catalogue_item_id: ID of the catalogue category to patch.
+        :param catalogue_item_update_data: Dictionary containing the basic patch data as would be required for a
+                                           `CatalogueItemPatchSchema` but with any `id`'s replaced by the `name` value
+                                           in its properties as the IDs will be added automatically.
+        """
 
-    # TODO: Move into UpdateDSL? (like post_child_item in catalogue category tests - depends if needed there or not)
+        # Replace any unit values with unit ids
+        catalogue_item_update_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+            catalogue_item_update_data, self.property_name_id_dict
+        )
+
+        self._patch_response_catalogue_item = self.test_client.patch(
+            f"/v1/catalogue-items/{catalogue_item_id}", json=catalogue_item_update_data
+        )
+
     def post_child_item(self) -> None:
         """Utility method that posts a child item for the last catalogue item posted."""
 
@@ -753,12 +776,727 @@ class DeleteDSL(ListDSL):
             "serial_number": "xyz123",
             "delivered_date": "2012-12-05T12:00:00Z",
             "notes": "Test notes",
-            "catalogue_item_id": self._post_response.json()["id"],
+            "catalogue_item_id": self._post_response_catalogue_item.json()["id"],
             "system_id": system_id,
             "usage_status_id": usage_status_id,
             "properties": [],
         }
         self.test_client.post("/v1/items", json=item_post)
+
+    def check_patch_catalogue_item_response_success(self, expected_catalogue_item_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_catalogue_item` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_item_get_data: Dictionary containing the expected system data returned as would
+                                                 be required for a `CatalogueItemSchema`. Does not need mandatory IDs
+                                                 (e.g. manufacturer_id) as they will be added automatically to check
+                                                 they are as expected.
+        """
+
+        assert self._patch_response_catalogue_item.status_code == 200
+        assert self._patch_response_catalogue_item.json() == self.add_ids_to_expected_catalogue_item_get_data(
+            expected_catalogue_item_get_data
+        )
+
+        E2ETestHelpers.check_created_and_modified_times_updated_correctly(
+            self._post_response_catalogue_item, self._patch_response_catalogue_item
+        )
+
+    def check_patch_catalogue_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `patch_catalogue_item` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._patch_response_catalogue_item.status_code == status_code
+        assert self._patch_response_catalogue_item.json()["detail"] == detail
+
+    def check_patch_catalogue_item_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `patch_catalogue_item` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._patch_response_catalogue_item.status_code == status_code
+        assert self._patch_response_catalogue_item.json()["detail"][0]["msg"] == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a catalogue item."""
+
+    def test_partial_update_all_fields_except_ids_or_properties_with_no_children(self):
+        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
+        no children."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+
+    def test_partial_update_all_fields_except_ids_or_properties_with_children(self):
+        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
+        children."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_child_item()
+
+        self.patch_catalogue_item(catalogue_item_id, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+
+    # TODO: More update tests
+
+    def test_partial_update_catalogue_category_id_no_properties(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when no properties are involved."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+
+    def test_partial_update_catalogue_category_id_with_same_defined_properties(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when both the old and new catalogue category
+        has identical properties."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {**BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES, "name": "Another category"}
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+
+    def test_partial_update_catalogue_category_id_and_properties_with_same_defined_properties(self):
+        """Test updating the `catalogue_category_id` and `properties` of a catalogue item when both the old and new
+        catalogue category has identical properties."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {**BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES, "name": "Another category"}
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {
+                "catalogue_category_id": new_catalogue_category_id,
+                "properties": CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
+            },
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
+            }
+        )
+
+    def test_partial_update_catalogue_category_id_with_same_defined_properties_different_order(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when both the old and new catalogue category
+        has identical properties but in a different order."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "name": "Another category",
+                "properties": BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES["properties"][::-1],
+            }
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Cannot move catalogue item to a category with different properties without specifying the new properties",
+        )
+
+    def test_partial_update_catalogue_category_id_and_properties_with_same_defined_properties_different_order(self):
+        """Test updating the `catalogue_category_id` and `properties` of a catalogue item when both the old and new
+        catalogue category has identical properties but in a different order."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "name": "Another category",
+                "properties": BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES["properties"][::-1],
+            }
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {
+                "catalogue_category_id": new_catalogue_category_id,
+                "properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][::-1],
+            },
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][::-1],
+            }
+        )
+
+    def test_partial_update_catalogue_category_id_with_different_defined_properties(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when the old and new catalogue category
+        have different properties."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "name": "Another category",
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            }
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Cannot move catalogue item to a category with different properties without specifying the new properties",
+        )
+
+    def test_partial_update_catalogue_category_id_and_properties_with_different_defined_properties(self):
+        """Test updating the `catalogue_category_id` and `properties` of a catalogue item when the old and new catalogue
+        category have different properties."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "name": "Another category",
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            }
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {"catalogue_category_id": new_catalogue_category_id, "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_42]},
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_42],
+            }
+        )
+
+    def test_partial_update_catalogue_category_id_while_removing_all_defined_properties(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when the old catalogue category and item has
+        properties but the new one does not."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "name": "Another category",
+                "properties": [],
+            }
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Cannot move catalogue item to a category with different properties without specifying the new properties",
+        )
+
+    def test_partial_update_catalogue_category_id_and_properties_while_removing_all_defined_properties(self):
+        """Test updating the `catalogue_category_id` and `properties` of a catalogue item when the old catalogue
+        category and item has properties but the new one does not."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        new_catalogue_category_id = self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "name": "Another category",
+                "properties": [],
+            }
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {"catalogue_category_id": new_catalogue_category_id, "properties": []},
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [],
+            }
+        )
+
+    def test_partial_update_catalogue_category_id_and_properties_with_missing_non_mandatory_properties(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when the item has missing non mandatory
+        properties in the new catalogue category."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_catalogue_category_id = self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {
+                "catalogue_category_id": new_catalogue_category_id,
+                "properties": CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
+            },
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "properties": CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
+            }
+        )
+
+    def test_partial_update_catalogue_category_id_and_properties_with_missing_mandatory_properties(self):
+        """Test updating the `catalogue_category_id` of a catalogue item when the item has missing mandatory properties
+        in the new catalogue category."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_catalogue_category_id = self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id, "properties": []}
+        )
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Missing mandatory property with ID: "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}'",
+        )
+
+    def test_partial_update_catalogue_category_id_with_non_leaf_id(self):
+        """Test updating the `catalogue_category_id` of a catalogue item to a non-leaf catalogue category."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_catalogue_category_id = self.post_catalogue_category(
+            CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
+        self.check_patch_catalogue_item_failed_with_detail(
+            409, "Adding a catalogue item to a non-leaf catalogue category is not allowed"
+        )
+
+    def test_partial_update_catalogue_category_id_with_non_existent_id(self):
+        """Test updating the `catalogue_category_id` of a catalogue item to a non-existent catalogue category."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": str(ObjectId())})
+        self.check_patch_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
+
+    def test_partial_update_catalogue_category_id_with_invalid_id(self):
+        """Test updating the `catalogue_category_id` of a catalogue item to an invalid ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": "invalid-id"})
+        self.check_patch_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
+
+    def test_partial_update_manufacturer_id_with_no_children(self):
+        """Test updating the `manufacturer_id` of a catalogue item when it has no children."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+
+        self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": new_manufacturer_id})
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+
+    def test_partial_update_manufacturer_id_with_children(self):
+        """Test updating the `manufacturer_id` of a catalogue item when it has children."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_child_item()
+        new_manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
+
+        self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": new_manufacturer_id})
+        self.check_patch_catalogue_item_failed_with_detail(
+            409, "Catalogue item has child elements and cannot be updated"
+        )
+
+    def test_partial_update_manufacturer_id_with_non_existent_id(self):
+        """Test updating the `manufacturer_id` of a catalogue item to a non-existent manufacturer."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": str(ObjectId())})
+        self.check_patch_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+
+    def test_partial_update_manufacturer_id_with_invalid_id(self):
+        """Test updating the `manufacturer_id` of a catalogue item to an invalid ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": "invalid-id"})
+        self.check_patch_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+
+    def test_partial_update_properties_with_no_children(self):
+        """Test updating the `properties` of a catalogue item when it has no children."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": []})
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+
+    def test_partial_update_properties_with_mandatory_properties_given_none(self):
+        """Test updating the `properties` of a catalogue item to have mandatory properties with a value of `None`."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}]}
+        )
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Mandatory property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}' "
+            "cannot be None.",
+        )
+
+    def test_partial_update_properties_with_non_mandatory_properties_given_none(self):
+        """Test updating the `properties` of a catalogue item to have non mandatory properties with a value of
+        `None`."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {
+                "properties": [
+                    PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
+                ]
+            },
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
+            }
+        )
+
+    def test_partial_update_properties_adding_non_mandatory_property(self):
+        """Test updating the `properties` of a catalogue item to define a previously undefined non-mandatory property."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][0:1],
+            }
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"]}
+        )
+        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+
+    def test_partial_update_properties_removing_non_mandatory_property(self):
+        """Test updating the `properties` of a catalogue item to remove a previously defined non-mandatory property."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][0:2]}
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    *CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][0:2],
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
+                ],
+            }
+        )
+
+    def test_partial_update_properties_removing_mandatory_property(self):
+        """Test updating the `properties` of a catalogue item to remove a previously defined mandatory property."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][1:3]}
+        )
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Missing mandatory property with ID: "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+        )
+
+    def test_partial_update_properties_with_string_property_with_invalid_value_type(self):
+        """Test updating the `properties` of a catalogue item to have an invalid value type for a string property."""
+
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(
+            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [PROPERTY_DATA_STRING_MANDATORY_TEXT]}
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": [{**PROPERTY_DATA_STRING_MANDATORY_TEXT, "value": 42}]}
+        )
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_STRING_MANDATORY_TEXT['name']]}'. Expected type: string.",
+        )
+
+    def test_partial_update_properties_with_number_property_with_invalid_value_type(self):
+        """Test updating the `properties` of a catalogue item to have an invalid value type for a number property."""
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(
+            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_42]}
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_42, "value": "42"}]}
+        )
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_NUMBER_NON_MANDATORY_42['name']]}'. Expected type: number.",
+        )
+
+    def test_partial_update_properties_with_boolean_property_with_invalid_value_type(self):
+        """Test updating the `properties` of a catalogue item to have an invalid value type for a boolean property."""
+
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(
+            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE]}
+        )
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"properties": [{**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, "value": "True"}]}
+        )
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}'. "
+            "Expected type: boolean.",
+        )
+
+    def test_partial_update_properties_with_allowed_values_list(self):
+        """Test updating the `properties` of a catalogue item that have a list of allowed values."""
+
+        # TODO: Can probably clean up
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                "properties": [
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                ],
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item({**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
+
+        self.patch_catalogue_item(
+            catalogue_item_id,
+            {
+                "properties": [
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                ]
+            },
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                ],
+            }
+        )
+
+    def test_partial_update_properties_with_string_allowed_values_list_to_invalid_value(self):
+        """Test updating the value of a string property with an allowed values list to be a value not in the list."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1"
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": [{"name": "property", "value": "value42"}]})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of value1, "
+            "value2, value3.",
+        )
+
+    def test_partial_update_properties_with_number_allowed_values_list_to_invalid_value(self):
+        """Test updating the value of a number property with an allowed values list to be a value not in the list."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "number", {"type": "list", "values": [1, 2, 3]}, 1
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": [{"name": "property", "value": 42}]})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1, 2, 3.",
+        )
+
+    def test_partial_update_properties_with_children(self):
+        """Test updating the `properties` of a catalogue item when it has children."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_child_item()
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": []})
+        self.check_patch_catalogue_item_failed_with_detail(
+            409, "Catalogue item has child elements and cannot be updated"
+        )
+
+    def test_partial_update_obsolete_replacement_catalogue_item_id(self):
+        """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        obsolete_replacement_catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(
+            catalogue_item_id, {"obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id}
+        )
+        self.check_patch_catalogue_item_response_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            }
+        )
+
+    def test_partial_update_obsolete_replacement_catalogue_item_id_with_non_existent_id(self):
+        """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item to a non-existent catalogue
+        item."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"obsolete_replacement_catalogue_item_id": str(ObjectId())})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422, "The specified replacement catalogue item does not exist"
+        )
+
+    def test_partial_update_obsolete_replacement_catalogue_item_id_with_invalid_id(self):
+        """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item to an invalid ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_catalogue_item(catalogue_item_id, {"obsolete_replacement_catalogue_item_id": "invalid-id"})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422, "The specified replacement catalogue item does not exist"
+        )
+
+    def test_partial_update_with_non_existent_id(self):
+        """Test updating a non-existent catalogue item."""
+
+        self.patch_catalogue_item(str(ObjectId()), {})
+        self.check_patch_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+    def test_partial_update_invalid_id(self):
+        """Test updating a catalogue item with an invalid ID."""
+
+        self.patch_catalogue_item("invalid-id", {})
+        self.check_patch_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+
+class DeleteDSL(UpdateDSL):
+    """Base class for delete tests."""
+
+    _delete_response_catalogue_item: Response
 
     def delete_catalogue_item(self, catalogue_item_id: str) -> None:
         """
@@ -767,13 +1505,13 @@ class DeleteDSL(ListDSL):
         :param catalogue_item_id: ID of the catalogue item to be deleted.
         """
 
-        self._delete_response = self.test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
+        self._delete_response_catalogue_item = self.test_client.delete(f"/v1/catalogue-items/{catalogue_item_id}")
 
     def check_delete_catalogue_item_success(self) -> None:
         """Checks that a prior call to `delete_catalogue_item` gave a successful response with the expected data
         returned."""
 
-        assert self._delete_response.status_code == 204
+        assert self._delete_response_catalogue_item.status_code == 204
 
     def check_delete_catalogue_item_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -784,8 +1522,8 @@ class DeleteDSL(ListDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._delete_response.status_code == status_code
-        assert self._delete_response.json()["detail"] == detail
+        assert self._delete_response_catalogue_item.status_code == status_code
+        assert self._delete_response_catalogue_item.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
@@ -828,1273 +1566,3 @@ class TestDelete(DeleteDSL):
 
         self.delete_catalogue_item("invalid_id")
         self.check_delete_catalogue_item_failed_with_detail(404, "Catalogue item not found")
-
-
-# # pylint: disable=duplicate-code
-# CATALOGUE_CATEGORY_POST_A = {
-#     "name": "Category A",
-#     "is_leaf": True,
-#     "properties": [
-#         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-#         {"name": "Property B", "type": "boolean", "mandatory": True},
-#         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-#     ],
-# }
-# # pylint: enable=duplicate-code
-
-# CATALOGUE_CATEGORY_POST_B = {
-#     "name": "Category B",
-#     "is_leaf": True,
-#     "properties": [
-#         {"name": "Property A", "type": "boolean", "mandatory": True},
-#     ],
-# }
-
-# # pylint: disable=duplicate-code
-# MANUFACTURER = {
-#     "name": "Manufacturer D",
-#     "url": "http://example.com/",
-#     "address": {
-#         "address_line": "1 Example Street",
-#         "town": "Oxford",
-#         "county": "Oxfordshire",
-#         "country": "United Kingdom",
-#         "postcode": "OX1 2AB",
-#     },
-#     "telephone": "0932348348",
-# }
-
-# CATALOGUE_ITEM_POST_A = {
-#     "name": "Catalogue Item A",
-#     "description": "This is Catalogue Item A",
-#     "cost_gbp": 129.99,
-#     "days_to_replace": 2.0,
-#     "drawing_link": "https://drawing-link.com/",
-#     "item_model_number": "abc123",
-#     "is_obsolete": False,
-#     "properties": [
-#         {"name": "Property A", "value": 20},
-#         {"name": "Property B", "value": False},
-#         {"name": "Property C", "value": "20x15x10"},
-#     ],
-# }
-
-# CATALOGUE_ITEM_POST_A_EXPECTED = {
-#     **CATALOGUE_ITEM_POST_A,
-#     **CREATED_MODIFIED_VALUES_EXPECTED,
-#     "id": ANY,
-#     "cost_to_rework_gbp": None,
-#     "days_to_rework": None,
-#     "drawing_number": None,
-#     "obsolete_reason": None,
-#     "obsolete_replacement_catalogue_item_id": None,
-#     "notes": None,
-#     "properties": [
-#         {"name": "Property A", "value": 20, "unit": "mm"},
-#         {"name": "Property B", "value": False, "unit": None},
-#         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
-#     ],
-# }
-
-# CATALOGUE_ITEM_POST_B = {
-#     "name": "Catalogue Item B",
-#     "description": "This is Catalogue Item B",
-#     "cost_gbp": 300.00,
-#     "cost_to_rework_gbp": 120.99,
-#     "days_to_replace": 1.5,
-#     "days_to_rework": 3.0,
-#     "drawing_number": "789xyz",
-#     "is_obsolete": False,
-#     "notes": "Some extra information",
-#     "properties": [{"name": "Property A", "value": True}],
-# }
-# # pylint: enable=duplicate-code
-
-# CATALOGUE_ITEM_POST_B_EXPECTED = {
-#     **CATALOGUE_ITEM_POST_B,
-#     **CREATED_MODIFIED_VALUES_EXPECTED,
-#     "id": ANY,
-#     "drawing_link": None,
-#     "item_model_number": None,
-#     "obsolete_reason": None,
-#     "obsolete_replacement_catalogue_item_id": None,
-#     "properties": [{"name": "Property A", "value": True, "unit": None}],
-# }
-
-# def test_partial_update_catalogue_item_when_no_child_items(test_client):
-#     """
-#     Test changing the name and description of a catalogue item when it doesn't have any child
-#     items
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         **catalogue_item_patch,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_when_has_child_items(test_client):
-#     """
-#     Test updating a catalogue item which has child items.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         **catalogue_item_patch,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_invalid_id(test_client):
-#     """
-#     Test updating a catalogue item with an invalid ID.
-#     """
-#     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
-
-#     response = test_client.patch("/v1/catalogue-items/invalid", json=catalogue_item_patch)
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue item not found"
-
-
-# def test_partial_update_catalogue_item_non_existent_id(test_client):
-#     """
-#     Test updating a catalogue item with a non-existent ID.
-#     """
-#     catalogue_item_patch = {"name": "Catalogue Item B", "description": "This is Catalogue Item B"}
-
-#     response = test_client.patch(f"/v1/catalogue-items/{str(ObjectId())}", json=catalogue_item_patch)
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Catalogue item not found"
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id(test_client):
-#     """
-#     Test moving a catalogue item to another catalogue category with the same properties without
-#     specifying any new properties.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     catalogue_category_b = _post_catalogue_category_with_units(
-#         test_client,
-#         {
-#             **CATALOGUE_CATEGORY_POST_B,
-#             "properties": CATALOGUE_CATEGORY_POST_A["properties"],
-#         },
-#     )
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": catalogue_category_b["id"],
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category_b["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_without_properties(test_client):
-#     """
-#     Test moving a catalogue item to another catalogue category without supplying any properties.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {"catalogue_category_id": catalogue_category_b_id}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     assert (
-#         response.json()["detail"]
-#         == "Cannot move catalogue item to a category with different properties without specifying the "
-#         "new properties"
-#     )
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_with_properties(test_client):
-#     """
-#     Test moving a catalogue item to another catalogue category while supplying any new properties.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_with_different_properties_order(test_client):
-#     """
-#     Test moving a catalogue item to another catalogue category with the same properties but in a different order
-#     without supplying the new properties.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     catalogue_category_b = _post_catalogue_category_with_units(
-#         test_client,
-#         {
-#             **CATALOGUE_CATEGORY_POST_B,
-#             "properties": CATALOGUE_CATEGORY_POST_A["properties"][::-1],
-#         },
-#     )
-
-#     catalogue_category_b_id = catalogue_category_b["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {"catalogue_category_id": catalogue_category_b_id}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     assert (
-#         response.json()["detail"]
-#         == "Cannot move catalogue item to a category with different properties without specifying the "
-#         "new properties"
-#     )
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_missing_mandatory_properties(test_client):
-#     """
-#     Test moving a catalogue item to another catalogue category with missing mandatory properties.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "properties": add_ids_to_properties(
-#             catalogue_category_a["properties"], [CATALOGUE_ITEM_POST_B["properties"][0]]
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     prop_id = catalogue_category_a["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Missing mandatory property with ID: '{prop_id}'"
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_missing_non_mandatory_properties(test_client):
-#     """
-#     Test moving a catalogue item to another catalogue category with missing non-mandatory properties.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-#     # pylint: enable=duplicate-code
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "properties": add_ids_to_properties(
-#             catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_B_EXPECTED,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category_a["properties"],
-#             [{"name": "Property A", "unit": "mm", "value": None}, *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:]],
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_invalid_id(test_client):
-#     """
-#     Test changing the catalogue category ID of a catalogue item to an invalid ID.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": "invalid",
-#         "properties": add_ids_to_properties(None, [CATALOGUE_ITEM_POST_A["properties"][0]]),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified catalogue category does not exist"
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_non_existent_id(test_client):
-#     """
-#     Test changing the catalogue category ID of a catalogue item to a non-existent ID.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": str(ObjectId()),
-#         "properties": add_ids_to_properties(None, [CATALOGUE_ITEM_POST_A["properties"][0]]),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified catalogue category does not exist"
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_non_leaf_catalogue_category(test_client):
-#     """
-#     Test moving a catalogue item to a non-leaf catalogue category.
-#     """
-#     catalogue_category_post_a = {"name": "Category A", "is_leaf": False}
-#     response = test_client.post("/v1/catalogue-categories", json=catalogue_category_post_a)
-#     catalogue_category_a_id = response.json()["id"]
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {"catalogue_category_id": catalogue_category_a_id}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Adding a catalogue item to a non-leaf catalogue category is not allowed"
-
-
-# def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_items(test_client):
-#     """
-#     Test moving a catalogue item with child items to another catalogue category.
-#     """
-#     # pylint: disable=duplicate-code
-#     # Parent
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     catalogue_item_patch = {
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-#     # child
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], ITEM_POST["properties"]),
-#     }
-#     test_client.post("/v1/items", json=item_post)
-
-#     response = test_client.patch(f"/v1/catalogue-items/{catalogue_item_id}", json=catalogue_item_patch)
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
-
-
-# def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id(test_client):
-#     """
-#     Test updating a catalogue item with an obsolete replacement catalogue item ID.
-#     """
-#     catalogue_category_a = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category_b = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post_a = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category_a["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_a["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post_a)
-#     catalogue_item_a_id = response.json()["id"]
-
-#     catalogue_item_post_b = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post_b)
-
-#     catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": catalogue_item_a_id}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_B_EXPECTED,
-#         "catalogue_category_id": catalogue_category_b["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "is_obsolete": True,
-#         "obsolete_replacement_catalogue_item_id": catalogue_item_a_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id_invalid_id(test_client):
-#     """
-#     Test updating a catalogue item with an invalid obsolete replacement catalogue item ID.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": "invalid"}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified replacement catalogue item does not exist"
-
-
-# def test_partial_update_catalogue_item_change_obsolete_replacement_catalogue_item_id_non_existent_id(test_client):
-#     """
-#     Test updating a catalogue item with aa non-existent obsolete replacement catalogue item ID.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch_b = {"is_obsolete": True, "obsolete_replacement_catalogue_item_id": str(ObjectId())}
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch_b)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified replacement catalogue item does not exist"
-
-
-# def test_partial_update_catalogue_item_with_mandatory_properties_given_none(test_client):
-#     """
-#     Test updating a catalogue item's mandatory properties to have a value of None
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 CATALOGUE_ITEM_POST_A["properties"][0],
-#                 {**CATALOGUE_ITEM_POST_A["properties"][1], "value": None},
-#                 {**CATALOGUE_ITEM_POST_A["properties"][2], "value": None},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Mandatory property with ID '{prop_id}' cannot be None."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_catalogue_item_with_non_mandatory_properties_given_none(test_client):
-#     """
-#     Test updating a catalogue item's non-mandatory properties to have a value of None
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{**CATALOGUE_ITEM_POST_A["properties"][0], "value": None}, *CATALOGUE_ITEM_POST_A["properties"][1:]],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-#     catalogue_item = response.json()
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {**CATALOGUE_ITEM_POST_A_EXPECTED["properties"][0], "value": None},
-#                 *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][1:],
-#             ],
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_add_non_mandatory_property(test_client):
-#     """
-#     Test adding a non-mandatory property and a value.
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"][-2:]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"])
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_A_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_remove_non_mandatory_property(test_client):
-#     """
-#     Test removing a non-mandatory property and its value..
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"][-2:])
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_A_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "unit": "mm", "value": None}, *CATALOGUE_ITEM_POST_A_EXPECTED["properties"][-2:]],
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_remove_mandatory_property(test_client):
-#     """
-#     Test removing a mandatory property and its value.
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [CATALOGUE_ITEM_POST_A["properties"][0], CATALOGUE_ITEM_POST_A["properties"][2]],
-#         )
-#     }
-
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == f"Missing mandatory property with ID: '{prop_id}'"
-
-
-# def test_partial_update_catalogue_item_change_value_for_string_property_invalid_type(test_client):
-#     """
-#     Test changing the value of a string property to an invalid type.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 20},
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": True},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][2]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: string."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_catalogue_item_change_value_for_number_property_invalid_type(test_client):
-#     """
-#     Test changing the value of a number property to an invalid type.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": "20"},
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": "20x15x10"},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][0]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: number."
-
-
-# def test_partial_update_catalogue_item_change_value_for_boolean_property_invalid_type(test_client):
-#     """
-#     Test changing the value of a boolean property to an invalid type.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 20},
-#                 {"name": "Property B", "value": "False"},
-#                 {"name": "Property C", "value": "20x15x10"},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: boolean."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_catalogue_item_change_values_with_allowed_values(test_client):
-#     """
-#     Test changing the value of properties with allowed_values defined
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 6}, {"name": "Property B", "value": "green"}],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "unit": "mm", "value": 6}, {"name": "Property B", "unit": None, "value": "green"}],
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_list_string(test_client):
-#     """
-#     Test updating a catalogue item when giving a string property a value that is not within
-#     the defined allowed_values list
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 4}, {"name": "Property B", "value": "blue"}],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of red, green."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_catalogue_item_change_value_for_invalid_allowed_values_list_number(test_client):
-#     """
-#     Test updating a catalogue item when giving a number property a value that is not within
-#     the defined allowed_values list
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"]
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 10}, {"name": "Property B", "value": "green"}],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][0]["id"]
-#     assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of 2, 4, 6."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_properties_when_has_child_items(test_client):
-#     """
-#     Test updating the properties of a catalogue item when it has child items.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_d_id = response.json()["id"]
-
-#     manufacturer_e_post = {
-#         **MANUFACTURER,
-#         "name": "Manufacturer E",
-#     }
-#     response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
-#     manufacturer_e_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
-#     usage_status_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_d_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-#     # Child
-#     # pylint: disable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     test_client.post("/v1/items", json=item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "manufacturer_id": manufacturer_e_id,
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
-
-
-# def test_partial_update_catalogue_item_change_manufacturer_id_when_no_child_items(test_client):
-#     """
-#     Test updating the manufacturer ID of a catalogue item when it doesn't have any child items.
-#     """
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_d_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     manufacturer_e_post = {
-#         "name": "Manufacturer E",
-#         "url": "http://example.com/",
-#         "address": {
-#             "address_line": "2 Example Street",
-#             "town": "Oxford",
-#             "county": "Oxfordshire",
-#             "country": "United Kingdom",
-#             "postcode": "OX1 2AB",
-#         },
-#         "telephone": "07384723948",
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
-#     manufacturer_e_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_d_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "manufacturer_id": manufacturer_e_id,
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 200
-
-#     catalogue_item = response.json()
-
-#     assert catalogue_item == {
-#         **CATALOGUE_ITEM_POST_B_EXPECTED,
-#         **catalogue_item_patch,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_e_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"], CATALOGUE_ITEM_POST_B_EXPECTED["properties"]
-#         ),
-#     }
-
-
-# def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_items(test_client):
-#     """
-#     Test updating the manufacturer ID of a catalogue item when it has child items.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     # Child
-#     # pylint: disable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     test_client.post("/v1/items", json=item_post)
-#     # pylint: enable=duplicate-code
-
-#     catalogue_item_patch = {
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 409
-#     assert response.json()["detail"] == "Catalogue item has child elements and cannot be updated"
-
-
-# def test_partial_update_catalogue_item_change_manufacturer_id_invalid_id(test_client):
-#     """
-#     Test changing the manufacturer ID of a catalogue item to an invalid ID.
-#     """
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "manufacturer_id": "invalid",
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified manufacturer does not exist"
-
-
-# def test_partial_update_catalogue_item_change_manufacturer_id_non_existent_id(test_client):
-#     """
-#     Test changing the manufacturer ID of a catalogue item to a non-existent ID.
-#     """
-#     response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_B)
-#     catalogue_category = response.json()
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_B,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_B["properties"]),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-
-#     catalogue_item_patch = {
-#         "manufacturer_id": str(ObjectId()),
-#     }
-#     response = test_client.patch(f"/v1/catalogue-items/{response.json()['id']}", json=catalogue_item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified manufacturer does not exist"

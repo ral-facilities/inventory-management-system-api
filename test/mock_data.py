@@ -73,6 +73,14 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT = {
     "allowed_values": None,
 }
 
+# Number, Non Mandatory, Allowed values list
+CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST = {
+    "name": "Non Mandatory Number Property With Allowed Values",
+    "type": "number",
+    "mandatory": False,
+    "allowed_values": {"type": "list", "values": [1, 2, 3]},
+}
+
 # String, Mandatory
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY = {
@@ -81,7 +89,7 @@ CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY = {
     "mandatory": True,
 }
 
-# String, Allowed values list
+# String, Non Mandatory, Allowed values list
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST = {
     "name": "Non Mandatory String Property With Allowed Values",
@@ -249,8 +257,20 @@ PROPERTY_GET_DATA_BOOLEAN_MANDATORY_TRUE = {
     **PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
 }
 
+# Number, Non Mandatory, Allowed Values List, 1
+
+PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1 = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["name"],
+    "value": 1,
+}
+
+PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1 = {
+    **PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1
+}
+
 # Number, Non Mandatory, 42
 
+# TODO: Rename? Specific to the CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT
 PROPERTY_DATA_NUMBER_NON_MANDATORY_42 = {
     "name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"],
     "value": 42,
@@ -266,6 +286,12 @@ PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE = {
 }
 
 PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE = {**PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE}
+
+# String, Mandatory, text
+PROPERTY_DATA_STRING_MANDATORY_TEXT = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"],
+    "value": "text",
+}
 
 # String, Non Mandatory, Allowed Values List, value1
 
