@@ -4,13 +4,15 @@ Unit tests for the `UnitService` service
 
 from unittest.mock import MagicMock, Mock, patch
 
+from test.mock_data import UNIT_POST_DATA_MM
+
+
+from test.unit.services.conftest import ServiceTestHelpers
 import pytest
+from bson import ObjectId
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.unit import UnitService
-from test.mock_data import UNIT_POST_DATA_MM
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
 
-from bson import ObjectId
 
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.unit import UnitPostSchema
@@ -59,19 +61,21 @@ class CreateDSL(UnitServiceDSL):
         """
         self._unit_post = UnitPostSchema(**unit_post_data)
 
-        self._expected_unit_in = UnitIn(**unit_post_data, code=utils.generate_code(unit_post_data["name"], "unit"))
+        self._expected_unit_in = UnitIn(**unit_post_data, code=utils.generate_code(unit_post_data["value"], "unit"))
         self._expected_unit_out = UnitOut(**self._expected_unit_in.model_dump(), id=ObjectId())
 
         ServiceTestHelpers.mock_create(self.mock_unit_repository, self._expected_unit_out)
 
     def call_create(self) -> None:
-        """Calls the `UnitService` `create` method with the appropriate data from a prior call to
-        `mock_create`."""
+        """
+        Calls the `UnitService` `create` method with the appropriate data from a prior call to
+        `mock_create`.
+        """
         self._created_unit = self.unit_service.create(self._unit_post)
 
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
-        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_unit_out.name, "unit")
+        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_unit_out.value, "unit")
         self.mock_unit_repository.create.assert_called_once_with(self._expected_unit_in)
         assert self._created_unit == self._expected_unit_out
 

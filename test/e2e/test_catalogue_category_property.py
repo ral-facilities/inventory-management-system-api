@@ -5,7 +5,6 @@ End-to-End tests for the properties endpoint of the catalogue category router
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
-from test.e2e.test_unit import UNIT_POST_A
 from typing import Optional
 from unittest.mock import ANY
 
@@ -59,6 +58,8 @@ ITEM_POST = {
     "notes": "Test notes",
     "properties": [{"name": "Property A", "value": 20}],
 }
+
+UNIT_POST_A = {"value": "mm"}
 
 # pylint:enable=duplicate-code
 

@@ -3,19 +3,21 @@ Unit tests for the `UnitRepo` repository
 """
 
 from typing import Optional
-from inventory_management_system_api.repositories.unit import UnitRepo
+from unittest.mock import MagicMock, Mock, call
+
+
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    UNIT_POST_DATA_CM,
-    UNIT_POST_DATA_MM,
+    UNIT_IN_DATA_CM,
+    UNIT_IN_DATA_MM
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from unittest.mock import MagicMock, Mock, call
-
 import pytest
 from bson import ObjectId
+
+
+from inventory_management_system_api.repositories.unit import UnitRepo
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -25,16 +27,6 @@ from inventory_management_system_api.core.exceptions import (
     PartOfCatalogueCategoryError,
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
-
-# pylint: disable=duplicate-code
-CATALOGUE_CATEGORY_INFO = {
-    "name": "Category A",
-    "code": "category-a",
-    "is_leaf": False,
-    "parent_id": None,
-    "properties": [],
-}
-# pylint: enable=duplicate-code
 
 
 class UnitRepoDSL:
@@ -160,13 +152,13 @@ class TestCreate(CreateDSL):
 
     def test_create(self):
         """Test creating a unit."""
-        self.mock_create(UNIT_POST_DATA_MM)
+        self.mock_create(UNIT_IN_DATA_MM)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_duplicate_name(self):
         """Test creating a unit with a duplicate unit being found."""
-        self.mock_create(UNIT_POST_DATA_MM, duplicate_unit_in_data=UNIT_POST_DATA_MM)
+        self.mock_create(UNIT_IN_DATA_MM, duplicate_unit_in_data=UNIT_IN_DATA_MM)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate unit found")
 
@@ -242,7 +234,7 @@ class TestGet(GetDSL):
         """Test getting a system."""
         unit_id = str(ObjectId())
 
-        self.mock_get(unit_id, UNIT_POST_DATA_MM)
+        self.mock_get(unit_id, UNIT_IN_DATA_MM)
         self.call_get(unit_id)
         self.check_get_success()
 
@@ -299,7 +291,7 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test listing all units."""
-        self.mock_list([UNIT_POST_DATA_MM, UNIT_POST_DATA_CM])
+        self.mock_list([UNIT_IN_DATA_MM, UNIT_IN_DATA_CM])
         self.call_list()
         self.check_list_success()
 
@@ -315,7 +307,7 @@ class DeleteDSL(UnitRepoDSL):
 
     _delete_unit_id: str
     _delete_exception: pytest.ExceptionInfo
-    _mock_catalogue_item_data: Optional[dict]
+    _mock_catalogue_category_data: Optional[dict]
 
     def mock_delete(self, deleted_count: int, catalogue_category_data: Optional[dict] = None) -> None:
         """
@@ -389,7 +381,7 @@ class DeleteDSL(UnitRepoDSL):
         :param expected_unit_id: Expected unit ID used in the database calls.
         """
         self.catalogue_categories_collection.find_one.assert_called_once_with(
-            {"unit_id": CustomObjectId(expected_unit_id)}, session=self.mock_session
+            {"properties.unit_id": CustomObjectId(expected_unit_id)}, session=self.mock_session
         )
 
 
@@ -419,7 +411,7 @@ class TestDelete(DeleteDSL):
             },
         )
         self.call_delete_expecting_error(unit_id, PartOfCatalogueCategoryError)
-        self.check_delete_failed_with_exception(f"Unit with ID '{unit_id}' is part of a catalogue category")
+        self.check_delete_failed_with_exception(f"The unit with ID {unit_id} is a part of a Catalogue category")
 
     def test_delete_non_existent_id(self):
         """Test deleting a unit with a non-existent ID."""

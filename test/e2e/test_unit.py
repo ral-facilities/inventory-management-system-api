@@ -4,11 +4,6 @@ End-to-End tests for the Unit router
 
 from typing import Optional
 
-from bson import ObjectId
-
-import pytest
-from fastapi.testclient import TestClient
-from httpx import Response
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     UNIT_GET_DATA_CM,
@@ -16,6 +11,12 @@ from test.mock_data import (
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
 )
+
+from bson import ObjectId
+
+import pytest
+from fastapi.testclient import TestClient
+from httpx import Response
 
 
 class CreateDSL:
