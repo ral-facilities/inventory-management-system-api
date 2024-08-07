@@ -7,7 +7,7 @@ Unit tests for the `CatalogueCategoryService` service.
 # pylint: disable=duplicate-code
 
 from test.mock_data import (
-    BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
+    BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
@@ -316,7 +316,7 @@ class TestCreate(CreateDSL):
 
         self.mock_create(
             CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-            catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
+            catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
         )
         self.call_create()

@@ -14,9 +14,6 @@ _DATA - Is none of the above - likely to be used in post requests as they are li
         known before hand.
 """
 
-# TODO: Not sure about _GET_DATA anymore if going with _POST_DATA vs _DATA distinction, _GET_DATA can now have missing
-# IDs
-
 from unittest.mock import ANY
 
 from bson import ObjectId
@@ -318,8 +315,8 @@ PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE = {
 # --------------------------------- CATALOGUE ITEMS ---------------------------------
 
 # This is the base catalogue category to be used in tests with properties
-BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES = CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
-BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES = CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
+BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM = CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
+BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM = CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
 
 
 # No properties

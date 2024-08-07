@@ -711,7 +711,8 @@ class UpdateDSL(ListDSL):
         # pylint:disable=fixme
         # TODO: Could change post_catalogue_category logic and use post_catalogue_category - right now a test like
         # test_partial_update_non_leaf_all_valid_values_when_has_child_catalogue_category wont work with that as it
-        # will assert the created times based on the last _post_response_catalogue_category which will be the child so have to bypass here
+        # will assert the created times based on the last _post_response_catalogue_category which will be the child so
+        # have to bypass here
         # currently - may not be necessary if have custom test client instead & should be clearer after items
         self.test_client.post(
             "/v1/catalogue-categories",

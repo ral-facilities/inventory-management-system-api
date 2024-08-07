@@ -12,7 +12,7 @@ from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
 from test.e2e.test_manufacturer import CreateDSL as ManufacturerCreateDSL
 from test.mock_data import (
-    BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+    BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
@@ -52,7 +52,6 @@ from bson import ObjectId
 from httpx import Response
 
 
-# TODO: Should this be inherited or should there be a base test client for it? Also need manufacturer and system
 class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     """Base class for create tests."""
 
@@ -71,7 +70,6 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """Setup fixtures"""
 
         self.property_name_id_dict = {}
-        # TODO: Look up from response instead of storing/overriding?
         self.catalogue_category_id = None
         self.manufacturer_id = None
 
@@ -168,6 +166,70 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
             else None
         )
 
+    def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
+        """
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
+        catalogue category and units. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
+        category.
+
+        :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
+                                    `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by
+                                    the `name` value in its properties as the IDs will be added automatically.
+        :return: ID of the created catalogue item (or `None` if not successful).
+        """
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        return self.post_catalogue_item(catalogue_item_data)
+
+    def post_catalogue_item_and_prerequisites_with_properties(self, catalogue_item_data: dict) -> Optional[str]:
+        """
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
+        catalogue category and units. Uses BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM for the catalogue category.
+
+        :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
+                                    `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by
+                                    the `name` value in its properties as the IDs will be added automatically.
+        :return: ID of the created catalogue item (or `None` if not successful).
+        """
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        return self.post_catalogue_item(catalogue_item_data)
+
+    def post_catalogue_item_and_prerequisites_with_given_properties(
+        self, catalogue_category_properties_data: list[dict], catalogue_item_properties_data: list[dict]
+    ) -> Optional[str]:
+        """
+        Utility method that posts a catalogue item with specific given properties and also its prerequisite
+        manufacturer, catalogue category and units. Uses BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM and
+        CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES as a base.
+
+        :param catalogue_category_properties_data: List of dictionaries containing the basic catalogue category property
+                        data as would be required for a `CatalogueCategoryPostPropertySchema` but with any `unit_id`'s
+                        replaced by the `unit` value in its properties as the IDs will be added automatically.
+        :param catalogue_item_properties_data: List of dictionaries containing the basic catalogue item property data as
+                        would be required for a `PropertyPostSchema` but with any `id`'s replaced by the `name` value as
+                        the IDs will be added automatically.
+        :return: ID of the created catalogue item (or `None` if not successful).
+        """
+
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
+                "properties": catalogue_category_properties_data,
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        return self.post_catalogue_item(
+            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": catalogue_item_properties_data}
+        )
+
     def post_catalogue_item_and_prerequisites_with_allowed_values(
         self, property_type: str, allowed_values_post_data: dict, property_value: Any
     ) -> Optional[str]:
@@ -183,7 +245,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """
         self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "properties": [
                     {
                         "name": "property",
@@ -251,9 +313,7 @@ class TestCreate(CreateDSL):
     def test_create_with_only_required_values_provided(self):
         """Test creating a catalogue item with only required values provided."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
@@ -261,9 +321,7 @@ class TestCreate(CreateDSL):
         """Test creating a non obsolete catalogue item with all values provided except `properties` and
         those related to being obsolete."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+        self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
         self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
@@ -292,9 +350,7 @@ class TestCreate(CreateDSL):
     def test_create_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
         """Test creating an obsolete catalogue item with a non-existent `obsolete_replacement_catalogue_item_id`."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
+        self.post_catalogue_item_and_prerequisites_no_properties(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "obsolete_replacement_catalogue_item_id": str(ObjectId()),
@@ -308,9 +364,7 @@ class TestCreate(CreateDSL):
     def test_create_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
         """Test creating an obsolete catalogue item an invalid `obsolete_replacement_catalogue_item_id`."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
+        self.post_catalogue_item_and_prerequisites_no_properties(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "obsolete_replacement_catalogue_item_id": "invalid-id",
@@ -324,30 +378,21 @@ class TestCreate(CreateDSL):
     def test_create_with_all_properties_defined(self):
         """Test creating a catalogue item with all properties within the catalogue category being defined."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        self.post_catalogue_item_and_prerequisites_with_properties(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
 
         self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
 
     def test_create_with_mandatory_properties_only(self):
         """Test creating a catalogue item with only mandatory properties defined."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
+        self.post_catalogue_item_and_prerequisites_with_properties(CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
 
         self.check_post_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
 
     def test_create_with_mandatory_properties_given_none(self):
         """Test creating a catalogue item when mandatory properties are given a value of `None`."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
+        self.post_catalogue_item_and_prerequisites_with_properties(
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
                 "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}],
@@ -363,10 +408,9 @@ class TestCreate(CreateDSL):
     def test_create_with_missing_mandatory_properties(self):
         """Test creating a catalogue item when missing mandatory properties."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item({**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []})
+        self.post_catalogue_item_and_prerequisites_with_properties(
+            {**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []}
+        )
 
         self.check_post_catalogue_item_failed_with_detail(
             422,
@@ -377,13 +421,7 @@ class TestCreate(CreateDSL):
     def test_create_with_non_mandatory_properties_given_none(self):
         """Test creating a catalogue item when non-mandatory properties are given a value of `None`."""
 
-        # TODO: Have a post for base catalogue category with properties/manufacturer or something to reduce lines
-        # repeated
-        self.post_unit(UNIT_POST_DATA_MM)
-        # TODO: Should BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES have _MM? at least _DATA?
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
+        self.post_catalogue_item_and_prerequisites_with_properties(
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
                 "properties": [
@@ -399,21 +437,11 @@ class TestCreate(CreateDSL):
     def test_create_with_string_property_with_invalid_value_type(self):
         """Test creating a catalogue item with an invalid value type for a string property."""
 
-        # TODO: Add utility function just for adding with specific properties?
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
-            {
-                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-                "properties": [
-                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42},
-                ],
-            }
+        self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
+            catalogue_item_properties_data=[
+                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42},
+            ],
         )
 
         self.check_post_catalogue_item_failed_with_detail(
@@ -426,21 +454,11 @@ class TestCreate(CreateDSL):
     def test_create_with_number_property_with_invalid_value_type(self):
         """Test creating a catalogue item with an invalid value type for a number property."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
-            {
-                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-                "properties": [
-                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"], "value": "42"},
-                ],
-            }
+        self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            catalogue_item_properties_data=[
+                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"], "value": "42"},
+            ],
         )
 
         self.check_post_catalogue_item_failed_with_detail(
@@ -453,20 +471,11 @@ class TestCreate(CreateDSL):
     def test_create_with_boolean_property_with_invalid_value_type(self):
         """Test creating a catalogue item with an invalid value type for a boolean property."""
 
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_catalogue_item(
-            {
-                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-                "properties": [
-                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "True"},
-                ],
-            }
+        self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
+            catalogue_item_properties_data=[
+                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "True"},
+            ],
         )
 
         self.check_post_catalogue_item_failed_with_detail(
@@ -733,7 +742,6 @@ class TestList(ListDSL):
         self.check_get_catalogue_items_success([])
 
 
-# TODO: Update tests
 class UpdateDSL(ListDSL):
     """Base class for update tests."""
 
@@ -835,9 +843,9 @@ class TestUpdate(UpdateDSL):
         """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
         no children."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
         self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
@@ -846,22 +854,20 @@ class TestUpdate(UpdateDSL):
         """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
         children."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         self.post_child_item()
 
         self.patch_catalogue_item(catalogue_item_id, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
         self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
-    # TODO: More update tests
-
     def test_partial_update_catalogue_category_id_no_properties(self):
         """Test updating the `catalogue_category_id` of a catalogue item when no properties are involved."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         new_catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
@@ -871,12 +877,11 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` of a catalogue item when both the old and new catalogue category
         has identical properties."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
-            {**BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES, "name": "Another category"}
+            {**BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM, "name": "Another category"}
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
@@ -886,12 +891,11 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` and `properties` of a catalogue item when both the old and new
         catalogue category has identical properties."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
-            {**BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES, "name": "Another category"}
+            {**BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM, "name": "Another category"}
         )
 
         self.patch_catalogue_item(
@@ -912,15 +916,14 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` of a catalogue item when both the old and new catalogue category
         has identical properties but in a different order."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "name": "Another category",
-                "properties": BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES["properties"][::-1],
+                "properties": BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM["properties"][::-1],
             }
         )
 
@@ -934,15 +937,14 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` and `properties` of a catalogue item when both the old and new
         catalogue category has identical properties but in a different order."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "name": "Another category",
-                "properties": BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES["properties"][::-1],
+                "properties": BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM["properties"][::-1],
             }
         )
 
@@ -964,13 +966,12 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` of a catalogue item when the old and new catalogue category
         have different properties."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "name": "Another category",
                 "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
             }
@@ -986,13 +987,12 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` and `properties` of a catalogue item when the old and new catalogue
         category have different properties."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "name": "Another category",
                 "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
             }
@@ -1013,13 +1013,12 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` of a catalogue item when the old catalogue category and item has
         properties but the new one does not."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "name": "Another category",
                 "properties": [],
             }
@@ -1035,13 +1034,12 @@ class TestUpdate(UpdateDSL):
         """Test updating the `catalogue_category_id` and `properties` of a catalogue item when the old catalogue
         category and item has properties but the new one does not."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
                 "name": "Another category",
                 "properties": [],
             }
@@ -1063,10 +1061,10 @@ class TestUpdate(UpdateDSL):
         properties in the new catalogue category."""
 
         self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
-        new_catalogue_category_id = self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        new_catalogue_category_id = self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM)
 
         self.patch_catalogue_item(
             catalogue_item_id,
@@ -1087,10 +1085,10 @@ class TestUpdate(UpdateDSL):
         in the new catalogue category."""
 
         self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
-        new_catalogue_category_id = self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        new_catalogue_category_id = self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM)
 
         self.patch_catalogue_item(
             catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id, "properties": []}
@@ -1104,9 +1102,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_catalogue_category_id_with_non_leaf_id(self):
         """Test updating the `catalogue_category_id` of a catalogue item to a non-leaf catalogue category."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         new_catalogue_category_id = self.post_catalogue_category(
             CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY
         )
@@ -1119,9 +1117,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_catalogue_category_id_with_non_existent_id(self):
         """Test updating the `catalogue_category_id` of a catalogue item to a non-existent catalogue category."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": str(ObjectId())})
         self.check_patch_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
@@ -1129,9 +1127,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_catalogue_category_id_with_invalid_id(self):
         """Test updating the `catalogue_category_id` of a catalogue item to an invalid ID."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": "invalid-id"})
         self.check_patch_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
@@ -1139,9 +1137,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_manufacturer_id_with_no_children(self):
         """Test updating the `manufacturer_id` of a catalogue item when it has no children."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         new_manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": new_manufacturer_id})
@@ -1150,9 +1148,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_manufacturer_id_with_children(self):
         """Test updating the `manufacturer_id` of a catalogue item when it has children."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         self.post_child_item()
         new_manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
 
@@ -1164,9 +1162,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_manufacturer_id_with_non_existent_id(self):
         """Test updating the `manufacturer_id` of a catalogue item to a non-existent manufacturer."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": str(ObjectId())})
         self.check_patch_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
@@ -1174,9 +1172,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_manufacturer_id_with_invalid_id(self):
         """Test updating the `manufacturer_id` of a catalogue item to an invalid ID."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": "invalid-id"})
         self.check_patch_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
@@ -1184,9 +1182,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_no_children(self):
         """Test updating the `properties` of a catalogue item when it has no children."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"properties": []})
         self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
@@ -1194,10 +1192,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_mandatory_properties_given_none(self):
         """Test updating the `properties` of a catalogue item to have mandatory properties with a value of `None`."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
 
         self.patch_catalogue_item(
             catalogue_item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}]}
@@ -1213,10 +1210,9 @@ class TestUpdate(UpdateDSL):
         """Test updating the `properties` of a catalogue item to have non mandatory properties with a value of
         `None`."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
 
         self.patch_catalogue_item(
             catalogue_item_id,
@@ -1236,12 +1232,10 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_properties_adding_non_mandatory_property(self):
-        """Test updating the `properties` of a catalogue item to define a previously undefined non-mandatory property."""
+        """Test updating the `properties` of a catalogue item to define a previously undefined non-mandatory
+        property."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
             {
                 **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
                 "properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][0:1],
@@ -1256,10 +1250,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_removing_non_mandatory_property(self):
         """Test updating the `properties` of a catalogue item to remove a previously defined non-mandatory property."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
 
         self.patch_catalogue_item(
             catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][0:2]}
@@ -1277,10 +1270,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_removing_mandatory_property(self):
         """Test updating the `properties` of a catalogue item to remove a previously defined mandatory property."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
 
         self.patch_catalogue_item(
             catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][1:3]}
@@ -1294,15 +1286,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_string_property_with_invalid_value_type(self):
         """Test updating the `properties` of a catalogue item to have an invalid value type for a string property."""
 
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(
-            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [PROPERTY_DATA_STRING_MANDATORY_TEXT]}
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
+            catalogue_item_properties_data=[PROPERTY_DATA_STRING_MANDATORY_TEXT],
         )
 
         self.patch_catalogue_item(
@@ -1317,16 +1303,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_number_property_with_invalid_value_type(self):
         """Test updating the `properties` of a catalogue item to have an invalid value type for a number property."""
 
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(
-            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_42]}
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            catalogue_item_properties_data=[PROPERTY_DATA_NUMBER_NON_MANDATORY_42],
         )
 
         self.patch_catalogue_item(
@@ -1341,15 +1320,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_boolean_property_with_invalid_value_type(self):
         """Test updating the `properties` of a catalogue item to have an invalid value type for a boolean property."""
 
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(
-            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE]}
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
+            catalogue_item_properties_data=[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE],
         )
 
         self.patch_catalogue_item(
@@ -1365,18 +1338,13 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_allowed_values_list(self):
         """Test updating the `properties` of a catalogue item that have a list of allowed values."""
 
-        # TODO: Can probably clean up
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_WITH_PROPERTIES,
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
-                ],
-            }
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+            ],
+            catalogue_item_properties_data=[],
         )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item({**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
 
         self.patch_catalogue_item(
             catalogue_item_id,
@@ -1427,9 +1395,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_children(self):
         """Test updating the `properties` of a catalogue item when it has children."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         self.post_child_item()
 
         self.patch_catalogue_item(catalogue_item_id, {"properties": []})
@@ -1440,9 +1408,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_obsolete_replacement_catalogue_item_id(self):
         """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        obsolete_replacement_catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        obsolete_replacement_catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_catalogue_item(
@@ -1459,9 +1427,9 @@ class TestUpdate(UpdateDSL):
         """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item to a non-existent catalogue
         item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"obsolete_replacement_catalogue_item_id": str(ObjectId())})
         self.check_patch_catalogue_item_failed_with_detail(
@@ -1471,9 +1439,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_obsolete_replacement_catalogue_item_id_with_invalid_id(self):
         """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item to an invalid ID."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.patch_catalogue_item(catalogue_item_id, {"obsolete_replacement_catalogue_item_id": "invalid-id"})
         self.check_patch_catalogue_item_failed_with_detail(
