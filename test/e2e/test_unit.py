@@ -232,7 +232,7 @@ class TestDelete(DeleteDSL):
                         "unit_id": unit_id,
                     }
                 ],
-            },
+            }
 
         self.test_client.post(
             "/v1/catalogue-categories", json=catalogue_category_data
