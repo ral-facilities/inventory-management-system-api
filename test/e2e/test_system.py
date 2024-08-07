@@ -6,12 +6,13 @@ End-to-End tests for the system router.
 # pylint: disable=duplicate-code
 
 from test.conftest import add_ids_to_properties
-from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
+from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
-from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
-from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
-from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
+from test.e2e.test_item import ITEM_POST
 from test.mock_data import (
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
@@ -32,7 +33,7 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: Response
+    _post_response_system: Response
 
     @pytest.fixture(autouse=True)
     def setup(self, test_client):
@@ -49,19 +50,19 @@ class CreateDSL:
         :return: ID of the created system (or `None` if not successful).
         """
 
-        self._post_response = self.test_client.post("/v1/systems", json=system_post_data)
-        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+        self._post_response_system = self.test_client.post("/v1/systems", json=system_post_data)
+        return self._post_response_system.json()["id"] if self._post_response_system.status_code == 201 else None
 
     def check_post_system_success(self, expected_system_get_data: dict) -> None:
         """
         Checks that a prior call to `post_system` gave a successful response with the expected data returned.
 
         :param expected_system_get_data: Dictionary containing the expected system data returned as would be required
-                                         for a `SystemGetSchema`.
+                                         for a `SystemSchema`.
         """
 
-        assert self._post_response.status_code == 201
-        assert self._post_response.json() == expected_system_get_data
+        assert self._post_response_system.status_code == 201
+        assert self._post_response_system.json() == expected_system_get_data
 
     def check_post_system_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -71,8 +72,8 @@ class CreateDSL:
         :param detail: Expected detail given in the response.
         """
 
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"] == detail
+        assert self._post_response_system.status_code == status_code
+        assert self._post_response_system.json()["detail"] == detail
 
     def check_post_system_failed_with_validation_message(self, status_code: int, message: str) -> None:
         """
@@ -83,8 +84,8 @@ class CreateDSL:
         :param message: Expected validation error message given in the response.
         """
 
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"][0]["msg"] == message
+        assert self._post_response_system.status_code == status_code
+        assert self._post_response_system.json()["detail"][0]["msg"] == message
 
 
 class TestCreate(CreateDSL):
@@ -142,7 +143,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
-    _get_response: Response
+    _get_response_system: Response
 
     def get_system(self, system_id: str):
         """
@@ -151,18 +152,18 @@ class GetDSL(CreateDSL):
         :param system_id: ID of the system to be obtained.
         """
 
-        self._get_response = self.test_client.get(f"/v1/systems/{system_id}")
+        self._get_response_system = self.test_client.get(f"/v1/systems/{system_id}")
 
     def check_get_system_success(self, expected_system_get_data: dict):
         """
         Checks that a prior call to `get_system` gave a successful response with the expected data returned.
 
         :param expected_system_get_data: Dictionary containing the expected system data returned as would be required
-                                         for a `SystemGetSchema`.
+                                         for a `SystemSchema`.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_system_get_data
+        assert self._get_response_system.status_code == 200
+        assert self._get_response_system.json() == expected_system_get_data
 
     def check_get_system_failed_with_detail(self, status_code: int, detail: str):
         """
@@ -172,8 +173,8 @@ class GetDSL(CreateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_system.status_code == status_code
+        assert self._get_response_system.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -202,7 +203,7 @@ class TestGet(GetDSL):
 class GetBreadcrumbsDSL(GetDSL):
     """Base class for breadcrumbs tests."""
 
-    _get_response: Response
+    _get_response_system: Response
 
     _posted_systems_get_data: list[dict]
 
@@ -225,7 +226,7 @@ class GetBreadcrumbsDSL(GetDSL):
             system_id = self.post_system(
                 {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": f"System {i}", "parent_id": parent_id}
             )
-            self._posted_systems_get_data.append(self._post_response.json())
+            self._posted_systems_get_data.append(self._post_response_system.json())
             parent_id = system_id
 
         return [system["id"] for system in self._posted_systems_get_data]
@@ -237,12 +238,12 @@ class GetBreadcrumbsDSL(GetDSL):
         :param system_id: ID of the system to obtain the breadcrumbs of.
         """
 
-        self._get_response = self.test_client.get(f"/v1/systems/{system_id}/breadcrumbs")
+        self._get_response_system = self.test_client.get(f"/v1/systems/{system_id}/breadcrumbs")
 
     def get_last_system_breadcrumbs(self) -> None:
         """Gets the last system posted's breadcrumbs."""
 
-        self.get_system_breadcrumbs(self._post_response.json()["id"])
+        self.get_system_breadcrumbs(self._post_response_system.json()["id"])
 
     def check_get_system_breadcrumbs_success(self, expected_trail_length: int, expected_full_trail: bool) -> None:
         """
@@ -253,8 +254,8 @@ class GetBreadcrumbsDSL(GetDSL):
         :param expected_full_trail: Whether the expected trail is a full trail or not.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == {
+        assert self._get_response_system.status_code == 200
+        assert self._get_response_system.json() == {
             "trail": [
                 [system["id"], system["name"]]
                 # When the expected trail length is < the number of systems posted, only use the last
@@ -274,8 +275,8 @@ class GetBreadcrumbsDSL(GetDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_system.status_code == status_code
+        assert self._get_response_system.json()["detail"] == detail
 
 
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
@@ -340,14 +341,14 @@ class ListDSL(GetBreadcrumbsDSL):
         :param filters: Filters to use in the request.
         """
 
-        self._get_response = self.test_client.get("/v1/systems", params=filters)
+        self._get_response_system = self.test_client.get("/v1/systems", params=filters)
 
     def post_test_system_with_child(self) -> list[dict]:
         """
         Posts a system with a single child and returns their expected responses when returned by the list endpoint.
 
         :return: List of dictionaries containing the expected system data returned from a get endpoint in the form of a
-                 `SystemGetSchema`.
+                 `SystemSchema`.
         """
 
         parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
@@ -360,11 +361,11 @@ class ListDSL(GetBreadcrumbsDSL):
         Checks that a prior call to `get_systems` gave a successful response with the expected data returned.
 
         :param expected_systems_get_data: List of dictionaries containing the expected system data returned as would be
-                                          required for `SystemGetSchema`'s.
+                                          required for `SystemSchema`'s.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_systems_get_data
+        assert self._get_response_system.status_code == 200
+        assert self._get_response_system.json() == expected_systems_get_data
 
 
 class TestList(ListDSL):
@@ -421,7 +422,7 @@ class TestList(ListDSL):
 class UpdateDSL(ListDSL):
     """Base class for update tests."""
 
-    _patch_response: Response
+    _patch_response_system: Response
 
     def patch_system(self, system_id: str, system_patch_data: dict) -> None:
         """
@@ -431,20 +432,22 @@ class UpdateDSL(ListDSL):
         :param system_patch_data: Dictionary containing the patch data as would be required for a `SystemPatchSchema`.
         """
 
-        self._patch_response = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
+        self._patch_response_system = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
     def check_patch_system_response_success(self, expected_system_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_system` gave a successful response with the expected data returned.
 
         :param expected_system_get_data: Dictionary containing the expected system data returned as would be required
-                                         for a `SystemGetSchema`.
+                                         for a `SystemSchema`.
         """
 
-        assert self._patch_response.status_code == 200
-        assert self._patch_response.json() == expected_system_get_data
+        assert self._patch_response_system.status_code == 200
+        assert self._patch_response_system.json() == expected_system_get_data
 
-        E2ETestHelpers.check_created_and_modified_times_updated_correctly(self._post_response, self._patch_response)
+        E2ETestHelpers.check_created_and_modified_times_updated_correctly(
+            self._post_response_system, self._patch_response_system
+        )
 
     def check_patch_system_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -454,8 +457,8 @@ class UpdateDSL(ListDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._patch_response.status_code == status_code
-        assert self._patch_response.json()["detail"] == detail
+        assert self._patch_response_system.status_code == status_code
+        assert self._patch_response_system.json()["detail"] == detail
 
 
 class TestUpdate(UpdateDSL):
@@ -549,7 +552,7 @@ class TestUpdate(UpdateDSL):
 class DeleteDSL(UpdateDSL):
     """Base class for delete tests."""
 
-    _delete_response: Response
+    _delete_response_system: Response
 
     def delete_system(self, system_id: str) -> None:
         """
@@ -558,12 +561,12 @@ class DeleteDSL(UpdateDSL):
         :param system_id: ID of the system to be deleted.
         """
 
-        self._delete_response = self.test_client.delete(f"/v1/systems/{system_id}")
+        self._delete_response_system = self.test_client.delete(f"/v1/systems/{system_id}")
 
     def check_delete_system_success(self) -> None:
         """Checks that a prior call to `delete_system` gave a successful response with the expected data returned."""
 
-        assert self._delete_response.status_code == 204
+        assert self._delete_response_system.status_code == 204
 
     def check_delete_system_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -574,8 +577,8 @@ class DeleteDSL(UpdateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._delete_response.status_code == status_code
-        assert self._delete_response.json()["detail"] == detail
+        assert self._delete_response_system.status_code == status_code
+        assert self._delete_response_system.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
@@ -608,33 +611,18 @@ class TestDelete(DeleteDSL):
         # TODO: This should be cleaned up in future
         # Create a child item
         # pylint: disable=duplicate-code
-        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
-        unit_mm = response.json()
-
-        response = self.test_client.post("/v1/units", json=UNIT_POST_B)
-        unit_cm = response.json()
-
-        units = [unit_mm, unit_cm]
-
         response = self.test_client.post(
-            "/v1/catalogue-categories",
-            json={
-                **CATALOGUE_CATEGORY_POST_A,
-                "properties": replace_unit_values_with_ids_in_properties(
-                    CATALOGUE_CATEGORY_POST_A["properties"], units
-                ),
-            },
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
         )
         catalogue_category = response.json()
 
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         manufacturer_id = response.json()["id"]
 
         catalogue_item_post = {
-            **CATALOGUE_ITEM_POST_A,
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_category_id": catalogue_category["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
         }
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
         catalogue_item_id = response.json()["id"]
