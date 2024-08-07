@@ -82,7 +82,6 @@ class CreateDSL(CatalogueItemRepoDSL):
     _catalogue_item_in: CatalogueItemIn
     _expected_catalogue_item_out: CatalogueItemOut
     _created_catalogue_item: CatalogueItemOut
-    _create_exception: pytest.ExceptionInfo
 
     def mock_create(
         self,
@@ -118,18 +117,6 @@ class CreateDSL(CatalogueItemRepoDSL):
             self._catalogue_item_in, session=self.mock_session
         )
 
-    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
-        """
-        Calls the `CatalogueItemRepo` `create` method with the appropriate data from a prior call to `mock_create`
-        while expecting an error to be raised.
-
-        :param error_type: Expected exception to be raised.
-        """
-
-        with pytest.raises(error_type) as exc:
-            self.catalogue_item_repository.create(self._catalogue_item_in)
-        self._create_exception = exc
-
     def check_create_success(self):
         """Checks that a prior call to `call_create` worked as expected."""
 
@@ -143,18 +130,6 @@ class CreateDSL(CatalogueItemRepoDSL):
             catalogue_item_in_data, session=self.mock_session
         )
         assert self._created_catalogue_item == self._expected_catalogue_item_out
-
-    def check_create_failed_with_exception(self, message: str) -> None:
-        """
-        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
-        with the correct message.
-
-        :param message: Expected message of the raised exception.
-        """
-
-        self.catalogue_items_collection.insert_one.assert_not_called()
-
-        assert str(self._create_exception.value) == message
 
 
 class TestCreate(CreateDSL):
