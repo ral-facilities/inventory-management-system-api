@@ -17,7 +17,7 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     MANUFACTURER_IN_DATA_A,
-    PROPERTY_DATA_NUMBER_NON_MANDATORY_42,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
 )
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
@@ -969,7 +969,7 @@ class TestUpdate(UpdateDSL):
             catalogue_item_id,
             catalogue_item_update_data={
                 "catalogue_category_id": str(ObjectId()),
-                "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_42],
+                "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
             },
             stored_catalogue_item_data=CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
             stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,

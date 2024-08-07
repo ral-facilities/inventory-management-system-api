@@ -34,14 +34,14 @@ from test.mock_data import (
     MANUFACTURER_POST_DATA_ALL_VALUES,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
-    PROPERTY_DATA_NUMBER_NON_MANDATORY_42,
-    PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
-    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_42,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     UNIT_POST_DATA_MM,
 )
@@ -308,7 +308,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a catalogue category."""
+    """Tests for creating a catalogue item."""
 
     def test_create_with_only_required_values_provided(self):
         """Test creating a catalogue item with only required values provided."""
@@ -426,7 +426,7 @@ class TestCreate(CreateDSL):
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
                 "properties": [
                     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
-                    PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
                     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
                 ],
             }
@@ -1000,12 +1000,15 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_item(
             catalogue_item_id,
-            {"catalogue_category_id": new_catalogue_category_id, "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_42]},
+            {
+                "catalogue_category_id": new_catalogue_category_id,
+                "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
+            },
         )
         self.check_patch_catalogue_item_response_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
-                "properties": [PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_42],
+                "properties": [PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
             }
         )
 
@@ -1219,7 +1222,7 @@ class TestUpdate(UpdateDSL):
             {
                 "properties": [
                     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
-                    PROPERTY_DATA_NUMBER_NON_MANDATORY_NONE,
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
                     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
                 ]
             },
@@ -1305,16 +1308,17 @@ class TestUpdate(UpdateDSL):
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
             catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
-            catalogue_item_properties_data=[PROPERTY_DATA_NUMBER_NON_MANDATORY_42],
+            catalogue_item_properties_data=[PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
         )
 
         self.patch_catalogue_item(
-            catalogue_item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_42, "value": "42"}]}
+            catalogue_item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42, "value": "42"}]}
         )
         self.check_patch_catalogue_item_failed_with_detail(
             422,
             "Invalid value type for property with ID "
-            f"'{self.property_name_id_dict[PROPERTY_DATA_NUMBER_NON_MANDATORY_42['name']]}'. Expected type: number.",
+            f"'{self.property_name_id_dict[PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42['name']]}'. "
+            "Expected type: number.",
         )
 
     def test_partial_update_properties_with_boolean_property_with_invalid_value_type(self):
@@ -1511,7 +1515,7 @@ class TestDelete(DeleteDSL):
         self.check_get_catalogue_item_failed_with_detail(404, "Catalogue item not found")
 
     def test_delete_with_child_item(self):
-        """Test deleting a catalogue category with a child catalogue item."""
+        """Test deleting a catalogue item with a child item."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)

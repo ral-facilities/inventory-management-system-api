@@ -130,12 +130,15 @@ class CreateDSL:
         Checks that a prior call to `post_catalogue_category` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
-                                                     as would be required for a `CatalogueCategorySchema`.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
+                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
+                                                     as they will be added automatically to check they are as expected.
         """
 
         assert self._post_response_catalogue_category.status_code == 201
-        assert self._post_response_catalogue_category.json() == expected_catalogue_category_get_data
+        assert self._post_response_catalogue_category.json() == E2ETestHelpers.add_unit_ids_to_properties(
+            expected_catalogue_category_get_data, self.unit_value_id_dict
+        )
 
     def check_post_catalogue_category_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -403,11 +406,14 @@ class GetDSL(CreateDSL):
         Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategorySchema`.
+                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
+                                                     as they will be added automatically to check they are as expected.
         """
 
         assert self._get_response_catalogue_category.status_code == 200
-        assert self._get_response_catalogue_category.json() == expected_catalogue_category_get_data
+        assert self._get_response_catalogue_category.json() == E2ETestHelpers.add_unit_ids_to_properties(
+            expected_catalogue_category_get_data, self.unit_value_id_dict
+        )
 
     def check_get_catalogue_category_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -771,11 +777,14 @@ class UpdateDSL(ListDSL):
         returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategorySchema`.
+                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
+                                                     as they will be added automatically to check they are as expected.
         """
 
         assert self._patch_response_catalogue_category.status_code == 200
-        assert self._patch_response_catalogue_category.json() == expected_catalogue_category_get_data
+        assert self._patch_response_catalogue_category.json() == E2ETestHelpers.add_unit_ids_to_properties(
+            expected_catalogue_category_get_data, self.unit_value_id_dict
+        )
 
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_catalogue_category, self._patch_response_catalogue_category
