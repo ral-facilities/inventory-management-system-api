@@ -2,17 +2,21 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from test.mock_data import ITEM_IN_DATA_REQUIRED_VALUES_ONLY, SYSTEM_IN_DATA_NO_PARENT_A
+from test.mock_data import (ITEM_IN_DATA_A, ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+                            SYSTEM_IN_DATA_NO_PARENT_A)
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
+from test.unit.repositories.mock_models import (MOCK_CREATED_MODIFIED_TIME,
+                                                MOCK_PROPERTY_A_INFO)
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.core.custom_object_id import \
+    CustomObjectId
+from inventory_management_system_api.core.exceptions import (
+    InvalidObjectIdError, MissingRecordError)
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemIn
@@ -256,469 +260,296 @@ class TestGet(GetDSL):
         self.check_get_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# FULL_ITEM_INFO = {
-#     "purchase_order_number": None,
-#     "is_defective": False,
-#     "warranty_end_date": "2015-11-15T23:59:59Z",
-#     "asset_number": None,
-#     "serial_number": "xyz123",
-#     "delivered_date": "2012-12-05T12:00:00Z",
-#     "notes": "Test notes",
-#     "properties": [{"id": str(ObjectId()), "name": "Property A", "value": 21, "unit": "mm"}],
-# }
-# # pylint: enable=duplicate-code
-
-
-# def test_delete(test_helpers, database_mock, item_repository):
-#     """
-#     Test deleting an item.
-
-#     Verify that the `delete` method properly handles the deletion of an item by ID.
-#     """
-#     item_id = str(ObjectId())
-#     session = MagicMock()
-
-#     # Mock `delete_one` to return that one document has been deleted
-#     test_helpers.mock_delete_one(database_mock.items, 1)
-
-#     item_repository.delete(item_id, session=session)
-
-#     database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)}, session=session)
-
-
-# def test_delete_with_invalid_id(item_repository):
-#     """
-#     Test deleting an item with an invalid ID.
-
-#     Verify that the `delete` method properly handles the deletion of an item with an invalid ID.
-#     """
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         item_repository.delete("invalid")
-#     assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-
-
-# def test_delete_with_non_existent_id(test_helpers, database_mock, item_repository):
-#     """
-#     Test deleting an item with an invalid ID.
-
-#     Verify that the `delete` method properly handles the deletion of an item with a non-existent ID.
-#     """
-#     item_id = str(ObjectId())
-
-#     # Mock `delete_one` to return that no document has been deleted
-#     test_helpers.mock_delete_one(database_mock.items, 0)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         item_repository.delete(item_id)
-#     assert str(exc.value) == f"No item found with ID: {item_id}"
-#     database_mock.items.delete_one.assert_called_once_with({"_id": CustomObjectId(item_id)}, session=None)
-
-
-# def test_list(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items.
-
-#     Verify that the `list` method properly handles the retrieval of items
-#     """
-#     # pylint: disable=duplicate-code
-#     item_a = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-
-#     item_b = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-#     # pylint: enable=duplicate-code
-#     session = MagicMock()
-
-#     # Mock `find` to return a list of item documents
-#     test_helpers.mock_find(
-#         database_mock.items,
-#         [
-#             {
-#                 **FULL_ITEM_INFO,
-#                 **MOCK_CREATED_MODIFIED_TIME,
-#                 "_id": CustomObjectId(item_a.id),
-#                 "catalogue_item_id": CustomObjectId(item_a.catalogue_item_id),
-#                 "system_id": CustomObjectId(item_a.system_id),
-#                 "usage_status_id": CustomObjectId(item_a.usage_status_id),
-#                 "usage_status": item_a.usage_status,
-#             },
-#             {
-#                 **FULL_ITEM_INFO,
-#                 **MOCK_CREATED_MODIFIED_TIME,
-#                 "_id": CustomObjectId(item_b.id),
-#                 "catalogue_item_id": CustomObjectId(item_b.catalogue_item_id),
-#                 "system_id": CustomObjectId(item_b.system_id),
-#                 "usage_status_id": CustomObjectId(item_b.usage_status_id),
-#                 "usage_status": item_b.usage_status,
-#             },
-#         ],
-#     )
-
-#     retrieved_item = item_repository.list(None, None, session=session)
-
-#     database_mock.items.find.assert_called_once_with({}, session=session)
-#     assert retrieved_item == [item_a, item_b]
-
-
-# def test_list_with_system_id_filter(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items based on the provided system ID filter.
-
-#     Verify that the `list` method properly handles the retrieval of items based on
-#     the provided system ID filter
-#     """
-#     # pylint: disable=duplicate-code
-#     item = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-#     session = MagicMock()
-#     # pylint: enable=duplicate-code
-
-#     # Mock `find` to return a list of item documents
-#     test_helpers.mock_find(
-#         database_mock.items,
-#         [
-#             {
-#                 **FULL_ITEM_INFO,
-#                 **MOCK_CREATED_MODIFIED_TIME,
-#                 "_id": CustomObjectId(item.id),
-#                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-#                 "system_id": CustomObjectId(item.system_id),
-#                 "usage_status_id": CustomObjectId(item.usage_status_id),
-#                 "usage_status": item.usage_status,
-#             }
-#         ],
-#     )
-
-#     retrieved_item = item_repository.list(item.system_id, None, session=session)
-
-#     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(item.system_id)}, session=session)
-#     assert retrieved_item == [item]
-
-
-# def test_list_with_system_id_filter_no_matching_results(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items based on the provided system ID filter when there are no matching results in
-#     the database.
-
-#     Verify the `list` method properly handles the retrieval of items based on the provided
-#     system ID filter
-#     """
-#     session = MagicMock()
-
-#     # Mock `find` to return an empty list of item documents
-#     test_helpers.mock_find(database_mock.items, [])
-
-#     system_id = str(ObjectId())
-#     retrieved_items = item_repository.list(system_id, None, session=session)
-
-#     database_mock.items.find.assert_called_once_with({"system_id": CustomObjectId(system_id)}, session=session)
-#     assert retrieved_items == []
-
-
-# def test_list_with_invalid_system_id_filter(item_repository):
-#     """
-#     Test getting an item with an invalid system ID filter
-
-#     Verify that the `list` method properly handles the retrieval of items with the provided
-#     ID filter
-#     """
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         item_repository.list("Invalid", None)
-#     assert str(exc.value) == "Invalid ObjectId value 'Invalid'"
-
-
-# def test_list_with_catalogue_item_id_filter(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items based on the provided catalogue item ID filter.
-
-#     Verify that the `list` method properly handles the retrieval of items based on
-#     the provided catalogue item ID filter
-#     """
-#     # pylint: disable=duplicate-code
-#     item = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-#     session = MagicMock()
-#     # pylint: enable=duplicate-code
-
-#     # Mock `find` to return a list of item documents
-#     test_helpers.mock_find(
-#         database_mock.items,
-#         [
-#             {
-#                 **FULL_ITEM_INFO,
-#                 **MOCK_CREATED_MODIFIED_TIME,
-#                 "_id": CustomObjectId(item.id),
-#                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-#                 "system_id": CustomObjectId(item.system_id),
-#                 "usage_status_id": CustomObjectId(item.usage_status_id),
-#                 "usage_status": item.usage_status,
-#             }
-#         ],
-#     )
-
-#     retrieved_item = item_repository.list(None, item.catalogue_item_id, session=session)
-
-#     database_mock.items.find.assert_called_once_with(
-#         {"catalogue_item_id": CustomObjectId(item.catalogue_item_id)}, session=session
-#     )
-#     assert retrieved_item == [item]
-
-
-# def test_with_catalogue_item_id_filter_no_matching_results(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items based on the provided catalogue item ID filter when there are no matching results in
-#     the database.
-
-#     Verify the `list` method properly handles the retrieval of items based on the provided
-#     catalogue item ID filter
-#     """
-#     session = MagicMock()
-
-#     # Mock `find` to return an empty list of item documents
-#     test_helpers.mock_find(database_mock.items, [])
-
-#     catalogue_item_id = str(ObjectId())
-#     retrieved_items = item_repository.list(None, catalogue_item_id, session=session)
-
-#     database_mock.items.find.assert_called_once_with(
-#         {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
-#     )
-#     assert retrieved_items == []
-
-
-# def test_list_with_invalid_catalogue_item_id(item_repository):
-#     """
-#     Test getting an item with an invalid catalogue item ID filter
-
-#     Verify that the `list` method properly handles the retrieval of items with the provided
-#     ID filter
-#     """
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         item_repository.list(None, "Invalid")
-#     assert str(exc.value) == "Invalid ObjectId value 'Invalid'"
-
-
-# def test_list_with_both_system_catalogue_item_id_filters(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting an item with both system and catalogue item id filters.
-
-#     Verify that the `list` method properly handles the retrieval of items with the provided ID filters
-#     """
-#     # pylint: disable=duplicate-code
-#     item = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-#     session = MagicMock()
-#     # pylint: enable=duplicate-code
-
-#     # Mock `find` to return a list of item documents
-#     test_helpers.mock_find(
-#         database_mock.items,
-#         [
-#             {
-#                 **FULL_ITEM_INFO,
-#                 **MOCK_CREATED_MODIFIED_TIME,
-#                 "_id": CustomObjectId(item.id),
-#                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-#                 "system_id": CustomObjectId(item.system_id),
-#                 "usage_status_id": CustomObjectId(item.usage_status_id),
-#                 "usage_status": item.usage_status,
-#             }
-#         ],
-#     )
-
-#     retrieved_item = item_repository.list(item.system_id, item.catalogue_item_id, session=session)
-
-#     database_mock.items.find.assert_called_once_with(
-#         {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)},
-#         session=session,
-#     )
-#     assert retrieved_item == [item]
-
-
-# def test_list_no_matching_result_both_filters(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items based on the provided system and catalogue item ID filters when there are no matching results in
-#     the database.
-
-#     Verify the `list` method properly handles the retrieval of items based on the provided
-#     system and catalogue item ID filters
-#     """
-#     session = MagicMock()
-
-#     # Mock `find` to return an empty list of item documents
-#     test_helpers.mock_find(database_mock.items, [])
-
-#     system_id = str(ObjectId())
-#     catalogue_item_id = str(ObjectId())
-#     retrieved_items = item_repository.list(system_id, catalogue_item_id, session=session)
-
-#     database_mock.items.find.assert_called_once_with(
-#         {"system_id": CustomObjectId(system_id), "catalogue_item_id": CustomObjectId(catalogue_item_id)},
-#         session=session,
-#     )
-#     assert retrieved_items == []
-
-
-# def test_list_two_filters_no_matching_results(test_helpers, database_mock, item_repository):
-#     """
-#     Test getting items based on the provided system and catalogue item ID filters when there are no matching results for
-#     one of the filters in the database.
-
-#     Verify the `list` method properly handles the retrieval of items based on the provided
-#     system and catalogue item ID filters
-#     """
-#     # pylint: disable=duplicate-code
-#     item = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-#     session = MagicMock()
-#     # pylint: enable=duplicate-code
-
-#     # Mock `find` to return a list of item documents
-#     test_helpers.mock_find(
-#         database_mock.items,
-#         [],
-#     )
-
-#     # catalogue item id no matching results
-#     rd_catalogue_item_id = str(ObjectId())
-#     retrieved_item = item_repository.list(item.system_id, rd_catalogue_item_id, session=session)
-
-#     database_mock.items.find.assert_called_with(
-#         {"system_id": CustomObjectId(item.system_id), "catalogue_item_id": CustomObjectId(rd_catalogue_item_id)},
-#         session=session,
-#     )
-#     assert retrieved_item == []
-
-#     # # Mock `find` to return a list of item documents
-#     test_helpers.mock_find(
-#         database_mock.items,
-#         [],
-#     )
-
-#     # system id no matching results
-#     rd_system_id = str(ObjectId())
-#     retrieved_item = item_repository.list(rd_system_id, item.catalogue_item_id, session=session)
-
-#     database_mock.items.find.assert_called_with(
-#         {"system_id": CustomObjectId(rd_system_id), "catalogue_item_id": CustomObjectId(item.catalogue_item_id)},
-#         session=session,
-#     )
-#     assert retrieved_item == []
-
-
-# def test_update(test_helpers, database_mock, item_repository):
-#     """
-#     Test updating an item.
-
-#     Verify that the `update` method properly handles the item to be updated.
-#     """
-#     # pylint: disable=duplicate-code
-#     item = ItemOut(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         id=str(ObjectId()),
-#         catalogue_item_id=str(ObjectId()),
-#         system_id=str(ObjectId()),
-#         usage_status_id=str(ObjectId()),
-#         usage_status="New",
-#     )
-#     session = MagicMock()
-#     # pylint: enable=duplicate-code
-
-#     # Mock `update_one` to return an object for the updated item document
-#     test_helpers.mock_update_one(database_mock.items)
-#     # Mock `find_one` to return the updated catalogue item document
-#     test_helpers.mock_find_one(
-#         database_mock.items,
-#         {
-#             **FULL_ITEM_INFO,
-#             **MOCK_CREATED_MODIFIED_TIME,
-#             "_id": CustomObjectId(item.id),
-#             "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-#             "system_id": CustomObjectId(item.system_id),
-#             "usage_status_id": CustomObjectId(item.usage_status_id),
-#             "usage_status": item.usage_status,
-#         },
-#     )
-
-#     item_in = ItemIn(
-#         **FULL_ITEM_INFO,
-#         **MOCK_CREATED_MODIFIED_TIME,
-#         catalogue_item_id=item.catalogue_item_id,
-#         system_id=item.system_id,
-#         usage_status_id=item.usage_status_id,
-#         usage_status=item.usage_status,
-#     )
-#     updated_item = item_repository.update(item.id, item_in, session=session)
-
-#     database_mock.items.update_one.assert_called_once_with(
-#         {"_id": CustomObjectId(item.id)},
-#         {
-#             "$set": {
-#                 "catalogue_item_id": CustomObjectId(item.catalogue_item_id),
-#                 **item_in.model_dump(by_alias=True),
-#             }
-#         },
-#         session=session,
-#     )
-#     database_mock.items.find_one.assert_called_once_with({"_id": CustomObjectId(item.id)}, session=session)
-#     assert updated_item == item
-
-
-# def test_update_with_invalid_id(item_repository):
-#     """
-#     Test updating an item with an invalid ID.
-
-#     Verify that the `update` method properly handles the update of an item with an invalid ID.
-#     """
-#     updated_item = MagicMock()
-#     item_id = "invalid"
-
-#     with pytest.raises(InvalidObjectIdError) as exc:
-#         item_repository.update(item_id, updated_item)
-#     assert str(exc.value) == f"Invalid ObjectId value '{item_id}'"
+class ListDSL(ItemRepoDSL):
+    """Base class for `list` tests."""
+
+    _expected_items_out: list[ItemOut]
+    _system_id_filter: Optional[str]
+    _catalogue_item_id_filter: Optional[str]
+    _obtained_items_out: list[ItemOut]
+
+    def mock_list(self, items_in_data: list[dict]) -> None:
+        """Mocks database methods appropriately to test the `list` repo method
+
+        :param items_in_data: List of dictionaries containing the item data as would be required for a `ItemIn` database
+                              model (i.e. no ID or created and modified times required)
+        """
+
+        self._expected_items_out = [
+            ItemOut(**ItemIn(**item_in_data).model_dump(by_alias=True), id=ObjectId()) for item_in_data in items_in_data
+        ]
+
+        RepositoryTestHelpers.mock_find(
+            self.items_collection, [item_out.model_dump() for item_out in self._expected_items_out]
+        )
+
+    def call_list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> None:
+        """
+        Calls the `ItemRepo` `list` method.
+
+        :param system_id: ID of the system to query by, or `None`.
+        :param catalogue_item_id: ID of the catalogue item to query by, or `None`.
+        """
+
+        self._system_id_filter = system_id
+        self._catalogue_item_id_filter = catalogue_item_id
+
+        self._obtained_items_out = self.item_repository.list(
+            system_id=system_id, catalogue_item_id=catalogue_item_id, session=self.mock_session
+        )
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+
+        expected_query = {}
+        if self._system_id_filter:
+            expected_query["system_id"] = CustomObjectId(self._system_id_filter)
+        if self._catalogue_item_id_filter:
+            expected_query["catalogue_item_id"] = CustomObjectId(self._catalogue_item_id_filter)
+
+        self.items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+
+        assert self._obtained_items_out == self._expected_items_out
+
+
+class TestList(ListDSL):
+    """Tests for listing items."""
+
+    def test_list(self):
+        """Test listing all items."""
+
+        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_A])
+        self.call_list(system_id=None, catalogue_item_id=None)
+        self.check_list_success()
+
+    def test_list_with_system_id_filter(self):
+        """Test listing all items with a given `system_id`."""
+
+        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_A])
+        self.call_list(system_id=str(ObjectId()), catalogue_item_id=None)
+        self.check_list_success()
+
+    def test_list_with_catalogue_category_id_filter(self):
+        """Test listing all items with a given `catalogue_category_id`."""
+
+        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_A])
+        self.call_list(system_id=None, catalogue_item_id=str(ObjectId()))
+        self.check_list_success()
+
+    def test_list_with_system_id_and_catalogue_category_id_with_no_results(self):
+        """Test listing all items with a `system_id` and `catalogue_category_id` filter returning no results."""
+
+        self.mock_list([])
+        self.call_list(system_id=str(ObjectId()), catalogue_item_id=str(ObjectId()))
+        self.check_list_success()
+
+    # TODO: Should these have invalid_id ones after all? Have in update - may effect other repo unit tests though
+
+
+class UpdateDSL(ItemRepoDSL):
+    """Base class for `update` tests."""
+
+    _item_in: ItemIn
+    _expected_item_out: ItemOut
+    _updated_item_id: str
+    _updated_item: ItemOut
+    _update_exception: pytest.ExceptionInfo
+
+    def set_update_data(self, new_item_in_data: dict):
+        """
+        Assigns the update data to use during a call to `call_update`.
+
+        :param new_item_in_data: New item data as would be required for a `ItemIn` database model to supply to the
+                                 `ItemRepo` `update` method.
+        """
+        self._item_in = ItemIn(**new_item_in_data)
+
+    def mock_update(
+        self,
+        item_id: str,
+        new_item_in_data: dict,
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `update` repo method.
+
+        :param item_id: ID of the item that will be updated.
+        :param new_item_in_data: Dictionary containing the new item data as would be required for a `ItemIn` database
+                                 model (i.e. no ID or created and modified times required).
+        """
+        self.set_update_data(new_item_in_data)
+
+        # Final item after update
+        self._expected_item_out = ItemOut(**self._item_in.model_dump(), id=CustomObjectId(item_id))
+        RepositoryTestHelpers.mock_find_one(self.items_collection, self._expected_item_out.model_dump(by_alias=True))
+
+    def call_update(self, item_id: str) -> None:
+        """
+        Calls the `ItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`).
+
+        :param item_id: ID of the catalogue item to be updated.
+        """
+
+        self._updated_item_id = item_id
+        self._updated_item = self.item_repository.update(item_id, self._item_in, session=self.mock_session)
+
+    def call_update_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`) while expecting an error to be raised.
+
+        :param item_id: ID of the item to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.item_repository.update(item_id, self._item_in)
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+
+        self.items_collection.update_one.assert_called_once_with(
+            {
+                "_id": CustomObjectId(self._updated_item_id),
+            },
+            {
+                "$set": self._item_in.model_dump(by_alias=True),
+            },
+            session=self.mock_session,
+        )
+
+        assert self._updated_item == self._expected_item_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.items_collection.update_one.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an item."""
+
+    def test_update(self):
+        """Test updating an item."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(item_id, ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.call_update(item_id)
+        self.check_update_success()
+
+    def test_update_with_invalid_id(self):
+        """Test updating an item with an invalid ID."""
+
+        item_id = "invalid-id"
+
+        self.set_update_data(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.call_update_expecting_error(item_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class DeleteDSL(ItemRepoDSL):
+    """Base class for `delete` tests."""
+
+    _delete_item_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(
+        self,
+        deleted_count: int,
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
+
+        :param deleted_count: Number of documents deleted successfully.
+        """
+
+        RepositoryTestHelpers.mock_delete_one(self.items_collection, deleted_count)
+
+    def call_delete(self, item_id: str) -> None:
+        """
+        Calls the `ItemRepo` `delete` method.
+
+        :param item_id: ID of the item to be deleted.
+        """
+
+        self._delete_item_id = item_id
+        self.item_repository.delete(item_id, session=self.mock_session)
+
+    def call_delete_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ItemRepo` `delete` method while expecting an error to be raised.
+
+        :param item_id: ID of the catalogue item to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._delete_item_id = item_id
+        with pytest.raises(error_type) as exc:
+            self.item_repository.delete(item_id)
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.items_collection.delete_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._delete_item_id)}, session=self.mock_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str, expecting_delete_one_called: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        :param expecting_delete_one_called: Whether the `delete_one` method is expected to be called or not.
+        """
+
+        if not expecting_delete_one_called:
+            self.items_collection.delete_one.assert_not_called()
+        else:
+            self.items_collection.delete_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._delete_item_id)}, session=None
+            )
+
+        assert str(self._delete_exception.value) == message
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an item."""
+
+    def test_delete(self):
+        """Test deleting an item."""
+
+        self.mock_delete(deleted_count=1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_non_existent_id(self):
+        """Test deleting an item with a non-existent ID."""
+
+        item_id = str(ObjectId())
+
+        self.mock_delete(deleted_count=0)
+        self.call_delete_expecting_error(item_id, MissingRecordError)
+        self.check_delete_failed_with_exception(
+            f"No item found with ID: {item_id}", expecting_delete_one_called=True
+        )
+
+    def test_delete_invalid_id(self):
+        """Test deleting an item with an invalid ID."""
+
+        item_id = "invalid-id"
+
+        self.call_delete_expecting_error(item_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
 # @patch("inventory_management_system_api.repositories.item.datetime")

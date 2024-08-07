@@ -350,7 +350,6 @@ class UpdateDSL(CatalogueItemRepoDSL):
         """
         self._catalogue_item_in = CatalogueItemIn(**new_catalogue_item_in_data)
 
-    # pylint:disable=too-many-arguments
     def mock_update(
         self,
         catalogue_item_id: str,
@@ -377,7 +376,7 @@ class UpdateDSL(CatalogueItemRepoDSL):
     def call_update(self, catalogue_item_id: str) -> None:
         """
         Calls the `CatalogueItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
-        (or`set_update_data`).
+        (or `set_update_data`).
 
         :param catalogue_item_id: ID of the catalogue item to be updated.
         """
@@ -408,7 +407,7 @@ class UpdateDSL(CatalogueItemRepoDSL):
                 "_id": CustomObjectId(self._updated_catalogue_item_id),
             },
             {
-                "$set": self._catalogue_item_in.model_dump(),
+                "$set": self._catalogue_item_in.model_dump(by_alias=True),
             },
             session=self.mock_session,
         )

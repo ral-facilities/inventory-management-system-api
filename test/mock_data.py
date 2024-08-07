@@ -443,6 +443,16 @@ ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     "usage_status": "In Use",
 }
 
+
+# TODO: Replace in later PR when have a suitable name for one
+ITEM_IN_DATA_A = {
+    "catalogue_item_id": str(ObjectId()),
+    "system_id": str(ObjectId()),
+    "is_defective": False,
+    "usage_status_id": str(ObjectId()),
+    "usage_status": "In Use",
+}
+
 # --------------------------------- MANUFACTURERS ---------------------------------
 
 # Required values only
