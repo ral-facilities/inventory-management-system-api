@@ -2,21 +2,22 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from test.mock_data import (ITEM_IN_DATA_A, ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
-                            SYSTEM_IN_DATA_NO_PARENT_A)
+from test.mock_data import (
+    ITEM_IN_DATA_A,
+    ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    PROPERTY_DATA_STRING_MANDATORY_TEXT,
+    SYSTEM_IN_DATA_NO_PARENT_A,
+)
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.mock_models import (MOCK_CREATED_MODIFIED_TIME,
-                                                MOCK_PROPERTY_A_INFO)
+from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.custom_object_id import \
-    CustomObjectId
-from inventory_management_system_api.core.exceptions import (
-    InvalidObjectIdError, MissingRecordError)
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemIn
@@ -522,6 +523,7 @@ class DeleteDSL(ItemRepoDSL):
 
         assert str(self._delete_exception.value) == message
 
+
 class TestDelete(DeleteDSL):
     """Tests for deleting an item."""
 
@@ -539,9 +541,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(item_id, MissingRecordError)
-        self.check_delete_failed_with_exception(
-            f"No item found with ID: {item_id}", expecting_delete_one_called=True
-        )
+        self.check_delete_failed_with_exception(f"No item found with ID: {item_id}", expecting_delete_one_called=True)
 
     def test_delete_invalid_id(self):
         """Test deleting an item with an invalid ID."""
@@ -552,61 +552,97 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# @patch("inventory_management_system_api.repositories.item.datetime")
-# def test_insert_property_to_all_in(datetime_mock, test_helpers, database_mock, item_repository):
-#     """
-#     Test inserting a property
+class InsertPropertyToAllInDSL(ItemRepoDSL):
+    """Base class for `insert_property_to_all_in` tests"""
 
-#     Verify that the `insert_property_to_all_matching` method properly handles the insertion of a
-#     property
-#     """
-#     session = MagicMock()
-#     catalogue_item_ids = [ObjectId(), ObjectId()]
-#     property_in = PropertyIn(**MOCK_PROPERTY_A_INFO)
+    _mock_datetime: Mock
+    _insert_property_to_all_in_catalogue_item_ids: list[ObjectId]
+    _property_in: PropertyIn
 
-#     # Mock 'update_many'
-#     test_helpers.mock_update_many(database_mock.items)
+    @pytest.fixture(autouse=True)
+    def setup_insert_property_to_all_in_dsl(self):
+        """Setup fixtures"""
 
-#     item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
+        with patch("inventory_management_system_api.repositories.item.datetime") as mock_datetime:
+            self._mock_datetime = mock_datetime
+            yield
 
-#     database_mock.items.update_many.assert_called_once_with(
-#         {"catalogue_item_id": {"$in": catalogue_item_ids}},
-#         {
-#             "$push": {"properties": property_in.model_dump(by_alias=True)},
-#             "$set": {"modified_time": datetime_mock.now.return_value},
-#         },
-#         session=session,
-#     )
+    def call_insert_property_to_all_in(self, catalogue_item_ids: list[ObjectId], property_data: dict) -> None:
+        """Calls the `ItemRepo` `insert_property_to_all_in` method.
 
+        :param catalogue_item_ids: List of IDs of the catalogue items.
+        :param property_data: Data of the property to insert as would be required for a `PropertyPostSchema` schema but
+                              without an `id`.
+        """
 
-# # pylint:disable=duplicate-code
+        self._property_in = PropertyIn(**property_data, id=str(ObjectId()))
 
+        self._insert_property_to_all_in_catalogue_item_ids = catalogue_item_ids
+        self.item_repository.insert_property_to_all_in(catalogue_item_ids, self._property_in, session=self.mock_session)
 
-# @patch("inventory_management_system_api.repositories.item.datetime")
-# def test_update_names_of_all_properties_with_id(datetime_mock, test_helpers, database_mock, item_repository):
-#     """
-#     Test updating the names of all properties with a given id
+    def check_insert_property_to_all_in_success(self) -> None:
+        """Checks that a prior call to `call_insert_property_to_all_in` worked as expected"""
 
-#     Verify that the `update_names_of_all_properties_with_id` method properly handles the update of
-#     property names
-#     """
-#     session = MagicMock()
-#     property_id = str(ObjectId())
-#     new_property_name = "new property name"
-
-#     # Mock 'update_many'
-#     test_helpers.mock_update_many(database_mock.items)
-
-#     item_repository.update_names_of_all_properties_with_id(property_id, new_property_name, session=session)
-
-#     database_mock.items.update_many.assert_called_once_with(
-#         {"properties._id": CustomObjectId(property_id)},
-#         {
-#             "$set": {"properties.$[elem].name": new_property_name, "modified_time": datetime_mock.now.return_value},
-#         },
-#         array_filters=[{"elem._id": CustomObjectId(property_id)}],
-#         session=session,
-#     )
+        self.items_collection.update_many.assert_called_once_with(
+            {"catalogue_item_id": {"$in": self._insert_property_to_all_in_catalogue_item_ids}},
+            {
+                "$push": {"properties": self._property_in.model_dump(by_alias=True)},
+                "$set": {"modified_time": self._mock_datetime.now.return_value},
+            },
+            session=self.mock_session,
+        )
 
 
-# # pylint:enable=duplicate-code
+class TestInsertPropertyToAllIn(InsertPropertyToAllInDSL):
+    """Tests for `insert_property_to_all_in`."""
+
+    def test_insert_property_to_all_matching(self):
+        """Test `insert_property_to_all_in`."""
+
+        self.call_insert_property_to_all_in([ObjectId(), ObjectId()], PROPERTY_DATA_STRING_MANDATORY_TEXT)
+        self.check_insert_property_to_all_in_success()
+
+
+class UpdateNamesOfAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
+    """Base class for `update_names_of_all_properties_with_id` tests"""
+
+    _update_names_of_all_properties_with_id_property_id: str
+    _update_names_of_all_properties_with_id_new_property_name: str
+
+    def call_update_names_of_all_properties_with_id(self, property_id: str, new_property_name: str) -> None:
+        """Calls the `ItemRepo` `update_names_of_all_properties_with_id` method.
+
+        :param property_id: ID of the property.
+        :param new_property_name: New property name.
+        """
+
+        self._update_names_of_all_properties_with_id_property_id = property_id
+        self._update_names_of_all_properties_with_id_new_property_name = new_property_name
+        self.item_repository.update_names_of_all_properties_with_id(
+            property_id, new_property_name, session=self.mock_session
+        )
+
+    def check_update_names_of_all_properties_with_id(self) -> None:
+        """Checks that a prior call to `update_names_of_all_properties_with_id` worked as expected"""
+
+        self.items_collection.update_many.assert_called_once_with(
+            {"properties._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)},
+            {
+                "$set": {
+                    "properties.$[elem].name": self._update_names_of_all_properties_with_id_new_property_name,
+                    "modified_time": self._mock_datetime.now.return_value,
+                }
+            },
+            array_filters=[{"elem._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)}],
+            session=self.mock_session,
+        )
+
+
+class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
+    """Tests for `update_names_of_all_properties_with_id`."""
+
+    def test_update_names_of_all_properties_with_id(self):
+        """Test `update_names_of_all_properties_with_id`."""
+
+        self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
+        self.check_update_names_of_all_properties_with_id()
