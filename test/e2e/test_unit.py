@@ -6,6 +6,7 @@ from typing import Optional
 
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_GET_DATA_CM,
     UNIT_GET_DATA_MM,
     UNIT_POST_DATA_CM,
@@ -223,8 +224,18 @@ class TestDelete(DeleteDSL):
         """Test deleting a unit when it is part of a catalogue item."""
         unit_id = self.post_unit(UNIT_POST_DATA_MM)
 
+        catalogue_category_data = {
+                **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+                "properties": [
+                    {
+                        **CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+                        "unit_id": unit_id,
+                    }
+                ],
+            },
+
         self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM
+            "/v1/catalogue-categories", json=catalogue_category_data
         )
 
         self.delete_unit(unit_id)
