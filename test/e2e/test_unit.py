@@ -239,7 +239,7 @@ class TestDelete(DeleteDSL):
         )
 
         self.delete_unit(unit_id)
-        self.check_delete_unit_failed_with_detail(409, "The specified unit is a part of a catalogue category")
+        self.check_delete_unit_failed_with_detail(409, "The specified unit is a part of a Catalogue category")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent unit."""
