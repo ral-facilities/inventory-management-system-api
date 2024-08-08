@@ -637,7 +637,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
                     ManufacturerOut(
                         **{
                             **ManufacturerIn(**new_manufacturer_in_data).model_dump(),
-                            "_id": new_manufacturer_in_data,
+                            "_id": catalogue_item_update_data["manufacturer_id"],
                         },
                     )
                     if new_manufacturer_in_data
@@ -816,8 +816,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_item_id,
-            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_update(catalogue_item_id)
         self.check_update_success()
@@ -830,8 +830,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_item_id,
-            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             has_child_elements=True,
         )
         self.call_update(catalogue_item_id)
