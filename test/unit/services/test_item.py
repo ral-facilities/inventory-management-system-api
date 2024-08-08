@@ -11,10 +11,14 @@ from test.mock_data import (
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES, ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES, ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-    SYSTEM_IN_DATA_NO_PARENT_A, USAGE_STATUS_IN_DATA_IN_USE)
-from test.unit.services.conftest import ServiceTestHelpers
+    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_WITH_ALL_PROPERTIES,
+    ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    SYSTEM_IN_DATA_NO_PARENT_A,
+    USAGE_STATUS_IN_DATA_IN_USE,
+)
+from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -22,24 +26,22 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError, InvalidActionError, MissingRecordError)
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn)
-from inventory_management_system_api.models.catalogue_item import (
-    CatalogueItemIn, CatalogueItemOut, PropertyIn)
+    DatabaseIntegrityError,
+    InvalidActionError,
+    MissingRecordError,
+)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemIn, SystemOut
-from inventory_management_system_api.models.usage_status import (
-    UsageStatusIn, UsageStatusOut)
-from inventory_management_system_api.schemas.catalogue_item import \
-    PropertyPostSchema
-from inventory_management_system_api.schemas.item import (ItemPatchSchema,
-                                                          ItemPostSchema)
+from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
+from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.item import ItemService
 
 
-class ItemServiceDSL:
+class ItemServiceDSL(BaseCatalogueServiceDSL):
     """Base class for `ItemService` unit tests."""
 
     # pylint:disable=too-many-instance-attributes
@@ -50,8 +52,6 @@ class ItemServiceDSL:
     mock_system_repository: Mock
     mock_usage_status_repository: Mock
     item_service: ItemService
-
-    property_name_id_dict: dict[str, str]
 
     # pylint:disable=too-many-arguments
     @pytest.fixture(autouse=True)
@@ -79,47 +79,6 @@ class ItemServiceDSL:
         with patch("inventory_management_system_api.services.item.utils", wraps=utils) as wrapped_utils:
             self.wrapped_utils = wrapped_utils
             yield
-
-    # pylint:disable=fixme
-    # TODO: Put this in a common place - its identical as the one catalogue items, and similar to catalogue categories
-    def construct_properties_in_and_post_with_ids(
-        self,
-        catalogue_category_properties_in: list[CatalogueCategoryPropertyIn],
-        properties_data: list[dict],
-    ) -> tuple[list[PropertyIn], list[PropertyPostSchema]]:
-        """
-        Returns a list of property post schemas and expected property in models by adding
-        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
-
-        :param catalogue_category_properties_in: List of `CatalogueCategoryPropertyIn`'s as would be found in the
-                                                 catalogue category.
-        :param properties_data: List of dictionaries containing the data for each property as would be required for a
-                                `PropertyPostSchema` but without any `id`'s.
-        :returns: Tuple of lists. The first contains the expected `PropertyIn` models and the second the
-                  `PropertyPostSchema` schema's that should be posted in order to obtain them.
-        """
-
-        property_post_schemas = []
-        expected_properties_in = []
-
-        self.property_name_id_dict = {}
-
-        for prop in properties_data:
-            prop_id = None
-            prop_without_name = prop.copy()
-
-            # Find the corresponding catalogue category property with the same name
-            for found_prop in catalogue_category_properties_in:
-                if found_prop.name == prop["name"]:
-                    prop_id = str(found_prop.id)
-                    self.property_name_id_dict["name"] = prop_id
-                    del prop_without_name["name"]
-                    break
-
-            expected_properties_in.append(PropertyIn(**prop, id=prop_id))
-            property_post_schemas.append(PropertyPostSchema(**prop_without_name, id=prop_id))
-
-        return expected_properties_in, property_post_schemas
 
 
 class CreateDSL(ItemServiceDSL):

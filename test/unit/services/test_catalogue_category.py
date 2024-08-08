@@ -16,7 +16,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
-from test.unit.services.conftest import ServiceTestHelpers
+from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import Optional
 from unittest.mock import ANY, MagicMock, Mock, call, patch
 
@@ -29,11 +29,7 @@ from inventory_management_system_api.core.exceptions import (
     LeafCatalogueCategoryError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
@@ -45,15 +41,13 @@ from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 
 
-class CatalogueCategoryServiceDSL:
+class CatalogueCategoryServiceDSL(BaseCatalogueServiceDSL):
     """Base class for `CatalogueCategoryService` unit tests."""
 
     wrapped_utils: Mock
     mock_catalogue_category_repository: Mock
     mock_unit_repository: Mock
     catalogue_category_service: CatalogueCategoryService
-
-    unit_value_id_dict: dict[str, str]
 
     @pytest.fixture(autouse=True)
     def setup(
@@ -74,40 +68,6 @@ class CatalogueCategoryServiceDSL:
         with patch("inventory_management_system_api.services.catalogue_category.utils", wraps=utils) as wrapped_utils:
             self.wrapped_utils = wrapped_utils
             yield
-
-    def construct_properties_in_and_post_with_ids(
-        self, catalogue_category_properties_data: list[dict]
-    ) -> tuple[list[CatalogueCategoryPropertyIn], list[CatalogueCategoryPostPropertySchema]]:
-        """
-        Returns a list of property post schemas and expected property in models by adding
-        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
-
-        :param catalogue_category_properties_data: List of dictionaries containing the data for each property as would
-                                                   be required for a `CatalogueCategoryPostPropertySchema` but without
-                                                   any `unit_id`'s.
-        :returns: Tuple of lists. The first contains the expected `CatalogueCategoryPropertyIn` models and the second
-                  the `CatalogueCategoryPostPropertySchema` schema's that should be posted in order to obtain them.
-        """
-
-        property_post_schemas = []
-        expected_properties_in = []
-
-        self.unit_value_id_dict = {}
-
-        for prop in catalogue_category_properties_data:
-            unit_id = None
-            prop_without_unit = prop.copy()
-
-            # Give unit IDs and remove the unit value from the prop for the post schema
-            if "unit" in prop and prop["unit"]:
-                unit_id = str(ObjectId())
-                self.unit_value_id_dict[prop["unit"]] = unit_id
-                del prop_without_unit["unit"]
-
-            expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
-            property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
-
-        return expected_properties_in, property_post_schemas
 
     def mock_add_property_unit_values(
         self, units_in_data: list[Optional[dict]], unit_value_id_dict: dict[str, str]
@@ -191,8 +151,8 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         property_post_schemas = []
         expected_properties_in = []
         if "properties" in catalogue_category_data and catalogue_category_data["properties"]:
-            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
-                catalogue_category_data["properties"]
+            expected_properties_in, property_post_schemas = (
+                self.construct_catalogue_category_properties_in_and_post_with_ids(catalogue_category_data["properties"])
             )
 
             self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
@@ -542,8 +502,10 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         # When properties are given need to mock any units and ensure the expected data inserts the unit IDs as well
         expected_properties_in = []
         if "properties" in catalogue_category_update_data and catalogue_category_update_data["properties"]:
-            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
-                catalogue_category_update_data["properties"]
+            expected_properties_in, property_post_schemas = (
+                self.construct_catalogue_category_properties_in_and_post_with_ids(
+                    catalogue_category_update_data["properties"]
+                )
             )
             catalogue_category_update_data["properties"] = property_post_schemas
 
