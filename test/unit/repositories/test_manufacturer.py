@@ -136,11 +136,12 @@ class CreateDSL(ManufacturerRepoDSL):
             # This is the check for the newly inserted manufacturer get
             call({"_id": CustomObjectId(self._expected_manufacturer_out.id)}, session=self.mock_session),
         ]
-        self.manufacturers_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         self.manufacturers_collection.insert_one.assert_called_once_with(
             manufacturer_in_data, session=self.mock_session
         )
+        self.manufacturers_collection.find_one.assert_has_calls(expected_find_one_calls)
+
         assert self._created_manufacturer == self._expected_manufacturer_out
 
     def check_create_failed_with_exception(self, message: str) -> None:

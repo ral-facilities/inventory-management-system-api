@@ -433,6 +433,29 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
     ],
 }
 
+# ------------------------------------- ITEMS -------------------------------------
+
+ITEM_DATA_REQUIRED_VALUES_ONLY = {
+    "is_defective": False,
+    "usage_status": "In Use",
+}
+
+ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
+    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "catalogue_item_id": str(ObjectId()),
+    "system_id": str(ObjectId()),
+    "usage_status_id": str(ObjectId()),
+}
+
+# pylint:disable=fixme
+# TODO: Replace in later item's PR when have a suitable name for one
+ITEM_IN_DATA_A = {
+    "catalogue_item_id": str(ObjectId()),
+    "system_id": str(ObjectId()),
+    "is_defective": False,
+    "usage_status_id": str(ObjectId()),
+    "usage_status": "In Use",
+}
 
 # --------------------------------- MANUFACTURERS ---------------------------------
 

@@ -776,7 +776,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 "_id": CustomObjectId(self._updated_catalogue_category_id),
             },
             {
-                "$set": self._catalogue_category_in.model_dump(),
+                "$set": self._catalogue_category_in.model_dump(by_alias=True),
             },
             session=self.mock_session,
         )

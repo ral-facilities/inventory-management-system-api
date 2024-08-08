@@ -51,20 +51,6 @@ class ItemRepo:
         item = self.get(str(result.inserted_id), session=session)
         return item
 
-    def delete(self, item_id: str, session: ClientSession = None) -> None:
-        """
-        Delete an item by its ID from a MongoDB database.
-
-        :param item_id: The ID of the item to delete.
-        :param session: PyMongo ClientSession to use for database operations
-        :raises MissingRecordError: If the item doesn't exist
-        """
-        item_id = CustomObjectId(item_id)
-        logger.info("Deleting item with ID: %s from the database", item_id)
-        result = self._items_collection.delete_one({"_id": item_id}, session=session)
-        if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
-
     def get(self, item_id: str, session: ClientSession = None) -> Optional[ItemOut]:
         """
         Retrieve an item by its ID from a MongoDB database.
@@ -126,6 +112,20 @@ class ItemRepo:
         self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
         item = self.get(str(item_id), session=session)
         return item
+
+    def delete(self, item_id: str, session: ClientSession = None) -> None:
+        """
+        Delete an item by its ID from a MongoDB database.
+
+        :param item_id: The ID of the item to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the item doesn't exist
+        """
+        item_id = CustomObjectId(item_id)
+        logger.info("Deleting item with ID: %s from the database", item_id)
+        result = self._items_collection.delete_one({"_id": item_id}, session=session)
+        if result.deleted_count == 0:
+            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: ClientSession = None
