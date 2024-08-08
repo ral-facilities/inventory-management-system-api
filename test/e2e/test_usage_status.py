@@ -230,16 +230,17 @@ class TestDelete(DeleteDSL):
 
         catalogue_item_post = {
             **CATALOGUE_ITEM_POST_A,
+            "properties": [],
             "catalogue_category_id": catalogue_category["id"],
             "manufacturer_id": manufacturer_id,
         }
 
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
+        catalogue_item = response.json()
 
         item_post = {
             **ITEM_POST,
-            "catalogue_item_id": catalogue_item_id,
+            "catalogue_item_id": catalogue_item["id"],
             "system_id": system_id,
             "usage_status_id": usage_status_id,
         }
