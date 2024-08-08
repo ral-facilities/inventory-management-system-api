@@ -137,6 +137,8 @@ class CreateDSL(ItemServiceDSL):
     _created_item: CatalogueItemOut
     _create_exception: pytest.ExceptionInfo
 
+    _expected_merged_properties: List[PropertyPostSchema]
+
     # TODO: Update comment below - particularly part about missing any mandatory ids - may need to say have value
     # instead
     # pylint:disable=too-many-arguments
@@ -250,17 +252,17 @@ class CreateDSL(ItemServiceDSL):
         supplied_properties_dict = {
             supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
-        expected_merged_properties: List[PropertyPostSchema] = []
+        self._expected_merged_properties = []
 
         if self._catalogue_item_out and self._catalogue_category_out:
             for prop in self._catalogue_item_out.properties:
                 supplied_property = supplied_properties_dict.get(prop.id)
-                expected_merged_properties.append(
+                self._expected_merged_properties.append(
                     supplied_property if supplied_property else PropertyPostSchema(**prop.model_dump())
                 )
 
             expected_properties_in = utils.process_properties(
-                self._catalogue_category_out.properties, expected_merged_properties
+                self._catalogue_category_out.properties, self._expected_merged_properties
             )
 
         self._expected_item_in = ItemIn(**{**item_data, **ids_to_insert, "properties": expected_properties_in})
@@ -298,6 +300,10 @@ class CreateDSL(ItemServiceDSL):
 
         # This is the get for the usage status
         self.mock_usage_status_repository.get.assert_called_once_with(self._item_post.usage_status_id)
+
+        self.wrapped_utils.process_properties.assert_called_once_with(
+            self._catalogue_category_out.properties, self._expected_merged_properties
+        )
 
         self.mock_item_repository.create.assert_called_once_with(self._expected_item_in)
 
@@ -393,6 +399,128 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(f"No usage status found with ID: {self._item_post.usage_status_id}")
 
 
+class GetDSL(ItemServiceDSL):
+    """Base class for `get` tests."""
+
+    _obtained_item_id: str
+    _expected_item: MagicMock
+    _obtained_item: MagicMock
+
+    def mock_get(self) -> None:
+        """Mocks repo methods appropriately to test the `get` service method."""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_item = MagicMock()
+        ServiceTestHelpers.mock_get(self.mock_item_repository, self._expected_item)
+
+    def call_get(self, item_id: str) -> None:
+        """
+        Calls the `ItemService` `get` method.
+
+        :param item_id: ID of the item to be obtained.
+        """
+
+        self._obtained_item_id = item_id
+        self._obtained_item = self.item_service.get(item_id)
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+
+        self.mock_item_repository.get.assert_called_once_with(self._obtained_item_id)
+        assert self._obtained_item == self._expected_item
+
+
+class TestGet(GetDSL):
+    """Tests for getting an item."""
+
+    def test_get(self):
+        """Test getting an item."""
+
+        self.mock_get()
+        self.call_get(str(ObjectId()))
+        self.check_get_success()
+
+
+class ListDSL(ItemServiceDSL):
+    """Base class for `list` tests"""
+
+    _system_id_filter: Optional[str]
+    _catalogue_item_id_filter: Optional[str]
+    _expected_items: MagicMock
+    _obtained_items: MagicMock
+
+    def mock_list(self) -> None:
+        """Mocks repo methods appropriately to test the `list` service method."""
+
+        # Simply a return currently, so no need to use actual data
+        self._expected_items = MagicMock()
+        ServiceTestHelpers.mock_list(self.mock_item_repository, self._expected_items)
+
+    def call_list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> None:
+        """
+        Calls the `CatalogueItemService` `list` method.
+
+        :param system_id: ID of the system to query by, or `None`.
+        :param catalogue_item_id: ID of the catalogue item to query by, or `None`.
+        """
+
+        self._system_id_filter = system_id
+        self._catalogue_item_id_filter = catalogue_item_id
+        self._obtained_items = self.item_service.list(system_id, catalogue_item_id)
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+
+        self.mock_item_repository.list.assert_called_once_with(self._system_id_filter, self._catalogue_item_id_filter)
+
+        assert self._obtained_items == self._expected_items
+
+
+class TestList(ListDSL):
+    """Tests for listing items."""
+
+    def test_list(self):
+        """Test listing items."""
+
+        self.mock_list()
+        self.call_list(str(ObjectId()), str(ObjectId()))
+        self.check_list_success()
+
+
+# TODO: Update tests
+
+
+class DeleteDSL(ItemServiceDSL):
+    """Base class for `delete` tests."""
+
+    _delete_item_id: str
+
+    def call_delete(self, item_id: str) -> None:
+        """
+        Calls the `ItemService` `delete` method.
+
+        :param item_id: ID of the item to be deleted.
+        """
+
+        self._delete_item_id = item_id
+        self.item_service.delete(item_id)
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.mock_item_repository.delete.assert_called_once_with(self._delete_item_id)
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an item."""
+
+    def test_delete(self):
+        """Test deleting an item."""
+
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+
 # # pylint: disable=duplicate-code
 # FULL_CATALOGUE_CATEGORY_A_INFO = {
 #     "name": "Category A",
@@ -481,66 +609,6 @@ class TestCreate(CreateDSL):
 
 
 # # pylint: enable=duplicate-code
-
-
-# def test_delete(item_repository_mock, item_service):
-#     """
-#     Test deleting item.
-
-#     Verify that the `delete` method properly handles the deletion of item by ID.
-#     """
-#     item_id = str(ObjectId())
-
-#     item_service.delete(item_id)
-
-#     item_repository_mock.delete.assert_called_once_with(item_id)
-
-
-# def test_get(test_helpers, item_repository_mock, item_service):
-#     """
-#     Test getting an item.
-
-#     Verify that the `get` method properly handles the retrieval of the item by ID.
-#     """
-#     item_id = str(ObjectId())
-#     item = MagicMock()
-
-#     # Mock `get` to return an item
-#     test_helpers.mock_get(item_repository_mock, item)
-
-#     retrieved_item = item_service.get(item_id)
-
-#     item_repository_mock.get.assert_called_once_with(item_id)
-#     assert retrieved_item == item
-
-
-# def test_get_with_non_existent_id(test_helpers, item_repository_mock, item_service):
-#     """
-#     Test getting an item with a non-existent ID.
-
-#     Verify the `get` method properly handles the retrieval of an item with a non-existent ID.
-#     """
-#     item_id = str(ObjectId())
-
-#     # Mock get to not return an item
-#     test_helpers.mock_get(item_repository_mock, None)
-
-#     retrieved_item = item_service.get(item_id)
-
-#     assert retrieved_item is None
-#     item_repository_mock.get.assert_called_once_with(item_id)
-
-
-# def test_list(item_repository_mock, item_service):
-#     """
-#     Test listing items.
-
-#     Verify that the `list` method properly calls the repository function
-#     """
-#     result = item_service.list(None, None)
-
-#     item_repository_mock.list.assert_called_once_with(None, None)
-#     assert result == item_repository_mock.list.return_value
 
 
 # def test_update(

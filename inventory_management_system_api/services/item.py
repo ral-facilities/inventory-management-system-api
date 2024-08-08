@@ -97,13 +97,14 @@ class ItemService:
             ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
         )
 
-    def delete(self, item_id: str) -> None:
+    def get(self, item_id: str) -> Optional[ItemOut]:
         """
-        Delete an item by its ID.
+        Retrieve an item by its ID
 
-        :param item_id: The ID of the item to delete.
+        :param item_id: The ID of the item to retrieve
+        :return: The retrieved item, or `None` if not found
         """
-        return self._item_repository.delete(item_id)
+        return self._item_repository.get(item_id)
 
     def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
         """
@@ -114,15 +115,6 @@ class ItemService:
         :return: list of all items
         """
         return self._item_repository.list(system_id, catalogue_item_id)
-
-    def get(self, item_id: str) -> Optional[ItemOut]:
-        """
-        Retrieve an item by its ID
-
-        :param item_id: The ID of the item to retrieve
-        :return: The retrieved item, or `None` if not found
-        """
-        return self._item_repository.get(item_id)
 
     def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
         """
@@ -181,6 +173,14 @@ class ItemService:
             update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
+
+    def delete(self, item_id: str) -> None:
+        """
+        Delete an item by its ID.
+
+        :param item_id: The ID of the item to delete.
+        """
+        return self._item_repository.delete(item_id)
 
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]
