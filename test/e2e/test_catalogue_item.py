@@ -14,10 +14,12 @@ from test.e2e.mock_schemas import (
     USAGE_STATUS_POST_B,
 )
 from test.e2e.test_item import ITEM_POST
-from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
+from test.mock_data import UNIT_POST_DATA_CM, UNIT_POST_DATA_MM
 from unittest.mock import ANY
 
+
 from bson import ObjectId
+
 
 # pylint: disable=duplicate-code
 CATALOGUE_CATEGORY_POST_A = {
@@ -120,10 +122,10 @@ def _post_units(test_client):
 
     if response.json() == []:
 
-        response = test_client.post("/v1/units", json=UNIT_POST_A)
+        response = test_client.post("/v1/units", json=UNIT_POST_DATA_MM)
         unit_mm = response.json()
 
-        response = test_client.post("/v1/units", json=UNIT_POST_B)
+        response = test_client.post("/v1/units", json=UNIT_POST_DATA_CM)
         unit_cm = response.json()
 
         units = [unit_mm, unit_cm]

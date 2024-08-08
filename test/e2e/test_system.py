@@ -10,12 +10,13 @@ from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_pr
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
 from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
-from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from test.mock_data import (
     SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    UNIT_POST_DATA_CM,
+    UNIT_POST_DATA_MM,
 )
 from typing import Optional
 
@@ -608,10 +609,10 @@ class TestDelete(DeleteDSL):
         # TODO: This should be cleaned up in future
         # Create a child item
         # pylint: disable=duplicate-code
-        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
+        response = self.test_client.post("/v1/units", json=UNIT_POST_DATA_MM)
         unit_mm = response.json()
 
-        response = self.test_client.post("/v1/units", json=UNIT_POST_B)
+        response = self.test_client.post("/v1/units", json=UNIT_POST_DATA_CM)
         unit_cm = response.json()
 
         units = [unit_mm, unit_cm]
