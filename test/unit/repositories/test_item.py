@@ -3,7 +3,7 @@ Unit tests for the `ItemRepo` repository.
 """
 
 from test.mock_data import (
-    ITEM_IN_DATA_A,
+    ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
     ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
     SYSTEM_IN_DATA_NO_PARENT_A,
@@ -317,21 +317,21 @@ class TestList(ListDSL):
     def test_list(self):
         """Test listing all items."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_A])
+        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=None)
         self.check_list_success()
 
     def test_list_with_system_id_filter(self):
         """Test listing all items with a given `system_id`."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_A])
+        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=str(ObjectId()), catalogue_item_id=None)
         self.check_list_success()
 
     def test_list_with_catalogue_category_id_filter(self):
         """Test listing all items with a given `catalogue_category_id`."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_A])
+        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=str(ObjectId()))
         self.check_list_success()
 

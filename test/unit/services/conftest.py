@@ -7,9 +7,10 @@ from typing import List, Type, Union
 from unittest.mock import Mock, patch
 
 import pytest
+from bson import ObjectId
 
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
-from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut, CatalogueCategoryPropertyIn
+from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, PropertyIn
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.models.system import SystemOut
@@ -23,6 +24,8 @@ from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
@@ -319,6 +322,86 @@ class ServiceTestHelpers:
         """
 
         repository_mock.update.return_value = repo_obj
+
+
+class BaseCatalogueServiceDSL:
+    """Base class providing utilities to any catalogue related service tests."""
+
+    unit_value_id_dict: dict[str, str]
+    property_name_id_dict: dict[str, str]
+
+    def construct_catalogue_category_properties_in_and_post_with_ids(
+        self, catalogue_category_properties_data: list[dict]
+    ) -> tuple[list[CatalogueCategoryPropertyIn], list[CatalogueCategoryPostPropertySchema]]:
+        """
+        Returns a list of catalogue category property post schemas and expected property in models by adding
+        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
+
+        :param catalogue_category_properties_data: List of dictionaries containing the data for each property as would
+                                                   be required for a `CatalogueCategoryPostPropertySchema` but without
+                                                   any `unit_id`'s.
+        :returns: Tuple of lists. The first contains the expected `CatalogueCategoryPropertyIn` models and the second
+                  the `CatalogueCategoryPostPropertySchema` schema's that should be posted in order to obtain them.
+        """
+
+        property_post_schemas = []
+        expected_properties_in = []
+
+        self.unit_value_id_dict = {}
+
+        for prop in catalogue_category_properties_data:
+            unit_id = None
+            prop_without_unit = prop.copy()
+
+            # Give unit IDs and remove the unit value from the prop for the post schema
+            if "unit" in prop and prop["unit"]:
+                unit_id = str(ObjectId())
+                self.unit_value_id_dict[prop["unit"]] = unit_id
+                del prop_without_unit["unit"]
+
+            expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
+            property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
+
+        return expected_properties_in, property_post_schemas
+
+    def construct_properties_in_and_post_with_ids(
+        self,
+        catalogue_category_properties_in: list[CatalogueCategoryPropertyIn],
+        properties_data: list[dict],
+    ) -> tuple[list[PropertyIn], list[PropertyPostSchema]]:
+        """
+        Returns a list of property post schemas and expected property in models by adding
+        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
+
+        :param catalogue_category_properties_in: List of `CatalogueCategoryPropertyIn`'s as would be found in the
+                                                 catalogue category.
+        :param properties_data: List of dictionaries containing the data for each property as would be required for a
+                                `PropertyPostSchema` but without any `id`'s.
+        :returns: Tuple of lists. The first contains the expected `PropertyIn` models and the second the
+                  `PropertyPostSchema` schema's that should be posted in order to obtain them.
+        """
+
+        property_post_schemas = []
+        expected_properties_in = []
+
+        self.property_name_id_dict = {}
+
+        for prop in properties_data:
+            prop_id = None
+            prop_without_name = prop.copy()
+
+            # Find the corresponding catalogue category property with the same name
+            for found_prop in catalogue_category_properties_in:
+                if found_prop.name == prop["name"]:
+                    prop_id = str(found_prop.id)
+                    self.property_name_id_dict["name"] = prop_id
+                    del prop_without_name["name"]
+                    break
+
+            expected_properties_in.append(PropertyIn(**prop, id=prop_id))
+            property_post_schemas.append(PropertyPostSchema(**prop_without_name, id=prop_id))
+
+        return expected_properties_in, property_post_schemas
 
 
 # pylint:disable=fixme

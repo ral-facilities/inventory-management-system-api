@@ -97,14 +97,6 @@ class CatalogueItemService:
             )
         )
 
-    def delete(self, catalogue_item_id: str) -> None:
-        """
-        Delete a catalogue item by its ID.
-
-        :param catalogue_item_id: The ID of the catalogue item to delete.
-        """
-        return self._catalogue_item_repository.delete(catalogue_item_id)
-
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """
         Retrieve a catalogue item by its ID.
@@ -219,3 +211,11 @@ class CatalogueItemService:
             catalogue_item_id,
             CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
         )
+
+    def delete(self, catalogue_item_id: str) -> None:
+        """
+        Delete a catalogue item by its ID.
+
+        :param catalogue_item_id: The ID of the catalogue item to delete.
+        """
+        return self._catalogue_item_repository.delete(catalogue_item_id)
