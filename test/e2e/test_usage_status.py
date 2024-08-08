@@ -211,7 +211,7 @@ class TestDelete(DeleteDSL):
         self.get_usage_status(usage_status_id)
         self.check_get_usage_status_failed_with_detail(404, "Usage status not found")
 
-    def test_delete_when_part_of_catalogue_category(self):
+    def test_delete_when_part_of_item(self):
         """Test deleting a usage status when it is part of an item."""
         usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
 

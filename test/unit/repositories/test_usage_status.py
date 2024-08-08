@@ -328,7 +328,7 @@ class DeleteDSL(UsageStatusRepoDSL):
         Mocks database methods appropriately to test the `delete` repo method.
 
         :param deleted_count: Number of documents deleted successfully.
-        :param catalogue_item_data: Dictionary containing a catalogue item's data (or `None`).
+        :param item_data: Dictionary containing a catalogue item's data (or `None`).
         """
         self.mock_is_usage_status_in_item(item_data)
         RepositoryTestHelpers.mock_delete_one(self.usage_statuses_collection, deleted_count)
