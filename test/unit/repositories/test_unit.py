@@ -10,7 +10,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_CM,
-    UNIT_IN_DATA_MM
+    UNIT_IN_DATA_MM,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 import pytest

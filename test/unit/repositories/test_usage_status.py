@@ -5,11 +5,13 @@ Unit tests for the `UsageStatusRepo` repository
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call
 
+from test.e2e.test_catalogue_category_property import ITEM_POST
+from test.mock_data import USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
 
+from test.unit.repositories.conftest import RepositoryTestHelpers
 
 import pytest
 from bson import ObjectId
-
 
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
@@ -17,14 +19,10 @@ from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
     MissingRecordError,
-    PartOfCatalogueCategoryError,
     PartOfItemError,
 )
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
-from test.e2e.test_catalogue_category_property import ITEM_POST
-from test.mock_data import USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
-from test.unit.repositories.conftest import RepositoryTestHelpers
 
 
 class UsageStatusRepoDSL:
@@ -57,10 +55,16 @@ class UsageStatusRepoDSL:
         """
         RepositoryTestHelpers.mock_find_one(
             self.usage_statuses_collection,
-            ({**UsageStatusIn(**duplicate_usage_status_in_data).model_dump(), "_id": ObjectId()} if duplicate_usage_status_in_data else None),
+            (
+                {**UsageStatusIn(**duplicate_usage_status_in_data).model_dump(), "_id": ObjectId()}
+                if duplicate_usage_status_in_data
+                else None
+            ),
         )
 
-    def get_is_duplicate_usage_status_expected_find_one_call(self, usage_status_in: UsageStatusIn, expected_usage_status_id: Optional[CustomObjectId]):
+    def get_is_duplicate_usage_status_expected_find_one_call(
+        self, usage_status_in: UsageStatusIn, expected_usage_status_id: Optional[CustomObjectId]
+    ):
         """
         Returns the expected `find_one` calls that should occur when `_is_duplicate_usage_status` is called.
 
@@ -93,7 +97,9 @@ class CreateDSL(UsageStatusRepoDSL):
         # Pass through UsageStatusIn first as need creation and modified times
         self._usage_status_in = UsageStatusIn(**usage_status_in_data)
 
-        self._expected_usage_status_out = UsageStatusOut(**self._usage_status_in.model_dump(), id=inserted_usage_status_id)
+        self._expected_usage_status_out = UsageStatusOut(
+            **self._usage_status_in.model_dump(), id=inserted_usage_status_id
+        )
         #
         self.mock_is_duplicate_usage_status(duplicate_usage_status_in_data)
         # Mock `insert one` to return object for inserted usage status
@@ -105,7 +111,9 @@ class CreateDSL(UsageStatusRepoDSL):
 
     def call_create(self) -> None:
         """Calls the `UsageStatusRepo` `create` method with the appropriate data from a prior call to `mock_create`."""
-        self._created_usage_status = self.usage_status_repository.create(self._usage_status_in, session=self.mock_session)
+        self._created_usage_status = self.usage_status_repository.create(
+            self._usage_status_in, session=self.mock_session
+        )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -131,7 +139,9 @@ class CreateDSL(UsageStatusRepoDSL):
         ]
         self.usage_statuses_collection.find_one.assert_has_calls(expected_find_one_calls)
 
-        self.usage_statuses_collection.insert_one.assert_called_once_with(usage_status_in_data, session=self.mock_session)
+        self.usage_statuses_collection.insert_one.assert_called_once_with(
+            usage_status_in_data, session=self.mock_session
+        )
         assert self._created_usage_status == self._expected_usage_status_out
 
     def check_create_failed_with_exception(self, message: str) -> None:
@@ -178,7 +188,9 @@ class GetDSL(UsageStatusRepoDSL):
             for a `UsageStatusIn` database model (i.e. no ID or created and modified times required).
         """
         self._expected_usage_status_out = (
-            UsageStatusOut(**UsageStatusIn(**usage_status_in_data).model_dump(), id=CustomObjectId(usage_status_id)) if usage_status_in_data else None
+            UsageStatusOut(**UsageStatusIn(**usage_status_in_data).model_dump(), id=CustomObjectId(usage_status_id))
+            if usage_status_in_data
+            else None
         )
 
         RepositoryTestHelpers.mock_find_one(
@@ -266,7 +278,8 @@ class ListDSL(UsageStatusRepoDSL):
             `UsageStatusIn` database model (i.e. no ID or created and modified times required).
         """
         self._expected_usage_status_out = [
-            UsageStatusOut(**UsageStatusIn(**usage_status_in_data).model_dump(), id=ObjectId()) for usage_status_in_data in usage_status_in_data
+            UsageStatusOut(**UsageStatusIn(**usage_status_in_data).model_dump(), id=ObjectId())
+            for usage_status_in_data in usage_status_in_data
         ]
 
         RepositoryTestHelpers.mock_find(
@@ -285,19 +298,22 @@ class ListDSL(UsageStatusRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing units."""
+    """Tests for listing usage statuses."""
 
+    # pylint: disable=duplicate-code
     def test_list(self):
-        """Test listing all units."""
+        """Test listing all usage statuses."""
         self.mock_list([USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED])
         self.call_list()
         self.check_list_success()
 
     def test_list_with_no_results(self):
-        """Test listing all units returning no results."""
+        """Test listing all usage statuses returning no results."""
         self.mock_list([])
         self.call_list()
         self.check_list_success()
+
+    # pylint: enable=duplicate-code
 
 
 class DeleteDSL(UsageStatusRepoDSL):
@@ -399,11 +415,11 @@ class TestDelete(DeleteDSL):
         self.mock_delete(
             deleted_count=1,
             item_data={
-            **ITEM_POST,
-            "catalogue_item_id": str(ObjectId()),
-            "system_id": str(ObjectId()),
-            "usage_status_id": usage_status_id,
-        }
+                **ITEM_POST,
+                "catalogue_item_id": str(ObjectId()),
+                "system_id": str(ObjectId()),
+                "usage_status_id": usage_status_id,
+            },
         )
         self.call_delete_expecting_error(usage_status_id, PartOfItemError)
         self.check_delete_failed_with_exception(f"The usage status with ID {usage_status_id} is a part of an Item")
@@ -414,7 +430,9 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(usage_status_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No usage status found with ID: {usage_status_id}", expecting_delete_one_called=True)
+        self.check_delete_failed_with_exception(
+            f"No usage status found with ID: {usage_status_id}", expecting_delete_one_called=True
+        )
 
     def test_delete_with_invalid_id(self):
         """Test deleting a usage status with an invalid ID."""

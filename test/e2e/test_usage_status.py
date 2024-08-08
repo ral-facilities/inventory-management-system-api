@@ -4,14 +4,20 @@ End-to-End tests for the Usage status router
 
 from typing import Optional
 
+from test.e2e.test_catalogue_category_property import CATALOGUE_ITEM_POST_A, ITEM_POST
+from test.mock_data import (
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    USAGE_STATUS_POST_DATA_NEW,
+    USAGE_STATUS_POST_DATA_USED,
+)
 
 from bson import ObjectId
 
 import pytest
 from fastapi.testclient import TestClient
 from httpx import Response
-from test.e2e.test_catalogue_category_property import CATALOGUE_ITEM_POST_A, ITEM_POST
-from test.mock_data import CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES, MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY, SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, USAGE_STATUS_POST_DATA_NEW, USAGE_STATUS_POST_DATA_USED
 
 
 class CreateDSL:
@@ -56,17 +62,6 @@ class CreateDSL:
         """
         assert self._post_response.status_code == status_code
         assert self._post_response.json()["detail"] == detail
-
-    def check_post_usage_status_failed_with_validation_message(self, status_code: int, message: str) -> None:
-        """
-        Checks that a prior call to `post_usage_status` gave a failed response with the expected code and pydantic
-        validation error message.
-
-        :param status_code: Expected status code to be returned.
-        :param message: Expected pydantic validation error message to be returned.
-        """
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"][0]["msg"] == message
 
 
 class TestCreate(CreateDSL):
@@ -219,7 +214,9 @@ class TestDelete(DeleteDSL):
         usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
 
         # pylint: disable=duplicate-code
-        response = self.test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
         catalogue_category = response.json()
 
         response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -259,4 +256,3 @@ class TestDelete(DeleteDSL):
         """Test deleting a usage status with invalid ID."""
         self.delete_usage_status("invalid-id")
         self.check_delete_usage_status_failed_with_detail(404, "Usage status not found")
-

@@ -111,39 +111,3 @@ SYSTEM_POST_B_EXPECTED = {
     "code": "system-b",
 }
 # pylint: enable=duplicate-code
-
-USAGE_STATUS_POST_A = {"value": "New"}
-
-USAGE_STATUS_POST_A_EXPECTED = {
-    **USAGE_STATUS_POST_A,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "new",
-    "id": ANY,
-}
-
-USAGE_STATUS_POST_B = {"value": "Used"}
-
-USAGE_STATUS_POST_B_EXPECTED = {
-    **USAGE_STATUS_POST_B,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "used",
-    "id": ANY,
-}
-
-USAGE_STATUS_POST_C = {"value": "In Use"}
-
-USAGE_STATUS_POST_C_EXPECTED = {
-    **USAGE_STATUS_POST_C,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "in-use",
-    "id": ANY,
-}
-
-USAGE_STATUS_POST_D = {"value": "Scrapped"}
-
-USAGE_STATUS_POST_D_EXPECTED = {
-    **USAGE_STATUS_POST_D,
-    **CREATED_MODIFIED_VALUES_EXPECTED,
-    "code": "scrapped",
-    "id": ANY,
-}

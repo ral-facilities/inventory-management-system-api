@@ -3,18 +3,16 @@ Unit tests for the `UsageStatusService` service
 """
 
 from unittest.mock import MagicMock, Mock, patch
+from test.mock_data import USAGE_STATUS_POST_DATA_NEW
+
+from test.unit.services.conftest import ServiceTestHelpers
+import pytest
+from bson import ObjectId
 
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema
 from inventory_management_system_api.services.usage_status import UsageStatusService
-from test.mock_data import USAGE_STATUS_POST_DATA_NEW
-
-
-
-import pytest
-from bson import ObjectId
 from inventory_management_system_api.services import utils
-from test.unit.services.conftest import ServiceTestHelpers
 
 
 class UsageStatusServiceDSL:
@@ -60,7 +58,9 @@ class CreateDSL(UsageStatusServiceDSL):
         """
         self._usage_status_post = UsageStatusPostSchema(**usage_status_post_data)
 
-        self._expected_usage_status_in = UsageStatusIn(**usage_status_post_data, code=utils.generate_code(usage_status_post_data["value"], "usage status"))
+        self._expected_usage_status_in = UsageStatusIn(
+            **usage_status_post_data, code=utils.generate_code(usage_status_post_data["value"], "usage status")
+        )
         self._expected_usage_status_out = UsageStatusOut(**self._expected_usage_status_in.model_dump(), id=ObjectId())
 
         ServiceTestHelpers.mock_create(self.mock_usage_status_repository, self._expected_usage_status_out)

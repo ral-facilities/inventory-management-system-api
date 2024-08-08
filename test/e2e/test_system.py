@@ -7,7 +7,6 @@ End-to-End tests for the system router.
 
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import USAGE_STATUS_POST_B
 from test.e2e.test_catalogue_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A
 from test.e2e.test_item import ITEM_POST, MANUFACTURER_POST
 from test.mock_data import (
@@ -17,6 +16,7 @@ from test.mock_data import (
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
+    USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Optional
 
@@ -640,7 +640,7 @@ class TestDelete(DeleteDSL):
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
         catalogue_item_id = response.json()["id"]
 
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
         usage_status_id = response.json()["id"]
 
         item_post = {

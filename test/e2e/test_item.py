@@ -12,9 +12,8 @@ from test.e2e.mock_schemas import (
     ITEM_POST_ALLOWED_VALUES_EXPECTED,
     SYSTEM_POST_A,
     SYSTEM_POST_B,
-    USAGE_STATUS_POST_A,
 )
-from test.mock_data import UNIT_POST_DATA_CM, UNIT_POST_DATA_MM
+from test.mock_data import UNIT_POST_DATA_CM, UNIT_POST_DATA_MM, USAGE_STATUS_POST_DATA_NEW
 from unittest.mock import ANY
 
 
@@ -154,7 +153,7 @@ def test_create_item(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -240,7 +239,7 @@ def test_create_item_with_invalid_system_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -279,7 +278,7 @@ def test_create_item_with_non_existent_system_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -319,7 +318,7 @@ def test_create_with_missing_existing_properties(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -386,7 +385,7 @@ def test_create_with_mandatory_properties_given_none(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -437,7 +436,7 @@ def test_create_with_non_mandatory_properties_given_none(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -503,7 +502,7 @@ def test_create_item_without_properties(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -643,7 +642,7 @@ def test_create_item_with_invalid_value_type_for_string_property(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -691,7 +690,7 @@ def test_create_item_with_invalid_value_type_for_number_property(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -738,7 +737,7 @@ def test_create_item_with_invalid_value_type_for_boolean_property(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -787,7 +786,7 @@ def test_create_item_with_allowed_values(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -845,7 +844,7 @@ def test_create_item_with_allowed_values_invalid_list_string(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -896,7 +895,7 @@ def test_create_item_with_allowed_values_invalid_list_number(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -945,7 +944,7 @@ def test_delete(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -1013,7 +1012,7 @@ def test_get_item(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     item_post = {
@@ -1095,7 +1094,7 @@ def test_get_items(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -1167,7 +1166,7 @@ def test_get_items_with_system_id_filters(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -1230,7 +1229,7 @@ def test_get_items_with_catalogue_id_filters(test_client):
     }
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
 
@@ -1363,7 +1362,7 @@ def test_partial_update_item(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
     item_post = {
@@ -1447,7 +1446,7 @@ def test_partial_update_change_catalogue_item_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1495,7 +1494,7 @@ def test_partial_update_change_system_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # pylint: enable=duplicate-code
     item_post = {
@@ -1553,7 +1552,7 @@ def test_partial_update_change_non_existent_system_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1598,7 +1597,7 @@ def test_partial_update_change_non_existent_usage_status_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1643,7 +1642,7 @@ def test_partial_update_change_invalid_usage_status_id(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1688,7 +1687,7 @@ def test_partial_update_property_values(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1757,7 +1756,7 @@ def test_partial_update_property_values_with_mandatory_properties_given_none(
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1815,7 +1814,7 @@ def test_partial_update_property_values_with_non_mandatory_properties_given_none
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1888,7 +1887,7 @@ def test_partial_update_property_values_with_allowed_values(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -1963,7 +1962,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_string(
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -2022,7 +2021,7 @@ def test_partial_update_property_values_with_allowed_values_invalid_list_number(
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -2078,7 +2077,7 @@ def test_partial_update_with_missing_existing_properties(test_client):
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -2149,7 +2148,7 @@ def test_partial_update_item_change_value_for_string_property_invalid_type(test_
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -2202,7 +2201,7 @@ def test_partial_update_item_change_value_for_number_property_invalid_type(test_
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
@@ -2259,7 +2258,7 @@ def test_partial_update_item_change_value_for_boolean_property_invalid_type(
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
     catalogue_item_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     # pylint: enable=duplicate-code
