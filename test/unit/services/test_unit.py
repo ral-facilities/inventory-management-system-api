@@ -50,7 +50,6 @@ class CreateDSL(UnitServiceDSL):
     _expected_unit_in: UnitIn
     _expected_unit_out: UnitOut
     _created_unit: UnitOut
-    _create_exception: pytest.ExceptionInfo
 
     def mock_create(self, unit_post_data: dict) -> None:
         """
@@ -137,6 +136,7 @@ class ListDSL(UnitServiceDSL):
     def mock_list(self) -> None:
         """Mocks repo methods appropriately to test the `list` service method."""
 
+        # Simply a return currently, so no need to use actual data
         self._expected_units = MagicMock()
         ServiceTestHelpers.mock_list(self.mock_unit_repository, self._expected_units)
 

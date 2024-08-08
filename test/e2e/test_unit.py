@@ -1,5 +1,5 @@
 """
-End-to-End tests for the Unit router
+End-to-End tests for the unit router.
 """
 
 from typing import Optional
@@ -25,7 +25,7 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: Response
+    _post_response_unit: Response
 
     @pytest.fixture(autouse=True)
     def setup(self, test_client):
@@ -36,12 +36,11 @@ class CreateDSL:
         """
         Posts a unit with the given data, returns the ID of the created unit if successful.
 
-        :param unit_post_data: Dictionary containing the unit data as would be required for a
-            `UnitPostSchema`.
+        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
         :return: ID of the created unit (or `None` if not successful).
         """
-        self._post_response = self.test_client.post("/v1/units", json=unit_post_data)
-        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+        self._post_response_unit = self.test_client.post("/v1/units", json=unit_post_data)
+        return self._post_response_unit.json()["id"] if self._post_response_unit.status_code == 201 else None
 
     def check_post_unit_success(self, expected_unit_get_data: dict) -> None:
         """
@@ -50,8 +49,8 @@ class CreateDSL:
         :param expected_unit_get_data: Dictionary containing the expected unit data as would be required
             for a `UnitSchema`.
         """
-        assert self._post_response.status_code == 201
-        assert self._post_response.json() == expected_unit_get_data
+        assert self._post_response_unit.status_code == 201
+        assert self._post_response_unit.json() == expected_unit_get_data
 
     def check_post_unit_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -60,19 +59,8 @@ class CreateDSL:
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"] == detail
-
-    def check_post_unit_failed_with_validation_message(self, status_code: int, message: str) -> None:
-        """
-        Checks that a prior call to `post_unit` gave a failed response with the expected code and pydantic
-        validation error message.
-
-        :param status_code: Expected status code to be returned.
-        :param message: Expected pydantic validation error message to be returned.
-        """
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"][0]["msg"] == message
+        assert self._post_response_unit.status_code == status_code
+        assert self._post_response_unit.json()["detail"] == detail
 
 
 class TestCreate(CreateDSL):
@@ -95,7 +83,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests"""
 
-    _get_response = Response
+    _get_response_unit = Response
 
     def get_unit(self, unit_id: str) -> None:
         """
@@ -103,7 +91,7 @@ class GetDSL(CreateDSL):
 
         :param unit_id: ID of the unit to be obtained.
         """
-        self._get_response = self.test_client.get(f"/v1/units/{unit_id}")
+        self._get_response_unit = self.test_client.get(f"/v1/units/{unit_id}")
 
     def check_get_unit_success(self, expected_unit_get_data: dict) -> None:
         """
@@ -112,8 +100,8 @@ class GetDSL(CreateDSL):
         :param expected_unit_get_data: Dictionary containing the expected unit data as would be required
             for a `UnitSchema`.
         """
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_unit_get_data
+        assert self._get_response_unit.status_code == 200
+        assert self._get_response_unit.json() == expected_unit_get_data
 
     def check_get_unit_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -122,8 +110,8 @@ class GetDSL(CreateDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_unit.status_code == status_code
+        assert self._get_response_unit.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -151,7 +139,7 @@ class ListDSL(GetDSL):
 
     def get_units(self) -> None:
         """Gets a list of units."""
-        self._get_response = self.test_client.get("/v1/units")
+        self._get_response_unit = self.test_client.get("/v1/units")
 
     def check_get_units_success(self, expected_units_get_data: list[dict]) -> None:
         """
@@ -160,8 +148,8 @@ class ListDSL(GetDSL):
         :param expected_units_get_data: List of dictionaries containing the expected unit data as would
             be required for a `UnitSchema`.
         """
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_units_get_data
+        assert self._get_response_unit.status_code == 200
+        assert self._get_response_unit.json() == expected_units_get_data
 
 
 class TestList(ListDSL):

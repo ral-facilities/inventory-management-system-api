@@ -6,7 +6,7 @@ from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import SYSTEM_POST_A
 from test.mock_data import USAGE_STATUS_POST_DATA_NEW
-
+from test.mock_data import UNIT_POST_DATA_MM
 from typing import Optional
 from unittest.mock import ANY
 
@@ -62,8 +62,6 @@ ITEM_POST = {
     "notes": "Test notes",
     "properties": [{"name": "Property A", "value": 20}],
 }
-
-UNIT_POST_A = {"value": "mm"}
 
 # pylint:enable=duplicate-code
 
@@ -157,7 +155,7 @@ class CreateDSL:
 
         # pylint:disable=duplicate-code
 
-        response = self.test_client.post("/v1/units", json=UNIT_POST_A)
+        response = self.test_client.post("/v1/units", json=UNIT_POST_DATA_MM)
         unit_mm = response.json()
 
         self.units = [unit_mm]
