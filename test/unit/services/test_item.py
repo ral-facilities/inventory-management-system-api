@@ -3,22 +3,18 @@
 Unit tests for the `ItemService` service.
 """
 
-from datetime import datetime, timedelta, timezone
-from test.conftest import add_ids_to_properties
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-    SYSTEM_IN_DATA_NO_PARENT_A,
-    USAGE_STATUS_IN_DATA_IN_USE,
-)
-from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, ServiceTestHelpers
+    ITEM_DATA_ALL_VALUES_NO_PROPERTIES, ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_WITH_ALL_PROPERTIES, ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    SYSTEM_IN_DATA_NO_PARENT_A, USAGE_STATUS_IN_DATA_IN_USE)
+from test.unit.services.conftest import ServiceTestHelpers
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -26,23 +22,19 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    InvalidActionError,
-    InvalidObjectIdError,
-    InvalidPropertyTypeError,
-    MissingRecordError,
-)
+    DatabaseIntegrityError, InvalidActionError, MissingRecordError)
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-)
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
+    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn, CatalogueItemOut, PropertyIn)
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemIn, SystemOut
-from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
-from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
+from inventory_management_system_api.models.usage_status import (
+    UsageStatusIn, UsageStatusOut)
+from inventory_management_system_api.schemas.catalogue_item import \
+    PropertyPostSchema
+from inventory_management_system_api.schemas.item import (ItemPatchSchema,
+                                                          ItemPostSchema)
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.item import ItemService
 
@@ -50,6 +42,7 @@ from inventory_management_system_api.services.item import ItemService
 class ItemServiceDSL:
     """Base class for `ItemService` unit tests."""
 
+    # pylint:disable=too-many-instance-attributes
     wrapped_utils: Mock
     mock_item_repository: Mock
     mock_catalogue_item_repository: Mock
@@ -87,7 +80,8 @@ class ItemServiceDSL:
             self.wrapped_utils = wrapped_utils
             yield
 
-    # TODO: Is this needed? Could this be reused - copied from test_catalogue_items
+    # pylint:disable=fixme
+    # TODO: Put this in a common place - its identical as the one catalogue items, and similar to catalogue categories
     def construct_properties_in_and_post_with_ids(
         self,
         catalogue_category_properties_in: list[CatalogueCategoryPropertyIn],
@@ -131,6 +125,7 @@ class ItemServiceDSL:
 class CreateDSL(ItemServiceDSL):
     """Base class for `create` tests."""
 
+    # pylint:disable=too-many-instance-attributes
     _catalogue_item_out: Optional[CatalogueItemOut]
     _catalogue_category_out: Optional[CatalogueCategoryOut]
     _usage_status_out: Optional[UsageStatusOut]
@@ -142,9 +137,8 @@ class CreateDSL(ItemServiceDSL):
 
     _expected_merged_properties: List[PropertyPostSchema]
 
-    # TODO: Update comment below - particularly part about missing any mandatory ids - may need to say have value
-    # instead
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
     def mock_create(
         self,
         item_data: dict,
@@ -250,8 +244,7 @@ class CreateDSL(ItemServiceDSL):
         self._item_post = ItemPostSchema(**{**item_data, **ids_to_insert, "properties": property_post_schemas})
 
         # Any missing properties should be inherited from the catalogue item
-        supplied_properties = self._item_post.properties if self._item_post.properties else []
-
+        supplied_properties = property_post_schemas
         supplied_properties_dict = {
             supplied_property.id: supplied_property for supplied_property in supplied_properties
         }
@@ -303,8 +296,6 @@ class CreateDSL(ItemServiceDSL):
 
         # This is the get for the usage status
         self.mock_usage_status_repository.get.assert_called_once_with(self._item_post.usage_status_id)
-
-        # TODO: Should _catalogue_category_out be _stored_catalogue_category_out?
 
         self.wrapped_utils.process_properties.assert_called_once_with(
             self._catalogue_category_out.properties, self._expected_merged_properties
@@ -496,9 +487,7 @@ class TestList(ListDSL):
 class UpdateDSL(ItemServiceDSL):
     """Base class for `update` tests."""
 
-    # TODO: Check if all of these are actually used
     _stored_item: Optional[ItemOut]
-    _stored_catalogue_item_in: Optional[CatalogueItemIn]
     _stored_catalogue_item_out: Optional[CatalogueItemOut]
     _stored_catalogue_category_out: Optional[CatalogueCategoryOut]
     _item_patch: ItemPatchSchema
@@ -514,6 +503,7 @@ class UpdateDSL(ItemServiceDSL):
     _expected_merged_properties: List[PropertyPostSchema]
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-locals
     def mock_update(
         self,
         item_id: str,
@@ -548,6 +538,8 @@ class UpdateDSL(ItemServiceDSL):
         # Add property ids to the stored catalogue item and item if needed
 
         catalogue_category_id = str(ObjectId())
+
+        # pylint:disable=fixme
         # TODO: Could simplify - copied from catalogue items - including the stored part below
         stored_catalogue_category_in = (
             CatalogueCategoryIn(**stored_catalogue_category_in_data) if stored_catalogue_category_in_data else None
@@ -674,9 +666,7 @@ class UpdateDSL(ItemServiceDSL):
                 )
 
             # Any missing properties should be inherited from the catalogue item
-            # TODO: Can use this in the one above in create instead of the if?
             supplied_properties = property_post_schemas
-
             supplied_properties_dict = {
                 supplied_property.id: supplied_property for supplied_property in supplied_properties
             }
@@ -735,8 +725,6 @@ class UpdateDSL(ItemServiceDSL):
 
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
-
-        # TODO: Implement
 
         self.mock_item_repository.get.assert_called_once_with(self._updated_item_id)
 
