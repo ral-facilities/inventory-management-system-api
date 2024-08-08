@@ -240,6 +240,7 @@ class TestDelete(DeleteDSL):
 
         item_post = {
             **ITEM_POST,
+            "properties": []
             "catalogue_item_id": catalogue_item["id"],
             "system_id": system_id,
             "usage_status_id": usage_status_id,
