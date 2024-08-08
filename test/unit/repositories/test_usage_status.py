@@ -50,8 +50,8 @@ class UsageStatusRepoDSL:
         """
         Mocks database methods appropriately for when the `_is_duplicate_usage_status` repo method will be called.
 
-        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a
-            duplicate usage status.
+        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a 
+        duplicate usage status.
         """
         RepositoryTestHelpers.mock_find_one(
             self.usage_statuses_collection,
@@ -89,8 +89,8 @@ class CreateDSL(UsageStatusRepoDSL):
 
         :param usage_status_in_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusIn` database model (i.e. no ID or created and modified times required).
-        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a
-            duplicate usage status.
+        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a 
+        duplicate usage status.
         """
         inserted_usage_status_id = CustomObjectId(str(ObjectId()))
 
@@ -241,7 +241,7 @@ class TestGet(GetDSL):
     """Tests for getting a usage status."""
 
     def test_get(self):
-        """Test getting a system."""
+        """Test getting a usage status."""
         usage_status_id = str(ObjectId())
 
         self.mock_get(usage_status_id, USAGE_STATUS_IN_DATA_NEW)

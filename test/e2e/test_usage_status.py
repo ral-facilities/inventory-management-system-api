@@ -38,8 +38,8 @@ class CreateDSL:
         """
         Posts a usage status with the given data, returns the ID of the created usage status if successful.
 
-        :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
-            `UsageStatusPostSchema`.
+        :param usage_status_post_data: Dictionary containing the usage status data as would be required for a 
+        `UsageStatusPostSchema`.
         :return: ID of the created usage status (or `None` if not successful).
         """
         self._post_response = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
@@ -49,8 +49,8 @@ class CreateDSL:
         """
         Checks that a prior call to `post_usage_status` gave a successful response with the expected data returned.
 
-        :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required
-            for a `UsageStatusSchema`.
+        :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required 
+        for a `UsageStatusSchema`.
         """
         assert self._post_response.status_code == 201
         assert self._post_response.json() == expected_usage_status_get_data
@@ -100,8 +100,8 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_usage_status` gave a successful response with the expected data returned.
 
-        :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required
-            for a `UsageStatusSchema`.
+        :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required 
+        for a `UsageStatusSchema`.
         """
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_usage_status_get_data
@@ -148,8 +148,8 @@ class ListDSL(GetDSL):
         """
         Checks that a prior call to `get_usage_statuss` gave a successful response with the expected data returned.
 
-        :param expected_usage_statuss_get_data: List of dictionaries containing the expected usage status data as would
-            be required for a `UsageStatusSchema`.
+        :param expected_usage_statuss_get_data: List of dictionaries containing the expected usage status data as would 
+        be required for a `UsageStatusSchema`.
         """
         assert self._get_response.status_code == 200
         assert self._get_response.json() == expected_usage_statuss_get_data
