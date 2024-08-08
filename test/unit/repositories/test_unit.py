@@ -54,8 +54,7 @@ class UnitRepoDSL:
         """
         Mocks database methods appropriately for when the `_is_duplicate_unit` repo method will be called.
 
-        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a
-            duplicate unit.
+        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a duplicate unit.
         """
         RepositoryTestHelpers.mock_find_one(
             self.units_collection,
@@ -96,7 +95,7 @@ class CreateDSL(UnitRepoDSL):
         self._unit_in = UnitIn(**unit_in_data)
 
         self._expected_unit_out = UnitOut(**self._unit_in.model_dump(), id=inserted_unit_id)
-        #
+
         self.mock_is_duplicate_unit(duplicate_unit_in_data)
         # Mock `insert one` to return object for inserted unit
         RepositoryTestHelpers.mock_insert_one(self.units_collection, inserted_unit_id)
@@ -131,9 +130,9 @@ class CreateDSL(UnitRepoDSL):
             # This is the check for the newly inserted unit get
             call({"_id": CustomObjectId(self._expected_unit_out.id)}, session=self.mock_session),
         ]
+        self.units_collection.insert_one.assert_called_once_with(unit_in_data, session=self.mock_session)
         self.units_collection.find_one.assert_has_calls(expected_find_one_calls)
 
-        self.units_collection.insert_one.assert_called_once_with(unit_in_data, session=self.mock_session)
         assert self._created_unit == self._expected_unit_out
 
     def check_create_failed_with_exception(self, message: str) -> None:
@@ -231,7 +230,7 @@ class TestGet(GetDSL):
     """Tests for getting a unit."""
 
     def test_get(self):
-        """Test getting a system."""
+        """Test getting a unit."""
         unit_id = str(ObjectId())
 
         self.mock_get(unit_id, UNIT_IN_DATA_MM)
