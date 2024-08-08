@@ -9,6 +9,8 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    USAGE_STATUS_GET_DATA_NEW,
+    USAGE_STATUS_GET_DATA_USED,
     USAGE_STATUS_POST_DATA_NEW,
     USAGE_STATUS_POST_DATA_USED,
 )
@@ -71,7 +73,7 @@ class TestCreate(CreateDSL):
         """Test creating a usage status"""
 
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.check_post_usage_status_success(USAGE_STATUS_POST_DATA_NEW)
+        self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
 
     def test_create_usage_status_with_duplicate_name(self):
         """Test creating a usage status with a duplicate value"""
@@ -122,7 +124,7 @@ class TestGet(GetDSL):
         """Test getting a usage status."""
         usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.get_usage_status(usage_status_id)
-        self.check_get_usage_status_success(USAGE_STATUS_POST_DATA_NEW)
+        self.check_get_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
 
     def test_get_with_non_existent_id(self):
         """Test getting a usage status with a non-existent ID."""
@@ -161,7 +163,7 @@ class TestList(ListDSL):
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.post_usage_status(USAGE_STATUS_POST_DATA_USED)
         self.get_usage_statuss()
-        self.check_get_usage_statuss_success([USAGE_STATUS_POST_DATA_NEW, USAGE_STATUS_POST_DATA_USED])
+        self.check_get_usage_statuss_success([USAGE_STATUS_GET_DATA_NEW, USAGE_STATUS_GET_DATA_USED])
 
     def test_list_no_usage_statuss(self):
         """Test getting a list of all usage statuses when there are no usage statuses."""
