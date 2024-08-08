@@ -121,6 +121,7 @@ class SystemRepoDSL:
 
         :param system_in: `SystemIn` model containing the data about the system.
         :param expected_system_id: Expected `system_id` provided to `is_duplicate_system`.
+        :return: Expected `find_one` calls.
         """
 
         return call(
@@ -216,9 +217,10 @@ class CreateDSL(SystemRepoDSL):
                 session=self.mock_session,
             )
         )
-        self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         self.systems_collection.insert_one.assert_called_once_with(system_in_data, session=self.mock_session)
+        self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
+
         assert self._created_system == self._expected_system_out
 
     def check_create_failed_with_exception(self, message: str) -> None:

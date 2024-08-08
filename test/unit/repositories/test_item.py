@@ -9,7 +9,6 @@ from test.mock_data import (
     SYSTEM_IN_DATA_NO_PARENT_A,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME, MOCK_PROPERTY_A_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -61,8 +60,8 @@ class CreateDSL(ItemRepoDSL):
     ) -> None:
         """Mocks database methods appropriately to test the `create` repo method.
 
-        :param item_in_data: Dictionary containing the catalogue item data as would be required for a `ItemIn` database
-                             model (i.e. no ID or created and modified times required).
+        :param item_in_data: Dictionary containing the item data as would be required for a `ItemIn` database model
+                             (i.e. no ID or created and modified times required).
         :param system_in_data: Either `None` or a dictionary system data as would be required for a `SystemIn` database
                                model.
         """
@@ -116,12 +115,11 @@ class CreateDSL(ItemRepoDSL):
 
         self.systems_collection.find_one.assert_called_with({"_id": self._item_in.system_id}, session=self.mock_session)
 
+        self.items_collection.insert_one.assert_called_once_with(item_in_data, session=self.mock_session)
         self.items_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._expected_item_out.id)}, session=self.mock_session
         )
 
-        # TODO: Move this above line above - final find is after the insert... - Same for other repo tests...
-        self.items_collection.insert_one.assert_called_once_with(item_in_data, session=self.mock_session)
         assert self._created_item == self._expected_item_out
 
     def check_create_failed_with_exception(self, message: str) -> None:
@@ -344,8 +342,6 @@ class TestList(ListDSL):
         self.call_list(system_id=str(ObjectId()), catalogue_item_id=str(ObjectId()))
         self.check_list_success()
 
-    # TODO: Should these have invalid_id ones after all? Have in update - may effect other repo unit tests though
-
 
 class UpdateDSL(ItemRepoDSL):
     """Base class for `update` tests."""
@@ -388,7 +384,7 @@ class UpdateDSL(ItemRepoDSL):
         Calls the `ItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
         (or `set_update_data`).
 
-        :param item_id: ID of the catalogue item to be updated.
+        :param item_id: ID of the item to be updated.
         """
 
         self._updated_item_id = item_id
@@ -489,7 +485,7 @@ class DeleteDSL(ItemRepoDSL):
         """
         Calls the `ItemRepo` `delete` method while expecting an error to be raised.
 
-        :param item_id: ID of the catalogue item to be deleted.
+        :param item_id: ID of the item to be deleted.
         :param error_type: Expected exception to be raised.
         """
 

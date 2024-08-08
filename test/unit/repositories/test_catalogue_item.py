@@ -8,10 +8,10 @@ Unit tests for the `CatalogueItemRepo` repository.
 from test.mock_data import (
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.test_item import FULL_ITEM_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -122,13 +122,13 @@ class CreateDSL(CatalogueItemRepoDSL):
 
         catalogue_item_in_data = self._catalogue_item_in.model_dump(by_alias=True)
 
+        self.catalogue_items_collection.insert_one.assert_called_once_with(
+            catalogue_item_in_data, session=self.mock_session
+        )
         self.catalogue_items_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._expected_catalogue_item_out.id)}, session=self.mock_session
         )
 
-        self.catalogue_items_collection.insert_one.assert_called_once_with(
-            catalogue_item_in_data, session=self.mock_session
-        )
         assert self._created_catalogue_item == self._expected_catalogue_item_out
 
 
@@ -538,9 +538,7 @@ class TestDelete(DeleteDSL):
 
         catalogue_item_id = str(ObjectId())
 
-        # pylint:disable=fixme
-        # TODO: Replace FULL_ITEM_INFO once items has been refactored
-        self.mock_delete(deleted_count=1, child_item_data=FULL_ITEM_INFO)
+        self.mock_delete(deleted_count=1, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
             f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
@@ -607,11 +605,7 @@ class TestHasChildElements(HasChildElementsDSL):
     def test_has_child_elements_with_child_item(self):
         """Test `has_child_elements` when there is a child item."""
 
-        # pylint:disable=fixme
-        # TODO: Replace FULL_ITEM_INFO once items has been refactored
-        self.mock_has_child_elements(
-            child_item_data=FULL_ITEM_INFO,
-        )
+        self.mock_has_child_elements(child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_has_child_elements(catalogue_item_id=str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
 
