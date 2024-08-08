@@ -90,7 +90,7 @@ class CatalogueItemServiceDSL:
     def construct_properties_in_and_post_with_ids(
         self,
         catalogue_category_properties_in: list[CatalogueCategoryPropertyIn],
-        catalogue_items_properties_data: list[dict],
+        properties_data: list[dict],
     ) -> tuple[list[PropertyIn], list[PropertyPostSchema]]:
         """
         Returns a list of property post schemas and expected property in models by adding
@@ -98,8 +98,8 @@ class CatalogueItemServiceDSL:
 
         :param catalogue_category_properties_in: List of `CatalogueCategoryPropertyIn`'s as would be found in the
                                                  catalogue category.
-        :param catalogue_items_properties_data: List of dictionaries containing the data for each property as would
-                                                   be required for a `PropertyPostSchema` but without any `id`'s.
+        :param properties_data: List of dictionaries containing the data for each property as would  be required for a
+                                `PropertyPostSchema` but without any `id`'s.
         :returns: Tuple of lists. The first contains the expected `PropertyIn` models and the second the
                   `PropertyPostSchema` schema's that should be posted in order to obtain them.
         """
@@ -109,7 +109,7 @@ class CatalogueItemServiceDSL:
 
         self.property_name_id_dict = {}
 
-        for prop in catalogue_items_properties_data:
+        for prop in properties_data:
             prop_id = None
             prop_without_name = prop.copy()
 
