@@ -4,10 +4,12 @@ End-to-End tests for the properties endpoint of the catalogue category router
 
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
+from test.e2e.mock_schemas import SYSTEM_POST_A
+from test.mock_data import USAGE_STATUS_POST_DATA_NEW
 from test.mock_data import UNIT_POST_DATA_MM
 from typing import Optional
 from unittest.mock import ANY
+
 
 import pytest
 from bson import ObjectId
@@ -189,7 +191,7 @@ class CreateDSL:
         self.catalogue_item = response.json()
         catalogue_item_id = self.catalogue_item["id"]
 
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
         usage_status_id = response.json()["id"]
         item_post = {
             **ITEM_POST,

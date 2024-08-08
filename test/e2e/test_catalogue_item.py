@@ -10,11 +10,9 @@ from test.e2e.mock_schemas import (
     CATALOGUE_ITEM_POST_ALLOWED_VALUES_EXPECTED,
     CREATED_MODIFIED_VALUES_EXPECTED,
     SYSTEM_POST_A,
-    USAGE_STATUS_POST_A,
-    USAGE_STATUS_POST_B,
 )
 from test.e2e.test_item import ITEM_POST
-from test.mock_data import UNIT_POST_DATA_CM, UNIT_POST_DATA_MM
+from test.mock_data import UNIT_POST_DATA_CM, UNIT_POST_DATA_MM, USAGE_STATUS_POST_DATA_NEW, USAGE_STATUS_POST_DATA_USED
 from unittest.mock import ANY
 
 
@@ -791,7 +789,7 @@ def test_delete_catalogue_item_with_child_items(test_client):
         "properties": add_ids_to_properties(catalogue_category["properties"], CATALOGUE_ITEM_POST_A["properties"]),
     }
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
@@ -1464,7 +1462,7 @@ def test_partial_update_catalogue_item_change_catalogue_category_id_has_child_it
         "properties": add_ids_to_properties(catalogue_category_b["properties"], CATALOGUE_ITEM_POST_B["properties"]),
     }
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
     # child
     item_post = {
@@ -2012,7 +2010,7 @@ def test_partial_update_properties_when_has_child_items(test_client):
     response = test_client.post("/v1/manufacturers", json=manufacturer_e_post)
     manufacturer_e_id = response.json()["id"]
 
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_B)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_USED)
     usage_status_id = response.json()["id"]
 
     catalogue_item_post = {
@@ -2112,7 +2110,7 @@ def test_partial_update_catalogue_item_change_manufacturer_id_when_has_child_ite
     manufacturer_id = response.json()["id"]
 
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+    response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
     usage_status_id = response.json()["id"]
 
     catalogue_item_post = {
