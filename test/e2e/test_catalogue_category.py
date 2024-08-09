@@ -53,15 +53,6 @@ class CreateDSL:
         self.test_client = test_client
         self.unit_value_id_dict = {}
 
-    def post_unit(self, unit_post_data: dict) -> None:
-        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
-
-        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
-        """
-
-        post_response = self.test_client.post("/v1/units", json=unit_post_data)
-        self.unit_value_id_dict[unit_post_data["value"]] = post_response.json()["id"]
-
     def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
         Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
@@ -72,6 +63,15 @@ class CreateDSL:
         """
 
         self.unit_value_id_dict[unit_value] = unit_id
+
+    def post_unit(self, unit_post_data: dict) -> None:
+        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
+
+        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
+        """
+
+        post_response = self.test_client.post("/v1/units", json=unit_post_data)
+        self.add_unit_value_and_id(unit_post_data["value"], post_response.json()["id"])
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """

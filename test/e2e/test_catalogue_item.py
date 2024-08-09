@@ -81,7 +81,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
         :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
                                                  would be required for a `CatalogueItemSchema`. Does not need mandatory
-                                                 IDs (e.g. manufacturer_id) as they will be added here.
+                                                 IDs (e.g. `manufacturer_id`) as they will be added here.
         """
         # Where there are properties add the property ID, unit ID and unit value
         expected_catalogue_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
@@ -133,8 +133,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
     def post_catalogue_item(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Posts a catalogue item with the given data and returns the ID of the created catalogue item if
-        successful.
+        Posts a catalogue item with the given data and returns the ID of the created catalogue item if successful.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required
                                         for a `CatalogueItemPostSchema` but with mandatory IDs missing and
@@ -168,8 +167,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
     def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
-        catalogue category and units. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer and
+        catalogue category. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
         category.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
@@ -260,9 +259,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         return self.post_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-                "properties": [
-                    {"name": "property", "value": property_value},
-                ],
+                "properties": [{"name": "property", "value": property_value}],
             }
         )
 
@@ -273,7 +270,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
         :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
                                                  would be required for a `CatalogueItemSchema`. Does not need mandatory
-                                                 IDs (e.g. manufacturer_id) as they will be to check they are as
+                                                 IDs (e.g. `manufacturer_id`) as they will be to check they are as
                                                  expected.
         """
 
@@ -375,7 +372,7 @@ class TestCreate(CreateDSL):
             422, "The specified replacement catalogue item does not exist"
         )
 
-    def test_create_with_all_properties_defined(self):
+    def test_create_with_all_properties_provided(self):
         """Test creating a catalogue item with all properties within the catalogue category being defined."""
 
         self.post_catalogue_item_and_prerequisites_with_properties(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
@@ -474,7 +471,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_item_and_prerequisites_with_given_properties(
             catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
             catalogue_item_properties_data=[
-                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "True"},
+                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": 0},
             ],
         )
 
