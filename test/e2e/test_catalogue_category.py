@@ -596,7 +596,7 @@ class ListDSL(GetBreadcrumbsDSL):
 
     def get_catalogue_categories(self, filters: dict) -> None:
         """
-        Gets a list catalogue categories with the given filters.
+        Gets a list of catalogue categories with the given filters.
 
         :param filters: Filters to use in the request.
         """
@@ -627,8 +627,8 @@ class ListDSL(GetBreadcrumbsDSL):
         Checks that a prior call to `get_catalogue_categories` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected system data
-                                                returned as would be required for `CatalogueCategorySchema`'s.
+        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected catalogue category
+                                                    data returned as would be required for `CatalogueCategorySchema`'s.
         """
 
         assert self._get_response_catalogue_category.status_code == 200

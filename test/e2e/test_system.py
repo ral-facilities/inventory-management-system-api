@@ -336,7 +336,7 @@ class ListDSL(GetBreadcrumbsDSL):
 
     def get_systems(self, filters: dict) -> None:
         """
-        Gets a list systems with the given filters.
+        Gets a list of systems with the given filters.
 
         :param filters: Filters to use in the request.
         """

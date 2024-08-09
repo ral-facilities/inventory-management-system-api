@@ -648,7 +648,7 @@ class ListDSL(GetDSL):
 
     def get_catalogue_items(self, filters: dict) -> None:
         """
-        Gets a list catalogue items with the given filters.
+        Gets a list of catalogue items with the given filters.
 
         :param filters: Filters to use in the request.
         """
@@ -658,9 +658,9 @@ class ListDSL(GetDSL):
     def post_test_catalogue_items(self) -> list[dict]:
         """
         Posts two catalogue items each in a separate catalogue category and returns their expected responses when
-        returned by the ist endpoint.
+        returned by the list endpoint.
 
-        :return: List of dictionaries containing the expected catalogue category data returned from a get endpoint in
+        :return: List of dictionaries containing the expected catalogue item data returned from a get endpoint in
                  the form of a `CatalogueItemSchema`.
         """
 
@@ -691,7 +691,7 @@ class ListDSL(GetDSL):
         """
         Checks that a prior call to `get_catalogue_items` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_items_get_data: List of dictionaries containing the expected system data
+        :param expected_catalogue_items_get_data: List of dictionaries containing the expected catalogue item data
                                                   returned as would be required for `CatalogueItemSchema`'s.
         """
 

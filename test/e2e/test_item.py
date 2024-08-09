@@ -18,6 +18,7 @@ from test.e2e.test_catalogue_item import CreateDSL as CatalogueItemCreateDSL
 from test.e2e.test_system import CreateDSL as SystemCreateDSL
 from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from test.mock_data import (
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY,
@@ -48,7 +49,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
 
     catalogue_item_id: Optional[str]
     system_id: Optional[str]
-    usage_status_id: Optional[str]
     usage_status_value_id_dict: dict[str, str]
 
     _post_response_item: Response
@@ -59,7 +59,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
 
         self.catalogue_item_id = None
         self.system_id = None
-        self.usage_status_id = None
         self.usage_status_value_id_dict = {}
 
     def add_ids_to_expected_item_get_data(self, expected_item_get_data) -> dict:
@@ -480,8 +479,6 @@ class TestCreate(CreateDSL):
             "Expected type: number.",
         )
 
-    # TODO: Implement more tests
-
     def test_create_with_non_existent_catalogue_item_id(self):
         """Test creating an item with a non-existent catalogue item ID."""
 
@@ -613,6 +610,148 @@ class TestGet(GetDSL):
 
         self.get_item("invalid-id")
         self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+
+
+class ListDSL(GetDSL):
+    """Base class for list tests."""
+
+    def get_items(self, filters: dict) -> None:
+        """
+        Gets a list of items with the given filters.
+
+        :param filters: Filters to use in the request.
+        """
+
+        self._get_response_item = self.test_client.get("/v1/items", params=filters)
+
+    def post_test_items(self) -> list[dict]:
+        """
+        Posts three items. The first two have the same catalogue item but different systems, and the last has a
+        different catalogue item but the same system as the second catalogue item.
+
+        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+                 the form of an `ItemSchema`. In the form [CATALOGUE_ITEM_A_SYSTEM_A, CATALOGUE_ITEM_A_SYSTEM_B,
+                 CATALOGUE_ITEM_B_SYSTEM_B]
+        """
+
+        # First item
+        self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        system_a_id = self.system_id
+        catalogue_item_a_id = self.catalogue_item_id
+
+        # Second item
+        system_b_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Another system"})
+        self.post_item(ITEM_DATA_ALL_VALUES_NO_PROPERTIES)
+
+        # Third item
+        self.post_catalogue_item({**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "Another catalogue item"})
+        catalogue_item_b_id = self.catalogue_item_id
+        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        return [
+            {
+                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": catalogue_item_a_id,
+                "system_id": system_a_id,
+                "usage_status_id": self.usage_status_value_id_dict[ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"]],
+            },
+            {
+                **ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES,
+                "catalogue_item_id": catalogue_item_a_id,
+                "system_id": system_b_id,
+                "usage_status_id": self.usage_status_value_id_dict[ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"]],
+            },
+            {
+                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": catalogue_item_b_id,
+                "system_id": system_b_id,
+                "usage_status_id": self.usage_status_value_id_dict[ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"]],
+            },
+        ]
+
+    def check_get_items_success(self, expected_items_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_items` gave a successful response with the expected data returned.
+
+        :param expected_items_get_data: List of dictionaries containing the expected item data returned as would be
+                                        required for `ItemSchema`'s.
+        """
+
+        assert self._get_response_item.status_code == 200
+        assert self._get_response_item.json() == expected_items_get_data
+
+
+class TestList(ListDSL):
+    """Tests for getting a list of items."""
+
+    def test_list_with_no_filters(self):
+        """
+        Test getting a list of all items with no filters provided.
+
+        Posts three items the first two in the same catalogue item and separate systems and the third in a different
+        catalogue item but the same system as the second. Expects all three to be returned.
+        """
+
+        items = self.post_test_items()
+        self.get_items(filters={})
+        self.check_get_items_success(items)
+
+    def test_list_with_system_id_filter(self):
+        """
+        Test getting a list of all items with a `system_id` filter provided.
+
+        Posts three items the first two in the same catalogue item and separate systems and the third in a different
+        catalogue item but the same system as the second. Expects just the latter two systems to be returned.
+        """
+
+        items = self.post_test_items()
+        self.get_items(filters={"system_id": items[1]["system_id"]})
+        self.check_get_items_success(items[1:])
+
+    def test_list_with_invalid_system_id_filter(self):
+        """Test getting a list of all items with an invalid `system_id` filter provided."""
+
+        self.get_items(filters={"system_id": "invalid-id"})
+        self.check_get_items_success([])
+
+    def test_list_with_catalogue_item_id_filter(self):
+        """
+        Test getting a list of all items with a `catalogue_item_id` filter provided.
+
+        Posts three items the first two in the same catalogue item and separate systems and the third in a different
+        catalogue item but the same system as the second. Expects just the former two systems to be returned.
+        """
+
+        items = self.post_test_items()
+        self.get_items(filters={"catalogue_item_id": items[0]["catalogue_item_id"]})
+        self.check_get_items_success(items[0:2])
+
+    def test_list_with_invalid_catalogue_item_id_filter(self):
+        """Test getting a list of all items with an invalid `catalogue_item_id` filter provided."""
+
+        self.get_items(filters={"catalogue_item_id": "invalid-id"})
+        self.check_get_items_success([])
+
+    def test_list_with_system_id_and_catalogue_item_id_filters(self):
+        """
+        Test getting a list of all items with `system_id` and `catalogue_item_id` filters provided.
+
+        Posts three items the first two in the same catalogue item and separate systems and the third in a different
+        catalogue item but the same system as the second. Expects just second item to be returned.
+        """
+
+        items = self.post_test_items()
+        self.get_items(filters={"system_id": items[2]["system_id"], "catalogue_item_id": items[0]["catalogue_item_id"]})
+        self.check_get_items_success([items[1]])
+
+    def test_list_with_system_id_and_catalogue_item_id_filters_with_no_matching_results(self):
+        """
+        Test getting a list of all items with `system_id` and `catalogue_item_id` filters provided when there are no
+        matching results.
+        """
+
+        self.get_items(filters={"system_id": str(ObjectId()), "catalogue_item_id": str(ObjectId())})
+        self.check_get_items_success([])
 
 
 # # pylint: disable=duplicate-code
@@ -784,276 +923,6 @@ class TestGet(GetDSL):
 
 #     assert response.status_code == 404
 #     assert response.json()["detail"] == "Item not found"
-
-
-# def test_get_items(test_client):
-#     """
-#     Test getting items
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id_a = response.json()["id"]
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_B)
-#     system_id_b = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     # pylint: disable=duplicate-code
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-
-#     item_post_a = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id_a,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-
-#     item_post_b = {**item_post_a, "system_id": system_id_b}
-
-#     test_client.post("/v1/items", json=item_post_a)
-#     test_client.post("/v1/items", json=item_post_b)
-
-#     response = test_client.get("/v1/items")
-
-#     assert response.status_code == 200
-
-#     items = response.json()
-
-#     properties_expected = add_ids_to_properties(
-#         catalogue_category["properties"],
-#         ITEM_POST_EXPECTED["properties"],
-#     )
-#     assert items == [
-#         {
-#             **ITEM_POST_EXPECTED,
-#             "catalogue_item_id": catalogue_item_id,
-#             "system_id": system_id_a,
-#             "usage_status_id": usage_status_id,
-#             "usage_status": "New",
-#             "properties": properties_expected,
-#         },
-#         {
-#             **ITEM_POST_EXPECTED,
-#             "catalogue_item_id": catalogue_item_id,
-#             "system_id": system_id_b,
-#             "usage_status_id": usage_status_id,
-#             "usage_status": "New",
-#             "properties": properties_expected,
-#         },
-#     ]
-
-
-# def test_get_items_with_system_id_filters(test_client):
-#     """
-#     Test getting items with system id filter
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     # pylint: disable=duplicate-code
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-
-#     item_post_a = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": None,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-
-#     item_post_b = {**item_post_a, "system_id": system_id}
-
-#     test_client.post("/v1/items", json=item_post_a)
-#     test_client.post("/v1/items", json=item_post_b)
-
-#     response = test_client.get("/v1/items", params={"system_id": system_id})
-
-#     assert response.status_code == 200
-
-#     items = response.json()
-
-#     assert items == [
-#         {
-#             **ITEM_POST_EXPECTED,
-#             "catalogue_item_id": catalogue_item_id,
-#             "system_id": system_id,
-#             "usage_status_id": usage_status_id,
-#             "usage_status": "New",
-#             "properties": add_ids_to_properties(
-#                 catalogue_category["properties"],
-#                 ITEM_POST_EXPECTED["properties"],
-#             ),
-#         }
-#     ]
-
-
-# def test_get_items_with_catalogue_id_filters(test_client):
-#     """
-#     Test getting items with catalogue item id filter
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     # pylint: disable=duplicate-code
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-
-#     # pylint: disable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     test_client.post("/v1/items", json=item_post)
-#     # pylint: enable=duplicate-code
-
-#     response = test_client.get("/v1/items", params={"catalogue_item_id": catalogue_item_id})
-
-#     assert response.status_code == 200
-
-#     items = response.json()
-
-#     assert items == [
-#         {
-#             **ITEM_POST_EXPECTED,
-#             "catalogue_item_id": catalogue_item_id,
-#             "system_id": system_id,
-#             "usage_status_id": usage_status_id,
-#             "usage_status": "New",
-#             "properties": add_ids_to_properties(
-#                 catalogue_category["properties"],
-#                 ITEM_POST_EXPECTED["properties"],
-#             ),
-#         }
-#     ]
-
-
-# def test_get_items_with_no_matching_filters(test_client):
-#     """
-#     Test getting items with neither filter having matching results
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     # pylint: disable=duplicate-code
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-
-#     # pylint: disable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     # pylint: enable=duplicate-code
-
-#     test_client.post("/v1/items", json=item_post)
-#     test_client.post("/v1/items", json=item_post)
-
-#     response = test_client.get(
-#         "/v1/items",
-#         params={"system_id": str(ObjectId()), "catalogue_item_id": str(ObjectId())},
-#     )
-
-#     assert response.status_code == 200
-
-#     items = response.json()
-
-#     assert not items
-
-
-# def test_get_items_with_invalid_system_id_filter(test_client):
-#     """
-#     Test getting items with an invalid system id filter
-#     """
-#     response = test_client.get("/v1/items", params={"system_id": "Invalid"})
-
-#     assert response.status_code == 200
-#     assert response.json() == []
-
-
-# def test_get_items_with_invalid_catalogue_item_id_filter(test_client):
-#     """
-#     Test getting items with an invalid catalogue item id filter
-#     """
-#     response = test_client.get("/v1/items", params={"catalogue_item_id": "Invalid"})
-
-#     assert response.status_code == 200
-#     assert response.json() == []
 
 
 # def test_partial_update_item(test_client):
