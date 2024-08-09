@@ -405,9 +405,10 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
-                                                     as they will be added automatically to check they are as expected.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
+                                                     as would be required for a `CatalogueCategorySchema`. Does not need
+                                                     unit IDs as they will be added automatically to check they are as
+                                                     expected.
         """
 
         assert self._get_response_catalogue_category.status_code == 200

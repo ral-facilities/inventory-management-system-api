@@ -552,6 +552,69 @@ class TestCreate(CreateDSL):
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
 
+class GetDSL(CreateDSL):
+    """Base class for get tests."""
+
+    _get_response_item: Response
+
+    def get_item(self, item_id: str) -> None:
+        """
+        Gets an item with the given ID.
+
+        :param item_id: ID of the catalogue item to be obtained.
+        """
+
+        self._get_response_item = self.test_client.get(f"/v1/items/{item_id}")
+
+    def check_get_item_success(self, expected_item_get_data: dict) -> None:
+        """
+        Checks that a prior call to `get_item` gave a successful response with the expected data returned.
+
+        :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for a
+                                       `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`) as they will
+                                       be added automatically to check they are as expected.
+        """
+
+        assert self._get_response_item.status_code == 200
+        assert self._get_response_item.json() == self.add_ids_to_expected_item_get_data(expected_item_get_data)
+
+    def check_get_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `get_item` gave a failed response with the expected code and error
+        message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._get_response_item.status_code == status_code
+        assert self._get_response_item.json()["detail"] == detail
+
+
+class TestGet(GetDSL):
+    """Tests for getting an item."""
+
+    def test_get(self):
+        """Test getting an item."""
+
+        catalogue_item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.get_item(catalogue_item_id)
+        self.check_get_item_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+
+    def test_get_with_non_existent_id(self):
+        """Test getting an item with a non-existent ID."""
+
+        self.get_item(str(ObjectId()))
+        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+
+    def test_get_with_invalid_id(self):
+        """Test getting an item with an invalid ID."""
+
+        self.get_item("invalid-id")
+        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+
+
 # # pylint: disable=duplicate-code
 # CATALOGUE_CATEGORY_POST_A = {
 #     "name": "Category A",
@@ -721,85 +784,6 @@ class TestCreate(CreateDSL):
 
 #     assert response.status_code == 404
 #     assert response.json()["detail"] == "Item not found"
-
-
-# def test_get_item(test_client):
-#     """
-#     Test getting an item by its ID.
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     # pylint: disable=duplicate-code
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     # pylint: enable=duplicate-code
-
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_id = response.json()["id"]
-#     response = test_client.get(f"/v1/items/{item_id}")
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             ITEM_POST_EXPECTED["properties"],
-#         ),
-#     }
-
-
-# def test_get_item_with_non_existent_id(test_client):
-#     """
-#     Test getting an item with a non-existent id
-#     """
-#     response = test_client.get(f"/v1/items/{str(ObjectId())}")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "An item with such ID was not found"
-
-
-# def test_get_item_with_invalid_id(test_client):
-#     """
-#     Test getting an item with an invalid id
-#     """
-#     response = test_client.get("/v1/items/invalid")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "An item with such ID was not found"
 
 
 # def test_get_items(test_client):

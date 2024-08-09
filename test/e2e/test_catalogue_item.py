@@ -578,7 +578,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
-    _get_response: Response
+    _get_response_catalogue_item: Response
 
     def get_catalogue_item(self, catalogue_item_id: str) -> None:
         """
@@ -587,20 +587,20 @@ class GetDSL(CreateDSL):
         :param catalogue_item_id: ID of the catalogue item to be obtained.
         """
 
-        self._get_response = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
+        self._get_response_catalogue_item = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
 
     def check_get_catalogue_item_success(self, expected_catalogue_item_get_data: dict) -> None:
         """
         Checks that a prior call to `get_catalogue_item` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_item_get_data: Dictionary containing the expected system data returned as would be
-                                                 required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
-                                                 manufacturer_id) as they will be added automatically to check they are
-                                                 as expected.
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue tiem data returned as
+                                                 would be required for a `CatalogueItemSchema`. Does not need mandatory
+                                                 IDs (e.g. `manufacturer_id`) as they will be added automatically to
+                                                 check they are as expected.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == self.add_ids_to_expected_catalogue_item_get_data(
+        assert self._get_response_catalogue_item.status_code == 200
+        assert self._get_response_catalogue_item.json() == self.add_ids_to_expected_catalogue_item_get_data(
             expected_catalogue_item_get_data
         )
 
@@ -613,8 +613,8 @@ class GetDSL(CreateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_catalogue_item.status_code == status_code
+        assert self._get_response_catalogue_item.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -623,9 +623,9 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting a catalogue item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.get_catalogue_item(catalogue_item_id)
         self.check_get_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
@@ -653,7 +653,7 @@ class ListDSL(GetDSL):
         :param filters: Filters to use in the request.
         """
 
-        self._get_response = self.test_client.get("/v1/catalogue-items", params=filters)
+        self._get_response_catalogue_item = self.test_client.get("/v1/catalogue-items", params=filters)
 
     def post_test_catalogue_items(self) -> list[dict]:
         """
@@ -695,8 +695,8 @@ class ListDSL(GetDSL):
                                                   returned as would be required for `CatalogueItemSchema`'s.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_catalogue_items_get_data
+        assert self._get_response_catalogue_item.status_code == 200
+        assert self._get_response_catalogue_item.json() == expected_catalogue_items_get_data
 
 
 class TestList(ListDSL):
