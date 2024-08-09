@@ -9,7 +9,8 @@ End-to-End tests for the catalogue item router.
 
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
-from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
+from test.e2e.test_catalogue_category import \
+    CreateDSL as CatalogueCategoryCreateDSL
 from test.e2e.test_manufacturer import CreateDSL as ManufacturerCreateDSL
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
@@ -43,8 +44,7 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
-    UNIT_POST_DATA_MM,
-)
+    UNIT_POST_DATA_MM)
 from typing import Any, Optional
 
 import pytest
@@ -1501,9 +1501,9 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting a catalogue item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.delete_catalogue_item(catalogue_item_id)
         self.check_delete_catalogue_item_success()
@@ -1514,9 +1514,9 @@ class TestDelete(DeleteDSL):
     def test_delete_with_child_item(self):
         """Test deleting a catalogue item with a child item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         self.post_child_item()
 
         self.delete_catalogue_item(catalogue_item_id)

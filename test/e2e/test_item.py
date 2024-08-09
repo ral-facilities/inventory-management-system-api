@@ -754,6 +754,71 @@ class TestList(ListDSL):
         self.check_get_items_success([])
 
 
+# TODO: Update tests
+
+
+# TODO: Change this to UpdateDSL once done
+class DeleteDSL(ListDSL):
+    """Base class for delete tests."""
+
+    _delete_response_item: Response
+
+    def delete_item(self, item_id: str) -> None:
+        """
+        Deletes an item with the given ID.
+
+        :param item_id: ID of the item to be deleted.
+        """
+
+        self._delete_response_item = self.test_client.delete(f"/v1/items/{item_id}")
+
+    def check_delete_item_success(self) -> None:
+        """Checks that a prior call to `delete_item` gave a successful response with the expected data
+        returned."""
+
+        assert self._delete_response_item.status_code == 204
+
+    def check_delete_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `delete_item` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._delete_response_item.status_code == status_code
+        assert self._delete_response_item.json()["detail"] == detail
+
+
+# pylint:disable=too-many-ancestors
+class TestDelete(DeleteDSL):
+    """Tests for deleting an item."""
+
+    def test_delete(self):
+        """Test deleting an item."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.delete_item(item_id)
+        self.check_delete_item_success()
+
+        self.get_item(item_id)
+        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent item."""
+
+        self.delete_item(str(ObjectId()))
+        self.check_delete_item_failed_with_detail(404, "Item not found")
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting an item with an invalid ID."""
+
+        self.delete_item("invalid_id")
+        self.check_delete_item_failed_with_detail(404, "Item not found")
+
+
 # # pylint: disable=duplicate-code
 # CATALOGUE_CATEGORY_POST_A = {
 #     "name": "Category A",
@@ -857,72 +922,6 @@ class TestList(ListDSL):
 
 
 # # pylint: enable=duplicate-code
-
-
-# def test_delete(test_client):
-#     """
-#     Test deleting an item
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-
-#     # pylint: enable=duplicate-code
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_id = response.json()["id"]
-
-#     response = test_client.delete(f"/v1/items/{item_id}")
-
-#     assert response.status_code == 204
-#     response = test_client.delete(f"/v1/items/{item_id}")
-#     assert response.status_code == 404
-
-
-# def test_delete_with_invalid_id(test_client):
-#     """
-#     Test deleting an item with an invalid ID.
-#     """
-#     response = test_client.delete("v1/items/invalid")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Item not found"
-
-
-# def test_delete_catalogue_item_with_non_existent_id(test_client):
-#     """
-#     Test deleting an item with a non-existent ID.
-#     """
-#     response = test_client.delete(f"/v1/items/{str(ObjectId())}")
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Item not found"
 
 
 # def test_partial_update_item(test_client):
