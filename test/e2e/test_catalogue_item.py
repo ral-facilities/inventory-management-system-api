@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 End-to-End tests for the catalogue item router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
@@ -81,7 +81,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
         :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
                                                  would be required for a `CatalogueItemSchema`. Does not need mandatory
-                                                 IDs (e.g. manufacturer_id) as they will be added here.
+                                                 IDs (e.g. `manufacturer_id`) as they will be added here.
         """
         # Where there are properties add the property ID, unit ID and unit value
         expected_catalogue_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
@@ -133,8 +133,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
     def post_catalogue_item(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Posts a catalogue item with the given data and returns the ID of the created catalogue item if
-        successful.
+        Posts a catalogue item with the given data and returns the ID of the created catalogue item if successful.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required
                                         for a `CatalogueItemPostSchema` but with mandatory IDs missing and
@@ -168,8 +167,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
     def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
-        catalogue category and units. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer and
+        catalogue category. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
         category.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
@@ -260,9 +259,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         return self.post_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-                "properties": [
-                    {"name": "property", "value": property_value},
-                ],
+                "properties": [{"name": "property", "value": property_value}],
             }
         )
 
@@ -272,9 +269,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         returned.
 
         :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
-                                                 would be required for a `CatalogueItemSchema`. Does not need mandatory
-                                                 IDs (e.g. manufacturer_id) as they will be to check they are as
-                                                 expected.
+                                would be required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
+                                `manufacturer_id`) as they will be added automatically to check they are as expected.
         """
 
         assert self._post_response_catalogue_item.status_code == 201
@@ -375,7 +371,7 @@ class TestCreate(CreateDSL):
             422, "The specified replacement catalogue item does not exist"
         )
 
-    def test_create_with_all_properties_defined(self):
+    def test_create_with_all_properties_provided(self):
         """Test creating a catalogue item with all properties within the catalogue category being defined."""
 
         self.post_catalogue_item_and_prerequisites_with_properties(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
@@ -474,7 +470,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_item_and_prerequisites_with_given_properties(
             catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
             catalogue_item_properties_data=[
-                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": "True"},
+                {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": 0},
             ],
         )
 
@@ -485,8 +481,32 @@ class TestCreate(CreateDSL):
             "'. Expected type: boolean.",
         )
 
-    def test_create_with_invalid_string_allowed_values_list_value(self):
-        """Test creating a catalogue item with an invalid value for a string property with an allowed values list."""
+    def test_create_with_allowed_values_list(self):
+        """Test creating a catalogue item with properties that have allowed values lists."""
+
+        self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+            ],
+            catalogue_item_properties_data=[
+                PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+            ],
+        )
+        self.check_post_catalogue_item_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                ],
+            }
+        )
+
+    def test_create_with_string_property_with_allowed_values_list_with_invalid_value(self):
+        """Test creating a catalogue item with a string property with an allowed values list while giving it a value not
+        in the list."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values(
             "string", {"type": "list", "values": ["value1"]}, "value2"
@@ -497,8 +517,9 @@ class TestCreate(CreateDSL):
             "Expected one of value1.",
         )
 
-    def test_create_with_invalid_string_allowed_values_list_type(self):
-        """Test creating a catalogue item with an invalid type for a string property with an allowed values list."""
+    def test_create_with_string_property_with_allowed_values_list_with_invalid_type(self):
+        """Test creating a catalogue item with a string property with an allowed values list while giving it a value
+        with an incorrect type."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values(
             "string", {"type": "list", "values": ["value1"]}, 42
@@ -509,8 +530,9 @@ class TestCreate(CreateDSL):
             "Expected type: string.",
         )
 
-    def test_create_with_invalid_number_allowed_values_list_value(self):
-        """Test creating a catalogue item with an invalid value for a number property with an allowed values list."""
+    def test_create_with_number_property_with_allowed_values_list_with_invalid_value(self):
+        """Test creating a catalogue item with a number property with an allowed values list while giving it a value not
+        in the list."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]}, 2)
         self.check_post_catalogue_item_failed_with_detail(
@@ -518,8 +540,9 @@ class TestCreate(CreateDSL):
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1.",
         )
 
-    def test_create_with_invalid_number_allowed_values_list_type(self):
-        """Test creating a catalogue item with an invalid type for a number property with an allowed values list."""
+    def test_create_with_number_property_with_allowed_values_list_with_invalid_type(self):
+        """Test creating a catalogue item with a number property with an allowed values list while giving it a value
+        with an incorrect type."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values(
             "number", {"type": "list", "values": [1]}, "test"
@@ -581,7 +604,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
-    _get_response: Response
+    _get_response_catalogue_item: Response
 
     def get_catalogue_item(self, catalogue_item_id: str) -> None:
         """
@@ -590,20 +613,20 @@ class GetDSL(CreateDSL):
         :param catalogue_item_id: ID of the catalogue item to be obtained.
         """
 
-        self._get_response = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
+        self._get_response_catalogue_item = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
 
     def check_get_catalogue_item_success(self, expected_catalogue_item_get_data: dict) -> None:
         """
         Checks that a prior call to `get_catalogue_item` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_item_get_data: Dictionary containing the expected system data returned as would be
-                                                 required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
-                                                 manufacturer_id) as they will be added automatically to check they are
-                                                 as expected.
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue tiem data returned as
+                                                 would be required for a `CatalogueItemSchema`. Does not need mandatory
+                                                 IDs (e.g. `manufacturer_id`) as they will be added automatically to
+                                                 check they are as expected.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == self.add_ids_to_expected_catalogue_item_get_data(
+        assert self._get_response_catalogue_item.status_code == 200
+        assert self._get_response_catalogue_item.json() == self.add_ids_to_expected_catalogue_item_get_data(
             expected_catalogue_item_get_data
         )
 
@@ -616,8 +639,8 @@ class GetDSL(CreateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_catalogue_item.status_code == status_code
+        assert self._get_response_catalogue_item.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -626,9 +649,9 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting a catalogue item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.get_catalogue_item(catalogue_item_id)
         self.check_get_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
@@ -651,19 +674,19 @@ class ListDSL(GetDSL):
 
     def get_catalogue_items(self, filters: dict) -> None:
         """
-        Gets a list catalogue items with the given filters.
+        Gets a list of catalogue items with the given filters.
 
         :param filters: Filters to use in the request.
         """
 
-        self._get_response = self.test_client.get("/v1/catalogue-items", params=filters)
+        self._get_response_catalogue_item = self.test_client.get("/v1/catalogue-items", params=filters)
 
     def post_test_catalogue_items(self) -> list[dict]:
         """
         Posts two catalogue items each in a separate catalogue category and returns their expected responses when
-        returned by the ist endpoint.
+        returned by the list endpoint.
 
-        :return: List of dictionaries containing the expected catalogue category data returned from a get endpoint in
+        :return: List of dictionaries containing the expected catalogue item data returned from a get endpoint in
                  the form of a `CatalogueItemSchema`.
         """
 
@@ -694,12 +717,12 @@ class ListDSL(GetDSL):
         """
         Checks that a prior call to `get_catalogue_items` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_items_get_data: List of dictionaries containing the expected system data
+        :param expected_catalogue_items_get_data: List of dictionaries containing the expected catalogue item data
                                                   returned as would be required for `CatalogueItemSchema`'s.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_catalogue_items_get_data
+        assert self._get_response_catalogue_item.status_code == 200
+        assert self._get_response_catalogue_item.json() == expected_catalogue_items_get_data
 
 
 class TestList(ListDSL):
@@ -751,13 +774,13 @@ class UpdateDSL(ListDSL):
         """
         Updates a catalogue item with the given ID.
 
-        :param catalogue_item_id: ID of the catalogue category to patch.
+        :param catalogue_item_id: ID of the catalogue item to patch.
         :param catalogue_item_update_data: Dictionary containing the basic patch data as would be required for a
                                            `CatalogueItemPatchSchema` but with any `id`'s replaced by the `name` value
                                            in its properties as the IDs will be added automatically.
         """
 
-        # Replace any unit values with unit ids
+        # Replace any property names with ids
         catalogue_item_update_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
             catalogue_item_update_data, self.property_name_id_dict
         )
@@ -796,10 +819,10 @@ class UpdateDSL(ListDSL):
         Checks that a prior call to `patch_catalogue_item` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_item_get_data: Dictionary containing the expected system data returned as would
-                                                 be required for a `CatalogueItemSchema`. Does not need mandatory IDs
-                                                 (e.g. manufacturer_id) as they will be added automatically to check
-                                                 they are as expected.
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
+                                        would be required for a `CatalogueItemSchema`. Does not need mandatory IDs
+                                        (e.g. `manufacturer_id`) as they will be added automatically to check they are
+                                        as expected.
         """
 
         assert self._patch_response_catalogue_item.status_code == 200
@@ -1340,7 +1363,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_properties_with_allowed_values_list(self):
-        """Test updating the `properties` of a catalogue item that have a list of allowed values."""
+        """Test updating the `properties` of a catalogue item that has allowed values lists."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
             catalogue_category_properties_data=[
@@ -1369,7 +1392,7 @@ class TestUpdate(UpdateDSL):
             }
         )
 
-    def test_partial_update_properties_with_string_allowed_values_list_to_invalid_value(self):
+    def test_partial_update_string_property_with_allowed_values_list_to_invalid_value(self):
         """Test updating the value of a string property with an allowed values list to be a value not in the list."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
@@ -1383,7 +1406,21 @@ class TestUpdate(UpdateDSL):
             "value2, value3.",
         )
 
-    def test_partial_update_properties_with_number_allowed_values_list_to_invalid_value(self):
+    def test_partial_update_string_property_with_allowed_values_list_to_invalid_value_type(self):
+        """Test updating the value of a string property with an allowed values list to be the wrong type."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1"]}, "value1"
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": [{"name": "property", "value": 42}]})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: string.",
+        )
+
+    def test_partial_update_number_property_with_allowed_values_list_to_invalid_value(self):
         """Test updating the value of a number property with an allowed values list to be a value not in the list."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
@@ -1394,6 +1431,20 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_item_failed_with_detail(
             422,
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1, 2, 3.",
+        )
+
+    def test_partial_update_number_property_with_allowed_values_list_to_invalid_value_type(self):
+        """Test updating the value of a number property with an allowed values list to be the wrong type."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "number", {"type": "list", "values": [1]}, 1
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": [{"name": "property", "value": "2"}]})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: number.",
         )
 
     def test_partial_update_properties_with_children(self):
@@ -1504,9 +1555,9 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting a catalogue item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
 
         self.delete_catalogue_item(catalogue_item_id)
         self.check_delete_catalogue_item_success()
@@ -1517,9 +1568,9 @@ class TestDelete(DeleteDSL):
     def test_delete_with_child_item(self):
         """Test deleting a catalogue item with a child item."""
 
-        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
         self.post_child_item()
 
         self.delete_catalogue_item(catalogue_item_id)
