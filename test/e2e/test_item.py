@@ -2,6 +2,12 @@
 """
 End-to-End tests for the catalogue item router.
 """
+
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-ancestors
+
 from test.conftest import add_ids_to_properties
 from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
 from test.e2e.mock_schemas import (
@@ -20,8 +26,10 @@ from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
@@ -31,10 +39,19 @@ from test.mock_data import (
     ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
     ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
+    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
+    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
+    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+    SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
     USAGE_STATUS_DATA_IN_USE,
+    USAGE_STATUS_DATA_NEW,
 )
 from typing import Any, Optional
 from unittest.mock import ANY
@@ -122,14 +139,16 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
 
         self.usage_status_value_id_dict[usage_status_value] = usage_status_id
 
-    def post_usage_status(self, usage_status_post_data: dict) -> None:
+    def post_usage_status(self, usage_status_post_data: dict) -> str:
         """Posts a usage status with the given data and stores the value and ID in a dictionary for lookup later.
 
         :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
         """
 
         post_response = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
+        usage_status_id = post_response.json()["id"]
         self.add_usage_status_value_and_id(usage_status_post_data["value"], post_response.json()["id"])
+        return usage_status_id
 
     def post_item(self, item_data: dict) -> Optional[str]:
         """
@@ -277,7 +296,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
         # Where properties are involved in the catalogue item, need to merge them
         catalogue_item_data = self._post_response_catalogue_item.json()
         expected_item_get_data = expected_item_get_data.copy()
-        if expected_item_get_data["properties"]:
+        if "properties" in expected_item_get_data:
             expected_merged_properties = []
             supplied_properties_dict = {
                 supplied_property["name"]: supplied_property
@@ -384,7 +403,7 @@ class TestCreate(CreateDSL):
         self.check_post_item_success(
             {
                 **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
-                "properties": [{**ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1], "value": None}],
+                "properties": [{**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}],
             }
         )
 
@@ -436,23 +455,52 @@ class TestCreate(CreateDSL):
             "'. Expected type: boolean.",
         )
 
-    def test_create_with_invalid_string_allowed_values_list_value(self):
-        """Test creating an item with an invalid value for a string property with an allowed values list."""
+    def test_create_with_allowed_values_list(self):
+        """Test creating an item with properties that have allowed values lists."""
+
+        self.post_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+            ],
+            catalogue_item_properties_data=[
+                PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+            ],
+            item_properties_data=[
+                PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
+                PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+            ],
+        )
+        self.check_post_item_success(
+            {
+                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
+                    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+                ],
+            }
+        )
+
+    def test_create_with_string_property_with_allowed_values_list_with_invalid_value(self):
+        """Test creating an item with a string property with an allowed values list while giving it a value not in the
+        list."""
 
         self.post_item_and_prerequisites_with_allowed_values(
-            "string", {"type": "list", "values": ["value1"]}, "value1", "value2"
+            "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1", "value42"
         )
         self.check_post_item_failed_with_detail(
             422,
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
-            "Expected one of value1.",
+            "Expected one of value1, value2, value3.",
         )
 
-    def test_create_with_invalid_string_allowed_values_list_type(self):
-        """Test creating an item with an invalid type for a string property with an allowed values list."""
+    def test_create_with_string_property_with_allowed_values_list_with_invalid_type(self):
+        """Test creating an item with a string property with an allowed values list while giving it a value with an
+        incorrect type."""
 
         self.post_item_and_prerequisites_with_allowed_values(
-            "string", {"type": "list", "values": ["value1"]}, "value1", 42
+            "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1", 42
         )
         self.check_post_item_failed_with_detail(
             422,
@@ -460,19 +508,21 @@ class TestCreate(CreateDSL):
             "Expected type: string.",
         )
 
-    def test_create_with_invalid_number_allowed_values_list_value(self):
-        """Test creating a catalogue item with an invalid value for a number property with an allowed values list."""
+    def test_create_with_number_property_with_allowed_values_list_with_invalid_value(self):
+        """Test creating an item with a number property with an allowed values list while giving it a value not in the
+        list."""
 
-        self.post_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]}, 1, 2)
+        self.post_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1, 2, 3]}, 1, 42)
         self.check_post_item_failed_with_detail(
             422,
-            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1.",
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1, 2, 3.",
         )
 
-    def test_create_with_invalid_number_allowed_values_list_type(self):
-        """Test creating an item with an invalid type for a number property with an allowed values list."""
+    def test_create_with_number_property_with_allowed_values_list_with_invalid_type(self):
+        """Test creating an item with a number property with an allowed values list while giving it a value with an
+        incorrect type."""
 
-        self.post_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]}, 1, "test")
+        self.post_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1, 2, 3]}, 1, "test")
         self.check_post_item_failed_with_detail(
             422,
             f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
@@ -754,11 +804,369 @@ class TestList(ListDSL):
         self.check_get_items_success([])
 
 
-# TODO: Update tests
+class UpdateDSL(ListDSL):
+    """Base class for update tests."""
+
+    _patch_response_item: Response
+
+    def patch_item(self, item_id: str, item_update_data: dict) -> None:
+        """
+        Updates an item with the given ID.
+
+        :param item_id: ID of the item to patch.
+        :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
+                                 but with any `id`'s replaced by the `name` value in its properties as the IDs will be
+                                 added automatically.
+        """
+
+        # Replace any property names with ids
+        item_update_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+            item_update_data, self.property_name_id_dict
+        )
+
+        self._patch_response_item = self.test_client.patch(f"/v1/items/{item_id}", json=item_update_data)
+
+    def check_patch_item_response_success(self, expected_item_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_item` gave a successful response with the expected data returned.
+
+        Also merges in any properties that were defined in the catalogue item but are not given in the expected data.
+
+        :param expected_item_get_data: Dictionary containing the expected item data returned as would
+                                                 be required for a `ItemSchema`. Does not need mandatory IDs
+                                                 (e.g. `system_id`) as they will be added automatically to check
+                                                 they are as expected.
+        """
+
+        # TODO: Move this to common function - its done in the CreateDSL too
+        # Where properties are involved in the catalogue item, need to merge them
+        catalogue_item_data = self._post_response_catalogue_item.json()
+        expected_item_get_data = expected_item_get_data.copy()
+        if "properties" in expected_item_get_data:
+            expected_merged_properties = []
+            supplied_properties_dict = {
+                supplied_property["name"]: supplied_property
+                for supplied_property in expected_item_get_data["properties"]
+            }
+            for prop in catalogue_item_data["properties"]:
+                supplied_property = supplied_properties_dict.get(prop["name"])
+                expected_merged_properties.append(supplied_property if supplied_property else prop)
+
+            expected_item_get_data["properties"] = expected_merged_properties
+
+        assert self._patch_response_item.status_code == 200
+        assert self._patch_response_item.json() == self.add_ids_to_expected_item_get_data(expected_item_get_data)
+
+        E2ETestHelpers.check_created_and_modified_times_updated_correctly(
+            self._post_response_item, self._patch_response_item
+        )
+
+    def check_patch_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `patch_item` gave a failed response with the expected code and error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._patch_response_item.status_code == status_code
+        assert self._patch_response_item.json()["detail"] == detail
+
+    def check_patch_item_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `patch_item` gave a failed response with the expected code and pydantic validation
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._patch_response_item.status_code == status_code
+        assert self._patch_response_item.json()["detail"][0]["msg"] == message
 
 
-# TODO: Change this to UpdateDSL once done
-class DeleteDSL(ListDSL):
+class TestUpdate(UpdateDSL):
+    """Tests for updating an item."""
+
+    def test_partial_update_all_fields_except_ids_or_properties(self):
+        """Test updating all fields of an item except its any of its `_id` fields or properties."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, ITEM_DATA_ALL_VALUES_NO_PROPERTIES)
+        self.check_patch_item_response_success(ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES)
+
+    def test_partial_update_catalogue_item_id(self):
+        """Test updating the `catalogue_item_id` of an item."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"catalogue_item_id": str(ObjectId())})
+        self.check_patch_item_failed_with_detail(422, "Cannot change the catalogue item of an item")
+
+    def test_partial_update_system_id(self):
+        """Test updating the `system_id` of an item."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_item(item_id, {"system_id": new_system_id})
+        self.check_patch_item_response_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+
+    def test_partial_update_system_id_with_non_existent_id(self):
+        """Test updating the `system_id` of an item to a non-existent system."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"system_id": str(ObjectId())})
+        self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
+
+    def test_partial_update_system_id_with_invalid_id(self):
+        """Test updating the `system_id` of an item to an invalid ID."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"system_id": "invalid-id"})
+        self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
+
+    def test_partial_update_usage_status_id(self):
+        """Test updating the `usage_status_id` of an item."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_usage_status_id = self.post_usage_status(USAGE_STATUS_DATA_NEW)
+
+        self.patch_item(item_id, {"usage_status_id": new_usage_status_id})
+        self.check_patch_item_response_success(
+            {**ITEM_GET_DATA_REQUIRED_VALUES_ONLY, "usage_status": USAGE_STATUS_DATA_NEW["value"]}
+        )
+
+    def test_partial_update_usage_status_id_with_non_existent_id(self):
+        """Test updating the `usage_status_id` of an item to a non-existent system."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"usage_status_id": str(ObjectId())})
+        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+
+    def test_partial_update_usage_status_id_with_invalid_id(self):
+        """Test updating the `usage_status_id` of an item to an invalid ID."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"usage_status_id": "invalid-id"})
+        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+
+    def test_partial_update_properties_with_no_properties_provided(self):
+        """Test updating the `properties` of an item to override none of the catalogue item properties."""
+
+        # All properties overridden to start with, then set to empty list to reset
+        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_item(item_id, {"properties": []})
+        self.check_patch_item_response_success({**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": []})
+
+    def test_partial_update_properties_with_some_properties_provided(self):
+        """Test updating the `properties` of an item to override some of the catalogue item properties."""
+
+        # No properties overridden to start with, then override some of them
+        item_id = self.post_item_and_prerequisites_with_properties({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
+
+        self.patch_item(item_id, {"properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]})
+        self.check_patch_item_response_success(
+            {**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]}
+        )
+
+    def test_partial_update_properties_with_all_properties_provided(self):
+        """Test updating the `properties` of an item to override all of the catalogue item properties."""
+
+        # No properties overridden to start with, then override all of them
+        item_id = self.post_item_and_prerequisites_with_properties({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
+
+        self.patch_item(item_id, {"properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"]})
+        self.check_patch_item_response_success(ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+
+    def test_partial_update_properties_with_mandatory_property_given_none(self):
+        """Test updating the `properties` of an item to have a mandatory property with a value of `None`."""
+
+        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}]})
+        self.check_patch_item_failed_with_detail(
+            422,
+            f"Mandatory property with ID '{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE['name']]}' "
+            "cannot be None.",
+        )
+
+    def test_partial_update_properties_with_non_mandatory_property_given_none(self):
+        """Test updating the `properties` of an item to have a non-mandatory property with a value of `None`."""
+
+        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]})
+        self.check_patch_item_response_success(
+            {
+                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [{**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}],
+            }
+        )
+
+    def test_partial_update_properties_with_string_property_with_invalid_value_type(self):
+        """Test updating the `properties` of an item to have an invalid value type for a string property."""
+
+        item_id = self.post_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
+            catalogue_item_properties_data=[PROPERTY_DATA_STRING_MANDATORY_TEXT],
+            item_properties_data=[],
+        )
+
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_STRING_MANDATORY_TEXT, "value": 42}]})
+
+        self.check_patch_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY['name']]}'. "
+            "Expected type: string.",
+        )
+
+    def test_partial_update_properties_with_number_property_with_invalid_value_type(self):
+        """Test updating the `properties` of an item to have an invalid value type for a number property."""
+
+        item_id = self.post_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+            catalogue_item_properties_data=[PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1],
+            item_properties_data=[],
+        )
+
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": "42"}]})
+
+        self.check_patch_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID '"
+            f"{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT['name']]}"
+            "'. Expected type: number.",
+        )
+
+    def test_partial_update_properties_with_boolean_property_with_invalid_value_type(self):
+        """Test updating the `properties` of an item to have an invalid value type for a boolean property."""
+
+        item_id = self.post_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
+            catalogue_item_properties_data=[PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE],
+            item_properties_data=[],
+        )
+
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": 0}]})
+
+        self.check_patch_item_failed_with_detail(
+            422,
+            "Invalid value type for property with ID '"
+            f"{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}"
+            "'. Expected type: boolean.",
+        )
+
+    def test_partial_update_properties_with_allowed_values_list(self):
+        """Test updating the `properties` of an item that has allowed values lists."""
+
+        item_id = self.post_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+            ],
+            catalogue_item_properties_data=[
+                PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+            ],
+            item_properties_data=[],
+        )
+        self.patch_item(
+            item_id,
+            {
+                "properties": [
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+                ]
+            },
+        )
+        self.check_patch_item_response_success(
+            {
+                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
+                    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+                ],
+            }
+        )
+
+    def test_partial_update_string_property_with_allowed_values_list_to_invalid_value(self):
+        """Test updating the value of a string property with an allowed values list to be a value not in the list."""
+
+        item_id = self.post_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1", "value2"
+        )
+
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": "value42"}]})
+        self.check_patch_item_failed_with_detail(
+            422,
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected one of value1, value2, value3.",
+        )
+
+    def test_partial_update_string_property_with_allowed_values_list_to_invalid_value_type(self):
+        """Test updating the value of a string property with an allowed values list to be the wrong type."""
+
+        item_id = self.post_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1", "value2"
+        )
+
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": 42}]})
+        self.check_patch_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: string.",
+        )
+
+    def test_partial_update_number_property_with_allowed_values_list_to_invalid_value(self):
+        """Test updating the value of a number property with an allowed values list to be a value not in the list."""
+
+        item_id = self.post_item_and_prerequisites_with_allowed_values(
+            "number", {"type": "list", "values": [1, 2, 3]}, 1, 2
+        )
+
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": 42}]})
+        self.check_patch_item_failed_with_detail(
+            422,
+            f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected one of 1, 2, 3.",
+        )
+
+    def test_partial_update_number_property_with_allowed_values_list_to_invalid_value_type(self):
+        """Test updating the value of a number property with an allowed values list to be a value not in the list."""
+
+        item_id = self.post_item_and_prerequisites_with_allowed_values(
+            "number", {"type": "list", "values": [1, 2, 3]}, 1, 2
+        )
+
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": "2"}]})
+        self.check_patch_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: number.",
+        )
+
+    def test_partial_update_with_non_existent_id(self):
+        """Test updating a non-existent item."""
+
+        self.patch_item(str(ObjectId()), {})
+        self.check_patch_item_failed_with_detail(404, "Item not found")
+
+    def test_partial_update_invalid_id(self):
+        """Test updating an item with an invalid ID."""
+
+        self.patch_item("invalid-id", {})
+        self.check_patch_item_failed_with_detail(404, "Item not found")
+
+
+class DeleteDSL(UpdateDSL):
     """Base class for delete tests."""
 
     _delete_response_item: Response
@@ -791,7 +1199,6 @@ class DeleteDSL(ListDSL):
         assert self._delete_response_item.json()["detail"] == detail
 
 
-# pylint:disable=too-many-ancestors
 class TestDelete(DeleteDSL):
     """Tests for deleting an item."""
 
@@ -817,1058 +1224,3 @@ class TestDelete(DeleteDSL):
 
         self.delete_item("invalid_id")
         self.check_delete_item_failed_with_detail(404, "Item not found")
-
-
-# # pylint: disable=duplicate-code
-# CATALOGUE_CATEGORY_POST_A = {
-#     "name": "Category A",
-#     "is_leaf": True,
-#     "properties": [
-#         {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-#         {"name": "Property B", "type": "boolean", "mandatory": True},
-#         {"name": "Property C", "type": "string", "unit": "cm", "mandatory": True},
-#         {"name": "Property D", "type": "string", "mandatory": False},
-#     ],
-# }
-
-# CATALOGUE_ITEM_POST_A = {
-#     "name": "Catalogue Item A",
-#     "description": "This is Catalogue Item A",
-#     "cost_gbp": 129.99,
-#     "days_to_replace": 2.0,
-#     "drawing_link": "https://drawing-link.com/",
-#     "item_model_number": "abc123",
-#     "is_obsolete": False,
-#     "properties": [
-#         {"name": "Property A", "value": 20},
-#         {"name": "Property B", "value": False},
-#         {"name": "Property C", "value": "20x15x10"},
-#     ],
-# }
-
-# MANUFACTURER_POST = {
-#     "name": "Manufacturer A",
-#     "url": "http://example.com/",
-#     "address": {
-#         "address_line": "1 Example Street",
-#         "town": "Oxford",
-#         "county": "Oxfordshire",
-#         "country": "United Kingdom",
-#         "postcode": "OX1 2AB",
-#     },
-#     "telephone": "0932348348",
-# }
-# # pylint: enable=duplicate-code
-
-# ITEM_POST = {
-#     "is_defective": False,
-#     "warranty_end_date": "2015-11-15T23:59:59Z",
-#     "serial_number": "xyz123",
-#     "delivered_date": "2012-12-05T12:00:00Z",
-#     "notes": "Test notes",
-#     "properties": [{"name": "Property A", "value": 21}],
-# }
-
-# ITEM_POST_EXPECTED = {
-#     **ITEM_POST,
-#     **CREATED_MODIFIED_VALUES_EXPECTED,
-#     "id": ANY,
-#     "purchase_order_number": None,
-#     "asset_number": None,
-#     "properties": [
-#         {"name": "Property A", "value": 21, "unit": "mm"},
-#         {"name": "Property B", "value": False, "unit": None},
-#         {"name": "Property C", "value": "20x15x10", "unit": "cm"},
-#         {"name": "Property D", "value": None, "unit": None},
-#     ],
-# }
-
-
-# # pylint: disable=duplicate-code
-# def _post_units(test_client):
-#     """Utility function for posting all mock units defined at the top of this file"""
-
-#     response = test_client.get("/v1/units")
-#     units = response.json()
-
-#     if response.json() == []:
-
-#         response = test_client.post("/v1/units", json=UNIT_POST_A)
-#         unit_mm = response.json()
-
-#         response = test_client.post("/v1/units", json=UNIT_POST_B)
-#         unit_cm = response.json()
-
-#         units = [unit_mm, unit_cm]
-
-#     return units
-
-
-# def _post_catalogue_category_with_units(test_client, catalogue_category):
-#     """Utility function for posting Catalogue category a defined at the top of this file"""
-
-#     units = _post_units(test_client)
-
-#     response = test_client.post(
-#         "/v1/catalogue-categories",
-#         json={
-#             **catalogue_category,
-#             "properties": replace_unit_values_with_ids_in_properties(catalogue_category["properties"], units),
-#         },
-#     )
-#     catalogue_category = response.json()
-
-#     return catalogue_category
-
-
-# # pylint: enable=duplicate-code
-
-
-# def test_partial_update_item(test_client):
-#     """
-#     Test changing 'usage_status' and 'is_defective' in an item
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {"usage_status": "Used", "is_defective": True}
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         **item_patch,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             ITEM_POST_EXPECTED["properties"],
-#         ),
-#     }
-
-
-# def test_partial_update_item_invalid_id(test_client):
-#     """
-#     Test updating an item with an invalid ID.
-#     """
-
-#     item_patch = {"usage_status_id": str(ObjectId()), "is_defective": True}
-
-#     response = test_client.patch("/v1/items/invalid", json=item_patch)
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Item not found"
-
-
-# def test_partial_update_item_non_existent_id(test_client):
-#     """
-#     Test updating an item with a non-existent ID.
-#     """
-#     item_patch = {"usage_status_id": str(ObjectId()), "is_defective": True}
-
-#     response = test_client.patch(f"/v1/items/{str(ObjectId())}", json=item_patch)
-
-#     assert response.status_code == 404
-#     assert response.json()["detail"] == "Item not found"
-
-
-# def test_partial_update_change_catalogue_item_id(test_client):
-#     """
-#     Test moving an item to another catalogue item
-#     """
-
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {"catalogue_item_id": str(ObjectId())}
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "Cannot change the catalogue item of an item"
-
-
-# def test_partial_update_change_system_id(test_client):
-#     """
-#     Test changing the system ID of an item
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id_a = response.json()["id"]
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_B)
-#     system_id_b = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id_a,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {"system_id": system_id_b}
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         **item_patch,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id_b,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             ITEM_POST_EXPECTED["properties"],
-#         ),
-#     }
-
-
-# def test_partial_update_change_non_existent_system_id(test_client):
-#     """
-#     Test updating system ID which is non-existent
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {"system_id": str(ObjectId())}
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified system does not exist"
-
-
-# def test_partial_update_change_non_existent_usage_status_id(test_client):
-#     """
-#     Test updating usage status ID which is non-existent
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {"usage_status_id": str(ObjectId())}
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified usage status does not exist"
-
-
-# def test_partial_update_change_invalid_usage_status_id(test_client):
-#     """
-#     Test updating usage status ID which is invalid
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {"usage_status_id": "invalid"}
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 422
-#     assert response.json()["detail"] == "The specified usage status does not exist"
-
-
-# def test_partial_update_property_values(test_client):
-#     """
-#     Test updating property values
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 12},
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": "20x15x10"},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 12, "unit": "mm"}] + ITEM_POST_EXPECTED["properties"][-3:],
-#         ),
-#     }
-
-
-# def test_partial_update_property_values_with_mandatory_properties_given_none(
-#     test_client,
-# ):
-#     """
-#     Test updating a item's mandatory properties to have a value of None
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property B", "value": None},
-#                 {"name": "Property C", "value": None},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Mandatory property with ID '{prop_id}' cannot be None."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_property_values_with_non_mandatory_properties_given_none(
-#     test_client,
-# ):
-#     """
-#     Test updating a item's mandatory properties to have a value of None
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": None},
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": "20x15x10"},
-#                 {"name": "Property D", "value": None},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "unit": "mm", "value": None},
-#                 {"name": "Property B", "unit": None, "value": False},
-#                 {"name": "Property C", "unit": "cm", "value": "20x15x10"},
-#                 {"name": "Property D", "unit": None, "value": None},
-#             ],
-#         ),
-#     }
-
-
-# def test_partial_update_property_values_with_allowed_values(test_client):
-#     """
-#     Test updating property values when using allowed_values in the catalogue category properties
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             ITEM_POST_ALLOWED_VALUES["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 2},
-#                 {"name": "Property B", "value": "red"},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "unit": "mm", "value": 2},
-#                 {"name": "Property B", "value": "red", "unit": None},
-#             ],
-#         ),
-#     }
-
-
-# def test_partial_update_property_values_with_allowed_values_invalid_list_string(
-#     test_client,
-# ):
-#     """
-#     Test updating property values when giving a string property a value that is not within the defined
-#     allowed_values
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             ITEM_POST_ALLOWED_VALUES["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property B", "value": "blue"}],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of red, green."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_property_values_with_allowed_values_invalid_list_number(
-#     test_client,
-# ):
-#     """
-#     Test updating property values when giving a number property a value that is not within the defined
-#     allowed_values
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_ALLOWED_VALUES)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_ALLOWED_VALUES["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST_ALLOWED_VALUES,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             ITEM_POST_ALLOWED_VALUES["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": 10}],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][0]["id"]
-#     assert response.json()["detail"] == f"Invalid value for property with ID '{prop_id}'. Expected one of 2, 4, 6."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_with_missing_existing_properties(test_client):
-#     """
-#     Test updating an item when not all properties defined in the catalogue item are supplied
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property B", "value": False},
-#                 {"name": "Property C", "value": "25x10x5"},
-#             ],
-#         ),
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     assert response.status_code == 200
-
-#     item = response.json()
-
-#     assert item == {
-#         **ITEM_POST_EXPECTED,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "usage_status": "New",
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [
-#                 {"name": "Property A", "value": 20, "unit": "mm"},
-#                 {"name": "Property B", "unit": None, "value": False},
-#                 {"name": "Property C", "unit": "cm", "value": "25x10x5"},
-#                 {"name": "Property D", "unit": None, "value": None},
-#             ],
-#         ),
-#     }
-
-
-# def test_partial_update_item_change_value_for_string_property_invalid_type(test_client):
-#     """
-#     Test changing the value of a string item property to an invalid type.
-#     """
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property C", "value": 21}],
-#         )
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][2]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: string."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_item_change_value_for_number_property_invalid_type(test_client):
-#     """
-#     Test changing the value of a string item property to an invalid type.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property A", "value": "21"}],
-#         )
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][0]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: number."
-#     # pylint: enable=duplicate-code
-
-
-# def test_partial_update_item_change_value_for_boolean_property_invalid_type(
-#     test_client,
-# ):
-#     """
-#     Test changing the value of a string item property to an invalid type.
-#     """
-#     # pylint: disable=duplicate-code
-#     catalogue_category = _post_catalogue_category_with_units(test_client, CATALOGUE_CATEGORY_POST_A)
-
-#     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
-#     system_id = response.json()["id"]
-
-#     response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
-#     manufacturer_id = response.json()["id"]
-#     # pylint: enable=duplicate-code
-
-#     # pylint: disable=duplicate-code
-#     catalogue_item_post = {
-#         **CATALOGUE_ITEM_POST_A,
-#         "catalogue_category_id": catalogue_category["id"],
-#         "manufacturer_id": manufacturer_id,
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             CATALOGUE_ITEM_POST_A["properties"],
-#         ),
-#     }
-#     response = test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-#     catalogue_item_id = response.json()["id"]
-
-#     response = test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
-#     usage_status_id = response.json()["id"]
-
-#     # pylint: enable=duplicate-code
-#     item_post = {
-#         **ITEM_POST,
-#         "catalogue_item_id": catalogue_item_id,
-#         "system_id": system_id,
-#         "usage_status_id": usage_status_id,
-#         "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
-#     }
-#     response = test_client.post("/v1/items", json=item_post)
-
-#     item_patch = {
-#         "properties": add_ids_to_properties(
-#             catalogue_category["properties"],
-#             [{"name": "Property B", "value": 21}],
-#         )
-#     }
-#     response = test_client.patch(f"/v1/items/{response.json()['id']}", json=item_patch)
-
-#     # pylint: disable=duplicate-code
-#     assert response.status_code == 422
-#     prop_id = catalogue_category["properties"][1]["id"]
-#     assert response.json()["detail"] == f"Invalid value type for property with ID '{prop_id}'. Expected type: boolean."
-#     # pylint: enable=duplicate-code

@@ -482,8 +482,32 @@ class TestCreate(CreateDSL):
             "'. Expected type: boolean.",
         )
 
-    def test_create_with_invalid_string_allowed_values_list_value(self):
-        """Test creating a catalogue item with an invalid value for a string property with an allowed values list."""
+    def test_create_with_allowed_values_list(self):
+        """Test creating a catalogue item with properties that have allowed values lists."""
+
+        self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+            ],
+            catalogue_item_properties_data=[
+                PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+            ],
+        )
+        self.check_post_catalogue_item_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                    PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                ],
+            }
+        )
+
+    def test_create_with_string_property_with_allowed_values_list_with_invalid_value(self):
+        """Test creating a catalogue item with a string property with an allowed values list while giving it a value not
+        in the list."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values(
             "string", {"type": "list", "values": ["value1"]}, "value2"
@@ -494,8 +518,9 @@ class TestCreate(CreateDSL):
             "Expected one of value1.",
         )
 
-    def test_create_with_invalid_string_allowed_values_list_type(self):
-        """Test creating a catalogue item with an invalid type for a string property with an allowed values list."""
+    def test_create_with_string_property_with_allowed_values_list_with_invalid_type(self):
+        """Test creating a catalogue item with a string property with an allowed values list while giving it a value
+        with an incorrect type."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values(
             "string", {"type": "list", "values": ["value1"]}, 42
@@ -506,8 +531,9 @@ class TestCreate(CreateDSL):
             "Expected type: string.",
         )
 
-    def test_create_with_invalid_number_allowed_values_list_value(self):
-        """Test creating a catalogue item with an invalid value for a number property with an allowed values list."""
+    def test_create_with_number_property_with_allowed_values_list_with_invalid_value(self):
+        """Test creating a catalogue item with a number property with an allowed values list while giving it a value not
+        in the list."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]}, 2)
         self.check_post_catalogue_item_failed_with_detail(
@@ -515,8 +541,9 @@ class TestCreate(CreateDSL):
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1.",
         )
 
-    def test_create_with_invalid_number_allowed_values_list_type(self):
-        """Test creating a catalogue item with an invalid type for a number property with an allowed values list."""
+    def test_create_with_number_property_with_allowed_values_list_with_invalid_type(self):
+        """Test creating a catalogue item with a number property with an allowed values list while giving it a value
+        with an incorrect type."""
 
         self.post_catalogue_item_and_prerequisites_with_allowed_values(
             "number", {"type": "list", "values": [1]}, "test"
@@ -748,13 +775,13 @@ class UpdateDSL(ListDSL):
         """
         Updates a catalogue item with the given ID.
 
-        :param catalogue_item_id: ID of the catalogue category to patch.
+        :param catalogue_item_id: ID of the catalogue item to patch.
         :param catalogue_item_update_data: Dictionary containing the basic patch data as would be required for a
                                            `CatalogueItemPatchSchema` but with any `id`'s replaced by the `name` value
                                            in its properties as the IDs will be added automatically.
         """
 
-        # Replace any unit values with unit ids
+        # Replace any property names with ids
         catalogue_item_update_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
             catalogue_item_update_data, self.property_name_id_dict
         )
@@ -793,10 +820,10 @@ class UpdateDSL(ListDSL):
         Checks that a prior call to `patch_catalogue_item` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_item_get_data: Dictionary containing the expected system data returned as would
-                                                 be required for a `CatalogueItemSchema`. Does not need mandatory IDs
-                                                 (e.g. manufacturer_id) as they will be added automatically to check
-                                                 they are as expected.
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
+                                        would be required for a `CatalogueItemSchema`. Does not need mandatory IDs
+                                        (e.g. `manufacturer_id`) as they will be added automatically to check they are
+                                        as expected.
         """
 
         assert self._patch_response_catalogue_item.status_code == 200
@@ -1337,7 +1364,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_partial_update_properties_with_allowed_values_list(self):
-        """Test updating the `properties` of a catalogue item that have a list of allowed values."""
+        """Test updating the `properties` of a catalogue item that has allowed values lists."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
             catalogue_category_properties_data=[
@@ -1366,7 +1393,7 @@ class TestUpdate(UpdateDSL):
             }
         )
 
-    def test_partial_update_properties_with_string_allowed_values_list_to_invalid_value(self):
+    def test_partial_update_string_property_with_allowed_values_list_to_invalid_value(self):
         """Test updating the value of a string property with an allowed values list to be a value not in the list."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
@@ -1380,7 +1407,21 @@ class TestUpdate(UpdateDSL):
             "value2, value3.",
         )
 
-    def test_partial_update_properties_with_number_allowed_values_list_to_invalid_value(self):
+    def test_partial_update_string_property_with_allowed_values_list_to_invalid_value_type(self):
+        """Test updating the value of a string property with an allowed values list to be the wrong type."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "string", {"type": "list", "values": ["value1"]}, "value1"
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": [{"name": "property", "value": 42}]})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: string.",
+        )
+
+    def test_partial_update_number_property_with_allowed_values_list_to_invalid_value(self):
         """Test updating the value of a number property with an allowed values list to be a value not in the list."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
@@ -1391,6 +1432,20 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_item_failed_with_detail(
             422,
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. Expected one of 1, 2, 3.",
+        )
+
+    def test_partial_update_number_property_with_allowed_values_list_to_invalid_value_type(self):
+        """Test updating the value of a number property with an allowed values list to be the wrong type."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            "number", {"type": "list", "values": [1]}, 1
+        )
+
+        self.patch_catalogue_item(catalogue_item_id, {"properties": [{"name": "property", "value": "2"}]})
+        self.check_patch_catalogue_item_failed_with_detail(
+            422,
+            f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
+            "Expected type: number.",
         )
 
     def test_partial_update_properties_with_children(self):
