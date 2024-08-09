@@ -1,10 +1,10 @@
-# pylint: disable=too-many-lines
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-lines
 
 from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,

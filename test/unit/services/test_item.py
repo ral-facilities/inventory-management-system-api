@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 Unit tests for the `ItemService` service.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 
 from test.mock_data import (

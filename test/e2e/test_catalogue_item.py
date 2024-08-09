@@ -1,16 +1,15 @@
-# pylint: disable=too-many-lines
 """
 End-to-End tests for the catalogue item router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
-from test.e2e.test_catalogue_category import \
-    CreateDSL as CatalogueCategoryCreateDSL
+from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
 from test.e2e.test_manufacturer import CreateDSL as ManufacturerCreateDSL
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
@@ -44,7 +43,8 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
-    UNIT_POST_DATA_MM)
+    UNIT_POST_DATA_MM,
+)
 from typing import Any, Optional
 
 import pytest
@@ -269,9 +269,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         returned.
 
         :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
-                                                 would be required for a `CatalogueItemSchema`. Does not need mandatory
-                                                 IDs (e.g. `manufacturer_id`) as they will be to check they are as
-                                                 expected.
+                                would be required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
+                                `manufacturer_id`) as they will be added automatically to check they are as expected.
         """
 
         assert self._post_response_catalogue_item.status_code == 201

@@ -1,30 +1,17 @@
-# pylint: disable=too-many-lines
 """
-End-to-End tests for the catalogue item router.
+End-to-End tests for the item router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-ancestors
 
-from test.conftest import add_ids_to_properties
-from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
-from test.e2e.mock_schemas import (
-    CATALOGUE_CATEGORY_POST_ALLOWED_VALUES,
-    CATALOGUE_ITEM_POST_ALLOWED_VALUES,
-    CREATED_MODIFIED_VALUES_EXPECTED,
-    ITEM_POST_ALLOWED_VALUES,
-    ITEM_POST_ALLOWED_VALUES_EXPECTED,
-    SYSTEM_POST_A,
-    SYSTEM_POST_B,
-    USAGE_STATUS_POST_A,
-)
+from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_item import CreateDSL as CatalogueItemCreateDSL
 from test.e2e.test_system import CreateDSL as SystemCreateDSL
-from test.e2e.test_unit import UNIT_POST_A, UNIT_POST_B
 from test.mock_data import (
-    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
@@ -54,7 +41,6 @@ from test.mock_data import (
     USAGE_STATUS_DATA_NEW,
 )
 from typing import Any, Optional
-from unittest.mock import ANY
 
 import pytest
 from bson import ObjectId
@@ -78,13 +64,39 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
         self.system_id = None
         self.usage_status_value_id_dict = {}
 
+    def merge_properties_in_expected_item_get_data(self, expected_item_get_data: dict) -> dict:
+        """
+        Merges any existing properties in an already posted catalogue item into expected get data returned for an item.
+
+        Assumes the last catalogue item posted was the one the properties should be merged with.
+
+        :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for a
+                                       `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`).
+        :return: Dictionary containing the same `expected_item_get_data` but with any missing properties found inside
+                 the last posted catalogue item merged in.
+        """
+
+        if "properties" in expected_item_get_data:
+            catalogue_item_data = self._post_response_catalogue_item.json()
+            expected_merged_properties = []
+            supplied_properties_dict = {
+                supplied_property["name"]: supplied_property
+                for supplied_property in expected_item_get_data["properties"]
+            }
+            for prop in catalogue_item_data["properties"]:
+                supplied_property = supplied_properties_dict.get(prop["name"])
+                expected_merged_properties.append(supplied_property if supplied_property else prop)
+
+            return {**expected_item_get_data, "properties": expected_merged_properties}
+        return expected_item_get_data
+
     def add_ids_to_expected_item_get_data(self, expected_item_get_data) -> dict:
         """
         Adds required IDs to some expected item get data based on what has already been posted.
 
-        :param expected_item_get_data: Dictionary containing the expected catalogue item data returned as would be
-                                       required for an `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`) as
-                                       they will be added here.
+        :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for an
+                                       `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`) as they will be
+                                       added here.
         """
         # Where there are properties add the property ID, unit ID and unit value
         expected_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
@@ -154,10 +166,10 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
         """
         Posts an item with the given data and returns the ID of the created item if successful.
 
-        :param item_data: Dictionary containing the basic catalogue item data as would be required for a
-                          `ItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by the `name` value
-                          in its properties as the IDs will be added automatically.
-        :return: ID of the created catalogue item (or `None` if not successful).
+        :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
+                          mandatory IDs missing and any `id`'s replaced by the `name` value in its properties as the IDs
+                          will be added automatically.
+        :return: ID of the created item (or `None` if not successful).
         """
 
         # Replace any unit values with unit IDs
@@ -289,24 +301,12 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
         Also merges in any properties that were defined in the catalogue item but are not given in the expected data.
 
         :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for a
-                                       `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`) as they will be to
-                                       check they are as expected.
+                                       `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`) as they will be
+                                       added automatically to check they are as expected.
         """
 
         # Where properties are involved in the catalogue item, need to merge them
-        catalogue_item_data = self._post_response_catalogue_item.json()
-        expected_item_get_data = expected_item_get_data.copy()
-        if "properties" in expected_item_get_data:
-            expected_merged_properties = []
-            supplied_properties_dict = {
-                supplied_property["name"]: supplied_property
-                for supplied_property in expected_item_get_data["properties"]
-            }
-            for prop in catalogue_item_data["properties"]:
-                supplied_property = supplied_properties_dict.get(prop["name"])
-                expected_merged_properties.append(supplied_property if supplied_property else prop)
-
-            expected_item_get_data["properties"] = expected_merged_properties
+        expected_item_get_data = self.merge_properties_in_expected_item_get_data(expected_item_get_data)
 
         assert self._post_response_item.status_code == 201
         assert self._post_response_item.json() == self.add_ids_to_expected_item_get_data(expected_item_get_data)
@@ -608,7 +608,7 @@ class GetDSL(CreateDSL):
         """
         Gets an item with the given ID.
 
-        :param item_id: ID of the catalogue item to be obtained.
+        :param item_id: ID of the item to be obtained.
         """
 
         self._get_response_item = self.test_client.get(f"/v1/items/{item_id}")
@@ -838,21 +838,8 @@ class UpdateDSL(ListDSL):
                                                  they are as expected.
         """
 
-        # TODO: Move this to common function - its done in the CreateDSL too
         # Where properties are involved in the catalogue item, need to merge them
-        catalogue_item_data = self._post_response_catalogue_item.json()
-        expected_item_get_data = expected_item_get_data.copy()
-        if "properties" in expected_item_get_data:
-            expected_merged_properties = []
-            supplied_properties_dict = {
-                supplied_property["name"]: supplied_property
-                for supplied_property in expected_item_get_data["properties"]
-            }
-            for prop in catalogue_item_data["properties"]:
-                supplied_property = supplied_properties_dict.get(prop["name"])
-                expected_merged_properties.append(supplied_property if supplied_property else prop)
-
-            expected_item_get_data["properties"] = expected_merged_properties
+        expected_item_get_data = self.merge_properties_in_expected_item_get_data(expected_item_get_data)
 
         assert self._patch_response_item.status_code == 200
         assert self._patch_response_item.json() == self.add_ids_to_expected_item_get_data(expected_item_get_data)

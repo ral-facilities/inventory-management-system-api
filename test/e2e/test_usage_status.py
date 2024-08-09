@@ -14,7 +14,12 @@ from test.e2e.mock_schemas import (
     USAGE_STATUS_POST_D,
     USAGE_STATUS_POST_D_EXPECTED,
 )
-from test.e2e.test_item import CATALOGUE_CATEGORY_POST_A, CATALOGUE_ITEM_POST_A, ITEM_POST, MANUFACTURER_POST
+from test.mock_data import (
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+)
 
 from bson import ObjectId
 
@@ -129,18 +134,20 @@ def test_delete_with_a_non_existent_id(test_client):
 def test_delete_usage_status_that_is_a_part_of_item(test_client):
     """Test trying to delete a usage status that is a part of an Item"""
     # pylint: disable=duplicate-code
-    response = test_client.post("/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_A)
+    response = test_client.post(
+        "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+    )
     catalogue_category = response.json()
 
     response = test_client.post("/v1/systems", json=SYSTEM_POST_A)
     system_id = response.json()["id"]
 
-    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST)
+    response = test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
 
     manufacturer_id = response.json()["id"]
 
     catalogue_item_post = {
-        **CATALOGUE_ITEM_POST_A,
+        **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
         "catalogue_category_id": catalogue_category["id"],
         "manufacturer_id": manufacturer_id,
         "properties": add_ids_to_properties(
@@ -160,11 +167,10 @@ def test_delete_usage_status_that_is_a_part_of_item(test_client):
     usage_status_id = response.json()["id"]
 
     item_post = {
-        **ITEM_POST,
+        **ITEM_DATA_REQUIRED_VALUES_ONLY,
         "catalogue_item_id": catalogue_item_id,
         "system_id": system_id,
         "usage_status_id": usage_status_id,
-        "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
     }
     # pylint: enable=duplicate-code
     response = test_client.post("/v1/items", json=item_post)

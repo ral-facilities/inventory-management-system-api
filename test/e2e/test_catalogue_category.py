@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 End-to-End tests for the catalogue category router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
@@ -24,7 +24,9 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY, UNIT_POST_DATA_MM)
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
+    UNIT_POST_DATA_MM,
+)
 from typing import Optional
 
 import pytest
@@ -32,8 +34,7 @@ from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from inventory_management_system_api.core.consts import \
-    BREADCRUMBS_TRAIL_MAX_LENGTH
+from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
 
 class CreateDSL:

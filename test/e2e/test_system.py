@@ -5,7 +5,6 @@ End-to-End tests for the system router.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.conftest import add_ids_to_properties
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
 from test.mock_data import (
