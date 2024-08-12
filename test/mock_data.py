@@ -23,18 +23,12 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 # ---------------------------- USAGE STATUSES -----------------------------
 
+# New
 USAGE_STATUS_POST_DATA_NEW = {"value": "New"}
-
-USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
 
 USAGE_STATUS_IN_DATA_NEW = {
     **USAGE_STATUS_POST_DATA_NEW,
     "code": "new",
-}
-
-USAGE_STATUS_IN_DATA_USED = {
-    **USAGE_STATUS_POST_DATA_USED,
-    "code": "used",
 }
 
 USAGE_STATUS_GET_DATA_NEW = {
@@ -42,6 +36,13 @@ USAGE_STATUS_GET_DATA_NEW = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "code": "new",
     "id": ANY,
+}
+# Used
+USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
+
+USAGE_STATUS_IN_DATA_USED = {
+    **USAGE_STATUS_POST_DATA_USED,
+    "code": "used",
 }
 
 USAGE_STATUS_GET_DATA_USED = {

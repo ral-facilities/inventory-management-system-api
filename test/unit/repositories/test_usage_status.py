@@ -1,3 +1,6 @@
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 """
 Unit tests for the `UsageStatusRepo` repository
 """
@@ -51,7 +54,7 @@ class UsageStatusRepoDSL:
         Mocks database methods appropriately for when the `_is_duplicate_usage_status` repo method will be called.
 
         :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a 
-        duplicate usage status.
+                                                                        duplicate usage status.
         """
         RepositoryTestHelpers.mock_find_one(
             self.usage_statuses_collection,
@@ -300,7 +303,6 @@ class ListDSL(UsageStatusRepoDSL):
 class TestList(ListDSL):
     """Tests for listing usage statuses."""
 
-    # pylint: disable=duplicate-code
     def test_list(self):
         """Test listing all usage statuses."""
         self.mock_list([USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED])
@@ -312,8 +314,6 @@ class TestList(ListDSL):
         self.mock_list([])
         self.call_list()
         self.check_list_success()
-
-    # pylint: enable=duplicate-code
 
 
 class DeleteDSL(UsageStatusRepoDSL):

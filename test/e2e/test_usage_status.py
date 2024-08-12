@@ -1,5 +1,5 @@
 """
-End-to-End tests for the Usage status router
+End-to-End tests for the usage status router
 """
 
 from typing import Optional
@@ -27,7 +27,7 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: Response
+    _post_response_usage_status: Response
 
     @pytest.fixture(autouse=True)
     def setup(self, test_client):
@@ -39,21 +39,21 @@ class CreateDSL:
         Posts a usage status with the given data, returns the ID of the created usage status if successful.
 
         :param usage_status_post_data: Dictionary containing the usage status data as would be required for a 
-        `UsageStatusPostSchema`.
+                                                            `UsageStatusPostSchema`.
         :return: ID of the created usage status (or `None` if not successful).
         """
-        self._post_response = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
-        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+        self._post_response_usage_status = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
+        return self._post_response_usage_status.json()["id"] if self._post_response_usage_status.status_code == 201 else None
 
     def check_post_usage_status_success(self, expected_usage_status_get_data: dict) -> None:
         """
         Checks that a prior call to `post_usage_status` gave a successful response with the expected data returned.
 
         :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required 
-        for a `UsageStatusSchema`.
+                                                                          for a `UsageStatusSchema`.
         """
-        assert self._post_response.status_code == 201
-        assert self._post_response.json() == expected_usage_status_get_data
+        assert self._post_response_usage_status.status_code == 201
+        assert self._post_response_usage_status.json() == expected_usage_status_get_data
 
     def check_post_usage_status_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -62,8 +62,8 @@ class CreateDSL:
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"] == detail
+        assert self._post_response_usage_status.status_code == status_code
+        assert self._post_response_usage_status.json()["detail"] == detail
 
 
 class TestCreate(CreateDSL):
@@ -75,8 +75,8 @@ class TestCreate(CreateDSL):
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
 
-    def test_create_usage_status_with_duplicate_name(self):
-        """Test creating a usage status with a duplicate value"""
+    def test_create_usage_status_with_duplicate_value(self):
+        """Test creating a usage status with a duplicate value."""
 
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
@@ -86,7 +86,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests"""
 
-    _get_response = Response
+    _get_response_usage_status = Response
 
     def get_usage_status(self, usage_status_id: str) -> None:
         """
@@ -94,17 +94,17 @@ class GetDSL(CreateDSL):
 
         :param usage_status_id: ID of the usage status to be obtained.
         """
-        self._get_response = self.test_client.get(f"/v1/usage-statuses/{usage_status_id}")
+        self._get_response_usage_status = self.test_client.get(f"/v1/usage-statuses/{usage_status_id}")
 
     def check_get_usage_status_success(self, expected_usage_status_get_data: dict) -> None:
         """
         Checks that a prior call to `get_usage_status` gave a successful response with the expected data returned.
 
         :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required 
-        for a `UsageStatusSchema`.
+                                                                           for a `UsageStatusSchema`.
         """
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_usage_status_get_data
+        assert self._get_response_usage_status.status_code == 200
+        assert self._get_response_usage_status.json() == expected_usage_status_get_data
 
     def check_get_usage_status_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -113,8 +113,8 @@ class GetDSL(CreateDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_usage_status.status_code == status_code
+        assert self._get_response_usage_status.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -140,9 +140,9 @@ class TestGet(GetDSL):
 class ListDSL(GetDSL):
     """Base class for list tests."""
 
-    def get_usage_statuss(self) -> None:
+    def get_usage_status(self) -> None:
         """Gets a list of usage statuses."""
-        self._get_response = self.test_client.get("/v1/usage-statuses")
+        self._get_response_usage_status = self.test_client.get("/v1/usage-statuses")
 
     def check_get_usage_statuss_success(self, expected_usage_statuss_get_data: list[dict]) -> None:
         """
@@ -151,8 +151,8 @@ class ListDSL(GetDSL):
         :param expected_usage_statuss_get_data: List of dictionaries containing the expected usage status data as would 
         be required for a `UsageStatusSchema`.
         """
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_usage_statuss_get_data
+        assert self._get_response_usage_status.status_code == 200
+        assert self._get_response_usage_status.json() == expected_usage_statuss_get_data
 
 
 class TestList(ListDSL):
@@ -174,7 +174,7 @@ class TestList(ListDSL):
 class DeleteDSL(ListDSL):
     """Base class for delete tests."""
 
-    _delete_response: Response
+    _delete_response_usage_status: Response
 
     def delete_usage_status(self, usage_status_id: str) -> None:
         """
@@ -182,11 +182,11 @@ class DeleteDSL(ListDSL):
 
         :param usage_status_id: ID of the usage status to be deleted.
         """
-        self._delete_response = self.test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
+        self._delete_response_usage_status = self.test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
 
     def check_delete_usage_status_success(self) -> None:
         """Checks that a prior call to `delete_usage_status` gave a successful response."""
-        assert self._delete_response.status_code == 204
+        assert self._delete_response_usage_status.status_code == 204
 
     def check_delete_usage_status_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -195,8 +195,8 @@ class DeleteDSL(ListDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._delete_response.status_code == status_code
-        assert self._delete_response.json()["detail"] == detail
+        assert self._delete_response_usage_status.status_code == status_code
+        assert self._delete_response_usage_status.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
