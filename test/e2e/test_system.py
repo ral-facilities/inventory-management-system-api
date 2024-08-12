@@ -16,8 +16,6 @@ from test.mock_data import (
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    UNIT_POST_DATA_CM,
-    UNIT_POST_DATA_MM,
 )
 from typing import Optional
 
