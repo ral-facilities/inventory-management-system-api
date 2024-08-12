@@ -2,8 +2,8 @@
 Unit tests for the `UsageStatusRepo` repository
 """
 
+from test.mock_data import ITEM_DATA_REQUIRED_VALUES_ONLY
 from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from test.unit.repositories.test_item import FULL_ITEM_INFO
 from unittest.mock import MagicMock, call
 
 import pytest
@@ -237,7 +237,7 @@ def test_delete_usage_status_that_is_part_of_a_catalogue_item(test_helpers, data
     test_helpers.mock_find_one(
         database_mock.items,
         {
-            **FULL_ITEM_INFO,
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
             "_id": CustomObjectId(str(ObjectId())),
             "catalogue_category_id": CustomObjectId(catalogue_category_id),
             "usage_status_id": CustomObjectId(usage_status_id),

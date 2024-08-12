@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 Unit tests for the `CatalogueCategoryService` service.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 
 from test.mock_data import (
@@ -16,7 +16,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
-from test.unit.services.conftest import ServiceTestHelpers
+from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import Optional
 from unittest.mock import ANY, MagicMock, Mock, call, patch
 
@@ -29,11 +29,7 @@ from inventory_management_system_api.core.exceptions import (
     LeafCatalogueCategoryError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
     CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
@@ -45,15 +41,13 @@ from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 
 
-class CatalogueCategoryServiceDSL:
+class CatalogueCategoryServiceDSL(BaseCatalogueServiceDSL):
     """Base class for `CatalogueCategoryService` unit tests."""
 
     wrapped_utils: Mock
     mock_catalogue_category_repository: Mock
     mock_unit_repository: Mock
     catalogue_category_service: CatalogueCategoryService
-
-    unit_value_id_dict: dict[str, str]
 
     @pytest.fixture(autouse=True)
     def setup(
@@ -74,40 +68,6 @@ class CatalogueCategoryServiceDSL:
         with patch("inventory_management_system_api.services.catalogue_category.utils", wraps=utils) as wrapped_utils:
             self.wrapped_utils = wrapped_utils
             yield
-
-    def construct_properties_in_and_post_with_ids(
-        self, catalogue_category_properties_data: list[dict]
-    ) -> tuple[list[CatalogueCategoryPropertyIn], list[CatalogueCategoryPostPropertySchema]]:
-        """
-        Returns a list of property post schemas and expected property in models by adding
-        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
-
-        :param catalogue_category_properties_data: List of dictionaries containing the data for each property as would
-                                                   be required for a `CatalogueCategoryPostPropertySchema` but without
-                                                   any `unit_id`'s.
-        :returns: Tuple of lists. The first contains the expected `CatalogueCategoryPropertyIn` models and the second
-                  the `CatalogueCategoryPostPropertySchema` schema's that should be posted in order to obtain them.
-        """
-
-        property_post_schemas = []
-        expected_properties_in = []
-
-        self.unit_value_id_dict = {}
-
-        for prop in catalogue_category_properties_data:
-            unit_id = None
-            prop_without_unit = prop.copy()
-
-            # Give unit IDs and remove the unit value from the prop for the post schema
-            if "unit" in prop and prop["unit"]:
-                unit_id = str(ObjectId())
-                self.unit_value_id_dict[prop["unit"]] = unit_id
-                del prop_without_unit["unit"]
-
-            expected_properties_in.append(CatalogueCategoryPropertyIn(**prop, unit_id=unit_id))
-            property_post_schemas.append(CatalogueCategoryPostPropertySchema(**prop_without_unit, unit_id=unit_id))
-
-        return expected_properties_in, property_post_schemas
 
     def mock_add_property_unit_values(
         self, units_in_data: list[Optional[dict]], unit_value_id_dict: dict[str, str]
@@ -166,8 +126,8 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         Mocks repo methods appropriately to test the `create` service method.
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
-                                        for a `CatalogueCategoryPostSchema` but with any unit_id's replaced by the
-                                        'unit' value in its properties as the IDs will be added automatically.
+                                        for a `CatalogueCategoryPostSchema` but with any `unit_id`'s replaced by the
+                                        `unit` value in its properties as the IDs will be added automatically.
         :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
                                                   data as would be required for a `CatalogueCategoryIn` database model.
         :param units_in_data: Either `None` or a list of dictionaries (or `None`) containing the unit data as would be
@@ -191,8 +151,8 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         property_post_schemas = []
         expected_properties_in = []
         if "properties" in catalogue_category_data and catalogue_category_data["properties"]:
-            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
-                catalogue_category_data["properties"]
+            expected_properties_in, property_post_schemas = (
+                self.construct_catalogue_category_properties_in_and_post_with_ids(catalogue_category_data["properties"])
             )
 
             self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
@@ -484,12 +444,12 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         :param catalogue_category_id: ID of the catalogue category that will be obtained.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
                                                `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
-                                               'unit' value in its properties as the IDs will be added automatically.
+                                               `unit` value in its properties as the IDs will be added automatically.
         :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
                                                stored catalogue category as would be required for a
                                                `CatalogueCategoryPostSchema` (i.e. no ID, code or created and modified
                                                times required).
-        :param has_child_elements: Boolean of whether the category being updated has child elements or not
+        :param has_child_elements: Boolean of whether the catalogue category being updated has child elements or not
         :param new_parent_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
                                                category data as would be required for a `CatalogueCategoryIn` database
                                                model.
@@ -504,7 +464,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
                 **CatalogueCategoryIn(
                     **stored_catalogue_category_post_data,
                     code=utils.generate_code(stored_catalogue_category_post_data["name"], "catalogue category"),
-                ).model_dump(),
+                ).model_dump(by_alias=True),
                 id=CustomObjectId(catalogue_category_id),
             )
             if stored_catalogue_category_post_data
@@ -521,9 +481,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         # When moving i.e. changing the parent id, the data for the new parent needs to be mocked
         self._moving_catalogue_category = (
-            "parent_id" in catalogue_category_update_data
-            and stored_catalogue_category_post_data is not None
-            and stored_catalogue_category_post_data["parent_id"] != catalogue_category_update_data["parent_id"]
+            "parent_id" in catalogue_category_update_data and stored_catalogue_category_post_data is not None
         )
 
         if self._moving_catalogue_category and catalogue_category_update_data["parent_id"]:
@@ -544,8 +502,10 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         # When properties are given need to mock any units and ensure the expected data inserts the unit IDs as well
         expected_properties_in = []
         if "properties" in catalogue_category_update_data and catalogue_category_update_data["properties"]:
-            expected_properties_in, property_post_schemas = self.construct_properties_in_and_post_with_ids(
-                catalogue_category_update_data["properties"]
+            expected_properties_in, property_post_schemas = (
+                self.construct_catalogue_category_properties_in_and_post_with_ids(
+                    catalogue_category_update_data["properties"]
+                )
             )
             catalogue_category_update_data["properties"] = property_post_schemas
 
@@ -597,11 +557,11 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
 
-        # Obtain a list of expected get calls
-        expected_get_calls = []
+        # Obtain a list of expected catalogue category get calls
+        expected_catalogue_category_get_calls = []
 
         # Ensure obtained old catalogue category
-        expected_get_calls.append(call(self._updated_catalogue_category_id))
+        expected_catalogue_category_get_calls.append(call(self._updated_catalogue_category_id))
 
         # Ensure checking children if needed
         if self._expect_child_check:
@@ -619,9 +579,9 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         # Ensure obtained new parent if moving
         if self._moving_catalogue_category and self._catalogue_category_patch.parent_id:
-            expected_get_calls.append(call(self._catalogue_category_patch.parent_id))
+            expected_catalogue_category_get_calls.append(call(self._catalogue_category_patch.parent_id))
 
-        self.mock_catalogue_category_repository.get.assert_has_calls(expected_get_calls)
+        self.mock_catalogue_category_repository.get.assert_has_calls(expected_catalogue_category_get_calls)
 
         # Ensure updated with expected data
         if self._catalogue_category_patch.properties:
@@ -666,7 +626,7 @@ class TestUpdate(UpdateDSL):
     """Tests for updating a catalogue category."""
 
     def test_update_non_leaf_all_fields_except_parent_id_no_children(self):
-        """Test updating all fields of a non-leaf catalogue category except its parent id when it has no children."""
+        """Test updating all fields of a non-leaf catalogue category except its `parent_id` when it has no children."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -679,7 +639,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_all_fields_except_parent_id_with_children(self):
-        """Test updating all allowable fields of a catalogue category except its parent id when it has children
+        """Test updating all allowable fields of a catalogue category except its `parent_id` when it has children
         (leaf/non-leaf doesn't matter as properties can't be updated with children anyway)."""
 
         catalogue_category_id = str(ObjectId())
@@ -693,7 +653,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_category_id)
         self.check_update_success()
 
-    def test_update_is_leaf_only_without_children(self):
+    def test_update_is_leaf_without_children(self):
         """Test updating a catalogue categories is_leaf field only when it doesn't have any children
         (code should not need regenerating as name doesn't change)."""
 
@@ -707,7 +667,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_category_id)
         self.check_update_success()
 
-    def test_update_is_leaf_only_with_children(self):
+    def test_update_is_leaf_with_children(self):
         """Test updating a catalogue categories is_leaf field only when it has children
         (code should not need regenerating as name doesn't change)."""
 
@@ -725,7 +685,7 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_leaf_all_fields_except_parent_id_with_no_children(self):
-        """Test updating all fields of a leaf catalogue category except its parent id when it has no children."""
+        """Test updating all fields of a leaf catalogue category except its `parent_id` when it has no children."""
 
         catalogue_category_id = str(ObjectId())
 
@@ -738,7 +698,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_category_id)
         self.check_update_success()
 
-    def test_update_leaf_properties_only_with_children(self):
+    def test_update_leaf_properties_with_children(self):
         """Test updating the properties of a leaf catalogue category when it has children."""
 
         catalogue_category_id = str(ObjectId())
@@ -757,7 +717,7 @@ class TestUpdate(UpdateDSL):
             f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
         )
 
-    def test_update_leaf_properties_only_with_non_existent_unit_id(self):
+    def test_update_leaf_properties_with_non_existent_unit_id(self):
         """Test updating the properties of a leaf catalogue category when given a property with an non-existent unit
         ID."""
 

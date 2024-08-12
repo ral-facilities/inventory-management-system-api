@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 End-to-End tests for the catalogue category router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
@@ -23,6 +23,8 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     UNIT_POST_DATA_MM,
 )
 from typing import Optional
@@ -40,7 +42,7 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: Response
+    _post_response_catalogue_category: Response
 
     unit_value_id_dict: dict[str, str]
 
@@ -50,15 +52,6 @@ class CreateDSL:
 
         self.test_client = test_client
         self.unit_value_id_dict = {}
-
-    def post_unit(self, unit_post_data: dict) -> None:
-        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
-
-        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
-        """
-
-        post_response = self.test_client.post("/v1/units", json=unit_post_data)
-        self.unit_value_id_dict[unit_post_data["value"]] = post_response.json()["id"]
 
     def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
@@ -71,6 +64,15 @@ class CreateDSL:
 
         self.unit_value_id_dict[unit_value] = unit_id
 
+    def post_unit(self, unit_post_data: dict) -> None:
+        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
+
+        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
+        """
+
+        post_response = self.test_client.post("/v1/units", json=unit_post_data)
+        self.add_unit_value_and_id(unit_post_data["value"], post_response.json()["id"])
+
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
         Posts a catalogue category with the given data and returns the ID of the created catalogue category if
@@ -78,7 +80,7 @@ class CreateDSL:
 
         :param catalogue_category_data: Dictionary containing the basic catalogue category data as would be required
                                         for a `CatalogueCategoryPostSchema` but with any `unit_id`'s replaced by the
-                                        'unit' value in its properties as the IDs will be added automatically.
+                                        `unit` value in its properties as the IDs will be added automatically.
         :return: ID of the created catalogue category (or `None` if not successful).
         """
 
@@ -87,9 +89,15 @@ class CreateDSL:
             catalogue_category_data, self.unit_value_id_dict
         )
 
-        self._post_response = self.test_client.post("/v1/catalogue-categories", json=catalogue_category_data)
+        self._post_response_catalogue_category = self.test_client.post(
+            "/v1/catalogue-categories", json=catalogue_category_data
+        )
 
-        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+        return (
+            self._post_response_catalogue_category.json()["id"]
+            if self._post_response_catalogue_category.status_code == 201
+            else None
+        )
 
     def post_leaf_catalogue_category_with_allowed_values(
         self, property_type: str, allowed_values_post_data: dict
@@ -123,11 +131,14 @@ class CreateDSL:
         returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategoryGetSchema`.
+                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
+                                                     as they will be added automatically to check they are as expected.
         """
 
-        assert self._post_response.status_code == 201
-        assert self._post_response.json() == expected_catalogue_category_get_data
+        assert self._post_response_catalogue_category.status_code == 201
+        assert self._post_response_catalogue_category.json() == E2ETestHelpers.add_unit_ids_to_properties(
+            expected_catalogue_category_get_data, self.unit_value_id_dict
+        )
 
     def check_post_catalogue_category_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -138,8 +149,8 @@ class CreateDSL:
         :param detail: Expected detail given in the response.
         """
 
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"] == detail
+        assert self._post_response_catalogue_category.status_code == status_code
+        assert self._post_response_catalogue_category.json()["detail"] == detail
 
     def check_post_catalogue_category_failed_with_validation_message(self, status_code: int, message: str) -> None:
         """
@@ -150,8 +161,8 @@ class CreateDSL:
         :param message: Expected validation error message given in the response.
         """
 
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"][0]["msg"] == message
+        assert self._post_response_catalogue_category.status_code == status_code
+        assert self._post_response_catalogue_category.json()["detail"][0]["msg"] == message
 
 
 class TestCreate(CreateDSL):
@@ -185,7 +196,7 @@ class TestCreate(CreateDSL):
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": parent_id}
         )
 
-    def test_create_with_eaf_parent(self):
+    def test_create_with_leaf_parent(self):
         """Test creating a catalogue category with a leaf parent."""
 
         parent_id = self.post_catalogue_category(
@@ -377,7 +388,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
-    _get_response: Response
+    _get_response_catalogue_category: Response
 
     def get_catalogue_category(self, catalogue_category_id: str) -> None:
         """
@@ -386,18 +397,24 @@ class GetDSL(CreateDSL):
         :param catalogue_category_id: ID of the catalogue category to be obtained.
         """
 
-        self._get_response = self.test_client.get(f"/v1/catalogue-categories/{catalogue_category_id}")
+        self._get_response_catalogue_category = self.test_client.get(
+            f"/v1/catalogue-categories/{catalogue_category_id}"
+        )
 
     def check_get_catalogue_category_success(self, expected_catalogue_category_get_data: dict) -> None:
         """
         Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategoryGetSchema`.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
+                                                     as would be required for a `CatalogueCategorySchema`. Does not need
+                                                     unit IDs as they will be added automatically to check they are as
+                                                     expected.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_catalogue_category_get_data
+        assert self._get_response_catalogue_category.status_code == 200
+        assert self._get_response_catalogue_category.json() == E2ETestHelpers.add_unit_ids_to_properties(
+            expected_catalogue_category_get_data, self.unit_value_id_dict
+        )
 
     def check_get_catalogue_category_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -408,8 +425,8 @@ class GetDSL(CreateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_catalogue_category.status_code == status_code
+        assert self._get_response_catalogue_category.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -439,7 +456,7 @@ class TestGet(GetDSL):
 class GetBreadcrumbsDSL(GetDSL):
     """Base class for breadcrumbs tests."""
 
-    _get_response: Response
+    _get_response_catalogue_category: Response
 
     _posted_catalogue_categories_get_data: list[dict]
 
@@ -466,7 +483,7 @@ class GetBreadcrumbsDSL(GetDSL):
                     "parent_id": parent_id,
                 }
             )
-            self._posted_catalogue_categories_get_data.append(self._post_response.json())
+            self._posted_catalogue_categories_get_data.append(self._post_response_catalogue_category.json())
             parent_id = catalogue_category_id
 
         return [catalogue_category["id"] for catalogue_category in self._posted_catalogue_categories_get_data]
@@ -478,12 +495,14 @@ class GetBreadcrumbsDSL(GetDSL):
         :param catalogue_category_id: ID of the catalogue category to obtain the breadcrumbs of.
         """
 
-        self._get_response = self.test_client.get(f"/v1/catalogue-categories/{catalogue_category_id}/breadcrumbs")
+        self._get_response_catalogue_category = self.test_client.get(
+            f"/v1/catalogue-categories/{catalogue_category_id}/breadcrumbs"
+        )
 
     def get_last_catalogue_category_breadcrumbs(self) -> None:
         """Gets the last catalogue category posted's breadcrumbs."""
 
-        self.get_catalogue_category_breadcrumbs(self._post_response.json()["id"])
+        self.get_catalogue_category_breadcrumbs(self._post_response_catalogue_category.json()["id"])
 
     def check_get_catalogue_categories_breadcrumbs_success(
         self, expected_trail_length: int, expected_full_trail: bool
@@ -496,8 +515,8 @@ class GetBreadcrumbsDSL(GetDSL):
         :param expected_full_trail: Whether the expected trail is a full trail or not.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == {
+        assert self._get_response_catalogue_category.status_code == 200
+        assert self._get_response_catalogue_category.json() == {
             "trail": [
                 [catalogue_category["id"], catalogue_category["name"]]
                 # When the expected trail length is < the number of systems posted, only use the last
@@ -516,8 +535,8 @@ class GetBreadcrumbsDSL(GetDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_catalogue_category.status_code == status_code
+        assert self._get_response_catalogue_category.json()["detail"] == detail
 
 
 class TestGetBreadcrumbs(GetBreadcrumbsDSL):
@@ -577,12 +596,12 @@ class ListDSL(GetBreadcrumbsDSL):
 
     def get_catalogue_categories(self, filters: dict) -> None:
         """
-        Gets a list catalogue categories with the given filters.
+        Gets a list of catalogue categories with the given filters.
 
         :param filters: Filters to use in the request.
         """
 
-        self._get_response = self.test_client.get("/v1/catalogue-categories", params=filters)
+        self._get_response_catalogue_category = self.test_client.get("/v1/catalogue-categories", params=filters)
 
     def post_test_catalogue_category_with_child(self) -> list[dict]:
         """
@@ -590,7 +609,7 @@ class ListDSL(GetBreadcrumbsDSL):
         list endpoint.
 
         :return: List of dictionaries containing the expected catalogue category data returned from a get endpoint in
-                 the form of a `CatalogueCategoryGetSchema`.
+                 the form of a `CatalogueCategorySchema`.
         """
 
         parent_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
@@ -608,12 +627,12 @@ class ListDSL(GetBreadcrumbsDSL):
         Checks that a prior call to `get_catalogue_categories` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected system data
-                                                returned as would be required for `CatalogueCategoryGetSchema`'s.
+        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected catalogue category
+                                                    data returned as would be required for `CatalogueCategorySchema`'s.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_catalogue_categories_get_data
+        assert self._get_response_catalogue_category.status_code == 200
+        assert self._get_response_catalogue_category.json() == expected_catalogue_categories_get_data
 
 
 class TestList(ListDSL):
@@ -655,13 +674,13 @@ class TestList(ListDSL):
         self.check_get_catalogue_categories_success([catalogue_categories[0]])
 
     def test_list_with_parent_id_filter_with_no_matching_results(self):
-        """Test getting a list of all systems with a `parent_id` filter that returns no results."""
+        """Test getting a list of all catalogue categories with a `parent_id` filter that returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": str(ObjectId())})
         self.check_get_catalogue_categories_success([])
 
     def test_list_with_invalid_parent_id_filter(self):
-        """Test getting a list of all systems with an invalid `parent_id` filter returns no results."""
+        """Test getting a list of all categories with an invalid `parent_id` filter returns no results."""
 
         self.get_catalogue_categories(filters={"parent_id": "invalid-id"})
         self.check_get_catalogue_categories_success([])
@@ -672,7 +691,7 @@ class TestList(ListDSL):
 class UpdateDSL(ListDSL):
     """Base class for update tests."""
 
-    _patch_response: Response
+    _patch_response_catalogue_category: Response
 
     def patch_catalogue_category(self, catalogue_category_id: str, catalogue_category_update_data: dict) -> None:
         """
@@ -681,7 +700,7 @@ class UpdateDSL(ListDSL):
         :param catalogue_category_id: ID of the catalogue category to patch.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
                                                `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
-                                               'unit' value in its properties as the ids will be added automatically.
+                                               `unit` value in its properties as the ids will be added automatically.
         """
 
         # Replace any unit values with unit ids
@@ -689,7 +708,7 @@ class UpdateDSL(ListDSL):
             catalogue_category_update_data, self.unit_value_id_dict
         )
 
-        self._patch_response = self.test_client.patch(
+        self._patch_response_catalogue_category = self.test_client.patch(
             f"/v1/catalogue-categories/{catalogue_category_id}", json=catalogue_category_update_data
         )
 
@@ -699,53 +718,33 @@ class UpdateDSL(ListDSL):
         # pylint:disable=fixme
         # TODO: Could change post_catalogue_category logic and use post_catalogue_category - right now a test like
         # test_partial_update_non_leaf_all_valid_values_when_has_child_catalogue_category wont work with that as it
-        # will assert the created times based on the last _post_response which will be the child so have to bypass here
+        # will assert the created times based on the last _post_response_catalogue_category which will be the child so
+        # have to bypass here
         # currently - may not be necessary if have custom test client instead & should be clearer after items
         self.test_client.post(
             "/v1/catalogue-categories",
             json={
                 **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-                "parent_id": self._post_response.json()["id"],
+                "parent_id": self._post_response_catalogue_category.json()["id"],
             },
         )
 
     def post_child_catalogue_item(self) -> None:
         """Utility method that posts a child catalogue item for the last catalogue category posted."""
 
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-
         # Create a child catalogue item
-        # pylint: disable=duplicate-code
         response = self.test_client.post(
             "/v1/manufacturers",
-            json={
-                "name": "Manufacturer D",
-                "url": "http://example.com/",
-                "address": {
-                    "address_line": "1 Example Street",
-                    "town": "Oxford",
-                    "county": "Oxfordshire",
-                    "country": "United Kingdom",
-                    "postcode": "OX1 2AB",
-                },
-                "telephone": "0932348348",
-            },
+            json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
         )
         manufacturer_id = response.json()["id"]
 
         catalogue_item_post = {
-            "name": "Catalogue Item A",
-            "description": "This is Catalogue Item A",
-            "cost_gbp": 129.99,
-            "days_to_replace": 2.0,
-            "is_obsolete": False,
-            "catalogue_category_id": self._post_response.json()["id"],
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": self._post_response_catalogue_category.json()["id"],
             "manufacturer_id": manufacturer_id,
-            "properties": [],
         }
         self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        # pylint: enable=duplicate-code
 
     def patch_properties_with_property_with_allowed_values(
         self, property_type: str, allowed_values_post_data: dict
@@ -760,7 +759,7 @@ class UpdateDSL(ListDSL):
         """
 
         self.patch_catalogue_category(
-            self._post_response.json()["id"],
+            self._post_response_catalogue_category.json()["id"],
             {
                 "properties": [
                     {
@@ -778,14 +777,19 @@ class UpdateDSL(ListDSL):
         Checks that a prior call to `patch_catalogue_category` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategoryGetSchema`.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
+                                            as would be required for a `CatalogueCategorySchema`. Does not need unit IDs
+                                            as they will be added automatically to check they are as expected.
         """
 
-        assert self._patch_response.status_code == 200
-        assert self._patch_response.json() == expected_catalogue_category_get_data
+        assert self._patch_response_catalogue_category.status_code == 200
+        assert self._patch_response_catalogue_category.json() == E2ETestHelpers.add_unit_ids_to_properties(
+            expected_catalogue_category_get_data, self.unit_value_id_dict
+        )
 
-        E2ETestHelpers.check_created_and_modified_times_updated_correctly(self._post_response, self._patch_response)
+        E2ETestHelpers.check_created_and_modified_times_updated_correctly(
+            self._post_response_catalogue_category, self._patch_response_catalogue_category
+        )
 
     def check_patch_catalogue_category_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -796,8 +800,8 @@ class UpdateDSL(ListDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._patch_response.status_code == status_code
-        assert self._patch_response.json()["detail"] == detail
+        assert self._patch_response_catalogue_category.status_code == status_code
+        assert self._patch_response_catalogue_category.json()["detail"] == detail
 
     def check_patch_catalogue_category_failed_with_validation_message(self, status_code: int, message: str) -> None:
         """
@@ -808,8 +812,8 @@ class UpdateDSL(ListDSL):
         :param message: Expected validation error message given in the response.
         """
 
-        assert self._patch_response.status_code == status_code
-        assert self._patch_response.json()["detail"][0]["msg"] == message
+        assert self._patch_response_catalogue_category.status_code == status_code
+        assert self._patch_response_catalogue_category.json()["detail"][0]["msg"] == message
 
 
 class TestUpdate(UpdateDSL):
@@ -1264,22 +1268,24 @@ class TestUpdate(UpdateDSL):
 class DeleteDSL(UpdateDSL):
     """Base class for delete tests."""
 
-    _delete_response: Response
+    _delete_response_catalogue_category: Response
 
     def delete_catalogue_category(self, catalogue_category_id: str) -> None:
         """
-        Deletes a catalogue_category with the given ID.
+        Deletes a catalogue category with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to be deleted.
         """
 
-        self._delete_response = self.test_client.delete(f"/v1/catalogue-categories/{catalogue_category_id}")
+        self._delete_response_catalogue_category = self.test_client.delete(
+            f"/v1/catalogue-categories/{catalogue_category_id}"
+        )
 
     def check_delete_catalogue_category_success(self) -> None:
         """Checks that a prior call to `delete_catalogue_category` gave a successful response with the expected data
         returned."""
 
-        assert self._delete_response.status_code == 204
+        assert self._delete_response_catalogue_category.status_code == 204
 
     def check_delete_catalogue_category_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -1290,8 +1296,8 @@ class DeleteDSL(UpdateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._delete_response.status_code == status_code
-        assert self._delete_response.json()["detail"] == detail
+        assert self._delete_response_catalogue_category.status_code == status_code
+        assert self._delete_response_catalogue_category.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
