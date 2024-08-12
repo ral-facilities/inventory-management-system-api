@@ -5,14 +5,13 @@ Unit tests for the `SystemRepo` repository
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.mock_data import SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
+from test.mock_data import ITEM_DATA_REQUIRED_VALUES_ONLY, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
     MOCK_MOVE_QUERY_RESULT_INVALID,
     MOCK_MOVE_QUERY_RESULT_VALID,
 )
-from test.unit.services.test_item import ITEM_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -72,7 +71,7 @@ class SystemRepoDSL:
         Mocks database methods appropriately for when the `_has_child_elements` repo method will be called.
 
         :param child_system_data: Dictionary containing a child system's data (or `None`).
-        :param child_item_data: Dictionary containing a child Item's data (or `None`).
+        :param child_item_data: Dictionary containing a child item's data (or `None`).
         """
 
         self._mock_child_system_data = child_system_data
@@ -121,6 +120,7 @@ class SystemRepoDSL:
 
         :param system_in: `SystemIn` model containing the data about the system.
         :param expected_system_id: Expected `system_id` provided to `is_duplicate_system`.
+        :return: Expected `find_one` calls.
         """
 
         return call(
@@ -216,9 +216,10 @@ class CreateDSL(SystemRepoDSL):
                 session=self.mock_session,
             )
         )
-        self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         self.systems_collection.insert_one.assert_called_once_with(system_in_data, session=self.mock_session)
+        self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
+
         assert self._created_system == self._expected_system_out
 
     def check_create_failed_with_exception(self, message: str) -> None:
@@ -481,7 +482,7 @@ class ListDSL(SystemRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing system's."""
+    """Tests for listing systems."""
 
     def test_list(self):
         """Test listing all systems."""
@@ -894,9 +895,7 @@ class TestDelete(DeleteDSL):
 
         system_id = str(ObjectId())
 
-        # pylint:disable=fixme
-        # TODO: Replace ITEM_INFO once item tests have been refactored
-        self.mock_delete(deleted_count=1, child_item_data=ITEM_INFO)
+        self.mock_delete(deleted_count=1, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(system_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
 

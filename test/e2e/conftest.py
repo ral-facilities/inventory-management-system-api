@@ -48,7 +48,7 @@ def replace_unit_values_with_ids_in_properties(properties_without_ids: list[dict
     unchanged.
 
     :param properties_without_ids: The list of properties without IDs. Each property is a dictionary
-                                   that may contain a 'unit' key with a unit value that needs to be
+                                   that may contain a `unit` key with a unit value that needs to be
                                    replaced by the unit ID.
     :param units: The list of units. Each unit is a dictionary containing 'id' and 'value' keys, where
                   ID is the unique identifier for the unit and 'value' is the unit value to match
@@ -108,11 +108,11 @@ class E2ETestHelpers:
 
     @staticmethod
     def replace_unit_values_with_ids_in_properties(data: dict, unit_value_id_dict: dict[str, str]) -> dict:
-        """Inserts unit IDs into some data that may have a 'properties' list within it
+        """Inserts unit IDs into some data that may have a 'properties' list within it while removing the unit value.
 
-        :param data: Dictionary of data that could have a 'properties' value within it
-        :param unit_value_id_dict: Dictionary of unit value and id pairs for unit id lookups
-        :return: The data with any needed unit IDs inserted
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param unit_value_id_dict: Dictionary of unit value and ID pairs for unit ID lookups.
+        :return: The data with any needed unit IDs inserted.
         """
 
         if "properties" in data and data["properties"]:
@@ -125,6 +125,66 @@ class E2ETestHelpers:
                     else:
                         new_property["unit_id"] = None
                     del new_property["unit"]
+                new_properties.append(new_property)
+            return {**data, "properties": new_properties}
+        return data
+
+    @staticmethod
+    def add_unit_ids_to_properties(data: dict, unit_value_id_dict: dict[str, str]) -> dict:
+        """Inserts unit IDs into some data that may have a 'properties' list within it.
+
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param unit_value_id_dict: Dictionary of unit value and ID pairs for unit ID lookups.
+        :return: The data with any needed unit IDs inserted.
+        """
+
+        if "properties" in data and data["properties"]:
+            new_properties = []
+            for prop in data["properties"]:
+                new_property = {**prop}
+                if "unit" in prop:
+                    if prop["unit"] is not None:
+                        new_property["unit_id"] = unit_value_id_dict[prop["unit"]]
+                    else:
+                        new_property["unit_id"] = None
+                new_properties.append(new_property)
+            return {**data, "properties": new_properties}
+        return data
+
+    @staticmethod
+    def replace_property_names_with_ids_in_properties(data: dict, property_name_id_dict: dict[str, str]) -> dict:
+        """Inserts property IDs into some data that may have a 'properties' list within it while removing the property
+        name.
+
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param property_name_id_dict: Dictionary of property name and ID pairs for property ID lookups.
+        :return: The data with any needed property IDs inserted.
+        """
+
+        if "properties" in data and data["properties"]:
+            new_properties = []
+            for prop in data["properties"]:
+                new_property = {**prop}
+                new_property["id"] = property_name_id_dict[prop["name"]]
+                del new_property["name"]
+                new_properties.append(new_property)
+            return {**data, "properties": new_properties}
+        return data
+
+    @staticmethod
+    def add_property_ids_to_properties(data: dict, property_name_id_dict: dict[str, str]) -> dict:
+        """Inserts property IDs into some data that may have a 'properties' list within it.
+
+        :param data: Dictionary of data that could have a 'properties' value within it.
+        :param property_name_id_dict: Dictionary of property name and ID pairs for property ID lookups.
+        :return: The data with any needed property IDs inserted.
+        """
+
+        if "properties" in data and data["properties"]:
+            new_properties = []
+            for prop in data["properties"]:
+                new_property = {**prop}
+                new_property["id"] = property_name_id_dict[prop["name"]]
                 new_properties.append(new_property)
             return {**data, "properties": new_properties}
         return data

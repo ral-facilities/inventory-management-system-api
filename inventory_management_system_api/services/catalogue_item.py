@@ -97,14 +97,6 @@ class CatalogueItemService:
             )
         )
 
-    def delete(self, catalogue_item_id: str) -> None:
-        """
-        Delete a catalogue item by its ID.
-
-        :param catalogue_item_id: The ID of the catalogue item to delete.
-        """
-        return self._catalogue_item_repository.delete(catalogue_item_id)
-
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """
         Retrieve a catalogue item by its ID.
@@ -124,6 +116,7 @@ class CatalogueItemService:
         return self._catalogue_item_repository.list(catalogue_category_id)
 
     # pylint:disable=too-many-branches
+    # pylint:disable=too-many-locals
     def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.
@@ -169,15 +162,20 @@ class CatalogueItemService:
                     stored_catalogue_item.catalogue_category_id
                 )
 
+                # Ensure the properties are the same in every way ignoring the ids
+                invalid_action_error_message = (
+                    "Cannot move catalogue item to a category with different properties without "
+                    "specifying the new properties"
+                )
+                if len(current_catalogue_category.properties) != len(catalogue_category.properties):
+                    raise InvalidActionError(invalid_action_error_message)
+
                 old_to_new_id_map = {}
                 for current_catalogue_category_prop, catalogue_category_prop in zip(
                     current_catalogue_category.properties, catalogue_category.properties
                 ):
                     if not current_catalogue_category_prop.is_equal_without_id(catalogue_category_prop):
-                        raise InvalidActionError(
-                            "Cannot move catalogue item to a category with different properties without "
-                            "specifying the new properties"
-                        )
+                        raise InvalidActionError(invalid_action_error_message)
                     old_to_new_id_map[current_catalogue_category_prop.id] = catalogue_category_prop.id
 
                 # The IDs of the properties need to be updated to those of the new catalogue category
@@ -213,3 +211,11 @@ class CatalogueItemService:
             catalogue_item_id,
             CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
         )
+
+    def delete(self, catalogue_item_id: str) -> None:
+        """
+        Delete a catalogue item by its ID.
+
+        :param catalogue_item_id: The ID of the catalogue item to delete.
+        """
+        return self._catalogue_item_repository.delete(catalogue_item_id)

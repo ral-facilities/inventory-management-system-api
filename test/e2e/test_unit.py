@@ -73,7 +73,7 @@ class TestCreate(CreateDSL):
         self.check_post_unit_success(UNIT_GET_DATA_MM)
 
     def test_create_unit_with_duplicate_value(self):
-        """Test creating a unit with a duplicate value"""
+        """Test creating a unit with a duplicate value."""
 
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_unit(UNIT_POST_DATA_MM)

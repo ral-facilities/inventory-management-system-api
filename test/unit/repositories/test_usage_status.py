@@ -53,7 +53,7 @@ class UsageStatusRepoDSL:
         """
         Mocks database methods appropriately for when the `_is_duplicate_usage_status` repo method will be called.
 
-        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a 
+        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a
                                                                         duplicate usage status.
         """
         RepositoryTestHelpers.mock_find_one(
@@ -92,7 +92,7 @@ class CreateDSL(UsageStatusRepoDSL):
 
         :param usage_status_in_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusIn` database model (i.e. no ID or created and modified times required).
-        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a 
+        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a
         duplicate usage status.
         """
         inserted_usage_status_id = CustomObjectId(str(ObjectId()))

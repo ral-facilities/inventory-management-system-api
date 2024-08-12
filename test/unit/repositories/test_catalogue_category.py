@@ -1,10 +1,10 @@
-# pylint: disable=too-many-lines
 """
 Unit tests for the `CatalogueCategoryRepo` repository.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-lines
 
 from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
@@ -12,6 +12,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
@@ -19,7 +20,6 @@ from test.unit.repositories.test_utils import (
     MOCK_MOVE_QUERY_RESULT_INVALID,
     MOCK_MOVE_QUERY_RESULT_VALID,
 )
-from test.unit.services.test_catalogue_item import CATALOGUE_ITEM_A_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -178,7 +178,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
 
     def call_create(self) -> None:
         """Calls the `CatalogueCategoryRepo` `create` method with the appropriate data from a prior call to
-        `mock_create`"""
+        `mock_create`."""
 
         self._created_catalogue_category = self.catalogue_category_repository.create(
             self._catalogue_category_in, session=self.mock_session
@@ -197,7 +197,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         self._create_exception = exc
 
     def check_create_success(self):
-        """Checks that a prior call to `call_create` worked as expected"""
+        """Checks that a prior call to `call_create` worked as expected."""
 
         catalogue_category_in_data = self._catalogue_category_in.model_dump(by_alias=True)
 
@@ -319,7 +319,7 @@ class GetDSL(CatalogueCategoryRepoDSL):
 
         :param catalogue_category_id: ID of the catalogue category to be obtained.
         :param catalogue_category_in_data: Either `None` or a Dictionary containing the catalogue category data as would
-                                           be required for a `CatalogueCategoryIn` database model (i.e. No id or created
+                                           be required for a `CatalogueCategoryIn` database model (i.e. No ID or created
                                            and modified times required).
         """
 
@@ -531,7 +531,7 @@ class ListDSL(CatalogueCategoryRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing Catalogue Category's."""
+    """Tests for listing catalogue categorys."""
 
     def test_list(self):
         """Test listing all catalogue categories."""
@@ -776,7 +776,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 "_id": CustomObjectId(self._updated_catalogue_category_id),
             },
             {
-                "$set": self._catalogue_category_in.model_dump(),
+                "$set": self._catalogue_category_in.model_dump(by_alias=True),
             },
             session=self.mock_session,
         )
@@ -927,68 +927,6 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-class HasChildElementsDSL(CatalogueCategoryRepoDSL):
-    """Base class for `has_child_elements` tests"""
-
-    _has_child_elements_catalogue_category_id: str
-    _has_child_elements_result: bool
-
-    def call_has_child_elements(self, catalogue_category_id: str) -> None:
-        """Calls the `CatalogueCategoryRepo` `has_child_elements` method.
-
-        :param catalogue_category_id: ID of the catalogue category to check.
-        """
-
-        self._has_child_elements_catalogue_category_id = catalogue_category_id
-        self._has_child_elements_result = self.catalogue_category_repository.has_child_elements(
-            CustomObjectId(catalogue_category_id), session=self.mock_session
-        )
-
-    def check_has_child_elements_success(self, expected_result: bool) -> None:
-        """Checks that a prior call to `call_has_child_elements` worked as expected
-
-        :param expected_result: The expected result returned by `has_child_elements`
-        """
-
-        self.check_has_child_elements_performed_expected_calls(self._has_child_elements_catalogue_category_id)
-
-        assert self._has_child_elements_result == expected_result
-
-
-class TestHasChildElements(HasChildElementsDSL):
-    """Tests for `has_child_elements`."""
-
-    def test_has_child_elements_with_no_children(self):
-        """Test `has_child_elements` when there are no child catalogue categories or catalogue items."""
-
-        self.mock_has_child_elements(child_catalogue_category_data=None, child_catalogue_item_data=None)
-        self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
-        self.check_has_child_elements_success(expected_result=False)
-
-    def test_has_child_elements_with_child_catalogue_category(self):
-        """Test `has_child_elements` when there is a child catalogue category but no child catalogue items."""
-
-        self.mock_has_child_elements(
-            child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-            child_catalogue_item_data=None,
-        )
-        self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
-        self.check_has_child_elements_success(expected_result=True)
-
-    def test_has_child_elements_with_child_catalogue_catalogue_item(self):
-        """Test `has_child_elements` when there are no child catalogue categories but there is a child catalogue
-        item."""
-
-        # pylint:disable=fixme
-        # TODO: Replace CATALOGUE_ITEM_A_INFO once catalogue item tests have been refactored
-        self.mock_has_child_elements(
-            child_catalogue_category_data=None,
-            child_catalogue_item_data=CATALOGUE_ITEM_A_INFO,
-        )
-        self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
-        self.check_has_child_elements_success(expected_result=True)
-
-
 class DeleteDSL(CatalogueCategoryRepoDSL):
     """Base class for `delete` tests."""
 
@@ -1090,9 +1028,7 @@ class TestDelete(DeleteDSL):
 
         catalogue_category_id = str(ObjectId())
 
-        # pylint:disable=fixme
-        # TODO: Replace CATALOGUE_ITEM_A_INFO once item tests have been refactored
-        self.mock_delete(deleted_count=1, child_catalogue_item_data=CATALOGUE_ITEM_A_INFO)
+        self.mock_delete(deleted_count=1, child_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
             f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
@@ -1116,6 +1052,66 @@ class TestDelete(DeleteDSL):
 
         self.call_delete_expecting_error(catalogue_category_id, InvalidObjectIdError)
         self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class HasChildElementsDSL(CatalogueCategoryRepoDSL):
+    """Base class for `has_child_elements` tests"""
+
+    _has_child_elements_catalogue_category_id: str
+    _has_child_elements_result: bool
+
+    def call_has_child_elements(self, catalogue_category_id: str) -> None:
+        """Calls the `CatalogueCategoryRepo` `has_child_elements` method.
+
+        :param catalogue_category_id: ID of the catalogue category to check.
+        """
+
+        self._has_child_elements_catalogue_category_id = catalogue_category_id
+        self._has_child_elements_result = self.catalogue_category_repository.has_child_elements(
+            CustomObjectId(catalogue_category_id), session=self.mock_session
+        )
+
+    def check_has_child_elements_success(self, expected_result: bool) -> None:
+        """Checks that a prior call to `call_has_child_elements` worked as expected
+
+        :param expected_result: The expected result returned by `has_child_elements`
+        """
+
+        self.check_has_child_elements_performed_expected_calls(self._has_child_elements_catalogue_category_id)
+
+        assert self._has_child_elements_result == expected_result
+
+
+class TestHasChildElements(HasChildElementsDSL):
+    """Tests for `has_child_elements`."""
+
+    def test_has_child_elements_with_no_children(self):
+        """Test `has_child_elements` when there are no child catalogue categories or catalogue items."""
+
+        self.mock_has_child_elements(child_catalogue_category_data=None, child_catalogue_item_data=None)
+        self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=False)
+
+    def test_has_child_elements_with_child_catalogue_category(self):
+        """Test `has_child_elements` when there is a child catalogue category but no child catalogue items."""
+
+        self.mock_has_child_elements(
+            child_catalogue_category_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            child_catalogue_item_data=None,
+        )
+        self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=True)
+
+    def test_has_child_elements_with_child_catalogue_catalogue_item(self):
+        """Test `has_child_elements` when there are no child catalogue categories but there is a child catalogue
+        item."""
+
+        self.mock_has_child_elements(
+            child_catalogue_category_data=None,
+            child_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+        )
+        self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=True)
 
 
 class CreatePropertyDSL(CatalogueCategoryRepoDSL):

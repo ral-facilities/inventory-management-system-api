@@ -5,14 +5,13 @@ End-to-End tests for the manufacturer router.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from typing import Optional
-
 from test.mock_data import (
-    MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY,
-    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
-    MANUFACTURER_POST_DATA_ALL_VALUES,
     MANUFACTURER_GET_DATA_ALL_VALUES,
+    MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY,
+    MANUFACTURER_POST_DATA_ALL_VALUES,
+    MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
 )
+from typing import Optional
 
 import pytest
 from bson import ObjectId
@@ -25,7 +24,7 @@ class CreateDSL:
 
     test_client: TestClient
 
-    _post_response: Response
+    _post_response_manufacturer: Response
 
     @pytest.fixture(autouse=True)
     def setup(self, test_client):
@@ -40,8 +39,12 @@ class CreateDSL:
             `ManufacturerPostSchema`.
         :return: ID of the created manufacturer (or `None` if not successful).
         """
-        self._post_response = self.test_client.post("/v1/manufacturers", json=manufacturer_post_data)
-        return self._post_response.json()["id"] if self._post_response.status_code == 201 else None
+        self._post_response_manufacturer = self.test_client.post("/v1/manufacturers", json=manufacturer_post_data)
+        return (
+            self._post_response_manufacturer.json()["id"]
+            if self._post_response_manufacturer.status_code == 201
+            else None
+        )
 
     def check_post_manufacturer_success(self, expected_manufacturer_get_data: dict) -> None:
         """
@@ -50,8 +53,8 @@ class CreateDSL:
         :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data as would be required
             for a `ManufacturerSchema`.
         """
-        assert self._post_response.status_code == 201
-        assert self._post_response.json() == expected_manufacturer_get_data
+        assert self._post_response_manufacturer.status_code == 201
+        assert self._post_response_manufacturer.json() == expected_manufacturer_get_data
 
     def check_post_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -60,8 +63,8 @@ class CreateDSL:
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"] == detail
+        assert self._post_response_manufacturer.status_code == status_code
+        assert self._post_response_manufacturer.json()["detail"] == detail
 
     def check_post_manufacturer_failed_with_validation_message(self, status_code: int, message: str) -> None:
         """
@@ -71,8 +74,8 @@ class CreateDSL:
         :param status_code: Expected status code to be returned.
         :param message: Expected pydantic validation error message to be returned.
         """
-        assert self._post_response.status_code == status_code
-        assert self._post_response.json()["detail"][0]["msg"] == message
+        assert self._post_response_manufacturer.status_code == status_code
+        assert self._post_response_manufacturer.json()["detail"][0]["msg"] == message
 
 
 class TestCreate(CreateDSL):
@@ -98,7 +101,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
-    _get_response = Response
+    _get_response_manufacturer = Response
 
     def get_manufacturer(self, manufacturer_id: str) -> None:
         """
@@ -106,7 +109,7 @@ class GetDSL(CreateDSL):
 
         :param manufacturer_id: ID of the manufacturer to be obtained.
         """
-        self._get_response = self.test_client.get(f"/v1/manufacturers/{manufacturer_id}")
+        self._get_response_manufacturer = self.test_client.get(f"/v1/manufacturers/{manufacturer_id}")
 
     def check_get_manufacturer_success(self, expected_manufacturer_get_data: dict) -> None:
         """
@@ -115,8 +118,8 @@ class GetDSL(CreateDSL):
         :param expected_manufacturer_get_data: Dictionary containing the expected manufacturer data as would be required
             for a `ManufacturerSchema`.
         """
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_manufacturer_get_data
+        assert self._get_response_manufacturer.status_code == 200
+        assert self._get_response_manufacturer.json() == expected_manufacturer_get_data
 
     def check_get_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -125,8 +128,8 @@ class GetDSL(CreateDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_manufacturer.status_code == status_code
+        assert self._get_response_manufacturer.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -154,7 +157,7 @@ class ListDSL(GetDSL):
 
     def get_manufacturers(self) -> None:
         """Gets a list of manufacturers."""
-        self._get_response = self.test_client.get("/v1/manufacturers")
+        self._get_response_manufacturer = self.test_client.get("/v1/manufacturers")
 
     def check_get_manufacturers_success(self, expected_manufacturers_get_data: list[dict]) -> None:
         """
@@ -163,8 +166,8 @@ class ListDSL(GetDSL):
         :param expected_manufacturers_get_data: List of dictionaries containing the expected manufacturer data as would
             be required for a `ManufacturerSchema`.
         """
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_manufacturers_get_data
+        assert self._get_response_manufacturer.status_code == 200
+        assert self._get_response_manufacturer.json() == expected_manufacturers_get_data
 
 
 class TestList(ListDSL):
@@ -188,7 +191,7 @@ class TestList(ListDSL):
 class UpdateDSL(ListDSL):
     """Base class for update tests."""
 
-    _patch_response: Response
+    _patch_response_manufacturer: Response
 
     def patch_manufacturer(self, manufacturer_id: str, manufacturer_patch_data: dict) -> None:
         """
@@ -198,7 +201,7 @@ class UpdateDSL(ListDSL):
         :param manufacturer_patch_data: Dictionary containing the manufacturer patch data as would be required for a
             `ManufacturerPatchSchema`.
         """
-        self._patch_response = self.test_client.patch(
+        self._patch_response_manufacturer = self.test_client.patch(
             f"/v1/manufacturers/{manufacturer_id}", json=manufacturer_patch_data
         )
 
@@ -209,8 +212,8 @@ class UpdateDSL(ListDSL):
         :param expected_manufacturer_get_data: Dictionaries containing the expected manufacturer data as would be
             required for a `ManufacturerSchema`.
         """
-        assert self._patch_response.status_code == 200
-        assert self._patch_response.json() == expected_manufacturer_get_data
+        assert self._patch_response_manufacturer.status_code == 200
+        assert self._patch_response_manufacturer.json() == expected_manufacturer_get_data
 
     def check_patch_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -219,8 +222,8 @@ class UpdateDSL(ListDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._patch_response.status_code == status_code
-        assert self._patch_response.json()["detail"] == detail
+        assert self._patch_response_manufacturer.status_code == status_code
+        assert self._patch_response_manufacturer.json()["detail"] == detail
 
 
 class TestUpdate(UpdateDSL):
@@ -264,7 +267,7 @@ class TestUpdate(UpdateDSL):
 class DeleteDSL(UpdateDSL):
     """Base class for delete tests."""
 
-    _delete_response: Response
+    _delete_response_manufacturer: Response
 
     def delete_manufacturer(self, manufacturer_id: str) -> None:
         """
@@ -272,11 +275,11 @@ class DeleteDSL(UpdateDSL):
 
         :param manufacturer_id: ID of the manufacturer to be deleted.
         """
-        self._delete_response = self.test_client.delete(f"/v1/manufacturers/{manufacturer_id}")
+        self._delete_response_manufacturer = self.test_client.delete(f"/v1/manufacturers/{manufacturer_id}")
 
     def check_delete_manufacturer_success(self) -> None:
         """Checks that a prior call to `delete_manufacturer` gave a successful response."""
-        assert self._delete_response.status_code == 204
+        assert self._delete_response_manufacturer.status_code == 204
 
     def check_delete_manufacturer_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -285,8 +288,8 @@ class DeleteDSL(UpdateDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._delete_response.status_code == status_code
-        assert self._delete_response.json()["detail"] == detail
+        assert self._delete_response_manufacturer.status_code == status_code
+        assert self._delete_response_manufacturer.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
