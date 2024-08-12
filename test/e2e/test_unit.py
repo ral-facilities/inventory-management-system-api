@@ -72,8 +72,8 @@ class TestCreate(CreateDSL):
         self.post_unit(UNIT_POST_DATA_MM)
         self.check_post_unit_success(UNIT_GET_DATA_MM)
 
-    def test_create_unit_with_duplicate_name(self):
-        """Test creating a unit with a duplicate name"""
+    def test_create_unit_with_duplicate_value(self):
+        """Test creating a unit with a duplicate value"""
 
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_unit(UNIT_POST_DATA_MM)
@@ -171,7 +171,7 @@ class TestList(ListDSL):
 class DeleteDSL(ListDSL):
     """Base class for delete tests."""
 
-    _delete_response: Response
+    _delete_response_unit: Response
 
     def delete_unit(self, unit_id: str) -> None:
         """
@@ -179,11 +179,11 @@ class DeleteDSL(ListDSL):
 
         :param unit_id: ID of the unit to be deleted.
         """
-        self._delete_response = self.test_client.delete(f"/v1/units/{unit_id}")
+        self._delete_response_unit = self.test_client.delete(f"/v1/units/{unit_id}")
 
     def check_delete_unit_success(self) -> None:
         """Checks that a prior call to `delete_unit` gave a successful response."""
-        assert self._delete_response.status_code == 204
+        assert self._delete_response_unit.status_code == 204
 
     def check_delete_unit_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -192,8 +192,8 @@ class DeleteDSL(ListDSL):
         :param status_code: Expected status code to be returned.
         :param detail: Expected detail to be returned.
         """
-        assert self._delete_response.status_code == status_code
-        assert self._delete_response.json()["detail"] == detail
+        assert self._delete_response_unit.status_code == status_code
+        assert self._delete_response_unit.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
