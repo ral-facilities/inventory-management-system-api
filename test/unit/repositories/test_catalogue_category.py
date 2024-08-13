@@ -12,35 +12,27 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-)
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
-    MOCK_MOVE_QUERY_RESULT_INVALID,
-    MOCK_MOVE_QUERY_RESULT_VALID,
-)
+    MOCK_MOVE_QUERY_RESULT_INVALID, MOCK_MOVE_QUERY_RESULT_VALID)
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.custom_object_id import \
+    CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    DuplicateRecordError,
-    InvalidActionError,
-    InvalidObjectIdError,
-    MissingRecordError,
-)
+    ChildElementsExistError, DuplicateRecordError, InvalidActionError,
+    InvalidObjectIdError, MissingRecordError)
 from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-    CatalogueCategoryPropertyOut,
-)
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+    CatalogueCategoryIn, CatalogueCategoryOut, CatalogueCategoryPropertyIn,
+    CatalogueCategoryPropertyOut)
+from inventory_management_system_api.repositories.catalogue_category import \
+    CatalogueCategoryRepo
 
 
 class CatalogueCategoryRepoDSL:
@@ -487,11 +479,11 @@ class ListDSL(CatalogueCategoryRepoDSL):
     _obtained_catalogue_categories_out: list[CatalogueCategoryOut]
 
     def mock_list(self, catalogue_categories_in_data: list[dict]) -> None:
-        """Mocks database methods appropriately to test the `list` repo method
+        """Mocks database methods appropriately to test the `list` repo method.
 
         :param catalogue_categories_in_data: List of dictionaries containing the catalogue category data as would be
                                              required for a `CatalogueCategoryIn` database model (i.e. no ID or created
-                                             and modified times required)
+                                             and modified times required).
         """
 
         self._expected_catalogue_categories_out = [
@@ -531,7 +523,7 @@ class ListDSL(CatalogueCategoryRepoDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing catalogue categorys."""
+    """Tests for listing catalogue categories."""
 
     def test_list(self):
         """Test listing all catalogue categories."""
@@ -1072,9 +1064,9 @@ class HasChildElementsDSL(CatalogueCategoryRepoDSL):
         )
 
     def check_has_child_elements_success(self, expected_result: bool) -> None:
-        """Checks that a prior call to `call_has_child_elements` worked as expected
+        """Checks that a prior call to `call_has_child_elements` worked as expected.
 
-        :param expected_result: The expected result returned by `has_child_elements`
+        :param expected_result: The expected result returned by `has_child_elements`.
         """
 
         self.check_has_child_elements_performed_expected_calls(self._has_child_elements_catalogue_category_id)
