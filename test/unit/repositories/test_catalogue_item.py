@@ -57,7 +57,7 @@ class CatalogueItemRepoDSL:
         """
         Mocks database methods appropriately for when the `has_child_elements` repo method will be called.
 
-        :param child_item_data: Dictionary containing a child item's data (or `None`)
+        :param child_item_data: Dictionary containing a child item's data (or `None`).
         """
 
         self._mock_child_item_data = child_item_data
@@ -280,11 +280,11 @@ class ListDSL(CatalogueItemRepoDSL):
     _obtained_catalogue_items_out: list[CatalogueItemOut]
 
     def mock_list(self, catalogue_items_in_data: list[dict]) -> None:
-        """Mocks database methods appropriately to test the `list` repo method
+        """Mocks database methods appropriately to test the `list` repo method.
 
         :param catalogue_items_in_data: List of dictionaries containing the catalogue item data as would be
                                              required for a `CatalogueItemIn` database model (i.e. no ID or created
-                                             and modified times required)
+                                             and modified times required).
         """
 
         self._expected_catalogue_items_out = [
@@ -610,9 +610,9 @@ class HasChildElementsDSL(CatalogueItemRepoDSL):
         )
 
     def check_has_child_elements_success(self, expected_result: bool) -> None:
-        """Checks that a prior call to `call_has_child_elements` worked as expected
+        """Checks that a prior call to `call_has_child_elements` worked as expected.
 
-        :param expected_result: The expected result returned by `has_child_elements`
+        :param expected_result: The expected result returned by `has_child_elements`.
         """
 
         self.check_has_child_elements_performed_expected_calls(self._has_child_elements_catalogue_item_id)
@@ -660,9 +660,9 @@ class ListIDsDSL(CatalogueItemRepoDSL):
         )
 
     def check_list_ids_success(self) -> None:
-        """Checks that a prior call to `call_list_ids` worked as expected
+        """Checks that a prior call to `call_list_ids` worked as expected.
 
-        :param expected_result: The expected result returned by `list_ids`
+        :param expected_result: The expected result returned by `list_ids`.
         """
 
         self.catalogue_items_collection.find.assert_called_once_with(
