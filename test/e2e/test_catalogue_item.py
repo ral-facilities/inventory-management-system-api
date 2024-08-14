@@ -235,7 +235,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     ) -> Optional[str]:
         """
         Utility method that posts a catalogue item with a property named 'property' of a given type with a given set of
-        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer)
+        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer).
 
         :param property_type: Type of the property to post.
         :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
