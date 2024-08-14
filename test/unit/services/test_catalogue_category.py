@@ -483,7 +483,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         :param catalogue_category_id: ID of the catalogue category that will be obtained.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
-                                               `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
+                                               `CatalogueCategoryPatchSchema` but with any `unit_id`'s replaced by the
                                                `unit` value in its properties as the IDs will be added automatically.
         :param stored_catalogue_category_post_data: Dictionary containing the catalogue category data for the existing
                                                stored catalogue category as would be required for a
