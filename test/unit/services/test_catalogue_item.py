@@ -669,7 +669,6 @@ class UpdateDSL(CatalogueItemServiceDSL):
             )
 
         # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
-        property_post_schemas = []
         expected_properties_in = []
         if self._updating_properties:
 
@@ -756,8 +755,9 @@ class UpdateDSL(CatalogueItemServiceDSL):
             )
 
         # Ensure obtained new catalogue category if moving
+        expected_catalogue_category_get_calls = []
         if self._moving_catalogue_item and self._catalogue_item_patch.catalogue_category_id:
-            expected_catalogue_category_get_calls = [call(self._catalogue_item_patch.catalogue_category_id)]
+            expected_catalogue_category_get_calls.append(call(self._catalogue_item_patch.catalogue_category_id))
 
             # Expect additional call from existing catalogue category to compare properties if new properties aren't
             # given
@@ -807,8 +807,8 @@ class TestUpdate(UpdateDSL):
     """Tests for updating a catalogue item."""
 
     def test_update_all_fields_except_ids_or_properties_with_no_children(self):
-        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
-        no children."""
+        """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has no
+        children."""
 
         catalogue_item_id = str(ObjectId())
 
@@ -821,8 +821,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_all_fields_except_ids_or_properties_with_children(self):
-        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties it has
-        children."""
+        """Test updating all fields of a catalogue item except any of its `_id` fields or properties it has children."""
 
         catalogue_item_id = str(ObjectId())
 
