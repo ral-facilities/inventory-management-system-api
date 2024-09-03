@@ -876,7 +876,7 @@ class TestUpdate(UpdateDSL):
     """Tests for updating an item."""
 
     def test_partial_update_all_fields_except_ids_or_properties(self):
-        """Test updating all fields of an item except its any of its `_id` fields or properties."""
+        """Test updating all fields of an item except any of its `_id` fields or properties."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
