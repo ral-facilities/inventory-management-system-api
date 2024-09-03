@@ -12,6 +12,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
@@ -19,7 +20,6 @@ from test.unit.repositories.test_utils import (
     MOCK_MOVE_QUERY_RESULT_INVALID,
     MOCK_MOVE_QUERY_RESULT_VALID,
 )
-from test.unit.services.test_catalogue_item import CATALOGUE_ITEM_A_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -979,11 +979,9 @@ class TestHasChildElements(HasChildElementsDSL):
         """Test `has_child_elements` when there are no child catalogue categories but there is a child catalogue
         item."""
 
-        # pylint:disable=fixme
-        # TODO: Replace CATALOGUE_ITEM_A_INFO once catalogue item tests have been refactored
         self.mock_has_child_elements(
             child_catalogue_category_data=None,
-            child_catalogue_item_data=CATALOGUE_ITEM_A_INFO,
+            child_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
@@ -1090,9 +1088,7 @@ class TestDelete(DeleteDSL):
 
         catalogue_category_id = str(ObjectId())
 
-        # pylint:disable=fixme
-        # TODO: Replace CATALOGUE_ITEM_A_INFO once item tests have been refactored
-        self.mock_delete(deleted_count=1, child_catalogue_item_data=CATALOGUE_ITEM_A_INFO)
+        self.mock_delete(deleted_count=1, child_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
             f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
