@@ -12,7 +12,6 @@ from pymongo.cursor import Cursor
 from pymongo.database import Database
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
@@ -35,17 +34,6 @@ def fixture_database_mock() -> Mock:
     database_mock.units = Mock(Collection)
     database_mock.usage_statuses = Mock(Collection)
     return database_mock
-
-
-@pytest.fixture(name="catalogue_item_repository")
-def fixture_catalogue_item_repository(database_mock: Mock) -> CatalogueItemRepo:
-    """
-    Fixture to create a `CatalogueItemRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `CatalogueItemRepo` instance with the mocked dependency.
-    """
-    return CatalogueItemRepo(database_mock)
 
 
 @pytest.fixture(name="item_repository")
