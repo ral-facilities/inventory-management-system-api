@@ -646,7 +646,7 @@ class ListIDsDSL(CatalogueItemRepoDSL):
     """Base class for `list_ids` tests"""
 
     _list_ids_catalogue_category_id: str
-    _list_ids_result: bool
+    _list_ids_result: list[ObjectId]
 
     def call_list_ids(self, catalogue_category_id: str) -> None:
         """Calls the `CatalogueItemRepo` `list_ids` method.
@@ -660,10 +660,7 @@ class ListIDsDSL(CatalogueItemRepoDSL):
         )
 
     def check_list_ids_success(self) -> None:
-        """Checks that a prior call to `call_list_ids` worked as expected.
-
-        :param expected_result: The expected result returned by `list_ids`.
-        """
+        """Checks that a prior call to `call_list_ids` worked as expected."""
 
         self.catalogue_items_collection.find.assert_called_once_with(
             {"catalogue_category_id": CustomObjectId(self._list_ids_catalogue_category_id)},
