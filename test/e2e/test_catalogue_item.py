@@ -7,6 +7,7 @@ End-to-End tests for the catalogue item router.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
+import copy
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
@@ -143,7 +144,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """
 
         # Replace any unit values with unit IDs
-        full_catalogue_item_data = catalogue_item_data.copy()
+        full_catalogue_item_data = copy.deepcopy(catalogue_item_data)
         full_catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
             full_catalogue_item_data, self.unit_value_id_dict
         )
@@ -167,8 +168,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
     def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer and
-        catalogue category. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
+        catalogue category and units. Uses `CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES` for the catalogue
         category.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
