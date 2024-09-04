@@ -7,7 +7,7 @@ Unit tests for the `CatalogueCategoryService` service.
 # pylint: disable=duplicate-code
 
 from test.mock_data import (
-    BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
+    BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
@@ -17,7 +17,7 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     MANUFACTURER_IN_DATA_A,
-    PROPERTY_DATA_NUMBER_NON_MANDATORY_42,
+    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
 )
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
@@ -156,7 +156,7 @@ class CreateDSL(CatalogueItemServiceDSL):
                                      for a `ManufacturerIn` database model.
         :param obsolete_replacement_catalogue_item_data: Dictionary containing the basic catalogue item data for the
                                      obsolete replacement as would be required for a `CatalogueItemPostSchema` but with
-                                     any `unit_id`'s replaced by the 'unit' value in its properties as the IDs will be
+                                     any `unit_id`'s replaced by the `unit` value in its properties as the IDs will be
                                      added automatically.
         """
 
@@ -311,12 +311,12 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_all_properties(self):
-        """Test creating a catalogue item with all properties present in the catalogue category are defined in the
+        """Test creating a catalogue item when all properties present in the catalogue category are defined in the
         catalogue item."""
 
         self.mock_create(
             CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-            catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES,
+            catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
         )
         self.call_create()
@@ -363,7 +363,6 @@ class TestCreate(CreateDSL):
         """Test creating a catalogue item with an obsolete replacement catalogue item."""
 
         obsolete_replacement_catalogue_item_id = str(ObjectId())
-
         self.mock_create(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
@@ -379,16 +378,19 @@ class TestCreate(CreateDSL):
     def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(self):
         """Test creating a catalogue item with a non-existent obsolete replacement catalogue item ID."""
 
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
         self.mock_create(
-            CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            },
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
             obsolete_replacement_catalogue_item_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            "No catalogue item found with ID: "
-            f"{CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES['obsolete_replacement_catalogue_item_id']}"
+            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
         )
 
 
@@ -849,7 +851,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_item_id)
         self.check_update_success()
 
-    def test_update_catalogue_category_id_without_properties_with_same_defined_properties(self):
+    def test_update_catalogue_category_id_with_same_defined_properties(self):
         """Test updating the catalogue item's `catalogue_category_id` when both the old and new catalogue category has
         identical properties.
         """
@@ -886,7 +888,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_item_id)
         self.check_update_success()
 
-    def test_update_catalogue_category_id_without_properties_with_same_defined_properties_different_order(self):
+    def test_update_catalogue_category_id_with_same_defined_properties_different_order(self):
         """Test updating the catalogue item's `catalogue_category_id` when both the old and new catalogue category has
         identical properties but in a different order.
         """
@@ -932,7 +934,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_item_id)
         self.check_update_success()
 
-    def test_update_catalogue_category_id_without_properties_with_different_defined_properties(self):
+    def test_update_catalogue_category_id_with_different_defined_properties(self):
         """Test updating the catalogue item's `catalogue_category_id` when the old and new catalogue category have
         different properties.
         """
@@ -966,7 +968,7 @@ class TestUpdate(UpdateDSL):
             catalogue_item_id,
             catalogue_item_update_data={
                 "catalogue_category_id": str(ObjectId()),
-                "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_42],
+                "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
             },
             stored_catalogue_item_data=CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
             stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
@@ -978,24 +980,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(catalogue_item_id)
         self.check_update_success()
 
-    def test_update_catalogue_category_id_and_properties_while_removing_defined_properties(self):
-        """Test updating the catalogue item's `catalogue_category_id` and `properties` when the old catalogue category
-        and item has properties but the new one does not.
-        """
-
-        catalogue_item_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_item_id,
-            catalogue_item_update_data={"catalogue_category_id": str(ObjectId()), "properties": []},
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-            stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
-            new_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-        )
-        self.call_update(catalogue_item_id)
-        self.check_update_success()
-
-    def test_update_catalogue_category_id_without_properties_while_removing_defined_properties(self):
+    def test_update_catalogue_category_id_while_removing_all_defined_properties(self):
         """Test updating the catalogue item's `catalogue_category_id` when the old catalogue category and item has
         properties but the new one does not.
         """
@@ -1015,19 +1000,22 @@ class TestUpdate(UpdateDSL):
             "without specifying the new properties"
         )
 
-    def test_update_with_non_existent_catalogue_category_id(self):
-        """Test updating the catalogue item's `catalogue_category_id` to a non-existent catalogue category."""
+    def test_update_catalogue_category_id_and_properties_while_removing_all_defined_properties(self):
+        """Test updating the catalogue item's `catalogue_category_id` and `properties` when the old catalogue category
+        and item has properties but the new one does not.
+        """
 
         catalogue_item_id = str(ObjectId())
-        catalogue_category_id = str(ObjectId())
 
         self.mock_update(
             catalogue_item_id,
-            catalogue_item_update_data={"catalogue_category_id": catalogue_category_id},
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_item_update_data={"catalogue_category_id": str(ObjectId()), "properties": []},
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+            stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+            new_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
         )
-        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
+        self.call_update(catalogue_item_id)
+        self.check_update_success()
 
     def test_update_with_non_leaf_catalogue_category_id(self):
         """Test updating the catalogue item's `catalogue_category_id` to a leaf catalogue category."""
@@ -1043,6 +1031,20 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, NonLeafCatalogueCategoryError)
         self.check_update_failed_with_exception("Cannot add catalogue item to a non-leaf catalogue category")
+
+    def test_update_with_non_existent_catalogue_category_id(self):
+        """Test updating the catalogue item's `catalogue_category_id` to a non-existent catalogue category."""
+
+        catalogue_item_id = str(ObjectId())
+        catalogue_category_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_item_id,
+            catalogue_item_update_data={"catalogue_category_id": catalogue_category_id},
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+        )
+        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
 
     def test_update_manufacturer_id_with_no_children(self):
         """Test updating the catalogue item's `manufacturer_id` when it has no children."""
