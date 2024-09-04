@@ -724,7 +724,7 @@ class TestUpdate(UpdateDSL):
     """Tests for updating a catalogue item."""
 
     def test_update_all_fields_except_ids_or_properties(self):
-        """Test updating all fields of an item except its any of its `_id` fields or properties."""
+        """Test updating all fields of an item except any of its `_id` fields or properties."""
 
         item_id = str(ObjectId())
 

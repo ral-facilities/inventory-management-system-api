@@ -131,8 +131,9 @@ class CreateDSL:
         returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
-                                                     as they will be added automatically to check they are as expected.
+                                                     be required for a `CatalogueCategorySchema`. Does not need
+                                                     `unit_id`'s as they will be added automatically to check they are
+                                                     as expected.
         """
 
         assert self._post_response_catalogue_category.status_code == 201
@@ -699,7 +700,7 @@ class UpdateDSL(ListDSL):
 
         :param catalogue_category_id: ID of the catalogue category to patch.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
-                                               `CatalogueCategoryPatchSchema` but with any unit_id's replaced by the
+                                               `CatalogueCategoryPatchSchema` but with any `unit_id`'s replaced by the
                                                `unit` value in its properties as the ids will be added automatically.
         """
 
