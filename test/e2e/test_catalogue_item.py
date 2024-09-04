@@ -7,6 +7,7 @@ End-to-End tests for the catalogue item router.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
+import copy
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
@@ -145,7 +146,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """
 
         # Replace any unit values with unit IDs
-        full_catalogue_item_data = catalogue_item_data.copy()
+        full_catalogue_item_data = copy.deepcopy(catalogue_item_data)
         full_catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
             full_catalogue_item_data, self.unit_value_id_dict
         )
@@ -169,8 +170,8 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
 
     def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer and
-        catalogue category. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
+        catalogue category and units. Uses `CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES` for the catalogue
         category.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
@@ -236,7 +237,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     ) -> Optional[str]:
         """
         Utility method that posts a catalogue item with a property named 'property' of a given type with a given set of
-        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer)
+        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer).
 
         :param property_type: Type of the property to post.
         :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
@@ -865,7 +866,7 @@ class TestUpdate(UpdateDSL):
     """Tests for updating a catalogue item."""
 
     def test_partial_update_all_fields_except_ids_or_properties_with_no_children(self):
-        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
+        """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has
         no children."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
@@ -876,7 +877,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
     def test_partial_update_all_fields_except_ids_or_properties_with_children(self):
-        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
+        """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has
         children."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
