@@ -7,6 +7,7 @@ End-to-End tests for the catalogue item router.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
+import copy
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
@@ -144,7 +145,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """
 
         # Replace any unit values with unit IDs
-        full_catalogue_item_data = catalogue_item_data.copy()
+        full_catalogue_item_data = copy.deepcopy(catalogue_item_data)
         full_catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
             full_catalogue_item_data, self.unit_value_id_dict
         )
@@ -169,7 +170,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
         """
         Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
-        catalogue category and units. Uses CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES for the catalogue
+        catalogue category and units. Uses `CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES` for the catalogue
         category.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
@@ -581,7 +582,7 @@ class TestCreate(CreateDSL):
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
-    _get_response: Response
+    _get_response_catalogue_item: Response
 
     def get_catalogue_item(self, catalogue_item_id: str) -> None:
         """
@@ -590,7 +591,7 @@ class GetDSL(CreateDSL):
         :param catalogue_item_id: ID of the catalogue item to be obtained.
         """
 
-        self._get_response = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
+        self._get_response_catalogue_item = self.test_client.get(f"/v1/catalogue-items/{catalogue_item_id}")
 
     def check_get_catalogue_item_success(self, expected_catalogue_item_get_data: dict) -> None:
         """
@@ -602,8 +603,8 @@ class GetDSL(CreateDSL):
                                                  as expected.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == self.add_ids_to_expected_catalogue_item_get_data(
+        assert self._get_response_catalogue_item.status_code == 200
+        assert self._get_response_catalogue_item.json() == self.add_ids_to_expected_catalogue_item_get_data(
             expected_catalogue_item_get_data
         )
 
@@ -616,8 +617,8 @@ class GetDSL(CreateDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._get_response.status_code == status_code
-        assert self._get_response.json()["detail"] == detail
+        assert self._get_response_catalogue_item.status_code == status_code
+        assert self._get_response_catalogue_item.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -656,7 +657,7 @@ class ListDSL(GetDSL):
         :param filters: Filters to use in the request.
         """
 
-        self._get_response = self.test_client.get("/v1/catalogue-items", params=filters)
+        self._get_response_catalogue_item = self.test_client.get("/v1/catalogue-items", params=filters)
 
     def post_test_catalogue_items(self) -> list[dict]:
         """
@@ -698,8 +699,8 @@ class ListDSL(GetDSL):
                                                   returned as would be required for `CatalogueItemSchema`'s.
         """
 
-        assert self._get_response.status_code == 200
-        assert self._get_response.json() == expected_catalogue_items_get_data
+        assert self._get_response_catalogue_item.status_code == 200
+        assert self._get_response_catalogue_item.json() == expected_catalogue_items_get_data
 
 
 class TestList(ListDSL):
