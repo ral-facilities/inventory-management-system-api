@@ -8,10 +8,10 @@ Unit tests for the `CatalogueItemRepo` repository.
 from test.mock_data import (
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
-from test.unit.repositories.test_item import FULL_ITEM_INFO
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -82,7 +82,6 @@ class CreateDSL(CatalogueItemRepoDSL):
     _catalogue_item_in: CatalogueItemIn
     _expected_catalogue_item_out: CatalogueItemOut
     _created_catalogue_item: CatalogueItemOut
-    _create_exception: pytest.ExceptionInfo
 
     def mock_create(
         self,
@@ -118,43 +117,19 @@ class CreateDSL(CatalogueItemRepoDSL):
             self._catalogue_item_in, session=self.mock_session
         )
 
-    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
-        """
-        Calls the `CatalogueItemRepo` `create` method with the appropriate data from a prior call to `mock_create`
-        while expecting an error to be raised.
-
-        :param error_type: Expected exception to be raised.
-        """
-
-        with pytest.raises(error_type) as exc:
-            self.catalogue_item_repository.create(self._catalogue_item_in)
-        self._create_exception = exc
-
     def check_create_success(self):
         """Checks that a prior call to `call_create` worked as expected."""
 
         catalogue_item_in_data = self._catalogue_item_in.model_dump(by_alias=True)
 
+        self.catalogue_items_collection.insert_one.assert_called_once_with(
+            catalogue_item_in_data, session=self.mock_session
+        )
         self.catalogue_items_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._expected_catalogue_item_out.id)}, session=self.mock_session
         )
 
-        self.catalogue_items_collection.insert_one.assert_called_once_with(
-            catalogue_item_in_data, session=self.mock_session
-        )
         assert self._created_catalogue_item == self._expected_catalogue_item_out
-
-    def check_create_failed_with_exception(self, message: str) -> None:
-        """
-        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
-        with the correct message.
-
-        :param message: Expected message of the raised exception.
-        """
-
-        self.catalogue_items_collection.insert_one.assert_not_called()
-
-        assert str(self._create_exception.value) == message
 
 
 class TestCreate(CreateDSL):
@@ -375,7 +350,6 @@ class UpdateDSL(CatalogueItemRepoDSL):
         """
         self._catalogue_item_in = CatalogueItemIn(**new_catalogue_item_in_data)
 
-    # pylint:disable=too-many-arguments
     def mock_update(
         self,
         catalogue_item_id: str,
@@ -402,7 +376,7 @@ class UpdateDSL(CatalogueItemRepoDSL):
     def call_update(self, catalogue_item_id: str) -> None:
         """
         Calls the `CatalogueItemRepo` `update` method with the appropriate data from a prior call to `mock_update`
-        (or`set_update_data`).
+        (or `set_update_data`).
 
         :param catalogue_item_id: ID of the catalogue item to be updated.
         """
@@ -433,7 +407,7 @@ class UpdateDSL(CatalogueItemRepoDSL):
                 "_id": CustomObjectId(self._updated_catalogue_item_id),
             },
             {
-                "$set": self._catalogue_item_in.model_dump(),
+                "$set": self._catalogue_item_in.model_dump(by_alias=True),
             },
             session=self.mock_session,
         )
@@ -564,9 +538,7 @@ class TestDelete(DeleteDSL):
 
         catalogue_item_id = str(ObjectId())
 
-        # pylint:disable=fixme
-        # TODO: Replace FULL_ITEM_INFO once items has been refactored
-        self.mock_delete(deleted_count=1, child_item_data=FULL_ITEM_INFO)
+        self.mock_delete(deleted_count=1, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
             f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
@@ -633,11 +605,7 @@ class TestHasChildElements(HasChildElementsDSL):
     def test_has_child_elements_with_child_item(self):
         """Test `has_child_elements` when there is a child item."""
 
-        # pylint:disable=fixme
-        # TODO: Replace FULL_ITEM_INFO once items has been refactored
-        self.mock_has_child_elements(
-            child_item_data=FULL_ITEM_INFO,
-        )
+        self.mock_has_child_elements(child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_has_child_elements(catalogue_item_id=str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
 

@@ -841,7 +841,7 @@ class TestUpdate(UpdateDSL):
     """Tests for updating a catalogue item."""
 
     def test_partial_update_all_fields_except_ids_or_properties_with_no_children(self):
-        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
+        """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has
         no children."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
@@ -852,7 +852,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
     def test_partial_update_all_fields_except_ids_or_properties_with_children(self):
-        """Test updating all fields of a catalogue item except its any of its `_id` fields or properties when it has
+        """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has
         children."""
 
         catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
