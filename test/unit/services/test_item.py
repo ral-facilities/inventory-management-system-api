@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 Unit tests for the `ItemService` service.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 
 from test.mock_data import (
@@ -289,7 +289,7 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_no_properties_defined(self):
+    def test_create_with_no_properties_provided(self):
         """Test creating an item when none of the properties present in the catalogue item are defined in the item."""
 
         self.mock_create(
@@ -301,7 +301,7 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_all_properties(self):
+    def test_create_with_all_properties_provided(self):
         """Test creating an item when all properties present in the catalogue item are defined in the item."""
 
         self.mock_create(

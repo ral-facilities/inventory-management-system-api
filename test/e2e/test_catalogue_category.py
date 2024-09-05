@@ -1,9 +1,9 @@
-# pylint: disable=too-many-lines
 """
 End-to-End tests for the catalogue category router.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
 
@@ -53,15 +53,6 @@ class CreateDSL:
         self.test_client = test_client
         self.unit_value_id_dict = {}
 
-    def post_unit(self, unit_post_data: dict) -> None:
-        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
-
-        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
-        """
-
-        post_response = self.test_client.post("/v1/units", json=unit_post_data)
-        self.unit_value_id_dict[unit_post_data["value"]] = post_response.json()["id"]
-
     def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
         Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
@@ -72,6 +63,15 @@ class CreateDSL:
         """
 
         self.unit_value_id_dict[unit_value] = unit_id
+
+    def post_unit(self, unit_post_data: dict) -> None:
+        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
+
+        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
+        """
+
+        post_response = self.test_client.post("/v1/units", json=unit_post_data)
+        self.add_unit_value_and_id(unit_post_data["value"], post_response.json()["id"])
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
@@ -406,9 +406,10 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
-                                                     as they will be added automatically to check they are as expected.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
+                                                     as would be required for a `CatalogueCategorySchema`. Does not need
+                                                     unit IDs as they will be added automatically to check they are as
+                                                     expected.
         """
 
         assert self._get_response_catalogue_category.status_code == 200
@@ -596,7 +597,7 @@ class ListDSL(GetBreadcrumbsDSL):
 
     def get_catalogue_categories(self, filters: dict) -> None:
         """
-        Gets a list catalogue categories with the given filters.
+        Gets a list of catalogue categories with the given filters.
 
         :param filters: Filters to use in the request.
         """
@@ -627,8 +628,8 @@ class ListDSL(GetBreadcrumbsDSL):
         Checks that a prior call to `get_catalogue_categories` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected system data
-                                                returned as would be required for `CatalogueCategorySchema`'s.
+        :param expected_catalogue_categories_get_data: List of dictionaries containing the expected catalogue category
+                                                    data returned as would be required for `CatalogueCategorySchema`'s.
         """
 
         assert self._get_response_catalogue_category.status_code == 200
@@ -777,9 +778,9 @@ class UpdateDSL(ListDSL):
         Checks that a prior call to `patch_catalogue_category` gave a successful response with the expected data
         returned.
 
-        :param expected_catalogue_category_get_data: Dictionary containing the expected system data returned as would
-                                                     be required for a `CatalogueCategorySchema`. Does not need unit IDs
-                                                     as they will be added automatically to check they are as expected.
+        :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
+                                            as would be required for a `CatalogueCategorySchema`. Does not need unit IDs
+                                            as they will be added automatically to check they are as expected.
         """
 
         assert self._patch_response_catalogue_category.status_code == 200

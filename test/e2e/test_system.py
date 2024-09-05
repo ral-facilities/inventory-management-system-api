@@ -5,13 +5,12 @@ End-to-End tests for the system router.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.conftest import add_ids_to_properties
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.mock_schemas import USAGE_STATUS_POST_B
-from test.e2e.test_item import ITEM_POST
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_REQUIRED_VALUES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
@@ -336,7 +335,7 @@ class ListDSL(GetBreadcrumbsDSL):
 
     def get_systems(self, filters: dict) -> None:
         """
-        Gets a list systems with the given filters.
+        Gets a list of systems with the given filters.
 
         :param filters: Filters to use in the request.
         """
@@ -631,11 +630,10 @@ class TestDelete(DeleteDSL):
         usage_status_id = response.json()["id"]
 
         item_post = {
-            **ITEM_POST,
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_item_id": catalogue_item_id,
             "system_id": system_id,
             "usage_status_id": usage_status_id,
-            "properties": add_ids_to_properties(catalogue_category["properties"], ITEM_POST["properties"]),
         }
         self.test_client.post("/v1/items", json=item_post)
         # pylint: enable=duplicate-code
