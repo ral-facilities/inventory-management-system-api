@@ -2,8 +2,6 @@
 End-to-End tests for the usage status router
 """
 
-from typing import Optional
-
 from test.e2e.test_catalogue_category_property import CATALOGUE_ITEM_POST_A, ITEM_POST
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
@@ -14,10 +12,10 @@ from test.mock_data import (
     USAGE_STATUS_POST_DATA_NEW,
     USAGE_STATUS_POST_DATA_USED,
 )
-
-from bson import ObjectId
+from typing import Optional
 
 import pytest
+from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 

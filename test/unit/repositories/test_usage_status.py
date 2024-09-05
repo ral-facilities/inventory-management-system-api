@@ -5,17 +5,14 @@
 Unit tests for the `UsageStatusRepo` repository
 """
 
+from test.e2e.test_catalogue_category_property import ITEM_POST
+from test.mock_data import USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
+from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call
 
-from test.e2e.test_catalogue_category_property import ITEM_POST
-from test.mock_data import USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
-
-from test.unit.repositories.conftest import RepositoryTestHelpers
-
 import pytest
 from bson import ObjectId
-
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (

@@ -2,17 +2,17 @@
 Unit tests for the `UsageStatusService` service
 """
 
-from unittest.mock import MagicMock, Mock, patch
 from test.mock_data import USAGE_STATUS_POST_DATA_NEW
-
 from test.unit.services.conftest import ServiceTestHelpers
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema
-from inventory_management_system_api.services.usage_status import UsageStatusService
 from inventory_management_system_api.services import utils
+from inventory_management_system_api.services.usage_status import UsageStatusService
 
 
 class UsageStatusServiceDSL:
