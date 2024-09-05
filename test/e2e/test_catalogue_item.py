@@ -46,8 +46,6 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     UNIT_POST_DATA_MM,
 )
-
-
 from typing import Any, Optional
 
 import pytest

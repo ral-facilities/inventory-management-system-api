@@ -2,20 +2,17 @@
 Unit tests for the `UnitService` service
 """
 
+from test.mock_data import UNIT_POST_DATA_MM
+from test.unit.services.conftest import ServiceTestHelpers
 from unittest.mock import MagicMock, Mock, patch
 
-from test.mock_data import UNIT_POST_DATA_MM
-
-
-from test.unit.services.conftest import ServiceTestHelpers
 import pytest
 from bson import ObjectId
-from inventory_management_system_api.services import utils
-from inventory_management_system_api.services.unit import UnitService
-
 
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.unit import UnitPostSchema
+from inventory_management_system_api.services import utils
+from inventory_management_system_api.services.unit import UnitService
 
 
 class UnitServiceDSL:
