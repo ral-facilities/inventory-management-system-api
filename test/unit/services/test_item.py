@@ -11,14 +11,11 @@ from test.mock_data import (
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
-    SYSTEM_IN_DATA_NO_PARENT_A,
-    USAGE_STATUS_IN_DATA_IN_USE,
-)
-from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
+    ITEM_DATA_ALL_VALUES_NO_PROPERTIES, ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_WITH_ALL_PROPERTIES, ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    SYSTEM_IN_DATA_NO_PARENT_A, USAGE_STATUS_IN_DATA_IN_USE)
+from test.unit.services.conftest import (BaseCatalogueServiceDSL,
+                                         ServiceTestHelpers)
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -26,17 +23,19 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    InvalidActionError,
-    MissingRecordError,
-)
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
+    DatabaseIntegrityError, InvalidActionError, MissingRecordError)
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryIn, CatalogueCategoryOut)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn, CatalogueItemOut)
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemIn, SystemOut
-from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
-from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
-from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
+from inventory_management_system_api.models.usage_status import (
+    UsageStatusIn, UsageStatusOut)
+from inventory_management_system_api.schemas.catalogue_item import \
+    PropertyPostSchema
+from inventory_management_system_api.schemas.item import (ItemPatchSchema,
+                                                          ItemPostSchema)
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.item import ItemService
 
@@ -91,7 +90,7 @@ class CreateDSL(ItemServiceDSL):
     _item_post: ItemPostSchema
     _expected_item_in: ItemIn
     _expected_item_out: ItemOut
-    _created_item: CatalogueItemOut
+    _created_item: ItemOut
     _create_exception: pytest.ExceptionInfo
 
     _expected_merged_properties: List[PropertyPostSchema]
@@ -151,7 +150,6 @@ class CreateDSL(ItemServiceDSL):
         # Catalogue item
 
         # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
-        catalogue_item_property_post_schemas = []
         catalogue_item_expected_properties_in = []
         if catalogue_item_data and "properties" in catalogue_item_data and catalogue_item_data["properties"]:
             catalogue_item_expected_properties_in, catalogue_item_property_post_schemas = (
@@ -277,7 +275,7 @@ class CreateDSL(ItemServiceDSL):
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a item."""
+    """Tests for creating an item."""
 
     def test_create_without_properties(self):
         """Test creating an item without any properties in the catalogue item or item."""
@@ -721,7 +719,7 @@ class UpdateDSL(ItemServiceDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a catalogue item."""
+    """Tests for updating an item."""
 
     def test_update_all_fields_except_ids_or_properties(self):
         """Test updating all fields of an item except any of its `_id` fields or properties."""
