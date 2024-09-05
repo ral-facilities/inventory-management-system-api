@@ -91,7 +91,7 @@ class CreateDSL(ItemServiceDSL):
     _item_post: ItemPostSchema
     _expected_item_in: ItemIn
     _expected_item_out: ItemOut
-    _created_item: CatalogueItemOut
+    _created_item: ItemOut
     _create_exception: pytest.ExceptionInfo
 
     _expected_merged_properties: List[PropertyPostSchema]
@@ -277,7 +277,7 @@ class CreateDSL(ItemServiceDSL):
 
 
 class TestCreate(CreateDSL):
-    """Tests for creating a item."""
+    """Tests for creating an item."""
 
     def test_create_without_properties(self):
         """Test creating an item without any properties in the catalogue item or item."""
@@ -721,7 +721,7 @@ class UpdateDSL(ItemServiceDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a catalogue item."""
+    """Tests for updating an item."""
 
     def test_update_all_fields_except_ids_or_properties(self):
         """Test updating all fields of an item except any of its `_id` fields or properties."""
