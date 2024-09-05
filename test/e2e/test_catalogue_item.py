@@ -47,8 +47,6 @@ from test.mock_data import (
     UNIT_POST_DATA_MM,
     USAGE_STATUS_POST_DATA_NEW,
 )
-
-
 from typing import Any, Optional
 
 import pytest

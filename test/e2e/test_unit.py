@@ -2,8 +2,6 @@
 End-to-End tests for the unit router.
 """
 
-from typing import Optional
-
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
@@ -12,10 +10,10 @@ from test.mock_data import (
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
 )
-
-from bson import ObjectId
+from typing import Optional
 
 import pytest
+from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 

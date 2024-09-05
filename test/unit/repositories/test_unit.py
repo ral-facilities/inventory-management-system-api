@@ -2,10 +2,6 @@
 Unit tests for the `UnitRepo` repository
 """
 
-from typing import Optional
-from unittest.mock import MagicMock, Mock, call
-
-
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
@@ -13,11 +9,11 @@ from test.mock_data import (
     UNIT_IN_DATA_MM,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
+from typing import Optional
+from unittest.mock import MagicMock, Mock, call
+
 import pytest
 from bson import ObjectId
-
-
-from inventory_management_system_api.repositories.unit import UnitRepo
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -27,6 +23,7 @@ from inventory_management_system_api.core.exceptions import (
     PartOfCatalogueCategoryError,
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
+from inventory_management_system_api.repositories.unit import UnitRepo
 
 
 class UnitRepoDSL:
