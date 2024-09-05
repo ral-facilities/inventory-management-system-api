@@ -19,12 +19,9 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+    ITEM_DATA_ALL_VALUES_NO_PROPERTIES, ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_WITH_ALL_PROPERTIES, ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES,
+    ITEM_GET_DATA_REQUIRED_VALUES_ONLY, ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
@@ -36,10 +33,8 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
-    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    USAGE_STATUS_DATA_IN_USE,
-    USAGE_STATUS_DATA_NEW,
-)
+    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, USAGE_STATUS_DATA_IN_USE,
+    USAGE_STATUS_DATA_NEW)
 from typing import Any, Optional
 
 import pytest
@@ -154,7 +149,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
     def post_usage_status(self, usage_status_post_data: dict) -> str:
         """Posts a usage status with the given data and stores the value and ID in a dictionary for lookup later.
 
-        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
+        :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
+                                       `UsageStatusPostSchema`.
         """
 
         post_response = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
