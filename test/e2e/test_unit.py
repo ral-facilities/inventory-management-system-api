@@ -44,8 +44,8 @@ class CreateDSL:
         """
         Checks that a prior call to `post_unit` gave a successful response with the expected data returned.
 
-        :param expected_unit_get_data: Dictionary containing the expected unit data as would be required
-            for a `UnitSchema`.
+        :param expected_unit_get_data: Dictionary containing the expected unit data as would be required for a
+            `UnitSchema`.
         """
         assert self._post_response_unit.status_code == 201
         assert self._post_response_unit.json() == expected_unit_get_data
@@ -95,8 +95,8 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_unit` gave a successful response with the expected data returned.
 
-        :param expected_unit_get_data: Dictionary containing the expected unit data as would be required
-            for a `UnitSchema`.
+        :param expected_unit_get_data: Dictionary containing the expected unit data as would be required for a
+            `UnitSchema`.
         """
         assert self._get_response_unit.status_code == 200
         assert self._get_response_unit.json() == expected_unit_get_data
@@ -143,8 +143,8 @@ class ListDSL(GetDSL):
         """
         Checks that a prior call to `get_units` gave a successful response with the expected data returned.
 
-        :param expected_units_get_data: List of dictionaries containing the expected unit data as would
-            be required for a `UnitSchema`.
+        :param expected_units_get_data: List of dictionaries containing the expected unit data as would be required for
+            a `UnitSchema`.
         """
         assert self._get_response_unit.status_code == 200
         assert self._get_response_unit.json() == expected_units_get_data

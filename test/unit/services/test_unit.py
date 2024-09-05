@@ -52,8 +52,8 @@ class CreateDSL(UnitServiceDSL):
         """
         Mocks repo methods appropriately to test the `create` service method.
 
-        :param unit_post_data: Dictionary containing the basic unit data as would be required for a
-            `UnitPostSchema` (i.e. no ID, code or created and modified times required).
+        :param unit_post_data: Dictionary containing the basic unit data as would be required for a `UnitPostSchema`
+            (i.e. no ID, code or created and modified times required).
         """
         self._unit_post = UnitPostSchema(**unit_post_data)
 
@@ -63,10 +63,7 @@ class CreateDSL(UnitServiceDSL):
         ServiceTestHelpers.mock_create(self.mock_unit_repository, self._expected_unit_out)
 
     def call_create(self) -> None:
-        """
-        Calls the `UnitService` `create` method with the appropriate data from a prior call to
-        `mock_create`.
-        """
+        """Calls the `UnitService` `create` method with the appropriate data from a prior call to `mock_create`."""
         self._created_unit = self.unit_service.create(self._unit_post)
 
     def check_create_success(self) -> None:
