@@ -19,7 +19,7 @@ from test.mock_data import (
     MANUFACTURER_IN_DATA_A,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
 )
-from test.unit.services.conftest import ServiceTestHelpers
+from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call, patch
 
@@ -33,24 +33,19 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryIn,
-    CatalogueCategoryOut,
-    CatalogueCategoryPropertyIn,
-)
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
-    PropertyPostSchema,
 )
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 
-class CatalogueItemServiceDSL:
+class CatalogueItemServiceDSL(BaseCatalogueServiceDSL):
     """Base class for `CatalogueItemService` unit tests."""
 
     wrapped_utils: Mock
@@ -59,8 +54,6 @@ class CatalogueItemServiceDSL:
     mock_manufacturer_repository: Mock
     mock_unit_repository: Mock
     catalogue_item_service: CatalogueItemService
-
-    property_name_id_dict: dict[str, str]
 
     # pylint:disable=too-many-arguments
     @pytest.fixture(autouse=True)
@@ -86,45 +79,6 @@ class CatalogueItemServiceDSL:
         with patch("inventory_management_system_api.services.catalogue_item.utils", wraps=utils) as wrapped_utils:
             self.wrapped_utils = wrapped_utils
             yield
-
-    def construct_properties_in_and_post_with_ids(
-        self,
-        catalogue_category_properties_in: list[CatalogueCategoryPropertyIn],
-        catalogue_items_properties_data: list[dict],
-    ) -> tuple[list[PropertyIn], list[PropertyPostSchema]]:
-        """
-        Returns a list of property post schemas and expected property in models by adding
-        in unit IDs. It also assigns `unit_value_id_dict` for looking up these IDs.
-
-        :param catalogue_category_properties_in: List of `CatalogueCategoryPropertyIn`'s as would be found in the
-                                                 catalogue category.
-        :param catalogue_items_properties_data: List of dictionaries containing the data for each property as would
-                                                   be required for a `PropertyPostSchema` but without any `id`'s.
-        :returns: Tuple of lists. The first contains the expected `PropertyIn` models and the second the
-                  `PropertyPostSchema` schema's that should be posted in order to obtain them.
-        """
-
-        property_post_schemas = []
-        expected_properties_in = []
-
-        self.property_name_id_dict = {}
-
-        for prop in catalogue_items_properties_data:
-            prop_id = None
-            prop_without_name = prop.copy()
-
-            # Find the corresponding catalogue category property with the same name
-            for found_prop in catalogue_category_properties_in:
-                if found_prop.name == prop["name"]:
-                    prop_id = str(found_prop.id)
-                    self.property_name_id_dict["name"] = prop_id
-                    del prop_without_name["name"]
-                    break
-
-            expected_properties_in.append(PropertyIn(**prop, id=prop_id))
-            property_post_schemas.append(PropertyPostSchema(**prop_without_name, id=prop_id))
-
-        return expected_properties_in, property_post_schemas
 
 
 class CreateDSL(CatalogueItemServiceDSL):
@@ -637,7 +591,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
                     ManufacturerOut(
                         **{
                             **ManufacturerIn(**new_manufacturer_in_data).model_dump(),
-                            "_id": new_manufacturer_in_data,
+                            "_id": catalogue_item_update_data["manufacturer_id"],
                         },
                     )
                     if new_manufacturer_in_data
@@ -816,8 +770,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_item_id,
-            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_update(catalogue_item_id)
         self.check_update_success()
@@ -829,8 +783,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_item_id,
-            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_item_update_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             has_child_elements=True,
         )
         self.call_update(catalogue_item_id)

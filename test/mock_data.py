@@ -28,6 +28,12 @@ UNIT_POST_DATA_MM = {"value": "mm"}
 
 UNIT_IN_DATA_MM = {**UNIT_POST_DATA_MM, "code": "mm"}
 
+# --------------------------------- USAGE STATUSES ---------------------------------
+
+USAGE_STATUS_DATA_IN_USE = {"value": "In Use"}
+
+USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_DATA_IN_USE, "code": "in-use"}
+
 # --------------------------------- CATALOGUE CATEGORY PROPERTIES ---------------------------------
 
 # Boolean, Mandatory, No unit
@@ -240,10 +246,16 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
 
 # --------------------------------- PROPERTIES ---------------------------------
 
+# Boolean, Mandatory, False
+PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"],
+    "value": False,
+}
+
 # Boolean, Mandatory, True
 
 PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE = {
-    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"],
+    **PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
     "value": True,
 }
 
@@ -262,10 +274,17 @@ PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1 = {
     **PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1
 }
 
+# Number, Non Mandatory, 1
+
+PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1 = {
+    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"],
+    "value": 1,
+}
+
 # Number, Non Mandatory, 42
 
 PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42 = {
-    "name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"],
+    **PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
     "value": 42,
 }
 
@@ -295,6 +314,12 @@ PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1 = {
 
 PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1 = {
     **PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1
+}
+
+# String, Non Mandatory, Allowed Values List, value2
+PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2 = {
+    **PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+    "value": "value2",
 }
 
 # String, Non Mandatory, Allowed Values List, None
@@ -418,9 +443,7 @@ CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
 CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     "name": "Catalogue Item With Mandatory Properties Only",
-    "properties": [
-        PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
-    ],
+    "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE],
 }
 
 CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
@@ -435,6 +458,12 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
 
 # ------------------------------------- ITEMS -------------------------------------
 
+# This is the base catalogue item to be used in tests with properties
+BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+
+
+# Required values only
+
 ITEM_DATA_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
     "usage_status": "In Use",
@@ -447,14 +476,42 @@ ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     "usage_status_id": str(ObjectId()),
 }
 
-# pylint:disable=fixme
-# TODO: Replace in later item's PR when have a suitable name for one
-ITEM_IN_DATA_A = {
+# All values, no properties
+ITEM_DATA_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "purchase_order_number": "1234-123",
+    "warranty_end_date": "2015-11-15T23:59:59Z",
+    "asset_number": "1234-123456",
+    "serial_number": "1234-123456-123",
+    "delivered_date": "2012-12-05T12:00:00Z",
+    "notes": "Test notes",
+}
+
+ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "is_defective": False,
     "usage_status_id": str(ObjectId()),
     "usage_status": "In Use",
+}
+
+
+# Only mandatory properties
+
+ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
+    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE],
+}
+
+# All properties
+
+ITEM_DATA_WITH_ALL_PROPERTIES = {
+    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+    "properties": [
+        PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
+        PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
+        PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+    ],
 }
 
 # --------------------------------- MANUFACTURERS ---------------------------------
