@@ -81,10 +81,9 @@ class CreateDSL(UnitRepoDSL):
         """
         Mocks database methods appropriately to test the `create` repo method.
 
-        :param unit_in_data: Dictionary containing the unit data as would be required for a
-            `UnitIn` database model (i.e. no ID or created and modified times required).
-        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a
-            duplicate unit.
+        :param unit_in_data: Dictionary containing the unit data as would be required for a `UnitIn` database model
+            (i.e. no ID or created and modified times required).
+        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a duplicate unit.
         """
         inserted_unit_id = CustomObjectId(str(ObjectId()))
 
@@ -172,8 +171,8 @@ class GetDSL(UnitRepoDSL):
         Mocks database methods appropriately to test the `get` repo method.
 
         :param unit_id: ID of the unit to be obtained.
-        :param unit_in_data: Either `None` or a dictionary containing the unit data as would be required
-            for a `UnitIn` database model (i.e. no ID or created and modified times required).
+        :param unit_in_data: Either `None` or a dictionary containing the unit data as would be required for a `UnitIn`
+            database model (i.e. no ID or created and modified times required).
         """
         self._expected_unit_out = (
             UnitOut(**UnitIn(**unit_in_data).model_dump(), id=CustomObjectId(unit_id)) if unit_in_data else None
@@ -195,8 +194,8 @@ class GetDSL(UnitRepoDSL):
 
     def call_get_expecting_error(self, unit_id: str, error_type: type[BaseException]) -> None:
         """
-        Calls the `UnitRepo` `get` method with the appropriate data from a prior call to `mock_get` while
-        expecting an error to be raised.
+        Calls the `UnitRepo` `get` method with the appropriate data from a prior call to `mock_get` while expecting an
+        error to be raised.
 
         :param unit_id: ID of the unit to be obtained.
         :param error_type: Expected exception to be raised.
@@ -260,8 +259,8 @@ class ListDSL(UnitRepoDSL):
         """
         Mocks database methods appropriately to test the `list` repo method.
 
-        :param units_in_data: List of dictionaries containing the unit data as would be required for a
-            `UnitIn` database model (i.e. no ID or created and modified times required).
+        :param units_in_data: List of dictionaries containing the unit data as would be required for a `UnitIn` database
+            model (i.e. no ID or created and modified times required).
         """
         self._expected_units_out = [
             UnitOut(**UnitIn(**unit_in_data).model_dump(), id=ObjectId()) for unit_in_data in units_in_data
@@ -310,7 +309,7 @@ class DeleteDSL(UnitRepoDSL):
         Mocks database methods appropriately to test the `delete` repo method.
 
         :param deleted_count: Number of documents deleted successfully.
-        :param catalogue_item_data: Dictionary containing a catalogue item's data (or `None`).
+        :param catalogue_category_data: Dictionary containing a catalogue category's data (or `None`).
         """
         self.mock_is_unit_in_catalogue_category(catalogue_category_data)
         RepositoryTestHelpers.mock_delete_one(self.units_collection, deleted_count)
@@ -339,7 +338,7 @@ class DeleteDSL(UnitRepoDSL):
 
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
-        self.check_is_unit_in_catalogue_item_performed_expected_calls(self._delete_unit_id)
+        self.check_is_unit_in_catalogue_category_performed_expected_calls(self._delete_unit_id)
         self.units_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_unit_id)}, session=self.mock_session
         )
@@ -363,16 +362,16 @@ class DeleteDSL(UnitRepoDSL):
 
     def mock_is_unit_in_catalogue_category(self, catalogue_category_data: Optional[dict] = None) -> None:
         """
-        Mocks database methods appropriately for when the `_is_unit_in_catalogue_item` repo method will be
-        called.
+        Mocks database methods appropriately for when the `_is_unit_in_catalogue_category` repo method will be called.
 
         :param catalogue_category_data: Dictionary containing a catalogue category's data (or `None`).
         """
         self._mock_catalogue_category_data = catalogue_category_data
         RepositoryTestHelpers.mock_find_one(self.catalogue_categories_collection, catalogue_category_data)
 
-    def check_is_unit_in_catalogue_item_performed_expected_calls(self, expected_unit_id: str) -> None:
-        """Checks that a call to `_is_unit_in_catalogue_item` performed the expected method calls.
+    def check_is_unit_in_catalogue_category_performed_expected_calls(self, expected_unit_id: str) -> None:
+        """
+        Checks that a call to `_is_unit_in_catalogue_category` performed the expected method calls.
 
         :param expected_unit_id: Expected unit ID used in the database calls.
         """
