@@ -1,5 +1,5 @@
 """
-Unit tests for the `UsageStatusService` service
+Unit tests for the `UsageStatusService` service.
 """
 
 from test.mock_data import USAGE_STATUS_POST_DATA_NEW
@@ -16,7 +16,7 @@ from inventory_management_system_api.services.usage_status import UsageStatusSer
 
 
 class UsageStatusServiceDSL:
-    """Base class for `UsageStatusService` usage status tests."""
+    """Base class for `UsageStatusService` unit tests."""
 
     wrapped_utils: Mock
     mock_usage_status_repository: Mock
@@ -67,8 +67,7 @@ class CreateDSL(UsageStatusServiceDSL):
 
     def call_create(self) -> None:
         """
-        Calls the `UsageStatusService` `create` method with the appropriate data from a prior call to
-        `mock_create`.
+        Calls the `UsageStatusService` `create` method with the appropriate data from a prior call to `mock_create`.
         """
         self._created_usage_status = self.usage_status_service.create(self._usage_status_post)
 

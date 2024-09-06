@@ -247,7 +247,9 @@ class ServiceTestHelpers:
     @staticmethod
     def mock_create(
         repository_mock: Mock,
-        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut],
+        repo_obj: Union[
+            CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, UsageStatusOut
+        ],
     ) -> None:
         """
         Mock the `create` method of the repository mock to return a repository object.

@@ -37,8 +37,8 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    USAGE_STATUS_DATA_IN_USE,
-    USAGE_STATUS_DATA_NEW,
+    USAGE_STATUS_POST_DATA_IN_USE,
+    USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Any, Optional
 
@@ -209,7 +209,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item(item_data)
 
@@ -229,7 +229,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
             CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item(item_data)
 
@@ -260,7 +260,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
             catalogue_category_properties_data, catalogue_item_properties_data
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": item_properties_data})
 
@@ -287,7 +287,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
             property_type, allowed_values_post_data, catalogue_item_property_value
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         return self.post_item(
             {
                 **ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -535,7 +535,7 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = str(ObjectId())
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
@@ -545,7 +545,7 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = "invalid-id"
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
@@ -557,7 +557,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = str(ObjectId())
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
@@ -569,7 +569,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = "invalid-id"
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
@@ -593,7 +593,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_DATA_IN_USE)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.add_usage_status_value_and_id(ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"], "invalid-id")
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
@@ -921,11 +921,11 @@ class TestUpdate(UpdateDSL):
         """Test updating the `usage_status_id` of an item."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
-        new_usage_status_id = self.post_usage_status(USAGE_STATUS_DATA_NEW)
+        new_usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
 
         self.patch_item(item_id, {"usage_status_id": new_usage_status_id})
         self.check_patch_item_response_success(
-            {**ITEM_GET_DATA_REQUIRED_VALUES_ONLY, "usage_status": USAGE_STATUS_DATA_NEW["value"]}
+            {**ITEM_GET_DATA_REQUIRED_VALUES_ONLY, "usage_status": USAGE_STATUS_POST_DATA_NEW["value"]}
         )
 
     def test_partial_update_usage_status_id_with_non_existent_id(self):

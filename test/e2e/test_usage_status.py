@@ -1,10 +1,11 @@
 """
-End-to-End tests for the usage status router
+End-to-End tests for the usage status router.
 """
 
-from test.e2e.test_catalogue_category_property import CATALOGUE_ITEM_POST_A, ITEM_POST
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_REQUIRED_VALUES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
     USAGE_STATUS_GET_DATA_NEW,
@@ -37,7 +38,7 @@ class CreateDSL:
         Posts a usage status with the given data, returns the ID of the created usage status if successful.
 
         :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
-                                                            `UsageStatusPostSchema`.
+            `UsageStatusPostSchema`.
         :return: ID of the created usage status (or `None` if not successful).
         """
         self._post_response_usage_status = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
@@ -72,7 +73,7 @@ class TestCreate(CreateDSL):
     """Tests for creating a usage status."""
 
     def test_create_usage_status(self):
-        """Test creating a usage status"""
+        """Test creating a usage status."""
 
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
@@ -103,7 +104,7 @@ class GetDSL(CreateDSL):
         Checks that a prior call to `get_usage_status` gave a successful response with the expected data returned.
 
         :param expected_usage_status_get_data: Dictionary containing the expected usage status data as would be required
-                                                                           for a `UsageStatusSchema`.
+            for a `UsageStatusSchema`.
         """
         assert self._get_response_usage_status.status_code == 200
         assert self._get_response_usage_status.json() == expected_usage_status_get_data
@@ -146,15 +147,15 @@ class ListDSL(GetDSL):
         """Gets a list of usage statuses."""
         self._get_response_usage_status = self.test_client.get("/v1/usage-statuses")
 
-    def check_get_usage_statuses_success(self, expected_usage_statuss_get_data: list[dict]) -> None:
+    def check_get_usage_statuses_success(self, expected_usage_statuses_get_data: list[dict]) -> None:
         """
         Checks that a prior call to `get_usage_statuses` gave a successful response with the expected data returned.
 
-        :param expected_usage_statuss_get_data: List of dictionaries containing the expected usage status data as would
-        be required for a `UsageStatusSchema`.
+        :param expected_usage_statuses_get_data: List of dictionaries containing the expected usage status data as would
+            be required for a `UsageStatusSchema`.
         """
         assert self._get_response_usage_status.status_code == 200
-        assert self._get_response_usage_status.json() == expected_usage_statuss_get_data
+        assert self._get_response_usage_status.json() == expected_usage_statuses_get_data
 
 
 class TestList(ListDSL):
@@ -167,7 +168,7 @@ class TestList(ListDSL):
         self.get_usage_statuses()
         self.check_get_usage_statuses_success([USAGE_STATUS_GET_DATA_NEW, USAGE_STATUS_GET_DATA_USED])
 
-    def test_list_no_usage_statuss(self):
+    def test_list_no_usage_statuses(self):
         """Test getting a list of all usage statuses when there are no usage statuses."""
         self.get_usage_statuses()
         self.check_get_usage_statuses_success([])
@@ -217,7 +218,6 @@ class TestDelete(DeleteDSL):
         """Test deleting a usage status when it is part of an item."""
         usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
 
-        # pylint: disable=duplicate-code
         response = self.test_client.post(
             "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
         )
@@ -227,27 +227,22 @@ class TestDelete(DeleteDSL):
         system_id = response.json()["id"]
 
         response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-
         manufacturer_id = response.json()["id"]
 
         catalogue_item_post = {
-            **CATALOGUE_ITEM_POST_A,
-            "properties": [],
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_category_id": catalogue_category["id"],
             "manufacturer_id": manufacturer_id,
         }
-
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
         catalogue_item = response.json()
 
         item_post = {
-            **ITEM_POST,
-            "properties": [],
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_item_id": catalogue_item["id"],
             "system_id": system_id,
             "usage_status_id": usage_status_id,
         }
-        # pylint: enable=duplicate-code
         self.test_client.post("/v1/items", json=item_post)
 
         self.delete_usage_status(usage_status_id)

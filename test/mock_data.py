@@ -38,6 +38,12 @@ USAGE_STATUS_GET_DATA_NEW = {
     "code": "new",
     "id": ANY,
 }
+
+# In Use
+USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
+
+USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
+
 # Used
 USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
 
@@ -69,20 +75,6 @@ UNIT_IN_DATA_CM = {**UNIT_POST_DATA_CM, "code": "cm"}
 
 UNIT_GET_DATA_CM = {**UNIT_POST_DATA_CM, **CREATED_MODIFIED_GET_DATA_EXPECTED, "id": ANY, "code": "cm"}
 
-
-# --------------------------------- USAGE STATUSES ---------------------------------
-
-# New
-
-USAGE_STATUS_DATA_NEW = {"value": "New"}
-
-USAGE_STATUS_IN_DATA_NEW = {**USAGE_STATUS_DATA_NEW, "code": "new"}
-
-# In Use
-
-USAGE_STATUS_DATA_IN_USE = {"value": "In Use"}
-
-USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_DATA_IN_USE, "code": "in-use"}
 
 # --------------------------------- CATALOGUE CATEGORY PROPERTIES ---------------------------------
 
