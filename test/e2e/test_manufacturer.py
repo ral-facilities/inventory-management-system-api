@@ -66,17 +66,6 @@ class CreateDSL:
         assert self._post_response_manufacturer.status_code == status_code
         assert self._post_response_manufacturer.json()["detail"] == detail
 
-    def check_post_manufacturer_failed_with_validation_message(self, status_code: int, message: str) -> None:
-        """
-        Checks that a prior call to `post_manufacturers` gave a failed response with the expected code and pydantic
-        validation error message.
-
-        :param status_code: Expected status code to be returned.
-        :param message: Expected pydantic validation error message to be returned.
-        """
-        assert self._post_response_manufacturer.status_code == status_code
-        assert self._post_response_manufacturer.json()["detail"][0]["msg"] == message
-
 
 class TestCreate(CreateDSL):
     """Tests for creating a manufacturer."""

@@ -22,6 +22,43 @@ from bson import ObjectId
 # at runtime
 CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
+# ---------------------------- USAGE STATUSES -----------------------------
+
+# New
+USAGE_STATUS_POST_DATA_NEW = {"value": "New"}
+
+USAGE_STATUS_IN_DATA_NEW = {
+    **USAGE_STATUS_POST_DATA_NEW,
+    "code": "new",
+}
+
+USAGE_STATUS_GET_DATA_NEW = {
+    **USAGE_STATUS_POST_DATA_NEW,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "code": "new",
+    "id": ANY,
+}
+
+# In Use
+USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
+
+USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
+
+# Used
+USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
+
+USAGE_STATUS_IN_DATA_USED = {
+    **USAGE_STATUS_POST_DATA_USED,
+    "code": "used",
+}
+
+USAGE_STATUS_GET_DATA_USED = {
+    **USAGE_STATUS_POST_DATA_USED,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "code": "used",
+    "id": ANY,
+}
+
 # --------------------------------- UNITS ---------------------------------
 
 # mm
@@ -38,20 +75,6 @@ UNIT_IN_DATA_CM = {**UNIT_POST_DATA_CM, "code": "cm"}
 
 UNIT_GET_DATA_CM = {**UNIT_POST_DATA_CM, **CREATED_MODIFIED_GET_DATA_EXPECTED, "id": ANY, "code": "cm"}
 
-
-# --------------------------------- USAGE STATUSES ---------------------------------
-
-# New
-
-USAGE_STATUS_DATA_NEW = {"value": "New"}
-
-USAGE_STATUS_IN_DATA_NEW = {**USAGE_STATUS_DATA_NEW, "code": "new"}
-
-# In Use
-
-USAGE_STATUS_DATA_IN_USE = {"value": "In Use"}
-
-USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_DATA_IN_USE, "code": "in-use"}
 
 # --------------------------------- CATALOGUE CATEGORY PROPERTIES ---------------------------------
 

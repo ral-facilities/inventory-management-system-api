@@ -9,7 +9,6 @@ End-to-End tests for the catalogue item router.
 
 import copy
 from test.e2e.conftest import E2ETestHelpers
-from test.e2e.mock_schemas import SYSTEM_POST_A, USAGE_STATUS_POST_A
 from test.e2e.test_catalogue_category import CreateDSL as CatalogueCategoryCreateDSL
 from test.e2e.test_manufacturer import CreateDSL as ManufacturerCreateDSL
 from test.mock_data import (
@@ -44,7 +43,9 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+    SYSTEM_POST_DATA_NO_PARENT_A,
     UNIT_POST_DATA_MM,
+    USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Any, Optional
 
@@ -796,10 +797,10 @@ class UpdateDSL(ListDSL):
         # pylint:disable=fixme
         # TODO: This should be cleaned up in future
 
-        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_A)
+        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_NO_PARENT_A)
         system_id = response.json()["id"]
 
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_A)
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
         usage_status_id = response.json()["id"]
 
         item_post = {
