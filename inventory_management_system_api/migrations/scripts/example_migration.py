@@ -2,12 +2,15 @@
 Module providing an example migration that does nothing
 """
 
+import logging
 from typing import Collection
 
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
+
+logger = logging.getLogger()
 
 # When the migration will modify database models by adding data may be a good idea to put the old here and pass any data
 # between them and the new ones before updating them in the database, to ensure all modifications are as expected
@@ -45,6 +48,8 @@ class Migration(BaseMigration):
         #     {}, {"$rename": {"value": "renamed_value"}}, session=session
         # )
 
+        logger.info("example_migration forward migration (that does nothing)")
+
     def backward(self, session: ClientSession):
         """This function should reverse the migration
 
@@ -56,3 +61,5 @@ class Migration(BaseMigration):
         # self._units_collection.update_many(
         #     {}, {"$rename": {"renamed_value": "value"}}, session=session
         # )
+
+        logger.info("example_migration backward migration (that does nothing)")

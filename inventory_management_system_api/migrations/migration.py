@@ -97,7 +97,7 @@ class CommandForward(SubCommand):
         super().__init__(help_message="Performs a forward database migration")
 
     def setup(self, parser: argparse.ArgumentParser):
-        parser.add_argument("migration", help_message="Name of the migration to perform")
+        parser.add_argument("migration", help="Name of the migration to perform")
 
     def run(self, args: argparse.Namespace):
         migration_instance: BaseMigration = load_migration(args.migration)
@@ -119,7 +119,7 @@ class CommandBackward(SubCommand):
         super().__init__(help_message="Performs a backward database migration")
 
     def setup(self, parser: argparse.ArgumentParser):
-        parser.add_argument("migration", help_message="Name of the migration to revert")
+        parser.add_argument("migration", help="Name of the migration to revert")
 
     def run(self, args: argparse.Namespace):
         migration_instance: BaseMigration = load_migration(args.migration)
