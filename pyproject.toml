@@ -16,6 +16,9 @@ dependencies = [
 [project.urls]
 "Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
 
+[project.scripts]
+"ims-migrate" = "inventory_management_system_api.migrations.migration:main"
+
 [project.optional-dependencies]
 code-analysis = [
     "pylint==3.2.5",
