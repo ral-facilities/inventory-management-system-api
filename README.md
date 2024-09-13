@@ -328,7 +328,7 @@ Migration scripts are located inside the `inventory_management_system/migrations
 up and shown via
 
 ```bash
-ims-migration list
+ims-migrate list
 ```
 
 or
@@ -342,11 +342,11 @@ if running in Docker.
 To perform a migration you should use
 
 ```bash
-ims-migration forward <migration_name>
+ims-migrate forward <migration_name>
 ```
 
 To revert the same migration use
 
 ```bash
-ims-migration backward <migration_name>
+ims-migrate backward <migration_name>
 ```
