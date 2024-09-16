@@ -9,20 +9,25 @@ Unit tests for the `CatalogueCategoryPropertyService` service.
 from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+    CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_BOOLEAN_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import Optional
-from unittest.mock import ANY, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
@@ -34,6 +39,7 @@ from inventory_management_system_api.models.catalogue_category import (
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueCategoryPostPropertySchema,
     CatalogueCategoryPropertyPatchSchema,
     CatalogueCategoryPropertyPostSchema,
 )
@@ -340,583 +346,389 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception("Cannot add a property to a non-leaf catalogue category")
 
 
-# pylint:disable=too-many-locals
-# pylint:disable=too-many-arguments
-
-# UNIT_A = {
-#     "value": "mm",
-#     "code": "mm",
-#     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
-# }
-
-
-# @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
-# def test_update(
-#     mongodb_client_mock,
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method properly handles the property to be created and propagates the changes
-#     downwards through catalogue items (This test supplies both name and allowed_values)
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
-#     )
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100]),
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-
-#     # Start of transaction
-#     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-#     catalogue_category_repository_mock.update_property.assert_called_once_with(
-#         catalogue_category_id,
-#         property_id,
-#         CatalogueCategoryPropertyIn(**{**stored_property.model_dump(), **property_patch.model_dump()}),
-#         session=session,
-#     )
-
-#     # Catalogue items update
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_called_once_with(
-#         property_id, property_patch.name, session=session
-#     )
-
-#     # Items update
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_called_once_with(
-#         property_id, property_patch.name, session=session
-#     )
-
-#     # Final output
-#     assert updated_property == catalogue_category_repository_mock.update_property.return_value
-
-
-# @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
-# def test_update_category_only(
-#     mongodb_client_mock,
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method properly handles an update that doesn't require any propagation through
-#     catalogue items and items (in this case only modifying the allowed_values)
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
-#     )
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100]),
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-
-#     # Start of transaction
-#     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-#     catalogue_category_repository_mock.update_property.assert_called_once_with(
-#         catalogue_category_id,
-#         property_id,
-#         CatalogueCategoryPropertyIn(
-#             **{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}
-#         ),
-#         session=session,
-#     )
-
-#     # Ensure changes aren't propagated
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-#     # Final output
-#     assert updated_property == catalogue_category_repository_mock.update_property.return_value
-
-
-# @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
-# def test_update_with_no_changes_allowed_values_none(
-#     mongodb_client_mock,
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method properly handles the property to be created and propagates the changes
-#     downwards through catalogue items (in this case passing allowed_values as None when the database
-#     model also uses None)
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(allowed_values=None)
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=None,
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-
-#     # Start of transaction
-#     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-#     catalogue_category_repository_mock.update_property.assert_called_once_with(
-#         catalogue_category_id,
-#         property_id,
-#         CatalogueCategoryPropertyIn(
-#             **{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}
-#         ),
-#         session=session,
-#     )
-
-#     # Ensure changes aren't propagated
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-#     # Final output
-#     assert updated_property == catalogue_category_repository_mock.update_property.return_value
-
-
-# def test_update_with_missing_catalogue_category(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method raises a MissingRecordError when the catalogue category with the given
-#     catalogue_category_id doesn't exist
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
-#     )
-#     stored_catalogue_category = None
-
-#     # Mock the stored catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-#     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
-
-#     # Ensure no updates actually called
-#     catalogue_category_repository_mock.update_property.assert_not_called()
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-
-# def test_update_with_missing_property(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method raises a MissingRecordError when the property with the given
-#     property_id doesn't exist
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
-#     )
-#     # pylint: disable=duplicate-code
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=str(ObjectId()),
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100]),
-#     )
-#     # pylint: enable=duplicate-code
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-#     assert str(exc.value) == f"No property found with ID: {property_id}"
-
-#     # Ensure no updates actually called
-#     catalogue_category_repository_mock.update_property.assert_not_called()
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-
-# def test_update_allowed_values_from_none_to_value(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method raises a InvalidActionError when attempting to change a properties' allowed_values
-#     from None to a value
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
-#     )
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=None,
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     with pytest.raises(InvalidActionError) as exc:
-#         catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-#     assert str(exc.value) == "Cannot add allowed_values to an existing property"
-
-#     # Ensure no updates actually called
-#     catalogue_category_repository_mock.update_property.assert_not_called()
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-
-# def test_update_allowed_values_from_value_to_none(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method raises a InvalidActionError when attempting to change a properties' allowed_values
-#     from a value to None
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(name="Property Name", allowed_values=None)
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100]),
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     with pytest.raises(InvalidActionError) as exc:
-#         catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-#     assert str(exc.value) == "Cannot remove allowed_values from an existing property"
-
-#     # Ensure no updates actually called
-#     catalogue_category_repository_mock.update_property.assert_not_called()
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-
-# def test_update_allowed_values_removing_element(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method raises a InvalidActionError when attempting to change a properties' allowed_values
-#     to have one fewer element
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000]}
-#     )
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100, 500, 1000, 2000]),
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     with pytest.raises(InvalidActionError) as exc:
-#         catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-#     assert (
-#         str(exc.value)
-#         == "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
-#     )
-
-#     # Ensure no updates actually called
-#     catalogue_category_repository_mock.update_property.assert_not_called()
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-
-# def test_update_allowed_values_modifying_element(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method raises a InvalidActionError when attempting to change a properties' allowed_values
-#     by changing one element
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         name="Property Name", allowed_values={"type": "list", "values": [100, 500, 1000, 2000]}
-#     )
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100, 500, 1200, 2000]),
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     with pytest.raises(InvalidActionError) as exc:
-#         catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-#     assert (
-#         str(exc.value)
-#         == "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
-#     )
-
-#     # Ensure no updates actually called
-#     catalogue_category_repository_mock.update_property.assert_not_called()
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-
-# @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
-# def test_update_adding_allowed_values(
-#     mongodb_client_mock,
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test updating a property at the catalogue category level
-
-#     Verify that the `update` method allows an allowed_values list to be extended
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     property_id = str(ObjectId())
-#     property_patch = CatalogueCategoryPropertyPatchSchema(
-#         allowed_values={"type": "list", "values": [100, 500, 1000, 2000, 3000, 4000]}
-#     )
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     stored_property = CatalogueCategoryPropertyOut(
-#         id=property_id,
-#         name="Property A",
-#         type="number",
-#         unit_id=unit.id,
-#         unit=unit.value,
-#         mandatory=True,
-#         allowed_values=AllowedValues(type="list", values=[100]),
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[stored_property],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     updated_property = catalogue_category_property_service.update(catalogue_category_id, property_id, property_patch)
-
-#     # Start of transaction
-#     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-#     catalogue_category_repository_mock.update_property.assert_called_once_with(
-#         catalogue_category_id,
-#         property_id,
-#         CatalogueCategoryPropertyIn(
-#             **{**stored_property.model_dump(), **property_patch.model_dump(exclude_unset=True)}
-#         ),
-#         session=session,
-#     )
-
-#     # Ensure changes aren't propagated
-#     catalogue_item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-#     item_repository_mock.update_names_of_all_properties_with_id.assert_not_called()
-
-#     # Final output
-#     assert updated_property == catalogue_category_repository_mock.update_property.return_value
+class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
+    """Base class for `update` tests."""
+
+    # TODO: Check if all of these are necessary
+    _catalogue_category_id: str
+    _stored_catalogue_category_in: Optional[CatalogueCategoryIn]
+    _stored_catalogue_category_out: Optional[CatalogueCategoryOut]
+    _stored_catalogue_category_property_out: Optional[CatalogueCategoryPropertyOut]
+    _catalogue_category_property_patch: CatalogueCategoryPropertyPatchSchema
+    _expected_catalogue_category_property_in: CatalogueCategoryPropertyIn
+    _expected_catalogue_category_property_out: MagicMock
+    _updated_catalogue_category_property_id: str
+    # TODO: Should no be magic mock?
+    _updated_catalogue_category_property: MagicMock
+    _update_exception: pytest.ExceptionInfo
+
+    # TODO: Update comment
+    def mock_update(
+        self,
+        catalogue_category_property_id: str,
+        catalogue_category_property_update_data: dict,
+        stored_catalogue_category_property_in_data: Optional[dict],
+        catalogue_category_exists: bool = True,
+    ) -> None:
+        """
+        Mocks repository methods appropriately to test the `update` service method.
+
+        :param catalogue_category_id: ID of the catalogue category that will be obtained.
+        :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a
+                                               `CatalogueCategoryPatchSchema` but with any `unit_id`'s replaced by the
+                                               `unit` value in its properties as the IDs will be added automatically.
+        :param stored_catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data
+                                                  for the existing stored catalogue category as would be required for a
+                                                  `CatalogueCategoryIn` database model.
+        :param has_child_elements: Boolean of whether the catalogue category being updated has child elements or not
+        :param new_parent_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
+                                               category data as would be required for a `CatalogueCategoryIn` database
+                                               model.
+        :param units_in_data: Either `None` or a list of dictionaries (or `None`) containing the unit data as would be
+                              required for a `UnitIn` database model. These values will be used for any unit look ups
+                              required by the given catalogue category properties in the patch data.
+        """
+
+        self._catalogue_category_id = str(ObjectId())
+
+        # Use a predefined catalogue category when it should exist with a single property to be overridden
+        self._stored_catalogue_category_in = (
+            CatalogueCategoryIn(
+                **CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            )
+            if catalogue_category_exists
+            else None
+        )
+
+        self._stored_catalogue_category_property_out = (
+            CatalogueCategoryPropertyOut(
+                **{
+                    **CatalogueCategoryPropertyIn(**stored_catalogue_category_property_in_data).model_dump(),
+                    "id": catalogue_category_property_id,
+                }
+            )
+            if stored_catalogue_category_property_in_data
+            else None
+        )
+        self._stored_catalogue_category_out = (
+            CatalogueCategoryOut(
+                **{
+                    **self._stored_catalogue_category_in.model_dump(by_alias=True),
+                    "properties": (
+                        [self._stored_catalogue_category_property_out]
+                        if stored_catalogue_category_property_in_data
+                        else []
+                    ),
+                },
+                id=self._catalogue_category_id,
+            )
+            if catalogue_category_exists
+            else None
+        )
+
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
+
+        # TODO: Mock everything else
+
+        # Updated catalogue item
+        self._expected_catalogue_category_property_out = MagicMock()
+        self.mock_catalogue_category_repository.update_property.return_value = (
+            self._expected_catalogue_category_property_out
+        )
+
+        # Patch schema
+        self._catalogue_category_property_patch = CatalogueCategoryPropertyPatchSchema(
+            **catalogue_category_property_update_data
+        )
+
+        # Expected input for the repository
+        if self._stored_catalogue_category_property_out:
+            self._expected_catalogue_category_property_in = CatalogueCategoryPropertyIn(
+                **{
+                    **self._stored_catalogue_category_property_out.model_dump(),
+                    **catalogue_category_property_update_data,
+                }
+            )
+
+    def call_update(self, catalogue_category_property_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryPropertyService` `update` method with the appropriate data from a prior call to
+        `mock_update`.
+
+        :param catalogue_item_id: ID of the catalogue item to be updated.
+        """
+
+        self._updated_catalogue_category_property_id = catalogue_category_property_id
+        self._updated_catalogue_category_property = self.catalogue_category_property_service.update(
+            self._catalogue_category_id, catalogue_category_property_id, self._catalogue_category_property_patch
+        )
+
+    def call_update_expecting_error(self, catalogue_category_property_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueCategoryPropertyService` `update` method with the appropriate data from a prior call to
+        `mock_update` while expecting an error to be raised.
+
+        :param catalogue_item_id: ID of the catalogue item to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_property_service.update(
+                self._catalogue_category_id, catalogue_category_property_id, self._catalogue_category_property_patch
+            )
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+
+        self.mock_catalogue_category_repository.get.assert_called_once_with(self._catalogue_category_id)
+
+        updating_name = (
+            self._catalogue_category_property_patch.name is not None
+            and self._stored_catalogue_category_out.name != self._catalogue_category_property_patch.name
+        )
+
+        if updating_name:
+            modified_catalogue_category_out = CatalogueCategoryPropertyOut(
+                **self._stored_catalogue_category_property_out.model_dump()
+            )
+            modified_catalogue_category_out.name = self._catalogue_category_property_patch.name
+            self.wrapped_utils.check_duplicate_property_names.assert_called_once_with([modified_catalogue_category_out])
+
+        # Session/Transaction
+        expected_session = self.mock_mongodb_client.start_session.return_value.__enter__.return_value
+        expected_session.start_transaction.assert_called_once()
+
+        # Catalogue category
+        self.mock_catalogue_category_repository.update_property.assert_called_once_with(
+            self._catalogue_category_id,
+            self._updated_catalogue_category_property_id,
+            self._expected_catalogue_category_property_in,
+            session=expected_session,
+        )
+
+        if updating_name:
+            # Catalogue items
+            self.mock_catalogue_item_repository.update_names_of_all_properties_with_id.assert_called_once_with(
+                self._updated_catalogue_category_property_id,
+                self._catalogue_category_property_patch.name,
+                session=expected_session,
+            )
+
+            # Items
+            self.mock_item_repository.update_names_of_all_properties_with_id.assert_called_once_with(
+                self._updated_catalogue_category_property_id,
+                self._catalogue_category_property_patch.name,
+                session=expected_session,
+            )
+        else:
+            self.mock_catalogue_item_repository.update_names_of_all_properties_with_id.assert_not_called()
+            self.mock_item_repository.update_names_of_all_properties_with_id.assert_not_called()
+
+        assert self._updated_catalogue_category_property == self._expected_catalogue_category_property_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_catalogue_category_repository.update_property.assert_not_called()
+        self.mock_catalogue_item_repository.update_names_of_all_properties_with_id.assert_not_called()
+        self.mock_item_repository.update_names_of_all_properties_with_id.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a catalogue category property."""
+
+    def test_update_all_fields(self):
+        """Test updating all allowable fields of a catalogue category property."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={
+                "name": "New name",
+                "allowed_values": {
+                    "type": "list",
+                    "values": [
+                        *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST[
+                            "allowed_values"
+                        ]["values"],
+                        4,
+                    ],
+                },
+            },
+            stored_catalogue_category_property_in_data=(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+            ),
+        )
+        self.call_update(catalogue_category_property_id)
+        self.check_update_success()
+
+    def test_update_name_only(self):
+        """Test updating only the name of catalogue category property."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"name": "New name"},
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+        )
+        self.call_update(catalogue_category_property_id)
+        self.check_update_success()
+
+    def test_update_allowed_values_to_none_no_changes(self):
+        """Test updating the `allowed_values` of a property to `None` when it already is."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"allowed_values": None},
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+        )
+        self.call_update(catalogue_category_property_id)
+        self.check_update_success()
+
+    def test_update_allowed_from_none_to_value(self):
+        """Test updating the `allowed_values` of a property to a value when it's currently `None`."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={
+                "allowed_values": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST[
+                    "allowed_values"
+                ]
+            },
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY,
+        )
+        self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot add allowed_values to an existing property")
+
+    def test_update_allowed_values_to_none(self):
+        """Test updating the `allowed_values` of a property to `None` when it currently has a value."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"allowed_values": None},
+            stored_catalogue_category_property_in_data=(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+            ),
+        )
+        self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot remove allowed_values from an existing property")
+
+    def test_update_allowed_values_list_adding_element(self):
+        """Test updating the `allowed_values` list of a property to have one more element than it already has."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={
+                "allowed_values": {
+                    "type": "list",
+                    "values": [
+                        *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST[
+                            "allowed_values"
+                        ]["values"],
+                        42,
+                    ],
+                },
+            },
+            stored_catalogue_category_property_in_data=(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+            ),
+        )
+        self.call_update(catalogue_category_property_id)
+        self.check_update_success()
+
+    def test_update_allowed_values_list_modifying_element(self):
+        """Test updating the `allowed_values` list of a property modify one element within it."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={
+                "allowed_values": {
+                    "type": "list",
+                    "values": [
+                        *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST[
+                            "allowed_values"
+                        ]["values"][:-1],
+                        42,
+                    ],
+                },
+            },
+            stored_catalogue_category_property_in_data=(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+            ),
+        )
+        self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
+        self.check_update_failed_with_exception(
+            "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+        )
+
+    # TODO: Simplify e.g. allowed_values specific functions like did for other tests?
+    def test_update_allowed_values_list_removing_element(self):
+        """Test updating the `allowed_values` list of a property to have one less element than it already has."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={
+                "allowed_values": {
+                    "type": "list",
+                    "values": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST[
+                        "allowed_values"
+                    ]["values"][:-1],
+                },
+            },
+            stored_catalogue_category_property_in_data=(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+            ),
+        )
+        self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
+        self.check_update_failed_with_exception(
+            "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+        )
+
+    def test_update_with_non_existent_catalogue_category_id(self):
+        """Test updating the a catalogue category property when given a non-existent catalogue category ID."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"name": "New name"},
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+            catalogue_category_exists=False,
+        )
+        self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No catalogue category found with ID: {self._catalogue_category_id}")
+
+    def test_update_with_non_existent_catalogue_category_property_id(self):
+        """Test updating the a catalogue category property when given a non-existent catalogue category property ID."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"name": "New name"},
+            stored_catalogue_category_property_in_data=None,
+        )
+        self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No property found with ID: {catalogue_category_property_id}")
