@@ -6,7 +6,16 @@ Unit tests for the `CatalogueCategoryPropertyService` service.
 # pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 
-from test.mock_data import CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES, UNIT_IN_DATA_MM
+from test.mock_data import (
+    CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+    CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    UNIT_IN_DATA_MM,
+)
 from test.unit.services.conftest import MODEL_MIXINS_FIXED_DATETIME_NOW, BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import Optional
 from unittest.mock import ANY, Mock, patch
@@ -32,7 +41,6 @@ from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
 
 
-# TODO: Does this really need BaseCatalogueServiceDSL?
 class CatalogueCategoryPropertyServiceDSL(BaseCatalogueServiceDSL):
     """Base class for `CatalogueCategoryPropertyService` unit tests."""
 
@@ -80,7 +88,6 @@ class CatalogueCategoryPropertyServiceDSL(BaseCatalogueServiceDSL):
 class CreateDSL(CatalogueCategoryPropertyServiceDSL):
     """Base class for `create` tests."""
 
-    # TODO: Are all of these still needed?
     _catalogue_category_id: str
     _catalogue_category_property_post: CatalogueCategoryPropertyPostSchema
     _catalogue_category_out: Optional[CatalogueCategoryOut]
@@ -112,7 +119,6 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
 
         self._catalogue_category_id = str(ObjectId())
 
-        # TODO: Add units to properties?
         # Catalogue category
         self._catalogue_category_out = (
             CatalogueCategoryOut(
@@ -133,16 +139,14 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         # Unit
         unit = None
         unit_id = None
-        if catalogue_category_property_data["unit"] is not None:
+        if "unit" in catalogue_category_property_data and catalogue_category_property_data["unit"] is not None:
             unit_in = UnitIn(**unit_in_data) if unit_in_data else None
             unit = catalogue_category_property_data["unit"]
-            unit_id = self.unit_value_id_dict[unit] if unit_in_data else None
+            unit_id = self.unit_value_id_dict[unit]
 
             ServiceTestHelpers.mock_get(
                 self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id) if unit_in else None
             )
-
-        # TODO: Actually mock everything
 
         self._catalogue_category_property_post = CatalogueCategoryPropertyPostSchema(
             **{**catalogue_category_property_data, "unit_id": unit_id}
@@ -158,6 +162,10 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
             value=self._catalogue_category_property_post.default_value,
             unit=unit,
             unit_id=unit_id,
+        )
+
+        self.mock_catalogue_category_repository.create_property.return_value = (
+            self._expected_catalogue_category_property_out
         )
 
     def call_create(self) -> None:
@@ -177,7 +185,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self._created_catalogue_category_property.create(
+            self.catalogue_category_property_service.create(
                 self._catalogue_category_id, self._catalogue_category_property_post
             )
         self._create_exception = exc
@@ -229,20 +237,107 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
             session=expected_session,
         )
 
+        assert self._created_catalogue_category_property == self._expected_catalogue_category_property_out
+
+    def check_create_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_catalogue_category_repository.create_property.assert_not_called()
+        self.mock_catalogue_item_repository.insert_property_to_all_matching.assert_not_called()
+        self.mock_item_repository.insert_property_to_all_in.assert_not_called()
+
+        assert str(self._create_exception.value) == message
+
 
 class TestCreate(CreateDSL):
     """Tests for creating a catalogue category property."""
 
-    # TODO: Rename and add more tests
-    def test_create(self):
+    def test_create_non_mandatory_without_default_value(self):
+        """Test creating a non-mandatory property without a default value provided."""
 
         self.mock_create(
-            {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False},
-            CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_non_mandatory_with_default_value(self):
+        """Test creating a non-mandatory property with a default value provided."""
+
+        self.mock_create(
+            {**CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY, "default_value": 20},
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_mandatory_without_default_value(self):
+        """Test creating a mandatory property without a default value provided."""
+
+        self.mock_create(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+        )
+        self.call_create_expecting_error(InvalidActionError)
+        self.check_create_failed_with_exception("Cannot add a mandatory property without a default value")
+
+    def test_create_mandatory_with_default_value(self):
+        """Test creating a mandatory property without a default value provided."""
+
+        self.mock_create(
+            {**CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, "default_value": True},
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_unit(self):
+        """Test creating a property with a unit provided."""
+
+        self.mock_create(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             unit_in_data=UNIT_IN_DATA_MM,
         )
         self.call_create()
         self.check_create_success()
+
+    def test_create_with_non_existent_unit_id(self):
+        """Test creating a property with a non-existent unit ID."""
+
+        self.mock_create(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            unit_in_data=None,
+        )
+        self.call_create_expecting_error(MissingRecordError)
+        self.check_create_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+
+    def test_create_with_non_existent_catalogue_category_id(self):
+        """Test creating a property with a non-existent catalogue category ID."""
+
+        self.mock_create(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
+            catalogue_category_in_data=None,
+        )
+        self.call_create_expecting_error(MissingRecordError)
+        self.check_create_failed_with_exception(f"No catalogue category found with ID: {self._catalogue_category_id}")
+
+    def test_create_with_non_leaf_catalogue_category(self):
+        """Test creating a property with a non-leaf catalogue category."""
+
+        self.mock_create(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+        )
+        self.call_create_expecting_error(InvalidActionError)
+        self.check_create_failed_with_exception("Cannot add a property to a non-leaf catalogue category")
 
 
 # pylint:disable=too-many-locals
@@ -254,280 +349,6 @@ class TestCreate(CreateDSL):
 #     "created_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 #     "modified_time": MODEL_MIXINS_FIXED_DATETIME_NOW,
 # }
-
-
-# @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
-# @pytest.mark.parametrize(
-#     "mandatory,default_value",
-#     [(False, None), (True, 42)],
-#     ids=["non_mandatory_without_default_value", "mandatory_with_default_value"],
-# )
-# def test_create(
-#     mongodb_client_mock,
-#     mandatory,
-#     default_value,
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     unit_repository_mock,
-#     model_mixins_datetime_now_mock,  # pylint: disable=unused-argument
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test creating a property at the catalogue category level
-
-#     Verify that the `create` method properly handles the property to be created and propagates the changes
-#     downwards through catalogue items and items for a non-mandatory property without a default value, and a mandatory
-#     property with a default value
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     property_post = CatalogueCategoryPropertyPostSchema(
-#         name="Property A", type="number", unit_id=unit.id, mandatory=mandatory, default_value=default_value
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     created_property = catalogue_category_property_service.create(catalogue_category_id, property_post)
-
-#     # Start of transaction
-#     session = mongodb_client_mock.start_session.return_value.__enter__.return_value
-#     catalogue_category_repository_mock.create_property.assert_called_once_with(
-#         catalogue_category_id,
-#         ANY,
-#         session=session,
-#     )
-
-#     expected_property_in = CatalogueCategoryPropertyIn(**{**property_post.model_dump(), "unit": unit.value})
-
-#     # Property insertion into catalogue category
-#     inserted_property_in = catalogue_category_repository_mock.create_property.call_args_list[0][0][1]
-#     assert inserted_property_in.model_dump() == {
-#         **expected_property_in.model_dump(),
-#         "id": ANY,
-#     }
-
-#     # Property
-#     expected_property_in = PropertyIn(
-#         id=str(expected_property_in.id),
-#         name=expected_property_in.name,
-#         value=property_post.default_value,
-#         unit=unit.value,
-#         unit_id=unit.id,
-#     )
-
-#     # Catalogue items update
-#     catalogue_item_repository_mock.insert_property_to_all_matching.assert_called_once_with(
-#         catalogue_category_id, ANY, session=session
-#     )
-#     insert_property_to_all_matching_property_in = (
-#         catalogue_item_repository_mock.insert_property_to_all_matching.call_args_list[0][0][1]
-#     )
-#     assert insert_property_to_all_matching_property_in.model_dump() == {
-#         **expected_property_in.model_dump(),
-#         "id": ANY,
-#     }
-
-#     # Catalogue category update
-#     catalogue_item_repository_mock.list_ids.assert_called_once_with(catalogue_category_id, session=session)
-#     item_repository_mock.insert_property_to_all_in.assert_called_once_with(
-#         catalogue_item_repository_mock.list_ids.return_value, ANY, session=session
-#     )
-#     insert_property_to_all_in_property_in = item_repository_mock.insert_property_to_all_in.call_args_list[0][0][1]
-#     assert insert_property_to_all_in_property_in.model_dump() == {
-#         **expected_property_in.model_dump(),
-#         "id": ANY,
-#     }
-
-#     # Final output
-#     assert created_property == catalogue_category_repository_mock.create_property.return_value
-
-
-# def test_create_mandatory_property_without_default_value(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     unit_repository_mock,
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test creating a property at the catalogue category
-
-#     Verify that the `create` method raises an InvalidActionError when the property being created is mandatory but
-#     doesn't have a default_value
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     property_post = CatalogueCategoryPropertyPostSchema(
-#         name="Property A", type="number", unit_id=unit.id, mandatory=True
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     with pytest.raises(InvalidActionError) as exc:
-#         catalogue_category_property_service.create(catalogue_category_id, property_post)
-#     assert str(exc.value) == "Cannot add a mandatory property without a default value"
-
-#     # Ensure no updates
-#     catalogue_category_repository_mock.create_property.assert_not_called()
-#     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
-#     item_repository_mock.insert_property_to_all_in.assert_not_called()
-
-
-# def test_create_non_existent_unit_id(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     unit_repository_mock,
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test creating a property at the catalogue category with a non existent unit id
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     unit_id = str(ObjectId())
-#     property_post = CatalogueCategoryPropertyPostSchema(
-#         name="Property A", type="number", unit_id=unit_id, mandatory=False
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=True,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     # Mock `get` to not return a unit
-#     test_helpers.mock_get(unit_repository_mock, None)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_category_property_service.create(catalogue_category_id, property_post)
-#     assert str(exc.value) == f"No unit found with ID: {unit_id}"
-
-#     # Ensure no updates
-#     catalogue_category_repository_mock.create_property.assert_not_called()
-#     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
-#     item_repository_mock.insert_property_to_all_in.assert_not_called()
-
-
-# def test_create_mandatory_property_with_missing_catalogue_category(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     unit_repository_mock,
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test creating a property at the catalogue category
-
-#     Verify that the `create` method raises an MissingRecordError when the catalogue category with the given
-#     catalogue_category_id doesn't exist
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     property_post = CatalogueCategoryPropertyPostSchema(
-#         name="Property A", type="number", unit_id=unit.id, mandatory=False
-#     )
-#     stored_catalogue_category = None
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     with pytest.raises(MissingRecordError) as exc:
-#         catalogue_category_property_service.create(catalogue_category_id, property_post)
-#     assert str(exc.value) == f"No catalogue category found with ID: {catalogue_category_id}"
-
-#     # Ensure no updates
-#     catalogue_category_repository_mock.create_property.assert_not_called()
-#     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
-#     item_repository_mock.insert_property_to_all_in.assert_not_called()
-
-
-# def test_create_mandatory_property_with_non_leaf_catalogue_category(
-#     test_helpers,
-#     catalogue_category_repository_mock,
-#     catalogue_item_repository_mock,
-#     item_repository_mock,
-#     unit_repository_mock,
-#     catalogue_category_property_service,
-# ):
-#     """
-#     Test creating a property at the catalogue category
-
-#     Verify that the `create` method raises an InvalidActionError when the catalogue category for the given id
-#     is not a leaf
-#     """
-#     catalogue_category_id = str(ObjectId())
-#     unit = UnitOut(id=str(ObjectId()), **UNIT_A)
-#     property_post = CatalogueCategoryPropertyPostSchema(
-#         name="Property A", type="number", unit_id=unit.id, mandatory=False
-#     )
-#     stored_catalogue_category = CatalogueCategoryOut(
-#         id=catalogue_category_id,
-#         name="Category A",
-#         code="category-a",
-#         is_leaf=False,
-#         parent_id=None,
-#         properties=[],
-#         created_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#         modified_time=MODEL_MIXINS_FIXED_DATETIME_NOW,
-#     )
-
-#     # Mock the stored catalogue category to one without a property with the same name
-#     test_helpers.mock_get(catalogue_category_repository_mock, stored_catalogue_category)
-
-#     # Mock `get` to return the unit
-#     test_helpers.mock_get(unit_repository_mock, unit)
-
-#     with pytest.raises(InvalidActionError) as exc:
-#         catalogue_category_property_service.create(catalogue_category_id, property_post)
-#     assert str(exc.value) == "Cannot add a property to a non-leaf catalogue category"
-
-#     # Ensure no updates
-#     catalogue_category_repository_mock.create_property.assert_not_called()
-#     catalogue_item_repository_mock.insert_property_to_all_matching.assert_not_called()
-#     item_repository_mock.insert_property_to_all_in.assert_not_called()
 
 
 # @patch("inventory_management_system_api.services.catalogue_category_property.mongodb_client")
