@@ -10,5 +10,5 @@ RUN --mount=type=cache,target=/root/.cache \
     \
     python3 -m pip install .;
 
-CMD ["uvicorn", "inventory_management_system_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["fastapi", "dev", "inventory_management_system_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
