@@ -213,6 +213,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         if self._catalogue_category_post.properties:
             # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
+            self.mock_catalogue_category_repository.create.assert_called_once()
             actual_catalogue_category_in = self.mock_catalogue_category_repository.create.call_args_list[0][0][0]
             assert isinstance(actual_catalogue_category_in, CatalogueCategoryIn)
             assert actual_catalogue_category_in.model_dump() == {
@@ -591,7 +592,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
             # To assert with property IDs we must compare as dicts and use ANY here as otherwise the ObjectIds will
             # always be different
-
+            self.mock_catalogue_category_repository.update.assert_called_once()
             update_call_args = self.mock_catalogue_category_repository.update.call_args_list[0][0]
             assert update_call_args[0] == self._updated_catalogue_category_id
             actual_catalogue_category_in = update_call_args[1]
