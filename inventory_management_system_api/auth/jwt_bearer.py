@@ -6,7 +6,7 @@ import logging
 
 import jwt
 from fastapi import HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.consts import PUBLIC_KEY
