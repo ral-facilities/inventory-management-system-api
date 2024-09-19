@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   inventory-management-system-api:
     container_name: inventory_management_system_api_container

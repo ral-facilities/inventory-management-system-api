@@ -1,7 +1,9 @@
 ## Description
+
 Enter a description of the changes here
 
 ## Testing instructions
+
 Add a set up instructions describing how the reviewer should test the code
 
 - [ ] Review code
@@ -10,4 +12,5 @@ Add a set up instructions describing how the reviewer should test the code
 - [ ] {more steps here}
 
 ## Agile board tracking
+
 connect to #{issue number}
