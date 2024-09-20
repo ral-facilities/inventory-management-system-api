@@ -224,7 +224,7 @@ replacing `<hostname>` with the actual hostname for the replica set.
 For docker you may use
 
 ```bash
-docker exec -i mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'mongodb_container:27017' }]})"
+docker exec -i ims_api_mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'ims_api_mongodb_container:27017' }]})"
 ```
 
 ### Using mock data for testing [Optional]
@@ -242,7 +242,7 @@ to populate the database with mock data.
 If you wish to do this manually the full command is
 
 ```bash
-docker exec -i mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
+docker exec -i ims_api_mongodb_container mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
 ```
 
 Otherwise there is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To use it from your development environment first ensure the API is running and then execute it with
@@ -274,13 +274,13 @@ to update the `./data/mock_data.dump` file and commit the changes.
 The parameters at the top of the file can be used to change the generated data. NOTE: This script will simply add to the existing database instance. So if you wish to update the `mock_data.dump`, you should first clear the database e.g. using
 
 ```bash
-docker exec -i mongodb_container mongosh ims --username "root" --password "example" --authenticationDatabase=admin --eval "db.dropDatabase()"
+docker exec -i ims_api_mongodb_container mongosh ims --username "root" --password "example" --authenticationDatabase=admin --eval "db.dropDatabase()"
 ```
 
 Then generate the mock data, import the units and then update the `./data/mock_data.dump` file using `mongodump` via
 
 ```bash
-docker exec -i mongodb_container mongodump --username "root" --password "example" --authenticationDatabase=admin --db ims --archive > ./data/mock_data.dump
+docker exec -i ims_api_mongodb_container mongodump --username "root" --password "example" --authenticationDatabase=admin --db ims --archive > ./data/mock_data.dump
 ```
 
 ## Notes
