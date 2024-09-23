@@ -3,11 +3,11 @@ Module for the overall configuration for the application.
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from pydantic_core.core_schema import ValidationInfo
-from pydantic_settings import SettingsConfigDict, BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class APIConfig(BaseModel):
@@ -69,9 +69,9 @@ class Config(BaseSettings):
     """
     Overall configuration model for the application.
 
-    It includes attributes for the API and database configurations. The class inherits from `BaseSettings` and
-    automatically reads environment variables. If values are not passed in form of system environment variables at
-    runtime, it will attempt to read them from the .env file.
+    It includes attributes for the API, authentication and database configurations. The class inherits from
+    `BaseSettings` and automatically reads environment variables. If values are not passed in form of system environment
+    variables at runtime, it will attempt to read them from the .env file.
     """
 
     api: APIConfig
