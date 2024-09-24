@@ -1,5 +1,5 @@
 """
-Unit tests for the `SystemService` service
+Unit tests for the `SystemService` service.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar

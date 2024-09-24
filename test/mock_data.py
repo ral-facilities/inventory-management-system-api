@@ -1,5 +1,5 @@
 """
-Mock data for use in unit tests.
+Mock data for use in tests.
 
 Names should ideally be descriptive enough to recognise what they are without looking at the data itself.
 Letters may be appended in places to indicate the data is of the same type, but has different specific values
@@ -9,17 +9,15 @@ _POST_DATA - Is for a `PostSchema` schema.
 _IN_DATA - Is for an `In` model.
 _GET_DATA - Is for an entity schema - Used in assertions for e2e tests. May have IDs missing where they are possible
             to be known e.g. `manufacturer_id` in a catalogue item.
-_DATA - Is none of the above - likely to be used in post requests as they are likely identical, only
-        with some ids missing so that they can be added later e.g. for pairing up units that aren't
-        known before hand.
+_DATA - Is none of the above - likely to be used in post requests as they are likely identical, only with some ids
+        missing so that they can be added later e.g. for pairing up units that aren't known before hand.
 """
 
 from unittest.mock import ANY
 
 from bson import ObjectId
 
-# Used for _GET_DATA's as when comparing these will not be possible to know
-# at runtime
+# Used for _GET_DATA's as when comparing these will not be possible to know at runtime
 CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 # ---------------------------- USAGE STATUSES -----------------------------
