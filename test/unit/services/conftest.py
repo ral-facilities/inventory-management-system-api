@@ -3,7 +3,7 @@ Module for providing common test configuration and test fixtures.
 """
 
 from datetime import datetime, timezone
-from typing import List, Type, Union
+from typing import List, Union
 from unittest.mock import Mock, patch
 
 import pytest
@@ -404,16 +404,6 @@ class BaseCatalogueServiceDSL:
             property_post_schemas.append(PropertyPostSchema(**prop_without_name, id=prop_id))
 
         return expected_properties_in, property_post_schemas
-
-
-# pylint:disable=fixme
-# TODO: Remove this once tests refactored - should be able to just use `ServiceTestHelpers.`
-@pytest.fixture(name="test_helpers")
-def fixture_test_helpers() -> Type[ServiceTestHelpers]:
-    """
-    Fixture to provide a TestHelpers class.
-    """
-    return ServiceTestHelpers
 
 
 MODEL_MIXINS_FIXED_DATETIME_NOW = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)

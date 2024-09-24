@@ -1,5 +1,5 @@
 """
-Unit tests for the `SystemRepo` repository
+Unit tests for the `SystemRepo` repository.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
