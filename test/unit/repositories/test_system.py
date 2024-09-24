@@ -201,8 +201,6 @@ class CreateDSL(SystemRepoDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        system_in_data = self._system_in.model_dump()
-
         # Obtain a list of expected find_one calls
         expected_find_one_calls = []
         # This is the check for parent existence
@@ -217,7 +215,9 @@ class CreateDSL(SystemRepoDSL):
             )
         )
 
-        self.systems_collection.insert_one.assert_called_once_with(system_in_data, session=self.mock_session)
+        self.systems_collection.insert_one.assert_called_once_with(
+            self._system_in.model_dump(), session=self.mock_session
+        )
         self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         assert self._created_system == self._expected_system_out
