@@ -93,6 +93,10 @@ jobs:
       - name: Run e2e tests
         run: pytest -c test/pytest.ini test/e2e/ --cov
 
+      - name: Output docker logs (mongodb)
+        if: failure()
+        run: docker logs ims_api_mongodb_container
+
   docker:
     # This job triggers only if all the other jobs succeed. It builds the Docker image and if successful,
     # it pushes it to Harbor.
