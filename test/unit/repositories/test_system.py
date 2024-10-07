@@ -1,5 +1,5 @@
 """
-Unit tests for the `SystemRepo` repository
+Unit tests for the `SystemRepo` repository.
 """
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
@@ -57,9 +57,6 @@ class SystemRepoDSL:
 
         self.mock_session = MagicMock()
 
-        # Here we only wrap the utils so they keep their original functionality - this is done here
-        # to avoid having to mock the code generation function as the output will be passed to `SystemOut`
-        # with pydantic validation and so will error otherwise
         with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
             self.mock_utils = mock_utils
             yield
@@ -201,8 +198,6 @@ class CreateDSL(SystemRepoDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        system_in_data = self._system_in.model_dump()
-
         # Obtain a list of expected find_one calls
         expected_find_one_calls = []
         # This is the check for parent existence
@@ -217,7 +212,9 @@ class CreateDSL(SystemRepoDSL):
             )
         )
 
-        self.systems_collection.insert_one.assert_called_once_with(system_in_data, session=self.mock_session)
+        self.systems_collection.insert_one.assert_called_once_with(
+            self._system_in.model_dump(), session=self.mock_session
+        )
         self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         assert self._created_system == self._expected_system_out

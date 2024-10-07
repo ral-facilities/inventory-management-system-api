@@ -18,12 +18,9 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
+    "black==24.8.0",
     "pylint==3.2.7",
     "inventory-management-system-api[test]"
-]
-
-formatting = [
-    "black==24.8.0"
 ]
 
 test = [
@@ -40,7 +37,6 @@ scripts = [
 
 dev = [
     "inventory-management-system-api[code-analysis]",
-    "inventory-management-system-api[formatting]",
     "inventory-management-system-api[test]",
     "inventory-management-system-api[scripts]"
 ]

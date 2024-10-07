@@ -3,7 +3,7 @@ Module for providing common test configuration and test fixtures.
 """
 
 from datetime import datetime, timezone
-from typing import List, Type, Union
+from typing import List, Union
 from unittest.mock import Mock, patch
 
 import pytest
@@ -41,7 +41,7 @@ def fixture_catalogue_category_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `CatalogueCategoryRepo` dependency.
 
-    :return: Mocked CatalogueCategoryRepo instance.
+    :return: Mocked `CatalogueCategoryRepo` instance.
     """
     return Mock(CatalogueCategoryRepo)
 
@@ -51,7 +51,7 @@ def fixture_catalogue_item_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `CatalogueItemRepo` dependency.
 
-    :return: Mocked CatalogueItemRepo instance.
+    :return: Mocked `CatalogueItemRepo` instance.
     """
     return Mock(CatalogueItemRepo)
 
@@ -61,7 +61,7 @@ def fixture_item_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `ItemRepo` dependency.
 
-    :return: Mocked ItemRepo instance.
+    :return: Mocked `ItemRepo` instance.
     """
     return Mock(ItemRepo)
 
@@ -71,7 +71,7 @@ def fixture_manufacturer_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `ManufacturerRepo dependency
 
-    :return: Mocked ManufacturerRepo instance
+    :return: Mocked `ManufacturerRepo` instance
     """
     return Mock(ManufacturerRepo)
 
@@ -81,7 +81,7 @@ def fixture_system_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `SystemRepo` dependency.
 
-    :return: Mocked SystemRepo instance.
+    :return: Mocked `SystemRepo` instance.
     """
     return Mock(SystemRepo)
 
@@ -91,7 +91,7 @@ def fixture_unit_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `UnitRepo` dependency.
 
-    :return: Mocked UnitRepo instance.
+    :return: Mocked `UnitRepo` instance.
     """
     return Mock(UnitRepo)
 
@@ -101,7 +101,7 @@ def fixture_usage_status_repository_mock() -> Mock:
     """
     Fixture to create a mock of the `UsageStatusRepo` dependency.
 
-    :return: Mocked UsageStatusRepo instance.
+    :return: Mocked `UsageStatusRepo` instance.
     """
     return Mock(UsageStatusRepo)
 
@@ -116,7 +116,7 @@ def fixture_catalogue_category_service(
 
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :param unit_repository_mock: Mocked `UnitRepo` instance.
-    :return: `CatalogueCategoryService` instance with the mocked dependency.
+    :return: `CatalogueCategoryService` instance with the mocked dependencies.
     """
     return CatalogueCategoryService(catalogue_category_repository_mock, unit_repository_mock)
 
@@ -156,7 +156,7 @@ def fixture_catalogue_item_service(
 
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
-    :return: `CatalogueItemService` instance with the mocked dependency.
+    :return: `CatalogueItemService` instance with the mocked dependencies.
     """
     return CatalogueItemService(
         catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock
@@ -195,7 +195,7 @@ def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> Manufact
     Fixture to create a `ManufacturerService` instance with a mocked `ManufacturerRepo`
 
     :param: manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
-    :return: `ManufacturerService` instance with mocked dependency
+    :return: `ManufacturerService` instance with mocked dependency.
     """
     return ManufacturerService(manufacturer_repository_mock)
 
@@ -206,8 +206,8 @@ def fixture_system_service(system_repository_mock: Mock) -> SystemService:
     Fixture to create a `SystemService` instance with a mocked `SystemRepo`
     dependencies.
 
-    :param system_repository_mock: Mocked `SystemRepo` instance
-    :return: `SystemService` instance with the mocked dependency
+    :param system_repository_mock: Mocked `SystemRepo` instance.
+    :return: `SystemService` instance with the mocked dependency.
     """
     return SystemService(system_repository_mock)
 
@@ -218,8 +218,8 @@ def fixture_unit_service(unit_repository_mock: Mock) -> UnitService:
     Fixture to create a `UnitService` instance with a mocked `UnitRepo`
     dependencies.
 
-    :param unit_repository_mock: Mocked `UnitRepo` instance
-    :return: `UnitService` instance with the mocked dependency
+    :param unit_repository_mock: Mocked `UnitRepo` instance.
+    :return: `UnitService` instance with the mocked dependency.
     """
     return UnitService(unit_repository_mock)
 
@@ -230,8 +230,8 @@ def fixture_usage_status_service(usage_status_repository_mock: Mock) -> UsageSta
     Fixture to create a `UsageStatusService` instance with a mocked `UsageStatusRepo`
     dependencies.
 
-    :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance
-    :return: `UsageStatusService` instance with the mocked dependency
+    :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
+    :return: `UsageStatusService` instance with the mocked dependency.
     """
     return UsageStatusService(usage_status_repository_mock)
 
@@ -406,23 +406,13 @@ class BaseCatalogueServiceDSL:
         return expected_properties_in, property_post_schemas
 
 
-# pylint:disable=fixme
-# TODO: Remove this once tests refactored - should be able to just use `ServiceTestHelpers.`
-@pytest.fixture(name="test_helpers")
-def fixture_test_helpers() -> Type[ServiceTestHelpers]:
-    """
-    Fixture to provide a TestHelpers class.
-    """
-    return ServiceTestHelpers
-
-
 MODEL_MIXINS_FIXED_DATETIME_NOW = datetime(2024, 2, 16, 14, 0, 0, 0, tzinfo=timezone.utc)
 
 
 @pytest.fixture(name="model_mixins_datetime_now_mock")
 def fixture_model_mixins_datetime_now_mock():
     """
-    Fixture that mocks the `datetime.now` method in the `inventory_management_system_api.models.mixins.datetime` module.
+    Fixture that mocks the `datetime.now` method in the `inventory_management_system_api.models.mixins` module.
     """
     with patch("inventory_management_system_api.models.mixins.datetime") as mock_datetime:
         mock_datetime.now.return_value = MODEL_MIXINS_FIXED_DATETIME_NOW

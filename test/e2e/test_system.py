@@ -44,8 +44,7 @@ class CreateDSL:
         """
         Posts a system with the given data and returns the id of the created system if successful.
 
-        :param system_post_data: Dictionary containing the system data as would be required for a
-                                 `SystemPostSchema`.
+        :param system_post_data: Dictionary containing the system data as would be required for a `SystemPostSchema`.
         :return: ID of the created system (or `None` if not successful).
         """
 
