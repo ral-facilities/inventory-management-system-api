@@ -63,6 +63,7 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
 
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
     """Adds common arguments for MongoDB authentication"""
+
     parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
     parser.add_argument("-p", "--password", default="example", help="Password for MongoDB authentication")
 
@@ -81,8 +82,8 @@ def get_mongodb_auth_args(args: argparse.Namespace):
 class SubCommand(ABC):
     """Base class for a sub command"""
 
-    def __init__(self, help: str):
-        self.help = help
+    def __init__(self, help_message: str):
+        self.help_message = help_message
 
     @abstractmethod
     def setup(self, parser: argparse.ArgumentParser):
@@ -103,7 +104,7 @@ class CommandDBInit(SubCommand):
     """
 
     def __init__(self):
-        super().__init__(help="Initialise database for development (using docker on linux)")
+        super().__init__(help_message="Initialise database for development (using docker on linux)")
 
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
@@ -168,7 +169,7 @@ class CommandDBImport(SubCommand):
     """Command that imports mock data into the database"""
 
     def __init__(self):
-        super().__init__(help="Imports database for development")
+        super().__init__(help_message="Imports database for development")
 
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
@@ -198,7 +199,7 @@ class CommandDBGenerate(SubCommand):
     """
 
     def __init__(self):
-        super().__init__(help="Generates new test data for the database and dumps it")
+        super().__init__(help_message="Generates new test data for the database and dumps it")
 
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
@@ -272,7 +273,7 @@ def main():
     subparser = parser.add_subparsers(dest="command")
 
     for command_name, command in commands.items():
-        command_parser = subparser.add_parser(command_name, help=command.help)
+        command_parser = subparser.add_parser(command_name, help=command.help_message)
         command.setup(command_parser)
 
     args = parser.parse_args()

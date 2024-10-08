@@ -322,3 +322,33 @@ encoding the token. Once the JWT access token is decoded successfully, it checks
 payload, and it has not expired. This means that any microservice can be used to generate JWT access tokens so long as
 it meets the above criteria. The [LDAP-JWT Authentication Service](https://github.com/ral-facilities/ldap-jwt-auth) is
 a microservice that provides user authentication against an LDAP server and returns a JWT access token.
+
+### Migrations
+
+Migration scripts are located inside the `inventory_management_system/migrations/scripts`. See the
+`example_migration.py` for an example on how to implement one. Any new migrations added should be automatically picked
+up and shown via
+
+```bash
+ims-migrate list
+```
+
+or
+
+```bash
+docker exec -it inventory_management_system_api_container ims-migrate list
+```
+
+if running in Docker.
+
+To perform a migration you should use
+
+```bash
+ims-migrate forward <migration_name>
+```
+
+To revert the same migration use
+
+```bash
+ims-migrate backward <migration_name>
+```
