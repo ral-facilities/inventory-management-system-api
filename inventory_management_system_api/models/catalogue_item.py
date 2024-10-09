@@ -51,6 +51,7 @@ class CatalogueItemBase(BaseModel):
     days_to_rework: Optional[float] = None
     drawing_number: Optional[str] = None
     drawing_link: Optional[HttpUrl] = None
+    expected_lifetime: Optional[float] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
