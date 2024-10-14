@@ -10,9 +10,9 @@ fake = Faker("en_GB")
 
 API_URL = "http://localhost:8000"
 
-MAX_LEVELS_DEEP = 3
-MAX_NUMBER_PER_PARENT = 10
-PROBABILITY_CATEGORY_IS_LEAF = 0.3  # All MAX_LEVEL_DEEP categories are populated, this just allows them to end earlier
+MAX_LEVELS_DEEP = 2
+MAX_NUMBER_PER_PARENT = 8
+PROBABILITY_CATEGORY_IS_LEAF = 0.4  # All MAX_LEVEL_DEEP categories are populated, this just allows them to end earlier
 PROBABILITY_CATALOGUE_CATEGORY_HAS_EXTRA_FIELDS = 0.5
 MAX_EXTRA_CATALOGUE_CATEGORY_FIELDS = 2
 PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD = 0.5
@@ -455,14 +455,14 @@ def populate_random_manufacturers() -> list[str]:
 
 
 def populate_units():
-    for i, unit in enumerate(units):
+    for _, unit in enumerate(units):
         unit = generate_unit(unit)
         unit = create_unit(unit)
         generated_units[unit["value"]] = unit
 
 
 def populate_usage_statuses():
-    for i, usage_status in enumerate(usage_statuses):
+    for _, usage_status in enumerate(usage_statuses):
         usage_status = generate_usage_status(usage_status)
         usage_status = create_usage_status(usage_status)
         generated_usage_statuses[usage_status["id"]] = usage_status
@@ -477,57 +477,57 @@ def populate_random_catalogue_categories(
 ):
     if levels_deep > MAX_LEVELS_DEEP:
         return
-    else:
-        logging.debug("Populating category with depth %s and is_leaf %s", levels_deep, is_leaf)
-        num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
 
-        for i in range(0, num_to_generate):
-            if is_leaf:
-                item = generate_random_catalogue_item(
-                    catalogue_category_id=parent_id,
-                    manufacturer_id=fake.random.choice(available_manufacturers),
-                    properties=(parent_catalogue_category["properties"] if parent_catalogue_category else None),
-                )
-                item_id = create_catalogue_item(item)["id"]
-                generated_catalogue_items[item_id] = parent_id
+    logging.debug("Populating category with depth %s and is_leaf %s", levels_deep, is_leaf)
+    num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
+
+    for _ in range(0, num_to_generate):
+        if is_leaf:
+            item = generate_random_catalogue_item(
+                catalogue_category_id=parent_id,
+                manufacturer_id=fake.random.choice(available_manufacturers),
+                properties=(parent_catalogue_category["properties"] if parent_catalogue_category else None),
+            )
+            item_id = create_catalogue_item(item)["id"]
+            generated_catalogue_items[item_id] = parent_id
+        else:
+            # Always make the last level a leaf
+            if levels_deep == MAX_LEVELS_DEEP - 1:
+                new_is_leaf = True
             else:
-                # Always make the last level a leaf
-                if levels_deep == MAX_LEVELS_DEEP - 1:
-                    new_is_leaf = True
-                else:
-                    new_is_leaf = fake.random.random() < PROBABILITY_CATEGORY_IS_LEAF
-                catalogue_category = generate_random_catalogue_category(parent_id, new_is_leaf)
-                catalogue_category = create_catalogue_category(catalogue_category)
-                generated_catalogue_categories[catalogue_category["id"]] = catalogue_category
-                populate_random_catalogue_categories(
-                    available_manufacturers=available_manufacturers,
-                    levels_deep=levels_deep + 1,
-                    parent_id=catalogue_category["id"],
-                    is_leaf=new_is_leaf,
-                    parent_catalogue_category=catalogue_category,
-                )
+                new_is_leaf = fake.random.random() < PROBABILITY_CATEGORY_IS_LEAF
+            catalogue_category = generate_random_catalogue_category(parent_id, new_is_leaf)
+            catalogue_category = create_catalogue_category(catalogue_category)
+            generated_catalogue_categories[catalogue_category["id"]] = catalogue_category
+            populate_random_catalogue_categories(
+                available_manufacturers=available_manufacturers,
+                levels_deep=levels_deep + 1,
+                parent_id=catalogue_category["id"],
+                is_leaf=new_is_leaf,
+                parent_catalogue_category=catalogue_category,
+            )
 
 
 def populate_random_items():
     for catalogue_item_id in list(generated_catalogue_items.keys()):
         if fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_ITEMS:
             number_to_generate = fake.random.randint(1, MAX_NUMBER_OF_ITEMS_PER_CATALOGUE_ITEM)
-            for i in range(0, number_to_generate):
+            for _ in range(0, number_to_generate):
                 item = generate_random_item(catalogue_item_id=catalogue_item_id)
                 create_item(item)
 
 
 def populate_random_systems(levels_deep: int = 0, parent_id=None):
-    if levels_deep > MAX_LEVELS_DEEP:
+    if levels_deep >= MAX_LEVELS_DEEP:
         return
-    else:
-        logging.debug("Populating system with depth %s", levels_deep)
-        num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
-        for i in range(0, num_to_generate):
-            system = generate_random_system(parent_id)
-            system_id = create_system(system)["id"]
-            populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
-            generated_system_ids.append(system_id)
+
+    logging.debug("Populating system with depth %s", levels_deep)
+    num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
+    for _ in range(0, num_to_generate):
+        system = generate_random_system(parent_id)
+        system_id = create_system(system)["id"]
+        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
+        generated_system_ids.append(system_id)
 
 
 def generate_mock_data():
