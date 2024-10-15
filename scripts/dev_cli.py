@@ -1,4 +1,4 @@
-"""Module defining a CLI Script for some common development tasks"""
+"""Module defining a CLI Script for some common development tasks."""
 
 import argparse
 import json
@@ -13,25 +13,25 @@ from typing import Optional
 
 
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """
-    Runs a command using subprocess
-    """
+    """Runs a command using subprocess"""
+
     logging.debug("Running command: %s", " ".join(args))
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
     # for some reason)
-    popen = subprocess.Popen(
+    with subprocess.Popen(
         args, stdin=stdin, stdout=stdout if stdout is not None else subprocess.PIPE, universal_newlines=True
-    )
-    if stdout is None:
-        for stdout_line in iter(popen.stdout.readline, ""):
-            print(stdout_line, end="")
-        popen.stdout.close()
-    return_code = popen.wait()
+    ) as popen:
+        if stdout is None:
+            for stdout_line in iter(popen.stdout.readline, ""):
+                print(stdout_line, end="")
+            popen.stdout.close()
+        return_code = popen.wait()
     return return_code
 
 
 def start_group(text: str, args: argparse.Namespace):
     """Print the start of a group for Github CI (to get collapsable sections)"""
+
     if args.ci:
         print(f"::group::{text}")
     else:
@@ -40,14 +40,14 @@ def start_group(text: str, args: argparse.Namespace):
 
 def end_group(args: argparse.Namespace):
     """End of a group for Github CI"""
+
     if args.ci:
         print("::endgroup::")
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """
-    Runs a command within the mongodb container
-    """
+    """Runs a command within the mongodb container"""
+
     return run_command(
         [
             "docker",
@@ -62,40 +62,41 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
 
 
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
-    """Adds common arguments for MongoDB authentication"""
+    """Adds common arguments for MongoDB authentication."""
 
-    parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
-    parser.add_argument("-p", "--password", default="example", help="Password for MongoDB authentication")
+    parser.add_argument("-dbu", "--db-username", default="root", help="Username for MongoDB authentication")
+    parser.add_argument("-dbp", "--db-password", default="example", help="Password for MongoDB authentication")
 
 
 def get_mongodb_auth_args(args: argparse.Namespace):
-    """Returns arguments in a list to use the parser arguments defined in add_mongodb_auth_args above"""
+    """Returns arguments in a list to use the parser arguments defined in `add_mongodb_auth_args` above."""
+
     return [
         "--username",
-        args.username,
+        args.db_username,
         "--password",
-        args.password,
+        args.db_password,
         "--authenticationDatabase=admin",
     ]
 
 
 class SubCommand(ABC):
-    """Base class for a sub command"""
+    """Base class for a sub command."""
 
     def __init__(self, help_message: str):
         self.help_message = help_message
 
     @abstractmethod
     def setup(self, parser: argparse.ArgumentParser):
-        """Setup the parser by adding any parameters here"""
+        """Setup the parser by adding any parameters here."""
 
     @abstractmethod
     def run(self, args: argparse.Namespace):
-        """Run the command with the given parameters as added by 'setup'"""
+        """Run the command with the given parameters as added by 'setup'."""
 
 
 class CommandDBInit(SubCommand):
-    """Command that initialises the database
+    """Command that initialises the database.
 
     - Generates a replica set keyfile and sets it's permissions (if it doesn't already exist)
     - Starts the mongodb service (and waits 10 seconds after it starts)
@@ -135,7 +136,7 @@ class CommandDBInit(SubCommand):
         end_group(args)
 
         start_group("Initialising replica set", args)
-        replicaSetConfig = json.dumps(
+        replica_set_config = json.dumps(
             {"_id": "rs0", "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}]}
         )
         run_mongodb_command(
@@ -145,7 +146,7 @@ class CommandDBInit(SubCommand):
             + get_mongodb_auth_args(args)
             + [
                 "--eval",
-                f"rs.initiate({replicaSetConfig})",
+                f"rs.initiate({replica_set_config})",
             ]
         )
         end_group(args)
@@ -166,7 +167,7 @@ class CommandDBInit(SubCommand):
 
 
 class CommandDBImport(SubCommand):
-    """Command that imports mock data into the database"""
+    """Command that imports mock data into the database."""
 
     def __init__(self):
         super().__init__(help_message="Imports database for development")
@@ -192,10 +193,8 @@ class CommandDBGenerate(SubCommand):
     """Command to generate new test data for the database (runs generate_mock_data.py)
 
     - Deletes all existing data (after confirmation)
-    - Imports units
     - Runs generate_mock_data.py
-
-    Has option to dump the data into './data/mock_data.dump'.
+    - (Optionally) Dumps the data into './data/mock_data.dump'
     """
 
     def __init__(self):
@@ -214,7 +213,7 @@ class CommandDBGenerate(SubCommand):
 
         # Firstly confirm ok with deleting
         answer = input("This operation will replace all existing data, are you sure? ")
-        if answer == "y" or answer == "yes":
+        if answer in ("y", "yes"):
             # Delete the existing data
             logging.info("Deleting database contents...")
             run_mongodb_command(
@@ -229,6 +228,7 @@ class CommandDBGenerate(SubCommand):
             logging.info("Generating new mock data...")
             try:
                 # Import here only because CI wont install necessary packages to import it directly
+                # pylint:disable=import-outside-toplevel
                 from generate_mock_data import generate_mock_data
 
                 generate_mock_data()
@@ -261,7 +261,8 @@ commands: dict[str, SubCommand] = {
 
 
 def main():
-    """Runs CLI commands"""
+    """Runs CLI commands."""
+
     parser = argparse.ArgumentParser(prog="IMS Dev Script", description="Some commands for development")
     parser.add_argument(
         "--debug", action="store_true", help="Flag for setting the log level to debug to output more info"
