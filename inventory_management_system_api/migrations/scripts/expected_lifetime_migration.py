@@ -99,21 +99,6 @@ class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
     Input database model for a catalogue item.
     """
 
-
-class NewCatalogueItemOut(CreatedModifiedTimeOutMixin, NewCatalogueItemBase):
-    """
-    Output database model for a catalogue item.
-    """
-
-    id: StringObjectIdField = Field(alias="_id")
-    catalogue_category_id: StringObjectIdField
-    manufacturer_id: StringObjectIdField
-    obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
-    properties: List[PropertyOut] = []
-
-    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
-
-
 class OldCatalogueItemBase(BaseModel):
     """
     Base database model for a catalogue item.
@@ -162,13 +147,6 @@ class OldCatalogueItemBase(BaseModel):
         :return: The URL as a string.
         """
         return url if url is None else str(url)
-
-
-class OldCatalogueItemIn(CreatedModifiedTimeInMixin, OldCatalogueItemBase):
-    """
-    Input database model for a catalogue item.
-    """
-
 
 class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
     """
