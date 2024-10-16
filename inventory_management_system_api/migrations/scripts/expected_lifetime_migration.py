@@ -15,6 +15,8 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 logger = logging.getLogger()
+
+
 class NewCatalogueItemBase(BaseModel):
     """
     Base database model for a catalogue item.
@@ -188,7 +190,7 @@ class Migration(BaseMigration):
                 )
 
             except ValidationError as ve:
-                logger.error("Validation failed for item with id %s: %s", catalogue_item['_id'], ve)
+                logger.error("Validation failed for item with id %s: %s", catalogue_item["_id"], ve)
 
                 continue
 
