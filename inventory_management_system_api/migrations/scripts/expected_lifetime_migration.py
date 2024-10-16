@@ -99,6 +99,7 @@ class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
     Input database model for a catalogue item.
     """
 
+
 class OldCatalogueItemBase(BaseModel):
     """
     Base database model for a catalogue item.
@@ -147,6 +148,7 @@ class OldCatalogueItemBase(BaseModel):
         :return: The URL as a string.
         """
         return url if url is None else str(url)
+
 
 class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
     """
