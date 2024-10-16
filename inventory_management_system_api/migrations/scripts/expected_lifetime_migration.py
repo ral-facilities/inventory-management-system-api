@@ -16,6 +16,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 logger = logging.getLogger()
 
+
 class PropertyIn(BaseModel):
     """
     Input database model for a property defined within a catalogue item or item
@@ -40,6 +41,7 @@ class PropertyOut(BaseModel):
     unit: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)
+
 
 class NewCatalogueItemBase(BaseModel):
     """
@@ -90,6 +92,8 @@ class NewCatalogueItemBase(BaseModel):
         :return: The URL as a string.
         """
         return url if url is None else str(url)
+
+
 class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
     """
     Input database model for a catalogue item.
@@ -108,6 +112,7 @@ class NewCatalogueItemOut(CreatedModifiedTimeOutMixin, NewCatalogueItemBase):
     properties: List[PropertyOut] = []
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
 
 class OldCatalogueItemBase(BaseModel):
     """
@@ -157,6 +162,8 @@ class OldCatalogueItemBase(BaseModel):
         :return: The URL as a string.
         """
         return url if url is None else str(url)
+
+
 class OldCatalogueItemIn(CreatedModifiedTimeInMixin, OldCatalogueItemBase):
     """
     Input database model for a catalogue item.
@@ -175,7 +182,6 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
     properties: List[PropertyOut] = []
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
-
 
 
 class Migration(BaseMigration):
@@ -198,7 +204,7 @@ class Migration(BaseMigration):
         for catalogue_item in catalogue_items:
             try:
                 old_item = OldCatalogueItemOut(**catalogue_item)
-                
+
                 new_item_data = {
                     "catalogue_category_id": old_item.catalogue_category_id,
                     "manufacturer_id": old_item.manufacturer_id,
@@ -218,18 +224,15 @@ class Migration(BaseMigration):
                     "notes": old_item.notes,
                     "properties": old_item.properties,
                     "created_time": catalogue_item["created_time"],
-                    "modified_time": catalogue_item["modified_time"]
+                    "modified_time": catalogue_item["modified_time"],
                 }
 
                 new_item = NewCatalogueItemIn(**new_item_data)
 
                 update_data = new_item.model_dump()
 
-                # Step 5: Update the document back into the collection, preserving 'modified_time'
                 self._catalogue_items_collection.update_one(
-                    {"_id": old_item.id},
-                    {"$set": update_data},
-                    session=session
+                    {"_id": old_item.id}, {"$set": update_data}, session=session
                 )
 
             except Exception as e:
@@ -243,5 +246,7 @@ class Migration(BaseMigration):
         """
 
         logger.info("expected_lifetime backward migration")
-        result = self._catalogue_items_collection.update_many({}, {"$unset": {"expected_lifetime": ""}}, session = session)
+        result = self._catalogue_items_collection.update_many(
+            {}, {"$unset": {"expected_lifetime": ""}}, session=session
+        )
         return result
