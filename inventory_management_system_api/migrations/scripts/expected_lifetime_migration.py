@@ -5,44 +5,16 @@ Module providing a migration for the optional expected_lifetime field under cata
 import logging
 from typing import Any, Collection, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_serializer, field_validator
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
-from inventory_management_system_api.models.catalogue_item import PropertyIn
+from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 logger = logging.getLogger()
-
-
-class PropertyIn(BaseModel):
-    """
-    Input database model for a property defined within a catalogue item or item
-    """
-
-    id: CustomObjectIdField = Field(serialization_alias="_id")
-    name: str
-    value: Any
-    unit_id: Optional[CustomObjectIdField] = None
-    unit: Optional[str] = None
-
-
-class PropertyOut(BaseModel):
-    """
-    Output database model for a property defined within a catalogue item or item
-    """
-
-    id: StringObjectIdField = Field(alias="_id")
-    name: str
-    value: Any
-    unit_id: Optional[StringObjectIdField] = None
-    unit: Optional[str] = None
-
-    model_config = ConfigDict(populate_by_name=True)
-
-
 class NewCatalogueItemBase(BaseModel):
     """
     Base database model for a catalogue item.
@@ -215,8 +187,9 @@ class Migration(BaseMigration):
                     {"_id": old_item.id}, {"$set": update_data}, session=session
                 )
 
-            except Exception as e:
-                logger.error(f"Validation or migration failed for item with id {catalogue_item['_id']}: {e}")
+            except ValidationError as ve:
+                logger.error("Validation failed for item with id %s: %s", catalogue_item['_id'], ve)
+
                 continue
 
     def backward(self, session: ClientSession):
