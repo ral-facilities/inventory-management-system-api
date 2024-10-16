@@ -17,6 +17,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 logger = logging.getLogger()
 
 
+# pylint: disable=duplicate-code
 class NewCatalogueItemBase(BaseModel):
     """
     Base database model for a catalogue item.
@@ -136,6 +137,9 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
     properties: List[PropertyOut] = []
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
+
+# pylint: enable=duplicate-code
 
 
 class Migration(BaseMigration):
