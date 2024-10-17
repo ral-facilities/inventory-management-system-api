@@ -164,13 +164,11 @@ class Migration(BaseMigration):
                     "modified_time": old_catalogue_item.modified_time,
                 }
 
-                result = self._catalogue_items_collection.replace_one(
+                self._catalogue_items_collection.replace_one(
                     {"_id": catalogue_item["_id"]},
                     update_data,
                     session=session,
                 )
-
-                return result
 
             except ValidationError as ve:
                 logger.error("Validation failed for item with id %s: %s", catalogue_item["_id"], ve)
