@@ -159,8 +159,6 @@ class Migration(BaseMigration):
 
                 new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
 
-                logger.info(new_catalogue_item.model_dump())
-
                 update_data = {
                     **new_catalogue_item.model_dump(),
                     "modified_time": old_catalogue_item.modified_time,
@@ -171,8 +169,6 @@ class Migration(BaseMigration):
                     update_data,
                     session=session,
                 )
-
-                logger.info(result)
 
             except ValidationError as ve:
                 logger.error("Validation failed for item with id %s: %s", catalogue_item["_id"], ve)
