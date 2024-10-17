@@ -137,49 +137,37 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
 
 
 class Migration(BaseMigration):
-    """Migration for Catalogue Items' Optional Expected Lifetime"""
+    """Migration for Catalogue Items' Optional Expected Lifetime Field"""
 
-    description = "Migration for Catalogue Items' Optional Expected Lifetime"
+    description = "Migration for Catalogue Items' Optional Expected Lifetime Field"
 
     def __init__(self, database: Database):
 
         self._catalogue_items_collection: Collection = database.catalogue_items
 
     def forward(self, session: ClientSession):
-        """This function should actually perform the migration
-
-        All database functions should be given the session in order to ensure all updates are done within a transaction
-        """
+        """Forward Migration for Catalogue Items' Optional Expected Lifetime Field"""
         catalogue_items = self._catalogue_items_collection.find({}, session=session)
 
         logger.info("expected_lifetime forward migration")
         for catalogue_item in catalogue_items:
-            try:
-                old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
+            old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
 
-                new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
+            new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
 
-                update_data = {
-                    **new_catalogue_item.model_dump(),
-                    "modified_time": old_catalogue_item.modified_time,
-                }
+            update_data = {
+                **new_catalogue_item.model_dump(),
+                "modified_time": old_catalogue_item.modified_time,
+            }
 
-                self._catalogue_items_collection.replace_one(
-                    {"_id": catalogue_item["_id"]},
-                    update_data,
-                    session=session,
-                )
-
-            except ValidationError as ve:
-                logger.error("Validation failed for item with id %s: %s", catalogue_item["_id"], ve)
-
-                continue
+            self._catalogue_items_collection.replace_one(
+                {"_id": catalogue_item["_id"]},
+                update_data,
+                session=session,
+            )
 
     def backward(self, session: ClientSession):
-        """This function should reverse the migration
-
-        All database functions should be given the session in order to ensure all updates are done within a transaction
-        """
+        """Backward Migration for Catalogue Items' Optional Expected Lifetime Field"""
 
         logger.info("expected_lifetime backward migration")
         result = self._catalogue_items_collection.update_many(
