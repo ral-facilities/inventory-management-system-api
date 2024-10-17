@@ -161,36 +161,14 @@ class Migration(BaseMigration):
         logger.info("expected_lifetime forward migration")
         for catalogue_item in catalogue_items:
             try:
-                old_item = OldCatalogueItemOut(**catalogue_item)
+                old_catalogue_item = OldCatalogueItemOut(**catalogue_item.model_dump())
 
-                new_item_data = {
-                    "catalogue_category_id": old_item.catalogue_category_id,
-                    "manufacturer_id": old_item.manufacturer_id,
-                    "name": old_item.name,
-                    "description": old_item.description,
-                    "cost_gbp": old_item.cost_gbp,
-                    "cost_to_rework_gbp": old_item.cost_to_rework_gbp,
-                    "days_to_replace": old_item.days_to_replace,
-                    "days_to_rework": old_item.days_to_rework,
-                    "drawing_number": old_item.drawing_number,
-                    "drawing_link": old_item.drawing_link,
-                    "expected_lifetime": None,
-                    "item_model_number": old_item.item_model_number,
-                    "is_obsolete": old_item.is_obsolete,
-                    "obsolete_reason": old_item.obsolete_reason,
-                    "obsolete_replacement_catalogue_item_id": old_item.obsolete_replacement_catalogue_item_id,
-                    "notes": old_item.notes,
-                    "properties": old_item.properties,
-                    "created_time": catalogue_item["created_time"],
-                    "modified_time": catalogue_item["modified_time"],
-                }
+                new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
 
-                new_item = NewCatalogueItemIn(**new_item_data)
-
-                update_data = new_item.model_dump()
+                update_data = {**new_catalogue_item.model_dump(), "modified_time": old_catalogue_item.modified_time}
 
                 self._catalogue_items_collection.update_one(
-                    {"_id": old_item.id}, {"$set": update_data}, session=session
+                    {"_id": old_catalogue_item.id}, {"$set": update_data}, session=session
                 )
 
             except ValidationError as ve:

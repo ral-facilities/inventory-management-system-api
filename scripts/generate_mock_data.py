@@ -350,7 +350,7 @@ def generate_random_catalogue_item(
         "days_to_rework": optional_catalogue_item_field(lambda: fake.random.randint(0, 100)),
         "drawing_number": optional_catalogue_item_field(lambda: str(fake.random.randint(1000, 10000))),
         "drawing_link": optional_catalogue_item_field(fake.image_url),
-        "expected_lifetime": optional_catalogue_item_field(lambda: fake.random.randint(1000,10000)),
+        "expected_lifetime": optional_catalogue_item_field(lambda: fake.random.randint(1000, 10000)),
         "item_model_number": optional_catalogue_item_field(fake.isbn13),
         "is_obsolete": bool(obsolete_replacement_catalogue_item_id),
         "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
