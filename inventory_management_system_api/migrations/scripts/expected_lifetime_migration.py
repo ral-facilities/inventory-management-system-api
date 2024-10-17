@@ -170,6 +170,8 @@ class Migration(BaseMigration):
                     session=session,
                 )
 
+                return result
+
             except ValidationError as ve:
                 logger.error("Validation failed for item with id %s: %s", catalogue_item["_id"], ve)
 
