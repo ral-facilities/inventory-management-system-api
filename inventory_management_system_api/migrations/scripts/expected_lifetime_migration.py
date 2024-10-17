@@ -41,7 +41,6 @@ class NewCatalogueItemBase(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
-    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
@@ -56,8 +55,6 @@ class NewCatalogueItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
-
-    # pylint: enable=duplicate-code
 
     @field_serializer("drawing_link")
     def serialize_url(self, url: HttpUrl):
@@ -97,7 +94,6 @@ class OldCatalogueItemBase(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
-    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
@@ -112,8 +108,6 @@ class OldCatalogueItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
-
-    # pylint: enable=duplicate-code
 
     @field_serializer("drawing_link")
     def serialize_url(self, url: HttpUrl):
@@ -161,15 +155,24 @@ class Migration(BaseMigration):
         logger.info("expected_lifetime forward migration")
         for catalogue_item in catalogue_items:
             try:
-                old_catalogue_item = OldCatalogueItemOut(**catalogue_item.model_dump())
+                old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
 
                 new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
 
-                update_data = {**new_catalogue_item.model_dump(), "modified_time": old_catalogue_item.modified_time}
+                logger.info(new_catalogue_item.model_dump())
 
-                self._catalogue_items_collection.update_one(
-                    {"_id": old_catalogue_item.id}, {"$set": update_data}, session=session
+                update_data = {
+                    **new_catalogue_item.model_dump(),
+                    "modified_time": old_catalogue_item.modified_time,
+                }
+
+                result = self._catalogue_items_collection.replace_one(
+                    {"_id": catalogue_item["_id"]},
+                    update_data,
+                    session=session,
                 )
+
+                logger.info(result)
 
             except ValidationError as ve:
                 logger.error("Validation failed for item with id %s: %s", catalogue_item["_id"], ve)
