@@ -5,7 +5,7 @@ Module providing a migration for the optional expected_lifetime field under cata
 import logging
 from typing import Any, Collection, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
