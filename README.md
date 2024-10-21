@@ -253,8 +253,6 @@ python ./scripts/generate_mock_data.py
 
 ## Generating new mock data
 
-##### Using dev_cli
-
 The easiest way to generate new mock data assuming you are using Linux is via the dev_cli script. To do this use
 
 ```bash
@@ -269,15 +267,21 @@ python ./scripts/dev_cli.py db-generate -d
 
 to update the `./data/mock_data.dump` file and commit the changes.
 
-##### Manually
+### Manually
 
-The parameters at the top of the file can be used to change the generated data. NOTE: This script will simply add to the existing database instance. So if you wish to update the `mock_data.dump`, you should first clear the database e.g. using
+The parameters at the top of the `generate_mock_data.py` file can be used to change the generated data. NOTE: This script will simply add to the existing database instance. So if you wish to update the `mock_data.dump`, you should first clear the database e.g. using
 
 ```bash
 docker exec -i ims_api_mongodb_container mongosh ims --username "root" --password "example" --authenticationDatabase=admin --eval "db.dropDatabase()"
 ```
 
-Then generate the mock data, import the units and then update the `./data/mock_data.dump` file using `mongodump` via
+Then generate the mock data using
+
+```bash
+python ./scripts/generate_mock_data.py
+```
+
+and then update the `./data/mock_data.dump` file using `mongodump` via
 
 ```bash
 docker exec -i ims_api_mongodb_container mongodump --username "root" --password "example" --authenticationDatabase=admin --db ims --archive > ./data/mock_data.dump
