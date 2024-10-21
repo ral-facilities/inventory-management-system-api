@@ -45,6 +45,7 @@ class CatalogueItemPostSchema(BaseModel):
     days_to_rework: Optional[float] = Field(default=None, description="The number of days to rework the catalogue item")
     drawing_number: Optional[str] = Field(default=None, description="The drawing number of the catalogue item")
     drawing_link: Optional[HttpUrl] = Field(default=None, description="The link to the drawing of the catalogue item")
+    expected_lifetime: Optional[float] = Field(default=None, description="The expected lifetime of the catalogue item")
     item_model_number: Optional[str] = Field(default=None, description="The model number of the catalogue item")
     is_obsolete: bool = Field(description="Whether the catalogue item is obsolete or not")
     obsolete_reason: Optional[str] = Field(
