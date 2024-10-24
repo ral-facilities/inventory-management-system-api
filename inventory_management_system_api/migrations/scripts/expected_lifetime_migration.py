@@ -1,5 +1,5 @@
 """
-Module providing a migration for the optional expected_lifetime field under catalogue items
+Module providing a migration for the optional expected_lifetime_days field under catalogue items
 """
 
 import logging
@@ -137,19 +137,19 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
 
 
 class Migration(BaseMigration):
-    """Migration for Catalogue Items' Optional Expected Lifetime Field"""
+    """Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
 
-    description = "Migration for Catalogue Items' Optional Expected Lifetime Field"
+    description = "Migration for Catalogue Items' Optional Expected Lifetime Days Field"
 
     def __init__(self, database: Database):
 
         self._catalogue_items_collection: Collection = database.catalogue_items
 
     def forward(self, session: ClientSession):
-        """Forward Migration for Catalogue Items' Optional Expected Lifetime Field"""
+        """Forward Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
         catalogue_items = self._catalogue_items_collection.find({}, session=session)
 
-        logger.info("expected_lifetime forward migration")
+        logger.info("expected_lifetime_days forward migration")
         for catalogue_item in catalogue_items:
             old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
 
@@ -167,9 +167,9 @@ class Migration(BaseMigration):
             )
 
     def backward(self, session: ClientSession):
-        """Backward Migration for Catalogue Items' Optional Expected Lifetime Field"""
+        """Backward Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
 
-        logger.info("expected_lifetime backward migration")
+        logger.info("expected_lifetime_days backward migration")
         result = self._catalogue_items_collection.update_many(
             {}, {"$unset": {"expected_lifetime_days": ""}}, session=session
         )
