@@ -33,7 +33,7 @@ class NewCatalogueItemBase(BaseModel):
     days_to_rework: Optional[float] = None
     drawing_number: Optional[str] = None
     drawing_link: Optional[HttpUrl] = None
-    expected_lifetime: Optional[float] = None
+    expected_lifetime_days: Optional[float] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
@@ -171,6 +171,6 @@ class Migration(BaseMigration):
 
         logger.info("expected_lifetime backward migration")
         result = self._catalogue_items_collection.update_many(
-            {}, {"$unset": {"expected_lifetime": ""}}, session=session
+            {}, {"$unset": {"expected_lifetime_days": ""}}, session=session
         )
         return result
