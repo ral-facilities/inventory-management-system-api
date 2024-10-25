@@ -56,6 +56,7 @@ class CatalogueItemServiceDSL(BaseCatalogueServiceDSL):
     catalogue_item_service: CatalogueItemService
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     @pytest.fixture(autouse=True)
     def setup(
         self,
@@ -456,6 +457,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
     _updating_properties: bool
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def mock_update(
         self,
         catalogue_item_id: str,

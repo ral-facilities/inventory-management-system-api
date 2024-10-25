@@ -532,6 +532,7 @@ class UpdateDSL(SystemRepoDSL):
         self._system_in = SystemIn(**new_system_in_data)
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def mock_update(
         self,
         system_id: str,
