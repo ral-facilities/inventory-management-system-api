@@ -33,6 +33,8 @@ class ItemService:
     Service for managing items.
     """
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def __init__(
         self,
         item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
@@ -40,7 +42,6 @@ class ItemService:
         catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
         system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
         usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)],
-        # pylint: disable=too-many-arguments
     ) -> None:
         """
         Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`,

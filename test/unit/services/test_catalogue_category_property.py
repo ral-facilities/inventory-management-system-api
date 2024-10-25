@@ -52,6 +52,7 @@ class CatalogueCategoryPropertyServiceDSL(BaseCatalogueServiceDSL):
     catalogue_category_property_service: CatalogueCategoryPropertyService
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     @pytest.fixture(autouse=True)
     def setup(
         self,

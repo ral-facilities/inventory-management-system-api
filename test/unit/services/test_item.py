@@ -54,6 +54,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
     item_service: ItemService
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     @pytest.fixture(autouse=True)
     def setup(
         self,
@@ -461,6 +462,7 @@ class UpdateDSL(ItemServiceDSL):
     _expected_merged_properties: List[PropertyPostSchema]
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     # pylint:disable=too-many-locals
     def mock_update(
         self,

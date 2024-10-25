@@ -597,6 +597,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         self._catalogue_category_in = CatalogueCategoryIn(**new_catalogue_category_in_data)
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def mock_update(
         self,
         catalogue_category_id: str,
