@@ -3,7 +3,7 @@ Module providing test fixtures for the e2e tests.
 """
 
 from datetime import datetime
-from test.conftest import VALID_ACCESS_TOKEN
+from test.mock_data import VALID_ACCESS_TOKEN
 from typing import Optional
 
 import pytest

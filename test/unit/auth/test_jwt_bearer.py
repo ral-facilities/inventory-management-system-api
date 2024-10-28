@@ -2,12 +2,12 @@
 Unit test for the `JWTBearer` class.
 """
 
+from test.mock_data import EXPIRED_ACCESS_TOKEN, INVALID_ACCESS_TOKEN, VALID_ACCESS_TOKEN
 from unittest.mock import Mock, patch
-from test.conftest import VALID_ACCESS_TOKEN, EXPIRED_ACCESS_TOKEN, INVALID_ACCESS_TOKEN
 
 import pytest
-from fastapi import Request, HTTPException
-from jwt import InvalidTokenError, ExpiredSignatureError
+from fastapi import HTTPException, Request
+from jwt import ExpiredSignatureError, InvalidTokenError
 
 from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 
