@@ -9,7 +9,10 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
+from inventory_management_system_api.models.usage_status import (
+    UsageStatusIn,
+    UsageStatusOut,
+)
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.usage_status import UsageStatusService
@@ -140,12 +143,12 @@ class ListDSL(UsageStatusServiceDSL):
 
     def call_list(self) -> None:
         """Calls the `UsageStatusService` `list` method."""
-        self._expected_usage_statuses = self.usage_status_service.list()
+        self._obtained_usage_statuses = self.usage_status_service.list()
 
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
         self.mock_usage_status_repository.list.assert_called_once()
-        assert self._expected_usage_statuses == self._expected_usage_statuses
+        assert self._obtained_usage_statuses == self._expected_usage_statuses
 
 
 class TestList(ListDSL):
