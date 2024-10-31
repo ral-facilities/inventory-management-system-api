@@ -5,14 +5,30 @@ Module providing a migration for the optional expected_lifetime_days field under
 import logging
 from typing import Any, Collection, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    field_serializer,
+    field_validator,
+)
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.migration import BaseMigration
-from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
-from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.catalogue_item import (
+    PropertyIn,
+    PropertyOut,
+)
+from inventory_management_system_api.models.custom_object_id_data_types import (
+    CustomObjectIdField,
+    StringObjectIdField,
+)
+from inventory_management_system_api.models.mixins import (
+    CreatedModifiedTimeInMixin,
+    CreatedModifiedTimeOutMixin,
+)
 
 logger = logging.getLogger()
 
@@ -31,9 +47,9 @@ class NewCatalogueItemBase(BaseModel):
     cost_to_rework_gbp: Optional[float] = None
     days_to_replace: float
     days_to_rework: Optional[float] = None
+    expected_lifetime_days: Optional[float] = None
     drawing_number: Optional[str] = None
     drawing_link: Optional[HttpUrl] = None
-    expected_lifetime_days: Optional[float] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None

@@ -4,10 +4,23 @@ Module for defining the database models for representing catalogue items.
 
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    field_serializer,
+    field_validator,
+)
 
-from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.custom_object_id_data_types import (
+    CustomObjectIdField,
+    StringObjectIdField,
+)
+from inventory_management_system_api.models.mixins import (
+    CreatedModifiedTimeInMixin,
+    CreatedModifiedTimeOutMixin,
+)
 
 
 class PropertyIn(BaseModel):
@@ -49,9 +62,9 @@ class CatalogueItemBase(BaseModel):
     cost_to_rework_gbp: Optional[float] = None
     days_to_replace: float
     days_to_rework: Optional[float] = None
+    expected_lifetime_days: Optional[float] = None
     drawing_number: Optional[str] = None
     drawing_link: Optional[HttpUrl] = None
-    expected_lifetime_days: Optional[float] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
