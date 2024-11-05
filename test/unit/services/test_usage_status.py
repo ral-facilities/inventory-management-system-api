@@ -9,10 +9,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.models.usage_status import (
-    UsageStatusIn,
-    UsageStatusOut,
-)
+from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.usage_status import UsageStatusService
