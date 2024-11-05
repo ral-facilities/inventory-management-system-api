@@ -140,12 +140,12 @@ class ListDSL(UsageStatusServiceDSL):
 
     def call_list(self) -> None:
         """Calls the `UsageStatusService` `list` method."""
-        self._expected_usage_statuses = self.usage_status_service.list()
+        self._obtained_usage_statuses = self.usage_status_service.list()
 
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
         self.mock_usage_status_repository.list.assert_called_once()
-        assert self._expected_usage_statuses == self._expected_usage_statuses
+        assert self._obtained_usage_statuses == self._expected_usage_statuses
 
 
 class TestList(ListDSL):
