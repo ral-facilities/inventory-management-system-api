@@ -4,23 +4,10 @@ Module for defining the database models for representing catalogue items.
 
 from typing import Any, List, Optional
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-    HttpUrl,
-    field_serializer,
-    field_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 
-from inventory_management_system_api.models.custom_object_id_data_types import (
-    CustomObjectIdField,
-    StringObjectIdField,
-)
-from inventory_management_system_api.models.mixins import (
-    CreatedModifiedTimeInMixin,
-    CreatedModifiedTimeOutMixin,
-)
+from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
 class PropertyIn(BaseModel):
