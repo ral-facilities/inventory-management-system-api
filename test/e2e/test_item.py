@@ -675,10 +675,11 @@ class ListDSL(GetDSL):
 
         self._get_response_item = self.test_client.get("/v1/items", params=filters)
 
-    def post_test_items(self) -> list[dict]:
+    def post_test_items_and_prerequisites(self) -> list[dict]:
         """
-        Posts three items. The first two have the same catalogue item but different systems, and the last has a
-        different catalogue item but the same system as the second catalogue item.
+        Posts three items having first posted the required prerequisite entities. The first two have the same catalogue
+        item but different systems, and the last has a different catalogue item but the same system as the second
+        catalogue item.
 
         :return: List of dictionaries containing the expected item data returned from a get endpoint in
                  the form of an `ItemSchema`. In the form [CATALOGUE_ITEM_A_SYSTEM_A, CATALOGUE_ITEM_A_SYSTEM_B,
@@ -743,7 +744,7 @@ class TestList(ListDSL):
         catalogue item but the same system as the second. Expects all three to be returned.
         """
 
-        items = self.post_test_items()
+        items = self.post_test_items_and_prerequisites()
         self.get_items(filters={})
         self.check_get_items_success(items)
 
@@ -755,7 +756,7 @@ class TestList(ListDSL):
         catalogue item but the same system as the second. Expects just the latter two systems to be returned.
         """
 
-        items = self.post_test_items()
+        items = self.post_test_items_and_prerequisites()
         self.get_items(filters={"system_id": items[1]["system_id"]})
         self.check_get_items_success(items[1:])
 
@@ -773,7 +774,7 @@ class TestList(ListDSL):
         catalogue item but the same system as the second. Expects just the former two systems to be returned.
         """
 
-        items = self.post_test_items()
+        items = self.post_test_items_and_prerequisites()
         self.get_items(filters={"catalogue_item_id": items[0]["catalogue_item_id"]})
         self.check_get_items_success(items[0:2])
 
@@ -791,7 +792,7 @@ class TestList(ListDSL):
         catalogue item but the same system as the second. Expects just second item to be returned.
         """
 
-        items = self.post_test_items()
+        items = self.post_test_items_and_prerequisites()
         self.get_items(filters={"system_id": items[2]["system_id"], "catalogue_item_id": items[0]["catalogue_item_id"]})
         self.check_get_items_success([items[1]])
 
@@ -834,7 +835,7 @@ class UpdateDSL(ListDSL):
         Also merges in any properties that were defined in the catalogue item but are not given in the expected data.
 
         :param expected_item_get_data: Dictionary containing the expected item data returned as would
-                                                 be required for a `ItemSchema`. Does not need mandatory IDs
+                                                 be required for an `ItemSchema`. Does not need mandatory IDs
                                                  (e.g. `system_id`) as they will be added automatically to check
                                                  they are as expected.
         """

@@ -53,7 +53,7 @@ class CreateDSL:
         self.test_client = test_client
         self.unit_value_id_dict = {}
 
-    def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
+    def set_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
         Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
         non-existent or invalid unit ID.
@@ -71,7 +71,7 @@ class CreateDSL:
         """
 
         post_response = self.test_client.post("/v1/units", json=unit_post_data)
-        self.add_unit_value_and_id(unit_post_data["value"], post_response.json()["id"])
+        self.set_unit_value_and_id(unit_post_data["value"], post_response.json()["id"])
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
@@ -259,16 +259,16 @@ class TestCreate(CreateDSL):
         self.check_post_catalogue_category_success(CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
 
     def test_create_leaf_with_properties_with_non_existent_unit_id(self):
-        """Test creating a leaf catalogue category with a property with a non-existent unit ID provided."""
+        """Test creating a leaf catalogue category with a property with a non-existent unit ID."""
 
-        self.add_unit_value_and_id("mm", str(ObjectId()))
+        self.set_unit_value_and_id("mm", str(ObjectId()))
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
 
     def test_create_leaf_with_properties_with_invalid_unit_id(self):
-        """Test creating a leaf catalogue category with a property with an invalid unit ID provided."""
+        """Test creating a leaf catalogue category with a property with an invalid unit ID."""
 
-        self.add_unit_value_and_id("mm", "invalid-id")
+        self.set_unit_value_and_id("mm", "invalid-id")
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
         self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
 
@@ -323,7 +323,7 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_property_with_empty_allowed_values_list(self):
-        """Test creating a leaf catalogue category with a property with an allowed values list that is empty."""
+        """Test creating a leaf catalogue category with a property with an empty allowed values list."""
 
         self.post_leaf_catalogue_category_with_allowed_values("string", {"type": "list", "values": []})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -332,8 +332,8 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_with_string_property_with_allowed_values_list_invalid_value(self):
-        """Test creating a leaf catalogue category with a string property with an allowed values list with an invalid
-        number value in it."""
+        """Test creating a leaf catalogue category with a string property with an allowed values list containing an
+        invalid number."""
 
         self.post_leaf_catalogue_category_with_allowed_values("string", {"type": "list", "values": ["1", "2", 3, "4"]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -344,7 +344,7 @@ class TestCreate(CreateDSL):
 
     def test_create_leaf_with_string_property_with_allowed_values_list_duplicate_value(self):
         """Test creating a leaf catalogue category with a string property with an allowed values list with a duplicate
-        string value in it."""
+        string value."""
 
         # Capitalisation is different as it shouldn't matter for this test
         self.post_leaf_catalogue_category_with_allowed_values(
@@ -356,8 +356,8 @@ class TestCreate(CreateDSL):
         )
 
     def test_create_leaf_with_number_property_with_allowed_values_list_invalid_value(self):
-        """Test creating a leaf catalogue category with a number property with an allowed values list with an invalid
-        number value in it."""
+        """Test creating a leaf catalogue category with a number property with an allowed values list containing an
+        invalid number."""
 
         self.post_leaf_catalogue_category_with_allowed_values("number", {"type": "list", "values": [1, 2, "3", 4]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -368,7 +368,7 @@ class TestCreate(CreateDSL):
 
     def test_create_leaf_with_number_property_with_allowed_values_list_duplicate_value(self):
         """Test creating a leaf catalogue category with a number property with an allowed values list with a duplicate
-        number value in it."""
+        number value."""
 
         self.post_leaf_catalogue_category_with_allowed_values("number", {"type": "list", "values": [1, 2, 1, 3]})
         self.check_post_catalogue_category_failed_with_validation_message(
@@ -407,9 +407,9 @@ class GetDSL(CreateDSL):
         Checks that a prior call to `get_catalogue_category` gave a successful response with the expected data returned.
 
         :param expected_catalogue_category_get_data: Dictionary containing the expected catalogue category data returned
-                                                     as would be required for a `CatalogueCategorySchema`. Does not need
-                                                     unit IDs as they will be added automatically to check they are as
-                                                     expected.
+                                        as would be required for a `CatalogueCategorySchema` but with any `unit_id`'s
+                                        replaced by the `unit` value in its properties as the IDs will be added
+                                        automatically.
         """
 
         assert self._get_response_catalogue_category.status_code == 200
@@ -1110,7 +1110,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_leaf_with_properties_with_non_existent_unit_id(self):
         """Test updating a leaf catalogue category's properties to have a property with a non-existent unit ID."""
 
-        self.add_unit_value_and_id("mm", str(ObjectId()))
+        self.set_unit_value_and_id("mm", str(ObjectId()))
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_catalogue_category(
             catalogue_category_id, {"properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]}
@@ -1118,9 +1118,9 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
 
     def test_partial_update_leaf_with_properties_with_invalid_unit_id(self):
-        """Test updating a leaf catalogue category's properties to have a property with an invalid unit ID provided."""
+        """Test updating a leaf catalogue category's properties to have a property with an invalid unit ID."""
 
-        self.add_unit_value_and_id("mm", "invalid-id")
+        self.set_unit_value_and_id("mm", "invalid-id")
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.patch_catalogue_category(
             catalogue_category_id, {"properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]}

@@ -621,7 +621,7 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_catalogue_item` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue tiem data returned as
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
                                                  would be required for a `CatalogueItemSchema`. Does not need mandatory
                                                  IDs (e.g. `manufacturer_id`) as they will be added automatically to
                                                  check they are as expected.
@@ -683,10 +683,10 @@ class ListDSL(GetDSL):
 
         self._get_response_catalogue_item = self.test_client.get("/v1/catalogue-items", params=filters)
 
-    def post_test_catalogue_items(self) -> list[dict]:
+    def post_test_catalogue_items_and_prerequisites(self) -> list[dict]:
         """
-        Posts two catalogue items each in a separate catalogue category and returns their expected responses when
-        returned by the list endpoint.
+        Posts two catalogue items having first posted the required prerequisite entities. Each catalogue item is in a
+        separate catalogue category.
 
         :return: List of dictionaries containing the expected catalogue item data returned from a get endpoint in
                  the form of a `CatalogueItemSchema`.
@@ -737,7 +737,7 @@ class TestList(ListDSL):
         Posts two catalogue items in different catalogue categories and expects both to be returned.
         """
 
-        catalogue_items = self.post_test_catalogue_items()
+        catalogue_items = self.post_test_catalogue_items_and_prerequisites()
         self.get_catalogue_items(filters={})
         self.check_get_catalogue_items_success(catalogue_items)
 
@@ -749,7 +749,7 @@ class TestList(ListDSL):
         expecting only the second catalogue item to be returned.
         """
 
-        catalogue_items = self.post_test_catalogue_items()
+        catalogue_items = self.post_test_catalogue_items_and_prerequisites()
         self.get_catalogue_items(filters={"catalogue_category_id": catalogue_items[1]["catalogue_category_id"]})
         self.check_get_catalogue_items_success([catalogue_items[1]])
 
