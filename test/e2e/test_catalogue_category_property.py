@@ -2,11 +2,15 @@
 End-to-End tests for the properties endpoint of the catalogue category router
 """
 
-from test.conftest import add_ids_to_properties
-from test.e2e.conftest import E2ETestHelpers, replace_unit_values_with_ids_in_properties
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
+# pylint: disable=duplicate-code
+# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-ancestors
+
+from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_category import GetDSL as CatalogueCategoryGetDSL
 from test.e2e.test_catalogue_item import GetDSL as CatalogueItemGetDSL
-from test.e2e.test_item import CreateDSL as ItemCreateDSL
 from test.e2e.test_item import GetDSL as ItemGetDSL
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_GET_DATA_WITH_PROPERTIES_MM,
@@ -29,6 +33,7 @@ from test.mock_data import (
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE,
+    PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
     PROPERTY_GET_DATA_STRING_MANDATORY_TEXT,
 )
@@ -448,385 +453,352 @@ class TestCreate(CreateDSL):
         )
 
 
-# EXISTING_CATALOGUE_CATEGORY_PROPERTY_POST = {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}
-
-# CATALOGUE_CATEGORY_PROPERTY_POST_NON_MANDATORY = {
-#     "name": "Property B",
-#     "type": "number",
-#     "unit": "mm",
-#     "mandatory": False,
-# }
-# CATALOGUE_CATEGORY_PROPERTY_POST_NON_MANDATORY_EXPECTED = {
-#     **CATALOGUE_CATEGORY_PROPERTY_POST_NON_MANDATORY,
-#     "allowed_values": None,
-# }
-
-# CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY = {
-#     "name": "Property B",
-#     "type": "number",
-#     "unit": "mm",
-#     "mandatory": True,
-#     "default_value": 20,
-# }
-# CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_EXPECTED = {
-#     "name": "Property B",
-#     "type": "number",
-#     "unit": "mm",
-#     "mandatory": True,
-#     "allowed_values": None,
-# }
-
-# NEW_CATALOGUE_CATEGORY_PROPERTY_MANDATORY_EXPECTED = CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_EXPECTED
-# NEW_PROPERTY_MANDATORY_EXPECTED = {"name": "Property B", "unit": "mm", "value": 20}
-
-# CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES = {
-#     **CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY,
-#     "allowed_values": {"type": "list", "values": [10, 20, 30]},
-# }
-# CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED = {
-#     **NEW_CATALOGUE_CATEGORY_PROPERTY_MANDATORY_EXPECTED,
-#     "allowed_values": {"type": "list", "values": [10, 20, 30]},
-# }
-# NEW_CATALOGUE_CATEGORY_PROPERTY_MANDATORY_ALLOWED_VALUES_EXPECTED = (
-#     CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED
-# )
-
-# CATALOGUE_CATEGORY_PROPERTY_PATCH = {
-#     "name": "New property name",
-#     "allowed_values": {"type": "list", "values": [10, 20, 30, 40]},
-# }
-
-# CATALOGUE_CATEGORY_PROPERTY_PATCH_EXPECTED = {
-#     **CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED,
-#     **CATALOGUE_CATEGORY_PROPERTY_PATCH,
-# }
-
-# NEW_CATALOGUE_CATEGORY_PROPERTY_PATCH_EXPECTED = CATALOGUE_CATEGORY_PROPERTY_PATCH_EXPECTED
-# NEW_PROPERTY_PATCH_EXPECTED = {"name": "New property name", "unit": "mm", "value": 20}
-
-# CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY = {
-#     "allowed_values": {"type": "list", "values": [10, 20, 30, 40]},
-# }
-# CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED = {
-#     **CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED,
-#     **CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY,
-# }
-
-
-# class UpdateDSL(CreateDSL):
-#     """Base class for update tests (inherits CreateDSL to gain access to posts)"""
-
-#     _catalogue_item_patch_response: Response
-
-#     def patch_property(
-#         self,
-#         property_patch,
-#         catalogue_category_id: Optional[str] = None,
-#         property_id: Optional[str] = None,
-#     ):
-#         """Patches a posted property"""
-#         self._catalogue_item_patch_response = self.test_client.patch(
-#             "/v1/catalogue-categories/"
-#             f"{catalogue_category_id if catalogue_category_id else self.catalogue_category['id']}"
-#             "/properties/"
-#             f"{property_id if property_id else self.property['id']}",
-#             json=property_patch,
-#         )
-
-#     def check_property_patch_response_success(self, property_expected):
-#         """Checks the response of patching a property succeeded as expected"""
-
-#         assert self._catalogue_item_patch_response.status_code == 200
-#         self.property = self._catalogue_item_patch_response.json()
-#         assert self.property == {**property_expected, "id": ANY, "unit_id": ANY}
-
-#     def check_property_patch_response_failed_with_message(self, status_code, detail):
-#         """Checks the response of patching a property failed as expected"""
-
-#         assert self._catalogue_item_patch_response.status_code == status_code
-#         assert self._catalogue_item_patch_response.json()["detail"] == detail
-
-
-# class TestUpdate(UpdateDSL):
-#     """Tests for updating a property at the catalogue category level"""
-
-#     def test_update(self):
-#         """
-#         Test updating a property at the catalogue category level
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH)
-
-#         # Check updated correctly down the tree
-#         self.check_property_patch_response_success(CATALOGUE_CATEGORY_PROPERTY_PATCH_EXPECTED)
-#         self.check_catalogue_category_updated(NEW_CATALOGUE_CATEGORY_PROPERTY_PATCH_EXPECTED)
-#         self.check_catalogue_item_updated(NEW_PROPERTY_PATCH_EXPECTED)
-#         self.check_item_updated(NEW_PROPERTY_PATCH_EXPECTED)
-
-#     def test_update_category_only(self):
-#         """
-#         Test updating a property at the catalogue category level but with an update that should leave the catalogue
-#         items and items alone (i.e. only updating the allowed values)
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY)
-
-#         # Check updated correctly
-#         self.check_property_patch_response_success(CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED)
-#         self.check_catalogue_category_updated(CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY_EXPECTED)
-#         # These are testing values are the same as they should have been prior to the patch (NEW_ is only there from
-#         # the create tests)
-#         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
-#         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
-
-#     def test_update_category_no_changes_allowed_values_none(self):
-#         """
-#         Test updating a property at the catalogue category level but with an update that shouldn't change anything
-#         (in this case also passing allowed_values as None and keeping it None on the patch request)
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY)
-#         self.check_property_post_response_success(NEW_CATALOGUE_CATEGORY_PROPERTY_MANDATORY_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property({"name": CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY["name"], "allowed_values": None})
-
-#         # Check updated correctly
-#         self.check_property_patch_response_success(NEW_CATALOGUE_CATEGORY_PROPERTY_MANDATORY_EXPECTED)
-#         # These are testing values are the same as they should have been prior to the patch (NEW_ is only there from
-#         # the create tests)
-#         self.check_catalogue_category_updated(NEW_CATALOGUE_CATEGORY_PROPERTY_MANDATORY_EXPECTED)
-#         self.check_catalogue_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
-#         self.check_item_updated(NEW_PROPERTY_MANDATORY_EXPECTED)
-
-#     def test_update_non_existent_catalogue_category_id(self):
-#         """
-#         Test updating a property at the catalogue category level when the specified catalogue category doesn't exist
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH, catalogue_category_id=str(ObjectId()))
-
-#         # Check
-#         self.check_property_patch_response_failed_with_message(404, "Catalogue category not found")
-
-#     def test_update_invalid_catalogue_category_id(self):
-#         """
-#         Test updating a property at the catalogue category level when the specified catalogue category id is invalid
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH, catalogue_category_id="invalid")
-
-#         # Check
-#         self.check_property_patch_response_failed_with_message(404, "Catalogue category not found")
-
-#     def test_update_non_existent_property_id(self):
-#         """
-#         Test updating a property at the catalogue category level when the specified property doesn't
-#         exist in the specified catalogue category
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH, property_id=str(ObjectId()))
-
-#         # Check
-#         self.check_property_patch_response_failed_with_message(404, "Catalogue category property not found")
-
-#     def test_update_invalid_property_id(self):
-#         """
-#         Test updating a property at the catalogue category level when the specified catalogue item id is invalid
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH, property_id="invalid")
-
-#         # Check
-#         self.check_property_patch_response_failed_with_message(404, "Catalogue category property not found")
-
-#     def test_updating_property_to_have_duplicate_name(self):
-#         """
-#         Test updating a property to have a name matching another already existing one
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property({"name": EXISTING_CATALOGUE_CATEGORY_PROPERTY_POST["name"]})
-#         self.check_property_patch_response_failed_with_message(422, "Duplicate property name: Property A")
-
-#     def test_updating_property_allowed_values_from_none_to_value(self):
-#         """
-#         Test updating a property to have a allowed_values when it was initially None
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(CATALOGUE_CATEGORY_PROPERTY_PATCH_ALLOWED_VALUES_ONLY)
-#         self.check_property_patch_response_failed_with_message(422, "Cannot add allowed_values to an existing property")
-
-#     def test_updating_property_allowed_values_from_value_to_none(self):
-#         """
-#         Test updating a property to have no allowed_values when it initially had
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property({"allowed_values": None})
-#         self.check_property_patch_response_failed_with_message(
-#             422, "Cannot remove allowed_values from an existing property"
-#         )
-
-#     def test_updating_property_removing_allowed_values_list(self):
-#         """
-#         Test updating a property to remove an element from an allowed values list
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(
-#             {
-#                 "allowed_values": {
-#                     "type": "list",
-#                     # Remove a single value
-#                     "values": CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"][
-#                         0:-1
-#                     ],
-#                 }
-#             }
-#         )
-#         self.check_property_patch_response_failed_with_message(
-#             422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
-#         )
-
-#     def test_updating_property_modifying_allowed_values_list(self):
-#         """
-#         Test updating a property to modify a value in an allowed values list
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(
-#             {
-#                 "allowed_values": {
-#                     "type": "list",
-#                     # Change only the last value
-#                     "values": [
-#                         *CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"][0:-1],
-#                         42,
-#                     ],
-#                 }
-#             }
-#         )
-#         self.check_property_patch_response_failed_with_message(
-#             422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
-#         )
-
-#     def test_updating_property_allowed_values_list_adding_with_different_type(self):
-#         """
-#         Test updating a property to add a value to an allowed values list but with a different type to the rest
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(
-#             {
-#                 "allowed_values": {
-#                     "type": "list",
-#                     # Change only the last value
-#                     "values": [
-#                         *CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"],
-#                         "different type",
-#                     ],
-#                 }
-#             }
-#         )
-#         self.check_property_patch_response_failed_with_message(
-#             422, "allowed_values of type 'list' must only contain values of the same type as the property itself"
-#         )
-
-#     def test_updating_property_allowed_values_list_adding_duplicate_value(self):
-#         """
-#         Test updating a property to add a duplicate value to an allowed values list
-#         """
-
-#         # Setup by creating a property to update
-#         self.post_catalogue_category_and_items()
-#         self.post_property(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES)
-#         self.check_property_post_response_success(CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES_EXPECTED)
-
-#         # Patch the property
-#         self.patch_property(
-#             {
-#                 "allowed_values": {
-#                     "type": "list",
-#                     # Change only the last value
-#                     "values": [
-#                         *CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"],
-#                         CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES["allowed_values"]["values"][0],
-#                     ],
-#                 }
-#             }
-#         )
-#         self.check_property_patch_response_failed_with_message(
-#             422,
-#             "allowed_values of type 'list' contains a duplicate value: "
-#             f"{CATALOGUE_CATEGORY_PROPERTY_POST_MANDATORY_ALLOWED_VALUES['allowed_values']['values'][0]}",
-#         )
+class UpdateDSL(CreateDSL):
+    """Base class for update tests."""
+
+    _patch_response_property: Response
+
+    def post_test_property_and_prerequisites(self, property_data: dict) -> Optional[None]:
+        """Posts an property for testing having first posted the required prerequisite entities.
+
+        :param property_data: Dictionary containing the basic catalogue category property data data as would be required
+                              for a `CatalogueCategoryPropertyPostSchema` but with any `unit_id`'s replaced by the
+                              `unit` value in its properties as the IDs will be added automatically.
+        """
+
+        # Add in property at the start rather than following a post so created & modified times are accurate to before
+        # any patch is done during update tests
+        self.item_id = self.post_item_and_prerequisites_with_given_properties(
+            [CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY, property_data],
+            [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, property_data],
+            [PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, property_data],
+        )
+        self._existing_catalogue_category_properties = self._post_response_catalogue_category.json()["properties"]
+
+        return self._existing_catalogue_category_properties[1]["id"]
+
+    def patch_property(self, property_id: str, property_update_data: dict) -> None:
+        """
+        Updates an property with the given ID.
+
+        :param property_id: ID of the property to patch.
+        :param property_update_data: Dictionary containing the basic catalogue category property data data as would be
+                                     required for a `CatalogueCategoryPropertyPatchSchema`.
+        """
+
+        # Ensure the property ID is updated and the old one removed
+        if "name" in property_update_data:
+            self.property_name_id_dict = {
+                key: value for key, value in self.property_name_id_dict.items() if value != property_id
+            }
+            self.property_name_id_dict[property_update_data["name"]] = property_id
+
+        self._patch_response_property = self.test_client.patch(
+            f"/v1/catalogue-categories/{self.catalogue_category_id}/properties/{property_id}", json=property_update_data
+        )
+
+    def check_patch_property_success(self, expected_property_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_property` gave a successful response with the expected data returned.
+
+        :param expected_property_get_data: Dictionary containing the expected property data returned as would be
+                                           required for a `CatalogueCategoryPropertySchema` but with any `unit_id`'s
+                                           replaced by the `unit` value in its properties as the IDs will be added
+                                           automatically.
+        """
+
+        assert self._patch_response_property.status_code == 200
+        assert (
+            self._patch_response_property.json()
+            == E2ETestHelpers.add_unit_ids_to_properties(
+                {"properties": [expected_property_get_data]}, self.unit_value_id_dict
+            )["properties"][0]
+        )
+
+    def check_patch_property_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `patch_property` gave a failed response with the expected code and error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._patch_response_property.status_code == status_code
+        assert self._patch_response_property.json()["detail"] == detail
+
+    def check_catalogue_item_not_updated(self, expected_property_get_data: dict) -> None:
+        """Checks the catalogue item has not been updated.
+
+        :param expected_property_get_data: Dictionary containing the expected property data returned as would be
+                                           required for a `PropertySchema`. Does not need mandatory IDs
+                                           (e.g. property/unit IDs) as they will be added automatically to check they
+                                           are as expected.
+        """
+
+        self.get_catalogue_item(self.catalogue_item_id)
+        self.check_get_catalogue_item_success(
+            {
+                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, expected_property_get_data],
+            }
+        )
+        E2ETestHelpers.check_created_and_modified_times_not_updated(
+            self._post_response_catalogue_item, self._get_response_catalogue_item
+        )
+
+    def check_item_not_updated(self, expected_property_get_data: dict) -> None:
+        """Checks the catalogue item has not been updated.
+
+        :param expected_property_get_data: Dictionary containing the expected property data returned as would be
+                                           required for a `PropertySchema`. Does not need mandatory IDs
+                                           (e.g. property/unit IDs) as they will be added automatically to check they
+                                           are as expected.
+        """
+
+        self.get_item(self.item_id)
+        self.check_get_item_success(
+            {
+                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                "properties": [
+                    PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
+                    expected_property_get_data,
+                ],
+            }
+        )
+        E2ETestHelpers.check_created_and_modified_times_not_updated(self._post_response_item, self._get_response_item)
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a property at the catalogue category level."""
+
+    def test_partial_update_name(self):
+        """Test updating the name of a property."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        property_update_data = {"name": "New property name"}
+        self.patch_property(property_id, property_update_data)
+
+        self.check_patch_property_success(
+            {**CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY, **property_update_data}
+        )
+        self.check_catalogue_category_updated(
+            {**CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY, **property_update_data}
+        )
+        self.check_catalogue_item_updated({**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE, **property_update_data})
+        self.check_item_updated({**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE, **property_update_data})
+
+    def test_partial_update_name_to_duplicate(self):
+        """Test updating the name of a property to conflict with a pre-existing one."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.patch_property(property_id, {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"]})
+
+        self.check_patch_property_failed_with_detail(
+            422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']}"
+        )
+
+    def test_update_allowed_values_list_adding_value(self):
+        """Test updating the allowed values list of a property by adding an additional value to it."""
+
+        property_id = self.post_test_property_and_prerequisites(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        )
+
+        property_update_data = {
+            "allowed_values": {
+                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
+                "values": [
+                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                        "values"
+                    ],
+                    9001,
+                ],
+            }
+        }
+        self.patch_property(property_id, property_update_data)
+
+        self.check_patch_property_success(
+            {
+                **CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                **property_update_data,
+            }
+        )
+        self.check_catalogue_category_updated(
+            {
+                **CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                **property_update_data,
+            }
+        )
+        self.check_catalogue_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE)
+        self.check_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE)
+
+    def test_update_allowed_values_list_adding_value_with_different_type(self):
+        """Test updating the allowed values list of a property by adding an additional value with a different type to
+        it."""
+
+        property_id = self.post_test_property_and_prerequisites(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        )
+
+        property_update_data = {
+            "allowed_values": {
+                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
+                "values": [
+                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                        "values"
+                    ],
+                    True,
+                ],
+            }
+        }
+        self.patch_property(property_id, property_update_data)
+
+        self.check_patch_property_failed_with_detail(
+            422, "allowed_values of type 'list' must only contain values of the same type as the property itself"
+        )
+
+    def test_update_allowed_values_list_adding_duplicate_value(self):
+        """Test updating the allowed values list of a property by adding a duplicate value to it."""
+
+        property_id = self.post_test_property_and_prerequisites(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        )
+
+        property_update_data = {
+            "allowed_values": {
+                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
+                "values": [
+                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                        "values"
+                    ],
+                    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                        "values"
+                    ][0],
+                ],
+            }
+        }
+        self.patch_property(property_id, property_update_data)
+
+        self.check_patch_property_failed_with_detail(
+            422,
+            "allowed_values of type 'list' contains a duplicate value: "
+            + str(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                    "values"
+                ][0]
+            ),
+        )
+
+    def test_update_allowed_values_list_removing_value(self):
+        """Test updating the allowed values list of a property by removing a value from it."""
+
+        property_id = self.post_test_property_and_prerequisites(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        )
+
+        property_update_data = {
+            "allowed_values": {
+                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
+                "values": [
+                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                        "values"
+                    ][1:]
+                ],
+            }
+        }
+        self.patch_property(property_id, property_update_data)
+
+        self.check_patch_property_failed_with_detail(
+            422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+        )
+
+    def test_update_allowed_values_list_modifying_value(self):
+        """Test updating the allowed values list of a property by modifying a value within it."""
+
+        property_id = self.post_test_property_and_prerequisites(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        )
+
+        property_update_data = {
+            "allowed_values": {
+                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
+                "values": [
+                    9001,
+                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
+                        "values"
+                    ][1:],
+                ],
+            }
+        }
+        self.patch_property(property_id, property_update_data)
+
+        self.check_patch_property_failed_with_detail(
+            422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
+        )
+
+    def test_update_allowed_values_from_none_to_value(self):
+        """Test updating the allowed values of a property from None to a value."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.patch_property(
+            property_id,
+            {
+                "allowed_values": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST[
+                    "allowed_values"
+                ],
+            },
+        )
+
+        self.check_patch_property_failed_with_detail(422, "Cannot add allowed_values to an existing property")
+
+    def test_update_allowed_values_from_value_to_none(self):
+        """Test updating the allowed values list of a property."""
+
+        property_id = self.post_test_property_and_prerequisites(
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        )
+
+        self.patch_property(property_id, {"allowed_values": None})
+
+        self.check_patch_property_failed_with_detail(422, "Cannot remove allowed_values from an existing property")
+
+    def test_partial_update_with_non_existent_catalogue_category_id(self):
+        """Test updating a property in a non-existent catalogue category."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+        self.catalogue_category_id = str(ObjectId())
+
+        self.patch_property(property_id, {})
+
+        self.check_patch_property_failed_with_detail(404, "Catalogue category not found")
+
+    def test_partial_update_with_catalogue_category_invalid_id(self):
+        """Test updating a property with an invalid ID."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+        self.catalogue_category_id = "invalid-id"
+
+        self.patch_property(property_id, {})
+
+        self.check_patch_property_failed_with_detail(404, "Catalogue category not found")
+
+    def test_partial_update_with_non_existent_property_id(self):
+        """Test updating a non-existent property."""
+
+        self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.patch_property(str(ObjectId()), {})
+
+        self.check_patch_property_failed_with_detail(404, "Catalogue category property not found")
+
+    def test_partial_update_with_invalid_property_id(self):
+        """Test updating a property with an invalid ID."""
+
+        self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.patch_property("invalid-id", {})
+
+        self.check_patch_property_failed_with_detail(404, "Catalogue category property not found")
