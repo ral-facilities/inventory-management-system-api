@@ -773,7 +773,7 @@ class UpdateDSL(ListDSL):
             },
         )
 
-    def check_patch_catalogue_category_response_success(self, expected_catalogue_category_get_data: dict) -> None:
+    def check_patch_catalogue_category_success(self, expected_catalogue_category_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_catalogue_category` gave a successful response with the expected data
         returned.
@@ -825,7 +825,7 @@ class TestUpdate(UpdateDSL):
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"name": "New Name"})
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "name": "New Name", "code": "new-name"}
         )
 
@@ -838,7 +838,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": parent_id})
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B, "parent_id": parent_id}
         )
 
@@ -925,7 +925,7 @@ class TestUpdate(UpdateDSL):
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "name": "Test catalogue category"}
         )
         self.patch_catalogue_category(catalogue_category_id, {"name": "Test Catalogue Category"})
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {
                 **CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
                 "name": "Test Catalogue Category",
@@ -946,7 +946,7 @@ class TestUpdate(UpdateDSL):
             {**CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, "parent_id": new_parent_id},
         )
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, "parent_id": new_parent_id}
         )
 
@@ -958,7 +958,7 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_category(catalogue_category_id, {"is_leaf": True})
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "is_leaf": True}
         )
 
@@ -974,7 +974,7 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_category(catalogue_category_id, update_data)
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, **update_data, "code": "new-name"}
         )
 
@@ -1003,7 +1003,7 @@ class TestUpdate(UpdateDSL):
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": new_parent_id},
         )
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": new_parent_id}
         )
 
@@ -1019,7 +1019,7 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_category(catalogue_category_id, update_data)
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES, **update_data, "code": "new-name"}
         )
 
@@ -1064,7 +1064,7 @@ class TestUpdate(UpdateDSL):
             },
         )
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": new_parent_id}
         )
 
@@ -1073,7 +1073,7 @@ class TestUpdate(UpdateDSL):
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"is_leaf": True})
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "is_leaf": True}
         )
 
@@ -1100,7 +1100,7 @@ class TestUpdate(UpdateDSL):
             {"properties": CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM["properties"]},
         )
 
-        self.check_patch_catalogue_category_response_success(
+        self.check_patch_catalogue_category_success(
             {
                 **CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
                 "properties": CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM["properties"],

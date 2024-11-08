@@ -828,7 +828,7 @@ class UpdateDSL(ListDSL):
 
         self._patch_response_item = self.test_client.patch(f"/v1/items/{item_id}", json=item_update_data)
 
-    def check_patch_item_response_success(self, expected_item_get_data: dict) -> None:
+    def check_patch_item_success(self, expected_item_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_item` gave a successful response with the expected data returned.
 
@@ -883,7 +883,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, ITEM_DATA_ALL_VALUES_NO_PROPERTIES)
-        self.check_patch_item_response_success(ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES)
+        self.check_patch_item_success(ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES)
 
     def test_partial_update_catalogue_item_id(self):
         """Test updating the `catalogue_item_id` of an item."""
@@ -900,7 +900,7 @@ class TestUpdate(UpdateDSL):
         new_system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
         self.patch_item(item_id, {"system_id": new_system_id})
-        self.check_patch_item_response_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_patch_item_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
     def test_partial_update_system_id_with_non_existent_id(self):
         """Test updating the `system_id` of an item to a non-existent system."""
@@ -925,7 +925,7 @@ class TestUpdate(UpdateDSL):
         new_usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
 
         self.patch_item(item_id, {"usage_status_id": new_usage_status_id})
-        self.check_patch_item_response_success(
+        self.check_patch_item_success(
             {**ITEM_GET_DATA_REQUIRED_VALUES_ONLY, "usage_status": USAGE_STATUS_POST_DATA_NEW["value"]}
         )
 
@@ -952,7 +952,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
 
         self.patch_item(item_id, {"properties": []})
-        self.check_patch_item_response_success({**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": []})
+        self.check_patch_item_success({**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": []})
 
     def test_partial_update_properties_with_some_properties_provided(self):
         """Test updating the `properties` of an item to override some of the catalogue item properties."""
@@ -961,7 +961,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_with_properties({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
 
         self.patch_item(item_id, {"properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]})
-        self.check_patch_item_response_success(
+        self.check_patch_item_success(
             {**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]}
         )
 
@@ -972,7 +972,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_with_properties({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
 
         self.patch_item(item_id, {"properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"]})
-        self.check_patch_item_response_success(ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+        self.check_patch_item_success(ITEM_GET_DATA_WITH_ALL_PROPERTIES)
 
     def test_partial_update_properties_with_mandatory_property_given_none(self):
         """Test updating the `properties` of an item to have a mandatory property with a value of `None`."""
@@ -992,7 +992,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
 
         self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]})
-        self.check_patch_item_response_success(
+        self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": [{**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}],
@@ -1076,7 +1076,7 @@ class TestUpdate(UpdateDSL):
                 ]
             },
         )
-        self.check_patch_item_response_success(
+        self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": [

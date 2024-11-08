@@ -68,14 +68,15 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
         :param property_data: Dictionary containing the basic catalogue category property data data as would be required
                               for a `CatalogueCategoryPropertyPostSchema` but with any `unit_id`'s replaced by the
                               `unit` value in its properties as the IDs will be added automatically.
-        :return: ID of the created catalogue category (or `None` if not successful).
+        :return: ID of the created property (or `None` if not successful).
         """
 
+        # First need to replace all unit values with unit IDs
         full_property_data = property_data.copy()
-        # TODO: Remove need for putting into "properties"? - same for where its used elsewhere
         full_property_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
             {"properties": [full_property_data]}, self.unit_value_id_dict
         )["properties"][0]
+
         self._post_response_property = self.test_client.post(
             "/v1/catalogue-categories/" f"{self.catalogue_category_id}/properties", json=full_property_data
         )
@@ -84,7 +85,6 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
             self._post_response_property.json()["id"] if self._post_response_property.status_code == 201 else None
         )
 
-        # TODO: Cleanup?
         # Append to the property name id dict for the new property
         if property_id:
             property_data = self._post_response_property.json()
@@ -458,12 +458,13 @@ class UpdateDSL(CreateDSL):
 
     _patch_response_property: Response
 
-    def post_test_property_and_prerequisites(self, property_data: dict) -> Optional[None]:
+    def post_test_property_and_prerequisites(self, property_data: dict) -> Optional[str]:
         """Posts an property for testing having first posted the required prerequisite entities.
 
         :param property_data: Dictionary containing the basic catalogue category property data data as would be required
                               for a `CatalogueCategoryPropertyPostSchema` but with any `unit_id`'s replaced by the
                               `unit` value in its properties as the IDs will be added automatically.
+        :return: ID of the created property (or `None` if not successful).
         """
 
         # Add in property at the start rather than following a post so created & modified times are accurate to before
@@ -476,6 +477,21 @@ class UpdateDSL(CreateDSL):
         self._existing_catalogue_category_properties = self._post_response_catalogue_category.json()["properties"]
 
         return self._existing_catalogue_category_properties[1]["id"]
+
+    def post_test_property_and_prerequisites_with_allowed_values_list(self) -> tuple[Optional[str], dict]:
+        """Posts an property for testing having first posted the required prerequisite entities.
+
+        :return: Tuple with
+            - ID of the created property (or `None` if not successful).
+            - Dictionary of the `allowed_values` data used in the creation of the property
+        """
+
+        return (
+            self.post_test_property_and_prerequisites(
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+            ),
+            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
+        )
 
     def patch_property(self, property_id: str, property_update_data: dict) -> None:
         """
@@ -602,20 +618,10 @@ class TestUpdate(UpdateDSL):
     def test_update_allowed_values_list_adding_value(self):
         """Test updating the allowed values list of a property by adding an additional value to it."""
 
-        property_id = self.post_test_property_and_prerequisites(
-            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
-        )
+        property_id, existing_allowed_values = self.post_test_property_and_prerequisites_with_allowed_values_list()
 
         property_update_data = {
-            "allowed_values": {
-                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
-                "values": [
-                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                        "values"
-                    ],
-                    9001,
-                ],
-            }
+            "allowed_values": {**existing_allowed_values, "values": [*existing_allowed_values["values"], 9001]}
         }
         self.patch_property(property_id, property_update_data)
 
@@ -638,22 +644,12 @@ class TestUpdate(UpdateDSL):
         """Test updating the allowed values list of a property by adding an additional value with a different type to
         it."""
 
-        property_id = self.post_test_property_and_prerequisites(
-            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
-        )
+        property_id, existing_allowed_values = self.post_test_property_and_prerequisites_with_allowed_values_list()
 
-        property_update_data = {
-            "allowed_values": {
-                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
-                "values": [
-                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                        "values"
-                    ],
-                    True,
-                ],
-            }
-        }
-        self.patch_property(property_id, property_update_data)
+        self.patch_property(
+            property_id,
+            {"allowed_values": {**existing_allowed_values, "values": [*existing_allowed_values["values"], True]}},
+        )
 
         self.check_patch_property_failed_with_detail(
             422, "allowed_values of type 'list' must only contain values of the same type as the property itself"
@@ -662,53 +658,36 @@ class TestUpdate(UpdateDSL):
     def test_update_allowed_values_list_adding_duplicate_value(self):
         """Test updating the allowed values list of a property by adding a duplicate value to it."""
 
-        property_id = self.post_test_property_and_prerequisites(
-            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
+        property_id, existing_allowed_values = self.post_test_property_and_prerequisites_with_allowed_values_list()
+
+        self.patch_property(
+            property_id,
+            {
+                "allowed_values": {
+                    **existing_allowed_values,
+                    "values": [*existing_allowed_values["values"], existing_allowed_values["values"][0]],
+                }
+            },
         )
 
-        property_update_data = {
-            "allowed_values": {
-                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
-                "values": [
-                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                        "values"
-                    ],
-                    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                        "values"
-                    ][0],
-                ],
-            }
-        }
-        self.patch_property(property_id, property_update_data)
-
         self.check_patch_property_failed_with_detail(
-            422,
-            "allowed_values of type 'list' contains a duplicate value: "
-            + str(
-                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                    "values"
-                ][0]
-            ),
+            422, f"allowed_values of type 'list' contains a duplicate value: {existing_allowed_values['values'][0]}"
         )
 
     def test_update_allowed_values_list_removing_value(self):
         """Test updating the allowed values list of a property by removing a value from it."""
 
-        property_id = self.post_test_property_and_prerequisites(
-            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
-        )
+        property_id, existing_allowed_values = self.post_test_property_and_prerequisites_with_allowed_values_list()
 
-        property_update_data = {
-            "allowed_values": {
-                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
-                "values": [
-                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                        "values"
-                    ][1:]
-                ],
-            }
-        }
-        self.patch_property(property_id, property_update_data)
+        self.patch_property(
+            property_id,
+            {
+                "allowed_values": {
+                    **existing_allowed_values,
+                    "values": [*existing_allowed_values["values"][1:]],
+                }
+            },
+        )
 
         self.check_patch_property_failed_with_detail(
             422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
@@ -717,22 +696,20 @@ class TestUpdate(UpdateDSL):
     def test_update_allowed_values_list_modifying_value(self):
         """Test updating the allowed values list of a property by modifying a value within it."""
 
-        property_id = self.post_test_property_and_prerequisites(
-            CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
-        )
+        property_id, existing_allowed_values = self.post_test_property_and_prerequisites_with_allowed_values_list()
 
-        property_update_data = {
-            "allowed_values": {
-                **CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
-                "values": [
-                    9001,
-                    *CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"][
-                        "values"
-                    ][1:],
-                ],
-            }
-        }
-        self.patch_property(property_id, property_update_data)
+        self.patch_property(
+            property_id,
+            {
+                "allowed_values": {
+                    **existing_allowed_values,
+                    "values": [
+                        9001,
+                        *existing_allowed_values["values"][1:],
+                    ],
+                }
+            },
+        )
 
         self.check_patch_property_failed_with_detail(
             422, "Cannot modify existing values inside allowed_values of type 'list', you may only add more values"
