@@ -161,7 +161,7 @@ def partial_update_catalogue_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except ChildElementsExistError as exc:
-        message = "Catalogue item has child elements and cannot be updated"
+        message = "Catalogue item has child elements, so the manufacturer_id and properties fields cannot be updated"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except InvalidActionError as exc:
