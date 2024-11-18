@@ -7,8 +7,8 @@ version = "1.0.0"
 
 dependencies = [
     "cryptography==43.0.3",
-    "fastapi[all]==0.115.3",
-    "PyJWT==2.9.0",
+    "fastapi[all]==0.115.5",
+    "PyJWT==2.10.0",
     "pymongo==4.10.1",
     "uvicorn==0.32.0"
 ]
@@ -29,12 +29,12 @@ code-analysis = [
 test = [
     "pytest==8.3.3",
     "pytest-asyncio==0.24.0",
-    "pytest-cov==5.0.0",
+    "pytest-cov==6.0.0",
     "pytest-env==1.1.5"
 ]
 
 scripts = [
-    "faker==30.8.1",
+    "faker==33.0.0",
     "requests==2.32.3"
 ]
 
