@@ -1184,7 +1184,9 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": new_manufacturer_id})
         self.check_patch_catalogue_item_failed_with_detail(
-            409, "Catalogue item has child elements, so the manufacturer_id and properties fields cannot be updated"
+            409,
+            "Catalogue item has child elements, so the following fields cannot be updated: "
+                + "manufacturer_id, properties"
         )
 
     def test_partial_update_manufacturer_id_with_non_existent_id(self):
@@ -1459,7 +1461,9 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_item(catalogue_item_id, {"properties": []})
         self.check_patch_catalogue_item_failed_with_detail(
-            409, "Catalogue item has child elements, so the manufacturer_id and properties fields cannot be updated"
+            409,
+            "Catalogue item has child elements, so the following fields cannot be updated: "
+                + "manufacturer_id, properties"
         )
 
     def test_partial_update_obsolete_replacement_catalogue_item_id(self):
