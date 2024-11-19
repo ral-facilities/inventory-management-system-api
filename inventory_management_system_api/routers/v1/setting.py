@@ -30,7 +30,6 @@ def update_spares_definition(
     logger.info("Updating spares definition")
     logger.debug("Spares definition data: %s", spares_definition)
 
-    # TODO: Appropriate excepts/error logging
     try:
         updated_spares_definition = setting_service.set_spares_definition(spares_definition)
         return SparesDefinitionSchema(**updated_spares_definition.model_dump())

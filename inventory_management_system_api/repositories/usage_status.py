@@ -98,7 +98,7 @@ class UsageStatusRepo:
         if self._is_usage_status_in_item(usage_status_id, session=session):
             raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is a part of an Item")
         if self._is_usage_status_in_setting(usage_status_id, session=session):
-            raise PartOfSettingError(f"The usage status with ID {str(usage_status_id)} is a used in the settings")
+            raise PartOfSettingError(f"The usage status with ID {str(usage_status_id)} is used in the settings")
 
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
         result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)

@@ -14,7 +14,7 @@ from inventory_management_system_api.models.setting import BaseSetting, SparesDe
 logger = logging.getLogger()
 
 # Template type for models inheriting from BaseSetting so this repo can be used generically for multiple settings
-TBaseSetting = TypeVar("TBaseSetting", bound=BaseSetting)
+BaseSettingT = TypeVar("BaseSettingT", bound=BaseSetting)
 
 
 class SettingRepo:
@@ -31,7 +31,7 @@ class SettingRepo:
         self._database = database
         self._settings_collection: Collection = self._database.settings
 
-    def get(self, output_model_type: Type[TBaseSetting], session: ClientSession = None) -> Optional[TBaseSetting]:
+    def get(self, output_model_type: Type[BaseSettingT], session: ClientSession = None) -> Optional[BaseSettingT]:
         """
         Retrieve a setting from a MongoDB database.
 
@@ -90,8 +90,8 @@ class SettingRepo:
         return None
 
     def upsert(
-        self, setting: BaseSetting, output_model_type: Type[TBaseSetting], session: ClientSession = None
-    ) -> TBaseSetting:
+        self, setting: BaseSetting, output_model_type: Type[BaseSettingT], session: ClientSession = None
+    ) -> BaseSettingT:
         """
         Assign a setting a MongoDB database. Will either update or insert the setting depending on whether it
         already exists.
