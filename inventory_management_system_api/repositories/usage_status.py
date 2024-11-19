@@ -13,7 +13,6 @@ from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
-
 logger = logging.getLogger()
 
 
@@ -89,6 +88,7 @@ class UsageStatusRepo:
         :raises MissingRecordError: if supplied usage status ID does not exist in the database
         """
         usage_status_id = CustomObjectId(usage_status_id)
+        # TODO: Update this check to ensure it also isn't used in the spares definition?
         if self._is_usage_status_in_item(str(usage_status_id), session=session):
             raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is a part of an Item")
 
