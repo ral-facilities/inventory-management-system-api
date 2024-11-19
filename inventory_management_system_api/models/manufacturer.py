@@ -1,5 +1,5 @@
 """
-Module for defining the database models for representing manufacturer.
+Module for defining the database models for representing manufacturers.
 """
 
 from typing import Optional
