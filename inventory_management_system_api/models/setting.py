@@ -8,6 +8,7 @@ from typing import ClassVar
 from pydantic import BaseModel
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.usage_status import UsageStatusOut
 
 
 class BaseSetting(BaseModel, ABC):
@@ -54,4 +55,4 @@ class SparesDefinitionOut(SparesDefinitionIn):
     Output database model for a spares definition.
     """
 
-    usage_statuses: list[SparesDefinitionUsageStatusOut]
+    usage_statuses: list[UsageStatusOut]

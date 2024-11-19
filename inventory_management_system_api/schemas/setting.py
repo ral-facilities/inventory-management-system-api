@@ -4,6 +4,8 @@ Module for defining the API schema models for representing settings.
 
 from pydantic import BaseModel, Field
 
+from inventory_management_system_api.schemas.usage_status import UsageStatusSchema
+
 
 class SparesDefinitionPutUsageStatusSchema(BaseModel):
     """
@@ -36,6 +38,4 @@ class SparesDefinitionSchema(SparesDefinitionPutSchema):
     Schema model for a spares definition.
     """
 
-    usage_statuses: list[SparesDefinitionUsageStatusSchema] = Field(
-        description="Usage statuses that classify items as a spare."
-    )
+    usage_statuses: list[UsageStatusSchema] = Field(description="Usage statuses that classify items as a spare.")

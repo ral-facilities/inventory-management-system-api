@@ -5,8 +5,9 @@ Module for providing an API router which defines routes for managing settings us
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.schemas.setting import SparesDefinitionPutSchema, SparesDefinitionSchema
 from inventory_management_system_api.services.setting import SettingService
 
@@ -29,7 +30,11 @@ def update_spares_definition(
     logger.info("Updating spares definition")
     logger.debug("Spares definition data: %s", spares_definition)
 
-    # TODO: Supposed to have 201 for created and 200 for updated
     # TODO: Appropriate excepts/error logging
-    updated_spares_definition = setting_service.update_spares_definition(spares_definition)
-    return SparesDefinitionSchema(**updated_spares_definition.model_dump())
+    try:
+        updated_spares_definition = setting_service.set_spares_definition(spares_definition)
+        return SparesDefinitionSchema(**updated_spares_definition.model_dump())
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "A specified usage status does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
