@@ -17,6 +17,38 @@ logger = logging.getLogger()
 BaseSettingT = TypeVar("BaseSettingT", bound=BaseSetting)
 
 
+# Aggregation pipeline for getting the spares definition complete with usage status data
+SPARES_DEFINITION_GET_AGGREGATION_PIPELINE: list = [
+    # Only perform this on the relevant document
+    {"$match": {"_id": SparesDefinitionOut.SETTING_ID}},
+    # Deconstruct the usage statuses so can go through them one by one
+    {"$unwind": "$usage_statuses"},
+    # Find and store actual usage status data as 'statusDetails'
+    {
+        "$lookup": {
+            "from": "usage_statuses",
+            "localField": "usage_statuses.id",
+            "foreignField": "_id",
+            "as": "statusDetails",
+        }
+    },
+    {"$unwind": "$statusDetails"},
+    # Merge the two sets of documents together
+    {"$addFields": {"usage_statuses": {"$mergeObjects": ["$usage_statuses", "$statusDetails"]}}},
+    # Remove the temporary 'statusDetails' field as no longer needed
+    {"$unset": "statusDetails"},
+    # Reconstruct the original document by merging with the original fields
+    {
+        "$group": {
+            "_id": "$_id",
+            "usage_statuses": {"$push": "$usage_statuses"},
+            "otherFields": {"$first": "$$ROOT"},
+        }
+    },
+    {"$replaceRoot": {"newRoot": {"$mergeObjects": ["$otherFields", {"usage_statuses": "$usage_statuses"}]}}},
+]
+
+
 class SettingRepo:
     """
     Repository for managing settings in a MongoDB database.
@@ -44,48 +76,12 @@ class SettingRepo:
             # The spares definition contains a list of usage statuses - use an aggregate query here to obtain
             # the actual usage status entities instead of just their stored ID
 
-            result = list(
-                self._settings_collection.aggregate(
-                    [
-                        # Only perform this on the relevant document
-                        {"$match": {"_id": output_model_type.SETTING_ID}},
-                        # Deconstruct the usage statuses so can go through them one by one
-                        {"$unwind": "$usage_statuses"},
-                        # Find and store actual usage status data as 'statusDetails'
-                        {
-                            "$lookup": {
-                                "from": "usage_statuses",
-                                "localField": "usage_statuses.id",
-                                "foreignField": "_id",
-                                "as": "statusDetails",
-                            }
-                        },
-                        {"$unwind": "$statusDetails"},
-                        # Merge the two sets of documents together
-                        {"$addFields": {"usage_statuses": {"$mergeObjects": ["$usage_statuses", "$statusDetails"]}}},
-                        # Remove the temporary 'statusDetails' field as no longer needed
-                        {"$unset": "statusDetails"},
-                        # Reconstruct the original document by merging with the original fields
-                        {
-                            "$group": {
-                                "_id": "$_id",
-                                "usage_statuses": {"$push": "$usage_statuses"},
-                                "otherFields": {"$first": "$$ROOT"},
-                            }
-                        },
-                        {
-                            "$replaceRoot": {
-                                "newRoot": {"$mergeObjects": ["$otherFields", {"usage_statuses": "$usage_statuses"}]}
-                            }
-                        },
-                    ]
-                )
-            )
+            result = list(self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE))
             setting = result[0] if len(result) > 0 else None
         else:
             setting = self._settings_collection.find_one({"_id": output_model_type.SETTING_ID}, session=session)
 
-        if setting:
+        if setting is not None:
             return output_model_type(**setting)
         return None
 
@@ -96,7 +92,7 @@ class SettingRepo:
         Assign a setting a MongoDB database. Will either update or insert the setting depending on whether it
         already exists.
 
-        :param setting: Setting to update. Also contains the ID for lookup.
+        :param setting: Setting containing the fields to be updated. Also contains the ID for lookup.
         :param output_model_type: The output type of the setting's model.
         :param session: PyMongo ClientSession to use for database operations.
         :return: The updated setting.
