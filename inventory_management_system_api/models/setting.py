@@ -21,7 +21,6 @@ class BaseSettingIn(BaseModel, ABC):
     @abstractmethod
     def SETTING_ID() -> str:  # pylint: disable=invalid-name
         """ID of the setting. Ensures this value can be obtained from the class type itself as a static variable."""
-        return ""
 
 
 class BaseSettingOut(BaseSettingIn):

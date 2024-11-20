@@ -2,7 +2,7 @@
 Module for defining the API schema models for representing settings.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from inventory_management_system_api.schemas.usage_status import UsageStatusSchema
 
@@ -31,6 +31,29 @@ class SparesDefinitionPutSchema(BaseModel):
     usage_statuses: list[SparesDefinitionPutUsageStatusSchema] = Field(
         description="Usage statuses that classify items as a spare."
     )
+
+    @field_validator("usage_statuses")
+    @classmethod
+    def validate_allowed_values(
+        cls, usage_statuses: list[SparesDefinitionPutUsageStatusSchema]
+    ) -> list[SparesDefinitionPutUsageStatusSchema]:
+        """
+        Validator for the `usage_statuses` field.
+
+        Ensures the `usage_statuses` dont contain any duplicate IDs.
+
+        :param allowed_values: The value of the `allowed_values` field.
+        :param info: Validation info from pydantic.
+        :return: The value of the `allowed_values` field.
+        """
+
+        seen_usage_status_ids = set()
+
+        for usage_status in usage_statuses:
+            if usage_status.id in seen_usage_status_ids:
+                raise ValueError(f"usage_statuses contains a duplicate ID: {usage_status.id}")
+            seen_usage_status_ids.add(usage_status.id)
+        return usage_statuses
 
 
 class SparesDefinitionSchema(SparesDefinitionPutSchema):
