@@ -53,6 +53,8 @@ import pytest
 from bson import ObjectId
 from httpx import Response
 
+from inventory_management_system_api.schemas.catalogue_item import CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS
+
 
 class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
     """Base class for create tests."""
@@ -1186,7 +1188,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_item_failed_with_detail(
             409,
             "Catalogue item has child elements, so the following fields cannot be updated: "
-                + "manufacturer_id, properties"
+                + ', '.join(CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS)
         )
 
     def test_partial_update_manufacturer_id_with_non_existent_id(self):
@@ -1463,7 +1465,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_item_failed_with_detail(
             409,
             "Catalogue item has child elements, so the following fields cannot be updated: "
-                + "manufacturer_id, properties"
+                + ', '.join(CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS)
         )
 
     def test_partial_update_obsolete_replacement_catalogue_item_id(self):
