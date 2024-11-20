@@ -17,6 +17,7 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 # ---------------------------- GENERAL -----------------------------
@@ -790,7 +791,8 @@ SYSTEM_IN_DATA_NO_PARENT_B = {
 SETTING_SPARES_DEFINITION_IN_DATA = {"usage_statuses": [{"id": str(ObjectId())}]}
 
 SETTING_SPARES_DEFINITION_OUT_DATA = {
+    "_id": SparesDefinitionOut.SETTING_ID,
     "usage_statuses": [
         UsageStatusOut(**UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=str(ObjectId())).model_dump()
-    ]
+    ],
 }

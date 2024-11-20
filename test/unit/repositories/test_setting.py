@@ -2,20 +2,35 @@
 Unit tests for the `SettingRepo` repository.
 """
 
-from test.mock_data import SETTING_SPARES_DEFINITION_IN_DATA, USAGE_STATUS_IN_DATA_NEW
+from test.mock_data import SETTING_SPARES_DEFINITION_IN_DATA, SETTING_SPARES_DEFINITION_OUT_DATA
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import ClassVar, Optional, Type
 from unittest.mock import MagicMock, Mock
 
 import pytest
 
-from inventory_management_system_api.models.setting import BaseSetting, SparesDefinitionIn, SparesDefinitionOut
-from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
+from inventory_management_system_api.models.setting import (
+    BaseSettingIn,
+    BaseSettingOut,
+    SparesDefinitionIn,
+    SparesDefinitionOut,
+)
 from inventory_management_system_api.repositories.setting import (
     SPARES_DEFINITION_GET_AGGREGATION_PIPELINE,
-    BaseSettingT,
+    BaseSettingInT,
+    BaseSettingOutT,
     SettingRepo,
 )
+
+
+class ExampleSettingIn(BaseSettingIn):
+    """Test setting."""
+
+    SETTING_ID: ClassVar[str] = "test_setting_id"
+
+
+class ExampleSettingOut(ExampleSettingIn, BaseSettingOut):
+    """Test setting."""
 
 
 class SettingRepoDSL:
@@ -41,49 +56,25 @@ class SettingRepoDSL:
 class GetDSL(SettingRepoDSL):
     """Base class for `get` tests."""
 
-    _obtained_output_model_type: Type[BaseSettingT]
-    _expected_setting_out: BaseSettingT
-    _obtained_setting: Optional[BaseSetting]
+    _obtained_out_model_type: Type[BaseSettingOutT]
+    _expected_setting_out: BaseSettingOutT
+    _obtained_setting: Optional[BaseSettingOutT]
 
     def mock_get(
         self,
-        output_model_type: Type[BaseSettingT],
-        setting_in_data: Optional[dict],
-        usage_statuses_in_data: Optional[list[dict]] = None,
+        out_model_type: Type[BaseSettingOutT],
+        setting_out_data: Optional[dict],
     ) -> None:
-        # TODO: Update comment
         """
         Mocks database methods appropriately to test the `get` repo method.
 
-        :param output_model_type: The output type of the setting's model to be obtained.
-        :param setting_in_data: Either `None` or a dictionary containing the setting data as would be required for the
-                               `In` database model.
+        :param out_model_type: The type of the setting's output model to be obtained.
+        :param setting_out_data: Either `None` or a dictionary containing the setting data as would be required for the
+                                 `Out` database model.
         """
+        self._expected_setting_out = out_model_type(**setting_out_data) if setting_out_data is not None else None
 
-        # TODO: Just use out data instead on in to save having to complicate this logic
-        if output_model_type is SparesDefinitionOut:
-            # Expected output also needs usage status data for each given usage status so insert that data here
-            setting_out_data = (
-                {
-                    **setting_in_data,
-                    "usage_statuses": [
-                        {
-                            **UsageStatusOut(
-                                **UsageStatusIn(**usage_statuses_in_data[i]).model_dump(), **usage_status_in_data
-                            ).model_dump(),
-                        }
-                        for i, usage_status_in_data in enumerate(setting_in_data["usage_statuses"])
-                    ],
-                }
-                if setting_in_data is not None
-                else None
-            )
-        else:
-            setting_out_data = setting_in_data
-
-        self._expected_setting_out = output_model_type(**setting_out_data) if setting_out_data is not None else None
-
-        if output_model_type is SparesDefinitionOut:
+        if out_model_type is SparesDefinitionOut:
             self.settings_collection.aggregate.return_value = [setting_out_data] if setting_out_data is not None else []
         else:
             RepositoryTestHelpers.mock_find_one(
@@ -95,24 +86,24 @@ class GetDSL(SettingRepoDSL):
                 ),
             )
 
-    def call_get(self, output_model_type: Type[BaseSettingT]) -> None:
+    def call_get(self, out_model_type: Type[BaseSettingOutT]) -> None:
         """
         Calls the `SettingRepo` `get` method with the appropriate data from a prior call to `mock_get`.
 
-        :param output_model_type: The output type of the setting's model to be obtained.
+        :param out_model_type: The type of the setting's output model to be obtained.
         """
 
-        self._obtained_output_model_type = output_model_type
-        self._obtained_setting = self.setting_repo.get(output_model_type, session=self.mock_session)
+        self._obtained_out_model_type = out_model_type
+        self._obtained_setting = self.setting_repo.get(out_model_type, session=self.mock_session)
 
     def check_get_success(self) -> None:
         """Checks that a prior call to `call_get` worked as expected."""
 
-        if self._obtained_output_model_type is SparesDefinitionOut:
+        if self._obtained_out_model_type is SparesDefinitionOut:
             self.settings_collection.aggregate.assert_called_once_with(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE)
         else:
             self.settings_collection.find_one.assert_called_once_with(
-                {"_id": self._obtained_output_model_type.SETTING_ID}, session=self.mock_session
+                {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session
             )
 
         assert self._obtained_setting == self._expected_setting_out
@@ -121,29 +112,24 @@ class GetDSL(SettingRepoDSL):
 class TestGet(GetDSL):
     """Tests for getting a setting."""
 
-    class TestSettingOut(BaseSetting):
-        """Test setting"""
-
-        SETTING_ID: ClassVar[str] = "test_setting_id"
-
     def test_get(self):
         """Test getting a setting."""
 
-        self.mock_get(self.TestSettingOut, {"setting": "data"})
-        self.call_get(self.TestSettingOut)
+        self.mock_get(ExampleSettingOut, {"_id": "example_setting"})
+        self.call_get(ExampleSettingOut)
         self.check_get_success()
 
     def test_get_non_existent(self):
         """Test getting a setting that is non-existent."""
 
-        self.mock_get(self.TestSettingOut, None)
-        self.call_get(self.TestSettingOut)
+        self.mock_get(ExampleSettingOut, None)
+        self.call_get(ExampleSettingOut)
         self.check_get_success()
 
     def test_get_spares_definition(self):
         """Test getting the spares definition setting."""
 
-        self.mock_get(SparesDefinitionOut, SETTING_SPARES_DEFINITION_IN_DATA, [USAGE_STATUS_IN_DATA_NEW])
+        self.mock_get(SparesDefinitionOut, SETTING_SPARES_DEFINITION_OUT_DATA)
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
 
@@ -158,61 +144,45 @@ class TestGet(GetDSL):
 class UpsertDSL(SettingRepoDSL):
     """Base class for `upsert` tests."""
 
-    _setting_in: BaseSetting
-    _output_model_type: BaseSetting
-    _expected_setting_out: BaseSettingT
-    _upserted_setting_in: BaseSetting
-    _upserted_setting: BaseSettingT
+    _setting_in: BaseSettingInT
+    _out_model_type: Type[BaseSettingOutT]
+    _expected_setting_out: BaseSettingOutT
+    _upserted_setting_in: BaseSettingInT
+    _upserted_setting: BaseSettingOutT
 
     def mock_upsert(
         self,
-        new_setting_in: dict,
-        output_model_type: Type[BaseSettingT],
-        new_usage_statuses_in_data: Optional[list[dict]],
+        new_setting_in_data: dict,
+        new_setting_out_data: dict,
+        in_model_type: Type[BaseSettingInT],
+        out_model_type: Type[BaseSettingOutT],
     ) -> None:
-        # TODO: Comment
+        """
+        Mocks database methods appropriately to test the `upsert` repo method.
 
-        self._setting_in = new_setting_in
-        self._output_model_type = output_model_type
+        :param new_setting_in_data: Dictionary containing the new setting data as would be required for a
+                                    `BaseSettingIn` database model.
+        :param new_setting_out_data: Dictionary containing the new setting data as would be required for a
+                                    `BaseSettingOut` database model.
+        :param in_model_type: The type of the setting's input model.
+        :param out_model_type: The type of the setting's output model.
+        """
 
-        # TODO: Combine this into function in base repo DSL rather than repeating in get below
-        setting_in_data = new_setting_in.model_dump()
-        if output_model_type is SparesDefinitionOut:
-            # Expected output also needs usage status data for each given usage status so insert that data here
-            setting_out_data = {
-                **setting_in_data,
-                "usage_statuses": [
-                    {
-                        **UsageStatusOut(
-                            **UsageStatusIn(**new_usage_statuses_in_data[i]).model_dump(), **usage_status_in_data
-                        ).model_dump(),
-                    }
-                    for i, usage_status_in_data in enumerate(setting_in_data["usage_statuses"])
-                ],
-            }
+        self._setting_in = in_model_type(**new_setting_in_data)
+        self._out_model_type = out_model_type
+
+        self._expected_setting_out = out_model_type(**new_setting_out_data)
+
+        if out_model_type is SparesDefinitionOut:
+            self.settings_collection.aggregate.return_value = [new_setting_out_data]
         else:
-            setting_out_data = setting_in_data
-
-        self._expected_setting_out = output_model_type(**setting_out_data) if setting_out_data is not None else None
-
-        # TODO: Again unify with below - perhaps inherit Get for this? - what about other tests?
-        if output_model_type is SparesDefinitionOut:
-            self.settings_collection.aggregate.return_value = [setting_out_data] if setting_out_data is not None else []
-        else:
-            RepositoryTestHelpers.mock_find_one(
-                self.settings_collection,
-                (
-                    self._expected_setting_out.model_dump(by_alias=True)
-                    if self._expected_setting_out is not None
-                    else None
-                ),
-            )
+            RepositoryTestHelpers.mock_find_one(self.settings_collection, new_setting_out_data)
 
     def call_upsert(self) -> None:
-        # TODO: Comment
+        """Calls the `SettingRepo` `upsert` method with the appropriate data from a prior call to `mock_upsert`."""
 
         self._upserted_setting = self.setting_repo.upsert(
-            self._setting_in, self._output_model_type, session=self.mock_session
+            self._setting_in, self._out_model_type, session=self.mock_session
         )
 
     def check_upsert_success(self) -> None:
@@ -231,12 +201,21 @@ class UpsertDSL(SettingRepoDSL):
 class TestUpdate(UpsertDSL):
     """Tests for upserting a setting."""
 
-    # TODO: Test that isn't the spares definition
     def test_upsert(self):
-        # TODO: Comment
+        """Test upserting a setting."""
+
+        self.mock_upsert({"_id": "example_setting"}, {"_id": "example_setting"}, ExampleSettingIn, ExampleSettingOut)
+        self.call_upsert()
+        self.check_upsert_success()
+
+    def test_upsert_spares_definition(self):
+        """Test upserting the spares definition setting."""
 
         self.mock_upsert(
-            SparesDefinitionIn(**SETTING_SPARES_DEFINITION_IN_DATA), SparesDefinitionOut, [USAGE_STATUS_IN_DATA_NEW]
+            SETTING_SPARES_DEFINITION_IN_DATA,
+            SETTING_SPARES_DEFINITION_OUT_DATA,
+            SparesDefinitionIn,
+            SparesDefinitionOut,
         )
         self.call_upsert()
         self.check_upsert_success()

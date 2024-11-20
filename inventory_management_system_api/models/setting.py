@@ -5,15 +5,15 @@ Module for defining the database models for representing settings.
 from abc import ABC, abstractmethod
 from typing import ClassVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 
 
-class BaseSetting(BaseModel, ABC):
+class BaseSettingIn(BaseModel, ABC):
     """
-    Base database model for a setting.
+    Base input database model for a setting.
     """
 
     @property
@@ -22,6 +22,14 @@ class BaseSetting(BaseModel, ABC):
     def SETTING_ID() -> str:  # pylint: disable=invalid-name
         """ID of the setting. Ensures this value can be obtained from the class type itself as a static variable."""
         return ""
+
+
+class BaseSettingOut(BaseSettingIn):
+    """
+    Base output database model for a setting.
+    """
+
+    id: StringObjectIdField = Field(alias="_id")
 
 
 class SparesDefinitionUsageStatusIn(BaseModel):
@@ -40,7 +48,7 @@ class SparesDefinitionUsageStatusOut(BaseModel):
     id: StringObjectIdField
 
 
-class SparesDefinitionIn(BaseSetting):
+class SparesDefinitionIn(BaseSettingIn):
     """
     Input database model for a spares definition.
     """
@@ -50,7 +58,7 @@ class SparesDefinitionIn(BaseSetting):
     usage_statuses: list[SparesDefinitionUsageStatusIn]
 
 
-class SparesDefinitionOut(SparesDefinitionIn):
+class SparesDefinitionOut(SparesDefinitionIn, BaseSettingOut):
     """
     Output database model for a spares definition.
     """
