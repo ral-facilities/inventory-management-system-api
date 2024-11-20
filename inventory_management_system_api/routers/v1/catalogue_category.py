@@ -26,6 +26,7 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPropertyPostSchema,
     CatalogueCategoryPropertySchema,
     CatalogueCategorySchema,
+    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
@@ -185,7 +186,8 @@ def partial_update_catalogue_category(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildElementsExistError as exc:
-        message = "Catalogue category has child elements and cannot be updated"
+        message = ("Catalogue category has child elements, so the following fields cannot be updated: "
+            + ', '.join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS))
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except DuplicateRecordError as exc:
