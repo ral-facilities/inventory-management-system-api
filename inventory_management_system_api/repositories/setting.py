@@ -64,6 +64,26 @@ class SettingRepo:
         self._database = database
         self._settings_collection: Collection = self._database.settings
 
+    def upsert(
+        self, setting: BaseSettingInT, out_model_type: Type[BaseSettingOutT], session: ClientSession = None
+    ) -> BaseSettingOutT:
+        """
+        Assign a setting a MongoDB database. Will either update or insert the setting depending on whether it
+        already exists.
+
+        :param setting: Setting containing the fields to be updated. Also contains the ID for lookup.
+        :param out_model_type: The output type of the setting's model.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: The updated setting.
+        """
+
+        logger.info("Assigning setting with ID: %s in the database", setting.SETTING_ID)
+        self._settings_collection.update_one(
+            {"_id": setting.SETTING_ID}, {"$set": setting.model_dump(by_alias=True)}, upsert=True, session=session
+        )
+
+        return self.get(out_model_type=out_model_type, session=session)
+
     def get(self, out_model_type: Type[BaseSettingOutT], session: ClientSession = None) -> Optional[BaseSettingOutT]:
         """
         Retrieve a setting from a MongoDB database.
@@ -85,23 +105,3 @@ class SettingRepo:
         if setting is not None:
             return out_model_type(**setting)
         return None
-
-    def upsert(
-        self, setting: BaseSettingInT, out_model_type: Type[BaseSettingOutT], session: ClientSession = None
-    ) -> BaseSettingOutT:
-        """
-        Assign a setting a MongoDB database. Will either update or insert the setting depending on whether it
-        already exists.
-
-        :param setting: Setting containing the fields to be updated. Also contains the ID for lookup.
-        :param out_model_type: The output type of the setting's model.
-        :param session: PyMongo ClientSession to use for database operations.
-        :return: The updated setting.
-        """
-
-        logger.info("Assigning setting with ID: %s in the database", setting.SETTING_ID)
-        self._settings_collection.update_one(
-            {"_id": setting.SETTING_ID}, {"$set": setting.model_dump(by_alias=True)}, upsert=True, session=session
-        )
-
-        return self.get(out_model_type=out_model_type, session=session)

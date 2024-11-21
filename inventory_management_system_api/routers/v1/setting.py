@@ -20,14 +20,14 @@ SettingServiceDep = Annotated[SettingService, Depends(SettingService)]
 
 @router.put(
     path="/spares_definition",
-    summary="Update the definition of a spare",
+    summary="Set the definition of a spare",
     response_description="Spares definition updated successfully",
 )
-def update_spares_definition(
+def set_spares_definition(
     spares_definition: SparesDefinitionPutSchema, setting_service: SettingServiceDep
 ) -> SparesDefinitionSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Updating spares definition")
+    logger.info("Setting spares definition")
     logger.debug("Spares definition data: %s", spares_definition)
 
     try:

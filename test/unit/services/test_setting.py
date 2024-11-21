@@ -2,12 +2,14 @@
 Unit tests for the `SettingService` service.
 """
 
-from test.mock_data import SETTING_SPARES_DEFINITION_PUT_DATA_NEW, USAGE_STATUS_OUT_DATA_NEW
+from copy import deepcopy
+from test.mock_data import SETTING_SPARES_DEFINITION_DATA_NEW, USAGE_STATUS_OUT_DATA_NEW
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call
 
 import pytest
+from bson import ObjectId
 
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
@@ -41,14 +43,14 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
     _set_spares_definition_exception: pytest.ExceptionInfo
 
     def mock_set_spares_definition(
-        self, spares_definition_put_data: dict, usage_statuses_out_data: list[Optional[dict]]
+        self, spares_definition_data: dict, usage_statuses_out_data: list[Optional[dict]]
     ) -> None:
         """
         Mocks repository methods appropriately to test the `set_spares_definition` service method.
 
-        :param spares_definition_put_data: Dictionary containing the put data as would be required for a
-                                           `SparesDefinitionPutSchema` (i.e. no ID, code, or created and modified times
-                                           required).
+        :param spares_definition_data: Dictionary containing the put data as would be required for a
+                                       `SparesDefinitionPutSchema` but with any `id`'s replaced by the `value` as the
+                                       IDs will be added automatically.
         :param usage_statuses_out_data: List where each element is either `None` or dictionaries containing the basic
                                         usage status data as would be required for a `UsageStatusOut` database model.
                                         (Should correspond to each of the usage status IDs given in the setting put
@@ -56,8 +58,16 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
         """
 
         # Stored usage statuses
-        for i in range(0, len(spares_definition_put_data["usage_statuses"])):
+        for i in range(0, len(spares_definition_data["usage_statuses"])):
             ServiceTestHelpers.mock_get(self.mock_usage_status_repository, usage_statuses_out_data[i])
+
+        # Insert usage status IDs
+        spares_definition_put_data = deepcopy(spares_definition_data)
+        for i, usage_status_dict in enumerate(spares_definition_put_data["usage_statuses"]):
+            usage_status_dict["id"] = (
+                str(ObjectId()) if usage_statuses_out_data[i] is None else usage_statuses_out_data[i]["id"]
+            )
+            del usage_status_dict["value"]
 
         # Put schema
         self._spares_definition_put = SparesDefinitionPutSchema(**spares_definition_put_data)
@@ -123,15 +133,17 @@ class TestSetSpareDefinition(SetSparesDefinitionDSL):
     def test_set_spare_definition(self):
         """Test setting the spares definition."""
 
-        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_PUT_DATA_NEW, [USAGE_STATUS_OUT_DATA_NEW])
+        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW, [USAGE_STATUS_OUT_DATA_NEW])
         self.call_set_spares_definition()
         self.check_set_spares_definition_success()
 
     def test_set_spare_definition_with_non_existent_usage_status_id(self):
         """Test setting the spares definition with a non-existent usage status ID."""
 
-        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_PUT_DATA_NEW, [None])
+        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW, [None])
         self.call_set_spares_definition_expecting_error(MissingRecordError)
         self.check_set_spares_definition_failed_with_exception(
-            f"No usage status found with ID: {USAGE_STATUS_OUT_DATA_NEW['id']}"
+            # Pydantic Field confuses pylint
+            # pylint: disable=unsubscriptable-object
+            f"No usage status found with ID: {self._spares_definition_put.usage_statuses[0].id}"
         )

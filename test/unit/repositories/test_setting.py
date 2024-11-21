@@ -53,6 +53,86 @@ class SettingRepoDSL:
         self.mock_session = MagicMock()
 
 
+class UpsertDSL(SettingRepoDSL):
+    """Base class for `upsert` tests."""
+
+    _setting_in: BaseSettingInT
+    _out_model_type: Type[BaseSettingOutT]
+    _expected_setting_out: BaseSettingOutT
+    _upserted_setting_in: BaseSettingInT
+    _upserted_setting: BaseSettingOutT
+
+    def mock_upsert(
+        self,
+        new_setting_in_data: dict,
+        new_setting_out_data: dict,
+        in_model_type: Type[BaseSettingInT],
+        out_model_type: Type[BaseSettingOutT],
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `upsert` repo method.
+
+        :param new_setting_in_data: Dictionary containing the new setting data as would be required for a
+                                    `BaseSettingIn` database model.
+        :param new_setting_out_data: Dictionary containing the new setting data as would be required for a
+                                    `BaseSettingOut` database model.
+        :param in_model_type: The type of the setting's input model.
+        :param out_model_type: The type of the setting's output model.
+        """
+
+        self._setting_in = in_model_type(**new_setting_in_data)
+        self._out_model_type = out_model_type
+
+        self._expected_setting_out = out_model_type(**new_setting_out_data)
+
+        if out_model_type is SparesDefinitionOut:
+            self.settings_collection.aggregate.return_value = [new_setting_out_data]
+        else:
+            RepositoryTestHelpers.mock_find_one(self.settings_collection, new_setting_out_data)
+
+    def call_upsert(self) -> None:
+        """Calls the `SettingRepo` `upsert` method with the appropriate data from a prior call to `mock_upsert`."""
+
+        self._upserted_setting = self.setting_repo.upsert(
+            self._setting_in, self._out_model_type, session=self.mock_session
+        )
+
+    def check_upsert_success(self) -> None:
+        """Checks that a prior call to `call_upsert` worked as expected."""
+
+        self.settings_collection.update_one.assert_called_once_with(
+            {"_id": self._setting_in.SETTING_ID},
+            {"$set": self._setting_in.model_dump(by_alias=True)},
+            upsert=True,
+            session=self.mock_session,
+        )
+
+        assert self._upserted_setting == self._expected_setting_out
+
+
+class TestUpdate(UpsertDSL):
+    """Tests for upserting a setting."""
+
+    def test_upsert(self):
+        """Test upserting a setting."""
+
+        self.mock_upsert({"_id": "example_setting"}, {"_id": "example_setting"}, ExampleSettingIn, ExampleSettingOut)
+        self.call_upsert()
+        self.check_upsert_success()
+
+    def test_upsert_spares_definition(self):
+        """Test upserting the spares definition setting."""
+
+        self.mock_upsert(
+            SETTING_SPARES_DEFINITION_IN_DATA_NEW,
+            SETTING_SPARES_DEFINITION_OUT_DATA_NEW,
+            SparesDefinitionIn,
+            SparesDefinitionOut,
+        )
+        self.call_upsert()
+        self.check_upsert_success()
+
+
 class GetDSL(SettingRepoDSL):
     """Base class for `get` tests."""
 
@@ -139,83 +219,3 @@ class TestGet(GetDSL):
         self.mock_get(SparesDefinitionOut, None)
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
-
-
-class UpsertDSL(SettingRepoDSL):
-    """Base class for `upsert` tests."""
-
-    _setting_in: BaseSettingInT
-    _out_model_type: Type[BaseSettingOutT]
-    _expected_setting_out: BaseSettingOutT
-    _upserted_setting_in: BaseSettingInT
-    _upserted_setting: BaseSettingOutT
-
-    def mock_upsert(
-        self,
-        new_setting_in_data: dict,
-        new_setting_out_data: dict,
-        in_model_type: Type[BaseSettingInT],
-        out_model_type: Type[BaseSettingOutT],
-    ) -> None:
-        """
-        Mocks database methods appropriately to test the `upsert` repo method.
-
-        :param new_setting_in_data: Dictionary containing the new setting data as would be required for a
-                                    `BaseSettingIn` database model.
-        :param new_setting_out_data: Dictionary containing the new setting data as would be required for a
-                                    `BaseSettingOut` database model.
-        :param in_model_type: The type of the setting's input model.
-        :param out_model_type: The type of the setting's output model.
-        """
-
-        self._setting_in = in_model_type(**new_setting_in_data)
-        self._out_model_type = out_model_type
-
-        self._expected_setting_out = out_model_type(**new_setting_out_data)
-
-        if out_model_type is SparesDefinitionOut:
-            self.settings_collection.aggregate.return_value = [new_setting_out_data]
-        else:
-            RepositoryTestHelpers.mock_find_one(self.settings_collection, new_setting_out_data)
-
-    def call_upsert(self) -> None:
-        """Calls the `SettingRepo` `upsert` method with the appropriate data from a prior call to `mock_upsert`."""
-
-        self._upserted_setting = self.setting_repo.upsert(
-            self._setting_in, self._out_model_type, session=self.mock_session
-        )
-
-    def check_upsert_success(self) -> None:
-        """Checks that a prior call to `call_upsert` worked as expected."""
-
-        self.settings_collection.update_one.assert_called_once_with(
-            {"_id": self._setting_in.SETTING_ID},
-            {"$set": self._setting_in.model_dump(by_alias=True)},
-            upsert=True,
-            session=self.mock_session,
-        )
-
-        assert self._upserted_setting == self._expected_setting_out
-
-
-class TestUpdate(UpsertDSL):
-    """Tests for upserting a setting."""
-
-    def test_upsert(self):
-        """Test upserting a setting."""
-
-        self.mock_upsert({"_id": "example_setting"}, {"_id": "example_setting"}, ExampleSettingIn, ExampleSettingOut)
-        self.call_upsert()
-        self.check_upsert_success()
-
-    def test_upsert_spares_definition(self):
-        """Test upserting the spares definition setting."""
-
-        self.mock_upsert(
-            SETTING_SPARES_DEFINITION_IN_DATA_NEW,
-            SETTING_SPARES_DEFINITION_OUT_DATA_NEW,
-            SparesDefinitionIn,
-            SparesDefinitionOut,
-        )
-        self.call_upsert()
-        self.check_upsert_success()
