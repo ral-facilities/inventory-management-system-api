@@ -36,6 +36,10 @@ from httpx import Response
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
 
+from inventory_management_system_api.schemas.catalogue_category import (
+    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
+)
+
 
 class CreateDSL:
     """Base class for create tests."""
@@ -987,7 +991,9 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(catalogue_category_id, {"is_leaf": True})
 
         self.check_patch_catalogue_category_failed_with_detail(
-            409, "Catalogue category has child elements and cannot be updated"
+            409,
+            "Catalogue category has child elements, so the following fields cannot be updated: "
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_all_valid_values_when_no_children(self):
@@ -1032,7 +1038,9 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(catalogue_category_id, {"is_leaf": False})
 
         self.check_patch_catalogue_category_failed_with_detail(
-            409, "Catalogue category has child elements and cannot be updated"
+            409,
+            "Catalogue category has child elements, so the following fields cannot be updated: "
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_properties_when_has_child_catalogue_item(self):
@@ -1044,7 +1052,9 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(catalogue_category_id, {"properties": []})
 
         self.check_patch_catalogue_category_failed_with_detail(
-            409, "Catalogue category has child elements and cannot be updated"
+            409,
+            "Catalogue category has child elements, so the following fields cannot be updated: "
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_to_non_leaf_with_properties(self):
@@ -1087,7 +1097,9 @@ class TestUpdate(UpdateDSL):
 
         self.patch_catalogue_category(catalogue_category_id, {"is_leaf": True})
         self.check_patch_catalogue_category_failed_with_detail(
-            409, "Catalogue category has child elements and cannot be updated"
+            409,
+            "Catalogue category has child elements, so the following fields cannot be updated: "
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_properties(self):
