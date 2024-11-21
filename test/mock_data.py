@@ -60,6 +60,10 @@ USAGE_STATUS_IN_DATA_NEW = {
     "code": "new",
 }
 
+USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id="673f07237da637045aaf5747"
+).model_dump()
+
 USAGE_STATUS_GET_DATA_NEW = {
     **USAGE_STATUS_POST_DATA_NEW,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
@@ -787,12 +791,12 @@ SYSTEM_IN_DATA_NO_PARENT_B = {
 
 # --------------------------------- SETTINGS ---------------------------------
 
-# Spares definition
-SETTING_SPARES_DEFINITION_IN_DATA = {"usage_statuses": [{"id": str(ObjectId())}]}
+# Spares definition, New
+SETTING_SPARES_DEFINITION_IN_DATA_NEW = {"usage_statuses": [{"id": USAGE_STATUS_OUT_DATA_NEW["id"]}]}
 
-SETTING_SPARES_DEFINITION_OUT_DATA = {
+SETTING_SPARES_DEFINITION_OUT_DATA_NEW = {
     "_id": SparesDefinitionOut.SETTING_ID,
-    "usage_statuses": [
-        UsageStatusOut(**UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=str(ObjectId())).model_dump()
-    ],
+    "usage_statuses": [USAGE_STATUS_OUT_DATA_NEW],
 }
+
+SETTING_SPARES_DEFINITION_PUT_DATA_NEW = SETTING_SPARES_DEFINITION_IN_DATA_NEW
