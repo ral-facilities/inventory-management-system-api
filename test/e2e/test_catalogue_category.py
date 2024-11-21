@@ -993,7 +993,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(
             409,
             "Catalogue category has child elements, so the following fields cannot be updated: "
-                + ', '.join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS)
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_all_valid_values_when_no_children(self):
@@ -1040,7 +1040,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(
             409,
             "Catalogue category has child elements, so the following fields cannot be updated: "
-                + ', '.join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS)
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_properties_when_has_child_catalogue_item(self):
@@ -1054,7 +1054,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(
             409,
             "Catalogue category has child elements, so the following fields cannot be updated: "
-                + ', '.join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS)
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_to_non_leaf_with_properties(self):
@@ -1099,7 +1099,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_catalogue_category_failed_with_detail(
             409,
             "Catalogue category has child elements, so the following fields cannot be updated: "
-                + ', '.join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS)
+            + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
         )
 
     def test_partial_update_leaf_properties(self):
