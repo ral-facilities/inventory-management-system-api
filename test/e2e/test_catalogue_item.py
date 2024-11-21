@@ -6,6 +6,7 @@ End-to-End tests for the catalogue item router.
 # pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-public-methods
+# pylint: disable=too-many-ancestors
 
 import copy
 from test.e2e.conftest import E2ETestHelpers

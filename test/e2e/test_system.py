@@ -35,7 +35,7 @@ class CreateDSL:
     _post_response_system: Response
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_client):
+    def setup_system_create_dsl(self, test_client):
         """Setup fixtures"""
 
         self.test_client = test_client
@@ -206,7 +206,7 @@ class GetBreadcrumbsDSL(GetDSL):
     _posted_systems_get_data: list[dict]
 
     @pytest.fixture(autouse=True)
-    def setup_breadcrumbs_dsl(self):
+    def setup_system_get_breadcrumbs_dsl(self):
         """Setup fixtures"""
 
         self._posted_systems_get_data = []

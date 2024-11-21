@@ -13,7 +13,6 @@ from bson import ObjectId
 from fastapi import Response
 from fastapi.testclient import TestClient
 
-
 EXISTING_CATALOGUE_CATEGORY_PROPERTY_POST = {"name": "Property A", "type": "number", "unit": "mm", "mandatory": False}
 EXISTING_CATALOGUE_CATEGORY_PROPERTY_EXPECTED = {**EXISTING_CATALOGUE_CATEGORY_PROPERTY_POST, "allowed_values": None}
 EXISTING_PROPERTY_EXPECTED = {"name": "Property A", "unit": "mm", "value": 20}
@@ -141,7 +140,7 @@ class CreateDSL:
     property: dict
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_client):
+    def setup_catalogue_category_property_create_dsl(self, test_client):
         """Setup fixtures"""
 
         self.test_client = test_client

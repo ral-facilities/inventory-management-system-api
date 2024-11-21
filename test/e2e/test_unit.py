@@ -22,23 +22,41 @@ class CreateDSL:
     """Base class for create tests."""
 
     test_client: TestClient
+    unit_value_id_dict: dict[str, str]
 
     _post_response_unit: Response
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_client):
+    def setup_unit_create_dsl(self, test_client):
         """Setup fixtures"""
         self.test_client = test_client
+        self.unit_value_id_dict = {}
+
+    def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
+        """
+        Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
+        non-existent or invalid unit ID.
+
+        :param unit_value: Value of the unit.
+        :param unit_id: ID of the unit.
+        """
+
+        self.unit_value_id_dict[unit_value] = unit_id
 
     def post_unit(self, unit_post_data: dict) -> Optional[str]:
         """
         Posts a unit with the given data, returns the ID of the created unit if successful.
 
+        Also stores any successfully created units for lookup via `unit_value_id_dict` later.
+
         :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
         :return: ID of the created unit (or `None` if not successful).
         """
         self._post_response_unit = self.test_client.post("/v1/units", json=unit_post_data)
-        return self._post_response_unit.json()["id"] if self._post_response_unit.status_code == 201 else None
+        created_id = self._post_response_unit.json()["id"] if self._post_response_unit.status_code == 201 else None
+        if created_id:
+            self.add_unit_value_and_id(unit_post_data["value"], created_id)
+        return created_id
 
     def check_post_unit_success(self, expected_unit_get_data: dict) -> None:
         """

@@ -10,49 +10,14 @@ from test.mock_data import (
     USAGE_STATUS_POST_DATA_NEW,
 )
 
-import pytest
 from bson import ObjectId
-from fastapi.testclient import TestClient
 from httpx import Response
 
 
 class SetSparesDefinitionDSL(UsageStatusCreateDSL):
     """Base class for set spares definition tests."""
 
-    test_client: TestClient
-    usage_status_value_id_dict: dict[str, str]
-
     _put_response_spares_definition: Response
-
-    @pytest.fixture(autouse=True)
-    def setup(self, test_client):
-        """Setup fixtures"""
-
-        self.test_client = test_client
-        self.usage_status_value_id_dict = {}
-
-    def add_usage_status_value_and_id(self, usage_status_value: str, usage_status_id: str) -> None:
-        """
-        Stores a usage status value and ID inside the `usage_status_value_id_dict` for tests that need to have a
-        non-existent or invalid usage status ID.
-
-        :param usage_status_value: Value of the usage status.
-        :param usage_status_id: ID of the usage status.
-        """
-
-        self.usage_status_value_id_dict[usage_status_value] = usage_status_id
-
-    def post_usage_status(self, usage_status_post_data: dict) -> str:
-        """Posts a usage status with the given data and stores the value and ID in a dictionary for lookup later.
-
-        :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
-                                       `UsageStatusPostSchema`.
-        """
-
-        post_response = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
-        usage_status_id = post_response.json()["id"]
-        self.add_usage_status_value_and_id(usage_status_post_data["value"], post_response.json()["id"])
-        return usage_status_id
 
     def put_spares_definition(self, spares_definition_data: dict) -> None:
         """

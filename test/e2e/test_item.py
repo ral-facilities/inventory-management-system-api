@@ -11,6 +11,7 @@ End-to-End tests for the item router.
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_item import CreateDSL as CatalogueItemCreateDSL
 from test.e2e.test_system import CreateDSL as SystemCreateDSL
+from test.e2e.test_usage_status import CreateDSL as UsageStatusCreateDSL
 from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
@@ -47,12 +48,11 @@ from bson import ObjectId
 from httpx import Response
 
 
-class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
+class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
     """Base class for create tests."""
 
     catalogue_item_id: Optional[str]
     system_id: Optional[str]
-    usage_status_value_id_dict: dict[str, str]
 
     _post_response_item: Response
 
@@ -62,7 +62,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
 
         self.catalogue_item_id = None
         self.system_id = None
-        self.usage_status_value_id_dict = {}
 
     def merge_properties_in_expected_item_get_data(self, expected_item_get_data: dict) -> dict:
         """
@@ -139,29 +138,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL):
 
         self.system_id = SystemCreateDSL.post_system(self, system_post_data)
         return self.system_id
-
-    def add_usage_status_value_and_id(self, usage_status_value: str, usage_status_id: str) -> None:
-        """
-        Stores a usage status value and ID inside the `usage_status_value_id_dict` for tests that need to have a
-        non-existent or invalid usage status ID.
-
-        :param usage_status_value: Value of the usage status.
-        :param usage_status_id: ID of the usage status.
-        """
-
-        self.usage_status_value_id_dict[usage_status_value] = usage_status_id
-
-    def post_usage_status(self, usage_status_post_data: dict) -> str:
-        """Posts a usage status with the given data and stores the value and ID in a dictionary for lookup later.
-
-        :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
-                                       `UsageStatusPostSchema`.
-        """
-
-        post_response = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
-        usage_status_id = post_response.json()["id"]
-        self.add_usage_status_value_and_id(usage_status_post_data["value"], post_response.json()["id"])
-        return usage_status_id
 
     def post_item(self, item_data: dict) -> Optional[str]:
         """

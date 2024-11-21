@@ -27,7 +27,7 @@ class CreateDSL:
     _post_response_manufacturer: Response
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_client):
+    def setup_manufacturer_create_dsl(self, test_client):
         """Setup fixtures"""
         self.test_client = test_client
 
