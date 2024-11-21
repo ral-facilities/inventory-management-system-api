@@ -184,7 +184,7 @@ class UpdateDSL(ListDSL):
 
     def patch_manufacturer(self, manufacturer_id: str, manufacturer_patch_data: dict) -> None:
         """
-        Updates a manufacturer with the given ID.
+        Patches a manufacturer with the given ID.
 
         :param manufacturer_id: ID of the manufacturer to be updated.
         :param manufacturer_patch_data: Dictionary containing the manufacturer patch data as would be required for a

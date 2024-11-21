@@ -2,7 +2,7 @@
 Unit tests for the `SettingRepo` repository.
 """
 
-from test.mock_data import SETTING_SPARES_DEFINITION_IN_DATA_NEW, SETTING_SPARES_DEFINITION_OUT_DATA_NEW
+from test.mock_data import SETTING_SPARES_DEFINITION_IN_DATA_NEW_USED, SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import ClassVar, Optional, Type
 from unittest.mock import MagicMock, Mock
@@ -124,8 +124,8 @@ class TestUpdate(UpsertDSL):
         """Test upserting the spares definition setting."""
 
         self.mock_upsert(
-            SETTING_SPARES_DEFINITION_IN_DATA_NEW,
-            SETTING_SPARES_DEFINITION_OUT_DATA_NEW,
+            SETTING_SPARES_DEFINITION_IN_DATA_NEW_USED,
+            SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
             SparesDefinitionIn,
             SparesDefinitionOut,
         )
@@ -209,7 +209,7 @@ class TestGet(GetDSL):
     def test_get_spares_definition(self):
         """Test getting the spares definition setting."""
 
-        self.mock_get(SparesDefinitionOut, SETTING_SPARES_DEFINITION_OUT_DATA_NEW)
+        self.mock_get(SparesDefinitionOut, SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED)
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
 

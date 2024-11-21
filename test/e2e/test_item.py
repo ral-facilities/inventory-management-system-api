@@ -788,7 +788,7 @@ class UpdateDSL(ListDSL):
 
     def patch_item(self, item_id: str, item_update_data: dict) -> None:
         """
-        Updates an item with the given ID.
+        Patches an item with the given ID.
 
         :param item_id: ID of the item to patch.
         :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`

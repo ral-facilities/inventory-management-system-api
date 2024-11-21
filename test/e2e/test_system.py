@@ -424,7 +424,7 @@ class UpdateDSL(ListDSL):
 
     def patch_system(self, system_id: str, system_patch_data: dict) -> None:
         """
-        Updates a system with the given ID.
+        Patches a system with the given ID.
 
         :param system_id: ID of the system to patch.
         :param system_patch_data: Dictionary containing the patch data as would be required for a `SystemPatchSchema`.

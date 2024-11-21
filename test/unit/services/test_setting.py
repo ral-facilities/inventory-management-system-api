@@ -3,7 +3,11 @@ Unit tests for the `SettingService` service.
 """
 
 from copy import deepcopy
-from test.mock_data import SETTING_SPARES_DEFINITION_DATA_NEW, USAGE_STATUS_OUT_DATA_NEW
+from test.mock_data import (
+    SETTING_SPARES_DEFINITION_DATA_NEW_USED,
+    USAGE_STATUS_OUT_DATA_NEW,
+    USAGE_STATUS_OUT_DATA_USED,
+)
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call
@@ -133,17 +137,19 @@ class TestSetSpareDefinition(SetSparesDefinitionDSL):
     def test_set_spare_definition(self):
         """Test setting the spares definition."""
 
-        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW, [USAGE_STATUS_OUT_DATA_NEW])
+        self.mock_set_spares_definition(
+            SETTING_SPARES_DEFINITION_DATA_NEW_USED, [USAGE_STATUS_OUT_DATA_NEW, USAGE_STATUS_OUT_DATA_USED]
+        )
         self.call_set_spares_definition()
         self.check_set_spares_definition_success()
 
     def test_set_spare_definition_with_non_existent_usage_status_id(self):
         """Test setting the spares definition with a non-existent usage status ID."""
 
-        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW, [None])
+        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW_USED, [USAGE_STATUS_OUT_DATA_NEW, None])
         self.call_set_spares_definition_expecting_error(MissingRecordError)
         self.check_set_spares_definition_failed_with_exception(
             # Pydantic Field confuses pylint
             # pylint: disable=unsubscriptable-object
-            f"No usage status found with ID: {self._spares_definition_put.usage_statuses[0].id}"
+            f"No usage status found with ID: {self._spares_definition_put.usage_statuses[1].id}"
         )

@@ -61,7 +61,7 @@ USAGE_STATUS_IN_DATA_NEW = {
 }
 
 USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id="673f07237da637045aaf5747"
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=str(ObjectId())
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_NEW = {
@@ -83,6 +83,10 @@ USAGE_STATUS_IN_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
     "code": "used",
 }
+
+USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=str(ObjectId())
+).model_dump()
 
 USAGE_STATUS_GET_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
@@ -794,11 +798,22 @@ SYSTEM_IN_DATA_NO_PARENT_B = {
 # Spares definition, New
 SETTING_SPARES_DEFINITION_DATA_NEW = {"usage_statuses": [{"value": USAGE_STATUS_POST_DATA_NEW["value"]}]}
 
-SETTING_SPARES_DEFINITION_IN_DATA_NEW = {"usage_statuses": [{"id": USAGE_STATUS_OUT_DATA_NEW["id"]}]}
+SETTING_SPARES_DEFINITION_GET_DATA_NEW = {"usage_statuses": [USAGE_STATUS_GET_DATA_NEW]}
 
-SETTING_SPARES_DEFINITION_OUT_DATA_NEW = {
-    "_id": SparesDefinitionOut.SETTING_ID,
-    "usage_statuses": [USAGE_STATUS_OUT_DATA_NEW],
+# Spares definition, New or Used
+SETTING_SPARES_DEFINITION_DATA_NEW_USED = {
+    "usage_statuses": [{"value": USAGE_STATUS_POST_DATA_NEW["value"]}, {"value": USAGE_STATUS_POST_DATA_USED["value"]}]
 }
 
-SETTING_SPARES_DEFINITION_GET_DATA_NEW = {"usage_statuses": [USAGE_STATUS_GET_DATA_NEW]}
+SETTING_SPARES_DEFINITION_IN_DATA_NEW_USED = {
+    "usage_statuses": [{"id": USAGE_STATUS_OUT_DATA_NEW["id"]}, {"id": USAGE_STATUS_OUT_DATA_USED["id"]}]
+}
+
+SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "usage_statuses": [USAGE_STATUS_OUT_DATA_NEW, USAGE_STATUS_OUT_DATA_USED],
+}
+
+SETTING_SPARES_DEFINITION_GET_DATA_NEW_USED = {
+    "usage_statuses": [USAGE_STATUS_GET_DATA_NEW, USAGE_STATUS_GET_DATA_USED]
+}

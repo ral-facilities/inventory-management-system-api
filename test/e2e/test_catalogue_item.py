@@ -775,7 +775,7 @@ class UpdateDSL(ListDSL):
 
     def patch_catalogue_item(self, catalogue_item_id: str, catalogue_item_update_data: dict) -> None:
         """
-        Updates a catalogue item with the given ID.
+        Patches a catalogue item with the given ID.
 
         :param catalogue_item_id: ID of the catalogue item to patch.
         :param catalogue_item_update_data: Dictionary containing the basic patch data as would be required for a
