@@ -37,3 +37,16 @@ def set_spares_definition(
         message = "A specified usage status does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+
+@router.get(
+    path="/spares_definition", summary="Get the definition of a spare", response_description="Spares definition"
+)
+def get_spares_definition(setting_service: SettingServiceDep) -> SparesDefinitionSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting spares definition")
+
+    spares_definition = setting_service.get_spares_definition()
+    if not spares_definition:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Spares definition not found.")
+    return spares_definition

@@ -52,3 +52,12 @@ class SettingService:
         return self._setting_repository.upsert(
             SparesDefinitionIn(**spares_definition.model_dump()), SparesDefinitionOut
         )
+
+    def get_spares_definition(self) -> SparesDefinitionOut:
+        """
+        Retrieves the spares definition.
+
+        :return: Retrieved spares definition or `None` if not found.
+        """
+
+        return self._setting_repository.get(SparesDefinitionOut)
