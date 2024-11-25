@@ -159,7 +159,9 @@ class CreateDSL(CatalogueItemServiceDSL):
             (
                 CatalogueItemOut(
                     **{
-                        **CatalogueItemIn(**obsolete_replacement_catalogue_item_data, **ids_to_insert).model_dump(),
+                        **CatalogueItemIn(
+                            **obsolete_replacement_catalogue_item_data, **ids_to_insert, number_of_spares=None
+                        ).model_dump(),
                         "_id": catalogue_item_data["obsolete_replacement_catalogue_item_id"],
                     },
                 )
@@ -188,7 +190,8 @@ class CreateDSL(CatalogueItemServiceDSL):
                 **catalogue_item_data,
                 **ids_to_insert,
                 "properties": expected_properties_in,
-            }
+            },
+            number_of_spares=None,
         )
         self._expected_catalogue_item_out = CatalogueItemOut(
             **self._expected_catalogue_item_in.model_dump(), id=ObjectId()
@@ -516,6 +519,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
                 **CatalogueItemIn(
                     **{**stored_catalogue_item_data, "properties": expected_stored_properties_in},
                     **stored_ids_to_insert,
+                    number_of_spares=None,
                 ).model_dump(),
                 id=CustomObjectId(catalogue_item_id),
             )
@@ -617,6 +621,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
                                 **new_obsolete_replacement_catalogue_item_data,
                                 catalogue_category_id=str(ObjectId()),
                                 manufacturer_id=str(ObjectId()),
+                                number_of_spares=None,
                             ).model_dump(),
                             "_id": catalogue_item_update_data["obsolete_replacement_catalogue_item_id"],
                         },
@@ -670,7 +675,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
             **catalogue_item_update_data,
         }
         self._expected_catalogue_item_in = CatalogueItemIn(
-            **{**merged_catalogue_item_data, "properties": expected_properties_in}
+            **{**merged_catalogue_item_data, "properties": expected_properties_in, "number_of_spares": None}
         )
 
     def call_update(self, catalogue_item_id: str) -> None:

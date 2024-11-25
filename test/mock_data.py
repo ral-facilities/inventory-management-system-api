@@ -457,6 +457,7 @@ CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     "catalogue_category_id": str(ObjectId()),
     "manufacturer_id": str(ObjectId()),
+    "number_of_spares": None,
 }
 
 CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
@@ -474,6 +475,7 @@ CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [],
+    "number_of_spares": None,
 }
 
 # Not obsolete, No properties
@@ -496,6 +498,7 @@ CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     "catalogue_category_id": str(ObjectId()),
     "manufacturer_id": str(ObjectId()),
+    "number_of_spares": None,
 }
 
 CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
@@ -505,6 +508,7 @@ CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
     "properties": [],
+    "number_of_spares": None,
 }
 
 # Obsolete, No properties
@@ -520,6 +524,7 @@ CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
+    "number_of_spares": None,
 }
 
 # All properties
@@ -542,6 +547,7 @@ CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
         PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
         PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     ],
+    "number_of_spares": None,
 }
 
 # Only mandatory properties
@@ -560,6 +566,7 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
         PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
         PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     ],
+    "number_of_spares": None,
 }
 
 # ------------------------------------- ITEMS -------------------------------------

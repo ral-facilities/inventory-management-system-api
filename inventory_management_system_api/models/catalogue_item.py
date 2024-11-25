@@ -60,7 +60,7 @@ class CatalogueItemBase(BaseModel):
     properties: List[PropertyIn] = []
 
     # Computed
-    number_of_spares: Optional[int] = None
+    number_of_spares: Optional[int]
 
     # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")

@@ -170,7 +170,8 @@ class CreateDSL(ItemServiceDSL):
                     "catalogue_category_id": catalogue_category_id,
                     "manufacturer_id": str(ObjectId()),
                     "properties": catalogue_item_expected_properties_in,
-                }
+                },
+                number_of_spares=None,
             )
             if catalogue_item_data
             else None
@@ -525,6 +526,7 @@ class UpdateDSL(ItemServiceDSL):
                         "manufacturer_id": str(ObjectId()),
                         "properties": expected_stored_catalogue_item_properties_in,
                     },
+                    number_of_spares=None,
                 ).model_dump(),
                 id=str(ObjectId()),
             )
