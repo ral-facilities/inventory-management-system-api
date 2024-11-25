@@ -10,26 +10,26 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from inventory_management_system_api.models.setting import (
-    BaseSettingIn,
-    BaseSettingOut,
+    SettingInBase,
+    SettingOutBase,
     SparesDefinitionIn,
     SparesDefinitionOut,
 )
 from inventory_management_system_api.repositories.setting import (
     SPARES_DEFINITION_GET_AGGREGATION_PIPELINE,
-    BaseSettingInT,
-    BaseSettingOutT,
+    SettingInBaseT,
+    SettingOutBaseT,
     SettingRepo,
 )
 
 
-class ExampleSettingIn(BaseSettingIn):
+class ExampleSettingIn(SettingInBase):
     """Test setting."""
 
     SETTING_ID: ClassVar[str] = "test_setting_id"
 
 
-class ExampleSettingOut(ExampleSettingIn, BaseSettingOut):
+class ExampleSettingOut(ExampleSettingIn, SettingOutBase):
     """Test setting."""
 
 
@@ -56,26 +56,26 @@ class SettingRepoDSL:
 class UpsertDSL(SettingRepoDSL):
     """Base class for `upsert` tests."""
 
-    _setting_in: BaseSettingInT
-    _out_model_type: Type[BaseSettingOutT]
-    _expected_setting_out: BaseSettingOutT
-    _upserted_setting_in: BaseSettingInT
-    _upserted_setting: BaseSettingOutT
+    _setting_in: SettingInBaseT
+    _out_model_type: Type[SettingOutBaseT]
+    _expected_setting_out: SettingOutBaseT
+    _upserted_setting_in: SettingInBaseT
+    _upserted_setting: SettingOutBaseT
 
     def mock_upsert(
         self,
         new_setting_in_data: dict,
         new_setting_out_data: dict,
-        in_model_type: Type[BaseSettingInT],
-        out_model_type: Type[BaseSettingOutT],
+        in_model_type: Type[SettingInBaseT],
+        out_model_type: Type[SettingOutBaseT],
     ) -> None:
         """
         Mocks database methods appropriately to test the `upsert` repo method.
 
         :param new_setting_in_data: Dictionary containing the new setting data as would be required for a
-                                    `BaseSettingIn` database model.
+                                    `SettingInBase` database model.
         :param new_setting_out_data: Dictionary containing the new setting data as would be required for a
-                                    `BaseSettingOut` database model.
+                                    `SettingOutBase` database model.
         :param in_model_type: The type of the setting's input model.
         :param out_model_type: The type of the setting's output model.
         """
@@ -136,13 +136,13 @@ class TestUpdate(UpsertDSL):
 class GetDSL(SettingRepoDSL):
     """Base class for `get` tests."""
 
-    _obtained_out_model_type: Type[BaseSettingOutT]
-    _expected_setting_out: BaseSettingOutT
-    _obtained_setting: Optional[BaseSettingOutT]
+    _obtained_out_model_type: Type[SettingOutBaseT]
+    _expected_setting_out: SettingOutBaseT
+    _obtained_setting: Optional[SettingOutBaseT]
 
     def mock_get(
         self,
-        out_model_type: Type[BaseSettingOutT],
+        out_model_type: Type[SettingOutBaseT],
         setting_out_data: Optional[dict],
     ) -> None:
         """
@@ -166,7 +166,7 @@ class GetDSL(SettingRepoDSL):
                 ),
             )
 
-    def call_get(self, out_model_type: Type[BaseSettingOutT]) -> None:
+    def call_get(self, out_model_type: Type[SettingOutBaseT]) -> None:
         """
         Calls the `SettingRepo` `get` method with the appropriate data from a prior call to `mock_get`.
 

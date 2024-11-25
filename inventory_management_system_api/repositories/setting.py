@@ -9,13 +9,13 @@ from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.models.setting import BaseSettingIn, BaseSettingOut, SparesDefinitionOut
+from inventory_management_system_api.models.setting import SettingInBase, SettingOutBase, SparesDefinitionOut
 
 logger = logging.getLogger()
 
-# Template types for models inheriting from BaseSetting so this repo can be used generically for multiple settings
-BaseSettingInT = TypeVar("BaseSettingInT", bound=BaseSettingIn)
-BaseSettingOutT = TypeVar("BaseSettingOutT", bound=BaseSettingOut)
+# Template types for models inheriting from SettingIn/OutBase so this repo can be used generically for multiple settings
+SettingInBaseT = TypeVar("SettingInBaseT", bound=SettingInBase)
+SettingOutBaseT = TypeVar("SettingOutBaseT", bound=SettingOutBase)
 
 
 # Aggregation pipeline for getting the spares definition complete with usage status data
@@ -65,8 +65,8 @@ class SettingRepo:
         self._settings_collection: Collection = self._database.settings
 
     def upsert(
-        self, setting: BaseSettingInT, out_model_type: Type[BaseSettingOutT], session: ClientSession = None
-    ) -> BaseSettingOutT:
+        self, setting: SettingInBaseT, out_model_type: Type[SettingOutBaseT], session: ClientSession = None
+    ) -> SettingOutBaseT:
         """
         Assign a setting a MongoDB database. Will either update or insert the setting depending on whether it
         already exists.
@@ -84,7 +84,7 @@ class SettingRepo:
 
         return self.get(out_model_type=out_model_type, session=session)
 
-    def get(self, out_model_type: Type[BaseSettingOutT], session: ClientSession = None) -> Optional[BaseSettingOutT]:
+    def get(self, out_model_type: Type[SettingOutBaseT], session: ClientSession = None) -> Optional[SettingOutBaseT]:
         """
         Retrieve a setting from a MongoDB database.
 
