@@ -11,7 +11,7 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 
 
-class BaseSettingIn(BaseModel, ABC):
+class SettingInBase(BaseModel, ABC):
     """
     Base input database model for a setting.
     """
@@ -23,7 +23,7 @@ class BaseSettingIn(BaseModel, ABC):
         """ID of the setting. Ensures this value can be obtained from the class type itself as a static variable."""
 
 
-class BaseSettingOut(BaseSettingIn):
+class SettingOutBase(SettingInBase):
     """
     Base output database model for a setting.
     """
@@ -47,7 +47,7 @@ class SparesDefinitionUsageStatusOut(BaseModel):
     id: StringObjectIdField
 
 
-class SparesDefinitionIn(BaseSettingIn):
+class SparesDefinitionIn(SettingInBase):
     """
     Input database model for a spares definition.
     """
@@ -57,7 +57,7 @@ class SparesDefinitionIn(BaseSettingIn):
     usage_statuses: list[SparesDefinitionUsageStatusIn]
 
 
-class SparesDefinitionOut(SparesDefinitionIn, BaseSettingOut):
+class SparesDefinitionOut(SparesDefinitionIn, SettingOutBase):
     """
     Output database model for a spares definition.
     """
