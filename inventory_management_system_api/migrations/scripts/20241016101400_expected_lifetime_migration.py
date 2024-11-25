@@ -1,8 +1,9 @@
 """
-Module providing an example migration that does nothing
+Module providing a migration for the optional expected_lifetime_days field under catalogue items
 """
 
 # Expect some duplicate code inside migrations as models can be duplicated
+# pylint: disable=invalid-name
 # pylint: disable=duplicate-code
 
 import logging
@@ -42,9 +43,6 @@ class NewCatalogueItemBase(BaseModel):
     obsolete_replacement_catalogue_item_id: Optional[CustomObjectIdField] = None
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
-
-    # Computed
-    number_of_spares: Optional[int] = None
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -90,7 +88,6 @@ class OldCatalogueItemBase(BaseModel):
     cost_to_rework_gbp: Optional[float] = None
     days_to_replace: float
     days_to_rework: Optional[float] = None
-    expected_lifetime_days: Optional[float] = None
     drawing_number: Optional[str] = None
     drawing_link: Optional[HttpUrl] = None
     item_model_number: Optional[str] = None
@@ -140,19 +137,19 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
 
 
 class Migration(BaseMigration):
-    """Migration for Catalogue Items' Number of Spares Field"""
+    """Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
 
-    description = "Migration for Catalogue Items' Number of Spares Field"
+    description = "Migration for Catalogue Items' Optional Expected Lifetime Days Field"
 
     def __init__(self, database: Database):
 
         self._catalogue_items_collection: Collection = database.catalogue_items
 
     def forward(self, session: ClientSession):
-        """Forward Migration for Catalogue Items' Number of Spares Field"""
+        """Forward Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
         catalogue_items = self._catalogue_items_collection.find({}, session=session)
 
-        logger.info("number_of_spares forward migration")
+        logger.info("expected_lifetime_days forward migration")
         for catalogue_item in catalogue_items:
             old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
             new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
@@ -165,8 +162,10 @@ class Migration(BaseMigration):
             self._catalogue_items_collection.replace_one({"_id": catalogue_item["_id"]}, update_data, session=session)
 
     def backward(self, session: ClientSession):
-        """Backward Migration for Catalogue Items' Number of Spares Field"""
+        """Backward Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
 
-        logger.info("number_of_spares backward migration")
-        result = self._catalogue_items_collection.update_many({}, {"$unset": {"number_of_spares": ""}}, session=session)
+        logger.info("expected_lifetime_days backward migration")
+        result = self._catalogue_items_collection.update_many(
+            {}, {"$unset": {"expected_lifetime_days": ""}}, session=session
+        )
         return result
