@@ -36,8 +36,9 @@ def check_user_sure(message: Optional[str] = None, skip: bool = False) -> bool:
     if skip:
         return True
 
-    print(message)
-    print()
+    if message:
+        print(message)
+        print()
     answer = input("Are you sure you wish to proceed? ")
     return answer in ("y", "yes")
 
@@ -79,27 +80,23 @@ class CommandCreate(SubCommand):
         with open(f"inventory_management_system_api/migrations/scripts/{file_name}", "w", encoding="utf-8") as file:
             file.write(
                 f'''"""
-Module providing a migration that {args.description}
+Module providing a migration that {args.description}.
 """
 
 # Expect some duplicate code inside migrations as models can be duplicated
 # pylint: disable=invalid-name
 # pylint: disable=duplicate-code
 
-import logging
-
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
 from inventory_management_system_api.migrations.base import BaseMigration
 
-logger = logging.getLogger()
-
 
 class Migration(BaseMigration):
     """Migration that {args.description}"""
 
-    description = "{args.description}"
+    description = "{args.description.capitalize()}"
 
     def __init__(self, database: Database):
         pass

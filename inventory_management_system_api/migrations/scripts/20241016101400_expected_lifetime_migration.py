@@ -1,12 +1,11 @@
 """
-Module providing a migration for the optional expected_lifetime_days field under catalogue items
+Module providing a migration that adds expected_lifetime_days to catalogue items.
 """
 
 # Expect some duplicate code inside migrations as models can be duplicated
 # pylint: disable=invalid-name
 # pylint: disable=duplicate-code
 
-import logging
 from typing import Any, Collection, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
@@ -17,8 +16,6 @@ from inventory_management_system_api.migrations.base import BaseMigration
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
-
-logger = logging.getLogger()
 
 
 class NewCatalogueItemBase(BaseModel):
@@ -137,19 +134,18 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
 
 
 class Migration(BaseMigration):
-    """Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
+    """Migration that adds expected_lifetime_days to catalogue items."""
 
-    description = "Migration for Catalogue Items' Optional Expected Lifetime Days Field"
+    description = "Adds expected_lifetime_days to catalogue items"
 
     def __init__(self, database: Database):
 
         self._catalogue_items_collection: Collection = database.catalogue_items
 
     def forward(self, session: ClientSession):
-        """Forward Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
+        """Applies database changes."""
         catalogue_items = self._catalogue_items_collection.find({}, session=session)
 
-        logger.info("expected_lifetime_days forward migration")
         for catalogue_item in catalogue_items:
             old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
             new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
@@ -162,9 +158,8 @@ class Migration(BaseMigration):
             self._catalogue_items_collection.replace_one({"_id": catalogue_item["_id"]}, update_data, session=session)
 
     def backward(self, session: ClientSession):
-        """Backward Migration for Catalogue Items' Optional Expected Lifetime Days Field"""
+        """Reverses database changes."""
 
-        logger.info("expected_lifetime_days backward migration")
         result = self._catalogue_items_collection.update_many(
             {}, {"$unset": {"expected_lifetime_days": ""}}, session=session
         )
