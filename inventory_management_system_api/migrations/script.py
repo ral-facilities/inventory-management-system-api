@@ -5,6 +5,7 @@ import datetime
 import logging
 import sys
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.migrations.core import (
@@ -23,15 +24,28 @@ logger = logging.getLogger()
 database = get_database()
 
 
-def check_user_sure() -> bool:
+def check_user_sure(message: Optional[str] = None, skip: bool = False) -> bool:
     """
     Asks user if they are sure action should proceed and exits if not.
 
+    :param message: Message to accompany the check.
+    :param skip: Whether to skip printing out the message and performing the check.
     :return: Whether user is sure.
     """
 
+    if skip:
+        return True
+
+    print(message)
+    print()
     answer = input("Are you sure you wish to proceed? ")
     return answer in ("y", "yes")
+
+
+def add_skip_args(parser: argparse.ArgumentParser):
+    """Adds common arguments for skipping user prompts."""
+
+    parser.add_argument("--yes", "-y", help="Specify to skip all are you sure prompts", action="store_true")
 
 
 class SubCommand(ABC):
@@ -198,6 +212,8 @@ class CommandSet(SubCommand):
     def setup(self, parser: argparse.ArgumentParser):
         parser.add_argument("name", help="Name of the last migration the database currently matches.")
 
+        add_skip_args(parser)
+
     def run(self, args: argparse.Namespace):
         available_migrations = find_available_migrations()
 
@@ -206,10 +222,10 @@ class CommandSet(SubCommand):
         except ValueError:
             sys.exit(f"Migration '{args.name}' was not found in the available list of migrations")
 
-        print(f"This operation will forcibly set the latest migration to '{available_migrations[end_index]}'")
-        print()
-
-        if check_user_sure():
+        if check_user_sure(
+            message=f"This operation will forcibly set the latest migration to '{available_migrations[end_index]}'",
+            skip=args.yes,
+        ):
             set_previous_migration(available_migrations[end_index])
 
 

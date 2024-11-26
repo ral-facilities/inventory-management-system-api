@@ -329,30 +329,64 @@ a microservice that provides user authentication against an LDAP server and retu
 
 ### Migrations
 
-Migration scripts are located inside the `inventory_management_system/migrations/scripts`. See the
-`example_migration.py` for an example on how to implement one. Any new migrations added should be automatically picked
-up and shown via
+#### Adding a migration
+
+To add a migration first use
 
 ```bash
-ims-migrate list
+ims-migrate create <migration_name> <migration_description>
 ```
 
-or
+to create a new one inside the `inventory_management_system/migrations/scripts` directory. Then add the code necessary
+to perform the migration. See `_example_migration.py` for an example on how to implement one.
+
+#### Performing forward migrations
+
+Before performing a you can first check the current status of the database and any outstanding migrations using
+
+```bash
+ims-migrate status
+```
+
+or in Docker
 
 ```bash
 docker exec -it inventory_management_system_api_container ims-migrate list
 ```
 
-if running in Docker.
-
-To perform a migration you should use
+Then to perform all outstanding migrations up to the latest one use
 
 ```bash
-ims-migrate forward <migration_name>
+ims-migrate forward latest
 ```
 
-To revert the same migration use
+You may also specify a specific migration name to apply instead which will apply all migrations between the current
+applied one and the specified one. A prompt will be shown to ensure the migrations being applied are sensible.
+
+#### Performing backward migrations
+
+To revert the database by performing backwards migrations you can first use
+
+```bash
+ims-migrate status
+```
+
+to check the current status of the database and available migrations and then use
 
 ```bash
 ims-migrate backward <migration_name>
 ```
+
+to perform all backward migrations to get from the current database state back to the state prior to the chosen
+migration name (i.e. it also performs the backward migration for the given migration name).
+
+#### Forcing migration state
+
+If for some reason the migration state is different to what you expect it may be forced via
+
+```bash
+ims-migrate set <migration_name>
+```
+
+This is already set to `latest` automatically when using the `dev_cli` to regenerate mock data so that the dump retains
+the expected state.

@@ -65,7 +65,7 @@ def set_previous_migration(name: Optional[str]) -> None:
     """
 
     migrations_collection = database.database_migrations
-    migrations_collection.update_one({"_id": "last_forward_migration"}, {"$set": {"name": name}}, upsert=True)
+    migrations_collection.update_one({"_id": "previous_migration"}, {"$set": {"name": name}}, upsert=True)
 
 
 def find_migration_index(name: str, migration_names: list[str]) -> int:
