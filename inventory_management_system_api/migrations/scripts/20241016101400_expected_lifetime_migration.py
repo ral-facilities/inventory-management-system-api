@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, fi
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
-from inventory_management_system_api.migrations.migration import BaseMigration
+from inventory_management_system_api.migrations.base import BaseMigration
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
