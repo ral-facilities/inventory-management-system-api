@@ -12,11 +12,11 @@ from inventory_management_system_api.migrations.core import (
     execute_forward_migrations,
     find_available_migrations,
     find_migration_index,
-    get_last_migration_applied,
+    get_previous_migration,
     load_backward_migrations_to,
     load_forward_migrations_to,
     load_migration,
-    set_last_migration_applied,
+    set_previous_migration,
 )
 
 logger = logging.getLogger()
@@ -127,18 +127,18 @@ class CommandStatus(SubCommand):
 
     def run(self, args: argparse.Namespace):
         available_migrations = find_available_migrations()
-        last_migration_applied = get_last_migration_applied()
+        previous_migration = get_previous_migration()
 
-        print(f"Last migration applied: {last_migration_applied}")
+        print(f"Previous migration: {previous_migration}")
         print()
 
         for migration_name in available_migrations:
             migration = load_migration(migration_name)
 
-            if last_migration_applied == migration_name:
-                print(f"> {migration_name} - {migration.description}")
-            else:
-                print(f"  {migration_name} - {migration.description}")
+            print(f"  {migration_name} - {migration.description}")
+
+            if previous_migration == migration_name:
+                print("> Database")
 
 
 class CommandForward(SubCommand):
@@ -177,15 +177,15 @@ class CommandBackward(SubCommand):
         parser.add_argument("name", help="Name migration to migrate backwards to (inclusive).")
 
     def run(self, args: argparse.Namespace):
-        migrations = load_backward_migrations_to(args.name)
+        migrations, final_previous_migration_name = load_backward_migrations_to(args.name)
 
-        print("This operation will apply the following migrations:")
+        print("This operation will revert the following migrations:")
         for name in migrations.keys():
             print(name)
         print()
 
         if check_user_sure():
-            execute_backward_migrations(migrations)
+            execute_backward_migrations(migrations, final_previous_migration_name)
             logger.info("Done!")
 
 
@@ -210,7 +210,7 @@ class CommandSet(SubCommand):
         print()
 
         if check_user_sure():
-            set_last_migration_applied(available_migrations[end_index])
+            set_previous_migration(available_migrations[end_index])
 
 
 # List of subcommands

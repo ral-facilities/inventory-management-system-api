@@ -40,31 +40,32 @@ def find_available_migrations() -> list[str]:
     return sorted(available_migrations)
 
 
-def get_last_migration_applied() -> Optional[str]:
+def get_previous_migration() -> Optional[str]:
     """
-    Obtain the name of the last migration applied to the database.
+    Obtain the name of the last forward migration that gets the database to its current state.
 
-    :return: Either the name of the last migration applied to the database or `None` if no migration has ever been
-             applied.
+    :return: Either the name of the last forward migration applied to the database or `None` if no migration has ever
+             been applied.
     """
 
     migrations_collection = database.database_migrations
-    last_migration_document = migrations_collection.find_one({"_id": "last_migration"})
+    previous_migration_document = migrations_collection.find_one({"_id": "previous_migration"})
 
-    if not last_migration_document:
+    if not previous_migration_document:
         return None
-    return last_migration_document["name"]
+    return previous_migration_document["name"]
 
 
-def set_last_migration_applied(name: str) -> None:
+def set_previous_migration(name: Optional[str]) -> None:
     """
-    Assigns the name of the of the last migration applied to the database.
+    Assigns the name of the of the previous migration that got the database to its current state inside the database.
 
-    :param name: The name of the last migration applied to the database.
+    :param name: The name of the previous migration applied to the database or `None` if being set back no migrations
+                 having been applied.
     """
 
     migrations_collection = database.database_migrations
-    migrations_collection.update_one({"_id": "last_migration"}, {"$set": {"name": name}}, upsert=True)
+    migrations_collection.update_one({"_id": "last_forward_migration"}, {"$set": {"name": name}}, upsert=True)
 
 
 def find_migration_index(name: str, migration_names: list[str]) -> int:
@@ -86,7 +87,7 @@ def find_migration_index(name: str, migration_names: list[str]) -> int:
 def load_forward_migrations_to(name: str) -> dict[str, BaseMigration]:
     """
     Returns a list of forward migrations that need to be applied to get from the last migration applied to the database
-    to the given one.
+    to the given one inclusive.
 
     :param name: Name of the last forward migration to apply. 'latest' will just use the latest one.
     :returns: List of dicts containing the names and instances of the migrations that need to be applied in the order
@@ -97,14 +98,14 @@ def load_forward_migrations_to(name: str) -> dict[str, BaseMigration]:
 
     start_index = 0
 
-    last_migration = get_last_migration_applied()
-    if last_migration:
+    previous_migration = get_previous_migration()
+    if previous_migration:
         try:
-            start_index = find_migration_index(last_migration, available_migrations)
+            start_index = find_migration_index(previous_migration, available_migrations) + 1
         except ValueError:
             logger.warning(
-                "Last migration applied '%s' not found in current migrations. Have you skipped a version?",
-                last_migration,
+                "Previous migration applied '%s' not found in current migrations. Have you skipped a version?",
+                previous_migration,
             )
 
     try:
@@ -112,55 +113,65 @@ def load_forward_migrations_to(name: str) -> dict[str, BaseMigration]:
     except ValueError:
         sys.exit(f"Migration '{name}' was not found in the available list of migrations")
 
-    if start_index >= end_index:
+    if start_index > end_index:
         sys.exit(
-            f"Migration '{name}' is either the same or before the last migration applied '{last_migration}. "
-            "So there is nothing to migrate.'"
+            f"Migration '{name}' is before the previous migration applied '{previous_migration}'. So there is nothing "
+            "to migrate."
         )
 
     # Dicts are insertion ordered so will match the list order
     return {name: load_migration(name) for name in available_migrations[start_index : end_index + 1]}
 
 
-def load_backward_migrations_to(name: str) -> dict[str, BaseMigration]:
+def load_backward_migrations_to(name: str) -> tuple[dict[str, BaseMigration], Optional[str]]:
     """
-    Returns a list of forward migrations that need to be applied to get from the last migration applied to the database
-    to the given one.
+    Returns a list of backward migrations that need to be applied to get from the last migration applied to the database
+    to the given one inclusive.
 
     :param name: Name of the last backward migration to apply.
-    :returns: List of dicts containing the names and instances of the migrations that need to be applied in the order
-              they should be applied.
+    :returns: Tuple containing:
+              - List of dicts containing the names and instances of the migrations that need to be applied in the order
+                they should be applied.
+              - Either the name of the last migration before the one given or `None` if there aren't any.
     """
 
     available_migrations = find_available_migrations()
 
     start_index = 0
 
-    last_migration = get_last_migration_applied()
-    if last_migration:
+    previous_migration = get_previous_migration()
+    if previous_migration is not None:
         try:
-            start_index = find_migration_index(last_migration, available_migrations)
+            start_index = find_migration_index(previous_migration, available_migrations)
         except ValueError:
             sys.exit(
-                f"Last migration '{last_migration}' applied not found in current migrations. "
+                f"Previous migration applied '{previous_migration}' not found in current migrations. "
                 "Have you skipped a version?"
             )
     else:
         sys.exit("No migrations to revert.")
 
     try:
-        end_index = find_migration_index(name, available_migrations)
+        end_index = find_migration_index(name, available_migrations) - 1
     except ValueError:
         sys.exit(f"Migration '{name}' was not found in the available list of migrations")
 
     if start_index <= end_index:
         sys.exit(
-            f"Migration '{name}' is either the same or after the last migration applied '{last_migration}. "
+            f"Migration '{name}' is already reverted or after the previous migration applied '{previous_migration}. "
             "So there is nothing to migrate.'"
         )
 
+    final_previous_migration_name = available_migrations[end_index] if end_index >= 0 else None
+
+    # Array split excludes the end
+    if end_index < 0:
+        end_index = None
+
     # Dicts are insertion ordered so will match the list order
-    return {name: load_migration(name) for name in available_migrations[start_index : end_index - 1 : -1]}
+    return {
+        name: load_migration(name) for name in available_migrations[start_index:end_index:-1]
+    }, final_previous_migration_name
 
 
 def execute_forward_migrations(migrations: dict[str, BaseMigration]) -> None:
@@ -180,14 +191,14 @@ def execute_forward_migrations(migrations: dict[str, BaseMigration]) -> None:
             for name, migration in migrations.items():
                 logger.info("Performing forward migration for '%s'...", name)
                 migration.forward(session)
-            set_last_migration_applied(list(migrations.keys())[-1])
+            set_previous_migration(list(migrations.keys())[-1])
         # Run some things outside the transaction e.g. if needing to drop a collection
         for name, migration in migrations.items():
             logger.info("Finalising forward migration for '%s'...", name)
             migration.forward_after_transaction(session)
 
 
-def execute_backward_migrations(migrations: dict[str, BaseMigration]):
+def execute_backward_migrations(migrations: dict[str, BaseMigration], final_previous_migration_name: Optional[str]):
     """
     Executes a list of backward migrations in order.
 
@@ -196,6 +207,8 @@ def execute_backward_migrations(migrations: dict[str, BaseMigration]):
 
     :param migrations: List of dicts containing the names and instances of the migrations that need to be applied in the
                        order they should be applied.
+    :param final_previous_migration_name: Either the name of the previous migration before the ones given or `None` if
+                                          there aren't any.
     """
     # Run migration inside a session to lock writes and revert the changes if it fails
     with mongodb_client.start_session() as session:
@@ -203,7 +216,7 @@ def execute_backward_migrations(migrations: dict[str, BaseMigration]):
             for name, migration in migrations.items():
                 logger.info("Performing backward migration for '%s'...", name)
                 migration.backward(session)
-            set_last_migration_applied(list(migrations.keys())[-1])
+            set_previous_migration(final_previous_migration_name)
         # Run some things outside the transaction e.g. if needing to drop a collection
         for name, migration in migrations.items():
             logger.info("Finalising backward migration for '%s'...", name)
