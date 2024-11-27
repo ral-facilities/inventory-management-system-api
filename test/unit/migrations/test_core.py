@@ -7,7 +7,16 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from inventory_management_system_api.migrations.core import load_migrations_backward_to, load_migrations_forward_to
+from inventory_management_system_api.migrations.core import (
+    execute_migrations_backward,
+    execute_migrations_forward,
+    find_available_migrations,
+    get_previous_migration,
+    load_migration,
+    load_migrations_backward_to,
+    load_migrations_forward_to,
+    set_previous_migration,
+)
 
 AVAILABLE_MIGRATIONS = ["migration1", "migration2", "migration3"]
 
@@ -223,8 +232,6 @@ class LoadMigrationsBackwardToDSL(BaseMigrationDSL):
         :param expected_final_previous_migration_name: Expected final previous migration name returned.
         """
 
-        print(expected_migration_names)
-        print(self._obtained_migrations_backward)
         self._mock_load_migration.assert_has_calls(
             [call(migration_name) for migration_name in expected_migration_names]
         )
@@ -285,6 +292,13 @@ class TestLoadMigrationsBackwardToDSL(LoadMigrationsBackwardToDSL):
         self.call_load_migrations_backward_to(AVAILABLE_MIGRATIONS[1])
         self.check_load_migrations_backward_to_success(AVAILABLE_MIGRATIONS[-1:0:-1], AVAILABLE_MIGRATIONS[0])
 
+    def test_load_migrations_backward_to_specific_from_none(self):
+        """Tests loading migrations backward to a specific migration from no previous migrations."""
+
+        self.mock_load_migrations_backward_to(available_migrations=AVAILABLE_MIGRATIONS, previous_migration=None)
+        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[1], SystemExit)
+        self.check_load_migrations_backward_to_success_failed_with_exception("No migrations to revert.")
+
     def test_load_migrations_backward_to_from_unknown(self):
         """Tests loading migrations backward to a migration from a previous unknown one."""
 
@@ -316,3 +330,95 @@ class TestLoadMigrationsBackwardToDSL(LoadMigrationsBackwardToDSL):
             f"Migration '{AVAILABLE_MIGRATIONS[-1]}' is already reverted or after the previous migration applied "
             f"'{AVAILABLE_MIGRATIONS[0]}'. So there is nothing to migrate."
         )
+
+
+# The following are some basic tests that did not warrant their own classes
+def test_load_migration():
+    """Tests that `load_migration` functions without erroring."""
+
+    load_migration("_example_migration")
+
+
+def test_load_migration_non_existent():
+    """Tests that `load_migration` produces an error if the migration named is non-existent."""
+
+    with pytest.raises(ModuleNotFoundError):
+        load_migration("_example_migration2")
+
+
+def test_find_available_migrations():
+    """Tests that `find_available_migrations` functions without erroring."""
+
+    assert isinstance(find_available_migrations(), list)
+
+
+@patch("inventory_management_system_api.migrations.core.database")
+def test_get_previous_migration(mock_database):
+    """Tests that `get_previous_migration` functions as expected when there is a previous migrations."""
+
+    mock_database.database_migrations.find_one.return_value = {"name": "migration_name"}
+
+    previous_migration = get_previous_migration()
+
+    mock_database.database_migrations.find_one.assert_called_once_with({"_id": "previous_migration"})
+    assert previous_migration == "migration_name"
+
+
+@patch("inventory_management_system_api.migrations.core.database")
+def test_set_previous_migration(mock_database):
+    """Tests that `set_previous_migration` functions as expected when there is a previous migrations."""
+
+    set_previous_migration("migration_name")
+
+    mock_database.database_migrations.update_one.assert_called_once_with(
+        {"_id": "previous_migration"}, {"$set": {"name": "migration_name"}}, upsert=True
+    )
+
+
+@patch("inventory_management_system_api.migrations.core.database")
+def test_get_previous_migration_when_none(mock_database):
+    """Tests that `get_previous_migration` functions as expected when there are no previous migrations."""
+
+    mock_database.database_migrations.find_one.return_value = None
+
+    previous_migration = get_previous_migration()
+
+    mock_database.database_migrations.find_one.assert_called_with({"_id": "previous_migration"})
+    assert previous_migration is None
+
+
+@patch("inventory_management_system_api.migrations.core.set_previous_migration")
+@patch("inventory_management_system_api.migrations.core.mongodb_client")
+def test_execute_migrations_forward(mock_mongodb_client, mock_set_previous_migration):
+    """Tests that `execute_migrations_forward` functions as expected."""
+
+    migrations = {"migration1": MagicMock(), "migration2": MagicMock()}
+    expected_session = mock_mongodb_client.start_session.return_value.__enter__.return_value
+
+    execute_migrations_forward(migrations)
+
+    expected_session.start_transaction.assert_called_once()
+    for migration in migrations.values():
+        migration.forward.assert_called_once_with(expected_session)
+        migration.forward_after_transaction.assert_called_once_with(expected_session)
+
+    mock_set_previous_migration.assert_called_once_with(list(migrations.keys())[-1])
+
+
+@patch("inventory_management_system_api.migrations.core.set_previous_migration")
+@patch("inventory_management_system_api.migrations.core.mongodb_client")
+def test_execute_migrations_backward(mock_mongodb_client, mock_set_previous_migration):
+    """Tests that `execute_migrations_backward` functions as expected."""
+
+    migrations = {"migration1": MagicMock(), "migration2": MagicMock()}
+    final_previous_migration_name = "final_migration_name"
+    expected_session = mock_mongodb_client.start_session.return_value.__enter__.return_value
+
+    execute_migrations_backward(migrations, final_previous_migration_name)
+
+    expected_session.start_transaction.assert_called_once()
+    for migration in migrations.values():
+        migration.backward.assert_called_once_with(expected_session)
+        migration.backward_after_transaction.assert_called_once_with(expected_session)
+
+    mock_set_previous_migration.assert_called_once_with(final_previous_migration_name)
