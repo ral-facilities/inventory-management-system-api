@@ -84,12 +84,12 @@ def find_migration_index(name: str, migration_names: list[str]) -> int:
     return migration_names.index(name)
 
 
-def load_forward_migrations_to(name: str) -> dict[str, BaseMigration]:
+def load_migrations_forward_to(name: str) -> dict[str, BaseMigration]:
     """
-    Returns a list of forward migrations that need to be applied to get from the last migration applied to the database
+    Returns a list of migrations forward that need to be applied to get from the last migration applied to the database
     to the given one inclusive.
 
-    :param name: Name of the last forward migration to apply. 'latest' will just use the latest one.
+    :param name: Name of the last migration forward to apply. 'latest' will just use the latest one.
     :returns: List of dicts containing the names and instances of the migrations that need to be applied in the order
               they should be applied.
     """
@@ -111,7 +111,7 @@ def load_forward_migrations_to(name: str) -> dict[str, BaseMigration]:
     try:
         end_index = find_migration_index(name, available_migrations)
     except ValueError:
-        sys.exit(f"Migration '{name}' was not found in the available list of migrations")
+        sys.exit(f"Migration '{name}' was not found in the available list of migrations.")
 
     if start_index > end_index:
         sys.exit(
@@ -123,12 +123,12 @@ def load_forward_migrations_to(name: str) -> dict[str, BaseMigration]:
     return {name: load_migration(name) for name in available_migrations[start_index : end_index + 1]}
 
 
-def load_backward_migrations_to(name: str) -> tuple[dict[str, BaseMigration], Optional[str]]:
+def load_migrations_backward_to(name: str) -> tuple[dict[str, BaseMigration], Optional[str]]:
     """
-    Returns a list of backward migrations that need to be applied to get from the last migration applied to the database
+    Returns a list of migrations backward that need to be applied to get from the last migration applied to the database
     to the given one inclusive.
 
-    :param name: Name of the last backward migration to apply.
+    :param name: Name of the last migration backward to apply.
     :returns: Tuple containing:
               - List of dicts containing the names and instances of the migrations that need to be applied in the order
                 they should be applied.
@@ -154,12 +154,12 @@ def load_backward_migrations_to(name: str) -> tuple[dict[str, BaseMigration], Op
     try:
         end_index = find_migration_index(name, available_migrations) - 1
     except ValueError:
-        sys.exit(f"Migration '{name}' was not found in the available list of migrations")
+        sys.exit(f"Migration '{name}' was not found in the available list of migrations.")
 
     if start_index <= end_index:
         sys.exit(
-            f"Migration '{name}' is already reverted or after the previous migration applied '{previous_migration}. "
-            "So there is nothing to migrate.'"
+            f"Migration '{name}' is already reverted or after the previous migration applied '{previous_migration}'. "
+            "So there is nothing to migrate."
         )
 
     final_previous_migration_name = available_migrations[end_index] if end_index >= 0 else None
@@ -174,9 +174,9 @@ def load_backward_migrations_to(name: str) -> tuple[dict[str, BaseMigration], Op
     }, final_previous_migration_name
 
 
-def execute_forward_migrations(migrations: dict[str, BaseMigration]) -> None:
+def execute_migrations_forward(migrations: dict[str, BaseMigration]) -> None:
     """
-    Executes a list of forward migrations in order.
+    Executes a list of migrations forward in order.
 
     All `forward_after_transaction`'s are executed AFTER the all of the `forward`'s are executed. This is so that the
     latter can be done at once in a transaction.
@@ -198,9 +198,9 @@ def execute_forward_migrations(migrations: dict[str, BaseMigration]) -> None:
             migration.forward_after_transaction(session)
 
 
-def execute_backward_migrations(migrations: dict[str, BaseMigration], final_previous_migration_name: Optional[str]):
+def execute_migrations_backward(migrations: dict[str, BaseMigration], final_previous_migration_name: Optional[str]):
     """
-    Executes a list of backward migrations in order.
+    Executes a list of migrations backward in order.
 
     All `backward_after_transaction`'s are executed AFTER the all of the `backward`'s are executed. This is so that the
     latter can be done at once in a transaction.

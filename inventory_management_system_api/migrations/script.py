@@ -9,14 +9,14 @@ from typing import Optional
 
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.migrations.core import (
-    execute_backward_migrations,
-    execute_forward_migrations,
+    execute_migrations_backward,
+    execute_migrations_forward,
     find_available_migrations,
     find_migration_index,
     get_previous_migration,
-    load_backward_migrations_to,
-    load_forward_migrations_to,
     load_migration,
+    load_migrations_backward_to,
+    load_migrations_forward_to,
     set_previous_migration,
 )
 
@@ -166,7 +166,7 @@ class CommandForward(SubCommand):
         )
 
     def run(self, args: argparse.Namespace):
-        migrations = load_forward_migrations_to(args.name)
+        migrations = load_migrations_forward_to(args.name)
 
         print("This operation will apply the following migrations:")
         for name in migrations.keys():
@@ -174,7 +174,7 @@ class CommandForward(SubCommand):
 
         print()
         if check_user_sure():
-            execute_forward_migrations(migrations)
+            execute_migrations_forward(migrations)
             logger.info("Done!")
 
 
@@ -188,7 +188,7 @@ class CommandBackward(SubCommand):
         parser.add_argument("name", help="Name migration to migrate backwards to (inclusive).")
 
     def run(self, args: argparse.Namespace):
-        migrations, final_previous_migration_name = load_backward_migrations_to(args.name)
+        migrations, final_previous_migration_name = load_migrations_backward_to(args.name)
 
         print("This operation will revert the following migrations:")
         for name in migrations.keys():
@@ -196,7 +196,7 @@ class CommandBackward(SubCommand):
         print()
 
         if check_user_sure():
-            execute_backward_migrations(migrations, final_previous_migration_name)
+            execute_migrations_backward(migrations, final_previous_migration_name)
             logger.info("Done!")
 
 
