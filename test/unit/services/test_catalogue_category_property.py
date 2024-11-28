@@ -44,7 +44,7 @@ class CatalogueCategoryPropertyServiceDSL(BaseCatalogueServiceDSL):
     """Base class for `CatalogueCategoryPropertyService` unit tests."""
 
     wrapped_utils: Mock
-    mock_mongodb_client: Mock
+    mock_start_session_transaction: Mock
     mock_catalogue_category_repository: Mock
     mock_catalogue_item_repository: Mock
     mock_item_repository: Mock
@@ -74,9 +74,9 @@ class CatalogueCategoryPropertyServiceDSL(BaseCatalogueServiceDSL):
         self.catalogue_category_property_service = catalogue_category_property_service
 
         with patch(
-            "inventory_management_system_api.services.catalogue_category_property.mongodb_client"
-        ) as mocked_mongo_db_client:
-            self.mock_mongodb_client = mocked_mongo_db_client
+            "inventory_management_system_api.services.catalogue_category_property.start_session_transaction"
+        ) as mocked_start_session_transaction:
+            self.mock_start_session_transaction = mocked_start_session_transaction
 
             with patch(
                 "inventory_management_system_api.services.catalogue_category_property.utils", wraps=utils
@@ -203,8 +203,10 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         )
 
         # Session/Transaction
-        expected_session = self.mock_mongodb_client.start_session.return_value.__enter__.return_value
-        expected_session.start_transaction.assert_called_once()
+        self.mock_start_session_transaction.assert_called_once_with(
+            "performing catalogue category property migration create"
+        )
+        expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
 
         # Catalogue category
 
@@ -481,8 +483,10 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self.wrapped_utils.check_duplicate_property_names.assert_called_once_with([modified_catalogue_category_out])
 
         # Session/Transaction
-        expected_session = self.mock_mongodb_client.start_session.return_value.__enter__.return_value
-        expected_session.start_transaction.assert_called_once()
+        self.mock_start_session_transaction.assert_called_once_with(
+            "performing catalogue category property migration update"
+        )
+        expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
 
         # Catalogue category
         self.mock_catalogue_category_repository.update_property.assert_called_once_with(
