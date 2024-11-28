@@ -203,9 +203,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         )
 
         # Session/Transaction
-        self.mock_start_session_transaction.assert_called_once_with(
-            "performing catalogue category property migration create"
-        )
+        self.mock_start_session_transaction.assert_called_once_with("adding property")
         expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
 
         # Catalogue category
@@ -483,9 +481,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self.wrapped_utils.check_duplicate_property_names.assert_called_once_with([modified_catalogue_category_out])
 
         # Session/Transaction
-        self.mock_start_session_transaction.assert_called_once_with(
-            "performing catalogue category property migration update"
-        )
+        self.mock_start_session_transaction.assert_called_once_with("updating property")
         expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
 
         # Catalogue category

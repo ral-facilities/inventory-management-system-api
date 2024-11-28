@@ -105,7 +105,7 @@ class CatalogueCategoryPropertyService:
         )
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
-        with start_session_transaction("performing catalogue category property migration create") as session:
+        with start_session_transaction("adding property") as session:
             # Firstly update the catalogue category
             catalogue_category_property_out = self._catalogue_category_repository.create_property(
                 catalogue_category_id, catalogue_category_property_in, session=session
@@ -227,7 +227,7 @@ class CatalogueCategoryPropertyService:
         property_in = CatalogueCategoryPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
-        with start_session_transaction("performing catalogue category property migration update") as session:
+        with start_session_transaction("updating property") as session:
             # Firstly update the catalogue category
             property_out = self._catalogue_category_repository.update_property(
                 catalogue_category_id, catalogue_category_property_id, property_in, session=session
