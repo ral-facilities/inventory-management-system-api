@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.database import mongodb_client
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
@@ -105,32 +105,31 @@ class CatalogueCategoryPropertyService:
         )
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
-        with mongodb_client.start_session() as session:
-            with session.start_transaction():
-                # Firstly update the catalogue category
-                catalogue_category_property_out = self._catalogue_category_repository.create_property(
-                    catalogue_category_id, catalogue_category_property_in, session=session
-                )
+        with start_session_transaction("performing catalogue category property migration create") as session:
+            # Firstly update the catalogue category
+            catalogue_category_property_out = self._catalogue_category_repository.create_property(
+                catalogue_category_id, catalogue_category_property_in, session=session
+            )
 
-                property_in = PropertyIn(
-                    id=str(catalogue_category_property_in.id),
-                    name=catalogue_category_property_in.name,
-                    value=catalogue_category_property.default_value,
-                    unit=unit_value,
-                    unit_id=catalogue_category_property.unit_id,
-                )
+            property_in = PropertyIn(
+                id=str(catalogue_category_property_in.id),
+                name=catalogue_category_property_in.name,
+                value=catalogue_category_property.default_value,
+                unit=unit_value,
+                unit_id=catalogue_category_property.unit_id,
+            )
 
-                # Add property to all catalogue items of the catalogue category
-                self._catalogue_item_repository.insert_property_to_all_matching(
-                    catalogue_category_id, property_in, session=session
-                )
+            # Add property to all catalogue items of the catalogue category
+            self._catalogue_item_repository.insert_property_to_all_matching(
+                catalogue_category_id, property_in, session=session
+            )
 
-                # Add property to all items of the catalogue items
-                # Obtain a list of ids to do this rather than iterate one by one as its faster. Limiting factor
-                # would be memory to store these ids and the network bandwidth it takes to send the request to the
-                # database but for 10000 items being updated this only takes 4.92 KB
-                catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
-                self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
+            # Add property to all items of the catalogue items
+            # Obtain a list of ids to do this rather than iterate one by one as its faster. Limiting factor
+            # would be memory to store these ids and the network bandwidth it takes to send the request to the
+            # database but for 10000 items being updated this only takes 4.92 KB
+            catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
+            self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
 
         return catalogue_category_property_out
 
@@ -228,20 +227,19 @@ class CatalogueCategoryPropertyService:
         property_in = CatalogueCategoryPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
-        with mongodb_client.start_session() as session:
-            with session.start_transaction():
-                # Firstly update the catalogue category
-                property_out = self._catalogue_category_repository.update_property(
-                    catalogue_category_id, catalogue_category_property_id, property_in, session=session
-                )
+        with start_session_transaction("performing catalogue category property migration update") as session:
+            # Firstly update the catalogue category
+            property_out = self._catalogue_category_repository.update_property(
+                catalogue_category_id, catalogue_category_property_id, property_in, session=session
+            )
 
-                # Avoid propagating changes unless absolutely necessary
-                if updating_name:
-                    self._catalogue_item_repository.update_names_of_all_properties_with_id(
-                        catalogue_category_property_id, catalogue_category_property.name, session=session
-                    )
-                    self._item_repository.update_names_of_all_properties_with_id(
-                        catalogue_category_property_id, catalogue_category_property.name, session=session
-                    )
+            # Avoid propagating changes unless absolutely necessary
+            if updating_name:
+                self._catalogue_item_repository.update_names_of_all_properties_with_id(
+                    catalogue_category_property_id, catalogue_category_property.name, session=session
+                )
+                self._item_repository.update_names_of_all_properties_with_id(
+                    catalogue_category_property_id, catalogue_category_property.name, session=session
+                )
 
         return property_out
