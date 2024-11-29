@@ -49,7 +49,9 @@ def start_session_transaction(action_description: str) -> Generator[ClientSessio
                 yield session
             except OperationFailure as exc:
                 if "write conflict" in str(exc).lower():
-                    raise WriteConflictError(f"Write conflict while {action_description}") from exc
+                    raise WriteConflictError(
+                        f"Write conflict while {action_description}. Please try again later."
+                    ) from exc
                 raise exc
 
 

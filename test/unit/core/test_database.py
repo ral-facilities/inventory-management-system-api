@@ -52,4 +52,4 @@ def test_start_session_transaction_with_operation_failure_write_conflict(mock_mo
 
     assert expected_session == session
     expected_session.start_transaction.assert_called_once()
-    assert str(exc.value) == "Write conflict while testing"
+    assert str(exc.value) == "Write conflict while testing. Please try again later."
