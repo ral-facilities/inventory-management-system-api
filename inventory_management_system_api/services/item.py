@@ -8,6 +8,8 @@ from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
@@ -16,9 +18,11 @@ from inventory_management_system_api.core.exceptions import (
 )
 from inventory_management_system_api.models.catalogue_item import PropertyOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
@@ -42,6 +46,7 @@ class ItemService:
         catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
         system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
         usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)],
+        setting_repository: Annotated[SettingRepo, Depends(SettingRepo)],
     ) -> None:
         """
         Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`,
@@ -52,12 +57,14 @@ class ItemService:
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param system_repository: The `SystemRepo` repository to use.
         :param usage_status_repository: The `UsageStatusRepo` repository to use.
+        :param setting_repository: The `SettingRepo` repository to use.
         """
         self._item_repository = item_repository
         self._catalogue_category_repository = catalogue_category_repository
         self._catalogue_item_repository = catalogue_item_repository
         self._system_repository = system_repository
         self._usage_status_repository = usage_status_repository
+        self._setting_repository = setting_repository
 
     def create(self, item: ItemPostSchema) -> ItemOut:
         """
@@ -94,9 +101,34 @@ class ItemService:
         defined_properties = catalogue_category.properties
         properties = utils.process_properties(defined_properties, supplied_properties)
 
-        return self._item_repository.create(
-            ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
-        )
+        # Need to recalculate number of spares after adding these need to either succeed or fail together. Also need
+        # to be able to write lock the catalogue item document in the process to prevent further changes while
+        # recalculating
+        with start_session_transaction("adding item") as session:
+            # Write lock the catalogue item to prevent any further item updates for it until the transaction
+            # completes
+            # TODO: Change to just str in the prepare_for_number_of_spares_update? Same below
+            utils.prepare_for_number_of_spares_update(
+                CustomObjectId(catalogue_item_id), self._catalogue_item_repository, session
+            )
+
+            new_item = self._item_repository.create(
+                ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
+                session=session,
+            )
+
+            # Obtain the current spares definition
+            spares_definition = self._setting_repository.get(SparesDefinitionOut, session=session)
+            if spares_definition:
+                utils.perform_number_of_spares_update(
+                    CustomObjectId(catalogue_item_id),
+                    utils.get_usage_status_ids(spares_definition),
+                    self._catalogue_item_repository,
+                    self._item_repository,
+                    session=session,
+                )
+
+        return new_item
 
     def get(self, item_id: str) -> Optional[ItemOut]:
         """
@@ -139,12 +171,16 @@ class ItemService:
 
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
+        catalogue_item_id = CustomObjectId(stored_item.catalogue_item_id)
 
         if "system_id" in update_data and item.system_id != stored_item.system_id:
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
+
+        updating_usage_status = False
         if "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id:
+            updating_usage_status = True
             usage_status_id = item.usage_status_id
             usage_status = self._usage_status_repository.get(usage_status_id)
             if not usage_status:
@@ -173,7 +209,28 @@ class ItemService:
 
             update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
-        return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
+        # TODO: Comment and cleanup
+        if not updating_usage_status:
+            return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
+        else:
+            with start_session_transaction("updating item") as session:
+                utils.prepare_for_number_of_spares_update(catalogue_item_id, self._catalogue_item_repository, session)
+
+                new_item = self._item_repository.update(
+                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
+                )
+
+                # Obtain the current spares definition
+                spares_definition = self._setting_repository.get(SparesDefinitionOut, session=session)
+                if spares_definition:
+                    utils.perform_number_of_spares_update(
+                        catalogue_item_id,
+                        utils.get_usage_status_ids(spares_definition),
+                        self._catalogue_item_repository,
+                        self._item_repository,
+                        session=session,
+                    )
+            return new_item
 
     def delete(self, item_id: str) -> None:
         """
@@ -181,7 +238,29 @@ class ItemService:
 
         :param item_id: The ID of the item to delete.
         """
-        return self._item_repository.delete(item_id)
+        # TODO: Update comment and tests for raising error instead of repo delete
+        item = self.get(item_id)
+        if item is None:
+            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+
+        # TODO: Comment below
+        with start_session_transaction("deleting item") as session:
+            catalogue_item_id = CustomObjectId(item.catalogue_item_id)
+
+            utils.prepare_for_number_of_spares_update(catalogue_item_id, self._catalogue_item_repository, session)
+
+            self._item_repository.delete(item_id, session=session)
+
+            # Obtain the current spares definition
+            spares_definition = self._setting_repository.get(SparesDefinitionOut, session=session)
+            if spares_definition:
+                utils.perform_number_of_spares_update(
+                    catalogue_item_id,
+                    utils.get_usage_status_ids(spares_definition),
+                    self._catalogue_item_repository,
+                    self._item_repository,
+                    session=session,
+                )
 
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]

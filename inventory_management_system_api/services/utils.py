@@ -6,12 +6,19 @@ import logging
 import re
 from typing import Dict, List, Union
 
+from bson import ObjectId
+from pymongo.client_session import ClientSession
+
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DuplicateCatalogueCategoryPropertyNameError,
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
@@ -241,3 +248,35 @@ def _merge_non_mandatory_properties(
         elif not defined_property["mandatory"]:
             properties[defined_property_id] = {"id": defined_property_id, "value": None}
     return properties
+
+
+def get_usage_status_ids(spares_definition: SparesDefinitionOut) -> list[CustomObjectId]:
+    # TODO: Comment
+
+    return [CustomObjectId(usage_status.id) for usage_status in spares_definition.usage_statuses]
+
+
+def prepare_for_number_of_spares_update(
+    catalogue_item_id: ObjectId, catalogue_item_repository: CatalogueItemRepo, session: ClientSession
+) -> None:
+    # TODO: Comment
+
+    catalogue_item_repository.update_number_of_spares(catalogue_item_id, None, session=session)
+
+
+def perform_number_of_spares_update(
+    catalogue_item_id: ObjectId,
+    usage_status_ids: list[CustomObjectId],
+    catalogue_item_repository: CatalogueItemRepo,
+    item_repository: ItemRepo,
+    session: ClientSession,
+) -> None:
+    # TODO: Comment - include must use prepare first
+
+    # Now calculate the new number of spares
+    new_number_of_spares = item_repository.count_with_usage_statuses_ids_in(
+        catalogue_item_id, usage_status_ids, session=session
+    )
+
+    # Finally update
+    catalogue_item_repository.update_number_of_spares(catalogue_item_id, new_number_of_spares, session=session)

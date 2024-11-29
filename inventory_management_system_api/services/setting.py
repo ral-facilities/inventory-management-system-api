@@ -16,6 +16,7 @@ from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.setting import SparesDefinitionPutSchema
+from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
 
@@ -60,10 +61,11 @@ class SettingService:
                 raise MissingRecordError(f"No usage status found with ID: {usage_status.id}")
 
         # Need all updates to the number of spares to succeed or fail together with assigning the new definition
-        # Also need to be able to write lock documents in the process
+        # Also need to be able to write lock the catalogue item documents in the process to prevent further changes
+        # while recalculating.
         with start_session_transaction("updating spares definition") as session:
             # Update spares definition first to ensure write locked to prevent further updates while calculating below
-            new_spares_definition_out = self._setting_repository.upsert(
+            new_spares_definition = self._setting_repository.upsert(
                 SparesDefinitionIn(**spares_definition.model_dump()), SparesDefinitionOut, session=session
             )
 
@@ -72,21 +74,13 @@ class SettingService:
 
             # Usage status id that constitute a spare in the new definition (obtain it now to save processing
             # repeatedly)
-            usage_status_ids = [CustomObjectId(usage_status.id) for usage_status in spares_definition.usage_statuses]
+            usage_status_ids = utils.get_usage_status_ids(new_spares_definition)
 
+            # Recalculate for each catalogue item
             for catalogue_item_id in catalogue_item_ids:
-                # Write lock the catalogue item to prevent any further item updates for it until the transaction
-                # completes
-                self._catalogue_item_repository.update_number_of_spares(catalogue_item_id, None, session=session)
-
-                # Now calculate the new number of spares
-                new_number_of_spares = self._item_repository.count_with_usage_statuses_ids_in(
-                    catalogue_item_id, usage_status_ids, session=session
+                utils.prepare_for_number_of_spares_update(catalogue_item_id, self._catalogue_item_repository, session)
+                utils.perform_number_of_spares_update(
+                    catalogue_item_id, usage_status_ids, self._catalogue_item_repository, self._item_repository, session
                 )
 
-                # Finally update
-                self._catalogue_item_repository.update_number_of_spares(
-                    catalogue_item_id, new_number_of_spares, session=session
-                )
-
-        return new_spares_definition_out
+        return new_spares_definition
