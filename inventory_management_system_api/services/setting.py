@@ -7,7 +7,6 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
@@ -62,7 +61,7 @@ class SettingService:
 
         # Need all updates to the number of spares to succeed or fail together with assigning the new definition
         # Also need to be able to write lock the catalogue item documents in the process to prevent further changes
-        # while recalculating.
+        # while recalculating
         with start_session_transaction("updating spares definition") as session:
             # Update spares definition first to ensure write locked to prevent further updates while calculating below
             new_spares_definition = self._setting_repository.upsert(
@@ -74,12 +73,14 @@ class SettingService:
 
             # Usage status id that constitute a spare in the new definition (obtain it now to save processing
             # repeatedly)
-            usage_status_ids = utils.get_usage_status_ids(new_spares_definition)
+            usage_status_ids = utils.get_usage_status_ids_from_spares_definition(new_spares_definition)
 
             # Recalculate for each catalogue item
             for catalogue_item_id in catalogue_item_ids:
-                utils.prepare_for_number_of_spares_update(catalogue_item_id, self._catalogue_item_repository, session)
-                utils.perform_number_of_spares_update(
+                utils.prepare_for_number_of_spares_recalculation(
+                    catalogue_item_id, self._catalogue_item_repository, session
+                )
+                utils.perform_number_of_spares_recalculation(
                     catalogue_item_id, usage_status_ids, self._catalogue_item_repository, self._item_repository, session
                 )
 

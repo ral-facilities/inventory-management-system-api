@@ -250,28 +250,54 @@ def _merge_non_mandatory_properties(
     return properties
 
 
-def get_usage_status_ids(spares_definition: SparesDefinitionOut) -> list[CustomObjectId]:
-    # TODO: Comment
+def get_usage_status_ids_from_spares_definition(spares_definition: SparesDefinitionOut) -> list[CustomObjectId]:
+    """
+    Returns a list of usage status ids from a spares definition  model in the format required for
+    `perform_number_of_spares_update`.
+
+    :param spares_definition: Spares definition.
+    :return: List of usage status ids converted to CustomObjectId's.
+    """
 
     return [CustomObjectId(usage_status.id) for usage_status in spares_definition.usage_statuses]
 
 
-def prepare_for_number_of_spares_update(
+def prepare_for_number_of_spares_recalculation(
     catalogue_item_id: ObjectId, catalogue_item_repository: CatalogueItemRepo, session: ClientSession
 ) -> None:
-    # TODO: Comment
+    """
+    Prepares a catalogue item for a recalculation of the `number_of_spares` field.
+
+    Should be called prior to `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write
+    locked to avoid other similar updates interfering.
+
+    :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for.
+    :param catalogue_item_repository: `CatalogueItemRepo` repository to use
+    :param session: Session to use for the recalculation. A transaction should already have been started.
+    """
 
     catalogue_item_repository.update_number_of_spares(catalogue_item_id, None, session=session)
 
 
-def perform_number_of_spares_update(
+def perform_number_of_spares_recalculation(
     catalogue_item_id: ObjectId,
     usage_status_ids: list[CustomObjectId],
     catalogue_item_repository: CatalogueItemRepo,
     item_repository: ItemRepo,
     session: ClientSession,
 ) -> None:
-    # TODO: Comment - include must use prepare first
+    """
+    Performs a recalculation of the `number_of_spares` field for a catalogue item.
+
+    Should after `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write locked to avoid
+    other similar updates interfering.
+
+    :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for.
+    :param usage_status_ids: Usage status ids that should constitute a spare.
+    :param catalogue_item_repository: `CatalogueItemRepo` repository to use.
+    :param item_repository: `ItemRepo` repository to use.
+    :param session: Session to use for the recalculation. A transaction should already have been started.
+    """
 
     # Now calculate the new number of spares
     new_number_of_spares = item_repository.count_with_usage_statuses_ids_in(

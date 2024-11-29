@@ -39,7 +39,8 @@ def start_session_transaction(action_description: str) -> Generator[ClientSessio
 
     Also handles write conflicts.
 
-    :param action_description: Description of what the transaction is doing so it can be used in any raised errors.
+    :param action_description: Description of what the contents of the transaction is doing so it can be used in any
+                               raised errors.
     :raises WriteConflictError: If there a write conflict during the transaction.
     """
 

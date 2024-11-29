@@ -138,8 +138,6 @@ class CatalogueItemRepo:
         return item is not None
 
     def list_ids(self, catalogue_category_id: Optional[str] = None, session: ClientSession = None) -> List[ObjectId]:
-        # TODO: Update description and tests
-        # TODO: Make sure where it is used elsewhere specifies catalogue_category_id =
         """
         Retrieve a list of all catalogue item ids with a specific catalogue_category_id from a MongoDB
         database. Performs a projection to only include _id. (Required for mass updates of properties
@@ -150,20 +148,23 @@ class CatalogueItemRepo:
         :return: A list object catalogue item ObjectId's or an empty list if no catalogue items are returned by
                  the database.
         """
-        logger.info(
-            "Finding the id's of all catalogue items within the catalogue category with ID '%s' in the database",
-            # TODO: Update this when catalogue_category_id is None?
-            catalogue_category_id,
-        )
+
+        query = {}
+        if catalogue_category_id:
+            catalogue_category_id = CustomObjectId(catalogue_category_id)
+            query["catalogue_category_id"] = catalogue_category_id
+
+        message = "Retrieving IDs of all catalogue items from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided catalogue category ID filter", message)
+            logger.debug("Provided catalogue category ID filter: %s", catalogue_category_id)
 
         # Using distinct has a 16MB limit
         # https://stackoverflow.com/questions/29771192/how-do-i-get-a-list-of-just-the-objectids-using-pymongo
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
-        return self._catalogue_items_collection.find(
-            {"catalogue_category_id": CustomObjectId(catalogue_category_id)} if catalogue_category_id else {},
-            {"_id": 1},
-            session=session,
-        ).distinct("_id")
+        return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
     def insert_property_to_all_matching(
         self, catalogue_category_id: str, property_in: PropertyIn, session: ClientSession = None
@@ -222,9 +223,17 @@ class CatalogueItemRepo:
         catalogue_item_id: ObjectId,
         number_of_spares: Optional[int],
         session: Optional[ClientSession] = None,
-    ):
+    ) -> None:
+        """
+        Updates the `number_of_spares` field for a catalogue item.
 
-        self._catalogue_items_collection.update_many(
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param number_of_spares: New number of spares to update to.
+        :param session: PyMongo ClientSession to use for database operations
+        """
+        logger.info("Updating the number of spares of the catalogue item with ID %s", catalogue_item_id)
+
+        self._catalogue_items_collection.update_one(
             {"_id": catalogue_item_id},
             {"$set": {"number_of_spares": number_of_spares}},
             session=session,
