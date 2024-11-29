@@ -182,3 +182,16 @@ class ItemRepo:
         )
 
     # pylint:enable=duplicate-code
+
+    def count_with_usage_statuses_ids_in(
+        self,
+        catalogue_item_id: ObjectId,
+        usage_status_ids: List[CustomObjectId],
+        session: Optional[ClientSession] = None,
+    ):
+        # TODO: Comment/log
+        # TODO: Look at https://stackoverflow.com/questions/60237515/mongodb-returning-wrong-count
+
+        return self._items_collection.count_documents(
+            {"catalogue_item_id": catalogue_item_id, "usage_status_id": {"$in": usage_status_ids}}, session=session
+        )

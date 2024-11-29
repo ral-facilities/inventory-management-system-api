@@ -96,7 +96,9 @@ class SettingRepo:
             # The spares definition contains a list of usage statuses - use an aggregate query here to obtain
             # the actual usage status entities instead of just their stored ID
 
-            result = list(self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE))
+            result = list(
+                self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=session)
+            )
             setting = result[0] if len(result) > 0 else None
         else:
             setting = self._settings_collection.find_one({"_id": out_model_type.SETTING_ID}, session=session)

@@ -137,7 +137,9 @@ class CatalogueItemRepo:
         item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id}, session=session)
         return item is not None
 
-    def list_ids(self, catalogue_category_id: str, session: ClientSession = None) -> List[ObjectId]:
+    def list_ids(self, catalogue_category_id: Optional[str] = None, session: ClientSession = None) -> List[ObjectId]:
+        # TODO: Update description and tests
+        # TODO: Make sure where it is used elsewhere specifies catalogue_category_id =
         """
         Retrieve a list of all catalogue item ids with a specific catalogue_category_id from a MongoDB
         database. Performs a projection to only include _id. (Required for mass updates of properties
@@ -150,6 +152,7 @@ class CatalogueItemRepo:
         """
         logger.info(
             "Finding the id's of all catalogue items within the catalogue category with ID '%s' in the database",
+            # TODO: Update this when catalogue_category_id is None?
             catalogue_category_id,
         )
 
@@ -157,7 +160,9 @@ class CatalogueItemRepo:
         # https://stackoverflow.com/questions/29771192/how-do-i-get-a-list-of-just-the-objectids-using-pymongo
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
         return self._catalogue_items_collection.find(
-            {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, {"_id": 1}, session=session
+            {"catalogue_category_id": CustomObjectId(catalogue_category_id)} if catalogue_category_id else {},
+            {"_id": 1},
+            session=session,
         ).distinct("_id")
 
     def insert_property_to_all_matching(
@@ -209,5 +214,18 @@ class CatalogueItemRepo:
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(property_id)}],
+            session=session,
+        )
+
+    def update_number_of_spares(
+        self,
+        catalogue_item_id: ObjectId,
+        number_of_spares: Optional[int],
+        session: Optional[ClientSession] = None,
+    ):
+
+        self._catalogue_items_collection.update_many(
+            {"_id": catalogue_item_id},
+            {"$set": {"number_of_spares": number_of_spares}},
             session=session,
         )
