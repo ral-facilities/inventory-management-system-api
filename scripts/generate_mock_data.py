@@ -29,11 +29,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
-units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
+UNITS = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 
-usage_statuses = ["New", "Used", "In Use", "Scrapped"]
+USAGE_STATUSES = ["New", "Used", "In Use", "Scrapped"]
+SPARES_DEFINITION_USAGE_STATUSES = ["New", "Used"]
 
-manufacturer_names = [
+MANUFACTURER_NAMES = [
     "Tech Innovators Inc.",
     "Global Gadgets Co.",
     "Precision Electronics Ltd.",
@@ -56,7 +57,7 @@ manufacturer_names = [
     "Dynamic Designs Inc.",
 ]
 
-catalogue_category_names = [
+CATALOGUE_CATEGORY_NAMES = [
     "Laser Diodes",
     "Beam Splitters",
     "Fiber OpticCables",
@@ -288,7 +289,7 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
                 prop["unit_id"] = unit["id"]
 
     category: dict = {
-        "name": f"{fake.random.choice(catalogue_category_names)}",
+        "name": f"{fake.random.choice(CATALOGUE_CATEGORY_NAMES)}",
         "is_leaf": is_leaf,
         "parent_id": parent_id,
         "properties": properties,
@@ -313,7 +314,7 @@ def generate_random_manufacturer():
     """Generates randomised data for a manufacturer."""
 
     return {
-        "name": fake.random.choice(manufacturer_names),
+        "name": fake.random.choice(MANUFACTURER_NAMES),
         "url": fake.url(),
         "address": {
             "address_line": f"{fake.secondary_address()}, {fake.street_name()}",
@@ -370,7 +371,7 @@ def generate_random_catalogue_item(
     return {
         "catalogue_category_id": catalogue_category_id,
         "manufacturer_id": manufacturer_id,
-        "name": fake.random.choice(catalogue_category_names),
+        "name": fake.random.choice(CATALOGUE_CATEGORY_NAMES),
         "description": optional_catalogue_item_field(lambda: fake.paragraph(nb_sentences=2)),
         "cost_gbp": fake.random.randint(0, 1000),
         "cost_to_rework_gbp": optional_catalogue_item_field(lambda: fake.random.randint(0, 1000)),
@@ -428,6 +429,18 @@ def generate_random_system(parent_id: str):
         "importance": fake.random.choice(["low", "medium", "high"]),
         "description": fake.paragraph(nb_sentences=2),
         "parent_id": parent_id,
+    }
+
+
+def generate_spares_definition(spares_definition_usage_statuses: list[str]):
+    """Generates spares definition put data given a list of usage statuses to use."""
+
+    generated_usage_statuses_value_id_dict = {value["value"]: key for key, value in generated_usage_statuses.items()}
+    return {
+        "usage_statuses": [
+            {"id": generated_usage_statuses_value_id_dict[usage_status]}
+            for usage_status in spares_definition_usage_statuses
+        ]
     }
 
 
@@ -492,6 +505,20 @@ def create_item(item_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 
+def set_spares_definition(spares_definition_data) -> dict[str, Any]:
+    """
+    Sets the spares definition given its data.
+
+    :return: JSON data from the response.
+    """
+    response = requests.put(
+        f"{API_URL}/v1/settings/spares_definition",
+        json=spares_definition_data,
+        timeout=10,
+    )
+    return response.json()
+
+
 def populate_random_manufacturers() -> list[str]:
     """Randomly populates manufacturers returning a list of their generated IDs."""
 
@@ -505,7 +532,7 @@ def populate_random_manufacturers() -> list[str]:
 def populate_units():
     """Randomly populates units."""
 
-    for _, unit in enumerate(units):
+    for _, unit in enumerate(UNITS):
         unit = generate_unit(unit)
         unit = create_unit(unit)
         generated_units[unit["value"]] = unit
@@ -514,7 +541,7 @@ def populate_units():
 def populate_usage_statuses():
     """Randomly populates usage statuses."""
 
-    for _, usage_status in enumerate(usage_statuses):
+    for _, usage_status in enumerate(USAGE_STATUSES):
         usage_status = generate_usage_status(usage_status)
         usage_status = create_usage_status(usage_status)
         generated_usage_statuses[usage_status["id"]] = usage_status
@@ -589,6 +616,12 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
         generated_system_ids.append(system_id)
 
 
+def populate_spares_definition():
+    """Sets the spares definition."""
+
+    set_spares_definition(generate_spares_definition(SPARES_DEFINITION_USAGE_STATUSES))
+
+
 def generate_mock_data():
     """Generates mock data for all the entities"""
 
@@ -596,6 +629,8 @@ def generate_mock_data():
     populate_units()
     logger.info("Populating usage statuses...")
     populate_usage_statuses()
+    logger.info("Populating spares definition...")
+    populate_spares_definition()
     logger.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
     logger.info("Populating catalogue categories...")
