@@ -94,9 +94,10 @@ class CatalogueCategoryServiceDSL(BaseCatalogueServiceDSL):
     def check_add_property_unit_values_performed_expected_calls(
         self, expected_properties: list[CatalogueCategoryPostPropertySchema]
     ) -> None:
-        """Checks that a call to `add_property_unit_values` performed the expected function calls.
+        """
+        Checks that a call to `add_property_unit_values` performed the expected function calls.
 
-        :param expected_properties: Expected properties the function would have been called with.
+        :param expected_properties: Expected properties the function should have been called with.
         """
 
         expected_unit_repo_calls = []

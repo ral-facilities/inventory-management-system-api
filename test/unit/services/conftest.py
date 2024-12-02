@@ -301,7 +301,15 @@ class ServiceTestHelpers:
     def mock_get(
         repository_mock: Mock,
         repo_obj: Union[
-            CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, UsageStatusOut, None
+            CatalogueCategoryOut,
+            CatalogueItemOut,
+            ItemOut,
+            ManufacturerOut,
+            SystemOut,
+            UnitOut,
+            UsageStatusOut,
+            SparesDefinitionOut,
+            None,
         ],
     ) -> None:
         """

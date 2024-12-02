@@ -15,6 +15,7 @@ from test.mock_data import (
     ITEM_DATA_REQUIRED_VALUES_ONLY,
     ITEM_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
     SYSTEM_IN_DATA_NO_PARENT_A,
     USAGE_STATUS_IN_DATA_IN_USE,
 )
@@ -25,6 +26,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
@@ -33,6 +35,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
@@ -51,7 +54,12 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
     mock_catalogue_category_repository: Mock
     mock_system_repository: Mock
     mock_usage_status_repository: Mock
+    mock_setting_repository: Mock
+    mock_start_session_transaction: Mock
     item_service: ItemService
+
+    mock_transaction_session: Mock
+    _expected_stored_spares_definition_out: Optional[SparesDefinitionOut]
 
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-positional-arguments
@@ -63,6 +71,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         catalogue_category_repository_mock,
         system_repository_mock,
         usage_status_repository_mock,
+        setting_repository_mock,
         item_service,
         # Ensures all created and modified times are mocked throughout
         # pylint: disable=unused-argument
@@ -75,11 +84,69 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         self.mock_catalogue_category_repository = catalogue_category_repository_mock
         self.mock_system_repository = system_repository_mock
         self.mock_usage_status_repository = usage_status_repository_mock
+        self.mock_setting_repository = setting_repository_mock
         self.item_service = item_service
 
         with patch("inventory_management_system_api.services.item.utils", wraps=utils) as wrapped_utils:
-            self.wrapped_utils = wrapped_utils
-            yield
+            with patch(
+                "inventory_management_system_api.services.item.start_session_transaction"
+            ) as mocked_start_session_transaction:
+                self.wrapped_utils = wrapped_utils
+                self.mock_start_session_transaction = mocked_start_session_transaction
+                yield
+
+    def _mock_start_transaction_impacting_number_of_spares(self, spares_definition_out_data: Optional[dict]) -> None:
+        """
+        Mocks methods appropriately for when the `_start_transaction_impacting_number_of_spares` repo method will be
+        called.
+
+        :param spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as would
+                                           be required for a `SparesDefinitionOut` database model.
+        """
+
+        # Mock the session
+        self.mock_transaction_session = MagicMock()
+        self.mock_start_session_transaction.return_value.__enter__.return_value = self.mock_transaction_session
+
+        # Mock the spares definition get
+        self._expected_stored_spares_definition_out = (
+            SparesDefinitionOut(**spares_definition_out_data) if spares_definition_out_data is not None else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_setting_repository, self._expected_stored_spares_definition_out)
+
+    def _check_start_transaction_impacting_number_of_spares_performed_expected_calls(
+        self, expected_action_description: str, expected_catalogue_item_id: CustomObjectId
+    ) -> None:
+        """
+        Checks that a call to `start_transaction_impacting_number_of_spares` performed the expected function calls.
+
+        :param expected_action_description: Expected `action_description` the function should have been called with.
+        :param expected_catalogue_item_id: Expected `catalogue_item_id` the function should have been called with.
+        """
+
+        # Ensure started the transaction
+        self.mock_start_session_transaction.assert_called_with(expected_action_description)
+
+        # Ensure prepared for the update
+        self.wrapped_utils.prepare_for_number_of_spares_recalculation.assert_called_once_with(
+            expected_catalogue_item_id, self.mock_catalogue_item_repository, self.mock_transaction_session
+        )
+
+        # Ensure obtained the spares definition and if necessary performed the recalculation
+        self.mock_setting_repository.get.assert_called_once_with(
+            SparesDefinitionOut, session=self.mock_transaction_session
+        )
+        if self._expected_stored_spares_definition_out is not None:
+            self.wrapped_utils.get_usage_status_ids_from_spares_definition.assert_called_once_with(
+                self._expected_stored_spares_definition_out
+            )
+            self.wrapped_utils.perform_number_of_spares_recalculation(
+                expected_catalogue_item_id,
+                self.wrapped_utils.get_usage_status_ids_from_spares_definition.return_value,
+                self.mock_catalogue_item_repository,
+                self.mock_item_repository,
+                self.mock_transaction_session,
+            )
 
 
 class CreateDSL(ItemServiceDSL):
@@ -98,6 +165,7 @@ class CreateDSL(ItemServiceDSL):
     _expected_merged_properties: List[PropertyPostSchema]
 
     # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     # pylint:disable=too-many-locals
     def mock_create(
         self,
@@ -105,6 +173,7 @@ class CreateDSL(ItemServiceDSL):
         catalogue_item_data: Optional[dict] = None,
         catalogue_category_in_data: Optional[dict] = None,
         usage_status_in_data: Optional[dict] = None,
+        stored_spares_definition_out_data: Optional[dict] = None,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
@@ -118,6 +187,8 @@ class CreateDSL(ItemServiceDSL):
                                            be required for a `CatalogueCategoryIn` database model.
         :param usage_status_in_data: Dictionary containing the basic usage status data as would be required for a
                                      `UsageStatusIn` database model.
+        :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
+                                                  would be required for a `SparesDefinitionOut` database model.
         """
 
         # Generate mandatory IDs to be inserted where needed
@@ -224,6 +295,8 @@ class CreateDSL(ItemServiceDSL):
         self._expected_item_in = ItemIn(**{**item_data, **ids_to_insert, "properties": expected_properties_in})
         self._expected_item_out = ItemOut(**self._expected_item_in.model_dump(), id=ObjectId())
 
+        self._mock_start_transaction_impacting_number_of_spares(stored_spares_definition_out_data)
+
         ServiceTestHelpers.mock_create(self.mock_item_repository, self._expected_item_out)
 
     def call_create(self) -> None:
@@ -261,7 +334,12 @@ class CreateDSL(ItemServiceDSL):
             self._catalogue_category_out.properties, self._expected_merged_properties
         )
 
-        self.mock_item_repository.create.assert_called_once_with(self._expected_item_in)
+        self._check_start_transaction_impacting_number_of_spares_performed_expected_calls(
+            "creating item", self._expected_item_in.catalogue_item_id
+        )
+        self.mock_item_repository.create.assert_called_once_with(
+            self._expected_item_in, session=self.mock_transaction_session
+        )
 
         assert self._created_item == self._expected_item_out
 
@@ -312,6 +390,19 @@ class TestCreate(CreateDSL):
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_spares_definition_defined(self):
+        """Test creating an item when there is a spares definition defined."""
+
+        self.mock_create(
+            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
         )
         self.call_create()
         self.check_create_success()
@@ -472,6 +563,7 @@ class UpdateDSL(ItemServiceDSL):
         stored_item_data: Optional[dict],
         stored_catalogue_item_data: Optional[dict] = None,
         stored_catalogue_category_in_data: Optional[dict] = None,
+        stored_spares_definition_out_data: Optional[dict] = None,
         new_system_in_data: Optional[dict] = None,
         new_usage_status_in_data: Optional[dict] = None,
     ) -> None:
@@ -481,15 +573,17 @@ class UpdateDSL(ItemServiceDSL):
         :param item_id: ID of the item that will be obtained.
         :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
                                  but without any mandatory IDs or property IDs.
-        :param stored_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item data for
-                                 the existing stored catalogue item as would be required for a `ItemPostSchema` but
-                                 without any mandatory IDs or property IDs.
+        :param stored_item_data: Either `None` or a dictionary containing the basic item data for the existing stored
+                                 item as would be required for a `ItemPostSchema` but without any mandatory IDs or
+                                 property IDs.
         :param stored_catalogue_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item
                                  data for the existing stored catalogue item as would be required for a
                                  `CatalogueItemPostSchema` but without any mandatory IDs or property IDs.
         :param stored_catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data
                                                   for the existing stored catalogue category as would be required for a
                                                   `CatalogueCategoryIn` database model.
+        :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
+                                                  would be required for a `SparesDefinitionOut` database model.
         :param new_system_in_data: Either `None` or a dictionary containing the system data for the new stored system as
                                    would be required for a `SystemIn` database model.
         :param new_usage_status_in_data: Either `None` or a dictionary containing the usage status data for the new
@@ -647,6 +741,8 @@ class UpdateDSL(ItemServiceDSL):
 
             item_update_data["properties"] = property_post_schemas
 
+        self._mock_start_transaction_impacting_number_of_spares(stored_spares_definition_out_data)
+
         # Updated item
         self._expected_item_out = MagicMock()
         ServiceTestHelpers.mock_update(self.mock_item_repository, self._expected_item_out)
@@ -709,6 +805,19 @@ class UpdateDSL(ItemServiceDSL):
         else:
             self.mock_catalogue_category_repository.get.assert_not_called()
             self.wrapped_utils.process_properties.assert_not_called()
+
+        if self._updating_usage_status:
+            self._check_start_transaction_impacting_number_of_spares_performed_expected_calls(
+                "updating item", CustomObjectId(self._stored_item.catalogue_item_id)
+            )
+
+            self.mock_item_repository.update.assert_called_once_with(
+                self._updated_item_id, self._expected_item_in, session=self.mock_transaction_session
+            )
+        else:
+            self.mock_item_repository.update.assert_called_once_with(self._updated_item_id, self._expected_item_in)
+
+        assert self._updated_item == self._expected_item_out
 
     def check_update_failed_with_exception(self, message: str) -> None:
         """
@@ -829,6 +938,21 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
+    def test_update_usage_status_id_with_spares_definition_defined(self):
+        """Test updating an item's `usage_status_id` when there is a spares definition defined."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"usage_status_id": str(ObjectId())},
+            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
+        )
+        self.call_update(item_id)
+        self.check_update_success()
+
     def test_update_with_non_existent_usage_status_id(self):
         """Test updating an item's `usage_status_id` to a non-existent usage status."""
 
@@ -861,7 +985,40 @@ class TestUpdate(UpdateDSL):
 class DeleteDSL(ItemServiceDSL):
     """Base class for `delete` tests."""
 
+    _stored_item: Optional[ItemOut]
     _delete_item_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(
+        self, stored_item_data: Optional[dict], stored_spares_definition_out_data: Optional[dict] = None
+    ) -> None:
+        """
+        Mocks repository methods appropriately to test the `delete` service method.
+
+        :param stored_item_data: Either `None` or a dictionary containing the basic item data for the existing stored
+                                 item as would be required for a `ItemPostSchema` but without any mandatory IDs or
+                                 property IDs.
+        :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
+                                                  would be required for a `SparesDefinitionOut` database model.
+        """
+
+        # Delete doesn't care about anything other than the catalogue item id here
+        self._stored_item = (
+            ItemOut(
+                **ItemIn(
+                    **stored_item_data,
+                    catalogue_item_id=str(ObjectId()),
+                    system_id=str(ObjectId()),
+                    usage_status_id=str(ObjectId()),
+                ).model_dump(),
+                id=str(ObjectId()),
+            )
+            if stored_item_data
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_item_repository, self._stored_item)
+
+        self._mock_start_transaction_impacting_number_of_spares(stored_spares_definition_out_data)
 
     def call_delete(self, item_id: str) -> None:
         """
@@ -873,10 +1030,42 @@ class DeleteDSL(ItemServiceDSL):
         self._delete_item_id = item_id
         self.item_service.delete(item_id)
 
+    def call_delete_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ItemRepo` `delete` method while expecting an error to be raised.
+
+        :param item_id: ID of the item to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._delete_item_id = item_id
+        with pytest.raises(error_type) as exc:
+            self.item_service.delete(item_id)
+        self._delete_exception = exc
+
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
-        self.mock_item_repository.delete.assert_called_once_with(self._delete_item_id)
+        self.mock_item_repository.get.assert_called_once_with(self._delete_item_id)
+        self._check_start_transaction_impacting_number_of_spares_performed_expected_calls(
+            "deleting item", CustomObjectId(self._stored_item.catalogue_item_id)
+        )
+        self.mock_item_repository.delete.assert_called_once_with(
+            self._delete_item_id, session=self.mock_transaction_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_item_repository.get.assert_called_once_with(self._delete_item_id)
+        self.mock_item_repository.delete.assert_not_called()
+
+        assert str(self._delete_exception.value) == message
 
 
 class TestDelete(DeleteDSL):
@@ -885,5 +1074,25 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting an item."""
 
+        self.mock_delete(stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
+
+    def test_delete_with_spares_definition_defined(self):
+        """Test deleting an item when there is a spares definition defined."""
+
+        self.mock_delete(
+            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
+        )
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_non_existent_id(self):
+        """Test deleting an item with a non-existent ID."""
+
+        item_id = str(ObjectId())
+
+        self.mock_delete(stored_item_data=None)
+        self.call_delete_expecting_error(item_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No item found with ID: {item_id}")
