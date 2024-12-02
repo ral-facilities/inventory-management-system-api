@@ -43,7 +43,6 @@ class SparesDefinitionPutSchema(BaseModel):
         Ensures the `usage_statuses` dont contain any duplicate IDs.
 
         :param usage_statuses: The value of the `usage_statuses` field.
-        :param info: Validation info from pydantic.
         :return: The value of the `usage_statuses` field.
         """
 
@@ -57,7 +56,7 @@ class SparesDefinitionPutSchema(BaseModel):
         return usage_statuses
 
 
-class SparesDefinitionSchema(SparesDefinitionPutSchema):
+class SparesDefinitionSchema(BaseModel):
     """
     Schema model for a spares definition.
     """

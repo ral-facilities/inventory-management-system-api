@@ -332,7 +332,7 @@ class DeleteDSL(UsageStatusRepoDSL):
 
         :param deleted_count: Number of documents deleted successfully.
         :param item_data: Dictionary containing an item's data (or `None`).
-        :param setting_data: Dictionary containing an settings's data (or `None`).
+        :param setting_data: Dictionary containing a settings's data (or `None`).
         """
         self.mock_is_usage_status_in_item(item_data)
         self.mock_is_usage_status_in_setting(setting_data)
@@ -400,7 +400,7 @@ class DeleteDSL(UsageStatusRepoDSL):
         Mocks database methods appropriately for when the `_is_usage_status_in_setting` repo method will be
         called.
 
-        :param setting_data: Dictionary containing an settings's data (or `None`).
+        :param setting_data: Dictionary containing a settings's data (or `None`).
         """
         self._mock_setting_data = setting_data
         RepositoryTestHelpers.mock_find_one(self.settings_collection, setting_data)
