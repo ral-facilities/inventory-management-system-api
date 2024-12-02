@@ -10,7 +10,7 @@ from test.mock_data import (
 )
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
@@ -25,16 +25,39 @@ class SettingServiceDSL:
     """Base class for `SettingService` unit tests."""
 
     mock_setting_repository: Mock
+    mock_catalogue_item_repository: Mock
+    mock_item_repository: Mock
     mock_usage_status_repository: Mock
+    mock_utils: Mock
+    mock_start_session_transaction: Mock
     setting_service: SettingService
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     @pytest.fixture(autouse=True)
-    def setup(self, setting_repository_mock, usage_status_repository_mock, setting_service):
+    def setup(
+        self,
+        setting_repository_mock,
+        catalogue_item_repository_mock,
+        item_repository_mock,
+        usage_status_repository_mock,
+        setting_service,
+    ):
         """Setup fixtures"""
 
         self.mock_setting_repository = setting_repository_mock
+        self.mock_catalogue_item_repository = catalogue_item_repository_mock
+        self.mock_item_repository = item_repository_mock
         self.mock_usage_status_repository = usage_status_repository_mock
         self.setting_service = setting_service
+
+        with patch("inventory_management_system_api.services.setting.utils") as mocked_utils:
+            with patch(
+                "inventory_management_system_api.services.setting.start_session_transaction"
+            ) as mocked_start_session_transaction:
+                self.mock_utils = mocked_utils
+                self.mock_start_session_transaction = mocked_start_session_transaction
+                yield
 
 
 class UpdateSparesDefinitionDSL(SettingServiceDSL):
@@ -43,6 +66,7 @@ class UpdateSparesDefinitionDSL(SettingServiceDSL):
     _spares_definition_put: SparesDefinitionPutSchema
     _expected_spares_definition_in: SparesDefinitionIn
     _expected_spares_definition_out: MagicMock
+    _expected_catalogue_item_ids: list[ObjectId]
     _updated_spares_definition: MagicMock
     _update_spares_definition_exception: pytest.ExceptionInfo
 
@@ -83,6 +107,10 @@ class UpdateSparesDefinitionDSL(SettingServiceDSL):
         self._expected_spares_definition_out = MagicMock()
         ServiceTestHelpers.mock_upsert(self.mock_setting_repository, self._expected_spares_definition_out)
 
+        # Expected list of catalogue item ids that need to be updated (actual values don't matter here)
+        self._expected_catalogue_item_ids = [ObjectId(), ObjectId()]
+        self.mock_catalogue_item_repository.list_ids.return_value = self._expected_catalogue_item_ids
+
     def call_update_spares_definition(self) -> None:
         """Calls the `SettingService` `update_spares_definition` method with the appropriate data from a prior call to
         `mock_update_spares_definition`."""
@@ -111,9 +139,41 @@ class UpdateSparesDefinitionDSL(SettingServiceDSL):
             [call(usage_status.id) for usage_status in self._spares_definition_put.usage_statuses]
         )
 
+        # Ensure started a transaction
+        self.mock_start_session_transaction.assert_called_once_with("updating spares definition")
+        expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
+
         # Ensure upserted with expected data
         self.mock_setting_repository.upsert.assert_called_once_with(
-            self._expected_spares_definition_in, SparesDefinitionOut
+            self._expected_spares_definition_in, SparesDefinitionOut, session=expected_session
+        )
+
+        # Ensure obtained list of all catalogue item ids and used them to recalculate the number of spares
+        self.mock_catalogue_item_repository.list_ids.assert_called_once_with()
+        self.mock_utils.get_usage_status_ids_from_spares_definition.assert_called_once_with(
+            self._expected_spares_definition_out
+        )
+
+        expected_prepare_for_number_of_spares_recalculation_calls = []
+        expected_perform_number_of_spares_recalculation_calls = []
+        for catalogue_item_id in self._expected_catalogue_item_ids:
+            expected_prepare_for_number_of_spares_recalculation_calls.append(
+                call(catalogue_item_id, self.mock_catalogue_item_repository, expected_session)
+            )
+            expected_perform_number_of_spares_recalculation_calls.append(
+                call(
+                    catalogue_item_id,
+                    self.mock_utils.get_usage_status_ids_from_spares_definition.return_value,
+                    self.mock_catalogue_item_repository,
+                    self.mock_item_repository,
+                    expected_session,
+                )
+            )
+        self.mock_utils.prepare_for_number_of_spares_recalculation.assert_has_calls(
+            expected_prepare_for_number_of_spares_recalculation_calls
+        )
+        self.mock_utils.perform_number_of_spares_recalculation.assert_has_calls(
+            expected_perform_number_of_spares_recalculation_calls
         )
 
         assert self._updated_spares_definition == self._expected_spares_definition_out
