@@ -180,7 +180,9 @@ class GetDSL(SettingRepoDSL):
         """Checks that a prior call to `call_get` worked as expected."""
 
         if self._obtained_out_model_type is SparesDefinitionOut:
-            self.settings_collection.aggregate.assert_called_once_with(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE)
+            self.settings_collection.aggregate.assert_called_once_with(
+                SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=self.mock_session
+            )
         else:
             self.settings_collection.find_one.assert_called_once_with(
                 {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session

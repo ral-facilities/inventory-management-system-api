@@ -183,7 +183,7 @@ class ItemRepo:
 
     # pylint:enable=duplicate-code
 
-    def count_with_usage_statuses_ids_in(
+    def count_with_usage_status_ids_in(
         self,
         catalogue_item_id: ObjectId,
         usage_status_ids: List[CustomObjectId],

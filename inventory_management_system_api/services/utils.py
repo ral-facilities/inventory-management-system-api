@@ -300,7 +300,7 @@ def perform_number_of_spares_recalculation(
     """
 
     # Now calculate the new number of spares
-    new_number_of_spares = item_repository.count_with_usage_statuses_ids_in(
+    new_number_of_spares = item_repository.count_with_usage_status_ids_in(
         catalogue_item_id, usage_status_ids, session=session
     )
 
