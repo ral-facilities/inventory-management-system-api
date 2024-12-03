@@ -586,6 +586,18 @@ class UpdateDSL(CatalogueItemServiceDSL):
                     ),
                 )
 
+                # Update with the new IDs (if its possible to update them in the first place)
+                if (
+                    self._stored_catalogue_category_out
+                    and self._new_catalogue_category_out
+                    and len(self._stored_catalogue_category_out.properties)
+                    == len(self._new_catalogue_category_out.properties)
+                ):
+                    expected_stored_properties_in, _ = self.construct_properties_in_and_post_with_ids(
+                        self._new_catalogue_category_in.properties,
+                        stored_catalogue_item_data["properties"] if "properties" in stored_catalogue_item_data else [],
+                    )
+
         self._updating_manufacturer = (
             "manufacturer_id" in catalogue_item_update_data
             and catalogue_item_update_data["manufacturer_id"] != self._stored_catalogue_item.manufacturer_id
@@ -632,9 +644,8 @@ class UpdateDSL(CatalogueItemServiceDSL):
             )
 
         # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
-        expected_properties_in = []
+        expected_properties_in = expected_stored_properties_in
         if self._updating_properties:
-
             # When not moving to a different catalogue category the existing catalogue category will still need to be
             # mocked
             if not self._moving_catalogue_item:
@@ -750,6 +761,9 @@ class UpdateDSL(CatalogueItemServiceDSL):
         else:
             self.wrapped_utils.process_properties.assert_not_called()
 
+        self.mock_catalogue_item_repository.update.assert_called_once_with(
+            self._updated_catalogue_item_id, self._expected_catalogue_item_in
+        )
         assert self._updated_catalogue_item == self._expected_catalogue_item_out
 
     def check_update_failed_with_exception(self, message: str) -> None:
