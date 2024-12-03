@@ -68,8 +68,7 @@ class SettingRepo:
         self, setting: SettingInBaseT, out_model_type: Type[SettingOutBaseT], session: ClientSession = None
     ) -> SettingOutBaseT:
         """
-        Assign a setting a MongoDB database. Will either update or insert the setting depending on whether it
-        already exists.
+        Update or insert a setting in a MongoDB database depending on whether it already exists.
 
         :param setting: Setting containing the fields to be updated. Also contains the ID for lookup.
         :param out_model_type: The output type of the setting's model.
