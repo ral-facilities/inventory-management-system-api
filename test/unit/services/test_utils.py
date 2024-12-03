@@ -2,15 +2,20 @@
 Unit tests for the `utils` in /services.
 """
 
+from test.mock_data import SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED
+from unittest.mock import MagicMock
+
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DuplicateCatalogueCategoryPropertyNameError,
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import AllowedValues, CatalogueCategoryPropertyOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.services import utils
 
@@ -323,4 +328,60 @@ class TestProcessProperties:
         assert (
             str(exc.value) == f"Invalid value for property with ID '{supplied_properties[4].id}'. "
             "Expected one of red, green."
+        )
+
+
+class TestGetUsageStatusIdsFromSparesDefinition:
+    """Tests for the `get_usage_status_ids_from_spares_definition` method."""
+
+    def test_get_usage_status_ids_from_spares_definition(self):
+        """Tests `get_usage_status_ids_from_spares_definition` works correctly."""
+
+        result = utils.get_usage_status_ids_from_spares_definition(
+            SparesDefinitionOut(**SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED)
+        )
+        assert result == [
+            CustomObjectId(usage_status["id"])
+            for usage_status in SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED["usage_statuses"]
+        ]
+
+
+class TestPrepareForNumberOfSparesRecalculation:
+    """Tests for the `prepare_for_number_of_spares_recalculation` method."""
+
+    def test_prepare_for_number_of_spares_recalculation(self):
+        """Tests `prepare_for_number_of_spares_recalculation` works correctly."""
+
+        catalogue_item_id = MagicMock()
+        catalogue_item_repository = MagicMock()
+        session = MagicMock()
+        utils.prepare_for_number_of_spares_recalculation(catalogue_item_id, catalogue_item_repository, session)
+
+        catalogue_item_repository.update_number_of_spares.assert_called_once_with(
+            catalogue_item_id, None, session=session
+        )
+
+
+class TestPerformNumberOfSparesRecalculation:
+    """Tests for the `perform_number_of_spares_recalculation` method."""
+
+    def test_perform_number_of_spares_recalculation(self):
+        """Tests `perform_number_of_spares_recalculation` works correctly."""
+
+        catalogue_item_id = MagicMock()
+        usage_status_ids = MagicMock()
+        catalogue_item_repository = MagicMock()
+        item_repository = MagicMock()
+        session = MagicMock()
+
+        utils.perform_number_of_spares_recalculation(
+            catalogue_item_id, usage_status_ids, catalogue_item_repository, item_repository, session
+        )
+
+        item_repository.count_with_usage_status_ids_in.assert_called_once_with(
+            catalogue_item_id, usage_status_ids, session=session
+        )
+        expected_new_number_of_spares = item_repository.count_with_usage_status_ids_in.return_value
+        catalogue_item_repository.update_number_of_spares(
+            catalogue_item_id, expected_new_number_of_spares, session=session
         )
