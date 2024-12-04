@@ -2,7 +2,14 @@
 End-to-End tests for the setting router.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=too-many-lines
+# pylint: disable=duplicate-code
+# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-ancestors
+
 from copy import deepcopy
+from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_item import GetDSL as CatalogueItemGetDSL
 from test.e2e.test_item import DeleteDSL as ItemDeleteDSL
 from test.e2e.test_usage_status import CreateDSL as UsageStatusCreateDSL
@@ -167,9 +174,27 @@ class SparesDefinitionDSL(SetSparesDefinitionDSL, ItemDeleteDSL, CatalogueItemGe
     """Base class for spares definition tests."""
 
     catalogue_item_ids: list[str]
+    _post_responses_catalogue_items: list[Response]
+
+    def post_item_with_usage_status(self, usage_status_value: str) -> Optional[str]:
+        """
+        Utility method that posts an item with a specific usage status.
+
+        :return: ID of the created item (or `None` if not successful).
+        """
+
+        return self.post_item({**ITEM_DATA_REQUIRED_VALUES_ONLY, "usage_status": usage_status_value})
 
     def post_items_and_prerequisites_with_usage_statuses(self, usage_status_values_lists: list[list[str]]) -> None:
-        # TODO: Comment
+        """
+        Utility method that posts a series of catalogue items and items as well as their prerequisite manufacturer,
+        catalogue category, units, usage statuses and units where the items have a given series of usage statuses.
+
+
+        :param usage_status_values_lists: List containing lists of usage status values. Each outer list represents
+                                          a separate catalogue item to create and each value in the inner list
+                                          gives the usage status of an item to create within that same catalogue item.
+        """
 
         # Item pre-requisites
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -181,6 +206,7 @@ class SparesDefinitionDSL(SetSparesDefinitionDSL, ItemDeleteDSL, CatalogueItemGe
 
         # Create one catalogue item for each list in usage_status_values_lists
         self.catalogue_item_ids = []
+        self._post_responses_catalogue_items = []
         for i, usage_status_values in enumerate(usage_status_values_lists):
             # Only post prerequisites once
             if i == 0:
@@ -190,32 +216,43 @@ class SparesDefinitionDSL(SetSparesDefinitionDSL, ItemDeleteDSL, CatalogueItemGe
             else:
                 catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES)
             self.catalogue_item_ids.append(catalogue_item_id)
+            self._post_responses_catalogue_items.append(self._post_response_catalogue_item)
 
             # Create one item for each usage status value in usage_status_values
             for usage_status_value in usage_status_values:
                 self.post_item_with_usage_status(usage_status_value)
 
-    def post_item_with_usage_status(self, usage_status_value: str) -> Optional[str]:
-        # TODO: Comment/reorder?
-
-        return self.post_item({**ITEM_DATA_REQUIRED_VALUES_ONLY, "usage_status": usage_status_value})
-
     def patch_item_usage_status(self, item_id: str, usage_status_value: str) -> None:
-        # TODO: Comment/reorder?
+        """
+        Utility method that patches an item to have a given usage status given its value.
 
-        self.patch_item(item_id, {"usage_status_id": self.usage_status_value_id_dict["New"]})
+        :param item_id: ID of the item to patch.
+        :param usage_status_value: Value of the usage status to update the item with.
+        """
+
+        self.patch_item(item_id, {"usage_status_id": self.usage_status_value_id_dict[usage_status_value]})
 
     def check_catalogue_items_spares(self, expected_number_of_spares_list: list[Optional[int]]) -> None:
-        # TODO: Comment
+        """
+        Checks that any catalogue items created via `post_items_and_prerequisites_with_usage_statuses` have specific
+        expected `number_of_spares` values.
 
-        for catalogue_item_id, expected_number_of_spares in zip(
-            self.catalogue_item_ids, expected_number_of_spares_list
+        :param expected_number_of_spares_list: List of the expected values of the `number_of_spares` field, one for
+                                               each catalogue item that was created.
+        """
+
+        for i, (catalogue_item_id, expected_number_of_spares) in enumerate(
+            zip(self.catalogue_item_ids, expected_number_of_spares_list)
         ):
             self.get_catalogue_item(catalogue_item_id)
             self.check_get_catalogue_item_success(
                 {**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "number_of_spares": expected_number_of_spares}
             )
-            # TODO: Modified time?
+
+            # Also ensure the created and modified times are not changed
+            E2ETestHelpers.check_created_and_modified_times_not_updated(
+                self._post_responses_catalogue_items[i], self._get_response_catalogue_item
+            )
 
 
 class TestSparesDefinitionDSL(SparesDefinitionDSL):
