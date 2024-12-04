@@ -98,5 +98,5 @@ class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostSchema):
 
     # Computed
     number_of_spares: Optional[int] = Field(
-        default=None, description="Number of spares currently available within this catalogue item if known"
+        default=None, description="The number of spares currently available within this catalogue item if known"
     )

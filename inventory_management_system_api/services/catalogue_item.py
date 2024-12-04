@@ -210,7 +210,7 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.update(
             catalogue_item_id,
-            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data, "number_of_spares": None}),
+            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
         )
 
     def delete(self, catalogue_item_id: str) -> None:
