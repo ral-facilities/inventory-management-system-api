@@ -623,7 +623,7 @@ class GetDSL(CreateDSL):
         """
         Checks that a prior call to `get_catalogue_item` gave a successful response with the expected data returned.
 
-        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue tiem data returned as
+        :param expected_catalogue_item_get_data: Dictionary containing the expected catalogue item data returned as
                                                  would be required for a `CatalogueItemSchema`. Does not need mandatory
                                                  IDs (e.g. `manufacturer_id`) as they will be added automatically to
                                                  check they are as expected.
@@ -685,10 +685,10 @@ class ListDSL(GetDSL):
 
         self._get_response_catalogue_item = self.test_client.get("/v1/catalogue-items", params=filters)
 
-    def post_test_catalogue_items(self) -> list[dict]:
+    def post_test_catalogue_items_and_prerequisites(self) -> list[dict]:
         """
-        Posts two catalogue items each in a separate catalogue category and returns their expected responses when
-        returned by the list endpoint.
+        Posts two catalogue items having first posted the required prerequisite entities. Each catalogue item is in a
+        separate catalogue category.
 
         :return: List of dictionaries containing the expected catalogue item data returned from a get endpoint in
                  the form of a `CatalogueItemSchema`.
@@ -739,7 +739,7 @@ class TestList(ListDSL):
         Posts two catalogue items in different catalogue categories and expects both to be returned.
         """
 
-        catalogue_items = self.post_test_catalogue_items()
+        catalogue_items = self.post_test_catalogue_items_and_prerequisites()
         self.get_catalogue_items(filters={})
         self.check_get_catalogue_items_success(catalogue_items)
 
@@ -751,7 +751,7 @@ class TestList(ListDSL):
         expecting only the second catalogue item to be returned.
         """
 
-        catalogue_items = self.post_test_catalogue_items()
+        catalogue_items = self.post_test_catalogue_items_and_prerequisites()
         self.get_catalogue_items(filters={"catalogue_category_id": catalogue_items[1]["catalogue_category_id"]})
         self.check_get_catalogue_items_success([catalogue_items[1]])
 
@@ -818,7 +818,7 @@ class UpdateDSL(ListDSL):
         }
         self.test_client.post("/v1/items", json=item_post)
 
-    def check_patch_catalogue_item_response_success(self, expected_catalogue_item_get_data: dict) -> None:
+    def check_patch_catalogue_item_success(self, expected_catalogue_item_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_catalogue_item` gave a successful response with the expected data
         returned.
@@ -875,7 +875,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
     def test_partial_update_all_fields_except_ids_or_properties_with_children(self):
         """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has
@@ -887,7 +887,7 @@ class TestUpdate(UpdateDSL):
         self.post_child_item()
 
         self.patch_catalogue_item(catalogue_item_id, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES)
 
     def test_partial_update_catalogue_category_id_no_properties(self):
         """Test updating the `catalogue_category_id` of a catalogue item when no properties are involved."""
@@ -898,7 +898,7 @@ class TestUpdate(UpdateDSL):
         new_catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY)
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
     def test_partial_update_catalogue_category_id_with_same_defined_properties(self):
         """Test updating the `catalogue_category_id` of a catalogue item when both the old and new catalogue category
@@ -912,7 +912,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": new_catalogue_category_id})
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
 
     def test_partial_update_catalogue_category_id_and_properties_with_same_defined_properties(self):
         """Test updating the `catalogue_category_id` and `properties` of a catalogue item when both the old and new
@@ -932,7 +932,7 @@ class TestUpdate(UpdateDSL):
                 "properties": CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
             },
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
@@ -982,7 +982,7 @@ class TestUpdate(UpdateDSL):
                 "properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][::-1],
             },
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][::-1],
@@ -1032,7 +1032,7 @@ class TestUpdate(UpdateDSL):
                 "properties": [PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
             },
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": [PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42],
@@ -1079,7 +1079,7 @@ class TestUpdate(UpdateDSL):
             catalogue_item_id,
             {"catalogue_category_id": new_catalogue_category_id, "properties": []},
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": [],
@@ -1103,7 +1103,7 @@ class TestUpdate(UpdateDSL):
                 "properties": CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
             },
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
                 "properties": CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
@@ -1173,7 +1173,7 @@ class TestUpdate(UpdateDSL):
         new_manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_ALL_VALUES)
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": new_manufacturer_id})
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
     def test_partial_update_manufacturer_id_with_children(self):
         """Test updating the `manufacturer_id` of a catalogue item when it has children."""
@@ -1219,7 +1219,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"properties": []})
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
 
     def test_partial_update_properties_with_mandatory_properties_given_none(self):
         """Test updating the `properties` of a catalogue item to have mandatory properties with a value of `None`."""
@@ -1256,7 +1256,7 @@ class TestUpdate(UpdateDSL):
                 ]
             },
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY["properties"],
@@ -1277,7 +1277,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_item(
             catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"]}
         )
-        self.check_patch_catalogue_item_response_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+        self.check_patch_catalogue_item_success(CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES)
 
     def test_partial_update_properties_removing_non_mandatory_property(self):
         """Test updating the `properties` of a catalogue item to remove a previously defined non-mandatory property."""
@@ -1289,7 +1289,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_item(
             catalogue_item_id, {"properties": CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["properties"][0:2]}
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": [
@@ -1388,7 +1388,7 @@ class TestUpdate(UpdateDSL):
                 ]
             },
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                 "properties": [
@@ -1479,7 +1479,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_item(
             catalogue_item_id, {"obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id}
         )
-        self.check_patch_catalogue_item_response_success(
+        self.check_patch_catalogue_item_success(
             {
                 **CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
                 "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
