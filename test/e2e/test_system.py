@@ -432,7 +432,7 @@ class UpdateDSL(ListDSL):
 
         self._patch_response_system = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
-    def check_patch_system_response_success(self, expected_system_get_data: dict) -> None:
+    def check_patch_system_success(self, expected_system_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_system` gave a successful response with the expected data returned.
 
@@ -467,7 +467,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-        self.check_patch_system_response_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
+        self.check_patch_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
     def test_partial_update_parent_id(self):
         """Test updating the `parent_id` of a system."""
@@ -476,7 +476,7 @@ class TestUpdate(UpdateDSL):
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
         self.patch_system(system_id, {"parent_id": parent_id})
-        self.check_patch_system_response_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
         """Test updating the `parent_id` of a system so that its name conflicts with one already in that other
@@ -530,7 +530,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Test system"})
         self.patch_system(system_id, {"name": "Test System"})
-        self.check_patch_system_response_success(
+        self.check_patch_system_success(
             {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "name": "Test System", "code": "test-system"}
         )
 
