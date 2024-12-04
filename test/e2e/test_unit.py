@@ -32,7 +32,7 @@ class CreateDSL:
         self.test_client = test_client
         self.unit_value_id_dict = {}
 
-    def add_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
+    def set_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
         """
         Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
         non-existent or invalid unit ID.
@@ -55,7 +55,7 @@ class CreateDSL:
         self._post_response_unit = self.test_client.post("/v1/units", json=unit_post_data)
         created_id = self._post_response_unit.json()["id"] if self._post_response_unit.status_code == 201 else None
         if created_id:
-            self.add_unit_value_and_id(unit_post_data["value"], created_id)
+            self.set_unit_value_and_id(unit_post_data["value"], created_id)
         return created_id
 
     def check_post_unit_success(self, expected_unit_get_data: dict) -> None:

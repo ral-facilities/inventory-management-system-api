@@ -91,21 +91,35 @@ class E2ETestHelpers:
     """
 
     @staticmethod
-    def check_created_and_modified_times_updated_correctly(post_response: Response, patch_response: Response):
-        """Checks that an updated entity has a created_time that is the same as its original, but an updated_time
+    def check_created_and_modified_times_updated_correctly(post_response: Response, new_response: Response):
+        """Checks that an updated entity has a `created_time` that is the same as its original, but an `updated_time`
         that is newer
 
         :param post_response: Original response for the entity post request
-        :param patch_response: Updated response for the entity patch request
+        :param new_response: Updated response for the entity patch/get request
         """
 
         original_data = post_response.json()
-        updated_data = patch_response.json()
+        updated_data = new_response.json()
 
         assert original_data["created_time"] == updated_data["created_time"]
         assert datetime.fromisoformat(updated_data["modified_time"]) > datetime.fromisoformat(
             original_data["modified_time"]
         )
+
+    @staticmethod
+    def check_created_and_modified_times_not_updated(post_response: Response, new_response: Response):
+        """Checks that an entity still has the same `created_time` and `updated_time` as its original
+
+        :param post_response: Original response for the entity post request
+        :param new_response: Updated response for the entity patch/get request
+        """
+
+        original_data = post_response.json()
+        updated_data = new_response.json()
+
+        assert original_data["created_time"] == updated_data["created_time"]
+        assert original_data["modified_time"] == updated_data["modified_time"]
 
     @staticmethod
     def replace_unit_values_with_ids_in_properties(data: dict, unit_value_id_dict: dict[str, str]) -> dict:
