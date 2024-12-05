@@ -93,7 +93,8 @@ class CatalogueItemService:
                 **{
                     **catalogue_item.model_dump(),
                     "properties": supplied_properties,
-                }
+                },
+                number_of_spares=None,
             )
         )
 

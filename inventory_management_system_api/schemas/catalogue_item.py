@@ -95,3 +95,8 @@ class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostSchema):
         description="The properties specific to this catalogue item as defined "
         "in the corresponding catalogue category"
     )
+
+    # Computed
+    number_of_spares: Optional[int] = Field(
+        default=None, description="The number of spares currently available within this catalogue item if known"
+    )

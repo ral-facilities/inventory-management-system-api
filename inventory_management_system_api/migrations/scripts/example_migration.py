@@ -2,6 +2,9 @@
 Module providing an example migration that does nothing
 """
 
+# Expect some duplicate code inside migrations as models can be duplicated
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Collection
 
