@@ -58,7 +58,7 @@ def get_previous_migration() -> Optional[str]:
 
 def set_previous_migration(name: Optional[str]) -> None:
     """
-    Assigns the name of the of the previous migration that got the database to its current state inside the database.
+    Assigns the name of the previous migration that got the database to its current state inside the database.
 
     :param name: The name of the previous migration applied to the database or `None` if being set back no migrations
                  having been applied.
