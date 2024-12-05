@@ -122,7 +122,7 @@ class UsageStatusRepo:
         )
         return usage_status is not None
 
-    def _is_usage_status_in_item(self, usage_status_id: str, session: ClientSession = None) -> bool:
+    def _is_usage_status_in_item(self, usage_status_id: CustomObjectId, session: ClientSession = None) -> bool:
         """Checks to see if any of the items in the database have a specific usage status ID.
 
         :param usage_status_id: The ID of the usage status that is looked for.

@@ -20,18 +20,18 @@ SettingServiceDep = Annotated[SettingService, Depends(SettingService)]
 
 @router.put(
     path="/spares_definition",
-    summary="Set the definition of a spare",
+    summary="Update the definition of a spare",
     response_description="Spares definition updated successfully",
 )
-def set_spares_definition(
+def update_spares_definition(
     spares_definition: SparesDefinitionPutSchema, setting_service: SettingServiceDep
 ) -> SparesDefinitionSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Setting spares definition")
+    logger.info("Updating spares definition")
     logger.debug("Spares definition data: %s", spares_definition)
 
     try:
-        updated_spares_definition = setting_service.set_spares_definition(spares_definition)
+        updated_spares_definition = setting_service.update_spares_definition(spares_definition)
         return SparesDefinitionSchema(**updated_spares_definition.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "A specified usage status does not exist"

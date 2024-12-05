@@ -17,8 +17,8 @@ from bson import ObjectId
 from httpx import Response
 
 
-class SetSparesDefinitionDSL(UsageStatusCreateDSL):
-    """Base class for set spares definition tests."""
+class UpdateSparesDefinitionDSL(UsageStatusCreateDSL):
+    """Base class for update spares definition tests."""
 
     _put_response_spares_definition: Response
 
@@ -90,18 +90,18 @@ class SetSparesDefinitionDSL(UsageStatusCreateDSL):
         assert self._put_response_spares_definition.json()["detail"][0]["msg"] == message
 
 
-class TestSetSparesDefinition(SetSparesDefinitionDSL):
-    """Tests for setting the spares definition."""
+class TestUpdateSparesDefinition(UpdateSparesDefinitionDSL):
+    """Tests for updating the spares definition."""
 
-    def test_set_spares_definition(self):
-        """Test setting the spares definition (for the first time)."""
+    def test_update_spares_definition(self):
+        """Test updating the spares definition (for the first time)."""
 
         self.put_spares_definition_and_post_prerequisites(SETTING_SPARES_DEFINITION_DATA_NEW_USED)
 
         self.check_put_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_NEW_USED)
 
-    def test_set_spares_definition_overwrite(self):
-        """Test setting the spares definition (when it has already been assigned before)."""
+    def test_update_spares_definition_overwrite(self):
+        """Test updating the spares definition (when it has already been assigned before)."""
 
         self.put_spares_definition_and_post_prerequisites(SETTING_SPARES_DEFINITION_DATA_NEW_USED)
         self.check_put_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_NEW_USED)
@@ -109,8 +109,8 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
         self.put_spares_definition_and_post_prerequisites(SETTING_SPARES_DEFINITION_DATA_NEW)
         self.check_put_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_NEW)
 
-    def test_set_spares_definition_with_no_usage_statuses(self):
-        """Test setting the spares definition with no usage statuses given."""
+    def test_update_spares_definition_with_no_usage_statuses(self):
+        """Test updating the spares definition with no usage statuses given."""
 
         self.put_spares_definition({**SETTING_SPARES_DEFINITION_DATA_NEW_USED, "usage_statuses": []})
 
@@ -118,8 +118,8 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
             422, "List should have at least 1 item after validation, not 0"
         )
 
-    def test_set_spares_definition_with_duplicate_usage_statuses(self):
-        """Test setting the spares definition with no usage statuses given."""
+    def test_update_spares_definition_with_duplicate_usage_statuses(self):
+        """Test updating the spares definition with no usage statuses given."""
 
         self.put_spares_definition_and_post_prerequisites(
             {
@@ -137,8 +137,8 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
             f"{self.usage_status_value_id_dict[SETTING_SPARES_DEFINITION_DATA_NEW_USED['usage_statuses'][0]['value']]}",
         )
 
-    def test_set_spares_definition_with_non_existent_usage_status_id(self):
-        """Test setting the spares definition when there is a non-existent usage status ID."""
+    def test_update_spares_definition_with_non_existent_usage_status_id(self):
+        """Test updating the spares definition when there is a non-existent usage status ID."""
 
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.add_usage_status_value_and_id(USAGE_STATUS_POST_DATA_USED["value"], str(ObjectId()))
@@ -146,8 +146,8 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
 
         self.check_put_spares_definition_failed_with_detail(422, "A specified usage status does not exist")
 
-    def test_set_spares_definition_with_invalid_usage_status_id(self):
-        """Test setting the spares definition when there is an invalid usage status ID."""
+    def test_update_spares_definition_with_invalid_usage_status_id(self):
+        """Test updating the spares definition when there is an invalid usage status ID."""
 
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.add_usage_status_value_and_id(USAGE_STATUS_POST_DATA_USED["value"], "invalid-id")

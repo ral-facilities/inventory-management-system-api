@@ -37,20 +37,20 @@ class SettingServiceDSL:
         self.setting_service = setting_service
 
 
-class SetSparesDefinitionDSL(SettingServiceDSL):
-    """Base class for `set_spares_definition` tests."""
+class UpdateSparesDefinitionDSL(SettingServiceDSL):
+    """Base class for `update_spares_definition` tests."""
 
     _spares_definition_put: SparesDefinitionPutSchema
     _expected_spares_definition_in: SparesDefinitionIn
     _expected_spares_definition_out: MagicMock
-    _set_spares_definition: MagicMock
-    _set_spares_definition_exception: pytest.ExceptionInfo
+    _updated_spares_definition: MagicMock
+    _update_spares_definition_exception: pytest.ExceptionInfo
 
-    def mock_set_spares_definition(
+    def mock_update_spares_definition(
         self, spares_definition_data: dict, usage_statuses_out_data: list[Optional[dict]]
     ) -> None:
         """
-        Mocks repository methods appropriately to test the `set_spares_definition` service method.
+        Mocks repository methods appropriately to test the `update_spares_definition` service method.
 
         :param spares_definition_data: Dictionary containing the put data as would be required for a
                                        `SparesDefinitionPutSchema` but with any `id`'s replaced by the `value` as the
@@ -83,26 +83,26 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
         self._expected_spares_definition_out = MagicMock()
         ServiceTestHelpers.mock_upsert(self.mock_setting_repository, self._expected_spares_definition_out)
 
-    def call_set_spares_definition(self) -> None:
-        """Calls the `SettingService` `set_spares_definition` method with the appropriate data from a prior call to
-        `mock_set_spares_definition`."""
+    def call_update_spares_definition(self) -> None:
+        """Calls the `SettingService` `update_spares_definition` method with the appropriate data from a prior call to
+        `mock_update_spares_definition`."""
 
-        self._set_spares_definition = self.setting_service.set_spares_definition(self._spares_definition_put)
+        self._updated_spares_definition = self.setting_service.update_spares_definition(self._spares_definition_put)
 
-    def call_set_spares_definition_expecting_error(self, error_type: type[BaseException]) -> None:
+    def call_update_spares_definition_expecting_error(self, error_type: type[BaseException]) -> None:
         """
-        Calls the `SettingService` `set_spares_definition` method with the appropriate data from a prior call to
-        `mock_set_spares_definition` while expecting an error to be raised.
+        Calls the `SettingService` `update_spares_definition` method with the appropriate data from a prior call to
+        `mock_update_spares_definition` while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
         """
 
         with pytest.raises(error_type) as exc:
-            self.setting_service.set_spares_definition(self._spares_definition_put)
-        self._set_spares_definition_exception = exc
+            self.setting_service.update_spares_definition(self._spares_definition_put)
+        self._update_spares_definition_exception = exc
 
-    def check_set_spares_definition_success(self) -> None:
-        """Checks that a prior call to `call_set_spares_definition` worked as expected."""
+    def check_update_spares_definition_success(self) -> None:
+        """Checks that a prior call to `call_update_spares_definition` worked as expected."""
 
         # Ensure obtained all of the required usage statuses
         self.mock_usage_status_repository.get.assert_has_calls(
@@ -116,11 +116,11 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
             self._expected_spares_definition_in, SparesDefinitionOut
         )
 
-        assert self._set_spares_definition == self._expected_spares_definition_out
+        assert self._updated_spares_definition == self._expected_spares_definition_out
 
-    def check_set_spares_definition_failed_with_exception(self, message: str) -> None:
+    def check_update_spares_definition_failed_with_exception(self, message: str) -> None:
         """
-        Checks that a prior call to `call_set_spares_definition_expecting_error` worked as expected, raising an
+        Checks that a prior call to `call_update_spares_definition_expecting_error` worked as expected, raising an
         exception with the correct message.
 
         :param message: Expected message of the raised exception.
@@ -128,27 +128,27 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
 
         self.mock_setting_repository.upsert.assert_not_called()
 
-        assert str(self._set_spares_definition_exception.value) == message
+        assert str(self._update_spares_definition_exception.value) == message
 
 
-class TestSetSpareDefinition(SetSparesDefinitionDSL):
-    """Tests for setting the spares definition."""
+class TestUpdateSpareDefinition(UpdateSparesDefinitionDSL):
+    """Tests for updating the spares definition."""
 
-    def test_set_spare_definition(self):
-        """Test setting the spares definition."""
+    def test_update_spare_definition(self):
+        """Test updating the spares definition."""
 
-        self.mock_set_spares_definition(
+        self.mock_update_spares_definition(
             SETTING_SPARES_DEFINITION_DATA_NEW_USED, [USAGE_STATUS_OUT_DATA_NEW, USAGE_STATUS_OUT_DATA_USED]
         )
-        self.call_set_spares_definition()
-        self.check_set_spares_definition_success()
+        self.call_update_spares_definition()
+        self.check_update_spares_definition_success()
 
-    def test_set_spare_definition_with_non_existent_usage_status_id(self):
-        """Test setting the spares definition with a non-existent usage status ID."""
+    def test_update_spare_definition_with_non_existent_usage_status_id(self):
+        """Test updating the spares definition with a non-existent usage status ID."""
 
-        self.mock_set_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW_USED, [USAGE_STATUS_OUT_DATA_NEW, None])
-        self.call_set_spares_definition_expecting_error(MissingRecordError)
-        self.check_set_spares_definition_failed_with_exception(
+        self.mock_update_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW_USED, [USAGE_STATUS_OUT_DATA_NEW, None])
+        self.call_update_spares_definition_expecting_error(MissingRecordError)
+        self.check_update_spares_definition_failed_with_exception(
             # Pydantic Field confuses pylint
             # pylint: disable=unsubscriptable-object
             f"No usage status found with ID: {self._spares_definition_put.usage_statuses[1].id}"
