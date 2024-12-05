@@ -49,4 +49,4 @@ def get_spares_definition(setting_service: SettingServiceDep) -> SparesDefinitio
     spares_definition = setting_service.get_spares_definition()
     if not spares_definition:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Spares definition not found.")
-    return spares_definition
+    return SparesDefinitionSchema(**spares_definition.model_dump())
