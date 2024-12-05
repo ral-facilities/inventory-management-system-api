@@ -1,5 +1,5 @@
 """
-Module for providing a service for managing Systems using the `SystemRepo` repository
+Module for providing a service for managing systems using the `SystemRepo` repository.
 """
 
 import logging

@@ -19,7 +19,9 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingRecordError,
     PartOfItemError,
+    PartOfSettingError,
 )
+from inventory_management_system_api.models.setting import SparesDefinitionIn
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 
@@ -31,6 +33,7 @@ class UsageStatusRepoDSL:
     usage_status_repository: UsageStatusRepo
     usage_statuses_collection: Mock
     items_collection: Mock
+    settings_collection: Mock
 
     mock_session = MagicMock()
 
@@ -41,6 +44,7 @@ class UsageStatusRepoDSL:
         self.usage_status_repository = UsageStatusRepo(database_mock)
         self.usage_statuses_collection = database_mock.usage_statuses
         self.items_collection = database_mock.items
+        self.settings_collection = database_mock.settings
 
         self.mock_session = MagicMock()
         yield
@@ -318,15 +322,20 @@ class DeleteDSL(UsageStatusRepoDSL):
     _delete_usage_status_id: str
     _delete_exception: pytest.ExceptionInfo
     _mock_item_data: Optional[dict]
+    _mock_setting_data: Optional[dict]
 
-    def mock_delete(self, deleted_count: int, item_data: Optional[dict] = None) -> None:
+    def mock_delete(
+        self, deleted_count: int, item_data: Optional[dict] = None, setting_data: Optional[dict] = None
+    ) -> None:
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
         :param deleted_count: Number of documents deleted successfully.
         :param item_data: Dictionary containing an item's data (or `None`).
+        :param setting_data: Dictionary containing a settings's data (or `None`).
         """
         self.mock_is_usage_status_in_item(item_data)
+        self.mock_is_usage_status_in_setting(setting_data)
         RepositoryTestHelpers.mock_delete_one(self.usage_statuses_collection, deleted_count)
 
     def call_delete(self, usage_status_id: str) -> None:
@@ -354,6 +363,7 @@ class DeleteDSL(UsageStatusRepoDSL):
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
         self.check_is_usage_status_in_item_performed_expected_calls(self._delete_usage_status_id)
+        self.check_is_usage_status_in_setting_performed_expected_calls(self._delete_usage_status_id)
         self.usage_statuses_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_usage_status_id)}, session=self.mock_session
         )
@@ -385,6 +395,16 @@ class DeleteDSL(UsageStatusRepoDSL):
         self._mock_item_data = item_data
         RepositoryTestHelpers.mock_find_one(self.items_collection, item_data)
 
+    def mock_is_usage_status_in_setting(self, setting_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately for when the `_is_usage_status_in_setting` repo method will be
+        called.
+
+        :param setting_data: Dictionary containing a settings's data (or `None`).
+        """
+        self._mock_setting_data = setting_data
+        RepositoryTestHelpers.mock_find_one(self.settings_collection, setting_data)
+
     def check_is_usage_status_in_item_performed_expected_calls(self, expected_usage_status_id: str) -> None:
         """Checks that a call to `_is_usage_status_in_item` performed the expected method calls.
 
@@ -392,6 +412,19 @@ class DeleteDSL(UsageStatusRepoDSL):
         """
         self.items_collection.find_one.assert_called_once_with(
             {"usage_status_id": CustomObjectId(expected_usage_status_id)}, session=self.mock_session
+        )
+
+    def check_is_usage_status_in_setting_performed_expected_calls(self, expected_usage_status_id: str) -> None:
+        """Checks that a call to `_is_usage_status_in_setting` performed the expected method calls.
+
+        :param expected_usage_status_id: Expected usage status ID used in the database calls.
+        """
+        self.settings_collection.find_one.assert_called_once_with(
+            {
+                "_id": SparesDefinitionIn.SETTING_ID,
+                "usage_statuses": {"$elemMatch": {"id": CustomObjectId(expected_usage_status_id)}},
+            },
+            session=self.mock_session,
         )
 
 
@@ -419,6 +452,14 @@ class TestDelete(DeleteDSL):
         )
         self.call_delete_expecting_error(usage_status_id, PartOfItemError)
         self.check_delete_failed_with_exception(f"The usage status with ID {usage_status_id} is a part of an Item")
+
+    def test_delete_when_part_of_setting(self):
+        """Test deleting a usage status when it is part of a setting."""
+        usage_status_id = str(ObjectId())
+
+        self.mock_delete(deleted_count=1, setting_data={"usage_statuses": [usage_status_id]})
+        self.call_delete_expecting_error(usage_status_id, PartOfSettingError)
+        self.check_delete_failed_with_exception(f"The usage status with ID {usage_status_id} is used in the settings")
 
     def test_delete_non_existent_id(self):
         """Test deleting a usage status with a non-existent ID."""
