@@ -1,5 +1,5 @@
 """
-Module for defining the database models for representing a System
+Module for defining the database models for representing systems.
 """
 
 from typing import Optional
