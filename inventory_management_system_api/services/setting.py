@@ -35,9 +35,9 @@ class SettingService:
         self._setting_repository = setting_repository
         self._usage_status_repository = usage_status_repository
 
-    def set_spares_definition(self, spares_definition: SparesDefinitionPutSchema) -> SparesDefinitionOut:
+    def update_spares_definition(self, spares_definition: SparesDefinitionPutSchema) -> SparesDefinitionOut:
         """
-        Sets the spares definition to a new value.
+        Updates the spares definition to a new value.
 
         :param spares_definition: The new spares definition.
         :return: The updated spares definition.
