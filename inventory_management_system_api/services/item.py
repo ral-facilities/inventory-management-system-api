@@ -276,6 +276,7 @@ class ItemService:
             # Update the number of spares
             spares_definition = self._setting_repository.get(SparesDefinitionOut, session=session)
             if spares_definition:
+                logger.info("Updating the number of spares of the catalogue item with ID %s", str(catalogue_item_id))
                 utils.perform_number_of_spares_recalculation(
                     catalogue_item_id,
                     utils.get_usage_status_ids_from_spares_definition(spares_definition),

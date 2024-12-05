@@ -759,13 +759,15 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
     """Base class for `update_number_of_spares` tests"""
 
-    _update_number_of_spares_catalogue_item_id: ObjectId
+    _update_number_of_spares_catalogue_item_id: Optional[ObjectId]
     _update_number_of_spares_number_of_spares: Optional[int]
 
-    def call_update_number_of_spares(self, catalogue_item_id: ObjectId, number_of_spares: Optional[int]) -> None:
+    def call_update_number_of_spares(
+        self, catalogue_item_id: Optional[ObjectId], number_of_spares: Optional[int]
+    ) -> None:
         """Calls the `CatalogueItemRepo` `update_number_of_spares` method.
 
-        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item_id: The ID of the catalogue item to update or `None` if updating all.
         :param number_of_spares: New number of spares to update to.
         """
 
@@ -776,20 +778,33 @@ class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
         )
 
     def check_update_number_of_spares(self) -> None:
-        """Checks that a prior call to `update_number_of_spares` worked as expected"""
+        """Checks that a prior call to `update_number_of_spares` worked as expected."""
 
-        self.catalogue_items_collection.update_one.assert_called_once_with(
-            {"_id": self._update_number_of_spares_catalogue_item_id},
-            {"$set": {"number_of_spares": self._update_number_of_spares_number_of_spares}},
-            session=self.mock_session,
-        )
+        if self._update_number_of_spares_catalogue_item_id is not None:
+            self.catalogue_items_collection.update_one.assert_called_once_with(
+                {"_id": self._update_number_of_spares_catalogue_item_id},
+                {"$set": {"number_of_spares": self._update_number_of_spares_number_of_spares}},
+                session=self.mock_session,
+            )
+        else:
+            self.catalogue_items_collection.update_many.assert_called_once_with(
+                {},
+                {"$set": {"number_of_spares": self._update_number_of_spares_number_of_spares}},
+                session=self.mock_session,
+            )
 
 
 class TestUpdateNumberOfSpares(UpdateNumberOfSparesDSL):
     """Tests for `update_number_of_spares`."""
 
-    def test_update_number_of_spares(self):
-        """Test `update_number_of_spares`."""
+    def test_update_number_of_spares_without_catalogue_item_id(self):
+        """Test `update_number_of_spares` with no catalogue item id."""
+
+        self.call_update_number_of_spares(None, None)
+        self.check_update_number_of_spares()
+
+    def test_update_number_of_spares_with_catalogue_item_id(self):
+        """Test `update_number_of_spares` with a specific catalogue item id."""
 
         self.call_update_number_of_spares(ObjectId(), 42)
         self.check_update_number_of_spares()

@@ -4,7 +4,7 @@ Collection of some utility functions used by services
 
 import logging
 import re
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from bson import ObjectId
 from pymongo.client_session import ClientSession
@@ -263,7 +263,7 @@ def get_usage_status_ids_from_spares_definition(spares_definition: SparesDefinit
 
 
 def prepare_for_number_of_spares_recalculation(
-    catalogue_item_id: ObjectId, catalogue_item_repository: CatalogueItemRepo, session: ClientSession
+    catalogue_item_id: Optional[ObjectId], catalogue_item_repository: CatalogueItemRepo, session: ClientSession
 ) -> None:
     """
     Prepares a catalogue item for a recalculation of the `number_of_spares` field.
@@ -271,7 +271,8 @@ def prepare_for_number_of_spares_recalculation(
     Should be called prior to `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write
     locked to avoid other similar updates interfering.
 
-    :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for.
+    :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for or `None` if all are
+                              being recalculated.
     :param catalogue_item_repository: `CatalogueItemRepo` repository to use
     :param session: Session to use for the recalculation. A transaction should already have been started.
     """

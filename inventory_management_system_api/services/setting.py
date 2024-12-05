@@ -75,11 +75,12 @@ class SettingService:
             # repeatedly)
             usage_status_ids = utils.get_usage_status_ids_from_spares_definition(new_spares_definition)
 
+            # Write lock all catalogue items
+            utils.prepare_for_number_of_spares_recalculation(None, self._catalogue_item_repository, session)
+
             # Recalculate for each catalogue item
+            logger.info("Updating the number of spares for all catalogue items")
             for catalogue_item_id in catalogue_item_ids:
-                utils.prepare_for_number_of_spares_recalculation(
-                    catalogue_item_id, self._catalogue_item_repository, session
-                )
                 utils.perform_number_of_spares_recalculation(
                     catalogue_item_id, usage_status_ids, self._catalogue_item_repository, self._item_repository, session
                 )

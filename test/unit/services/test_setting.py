@@ -154,12 +154,12 @@ class UpdateSparesDefinitionDSL(SettingServiceDSL):
             self._expected_spares_definition_out
         )
 
-        expected_prepare_for_number_of_spares_recalculation_calls = []
+        self.mock_utils.prepare_for_number_of_spares_recalculation.assert_called_once_with(
+            None, self.mock_catalogue_item_repository, expected_session
+        )
+
         expected_perform_number_of_spares_recalculation_calls = []
         for catalogue_item_id in self._expected_catalogue_item_ids:
-            expected_prepare_for_number_of_spares_recalculation_calls.append(
-                call(catalogue_item_id, self.mock_catalogue_item_repository, expected_session)
-            )
             expected_perform_number_of_spares_recalculation_calls.append(
                 call(
                     catalogue_item_id,
@@ -169,9 +169,6 @@ class UpdateSparesDefinitionDSL(SettingServiceDSL):
                     expected_session,
                 )
             )
-        self.mock_utils.prepare_for_number_of_spares_recalculation.assert_has_calls(
-            expected_prepare_for_number_of_spares_recalculation_calls
-        )
         self.mock_utils.perform_number_of_spares_recalculation.assert_has_calls(
             expected_perform_number_of_spares_recalculation_calls
         )

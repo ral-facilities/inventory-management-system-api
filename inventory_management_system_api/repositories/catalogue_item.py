@@ -220,21 +220,27 @@ class CatalogueItemRepo:
 
     def update_number_of_spares(
         self,
-        catalogue_item_id: ObjectId,
+        catalogue_item_id: Optional[ObjectId],
         number_of_spares: Optional[int],
         session: Optional[ClientSession] = None,
     ) -> None:
         """
-        Updates the `number_of_spares` field for a catalogue item.
+        Updates the `number_of_spares` field using a given catalogue item id filter.
 
-        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param catalogue_item_id: The ID of the catalogue item to update or `None` if updating all.
         :param number_of_spares: New number of spares to update to.
         :param session: PyMongo ClientSession to use for database operations
         """
-        logger.info("Updating the number of spares of the catalogue item with ID %s", catalogue_item_id)
 
-        self._catalogue_items_collection.update_one(
-            {"_id": catalogue_item_id},
-            {"$set": {"number_of_spares": number_of_spares}},
-            session=session,
-        )
+        if catalogue_item_id is not None:
+            self._catalogue_items_collection.update_one(
+                {"_id": catalogue_item_id},
+                {"$set": {"number_of_spares": number_of_spares}},
+                session=session,
+            )
+        else:
+            self._catalogue_items_collection.update_many(
+                {},
+                {"$set": {"number_of_spares": number_of_spares}},
+                session=session,
+            )
