@@ -342,7 +342,8 @@ to perform the migration. See `_example_migration.py` for an example on how to i
 
 #### Performing forward migrations
 
-Before performing a you can first check the current status of the database and any outstanding migrations using
+Before performing a migration you can first check the current status of the database and any outstanding migrations
+using
 
 ```bash
 ims-migrate status
