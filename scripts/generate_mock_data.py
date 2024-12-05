@@ -505,9 +505,9 @@ def create_item(item_data: dict) -> dict[str, Any]:
     return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 
-def set_spares_definition(spares_definition_data) -> dict[str, Any]:
+def update_spares_definition(spares_definition_data) -> dict[str, Any]:
     """
-    Sets the spares definition given its data.
+    Updates the spares definition given its data.
 
     :return: JSON data from the response.
     """
@@ -617,9 +617,9 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
 
 
 def populate_spares_definition():
-    """Sets the spares definition."""
+    """Update the spares definition."""
 
-    set_spares_definition(generate_spares_definition(SPARES_DEFINITION_USAGE_STATUSES))
+    update_spares_definition(generate_spares_definition(SPARES_DEFINITION_USAGE_STATUSES))
 
 
 def generate_mock_data():
