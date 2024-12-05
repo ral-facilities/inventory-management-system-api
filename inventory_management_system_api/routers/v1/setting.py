@@ -7,7 +7,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError, WriteConflictError
 from inventory_management_system_api.schemas.setting import SparesDefinitionPutSchema, SparesDefinitionSchema
 from inventory_management_system_api.services.setting import SettingService
 
@@ -37,3 +37,9 @@ def update_spares_definition(
         message = "A specified usage status does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: enable=duplicate-code
