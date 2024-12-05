@@ -156,7 +156,7 @@ class TestUpdateSparesDefinition(UpdateSparesDefinitionDSL):
         self.check_put_spares_definition_failed_with_detail(422, "A specified usage status does not exist")
 
 
-class GetSparesDefinitionDSL(SetSparesDefinitionDSL):
+class GetSparesDefinitionDSL(UpdateSparesDefinitionDSL):
     """Base class for get spares definition tests."""
 
     _get_response_spares_definition: Response
