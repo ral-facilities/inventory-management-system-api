@@ -8,6 +8,7 @@ End-to-End tests for the catalogue category router.
 # pylint: disable=too-many-public-methods
 
 from test.e2e.conftest import E2ETestHelpers
+from test.e2e.test_unit import CreateDSL as UnitCreateDSL
 from test.mock_data import (
     CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
@@ -31,51 +32,16 @@ from typing import Optional
 
 import pytest
 from bson import ObjectId
-from fastapi.testclient import TestClient
 from httpx import Response
 
 from inventory_management_system_api.core.consts import BREADCRUMBS_TRAIL_MAX_LENGTH
-
-from inventory_management_system_api.schemas.catalogue_category import (
-    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
-)
+from inventory_management_system_api.schemas.catalogue_category import CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS
 
 
-class CreateDSL:
+class CreateDSL(UnitCreateDSL):
     """Base class for create tests."""
 
-    test_client: TestClient
-
     _post_response_catalogue_category: Response
-
-    unit_value_id_dict: dict[str, str]
-
-    @pytest.fixture(autouse=True)
-    def setup(self, test_client):
-        """Setup fixtures"""
-
-        self.test_client = test_client
-        self.unit_value_id_dict = {}
-
-    def set_unit_value_and_id(self, unit_value: str, unit_id: str) -> None:
-        """
-        Stores a unit value and ID inside the `unit_value_id_dict` for tests that need to have a
-        non-existent or invalid unit ID.
-
-        :param unit_value: Value of the unit.
-        :param unit_id: ID of the unit.
-        """
-
-        self.unit_value_id_dict[unit_value] = unit_id
-
-    def post_unit(self, unit_post_data: dict) -> None:
-        """Posts a unit with the given data and stores the value and ID in a dictionary for lookup later.
-
-        :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
-        """
-
-        post_response = self.test_client.post("/v1/units", json=unit_post_data)
-        self.set_unit_value_and_id(unit_post_data["value"], post_response.json()["id"])
 
     def post_catalogue_category(self, catalogue_category_data: dict) -> Optional[str]:
         """
@@ -466,7 +432,7 @@ class GetBreadcrumbsDSL(GetDSL):
     _posted_catalogue_categories_get_data: list[dict]
 
     @pytest.fixture(autouse=True)
-    def setup_breadcrumbs_dsl(self):
+    def setup_catalogue_category_get_breadcrumbs_dsl(self):
         """Setup fixtures"""
 
         self._posted_catalogue_categories_get_data = []
@@ -700,7 +666,7 @@ class UpdateDSL(ListDSL):
 
     def patch_catalogue_category(self, catalogue_category_id: str, catalogue_category_update_data: dict) -> None:
         """
-        Updates a catalogue category with the given ID.
+        Patches a catalogue category with the given ID.
 
         :param catalogue_category_id: ID of the catalogue category to patch.
         :param catalogue_category_update_data: Dictionary containing the basic patch data as would be required for a

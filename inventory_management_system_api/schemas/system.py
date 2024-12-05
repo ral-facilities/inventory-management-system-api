@@ -1,5 +1,5 @@
 """
-Module for defining the API schema models for representing Systems
+Module for defining the API schema models for representing systems.
 """
 
 from enum import Enum

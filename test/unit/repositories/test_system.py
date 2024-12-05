@@ -48,7 +48,7 @@ class SystemRepoDSL:
 
     @pytest.fixture(autouse=True)
     def setup(self, database_mock):
-        """Setup fixtures"""
+        """Setup fixtures."""
 
         self.mock_database = database_mock
         self.system_repository = SystemRepo(database_mock)

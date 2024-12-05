@@ -82,6 +82,12 @@ class PartOfItemError(DatabaseError):
     """
 
 
+class PartOfSettingError(DatabaseError):
+    """
+    Exception raised when attempting to delete an entity being referred to by a setting
+    """
+
+
 class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been

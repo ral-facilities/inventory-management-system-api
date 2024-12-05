@@ -6,7 +6,7 @@ from enum import Enum
 from numbers import Number
 from typing import Annotated, Any, List, Literal, Optional
 
-from pydantic import BaseModel, Field, conlist, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
@@ -28,7 +28,7 @@ class AllowedValuesListSchema(BaseModel):
     """
 
     type: Literal["list"]
-    values: conlist(Any, min_length=1)
+    values: list[Any] = Field(description="Value within the allowed values list", min_length=1)
 
 
 # Use discriminated union for any additional types of allowed values (so can use Pydantic's validation)
@@ -96,15 +96,15 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
         cls, allowed_values: Optional[AllowedValuesSchema], property_data: dict[str, Any]
     ) -> None:
         """
-        Checks allowed_values against its parent property raising an error if its invalid
+        Checks `allowed_values` against its parent property raising an error if its invalid
 
-        :param allowed_values: The value of the `allowed_values` field.
+        :param `allowed_values`: The value of the `allowed_values` field.
         :param property_data: Property data to validate the allowed values against.
         :raises ValueError:
-            - If the allowed_values has been given a value and the property type is a `boolean`
-            - If the allowed_values is of type 'list' and 'values' contains any with a different type to the property
-              type
-            - If the allowed_values is of type 'list' and 'values' contains any duplicates
+            - If the `allowed_values` has been given a value and the property type is a `boolean`.
+            - If the `allowed_values` is of type `list` and `values` contains any with a different type to the property
+              type.
+            - If the `allowed_values` is of type `list` and `values` contains any duplicates.
         """
         if allowed_values is not None and "type" in property_data:
             # Ensure the type is not boolean
@@ -143,7 +143,7 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
         """
         Validator for the `allowed_values` field.
 
-        Ensures the allowed_values are valid given the rest of the property schema.
+        Ensures the `allowed_values` are valid given the rest of the property schema.
 
         :param allowed_values: The value of the `allowed_values` field.
         :param info: Validation info from pydantic.
