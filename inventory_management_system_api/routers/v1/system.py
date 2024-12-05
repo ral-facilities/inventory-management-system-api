@@ -1,5 +1,5 @@
 """
-Module for providing an API router which defines routes for managing Systems using the `SystemService`
+Module for providing an API router which defines routes for managing systems using the `SystemService`
 service.
 """
 

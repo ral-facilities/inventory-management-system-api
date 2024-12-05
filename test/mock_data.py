@@ -17,6 +17,9 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.models.setting import SparesDefinitionOut
+from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
+
 # ---------------------------- GENERAL -----------------------------
 
 # Used for _GET_DATA's as when comparing these will not be possible to know at runtime
@@ -57,6 +60,10 @@ USAGE_STATUS_IN_DATA_NEW = {
     "code": "new",
 }
 
+USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=str(ObjectId())
+).model_dump()
+
 USAGE_STATUS_GET_DATA_NEW = {
     **USAGE_STATUS_POST_DATA_NEW,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
@@ -76,6 +83,10 @@ USAGE_STATUS_IN_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
     "code": "used",
 }
+
+USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=str(ObjectId())
+).model_dump()
 
 USAGE_STATUS_GET_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
@@ -824,4 +835,29 @@ SYSTEM_POST_DATA_NO_PARENT_B = {
 SYSTEM_IN_DATA_NO_PARENT_B = {
     **SYSTEM_POST_DATA_NO_PARENT_B,
     "code": "test-name-b",
+}
+
+# --------------------------------- SETTINGS ---------------------------------
+
+# Spares definition, New
+SETTING_SPARES_DEFINITION_DATA_NEW = {"usage_statuses": [{"value": USAGE_STATUS_POST_DATA_NEW["value"]}]}
+
+SETTING_SPARES_DEFINITION_GET_DATA_NEW = {"usage_statuses": [USAGE_STATUS_GET_DATA_NEW]}
+
+# Spares definition, New or Used
+SETTING_SPARES_DEFINITION_DATA_NEW_USED = {
+    "usage_statuses": [{"value": USAGE_STATUS_POST_DATA_NEW["value"]}, {"value": USAGE_STATUS_POST_DATA_USED["value"]}]
+}
+
+SETTING_SPARES_DEFINITION_IN_DATA_NEW_USED = {
+    "usage_statuses": [{"id": USAGE_STATUS_OUT_DATA_NEW["id"]}, {"id": USAGE_STATUS_OUT_DATA_USED["id"]}]
+}
+
+SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "usage_statuses": [USAGE_STATUS_OUT_DATA_NEW, USAGE_STATUS_OUT_DATA_USED],
+}
+
+SETTING_SPARES_DEFINITION_GET_DATA_NEW_USED = {
+    "usage_statuses": [USAGE_STATUS_GET_DATA_NEW, USAGE_STATUS_GET_DATA_USED]
 }

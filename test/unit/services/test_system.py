@@ -37,7 +37,7 @@ class SystemServiceDSL:
         # pylint: disable=unused-argument
         model_mixins_datetime_now_mock,
     ):
-        """Setup fixtures"""
+        """Setup fixtures."""
 
         self.mock_system_repository = system_repository_mock
         self.system_service = system_service
@@ -322,8 +322,8 @@ class UpdateDSL(SystemServiceDSL):
 
     def check_update_failed_with_exception(self, message: str) -> None:
         """
-        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
-        with the correct message.
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception with the
+        correct message.
 
         :param message: Expected message of the raised exception.
         """

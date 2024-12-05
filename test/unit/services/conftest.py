@@ -13,6 +13,7 @@ from inventory_management_system_api.models.catalogue_category import CatalogueC
 from inventory_management_system_api.models.catalogue_item import CatalogueItemOut, PropertyIn
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.system import SystemOut
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
@@ -20,6 +21,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
@@ -31,6 +33,7 @@ from inventory_management_system_api.services.catalogue_category_property import
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
+from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system import SystemService
 from inventory_management_system_api.services.unit import UnitService
 from inventory_management_system_api.services.usage_status import UsageStatusService
@@ -106,6 +109,16 @@ def fixture_usage_status_repository_mock() -> Mock:
     return Mock(UsageStatusRepo)
 
 
+@pytest.fixture(name="setting_repository_mock")
+def fixture_setting_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `SettingRepo` dependency.
+
+    :return: Mocked `SettingRepo` instance.
+    """
+    return Mock(SettingRepo)
+
+
 @pytest.fixture(name="catalogue_category_service")
 def fixture_catalogue_category_service(
     catalogue_category_repository_mock: Mock, unit_repository_mock: Mock
@@ -172,8 +185,8 @@ def fixture_item_service(
     usage_status_repository_mock: Mock,
 ) -> ItemService:
     """
-    Fixture to create an `ItemService` instance with mocked `ItemRepo`, `CatalogueItemRepo`,
-    `CatalogueCategoryRepo`, `SystemRepo` and `UsageStatusRepo` dependencies.
+    Fixture to create an `ItemService` instance with mocked `ItemRepo`, `CatalogueItemRepo`, `CatalogueCategoryRepo`,
+    `SystemRepo` and `UsageStatusRepo` dependencies.
 
     :param item_repository_mock: Mocked `ItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
@@ -192,7 +205,7 @@ def fixture_item_service(
 @pytest.fixture(name="manufacturer_service")
 def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> ManufacturerService:
     """
-    Fixture to create a `ManufacturerService` instance with a mocked `ManufacturerRepo`
+    Fixture to create a `ManufacturerService` instance with a mocked `ManufacturerRepo` dependency.
 
     :param: manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
     :return: `ManufacturerService` instance with mocked dependency.
@@ -203,8 +216,7 @@ def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> Manufact
 @pytest.fixture(name="system_service")
 def fixture_system_service(system_repository_mock: Mock) -> SystemService:
     """
-    Fixture to create a `SystemService` instance with a mocked `SystemRepo`
-    dependencies.
+    Fixture to create a `SystemService` instance with a mocked `SystemRepo` dependency.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
     :return: `SystemService` instance with the mocked dependency.
@@ -215,8 +227,7 @@ def fixture_system_service(system_repository_mock: Mock) -> SystemService:
 @pytest.fixture(name="unit_service")
 def fixture_unit_service(unit_repository_mock: Mock) -> UnitService:
     """
-    Fixture to create a `UnitService` instance with a mocked `UnitRepo`
-    dependencies.
+    Fixture to create a `UnitService` instance with a mocked `UnitRepo` dependency.
 
     :param unit_repository_mock: Mocked `UnitRepo` instance.
     :return: `UnitService` instance with the mocked dependency.
@@ -227,13 +238,24 @@ def fixture_unit_service(unit_repository_mock: Mock) -> UnitService:
 @pytest.fixture(name="usage_status_service")
 def fixture_usage_status_service(usage_status_repository_mock: Mock) -> UsageStatusService:
     """
-    Fixture to create a `UsageStatusService` instance with a mocked `UsageStatusRepo`
-    dependencies.
+    Fixture to create a `UsageStatusService` instance with a mocked `UsageStatusRepo` dependency.
 
     :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
     :return: `UsageStatusService` instance with the mocked dependency.
     """
     return UsageStatusService(usage_status_repository_mock)
+
+
+@pytest.fixture(name="setting_service")
+def fixture_setting_service(setting_repository_mock: Mock, usage_status_repository_mock: Mock) -> SettingService:
+    """
+    Fixture to create a `SettingService` instance with mocked `SettingRepo` and `UsageStatusRepo` dependencies.
+
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
+    :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
+    :return: `SettingService` instance with the mocked dependency.
+    """
+    return SettingService(setting_repository_mock, usage_status_repository_mock)
 
 
 class ServiceTestHelpers:
@@ -262,7 +284,9 @@ class ServiceTestHelpers:
     @staticmethod
     def mock_get(
         repository_mock: Mock,
-        repo_obj: Union[CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, None],
+        repo_obj: Union[
+            CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, UsageStatusOut, None
+        ],
     ) -> None:
         """
         Mock the `get` method of the repository mock to return a specific repository object.
@@ -324,6 +348,17 @@ class ServiceTestHelpers:
         """
 
         repository_mock.update.return_value = repo_obj
+
+    @staticmethod
+    def mock_upsert(repository_mock: Mock, repo_obj: SparesDefinitionOut) -> None:
+        """
+        Mock the `upsert` method of the repository mock to return a repository object.
+
+        :param repository_mock: Mocked repository instance.
+        :param repo_obj: The repository object to be returned by the `upsert` method.
+        """
+
+        repository_mock.upsert.return_value = repo_obj
 
 
 class BaseCatalogueServiceDSL:

@@ -25,28 +25,47 @@ class CreateDSL:
     """Base class for create tests."""
 
     test_client: TestClient
+    usage_status_value_id_dict: dict[str, str]
 
     _post_response_usage_status: Response
 
     @pytest.fixture(autouse=True)
-    def setup(self, test_client):
+    def setup_usage_status_create_dsl(self, test_client):
         """Setup fixtures"""
+
         self.test_client = test_client
+        self.usage_status_value_id_dict = {}
+
+    def add_usage_status_value_and_id(self, usage_status_value: str, usage_status_id: str) -> None:
+        """
+        Stores a usage status value and ID inside the `usage_status_value_id_dict` for tests that need to have a
+        non-existent or invalid usage status ID.
+
+        :param usage_status_value: Value of the usage status.
+        :param usage_status_id: ID of the usage status.
+        """
+
+        self.usage_status_value_id_dict[usage_status_value] = usage_status_id
 
     def post_usage_status(self, usage_status_post_data: dict) -> Optional[str]:
         """
-        Posts a usage status with the given data, returns the ID of the created usage status if successful.
+        Posts a usage status with the given data and returns the ID of the created usage status if successful.
+
+        Also stores any successfully created usage statuses for lookup via `usage_status_value_id_dict` later.
 
         :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusPostSchema`.
         :return: ID of the created usage status (or `None` if not successful).
         """
         self._post_response_usage_status = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
-        return (
+        created_id = (
             self._post_response_usage_status.json()["id"]
             if self._post_response_usage_status.status_code == 201
             else None
         )
+        if created_id:
+            self.add_usage_status_value_and_id(usage_status_post_data["value"], created_id)
+        return created_id
 
     def check_post_usage_status_success(self, expected_usage_status_get_data: dict) -> None:
         """
