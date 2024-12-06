@@ -170,7 +170,7 @@ class TestUpdateSparesDefinition(UpdateSparesDefinitionDSL):
         self.check_put_spares_definition_failed_with_detail(422, "A specified usage status does not exist")
 
 
-class SparesDefinitionDSL(SetSparesDefinitionDSL, ItemDeleteDSL, CatalogueItemGetDSL):
+class SparesDefinitionDSL(UpdateSparesDefinitionDSL, ItemDeleteDSL, CatalogueItemGetDSL):
     """Base class for spares definition tests."""
 
     catalogue_item_ids: list[str]
