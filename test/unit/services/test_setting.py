@@ -148,14 +148,15 @@ class UpdateSparesDefinitionDSL(SettingServiceDSL):
             self._expected_spares_definition_in, SparesDefinitionOut, session=expected_session
         )
 
+        # Ensure write locking all existing catalogue items
+        self.mock_utils.prepare_for_number_of_spares_recalculation.assert_called_once_with(
+            None, self.mock_catalogue_item_repository, expected_session
+        )
+
         # Ensure obtained list of all catalogue item ids and used them to recalculate the number of spares
         self.mock_catalogue_item_repository.list_ids.assert_called_once_with()
         self.mock_utils.get_usage_status_ids_from_spares_definition.assert_called_once_with(
             self._expected_spares_definition_out
-        )
-
-        self.mock_utils.prepare_for_number_of_spares_recalculation.assert_called_once_with(
-            None, self.mock_catalogue_item_repository, expected_session
         )
 
         expected_perform_number_of_spares_recalculation_calls = []

@@ -94,13 +94,16 @@ class CatalogueItemService:
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
         supplied_properties = utils.process_properties(defined_properties, supplied_properties)
 
-        # TODO: Update tests and comment, also check name here for consistency with others
+        # Perform actual creation in a transaction as we need to ensure they cannot be added when in the process of
+        # recalculating spares through the spares definition being set
         with start_session_transaction("creating catalogue item") as session:
-            # TODO: Update number of spares to be 0 if its there
+            # TODO: Update tests to include this new logic
             # TODO: Handle if setting doesn't exist
-            # TODO: Explain these
+            # Write lock the spares definition - if this fails it either means another catalogue item is being created
+            # (unlikely) or that the spares definition has been set and is still recalculating
             self._setting_repository.write_lock(SparesDefinitionOut, session)
 
+            # Obtain the current spares definition as if there is one set, we know it has 0 items
             spares_definition = self._setting_repository.get(SparesDefinitionOut, session=session)
 
             return self._catalogue_item_repository.create(

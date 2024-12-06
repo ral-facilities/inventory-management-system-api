@@ -64,16 +64,13 @@ class SettingService:
         # while recalculating
         with start_session_transaction("updating spares definition") as session:
             # Update spares definition first to ensure write locked to prevent further updates while calculating below
+            # also ensures catalogue items cannot be created
             new_spares_definition = self._setting_repository.upsert(
                 SparesDefinitionIn(**spares_definition.model_dump()), SparesDefinitionOut, session=session
             )
 
-            # TODO: Update tests to reflect new order here
-
-            # Write lock for spares definition document to prevent any more catalogue items being created
-            self._setting_repository.write_lock(SparesDefinitionOut, session)
-
-            # Write lock all catalogue items to prevent any other spares calculations from happening
+            # Write lock all catalogue items to prevent any other spares calculations from happening when items
+            # are added, deleted or their usage status modified
             utils.prepare_for_number_of_spares_recalculation(None, self._catalogue_item_repository, session)
 
             # Obtain a list of all catalogue item ids that will need to be recalculated

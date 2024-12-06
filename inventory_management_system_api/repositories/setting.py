@@ -92,23 +92,34 @@ class SettingRepo:
         :return: Retrieved setting or `None` if not found.
         """
 
+        # First obtain the setting document
+        setting = self._settings_collection.find_one({"_id": out_model_type.SETTING_ID}, session=session)
+
+        # Now ensure the setting is actually assigned and doesn't just have a write `_lock` and `_id` fields
+        if setting is None or (len(setting.keys()) == 2 and "_lock" in setting):
+            return None
+
         if out_model_type is SparesDefinitionOut:
             # The spares definition contains a list of usage statuses - use an aggregate query here to obtain
             # the actual usage status entities instead of just their stored ID
 
-            result = list(
+            setting = list(
                 self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=session)
-            )
-            setting = result[0] if len(result) > 0 else None
-        else:
-            setting = self._settings_collection.find_one({"_id": out_model_type.SETTING_ID}, session=session)
+            )[0]
 
-        if setting is not None:
-            return out_model_type(**setting)
-        return None
+        return out_model_type(**setting)
 
     def write_lock(self, out_model_type: Type[SettingOutBaseT], session: ClientSession) -> None:
-        # TODO: Comment
+        """
+        Updates a field `_lock` inside a setting in the database to lock the document from further updates in other
+        transactions.
+
+        Will add the setting document if it doesn't already exist. To ensure it can still be locked if it hasn't
+        ever been assigned a value before. (The get handles this case ensuring it still returns `None`.)
+
+        :param out_model_type: The output type of the setting's model. Also contains the ID for lookup.
+        :param session: PyMongo ClientSession to use for database operations.
+        """
         self._settings_collection.update_one(
-            {"_id": out_model_type.SETTING_ID}, {"$set": {"_lock": None}}, session=session
+            {"_id": out_model_type.SETTING_ID}, {"$set": {"_lock": None}}, upsert=True, session=session
         )

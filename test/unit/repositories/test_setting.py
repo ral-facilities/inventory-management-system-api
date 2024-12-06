@@ -221,3 +221,36 @@ class TestGet(GetDSL):
         self.mock_get(SparesDefinitionOut, None)
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
+
+
+class WriteLockDSL(SettingRepoDSL):
+    """Base class for `write_lock` tests."""
+
+    _write_lock_out_model_type: Type[SettingOutBaseT]
+
+    def call_write_lock(self, out_model_type: Type[SettingOutBaseT]) -> None:
+        """
+        Calls the `SettingRepo` `write_lock` method with the appropriate data from a prior call to `mock_get`.
+
+        :param out_model_type: The type of the setting's output model to be obtained.
+        """
+
+        self._write_lock_out_model_type = out_model_type
+        self.setting_repo.write_lock(out_model_type, self.mock_session)
+
+    def check_write_lock_success(self) -> None:
+        """Checks that a prior call to `call_write_lock` worked as expected."""
+
+        self.settings_collection.update_one.assert_called_once_with(
+            {"_id": self._write_lock_out_model_type.SETTING_ID}, {"$set": {"_lock": None}}, session=self.mock_session
+        )
+
+
+class TestWriteLock(WriteLockDSL):
+    """Tests for write locking a setting."""
+
+    def test_write_lock(self):
+        """Test write locking a setting."""
+
+        self.call_write_lock(ExampleSettingOut)
+        self.check_write_lock_success()
