@@ -102,5 +102,5 @@ class InvalidActionError(DatabaseError):
 
 class WriteConflictError(DatabaseError):
     """
-    Exception raised when a transaction has a write conflict
+    Exception raised when a transaction has a write conflict.
     """
