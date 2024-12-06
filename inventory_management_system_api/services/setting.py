@@ -68,15 +68,20 @@ class SettingService:
                 SparesDefinitionIn(**spares_definition.model_dump()), SparesDefinitionOut, session=session
             )
 
+            # TODO: Update tests to reflect new order here
+
+            # Write lock for spares definition document to prevent any more catalogue items being created
+            self._setting_repository.write_lock(SparesDefinitionOut, session)
+
+            # Write lock all catalogue items to prevent any other spares calculations from happening
+            utils.prepare_for_number_of_spares_recalculation(None, self._catalogue_item_repository, session)
+
             # Obtain a list of all catalogue item ids that will need to be recalculated
             catalogue_item_ids = self._catalogue_item_repository.list_ids()
 
             # Usage status id that constitute a spare in the new definition (obtain it now to save processing
             # repeatedly)
             usage_status_ids = utils.get_usage_status_ids_from_spares_definition(new_spares_definition)
-
-            # Write lock all catalogue items
-            utils.prepare_for_number_of_spares_recalculation(None, self._catalogue_item_repository, session)
 
             # Recalculate for each catalogue item
             logger.info("Updating the number of spares for all catalogue items")

@@ -106,3 +106,9 @@ class SettingRepo:
         if setting is not None:
             return out_model_type(**setting)
         return None
+
+    def write_lock(self, out_model_type: Type[SettingOutBaseT], session: ClientSession) -> None:
+        # TODO: Comment
+        self._settings_collection.update_one(
+            {"_id": out_model_type.SETTING_ID}, {"$set": {"_lock": None}}, session=session
+        )

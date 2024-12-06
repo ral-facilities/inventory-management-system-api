@@ -16,12 +16,13 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryProperty,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
+    WriteConflictError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
+    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
     CatalogueItemSchema,
-    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
 )
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
@@ -107,6 +108,12 @@ def create_catalogue_item(
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: enable=duplicate-code
 
 
 @router.patch(
