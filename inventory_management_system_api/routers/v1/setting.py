@@ -43,3 +43,16 @@ def update_spares_definition(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     # pylint: enable=duplicate-code
+
+
+@router.get(
+    path="/spares_definition", summary="Get the definition of a spare", response_description="Spares definition"
+)
+def get_spares_definition(setting_service: SettingServiceDep) -> SparesDefinitionSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting spares definition")
+
+    spares_definition = setting_service.get_spares_definition()
+    if not spares_definition:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Spares definition not found.")
+    return SparesDefinitionSchema(**spares_definition.model_dump())

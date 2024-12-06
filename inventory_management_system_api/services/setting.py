@@ -88,3 +88,12 @@ class SettingService:
                 )
 
         return new_spares_definition
+
+    def get_spares_definition(self) -> SparesDefinitionOut:
+        """
+        Retrieves the spares definition.
+
+        :return: Retrieved spares definition or `None` if not found.
+        """
+
+        return self._setting_repository.get(SparesDefinitionOut)
