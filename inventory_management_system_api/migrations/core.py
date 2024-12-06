@@ -137,8 +137,6 @@ def load_migrations_backward_to(name: str) -> tuple[dict[str, BaseMigration], Op
 
     available_migrations = find_available_migrations()
 
-    start_index = 0
-
     previous_migration = get_previous_migration()
     if previous_migration is not None:
         try:

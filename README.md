@@ -352,7 +352,7 @@ ims-migrate status
 or in Docker
 
 ```bash
-docker exec -it inventory_management_system_api_container ims-migrate list
+docker exec -it inventory_management_system_api_container ims-migrate status
 ```
 
 Then to perform all outstanding migrations up to the latest one use
