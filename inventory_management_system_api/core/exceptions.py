@@ -98,3 +98,9 @@ class InvalidActionError(DatabaseError):
     """
     Exception raised when trying to update an item's catalogue item ID
     """
+
+
+class WriteConflictError(DatabaseError):
+    """
+    Exception raised when a transaction has a write conflict.
+    """
