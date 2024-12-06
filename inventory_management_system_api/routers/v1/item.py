@@ -14,6 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
+    WriteConflictError,
 )
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
@@ -58,6 +59,12 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchem
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: enable=duplicate-code
 
 
 @router.delete(
@@ -77,6 +84,12 @@ def delete_item(
         message = "Item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: enable=duplicate-code
 
 
 @router.get(path="", summary="Get items", response_description="List of items")
@@ -161,3 +174,9 @@ def partial_update_item(
         message = "Cannot change the catalogue item of an item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: enable=duplicate-code
