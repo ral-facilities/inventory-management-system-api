@@ -154,3 +154,54 @@ class TestUpdateSparesDefinition(UpdateSparesDefinitionDSL):
         self.put_spares_definition(SETTING_SPARES_DEFINITION_DATA_NEW_USED)
 
         self.check_put_spares_definition_failed_with_detail(422, "A specified usage status does not exist")
+
+
+class GetSparesDefinitionDSL(UpdateSparesDefinitionDSL):
+    """Base class for get spares definition tests."""
+
+    _get_response_spares_definition: Response
+
+    def get_spares_definition(self):
+        """Gets the spares definition."""
+
+        self._get_response_spares_definition = self.test_client.get("/v1/settings/spares_definition")
+
+    def check_get_spares_definition_success(self, expected_spares_definition_get_data: dict):
+        """
+        Checks that a prior call to `get_spares_definition` gave a successful response with the expected data returned.
+
+        :param expected_spares_definition_get_data: Dictionary containing the expected system data returned as would be
+                                                    required for a `SparesDefinitionSchema`.
+        """
+
+        assert self._get_response_spares_definition.status_code == 200
+        assert self._get_response_spares_definition.json() == expected_spares_definition_get_data
+
+    def check_get_spares_definition_failed_with_detail(self, status_code: int, detail: str):
+        """
+        Checks that a prior call to `get_spares_definition` gave a failed response with the expected code and error
+        message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._get_response_spares_definition.status_code == status_code
+        assert self._get_response_spares_definition.json()["detail"] == detail
+
+
+class TestGetSparesDefinition(GetSparesDefinitionDSL):
+    """Tests for getting the spares definition."""
+
+    def test_get_spares_definition(self):
+        """Test getting the spares definition."""
+
+        self.put_spares_definition_and_post_prerequisites(SETTING_SPARES_DEFINITION_DATA_NEW_USED)
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_NEW_USED)
+
+    def test_get_spares_definition_when_non_existent(self):
+        """Test getting the spares definition when it is non-existent."""
+
+        self.get_spares_definition()
+        self.check_get_spares_definition_failed_with_detail(404, "Spares definition not found.")
