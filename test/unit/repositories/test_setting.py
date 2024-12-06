@@ -85,10 +85,10 @@ class UpsertDSL(SettingRepoDSL):
 
         self._expected_setting_out = out_model_type(**new_setting_out_data)
 
+        RepositoryTestHelpers.mock_find_one(self.settings_collection, new_setting_out_data)
+
         if out_model_type is SparesDefinitionOut:
             self.settings_collection.aggregate.return_value = [new_setting_out_data]
-        else:
-            RepositoryTestHelpers.mock_find_one(self.settings_collection, new_setting_out_data)
 
     def call_upsert(self) -> None:
         """Calls the `SettingRepo` `upsert` method with the appropriate data from a prior call to `mock_upsert`."""
@@ -138,33 +138,33 @@ class GetDSL(SettingRepoDSL):
 
     _obtained_out_model_type: Type[SettingOutBaseT]
     _expected_setting_out: SettingOutBaseT
+    _expect_return_before_aggregate: bool
     _obtained_setting: Optional[SettingOutBaseT]
 
     def mock_get(
         self,
         out_model_type: Type[SettingOutBaseT],
+        setting_database_data: Optional[dict],
         setting_out_data: Optional[dict],
     ) -> None:
         """
         Mocks database methods appropriately to test the `get` repo method.
 
         :param out_model_type: The type of the setting's output model to be obtained.
+        :param setting_database_data: Either `None` or a dictionary containing the setting data as would be returned
+                                      by a `find_one` query.
         :param setting_out_data: Either `None` or a dictionary containing the setting data as would be required for the
                                  `Out` database model.
         """
         self._expected_setting_out = out_model_type(**setting_out_data) if setting_out_data is not None else None
+        self._expect_return_before_aggregate = setting_database_data is None or (
+            len(setting_database_data.keys()) == 2 and "_lock" in setting_database_data
+        )
+
+        RepositoryTestHelpers.mock_find_one(self.settings_collection, setting_database_data)
 
         if out_model_type is SparesDefinitionOut:
             self.settings_collection.aggregate.return_value = [setting_out_data] if setting_out_data is not None else []
-        else:
-            RepositoryTestHelpers.mock_find_one(
-                self.settings_collection,
-                (
-                    self._expected_setting_out.model_dump(by_alias=True)
-                    if self._expected_setting_out is not None
-                    else None
-                ),
-            )
 
     def call_get(self, out_model_type: Type[SettingOutBaseT]) -> None:
         """
@@ -179,14 +179,15 @@ class GetDSL(SettingRepoDSL):
     def check_get_success(self) -> None:
         """Checks that a prior call to `call_get` worked as expected."""
 
-        if self._obtained_out_model_type is SparesDefinitionOut:
-            self.settings_collection.aggregate.assert_called_once_with(
-                SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=self.mock_session
-            )
-        else:
-            self.settings_collection.find_one.assert_called_once_with(
-                {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session
-            )
+        self.settings_collection.find_one.assert_called_once_with(
+            {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session
+        )
+
+        if not self._expect_return_before_aggregate:
+            if self._obtained_out_model_type is SparesDefinitionOut:
+                self.settings_collection.aggregate.assert_called_once_with(
+                    SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=self.mock_session
+                )
 
         assert self._obtained_setting == self._expected_setting_out
 
@@ -197,28 +198,48 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting a setting."""
 
-        self.mock_get(ExampleSettingOut, {"_id": "example_setting"})
+        self.mock_get(ExampleSettingOut, {"_id": "example_setting"}, {"_id": "example_setting"})
         self.call_get(ExampleSettingOut)
         self.check_get_success()
 
     def test_get_non_existent(self):
         """Test getting a setting that is non-existent."""
 
-        self.mock_get(ExampleSettingOut, None)
+        self.mock_get(ExampleSettingOut, None, None)
+        self.call_get(ExampleSettingOut)
+        self.check_get_success()
+
+    def test_get_existent_but_not_assigned(self):
+        """Test getting a setting that is existent but only due to a write lock."""
+
+        self.mock_get(ExampleSettingOut, {"_id": "example_setting", "_lock": None}, None)
         self.call_get(ExampleSettingOut)
         self.check_get_success()
 
     def test_get_spares_definition(self):
         """Test getting the spares definition setting."""
 
-        self.mock_get(SparesDefinitionOut, SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED)
+        self.mock_get(
+            SparesDefinitionOut,
+            SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
+            SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED,
+        )
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
 
     def test_get_non_existent_spares_definition(self):
         """Test getting the spares definition setting when it is non-existent."""
 
-        self.mock_get(SparesDefinitionOut, None)
+        self.mock_get(SparesDefinitionOut, None, None)
+        self.call_get(SparesDefinitionOut)
+        self.check_get_success()
+
+    def test_get_existent_spares_definition_but_not_assinged(self):
+        """Test getting the spares definition setting when it is existent but only due to a write lock."""
+
+        self.mock_get(
+            SparesDefinitionOut, {"_id": SETTING_SPARES_DEFINITION_OUT_DATA_NEW_USED["_id"], "_lock": None}, None
+        )
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
 
@@ -242,7 +263,10 @@ class WriteLockDSL(SettingRepoDSL):
         """Checks that a prior call to `call_write_lock` worked as expected."""
 
         self.settings_collection.update_one.assert_called_once_with(
-            {"_id": self._write_lock_out_model_type.SETTING_ID}, {"$set": {"_lock": None}}, session=self.mock_session
+            {"_id": self._write_lock_out_model_type.SETTING_ID},
+            {"$set": {"_lock": None}},
+            upsert=True,
+            session=self.mock_session,
         )
 
 

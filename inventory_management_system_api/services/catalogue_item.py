@@ -97,8 +97,6 @@ class CatalogueItemService:
         # Perform actual creation in a transaction as we need to ensure they cannot be added when in the process of
         # recalculating spares through the spares definition being set
         with start_session_transaction("creating catalogue item") as session:
-            # TODO: Update tests to include this new logic
-            # TODO: Handle if setting doesn't exist
             # Write lock the spares definition - if this fails it either means another catalogue item is being created
             # (unlikely) or that the spares definition has been set and is still recalculating
             self._setting_repository.write_lock(SparesDefinitionOut, session)

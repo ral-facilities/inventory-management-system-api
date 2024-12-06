@@ -309,6 +309,13 @@ class SparesDefinitionDSL(UpdateSparesDefinitionDSL, ItemDeleteDSL, CatalogueIte
 class TestSparesDefinitionDSL(SparesDefinitionDSL):
     """Tests for spares definition."""
 
+    def test_create_catalogue_item_after_spares_definition_set(self):
+        """Test creating a catalogue item after the spares definition is set."""
+
+        self.put_spares_definition_and_post_prerequisites(SETTING_SPARES_DEFINITION_DATA_NEW)
+        self.post_items_and_prerequisites_with_usage_statuses([[]])
+        self.check_catalogue_items_spares([0])
+
     def test_set_spares_definition_with_existing_items(self):
         """Test setting the spares definition when there are existing items."""
 

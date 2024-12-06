@@ -161,18 +161,26 @@ def fixture_catalogue_category_property_service(
 
 @pytest.fixture(name="catalogue_item_service")
 def fixture_catalogue_item_service(
-    catalogue_item_repository_mock: Mock, catalogue_category_repository_mock: Mock, manufacturer_repository_mock: Mock
+    catalogue_item_repository_mock: Mock,
+    catalogue_category_repository_mock: Mock,
+    manufacturer_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> CatalogueItemService:
     """
-    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo` and `CatalogueCategoryRepo`
-    dependencies.
+    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo`, `CatalogueCategoryRepo`,
+    `ManufacturerRepo` and `SettingRepo` dependencies.
 
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `CatalogueItemService` instance with the mocked dependencies.
     """
     return CatalogueItemService(
-        catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock
+        catalogue_item_repository_mock,
+        catalogue_category_repository_mock,
+        manufacturer_repository_mock,
+        setting_repository_mock,
     )
 
 
