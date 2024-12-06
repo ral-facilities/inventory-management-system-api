@@ -1,23 +1,21 @@
 """
-Module providing an example migration that does nothing
+Module providing a migration that adds number_of_spares to catalogue items.
 """
 
 # Expect some duplicate code inside migrations as models can be duplicated
+# pylint: disable=invalid-name
 # pylint: disable=duplicate-code
 
-import logging
 from typing import Any, Collection, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
-from inventory_management_system_api.migrations.migration import BaseMigration
+from inventory_management_system_api.migrations.base import BaseMigration
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
-
-logger = logging.getLogger()
 
 
 class NewCatalogueItemBase(BaseModel):
@@ -140,19 +138,18 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
 
 
 class Migration(BaseMigration):
-    """Migration for Catalogue Items' Number of Spares Field"""
+    """Migration that adds number_of_spares to catalogue items."""
 
-    description = "Migration for Catalogue Items' Number of Spares Field"
+    description = "Adds number_of_spares to catalogue items"
 
     def __init__(self, database: Database):
 
         self._catalogue_items_collection: Collection = database.catalogue_items
 
     def forward(self, session: ClientSession):
-        """Forward Migration for Catalogue Items' Number of Spares Field"""
+        """Applies database changes."""
         catalogue_items = self._catalogue_items_collection.find({}, session=session)
 
-        logger.info("number_of_spares forward migration")
         for catalogue_item in catalogue_items:
             old_catalogue_item = OldCatalogueItemOut(**catalogue_item)
             new_catalogue_item = NewCatalogueItemIn(**old_catalogue_item.model_dump())
@@ -165,8 +162,7 @@ class Migration(BaseMigration):
             self._catalogue_items_collection.replace_one({"_id": catalogue_item["_id"]}, update_data, session=session)
 
     def backward(self, session: ClientSession):
-        """Backward Migration for Catalogue Items' Number of Spares Field"""
+        """Reverses database changes."""
 
-        logger.info("number_of_spares backward migration")
         result = self._catalogue_items_collection.update_many({}, {"$unset": {"number_of_spares": ""}}, session=session)
         return result
