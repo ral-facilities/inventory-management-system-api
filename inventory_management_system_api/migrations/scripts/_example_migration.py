@@ -11,7 +11,7 @@ from typing import Collection
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
-from inventory_management_system_api.migrations.migration import BaseMigration
+from inventory_management_system_api.migrations.base import BaseMigration
 
 logger = logging.getLogger()
 
