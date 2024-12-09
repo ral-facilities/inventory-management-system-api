@@ -42,6 +42,7 @@ def start_session_transaction(action_description: str) -> Generator[ClientSessio
     :param action_description: Description of what the contents of the transaction is doing so it can be used in any
                                raised errors.
     :raises WriteConflictError: If there a write conflict during the transaction.
+    :returns: MongoDB session that has a transaction started on it.
     """
 
     with mongodb_client.start_session() as session:
