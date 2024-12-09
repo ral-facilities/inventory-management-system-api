@@ -388,37 +388,37 @@ def test_get_previous_migration_when_none(mock_database):
 
 
 @patch("inventory_management_system_api.migrations.core.set_previous_migration")
-@patch("inventory_management_system_api.migrations.core.mongodb_client")
-def test_execute_migrations_forward(mock_mongodb_client, mock_set_previous_migration):
+@patch("inventory_management_system_api.migrations.core.start_session_transaction")
+def test_execute_migrations_forward(mock_start_session_transaction, mock_set_previous_migration):
     """Tests that `execute_migrations_forward` functions as expected."""
 
     migrations = {"migration1": MagicMock(), "migration2": MagicMock()}
-    expected_session = mock_mongodb_client.start_session.return_value.__enter__.return_value
+    expected_session = mock_start_session_transaction.return_value.__enter__.return_value
 
     execute_migrations_forward(migrations)
 
-    expected_session.start_transaction.assert_called_once()
+    mock_start_session_transaction.assert_called_once_with("forward migration")
     for migration in migrations.values():
         migration.forward.assert_called_once_with(expected_session)
-        migration.forward_after_transaction.assert_called_once_with(expected_session)
+        migration.forward_after_transaction.assert_called_once()
 
     mock_set_previous_migration.assert_called_once_with(list(migrations.keys())[-1])
 
 
 @patch("inventory_management_system_api.migrations.core.set_previous_migration")
-@patch("inventory_management_system_api.migrations.core.mongodb_client")
-def test_execute_migrations_backward(mock_mongodb_client, mock_set_previous_migration):
+@patch("inventory_management_system_api.migrations.core.start_session_transaction")
+def test_execute_migrations_backward(mock_start_session_transaction, mock_set_previous_migration):
     """Tests that `execute_migrations_backward` functions as expected."""
 
     migrations = {"migration1": MagicMock(), "migration2": MagicMock()}
     final_previous_migration_name = "final_migration_name"
-    expected_session = mock_mongodb_client.start_session.return_value.__enter__.return_value
+    expected_session = mock_start_session_transaction.return_value.__enter__.return_value
 
     execute_migrations_backward(migrations, final_previous_migration_name)
 
-    expected_session.start_transaction.assert_called_once()
+    mock_start_session_transaction.assert_called_once_with("backward migration")
     for migration in migrations.values():
         migration.backward.assert_called_once_with(expected_session)
-        migration.backward_after_transaction.assert_called_once_with(expected_session)
+        migration.backward_after_transaction.assert_called_once()
 
     mock_set_previous_migration.assert_called_once_with(final_previous_migration_name)

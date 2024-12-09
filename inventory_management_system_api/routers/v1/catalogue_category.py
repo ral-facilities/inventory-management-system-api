@@ -17,16 +17,17 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     LeafCatalogueCategoryError,
     MissingRecordError,
+    WriteConflictError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
+    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueCategoryPatchSchema,
     CatalogueCategoryPostSchema,
     CatalogueCategoryPropertyPatchSchema,
     CatalogueCategoryPropertyPostSchema,
     CatalogueCategoryPropertySchema,
     CatalogueCategorySchema,
-    CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS,
 )
 from inventory_management_system_api.services.catalogue_category import CatalogueCategoryService
 from inventory_management_system_api.services.catalogue_category_property import CatalogueCategoryPropertyService
@@ -272,6 +273,10 @@ def create_property(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.patch(
@@ -320,3 +325,7 @@ def partial_update_property(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

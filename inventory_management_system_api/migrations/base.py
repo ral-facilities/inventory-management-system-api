@@ -23,7 +23,7 @@ class BaseMigration(ABC):
     def forward(self, session: ClientSession):
         """Method for executing the migration."""
 
-    def forward_after_transaction(self, session: ClientSession):
+    def forward_after_transaction(self):
         """Method called after the forward function is called to do anything that can't be done inside a transaction
         (ONLY USE IF NECESSARY e.g. dropping a collection)."""
 
@@ -31,7 +31,7 @@ class BaseMigration(ABC):
     def backward(self, session: ClientSession):
         """Method for reversing the migration."""
 
-    def backward_after_transaction(self, session: ClientSession):
+    def backward_after_transaction(self):
         """
         Method called after the backward function is called to do anything that can't be done inside a transaction
         (ONLY USE IF NECESSARY e.g. dropping a collection).
