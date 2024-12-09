@@ -5,7 +5,7 @@ import logging
 import sys
 from typing import Optional
 
-from inventory_management_system_api.core.database import get_database, mongodb_client
+from inventory_management_system_api.core.database import get_database, start_session_transaction
 from inventory_management_system_api.migrations.base import BaseMigration
 
 database = get_database()
@@ -184,16 +184,15 @@ def execute_migrations_forward(migrations: dict[str, BaseMigration]) -> None:
     """
 
     # Run migration inside a session to lock writes and revert the changes if it fails
-    with mongodb_client.start_session() as session:
-        with session.start_transaction():
-            for name, migration in migrations.items():
-                logger.info("Performing forward migration for '%s'...", name)
-                migration.forward(session)
-            set_previous_migration(list(migrations.keys())[-1])
-        # Run some things outside the transaction e.g. if needing to drop a collection
+    with start_session_transaction("forward migration") as session:
         for name, migration in migrations.items():
-            logger.info("Finalising forward migration for '%s'...", name)
-            migration.forward_after_transaction(session)
+            logger.info("Performing forward migration for '%s'...", name)
+            migration.forward(session)
+        set_previous_migration(list(migrations.keys())[-1])
+    # Run some things outside the transaction e.g. if needing to drop a collection
+    for name, migration in migrations.items():
+        logger.info("Finalising forward migration for '%s'...", name)
+        migration.forward_after_transaction()
 
 
 def execute_migrations_backward(migrations: dict[str, BaseMigration], final_previous_migration_name: Optional[str]):
@@ -209,13 +208,12 @@ def execute_migrations_backward(migrations: dict[str, BaseMigration], final_prev
                                           there aren't any.
     """
     # Run migration inside a session to lock writes and revert the changes if it fails
-    with mongodb_client.start_session() as session:
-        with session.start_transaction():
-            for name, migration in migrations.items():
-                logger.info("Performing backward migration for '%s'...", name)
-                migration.backward(session)
-            set_previous_migration(final_previous_migration_name)
-        # Run some things outside the transaction e.g. if needing to drop a collection
+    with start_session_transaction("backward migration") as session:
         for name, migration in migrations.items():
-            logger.info("Finalising backward migration for '%s'...", name)
-            migration.backward_after_transaction(session)
+            logger.info("Performing backward migration for '%s'...", name)
+            migration.backward(session)
+        set_previous_migration(final_previous_migration_name)
+    # Run some things outside the transaction e.g. if needing to drop a collection
+    for name, migration in migrations.items():
+        logger.info("Finalising backward migration for '%s'...", name)
+        migration.backward_after_transaction()
