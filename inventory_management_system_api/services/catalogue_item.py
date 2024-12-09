@@ -9,6 +9,7 @@ from typing import Annotated, List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -16,9 +17,11 @@ from inventory_management_system_api.core.exceptions import (
     NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
@@ -39,6 +42,7 @@ class CatalogueItemService:
         catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
         catalogue_category_repository: Annotated[CatalogueCategoryRepo, Depends(CatalogueCategoryRepo)],
         manufacturer_repository: Annotated[ManufacturerRepo, Depends(ManufacturerRepo)],
+        setting_repository: Annotated[SettingRepo, Depends(SettingRepo)],
     ) -> None:
         """
         Initialise the `CatalogueItemService` with a `CatalogueItemRepo`, `CatalogueCategoryRepo`
@@ -47,10 +51,12 @@ class CatalogueItemService:
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.
         :param manufacturer_repository: The `ManufacturerRepo` repository to use.
+        :param setting_repository: The `SettingRepo` repository to use.
         """
         self._catalogue_item_repository = catalogue_item_repository
         self._catalogue_category_repository = catalogue_category_repository
         self._manufacturer_repository = manufacturer_repository
+        self._setting_repository = setting_repository
 
     def create(self, catalogue_item: CatalogueItemPostSchema) -> CatalogueItemOut:
         """
@@ -88,15 +94,26 @@ class CatalogueItemService:
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
         supplied_properties = utils.process_properties(defined_properties, supplied_properties)
 
-        return self._catalogue_item_repository.create(
-            CatalogueItemIn(
-                **{
-                    **catalogue_item.model_dump(),
-                    "properties": supplied_properties,
-                },
-                number_of_spares=None,
+        # Perform actual creation in a transaction as we need to ensure they cannot be added when in the process of
+        # recalculating spares through the spares definition being set
+        with start_session_transaction("creating catalogue item") as session:
+            # Write lock the spares definition - if this fails it either means another catalogue item is being created
+            # (unlikely) or that the spares definition has been set and is still recalculating
+            self._setting_repository.write_lock(SparesDefinitionOut, session)
+
+            # Obtain the current spares definition as if there is one set, we know it has 0 items
+            spares_definition = self._setting_repository.get(SparesDefinitionOut, session=session)
+
+            return self._catalogue_item_repository.create(
+                CatalogueItemIn(
+                    **{
+                        **catalogue_item.model_dump(),
+                        "properties": supplied_properties,
+                    },
+                    number_of_spares=None if spares_definition is None else 0,
+                ),
+                session=session,
             )
-        )
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """

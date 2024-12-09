@@ -642,3 +642,48 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 
         self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
         self.check_update_names_of_all_properties_with_id()
+
+
+class CountWithUsageStatusIDsInDSL(ItemRepoDSL):
+    """Base class for `count_with_usage_status_ids_in` tests"""
+
+    _count_with_usage_status_ids_in_catalogue_item_id: ObjectId
+    _count_with_usage_status_ids_in_usage_status_ids: list[CustomObjectId]
+
+    def call_count_with_usage_status_ids_in(
+        self, catalogue_item_id: ObjectId, usage_status_ids: list[CustomObjectId]
+    ) -> None:
+        """Calls the `ItemRepo` `count_with_usage_status_ids_in` method.
+
+        :param catalogue_item_id: ID of the catalogue item for which items should be counted.
+        :param usage_status_id: List of usage status IDs which should be included in the count.
+        """
+
+        self._count_with_usage_status_ids_in_catalogue_item_id = catalogue_item_id
+        self._count_with_usage_status_ids_in_usage_status_ids = usage_status_ids
+        self.item_repository.count_with_usage_status_ids_in(
+            catalogue_item_id, usage_status_ids, session=self.mock_session
+        )
+
+    def check_count_with_usage_status_ids_in(self) -> None:
+        """Checks that a prior call to `count_with_usage_status_ids_in` worked as expected"""
+
+        self.items_collection.count_documents.assert_called_once_with(
+            {
+                "catalogue_item_id": self._count_with_usage_status_ids_in_catalogue_item_id,
+                "usage_status_id": {"$in": self._count_with_usage_status_ids_in_usage_status_ids},
+            },
+            session=self.mock_session,
+        )
+
+
+class TestCountWithUsageStatusIDsIn(CountWithUsageStatusIDsInDSL):
+    """Tests for `count_with_usage_status_ids_in`."""
+
+    def test_count_with_usage_status_ids_in(self):
+        """Test `count_with_usage_status_ids_in`."""
+
+        self.call_count_with_usage_status_ids_in(
+            ObjectId(), [CustomObjectId(str(ObjectId())), CustomObjectId(str(ObjectId()))]
+        )
+        self.check_count_with_usage_status_ids_in()
