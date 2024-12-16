@@ -6,11 +6,11 @@ requires-python = ">=3.12"
 version = "1.0.0"
 
 dependencies = [
-    "cryptography==43.0.3",
-    "fastapi[all]==0.115.5",
-    "PyJWT==2.10.0",
+    "cryptography==44.0.0",
+    "fastapi[all]==0.115.6",
+    "PyJWT==2.10.1",
     "pymongo==4.10.1",
-    "uvicorn==0.32.1"
+    "uvicorn==0.34.0"
 ]
 
 [project.urls]
@@ -22,19 +22,19 @@ dependencies = [
 [project.optional-dependencies]
 code-analysis = [
     "black==24.10.0",
-    "pylint==3.3.1",
+    "pylint==3.3.2",
     "inventory-management-system-api[test]"
 ]
 
 test = [
-    "pytest==8.3.3",
-    "pytest-asyncio==0.24.0",
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.0",
     "pytest-cov==6.0.0",
     "pytest-env==1.1.5"
 ]
 
 scripts = [
-    "faker==33.0.0",
+    "faker==33.1.0",
     "requests==2.32.3"
 ]
 
