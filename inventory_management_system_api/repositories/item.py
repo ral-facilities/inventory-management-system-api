@@ -193,7 +193,7 @@ class ItemRepo:
         Counts the number of items within a catalogue item with a `usage_status_id` contained within the given list.
 
         :param catalogue_item_id: ID of the catalogue item for which items should be counted.
-        :param usage_status_id: List of usage status IDs which should be included in the count.
+        :param usage_status_ids: List of usage status IDs which should be included in the count.
         :param session: PyMongo ClientSession to use for database operations.
         :return: Number of items counted.
         """

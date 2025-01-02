@@ -234,7 +234,7 @@ class TestGet(GetDSL):
         self.call_get(SparesDefinitionOut)
         self.check_get_success()
 
-    def test_get_existent_spares_definition_but_not_assinged(self):
+    def test_get_existent_spares_definition_but_not_assigned(self):
         """Test getting the spares definition setting when it is existent but only due to a write lock."""
 
         self.mock_get(

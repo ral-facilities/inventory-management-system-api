@@ -228,8 +228,10 @@ class CatalogueItemRepo:
         Updates the `number_of_spares` field using a given catalogue item id filter.
 
         :param catalogue_item_id: The ID of the catalogue item to update or `None` if updating all.
-        :param number_of_spares: New number of spares to update to.
-        :param session: PyMongo ClientSession to use for database operations
+        :param number_of_spares: New number of spares to update to. A value of `None` can be used to write lock
+                                 the involved documents when updating within a transaction as the actual value will be
+                                 assigned later but the documents should be write locked immediately.
+        :param session: PyMongo ClientSession to use for database operations.
         """
 
         if catalogue_item_id is not None:

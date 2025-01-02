@@ -656,7 +656,7 @@ class CountWithUsageStatusIDsInDSL(ItemRepoDSL):
         """Calls the `ItemRepo` `count_with_usage_status_ids_in` method.
 
         :param catalogue_item_id: ID of the catalogue item for which items should be counted.
-        :param usage_status_id: List of usage status IDs which should be included in the count.
+        :param usage_status_ids: List of usage status IDs which should be included in the count.
         """
 
         self._count_with_usage_status_ids_in_catalogue_item_id = catalogue_item_id
