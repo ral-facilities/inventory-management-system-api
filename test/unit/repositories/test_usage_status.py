@@ -49,7 +49,7 @@ class UsageStatusRepoDSL:
         self.mock_session = MagicMock()
         yield
 
-    def mock_is_duplicate_usage_status(self, duplicate_usage_status_in_data: Optional[dict] = None) -> None:
+    def _mock_is_duplicate_usage_status(self, duplicate_usage_status_in_data: Optional[dict] = None) -> None:
         """
         Mocks database methods appropriately for when the `_is_duplicate_usage_status` repo method will be called.
 
@@ -104,7 +104,7 @@ class CreateDSL(UsageStatusRepoDSL):
             **self._usage_status_in.model_dump(), id=inserted_usage_status_id
         )
         #
-        self.mock_is_duplicate_usage_status(duplicate_usage_status_in_data)
+        self._mock_is_duplicate_usage_status(duplicate_usage_status_in_data)
         # Mock `insert one` to return object for inserted usage status
         RepositoryTestHelpers.mock_insert_one(self.usage_statuses_collection, inserted_usage_status_id)
         # Mock `find_one` to return the inserted usage status document

@@ -45,7 +45,7 @@ class ManufacturerRepoDSL:
         self.mock_session = MagicMock()
         yield
 
-    def mock_is_duplicate_manufacturer(self, duplicate_manufacturer_in_data: Optional[dict] = None) -> None:
+    def _mock_is_duplicate_manufacturer(self, duplicate_manufacturer_in_data: Optional[dict] = None) -> None:
         """
         Mocks database methods appropriately for when the `_is_duplicate_manufacturer` repo method will be called.
 
@@ -61,7 +61,7 @@ class ManufacturerRepoDSL:
             ),
         )
 
-    def get_is_duplicate_manufacturer_expected_find_one_call(
+    def _get_is_duplicate_manufacturer_expected_find_one_call(
         self, manufacturer_in: ManufacturerIn, expected_manufacturer_id: Optional[CustomObjectId]
     ):
         """
@@ -100,7 +100,7 @@ class CreateDSL(ManufacturerRepoDSL):
             **self._manufacturer_in.model_dump(), id=inserted_manufacturer_id
         )
         #
-        self.mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
+        self._mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
         # Mock `insert one` to return object for inserted manufacturer
         RepositoryTestHelpers.mock_insert_one(self.manufacturers_collection, inserted_manufacturer_id)
         # Mock `find_one` to return the inserted manufacturer document
@@ -132,7 +132,7 @@ class CreateDSL(ManufacturerRepoDSL):
         # Obtain a list of expected find_one calls
         expected_find_one_calls = [
             # This is the check for the duplicate
-            self.get_is_duplicate_manufacturer_expected_find_one_call(self._manufacturer_in, None),
+            self._get_is_duplicate_manufacturer_expected_find_one_call(self._manufacturer_in, None),
             # This is the check for the newly inserted manufacturer get
             call({"_id": CustomObjectId(self._expected_manufacturer_out.id)}, session=self.mock_session),
         ]
@@ -367,7 +367,7 @@ class UpdateDSL(ManufacturerRepoDSL):
 
         # Duplicate check
         if self._stored_manufacturer_out and (self._manufacturer_in.name != self._stored_manufacturer_out.name):
-            self.mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
+            self._mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
 
         # Final manufacturer after update
         self._expected_manufacturer_out = ManufacturerOut(
@@ -410,7 +410,7 @@ class UpdateDSL(ManufacturerRepoDSL):
         # Duplicate check (which only runs if changing the name)
         if self._stored_manufacturer_out and (self._manufacturer_in.name != self._stored_manufacturer_out.name):
             expected_find_one_calls.append(
-                self.get_is_duplicate_manufacturer_expected_find_one_call(
+                self._get_is_duplicate_manufacturer_expected_find_one_call(
                     self._manufacturer_in, CustomObjectId(self._updated_manufacturer_id)
                 )
             )
