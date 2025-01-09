@@ -38,7 +38,7 @@ class UsageStatusRepo:
         self._items_collection: Collection = self._database.items
         self._settings_collection: Collection = self._database.settings
 
-    def create(self, usage_status: UsageStatusIn, session: ClientSession = None) -> UsageStatusOut:
+    def create(self, usage_status: UsageStatusIn, session: Optional[ClientSession] = None) -> UsageStatusOut:
         """
         Create a new usage status in MongoDB database
 
@@ -58,7 +58,7 @@ class UsageStatusRepo:
 
         return usage_status
 
-    def list(self, session: ClientSession = None) -> list[UsageStatusOut]:
+    def list(self, session: Optional[ClientSession] = None) -> list[UsageStatusOut]:
         """
         Retrieve Usage statuses from a MongoDB database
 
@@ -68,7 +68,7 @@ class UsageStatusRepo:
         usage_statuses = self._usage_statuses_collection.find(session=session)
         return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
 
-    def get(self, usage_status_id: str, session: ClientSession = None) -> Optional[UsageStatusOut]:
+    def get(self, usage_status_id: str, session: Optional[ClientSession] = None) -> Optional[UsageStatusOut]:
         """
         Retrieve a usage status by its ID from a MongoDB database.
 
@@ -83,7 +83,7 @@ class UsageStatusRepo:
             return UsageStatusOut(**usage_status)
         return None
 
-    def delete(self, usage_status_id: str, session: ClientSession = None) -> None:
+    def delete(self, usage_status_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a usage status by its ID from a MongoDB database.
 
@@ -106,7 +106,7 @@ class UsageStatusRepo:
             raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
 
     def _is_duplicate_usage_status(
-        self, code: str, usage_status_id: CustomObjectId = None, session: ClientSession = None
+        self, code: str, usage_status_id: CustomObjectId = None, session: Optional[ClientSession] = None
     ) -> bool:
         """
         Check if usage status with the same name already exists in the usage statuses collection
@@ -122,7 +122,9 @@ class UsageStatusRepo:
         )
         return usage_status is not None
 
-    def _is_usage_status_in_item(self, usage_status_id: CustomObjectId, session: ClientSession = None) -> bool:
+    def _is_usage_status_in_item(
+        self, usage_status_id: CustomObjectId, session: Optional[ClientSession] = None
+    ) -> bool:
         """Checks to see if any of the items in the database have a specific usage status ID.
 
         :param usage_status_id: The ID of the usage status that is looked for.
@@ -131,7 +133,9 @@ class UsageStatusRepo:
         """
         return self._items_collection.find_one({"usage_status_id": usage_status_id}, session=session) is not None
 
-    def _is_usage_status_in_setting(self, usage_status_id: CustomObjectId, session: ClientSession = None) -> bool:
+    def _is_usage_status_in_setting(
+        self, usage_status_id: CustomObjectId, session: Optional[ClientSession] = None
+    ) -> bool:
         """Checks to see if any of the settings in the database refer to a specific usage status ID.
 
         :param usage_status_id: The ID of the usage status that is looked for.

@@ -44,7 +44,9 @@ class CatalogueCategoryRepo:
         self._catalogue_categories_collection: Collection = self._database.catalogue_categories
         self._catalogue_items_collection: Collection = self._database.catalogue_items
 
-    def create(self, catalogue_category: CatalogueCategoryIn, session: ClientSession = None) -> CatalogueCategoryOut:
+    def create(
+        self, catalogue_category: CatalogueCategoryIn, session: Optional[ClientSession] = None
+    ) -> CatalogueCategoryOut:
         """
         Create a new catalogue category in a MongoDB database.
 
@@ -72,7 +74,9 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(result.inserted_id), session=session)
         return catalogue_category
 
-    def get(self, catalogue_category_id: str, session: ClientSession = None) -> Optional[CatalogueCategoryOut]:
+    def get(
+        self, catalogue_category_id: str, session: Optional[ClientSession] = None
+    ) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID from a MongoDB database.
 
@@ -89,7 +93,9 @@ class CatalogueCategoryRepo:
             return CatalogueCategoryOut(**catalogue_category)
         return None
 
-    def get_breadcrumbs(self, catalogue_category_id: str, session: ClientSession = None) -> BreadcrumbsGetSchema:
+    def get_breadcrumbs(
+        self, catalogue_category_id: str, session: Optional[ClientSession] = None
+    ) -> BreadcrumbsGetSchema:
         """
         Retrieve the breadcrumbs for a specific catalogue category
 
@@ -111,7 +117,7 @@ class CatalogueCategoryRepo:
             collection_name="catalogue_categories",
         )
 
-    def list(self, parent_id: Optional[str], session: ClientSession = None) -> List[CatalogueCategoryOut]:
+    def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> List[CatalogueCategoryOut]:
         """
         Retrieve catalogue categories from a MongoDB database based on the provided filters.
 
@@ -126,7 +132,10 @@ class CatalogueCategoryRepo:
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
 
     def update(
-        self, catalogue_category_id: str, catalogue_category: CatalogueCategoryIn, session: ClientSession = None
+        self,
+        catalogue_category_id: str,
+        catalogue_category: CatalogueCategoryIn,
+        session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryOut:
         """
         Update a catalogue category by its ID in a MongoDB database.
@@ -183,7 +192,7 @@ class CatalogueCategoryRepo:
         catalogue_category = self.get(str(catalogue_category_id), session=session)
         return catalogue_category
 
-    def delete(self, catalogue_category_id: str, session: ClientSession = None) -> None:
+    def delete(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a catalogue category by its ID from a MongoDB database.
 
@@ -211,7 +220,7 @@ class CatalogueCategoryRepo:
         parent_id: Optional[str],
         code: str,
         catalogue_category_id: CustomObjectId = None,
-        session: ClientSession = None,
+        session: Optional[ClientSession] = None,
     ) -> bool:
         """
         Check if a catalogue category with the same code already exists within the parent category.
@@ -233,7 +242,9 @@ class CatalogueCategoryRepo:
 
         return catalogue_category is not None
 
-    def has_child_elements(self, catalogue_category_id: CustomObjectId, session: ClientSession = None) -> bool:
+    def has_child_elements(
+        self, catalogue_category_id: CustomObjectId, session: Optional[ClientSession] = None
+    ) -> bool:
         """
         Check if a catalogue category has child elements based on its ID.
 
@@ -259,7 +270,7 @@ class CatalogueCategoryRepo:
         self,
         catalogue_category_id: str,
         property_in: CatalogueCategoryPropertyIn,
-        session: ClientSession = None,
+        session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryPropertyOut:
         """
         Create a new a property within a catalogue category given its ID in a MongoDB database
@@ -293,7 +304,7 @@ class CatalogueCategoryRepo:
         catalogue_category_id: str,
         property_id: str,
         property_in: CatalogueCategoryPropertyIn,
-        session: ClientSession = None,
+        session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryPropertyOut:
         """
         Updates a property given its ID and the ID of the catalogue category it's in
