@@ -69,7 +69,7 @@ class CatalogueCategoryServiceDSL(BaseCatalogueServiceDSL):
             self.wrapped_utils = wrapped_utils
             yield
 
-    def mock_add_property_unit_values(
+    def _mock_add_property_unit_values(
         self, units_in_data: list[Optional[dict]], unit_value_id_dict: dict[str, str]
     ) -> None:
         """
@@ -94,9 +94,10 @@ class CatalogueCategoryServiceDSL(BaseCatalogueServiceDSL):
     def check_add_property_unit_values_performed_expected_calls(
         self, expected_properties: list[CatalogueCategoryPostPropertySchema]
     ) -> None:
-        """Checks that a call to `add_property_unit_values` performed the expected function calls.
+        """
+        Checks that a call to `add_property_unit_values` performed the expected function calls.
 
-        :param expected_properties: Expected properties the function would have been called with.
+        :param expected_properties: Expected properties the function should have been called with.
         """
 
         expected_unit_repo_calls = []
@@ -155,7 +156,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
                 self.construct_catalogue_category_properties_in_and_post_with_ids(catalogue_category_data["properties"])
             )
 
-            self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
+            self._mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
 
         self._catalogue_category_post = CatalogueCategoryPostSchema(
             **{**catalogue_category_data, "properties": property_post_schemas}
@@ -511,7 +512,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
             )
             catalogue_category_update_data["properties"] = property_post_schemas
 
-            self.mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
+            self._mock_add_property_unit_values(units_in_data or [], self.unit_value_id_dict)
 
         # Updated catalogue category
         self._expected_catalogue_category_out = MagicMock()

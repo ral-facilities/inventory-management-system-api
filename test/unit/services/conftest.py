@@ -161,21 +161,31 @@ def fixture_catalogue_category_property_service(
 
 @pytest.fixture(name="catalogue_item_service")
 def fixture_catalogue_item_service(
-    catalogue_item_repository_mock: Mock, catalogue_category_repository_mock: Mock, manufacturer_repository_mock: Mock
+    catalogue_item_repository_mock: Mock,
+    catalogue_category_repository_mock: Mock,
+    manufacturer_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> CatalogueItemService:
     """
-    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo` and `CatalogueCategoryRepo`
-    dependencies.
+    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo`, `CatalogueCategoryRepo`,
+    `ManufacturerRepo` and `SettingRepo` dependencies.
 
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `CatalogueItemService` instance with the mocked dependencies.
     """
     return CatalogueItemService(
-        catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock
+        catalogue_item_repository_mock,
+        catalogue_category_repository_mock,
+        manufacturer_repository_mock,
+        setting_repository_mock,
     )
 
 
+# pylint:disable=too-many-arguments
+# pylint:disable=too-many-positional-arguments
 @pytest.fixture(name="item_service")
 def fixture_item_service(
     item_repository_mock: Mock,
@@ -183,14 +193,18 @@ def fixture_item_service(
     catalogue_item_repository_mock: Mock,
     system_repository_mock: Mock,
     usage_status_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> ItemService:
     """
     Fixture to create an `ItemService` instance with mocked `ItemRepo`, `CatalogueItemRepo`, `CatalogueCategoryRepo`,
-    `SystemRepo` and `UsageStatusRepo` dependencies.
+    `SystemRepo`, `UsageStatusRepo` and `SettingRepo` dependencies.
 
     :param item_repository_mock: Mocked `ItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param system_repository_mock: Mocked `SystemRepo` instance.
+    :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `ItemService` instance with the mocked dependencies.
     """
     return ItemService(
@@ -199,6 +213,7 @@ def fixture_item_service(
         catalogue_item_repository_mock,
         system_repository_mock,
         usage_status_repository_mock,
+        setting_repository_mock,
     )
 
 
@@ -247,15 +262,24 @@ def fixture_usage_status_service(usage_status_repository_mock: Mock) -> UsageSta
 
 
 @pytest.fixture(name="setting_service")
-def fixture_setting_service(setting_repository_mock: Mock, usage_status_repository_mock: Mock) -> SettingService:
+def fixture_setting_service(
+    setting_repository_mock: Mock,
+    catalogue_item_repository_mock: Mock,
+    item_repository_mock: Mock,
+    usage_status_repository_mock: Mock,
+) -> SettingService:
     """
     Fixture to create a `SettingService` instance with mocked `SettingRepo` and `UsageStatusRepo` dependencies.
 
     :param setting_repository_mock: Mocked `SettingRepo` instance.
+    :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param item_repository_mock: Mocked `ItemRepo` instance.
     :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
     :return: `SettingService` instance with the mocked dependency.
     """
-    return SettingService(setting_repository_mock, usage_status_repository_mock)
+    return SettingService(
+        setting_repository_mock, catalogue_item_repository_mock, item_repository_mock, usage_status_repository_mock
+    )
 
 
 class ServiceTestHelpers:
@@ -285,7 +309,15 @@ class ServiceTestHelpers:
     def mock_get(
         repository_mock: Mock,
         repo_obj: Union[
-            CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, UsageStatusOut, None
+            CatalogueCategoryOut,
+            CatalogueItemOut,
+            ItemOut,
+            ManufacturerOut,
+            SystemOut,
+            UnitOut,
+            UsageStatusOut,
+            SparesDefinitionOut,
+            None,
         ],
     ) -> None:
         """
