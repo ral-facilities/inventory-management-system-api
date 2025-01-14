@@ -34,7 +34,7 @@ class ItemRepo:
         self._items_collection: Collection = self._database.items
         self._systems_collection: Collection = self._database.systems
 
-    def create(self, item: ItemIn, session: ClientSession = None) -> ItemOut:
+    def create(self, item: ItemIn, session: Optional[ClientSession] = None) -> ItemOut:
         """
         Create a new item in a MongoDB database.
 
@@ -51,7 +51,7 @@ class ItemRepo:
         item = self.get(str(result.inserted_id), session=session)
         return item
 
-    def get(self, item_id: str, session: ClientSession = None) -> Optional[ItemOut]:
+    def get(self, item_id: str, session: Optional[ClientSession] = None) -> Optional[ItemOut]:
         """
         Retrieve an item by its ID from a MongoDB database.
 
@@ -67,7 +67,7 @@ class ItemRepo:
         return None
 
     def list(
-        self, system_id: Optional[str], catalogue_item_id: Optional[str], session: ClientSession = None
+        self, system_id: Optional[str], catalogue_item_id: Optional[str], session: Optional[ClientSession] = None
     ) -> List[ItemOut]:
         """
         Get all items from the MongoDB database
@@ -98,7 +98,7 @@ class ItemRepo:
         items = self._items_collection.find(query, session=session)
         return [ItemOut(**item) for item in items]
 
-    def update(self, item_id: str, item: ItemIn, session: ClientSession = None) -> ItemOut:
+    def update(self, item_id: str, item: ItemIn, session: Optional[ClientSession] = None) -> ItemOut:
         """
         Update an item by its ID in a MongoDB database.
 
@@ -113,7 +113,7 @@ class ItemRepo:
         item = self.get(str(item_id), session=session)
         return item
 
-    def delete(self, item_id: str, session: ClientSession = None) -> None:
+    def delete(self, item_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete an item by its ID from a MongoDB database.
 
@@ -128,7 +128,7 @@ class ItemRepo:
             raise MissingRecordError(f"No item found with ID: {str(item_id)}")
 
     def insert_property_to_all_in(
-        self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: ClientSession = None
+        self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
     ):
         """
         Inserts a property into every item with one of the given catalogue_item_id's using an update_many query
@@ -155,7 +155,7 @@ class ItemRepo:
 
     # pylint:disable=duplicate-code
     def update_names_of_all_properties_with_id(
-        self, property_id: str, new_property_name: str, session: ClientSession = None
+        self, property_id: str, new_property_name: str, session: Optional[ClientSession] = None
     ) -> None:
         """
         Updates the name of a property in every item it is present in

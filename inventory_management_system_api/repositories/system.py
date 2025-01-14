@@ -38,7 +38,7 @@ class SystemRepo:
         self._systems_collection: Collection = self._database.systems
         self._items_collection: Collection = self._database.items
 
-    def create(self, system: SystemIn, session: ClientSession = None) -> SystemOut:
+    def create(self, system: SystemIn, session: Optional[ClientSession] = None) -> SystemOut:
         """
         Create a new system in a MongoDB database
 
@@ -64,7 +64,7 @@ class SystemRepo:
         system = self.get(str(result.inserted_id), session=session)
         return system
 
-    def get(self, system_id: str, session: ClientSession = None) -> Optional[SystemOut]:
+    def get(self, system_id: str, session: Optional[ClientSession] = None) -> Optional[SystemOut]:
         """
         Retrieve a system by its ID from a MongoDB database
 
@@ -79,7 +79,7 @@ class SystemRepo:
             return SystemOut(**system)
         return None
 
-    def get_breadcrumbs(self, system_id: str, session: ClientSession = None) -> BreadcrumbsGetSchema:
+    def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """
         Retrieve the breadcrumbs for a specific system
 
@@ -99,7 +99,7 @@ class SystemRepo:
             collection_name="systems",
         )
 
-    def list(self, parent_id: Optional[str], session: ClientSession = None) -> list[SystemOut]:
+    def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> list[SystemOut]:
         """
         Retrieve systems from a MongoDB database based on the provided filters
 
@@ -112,7 +112,7 @@ class SystemRepo:
         systems = self._systems_collection.find(query, session=session)
         return [SystemOut(**system) for system in systems]
 
-    def update(self, system_id: str, system: SystemIn, session: ClientSession = None) -> SystemOut:
+    def update(self, system_id: str, system: SystemIn, session: Optional[ClientSession] = None) -> SystemOut:
         """Update a system by its ID in a MongoDB database
 
         :param system_id: ID of the system to update
@@ -155,7 +155,7 @@ class SystemRepo:
 
         return self.get(str(system_id), session=session)
 
-    def delete(self, system_id: str, session: ClientSession = None) -> None:
+    def delete(self, system_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a system by its ID from a MongoDB database
 
@@ -176,7 +176,11 @@ class SystemRepo:
             raise MissingRecordError(f"No system found with ID: {str(system_id)}")
 
     def _is_duplicate_system(
-        self, parent_id: Optional[str], code: str, system_id: CustomObjectId = None, session: ClientSession = None
+        self,
+        parent_id: Optional[str],
+        code: str,
+        system_id: Optional[CustomObjectId] = None,
+        session: Optional[ClientSession] = None,
     ) -> bool:
         """
         Check if a system with the same code already exists within the parent system
@@ -196,7 +200,7 @@ class SystemRepo:
         )
         return system is not None
 
-    def _has_child_elements(self, system_id: CustomObjectId, session: ClientSession = None) -> bool:
+    def _has_child_elements(self, system_id: CustomObjectId, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a system has any child system's or any Item's based on its ID
 
