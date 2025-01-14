@@ -106,7 +106,7 @@ class UsageStatusRepo:
             raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
 
     def _is_duplicate_usage_status(
-        self, code: str, usage_status_id: CustomObjectId = None, session: Optional[ClientSession] = None
+        self, code: str, usage_status_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None
     ) -> bool:
         """
         Check if usage status with the same name already exists in the usage statuses collection

@@ -219,7 +219,7 @@ class CatalogueCategoryRepo:
         self,
         parent_id: Optional[str],
         code: str,
-        catalogue_category_id: CustomObjectId = None,
+        catalogue_category_id: Optional[CustomObjectId] = None,
         session: Optional[ClientSession] = None,
     ) -> bool:
         """

@@ -127,7 +127,7 @@ class ManufacturerRepo:
             raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
 
     def _is_duplicate_manufacturer(
-        self, code: str, manufacturer_id: CustomObjectId = None, session: Optional[ClientSession] = None
+        self, code: str, manufacturer_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None
     ) -> bool:
         """
         Check if a manufacturer with the same code already exists.

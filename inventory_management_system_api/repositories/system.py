@@ -179,7 +179,7 @@ class SystemRepo:
         self,
         parent_id: Optional[str],
         code: str,
-        system_id: CustomObjectId = None,
+        system_id: Optional[CustomObjectId] = None,
         session: Optional[ClientSession] = None,
     ) -> bool:
         """
