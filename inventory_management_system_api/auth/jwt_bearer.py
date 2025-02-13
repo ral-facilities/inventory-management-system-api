@@ -43,6 +43,8 @@ class JWTBearer(HTTPBearer):
         if not self._is_jwt_access_token_valid(credentials.credentials):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token or expired token")
 
+        request.state.token = credentials.credentials
+
         return credentials.credentials
 
     def _is_jwt_access_token_valid(self, access_token: str) -> bool:
