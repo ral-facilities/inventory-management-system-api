@@ -37,7 +37,7 @@ class AuthenticationConfig(BaseModel):
     def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
         """
         Validator for the `public_key_path` and `jwt_algorithm` fields to make them mandatory if the value of the
-        `enabled` is `True`
+        `enabled` field is `True`.
 
         It checks if the `enabled` field has been set to `True` and raises a `TypeError` if this is the case.
 
@@ -65,6 +65,32 @@ class DatabaseConfig(BaseModel):
     model_config = ConfigDict(hide_input_in_errors=True)
 
 
+class ObjectStorageConfig(BaseModel):
+    """
+    Configuration model for the Object Storage.
+    """
+
+    enabled: bool
+    api_url: str
+
+    @field_validator("api_url")
+    @classmethod
+    def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
+        """
+        Validator for the `api_url` field to make it mandatory if the value of the `enabled` field is `True`.
+
+        It checks if the `enabled` field has been set to `True` and raises a `TypeError` if this is the case.
+
+        :param field_value: The value of the field.
+        :param info: Validation info from pydantic.
+        :raises ValueError: If no value is provided for the field when `enabled` is set to `True`.
+        :return: The value of the field.
+        """
+        if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
+            raise ValueError("Field required")
+        return field_value
+
+
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
@@ -77,6 +103,8 @@ class Config(BaseSettings):
     api: APIConfig
     authentication: AuthenticationConfig
     database: DatabaseConfig
+    object_storage: ObjectStorageConfig
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env",
         env_file_encoding="utf-8",

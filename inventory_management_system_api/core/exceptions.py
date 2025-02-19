@@ -9,6 +9,12 @@ class DatabaseError(Exception):
     """
 
 
+class ObjectStorageAPIError(Exception):
+    """
+    Object Storage API related error.
+    """
+
+
 class LeafCatalogueCategoryError(Exception):
     """
     Catalogue category is attempted to be added to a leaf parent catalogue category.
@@ -103,4 +109,16 @@ class InvalidActionError(DatabaseError):
 class WriteConflictError(DatabaseError):
     """
     Exception raised when a transaction has a write conflict.
+    """
+
+
+class ObjectStorageAPIAuthError(ObjectStorageAPIError):
+    """
+    Exception raised for auth failures or expired tokens while communicating with the Object Storage API.
+    """
+
+
+class ObjectStorageAPIServerError(ObjectStorageAPIError):
+    """
+    Exception raised when server errors occur while communicating with the Object Storage API.
     """
