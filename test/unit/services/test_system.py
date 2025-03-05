@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
@@ -376,6 +376,16 @@ class DeleteDSL(SystemServiceDSL):
     """Base class for `delete` tests."""
 
     _delete_system_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(self, has_child_elements: Optional[bool] = False) -> None:
+        """
+        Mocks repo methods appropriately to test the `delete` service method.
+
+        :param has_child_elements: Whether the system being deleted has child elements or not.
+        """
+
+        self.mock_system_repository.has_child_elements.return_value = has_child_elements
 
     def call_delete(self, system_id: str) -> None:
         """
@@ -387,10 +397,33 @@ class DeleteDSL(SystemServiceDSL):
         self._delete_system_id = system_id
         self.system_service.delete(system_id)
 
+    def call_delete_expecting_error(self, system_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `SystemService` `delete` method while expecting an error to be raised.
+
+        :param system_id: ID of the system to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.system_service.delete(system_id)
+        self._delete_exception = exc
+
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
         self.mock_system_repository.delete.assert_called_once_with(self._delete_system_id)
+
+    def check_delete_failed_with_exception(self, message: str) -> None:
+        """
+        Check that a prior call to `call_delete_expecting_error` worked as expected, raising an exception with the
+        correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_system_repository.delete.assert_not_called()
+        assert str(self._delete_exception.value) == message
 
 
 class TestDelete(DeleteDSL):
@@ -399,5 +432,15 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting a system."""
 
+        self.mock_delete(has_child_elements=False)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
+
+    def test_delete_with_child_elements(self):
+        """Testing deleting a system when it has child elements."""
+
+        system_id = str(ObjectId())
+
+        self.mock_delete(has_child_elements=True)
+        self.call_delete_expecting_error(system_id, ChildElementsExistError)
+        self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
