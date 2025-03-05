@@ -186,8 +186,8 @@ class ItemService:
         """
         # First attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
-            ObjectStorageAPIClient.delete_attachments(access_token, item_id)
-            ObjectStorageAPIClient.delete_images(access_token, item_id)
+            ObjectStorageAPIClient.delete_attachments(item_id, access_token)
+            ObjectStorageAPIClient.delete_images(item_id, access_token)
 
         return self._item_repository.delete(item_id)
 

@@ -228,7 +228,7 @@ class CatalogueItemService:
 
         # First attempt to delete any attachments and/or images that might be associated with this catalogue item.
         if config.object_storage.enabled:
-            ObjectStorageAPIClient.delete_attachments(access_token, catalogue_item_id)
-            ObjectStorageAPIClient.delete_images(access_token, catalogue_item_id)
+            ObjectStorageAPIClient.delete_attachments(catalogue_item_id, access_token)
+            ObjectStorageAPIClient.delete_images(catalogue_item_id, access_token)
 
         self._catalogue_item_repository.delete(catalogue_item_id)

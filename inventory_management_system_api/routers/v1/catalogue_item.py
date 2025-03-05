@@ -8,6 +8,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -189,7 +190,7 @@ def delete_catalogue_item(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
     try:
-        catalogue_item_service.delete(catalogue_item_id, request.state.token)
+        catalogue_item_service.delete(catalogue_item_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "Catalogue item not found"
         logger.exception(message)

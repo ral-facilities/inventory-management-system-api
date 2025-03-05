@@ -31,7 +31,7 @@ class TestObjectStorageAPIClient:
 
         entity_id = str(ObjectId())
 
-        method(VALID_ACCESS_TOKEN, entity_id)
+        method(entity_id, VALID_ACCESS_TOKEN)
         mock_delete.assert_called_once_with(
             f"{config.object_storage.api_url}{endpoint}",
             headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN}"},
@@ -54,7 +54,7 @@ class TestObjectStorageAPIClient:
         mock_delete.return_value = mock_response
 
         with pytest.raises(ObjectStorageAPIAuthError) as exc:
-            method(EXPIRED_ACCESS_TOKEN, str(ObjectId()))
+            method(str(ObjectId()), EXPIRED_ACCESS_TOKEN)
         assert str(exc.value) == "Invalid token or expired token"
 
     @pytest.mark.parametrize(
@@ -73,5 +73,5 @@ class TestObjectStorageAPIClient:
         mock_delete.return_value = mock_response
 
         with pytest.raises(ObjectStorageAPIServerError) as exc:
-            method(VALID_ACCESS_TOKEN, str(ObjectId()))
+            method(str(ObjectId()), VALID_ACCESS_TOKEN)
         assert str(exc.value) == "Object Storage API server error: [500] {'detail': 'Something went wrong'}"

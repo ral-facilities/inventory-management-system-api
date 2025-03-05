@@ -59,7 +59,7 @@ class JWTBearer(HTTPBearer):
         logger.info("Checking if JWT access token is valid")
         try:
             payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
-        except Exception:  # pylint: disable=broad-exception-caught)
+        except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Error decoding JWT access token")
             payload = None
 

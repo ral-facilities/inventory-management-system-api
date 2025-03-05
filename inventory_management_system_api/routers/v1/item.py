@@ -7,6 +7,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
@@ -76,7 +77,7 @@ def delete_item(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting item with ID: %s", item_id)
     try:
-        item_service.delete(item_id, request.state.token)
+        item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "Item not found"
         logger.exception(message)

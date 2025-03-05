@@ -113,7 +113,7 @@ class SystemService:
 
         # First attempt to delete any attachments and/or images that might be associated with this system.
         if config.object_storage.enabled:
-            ObjectStorageAPIClient.delete_attachments(access_token, system_id)
-            ObjectStorageAPIClient.delete_images(access_token, system_id)
+            ObjectStorageAPIClient.delete_attachments(system_id, access_token)
+            ObjectStorageAPIClient.delete_images(system_id, access_token)
 
         self._system_repository.delete(system_id)

@@ -8,6 +8,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
@@ -156,7 +157,7 @@ def delete_system(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)
     try:
-        system_service.delete(system_id, request.state.token)
+        system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "System not found"
         logger.exception(message)
