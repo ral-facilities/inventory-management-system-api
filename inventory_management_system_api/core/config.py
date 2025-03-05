@@ -71,8 +71,8 @@ class ObjectStorageConfig(BaseModel):
     """
 
     enabled: bool
-    api_request_timeout_seconds: int
-    api_url: str
+    api_request_timeout_seconds: Optional[int] = Field(default=None, validate_default=True)
+    api_url: Optional[str] = Field(default=None, validate_default=True)
 
     @field_validator("api_request_timeout_seconds", "api_url")
     @classmethod
