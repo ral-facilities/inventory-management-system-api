@@ -36,6 +36,7 @@ class TestObjectStorageAPIClient:
             f"{config.object_storage.api_url}{endpoint}",
             headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN}"},
             params={"entity_id": entity_id},
+            timeout=config.object_storage.api_request_timeout_seconds,
         )
 
     @pytest.mark.parametrize(

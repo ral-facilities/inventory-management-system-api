@@ -51,8 +51,9 @@ class ObjectStorageAPIClient:
         headers = {"Authorization": f"Bearer {access_token}"} if config.authentication.enabled else None
         params = {"entity_id": entity_id}
 
-        # pylint: disable=missing-timeout
-        response = requests.delete(url, headers=headers, params=params)
+        response = requests.delete(
+            url, headers=headers, params=params, timeout=config.object_storage.api_request_timeout_seconds
+        )
 
         if response.status_code == 403:
             raise ObjectStorageAPIAuthError(response.json()["detail"])

@@ -71,13 +71,15 @@ class ObjectStorageConfig(BaseModel):
     """
 
     enabled: bool
+    api_request_timeout_seconds: int
     api_url: str
 
-    @field_validator("api_url")
+    @field_validator("api_request_timeout_seconds", "api_url")
     @classmethod
     def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
         """
-        Validator for the `api_url` field to make it mandatory if the value of the `enabled` field is `True`.
+        Validator for the `api_request_timeout_seconds` and `api_url` fields to make them mandatory if the value of the
+        `enabled` field is `True`.
 
         It checks if the `enabled` field has been set to `True` and raises a `TypeError` if this is the case.
 
