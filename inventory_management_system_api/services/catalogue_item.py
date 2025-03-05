@@ -9,7 +9,6 @@ from typing import Annotated, List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -141,9 +140,9 @@ class CatalogueItemService:
 
         # If any of these, need to ensure the catalogue item has no child elements
         if any(key in update_data for key in CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS):
-            if self._catalogue_item_repository.has_child_elements(CustomObjectId(catalogue_item_id)):
+            if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
                 raise ChildElementsExistError(
-                    f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+                    f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated"
                 )
 
         catalogue_category = None
@@ -222,9 +221,14 @@ class CatalogueItemService:
         :param catalogue_item_id: The ID of the catalogue item to delete.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
+        if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
+            raise ChildElementsExistError(
+                f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+            )
+
         # First attempt to delete any attachments and/or images that might be associated with this catalogue item.
         if config.object_storage.enabled:
             ObjectStorageAPIClient.delete_attachments(access_token, catalogue_item_id)
             ObjectStorageAPIClient.delete_images(access_token, catalogue_item_id)
 
-        return self._catalogue_item_repository.delete(catalogue_item_id)
+        self._catalogue_item_repository.delete(catalogue_item_id)

@@ -138,7 +138,7 @@ class CatalogueCategoryService:
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
             if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
                 raise ChildElementsExistError(
-                    f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
+                    f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
                 )
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:

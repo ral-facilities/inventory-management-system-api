@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -108,9 +108,12 @@ class SystemService:
         :param system_id: ID of the system to delete
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
+        if self._system_repository.has_child_elements(system_id):
+            raise ChildElementsExistError(f"System with ID {system_id} has child elements and cannot be deleted")
+
         # First attempt to delete any attachments and/or images that might be associated with this system.
         if config.object_storage.enabled:
             ObjectStorageAPIClient.delete_attachments(access_token, system_id)
             ObjectStorageAPIClient.delete_images(access_token, system_id)
 
-        return self._system_repository.delete(system_id)
+        self._system_repository.delete(system_id)
