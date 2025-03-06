@@ -111,7 +111,7 @@ class SystemService:
         if self._system_repository.has_child_elements(system_id):
             raise ChildElementsExistError(f"System with ID {system_id} has child elements and cannot be deleted")
 
-        # First attempt to delete any attachments and/or images that might be associated with this system.
+        # First, attempt to delete any attachments and/or images that might be associated with this system.
         if config.object_storage.enabled:
             ObjectStorageAPIClient.delete_attachments(system_id, access_token)
             ObjectStorageAPIClient.delete_images(system_id, access_token)

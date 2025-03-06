@@ -226,7 +226,7 @@ class CatalogueItemService:
                 f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
             )
 
-        # First attempt to delete any attachments and/or images that might be associated with this catalogue item.
+        # First, attempt to delete any attachments and/or images that might be associated with this catalogue item.
         if config.object_storage.enabled:
             ObjectStorageAPIClient.delete_attachments(catalogue_item_id, access_token)
             ObjectStorageAPIClient.delete_images(catalogue_item_id, access_token)

@@ -437,7 +437,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
     def test_delete_with_child_elements(self):
-        """Testing deleting a system when it has child elements."""
+        """Test deleting a system when it has child elements."""
 
         system_id = str(ObjectId())
 

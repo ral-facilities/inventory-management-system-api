@@ -26,7 +26,9 @@ class TestObjectStorageAPIClient:
     )
     @patch("inventory_management_system_api.core.object_storage_api_client.requests.delete")
     def test_delete_success(self, mock_delete, method, endpoint):
-        """Test `delete_attachments` and `delete_images methods when Object Storage API responds with 204 No Content."""
+        """
+        Test `delete_attachments` and `delete_images` methods when Object Storage API responds with 204 No Content.
+        """
         mock_delete.return_value.status_code = 204
 
         entity_id = str(ObjectId())

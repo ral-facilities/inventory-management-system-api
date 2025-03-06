@@ -938,7 +938,7 @@ class TestHasChildElements(HasChildElementsDSL):
         self.check_has_child_elements_success(expected_result=True)
 
     def test_has_child_elements_with_child_item(self):
-        """Test `has_child_elements` when there are no child system but there is a child item."""
+        """Test `has_child_elements` when there are no child systems but there is a child item."""
 
         self.mock_has_child_elements(child_system_data=None, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_has_child_elements(str(ObjectId()))

@@ -1197,7 +1197,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
     def test_delete_with_child_elements(self):
-        """Testing deleting a catalogue item when it has child elements."""
+        """Test deleting a catalogue item when it has child elements."""
 
         catalogue_item_id = str(ObjectId())
 

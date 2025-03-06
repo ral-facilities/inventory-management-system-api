@@ -184,7 +184,7 @@ class ItemService:
         :param item_id: The ID of the item to delete.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
-        # First attempt to delete any attachments and/or images that might be associated with this item.
+        # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
             ObjectStorageAPIClient.delete_attachments(item_id, access_token)
             ObjectStorageAPIClient.delete_images(item_id, access_token)
