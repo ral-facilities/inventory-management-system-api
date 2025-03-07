@@ -33,7 +33,7 @@ class CatalogueItemRepo:
         self._catalogue_items_collection: Collection = self._database.catalogue_items
         self._items_collection: Collection = self._database.items
 
-    def create(self, catalogue_item: CatalogueItemIn, session: ClientSession = None) -> CatalogueItemOut:
+    def create(self, catalogue_item: CatalogueItemIn, session: Optional[ClientSession] = None) -> CatalogueItemOut:
         """
         Create a new catalogue item in a MongoDB database.
 
@@ -46,7 +46,7 @@ class CatalogueItemRepo:
         catalogue_item = self.get(str(result.inserted_id), session=session)
         return catalogue_item
 
-    def get(self, catalogue_item_id: str, session: ClientSession = None) -> Optional[CatalogueItemOut]:
+    def get(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> Optional[CatalogueItemOut]:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
 
@@ -61,7 +61,9 @@ class CatalogueItemRepo:
             return CatalogueItemOut(**catalogue_item)
         return None
 
-    def list(self, catalogue_category_id: Optional[str], session: ClientSession = None) -> List[CatalogueItemOut]:
+    def list(
+        self, catalogue_category_id: Optional[str], session: Optional[ClientSession] = None
+    ) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items from a MongoDB database.
 
@@ -85,7 +87,7 @@ class CatalogueItemRepo:
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
 
     def update(
-        self, catalogue_item_id: str, catalogue_item: CatalogueItemIn, session: ClientSession = None
+        self, catalogue_item_id: str, catalogue_item: CatalogueItemIn, session: Optional[ClientSession] = None
     ) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID in a MongoDB database.
@@ -104,7 +106,7 @@ class CatalogueItemRepo:
         catalogue_item = self.get(str(catalogue_item_id), session=session)
         return catalogue_item
 
-    def delete(self, catalogue_item_id: str, session: ClientSession = None) -> None:
+    def delete(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a catalogue item by its ID from a MongoDB database.
 
@@ -123,7 +125,7 @@ class CatalogueItemRepo:
         if result.deleted_count == 0:
             raise MissingRecordError(f"No catalogue item found with ID: {str(catalogue_item_id)}")
 
-    def has_child_elements(self, catalogue_item_id: CustomObjectId, session: ClientSession = None) -> bool:
+    def has_child_elements(self, catalogue_item_id: CustomObjectId, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a catalogue item has child elements based on its ID.
 
@@ -137,7 +139,9 @@ class CatalogueItemRepo:
         item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id}, session=session)
         return item is not None
 
-    def list_ids(self, catalogue_category_id: Optional[str] = None, session: ClientSession = None) -> List[ObjectId]:
+    def list_ids(
+        self, catalogue_category_id: Optional[str] = None, session: Optional[ClientSession] = None
+    ) -> List[ObjectId]:
         """
         Retrieve a list of all catalogue item ids with a specific catalogue_category_id from a MongoDB
         database. Performs a projection to only include _id. (Required for mass updates of properties
@@ -167,7 +171,7 @@ class CatalogueItemRepo:
         return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
     def insert_property_to_all_matching(
-        self, catalogue_category_id: str, property_in: PropertyIn, session: ClientSession = None
+        self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
     ):
         """
         Inserts a property into every catalogue item with a given catalogue_category_id via an update_many query
@@ -192,7 +196,7 @@ class CatalogueItemRepo:
         )
 
     def update_names_of_all_properties_with_id(
-        self, property_id: str, new_property_name: str, session: ClientSession = None
+        self, property_id: str, new_property_name: str, session: Optional[ClientSession] = None
     ) -> None:
         """
         Updates the name of a property in every catalogue item it is present in

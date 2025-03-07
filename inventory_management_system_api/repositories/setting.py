@@ -65,7 +65,7 @@ class SettingRepo:
         self._settings_collection: Collection = self._database.settings
 
     def upsert(
-        self, setting: SettingInBaseT, out_model_type: Type[SettingOutBaseT], session: ClientSession = None
+        self, setting: SettingInBaseT, out_model_type: Type[SettingOutBaseT], session: Optional[ClientSession] = None
     ) -> SettingOutBaseT:
         """
         Update or insert a setting in a MongoDB database depending on whether it already exists.
@@ -83,7 +83,9 @@ class SettingRepo:
 
         return self.get(out_model_type=out_model_type, session=session)
 
-    def get(self, out_model_type: Type[SettingOutBaseT], session: ClientSession = None) -> Optional[SettingOutBaseT]:
+    def get(
+        self, out_model_type: Type[SettingOutBaseT], session: Optional[ClientSession] = None
+    ) -> Optional[SettingOutBaseT]:
         """
         Retrieve a setting from a MongoDB database.
 

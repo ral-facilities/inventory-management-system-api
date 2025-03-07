@@ -34,7 +34,7 @@ class UnitRepo:
         self._units_collection: Collection = self._database.units
         self._catalogue_categories_collection: Collection = self._database.catalogue_categories
 
-    def create(self, unit: UnitIn, session: ClientSession = None) -> UnitOut:
+    def create(self, unit: UnitIn, session: Optional[ClientSession] = None) -> UnitOut:
         """
         Create a new Unit in a MongoDB database
 
@@ -54,7 +54,7 @@ class UnitRepo:
 
         return unit
 
-    def list(self, session: ClientSession = None) -> list[UnitOut]:
+    def list(self, session: Optional[ClientSession] = None) -> list[UnitOut]:
         """
         Retrieve Units from a MongoDB database
 
@@ -64,7 +64,7 @@ class UnitRepo:
         units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
 
-    def get(self, unit_id: str, session: ClientSession = None) -> Optional[UnitOut]:
+    def get(self, unit_id: str, session: Optional[ClientSession] = None) -> Optional[UnitOut]:
         """
         Retrieve a Unit by its ID from a MongoDB database.
 
@@ -79,7 +79,7 @@ class UnitRepo:
             return UnitOut(**unit)
         return None
 
-    def delete(self, unit_id: str, session: ClientSession = None) -> None:
+    def delete(self, unit_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a unit by its ID from a MongoDB database.
 
@@ -99,7 +99,9 @@ class UnitRepo:
         if result.deleted_count == 0:
             raise MissingRecordError(f"No unit found with ID: {str(unit_id)}")
 
-    def _is_duplicate_unit(self, code: str, unit_id: CustomObjectId = None, session: ClientSession = None) -> bool:
+    def _is_duplicate_unit(
+        self, code: str, unit_id: CustomObjectId = None, session: Optional[ClientSession] = None
+    ) -> bool:
         """
         Check if a Unit with the same value already exists in the Units collection
 
@@ -112,7 +114,7 @@ class UnitRepo:
         unit = self._units_collection.find_one({"code": code, "_id": {"$ne": unit_id}}, session=session)
         return unit is not None
 
-    def _is_unit_in_catalogue_category(self, unit_id: str, session: ClientSession = None) -> bool:
+    def _is_unit_in_catalogue_category(self, unit_id: str, session: Optional[ClientSession] = None) -> bool:
         """
         Checks if any catalogue categories in the database have a specific unit ID
 

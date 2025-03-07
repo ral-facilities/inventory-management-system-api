@@ -33,7 +33,7 @@ class ManufacturerRepo:
         self._manufacturers_collection: Collection = self._database.manufacturers
         self._catalogue_items_collection: Collection = self._database.catalogue_items
 
-    def create(self, manufacturer: ManufacturerIn, session: ClientSession = None) -> ManufacturerOut:
+    def create(self, manufacturer: ManufacturerIn, session: Optional[ClientSession] = None) -> ManufacturerOut:
         """
         Create a new manufacturer in a MongoDB database.
 
@@ -52,7 +52,7 @@ class ManufacturerRepo:
 
         return manufacturer
 
-    def get(self, manufacturer_id: str, session: ClientSession = None) -> Optional[ManufacturerOut]:
+    def get(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> Optional[ManufacturerOut]:
         """
         Retrieve a manufacturer by its ID from a MondoDB database.
 
@@ -67,7 +67,7 @@ class ManufacturerRepo:
             return ManufacturerOut(**manufacturer)
         return None
 
-    def list(self, session: ClientSession = None) -> List[ManufacturerOut]:
+    def list(self, session: Optional[ClientSession] = None) -> List[ManufacturerOut]:
         """
         Retrieve all manufacturers from a MongoDB database.
 
@@ -79,7 +79,7 @@ class ManufacturerRepo:
         return [ManufacturerOut(**manufacturer) for manufacturer in manufacturers]
 
     def update(
-        self, manufacturer_id: str, manufacturer: ManufacturerIn, session: ClientSession = None
+        self, manufacturer_id: str, manufacturer: ManufacturerIn, session: Optional[ClientSession] = None
     ) -> ManufacturerOut:
         """
         Update manufacturer by its ID in a MongoDB database.
@@ -105,7 +105,7 @@ class ManufacturerRepo:
         manufacturer = self.get(str(manufacturer_id), session=session)
         return manufacturer
 
-    def delete(self, manufacturer_id: str, session: ClientSession = None) -> None:
+    def delete(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a manufacturer by its ID from a MongoDB database.
 
@@ -127,7 +127,7 @@ class ManufacturerRepo:
             raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
 
     def _is_duplicate_manufacturer(
-        self, code: str, manufacturer_id: CustomObjectId = None, session: ClientSession = None
+        self, code: str, manufacturer_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None
     ) -> bool:
         """
         Check if a manufacturer with the same code already exists.
@@ -143,7 +143,7 @@ class ManufacturerRepo:
         )
         return manufacturer is not None
 
-    def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str, session: ClientSession = None) -> bool:
+    def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a manufacturer is part of a catalogue item based on its ID.
 
