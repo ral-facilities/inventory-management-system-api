@@ -94,7 +94,7 @@ def process_properties(
 
 
 def _create_properties_dict(
-    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]]
+    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]],
 ) -> Dict[str, Dict]:
     """
     Convert a list of property objects into a dictionary where the keys are the catalogue item
@@ -290,8 +290,8 @@ def perform_number_of_spares_recalculation(
     """
     Performs a recalculation of the `number_of_spares` field for a catalogue item.
 
-    Should after `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write locked to avoid
-    other similar updates interfering.
+    Should be called after `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write
+    locked to avoid other similar updates interfering.
 
     :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for.
     :param usage_status_ids: Usage status ids that should constitute a spare.
