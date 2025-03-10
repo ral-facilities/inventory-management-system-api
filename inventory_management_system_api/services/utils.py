@@ -4,14 +4,21 @@ Collection of some utility functions used by services
 
 import logging
 import re
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
+from bson import ObjectId
+from pymongo.client_session import ClientSession
+
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     DuplicateCatalogueCategoryPropertyNameError,
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
@@ -87,7 +94,7 @@ def process_properties(
 
 
 def _create_properties_dict(
-    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]]
+    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]],
 ) -> Dict[str, Dict]:
     """
     Convert a list of property objects into a dictionary where the keys are the catalogue item
@@ -241,3 +248,62 @@ def _merge_non_mandatory_properties(
         elif not defined_property["mandatory"]:
             properties[defined_property_id] = {"id": defined_property_id, "value": None}
     return properties
+
+
+def get_usage_status_ids_from_spares_definition(spares_definition: SparesDefinitionOut) -> list[CustomObjectId]:
+    """
+    Returns a list of usage status ids from a spares definition  model in the format required for
+    `perform_number_of_spares_update`.
+
+    :param spares_definition: Spares definition.
+    :return: List of usage status ids converted to CustomObjectId's.
+    """
+
+    return [CustomObjectId(usage_status.id) for usage_status in spares_definition.usage_statuses]
+
+
+def prepare_for_number_of_spares_recalculation(
+    catalogue_item_id: Optional[ObjectId], catalogue_item_repository: CatalogueItemRepo, session: ClientSession
+) -> None:
+    """
+    Prepares a catalogue item for a recalculation of the `number_of_spares` field.
+
+    Should be called prior to `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write
+    locked to avoid other similar updates interfering.
+
+    :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for or `None` if all are
+                              being recalculated.
+    :param catalogue_item_repository: `CatalogueItemRepo` repository to use
+    :param session: Session to use for the recalculation. A transaction should already have been started.
+    """
+
+    catalogue_item_repository.update_number_of_spares(catalogue_item_id, None, session=session)
+
+
+def perform_number_of_spares_recalculation(
+    catalogue_item_id: ObjectId,
+    usage_status_ids: list[CustomObjectId],
+    catalogue_item_repository: CatalogueItemRepo,
+    item_repository: ItemRepo,
+    session: ClientSession,
+) -> None:
+    """
+    Performs a recalculation of the `number_of_spares` field for a catalogue item.
+
+    Should be called after `perform_number_of_spares_recalculation` in order to ensure the catalogue item is write
+    locked to avoid other similar updates interfering.
+
+    :param catalogue_item_id: ID of the catalogue item that the spares will be recalculated for.
+    :param usage_status_ids: Usage status ids that should constitute a spare.
+    :param catalogue_item_repository: `CatalogueItemRepo` repository to use.
+    :param item_repository: `ItemRepo` repository to use.
+    :param session: Session to use for the recalculation. A transaction should already have been started.
+    """
+
+    # Now calculate the new number of spares
+    new_number_of_spares = item_repository.count_with_usage_status_ids_in(
+        catalogue_item_id, usage_status_ids, session=session
+    )
+
+    # Finally update
+    catalogue_item_repository.update_number_of_spares(catalogue_item_id, new_number_of_spares, session=session)

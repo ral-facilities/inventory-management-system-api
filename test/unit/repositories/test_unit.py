@@ -47,7 +47,7 @@ class UnitRepoDSL:
         self.mock_session = MagicMock()
         yield
 
-    def mock_is_duplicate_unit(self, duplicate_unit_in_data: Optional[dict] = None) -> None:
+    def _mock_is_duplicate_unit(self, duplicate_unit_in_data: Optional[dict] = None) -> None:
         """
         Mocks database methods appropriately for when the `_is_duplicate_unit` repo method will be called.
 
@@ -58,7 +58,9 @@ class UnitRepoDSL:
             ({**UnitIn(**duplicate_unit_in_data).model_dump(), "_id": ObjectId()} if duplicate_unit_in_data else None),
         )
 
-    def get_is_duplicate_unit_expected_find_one_call(self, unit_in: UnitIn, expected_unit_id: Optional[CustomObjectId]):
+    def _get_is_duplicate_unit_expected_find_one_call(
+        self, unit_in: UnitIn, expected_unit_id: Optional[CustomObjectId]
+    ):
         """
         Returns the expected `find_one` calls that should occur when `_is_duplicate_unit` is called.
 
@@ -92,7 +94,7 @@ class CreateDSL(UnitRepoDSL):
 
         self._expected_unit_out = UnitOut(**self._unit_in.model_dump(), id=inserted_unit_id)
 
-        self.mock_is_duplicate_unit(duplicate_unit_in_data)
+        self._mock_is_duplicate_unit(duplicate_unit_in_data)
         # Mock `insert one` to return object for inserted unit
         RepositoryTestHelpers.mock_insert_one(self.units_collection, inserted_unit_id)
         # Mock `find_one` to return the inserted unit document
@@ -122,7 +124,7 @@ class CreateDSL(UnitRepoDSL):
         # Obtain a list of expected find_one calls
         expected_find_one_calls = [
             # This is the check for the duplicate
-            self.get_is_duplicate_unit_expected_find_one_call(self._unit_in, None),
+            self._get_is_duplicate_unit_expected_find_one_call(self._unit_in, None),
             # This is the check for the newly inserted unit get
             call({"_id": CustomObjectId(self._expected_unit_out.id)}, session=self.mock_session),
         ]
