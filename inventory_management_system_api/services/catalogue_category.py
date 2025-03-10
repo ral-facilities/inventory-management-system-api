@@ -7,7 +7,6 @@ from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     LeafCatalogueCategoryError,
@@ -136,7 +135,7 @@ class CatalogueCategoryService:
 
         # If any of these, need to ensure the category has no child elements
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
-            if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
+            if self._catalogue_category_repository.has_child_elements(catalogue_category_id):
                 raise ChildElementsExistError(
                     f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
                 )

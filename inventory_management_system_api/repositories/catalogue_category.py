@@ -204,16 +204,17 @@ class CatalogueCategoryRepo:
         :raises ChildElementsExistError: If the catalogue category has child elements.
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
-        catalogue_category_id = CustomObjectId(catalogue_category_id)
         if self.has_child_elements(catalogue_category_id, session=session):
             raise ChildElementsExistError(
-                f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be deleted"
+                f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
             )
 
         logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
-        result = self._catalogue_categories_collection.delete_one({"_id": catalogue_category_id}, session=session)
+        result = self._catalogue_categories_collection.delete_one(
+            {"_id": CustomObjectId(catalogue_category_id)}, session=session
+        )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue category found with ID: {str(catalogue_category_id)}")
+            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
     def _is_duplicate_catalogue_category(
         self,
@@ -242,9 +243,7 @@ class CatalogueCategoryRepo:
 
         return catalogue_category is not None
 
-    def has_child_elements(
-        self, catalogue_category_id: CustomObjectId, session: Optional[ClientSession] = None
-    ) -> bool:
+    def has_child_elements(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a catalogue category has child elements based on its ID.
 
@@ -256,7 +255,7 @@ class CatalogueCategoryRepo:
         :return: True if the catalogue category has child elements, False otherwise.
         """
         logger.info("Checking if catalogue category with ID '%s' has children elements", catalogue_category_id)
-
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
         return (
             self._catalogue_categories_collection.find_one({"parent_id": catalogue_category_id}, session=session)
             is not None

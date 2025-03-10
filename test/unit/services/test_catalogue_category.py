@@ -568,7 +568,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         # Ensure checking children if needed
         if self._expect_child_check:
             self.mock_catalogue_category_repository.has_child_elements.assert_called_once_with(
-                CustomObjectId(self._updated_catalogue_category_id)
+                self._updated_catalogue_category_id
             )
 
         # Ensure new code was obtained if patching name
