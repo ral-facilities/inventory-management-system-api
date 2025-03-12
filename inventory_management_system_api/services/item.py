@@ -8,12 +8,14 @@ from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
 )
+from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import PropertyOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
@@ -175,12 +177,18 @@ class ItemService:
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
-    def delete(self, item_id: str) -> None:
+    def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
         """
         Delete an item by its ID.
 
         :param item_id: The ID of the item to delete.
+        :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
+        # First, attempt to delete any attachments and/or images that might be associated with this item.
+        if config.object_storage.enabled:
+            ObjectStorageAPIClient.delete_attachments(item_id, access_token)
+            ObjectStorageAPIClient.delete_images(item_id, access_token)
+
         return self._item_repository.delete(item_id)
 
     def _merge_missing_properties(

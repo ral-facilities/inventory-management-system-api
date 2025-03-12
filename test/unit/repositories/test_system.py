@@ -20,7 +20,6 @@ from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
     DuplicateRecordError,
     InvalidActionError,
     InvalidObjectIdError,
@@ -60,38 +59,6 @@ class SystemRepoDSL:
         with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
             self.mock_utils = mock_utils
             yield
-
-    def mock_has_child_elements(
-        self, child_system_data: Optional[dict] = None, child_item_data: Optional[dict] = None
-    ) -> None:
-        """
-        Mocks database methods appropriately for when the `_has_child_elements` repo method will be called.
-
-        :param child_system_data: Dictionary containing a child system's data (or `None`).
-        :param child_item_data: Dictionary containing a child item's data (or `None`).
-        """
-
-        self._mock_child_system_data = child_system_data
-        self._mock_child_item_data = child_item_data
-
-        RepositoryTestHelpers.mock_find_one(self.systems_collection, child_system_data)
-        RepositoryTestHelpers.mock_find_one(self.items_collection, child_item_data)
-
-    def check_has_child_elements_performed_expected_calls(self, expected_system_id: str) -> None:
-        """
-        Checks that a call to `_has_child_elements` performed the expected function calls.
-
-        :param expected_system_id: Expected `system_id` used in the database calls.
-        """
-
-        self.systems_collection.find_one.assert_called_once_with(
-            {"parent_id": CustomObjectId(expected_system_id)}, session=self.mock_session
-        )
-        # Will only call the second one if the first doesn't return anything
-        if not self._mock_child_item_data:
-            self.items_collection.find_one.assert_called_once_with(
-                {"system_id": CustomObjectId(expected_system_id)}, session=self.mock_session
-            )
 
     def mock_is_duplicate_system(self, duplicate_system_in_data: Optional[dict] = None) -> None:
         """
@@ -805,18 +772,13 @@ class DeleteDSL(SystemRepoDSL):
     _delete_system_id: str
     _delete_exception: pytest.ExceptionInfo
 
-    def mock_delete(
-        self, deleted_count: int, child_system_data: Optional[dict] = None, child_item_data: Optional[dict] = None
-    ) -> None:
+    def mock_delete(self, deleted_count: int) -> None:
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
         :param deleted_count: Number of documents deleted successfully.
-        :param child_system_data: Dictionary containing a child system's data (or `None`).
-        :param child_item_data: Dictionary containing a child item's data (or `None`).
         """
 
-        self.mock_has_child_elements(child_system_data, child_item_data)
         RepositoryTestHelpers.mock_delete_one(self.systems_collection, deleted_count)
 
     def call_delete(self, system_id: str) -> None:
@@ -845,7 +807,6 @@ class DeleteDSL(SystemRepoDSL):
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
-        self.check_has_child_elements_performed_expected_calls(self._delete_system_id)
         self.systems_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_system_id)}, session=self.mock_session
         )
@@ -879,24 +840,6 @@ class TestDelete(DeleteDSL):
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
-    def test_delete_with_child_system(self):
-        """Test deleting a system when it has a child system."""
-
-        system_id = str(ObjectId())
-
-        self.mock_delete(deleted_count=1, child_system_data=SYSTEM_IN_DATA_NO_PARENT_A)
-        self.call_delete_expecting_error(system_id, ChildElementsExistError)
-        self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
-
-    def test_delete_with_child_item(self):
-        """Test deleting a system when it has a child item."""
-
-        system_id = str(ObjectId())
-
-        self.mock_delete(deleted_count=1, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
-        self.call_delete_expecting_error(system_id, ChildElementsExistError)
-        self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
-
     def test_delete_non_existent_id(self):
         """Test deleting a system with a non-existent ID."""
 
@@ -915,3 +858,124 @@ class TestDelete(DeleteDSL):
 
         self.call_delete_expecting_error(system_id, InvalidObjectIdError)
         self.check_delete_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class HasChildElementsDSL(SystemRepoDSL):
+    """Base class for `has_child_elements` tests"""
+
+    _has_child_elements_system_id: str
+    _has_child_elements_result: bool
+    _has_child_elements_exception: pytest.ExceptionInfo
+
+    def mock_has_child_elements(
+        self, child_system_data: Optional[dict] = None, child_item_data: Optional[dict] = None
+    ) -> None:
+        """
+        Mocks database methods appropriately for when the `has_child_elements` repo method will be called.
+
+        :param child_system_data: Dictionary containing a child system's data (or `None`).
+        :param child_item_data: Dictionary containing a child item's data (or `None`).
+        """
+
+        self._mock_child_system_data = child_system_data
+        self._mock_child_item_data = child_item_data
+
+        RepositoryTestHelpers.mock_find_one(self.systems_collection, child_system_data)
+        RepositoryTestHelpers.mock_find_one(self.items_collection, child_item_data)
+
+    def call_has_child_elements(self, system_id: str) -> None:
+        """Calls the `SystemRepo` `has_child_elements` method.
+
+        :param system_id: ID of the system to check.
+        """
+
+        self._has_child_elements_system_id = system_id
+        self._has_child_elements_result = self.system_repository.has_child_elements(
+            system_id, session=self.mock_session
+        )
+
+    def call_has_child_elements_expecting_error(
+        self, catalogue_category_id: str, error_type: type[BaseException]
+    ) -> None:
+        """
+        Calls the `SystemRepo` `has_child_elements` method while expecting an error to be raised.
+
+        :param catalogue_category_id: ID of the system to check.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.system_repository.has_child_elements(catalogue_category_id)
+        self._has_child_elements_exception = exc
+
+    def check_has_child_elements_performed_expected_calls(self, expected_system_id: str) -> None:
+        """
+        Checks that a call to `has_child_elements` performed the expected function calls.
+
+        :param expected_system_id: Expected `system_id` used in the database calls.
+        """
+
+        self.systems_collection.find_one.assert_called_once_with(
+            {"parent_id": CustomObjectId(expected_system_id)}, session=self.mock_session
+        )
+        # Will only call the second one if the first doesn't return anything
+        if not self._mock_child_system_data:
+            self.items_collection.find_one.assert_called_once_with(
+                {"system_id": CustomObjectId(expected_system_id)}, session=self.mock_session
+            )
+
+    def check_has_child_elements_success(self, expected_result: bool) -> None:
+        """Checks that a prior call to `call_has_child_elements` worked as expected.
+
+        :param expected_result: The expected result returned by `has_child_elements`.
+        """
+
+        self.check_has_child_elements_performed_expected_calls(self._has_child_elements_system_id)
+
+        assert self._has_child_elements_result == expected_result
+
+    def check_has_child_elements_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception with the correct
+        message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.systems_collection.find_one.assert_not_called()
+        self.items_collection.find_one.assert_not_called()
+
+        assert str(self._has_child_elements_exception.value) == message
+
+
+class TestHasChildElements(HasChildElementsDSL):
+    """Tests for `has_child_elements`."""
+
+    def test_has_child_elements_with_no_children(self):
+        """Test `has_child_elements` when there are no child systems or items."""
+
+        self.mock_has_child_elements(child_system_data=None, child_item_data=None)
+        self.call_has_child_elements(str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=False)
+
+    def test_has_child_elements_with_child_system(self):
+        """Test `has_child_elements` when there is a child system but no child items."""
+
+        self.mock_has_child_elements(child_system_data=SYSTEM_IN_DATA_NO_PARENT_A, child_item_data=None)
+        self.call_has_child_elements(str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=True)
+
+    def test_has_child_elements_with_child_item(self):
+        """Test `has_child_elements` when there are no child systems but there is a child item."""
+
+        self.mock_has_child_elements(child_system_data=None, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.call_has_child_elements(str(ObjectId()))
+        self.check_has_child_elements_success(expected_result=True)
+
+    def test_has_child_elements_with_invalid_id(self):
+        """Test `has_child_elements` with an invalid ID."""
+
+        system_id = "invalid-id"
+
+        self.call_has_child_elements_expecting_error(system_id, InvalidObjectIdError)
+        self.check_has_child_elements_failed_with_exception("Invalid ObjectId value 'invalid-id'")

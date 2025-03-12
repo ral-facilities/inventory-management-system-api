@@ -1057,6 +1057,7 @@ class HasChildElementsDSL(CatalogueCategoryRepoDSL):
 
     _has_child_elements_catalogue_category_id: str
     _has_child_elements_result: bool
+    _has_child_elements_exception: pytest.ExceptionInfo
 
     def call_has_child_elements(self, catalogue_category_id: str) -> None:
         """Calls the `CatalogueCategoryRepo` `has_child_elements` method.
@@ -1066,8 +1067,22 @@ class HasChildElementsDSL(CatalogueCategoryRepoDSL):
 
         self._has_child_elements_catalogue_category_id = catalogue_category_id
         self._has_child_elements_result = self.catalogue_category_repository.has_child_elements(
-            CustomObjectId(catalogue_category_id), session=self.mock_session
+            catalogue_category_id, session=self.mock_session
         )
+
+    def call_has_child_elements_expecting_error(
+        self, catalogue_category_id: str, error_type: type[BaseException]
+    ) -> None:
+        """
+        Calls the `CatalogueCategoryRepo` `has_child_elements` method while expecting an error to be raised.
+
+        :param catalogue_category_id: ID of the catalogue category to check.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_repository.has_child_elements(catalogue_category_id)
+        self._has_child_elements_exception = exc
 
     def check_has_child_elements_success(self, expected_result: bool) -> None:
         """Checks that a prior call to `call_has_child_elements` worked as expected.
@@ -1078,6 +1093,19 @@ class HasChildElementsDSL(CatalogueCategoryRepoDSL):
         self.check_has_child_elements_performed_expected_calls(self._has_child_elements_catalogue_category_id)
 
         assert self._has_child_elements_result == expected_result
+
+    def check_has_child_elements_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception with the correct
+        message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.catalogue_categories_collection.find_one.assert_not_called()
+        self.catalogue_items_collection.find_one.assert_not_called()
+
+        assert str(self._has_child_elements_exception.value) == message
 
 
 class TestHasChildElements(HasChildElementsDSL):
@@ -1110,6 +1138,14 @@ class TestHasChildElements(HasChildElementsDSL):
         )
         self.call_has_child_elements(catalogue_category_id=str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
+
+    def test_has_child_elements_with_invalid_id(self):
+        """Test `has_child_elements` with an invalid ID."""
+
+        catalogue_category_id = "invalid-id"
+
+        self.call_has_child_elements_expecting_error(catalogue_category_id, InvalidObjectIdError)
+        self.check_has_child_elements_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
 class CreatePropertyDSL(CatalogueCategoryRepoDSL):

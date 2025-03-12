@@ -8,13 +8,14 @@ from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
+from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -139,9 +140,9 @@ class CatalogueItemService:
 
         # If any of these, need to ensure the catalogue item has no child elements
         if any(key in update_data for key in CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS):
-            if self._catalogue_item_repository.has_child_elements(CustomObjectId(catalogue_item_id)):
+            if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
                 raise ChildElementsExistError(
-                    f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+                    f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated"
                 )
 
         catalogue_category = None
@@ -213,10 +214,21 @@ class CatalogueItemService:
             CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
         )
 
-    def delete(self, catalogue_item_id: str) -> None:
+    def delete(self, catalogue_item_id: str, access_token: Optional[str] = None) -> None:
         """
         Delete a catalogue item by its ID.
 
         :param catalogue_item_id: The ID of the catalogue item to delete.
+        :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
-        return self._catalogue_item_repository.delete(catalogue_item_id)
+        if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
+            raise ChildElementsExistError(
+                f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+            )
+
+        # First, attempt to delete any attachments and/or images that might be associated with this catalogue item.
+        if config.object_storage.enabled:
+            ObjectStorageAPIClient.delete_attachments(catalogue_item_id, access_token)
+            ObjectStorageAPIClient.delete_images(catalogue_item_id, access_token)
+
+        self._catalogue_item_repository.delete(catalogue_item_id)

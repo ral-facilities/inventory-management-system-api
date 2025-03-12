@@ -11,7 +11,6 @@ from pymongo.collection import Collection
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
     DuplicateRecordError,
     InvalidActionError,
     MissingRecordError,
@@ -166,14 +165,10 @@ class SystemRepo:
         :raises ChildElementsExistError: If the system has child elements
         :raises MissingRecordError: If the system doesn't exist
         """
-        system_id = CustomObjectId(system_id)
-        if self._has_child_elements(system_id, session=session):
-            raise ChildElementsExistError(f"System with ID {str(system_id)} has child elements and cannot be deleted")
-
         logger.info("Deleting system with ID: %s from the database", system_id)
-        result = self._systems_collection.delete_one({"_id": system_id}, session=session)
+        result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No system found with ID: {str(system_id)}")
+            raise MissingRecordError(f"No system found with ID: {system_id}")
 
     def _is_duplicate_system(
         self,
@@ -200,7 +195,7 @@ class SystemRepo:
         )
         return system is not None
 
-    def _has_child_elements(self, system_id: CustomObjectId, session: Optional[ClientSession] = None) -> bool:
+    def has_child_elements(self, system_id: str, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a system has any child system's or any Item's based on its ID
 
@@ -208,8 +203,8 @@ class SystemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: `True` if the system has child elements, `False` otherwise
         """
-        logger.info("Checking if system with ID '%s' has child elements", str(system_id))
-
+        logger.info("Checking if system with ID '%s' has child elements", system_id)
+        system_id = CustomObjectId(system_id)
         return (
             self._systems_collection.find_one({"parent_id": system_id}, session=session) is not None
             or self._items_collection.find_one({"system_id": system_id}, session=session) is not None

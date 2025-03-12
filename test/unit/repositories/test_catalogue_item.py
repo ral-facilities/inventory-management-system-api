@@ -19,11 +19,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    InvalidObjectIdError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 
@@ -52,28 +48,6 @@ class CatalogueItemRepoDSL:
         self.items_collection = database_mock.items
 
         self.mock_session = MagicMock()
-
-    def mock_has_child_elements(self, child_item_data: Optional[dict] = None) -> None:
-        """
-        Mocks database methods appropriately for when the `has_child_elements` repo method will be called.
-
-        :param child_item_data: Dictionary containing a child item's data (or `None`).
-        """
-
-        self._mock_child_item_data = child_item_data
-
-        RepositoryTestHelpers.mock_find_one(self.items_collection, child_item_data)
-
-    def check_has_child_elements_performed_expected_calls(self, expected_catalogue_item_id: str) -> None:
-        """
-        Checks that a call to `has_child_elements` performed the expected function calls.
-
-        :param expected_catalogue_item_id: Expected `catalogue_item_id` used in the database calls.
-        """
-
-        self.items_collection.find_one.assert_called_once_with(
-            {"catalogue_item_id": CustomObjectId(expected_catalogue_item_id)}, session=self.mock_session
-        )
 
 
 class CreateDSL(CatalogueItemRepoDSL):
@@ -458,19 +432,13 @@ class DeleteDSL(CatalogueItemRepoDSL):
     _delete_catalogue_item_id: str
     _delete_exception: pytest.ExceptionInfo
 
-    def mock_delete(
-        self,
-        deleted_count: int,
-        child_item_data: Optional[dict] = None,
-    ) -> None:
+    def mock_delete(self, deleted_count: int) -> None:
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
         :param deleted_count: Number of documents deleted successfully.
-        :param child_item_data: Dictionary containing a child item's data (or `None`).
         """
 
-        self.mock_has_child_elements(child_item_data)
         RepositoryTestHelpers.mock_delete_one(self.catalogue_items_collection, deleted_count)
 
     def call_delete(self, catalogue_item_id: str) -> None:
@@ -499,7 +467,6 @@ class DeleteDSL(CatalogueItemRepoDSL):
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
-        self.check_has_child_elements_performed_expected_calls(self._delete_catalogue_item_id)
         self.catalogue_items_collection.delete_one.assert_called_once_with(
             {"_id": CustomObjectId(self._delete_catalogue_item_id)}, session=self.mock_session
         )
@@ -533,17 +500,6 @@ class TestDelete(DeleteDSL):
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
-    def test_delete_with_child_item(self):
-        """Test deleting a catalogue item when it has a child item."""
-
-        catalogue_item_id = str(ObjectId())
-
-        self.mock_delete(deleted_count=1, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
-        self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
-        self.check_delete_failed_with_exception(
-            f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
-        )
-
     def test_delete_non_existent_id(self):
         """Test deleting a catalogue item with a non-existent ID."""
 
@@ -569,6 +525,18 @@ class HasChildElementsDSL(CatalogueItemRepoDSL):
 
     _has_child_elements_catalogue_item_id: str
     _has_child_elements_result: bool
+    _has_child_elements_exception: pytest.ExceptionInfo
+
+    def mock_has_child_elements(self, child_item_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately for when the `has_child_elements` repo method will be called.
+
+        :param child_item_data: Dictionary containing a child item's data (or `None`).
+        """
+
+        self._mock_child_item_data = child_item_data
+
+        RepositoryTestHelpers.mock_find_one(self.items_collection, child_item_data)
 
     def call_has_child_elements(self, catalogue_item_id: str) -> None:
         """Calls the `CatalogueItemRepo` `has_child_elements` method.
@@ -578,7 +546,32 @@ class HasChildElementsDSL(CatalogueItemRepoDSL):
 
         self._has_child_elements_catalogue_item_id = catalogue_item_id
         self._has_child_elements_result = self.catalogue_item_repository.has_child_elements(
-            CustomObjectId(catalogue_item_id), session=self.mock_session
+            catalogue_item_id, session=self.mock_session
+        )
+
+    def call_has_child_elements_expecting_error(
+        self, catalogue_category_id: str, error_type: type[BaseException]
+    ) -> None:
+        """
+        Calls the `CatalogueItemRepo` `has_child_elements` method while expecting an error to be raised.
+
+        :param catalogue_category_id: ID of the catalogue item to check.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_item_repository.has_child_elements(catalogue_category_id)
+        self._has_child_elements_exception = exc
+
+    def check_has_child_elements_performed_expected_calls(self, expected_catalogue_item_id: str) -> None:
+        """
+        Checks that a call to `has_child_elements` performed the expected function calls.
+
+        :param expected_catalogue_item_id: Expected `catalogue_item_id` used in the database calls.
+        """
+
+        self.items_collection.find_one.assert_called_once_with(
+            {"catalogue_item_id": CustomObjectId(expected_catalogue_item_id)}, session=self.mock_session
         )
 
     def check_has_child_elements_success(self, expected_result: bool) -> None:
@@ -591,6 +584,18 @@ class HasChildElementsDSL(CatalogueItemRepoDSL):
 
         assert self._has_child_elements_result == expected_result
 
+    def check_has_child_elements_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception with the correct
+        message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.items_collection.find_one.assert_not_called()
+
+        assert str(self._has_child_elements_exception.value) == message
+
 
 class TestHasChildElements(HasChildElementsDSL):
     """Tests for `has_child_elements`."""
@@ -599,15 +604,23 @@ class TestHasChildElements(HasChildElementsDSL):
         """Test `has_child_elements` when there are no child items."""
 
         self.mock_has_child_elements(child_item_data=None)
-        self.call_has_child_elements(catalogue_item_id=str(ObjectId()))
+        self.call_has_child_elements(str(ObjectId()))
         self.check_has_child_elements_success(expected_result=False)
 
     def test_has_child_elements_with_child_item(self):
         """Test `has_child_elements` when there is a child item."""
 
         self.mock_has_child_elements(child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
-        self.call_has_child_elements(catalogue_item_id=str(ObjectId()))
+        self.call_has_child_elements(str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
+
+    def test_has_child_elements_with_invalid_id(self):
+        """Test `has_child_elements` with an invalid ID."""
+
+        catalogue_item_id = "invalid-id"
+
+        self.call_has_child_elements_expecting_error(catalogue_item_id, InvalidObjectIdError)
+        self.check_has_child_elements_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
 class ListIDsDSL(CatalogueItemRepoDSL):

@@ -12,7 +12,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
+from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 
 logger = logging.getLogger()
@@ -114,18 +114,14 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
-        catalogue_item_id = CustomObjectId(catalogue_item_id)
-        if self.has_child_elements(catalogue_item_id, session=session):
-            raise ChildElementsExistError(
-                f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be deleted"
-            )
-
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
-        result = self._catalogue_items_collection.delete_one({"_id": catalogue_item_id}, session=session)
+        result = self._catalogue_items_collection.delete_one(
+            {"_id": CustomObjectId(catalogue_item_id)}, session=session
+        )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID: {str(catalogue_item_id)}")
+            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
 
-    def has_child_elements(self, catalogue_item_id: CustomObjectId, session: Optional[ClientSession] = None) -> bool:
+    def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a catalogue item has child elements based on its ID.
 
@@ -136,7 +132,9 @@ class CatalogueItemRepo:
         :return: True if the catalogue item has child elements, False otherwise.
         """
         logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
-        item = self._items_collection.find_one({"catalogue_item_id": catalogue_item_id}, session=session)
+        item = self._items_collection.find_one(
+            {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
+        )
         return item is not None
 
     def list_ids(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> List[ObjectId]:

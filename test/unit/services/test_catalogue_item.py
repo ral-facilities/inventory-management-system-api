@@ -714,7 +714,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
         # Ensure checking children if needed
         if self._expect_child_check:
             self.mock_catalogue_item_repository.has_child_elements.assert_called_once_with(
-                CustomObjectId(self._updated_catalogue_item_id)
+                self._updated_catalogue_item_id
             )
 
         # Ensure obtained new catalogue category if moving
@@ -1136,6 +1136,16 @@ class DeleteDSL(CatalogueItemServiceDSL):
     """Base class for `delete` tests."""
 
     _delete_catalogue_item_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(self, has_child_elements: Optional[bool] = False) -> None:
+        """
+        Mocks repo methods appropriately to test the `delete` service method.
+
+        :param has_child_elements: Whether the catalogue item being deleted has child elements or not.
+        """
+
+        self.mock_catalogue_item_repository.has_child_elements.return_value = has_child_elements
 
     def call_delete(self, catalogue_item_id: str) -> None:
         """
@@ -1147,10 +1157,33 @@ class DeleteDSL(CatalogueItemServiceDSL):
         self._delete_catalogue_item_id = catalogue_item_id
         self.catalogue_item_service.delete(catalogue_item_id)
 
+    def call_delete_expecting_error(self, catalogue_item_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueItemService` `delete` method while expecting an error to be raised.
+
+        :param catalogue_item_id: ID of the catalogue item to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_item_service.delete(catalogue_item_id)
+        self._delete_exception = exc
+
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
         self.mock_catalogue_item_repository.delete.assert_called_once_with(self._delete_catalogue_item_id)
+
+    def check_delete_failed_with_exception(self, message: str) -> None:
+        """
+        Check that a prior call to `call_delete_expecting_error` worked as expected, raising an exception with the
+        correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_catalogue_item_repository.delete.assert_not_called()
+        assert str(self._delete_exception.value) == message
 
 
 class TestDelete(DeleteDSL):
@@ -1159,5 +1192,17 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting a catalogue item."""
 
+        self.mock_delete(has_child_elements=False)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
+
+    def test_delete_with_child_elements(self):
+        """Test deleting a catalogue item when it has child elements."""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_delete(has_child_elements=True)
+        self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
+        self.check_delete_failed_with_exception(
+            f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+        )

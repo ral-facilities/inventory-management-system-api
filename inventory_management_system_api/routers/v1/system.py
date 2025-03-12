@@ -6,8 +6,9 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
@@ -15,6 +16,8 @@ from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
+    ObjectStorageAPIAuthError,
+    ObjectStorageAPIServerError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
@@ -147,12 +150,14 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_system(
-    system_id: Annotated[str, Path(description="ID of the system to delete")], system_service: SystemServiceDep
+    system_id: Annotated[str, Path(description="ID of the system to delete")],
+    system_service: SystemServiceDep,
+    request: Request,
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)
     try:
-        system_service.delete(system_id)
+        system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "System not found"
         logger.exception(message)
@@ -161,3 +166,13 @@ def delete_system(
         message = "System has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
+        message = "Unable to delete attachments and/or images"
+        logger.exception(message)
+
+        if exc.args[0] == "Invalid token or expired token":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    # pylint: enable=duplicate-code
