@@ -28,8 +28,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[code-analysis]
+          python -m pip install -r requirements.txt
+
       - name: Run black
         run: black --check --line-length 120 inventory_management_system_api test
+
       - name: Run pylint
         run: pylint inventory_management_system_api test
 
@@ -50,6 +53,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[test]
+          python -m pip install -r requirements.txt
 
       - name: Create logging configuration file
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
@@ -81,6 +85,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[test]
+          python -m pip install -r requirements.txt
 
       - name: Create logging configuration file
         run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini

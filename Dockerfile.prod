@@ -5,14 +5,14 @@ WORKDIR /inventory-management-system-api-run
 # Requirement when using a different workdir to get scripts to import correctly
 ENV PYTHONPATH="${PYTHONPATH}:/inventory-management-system-api-run"
 
-COPY README.md pyproject.toml ./
+COPY requirements.txt ./
 # Copy inventory_management_system_api source files
 COPY inventory_management_system_api/ inventory_management_system_api/
 
 RUN set -eux; \
     \
     # Install pip dependencies \
-    python -m pip install --no-cache-dir .; \
+    python -m pip install --no-cache-dir --requirement requirements.txt; \
     \
     # Create loging.ini from its .example file \
     cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini; \

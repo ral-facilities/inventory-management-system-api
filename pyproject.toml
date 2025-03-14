@@ -3,15 +3,15 @@ name = "inventory-management-system-api"
 description = "Python microservice providing an API for the Inventory Management System."
 readme = "README.md"
 requires-python = ">=3.12"
-version = "1.0.0"
+version = "1.0.2"
 
 dependencies = [
-    "cryptography==43.0.3",
-    "fastapi[all]==0.115.5",
-    "PyJWT==2.10.0",
-    "pymongo==4.10.1",
-    "requests==2.32.3",
-    "uvicorn==0.32.1"
+    "cryptography",
+    "fastapi[all]",
+    "PyJWT",
+    "pymongo",
+    "requests",
+    "uvicorn"
 ]
 
 [project.urls]
