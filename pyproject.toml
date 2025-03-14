@@ -3,7 +3,7 @@ name = "inventory-management-system-api"
 description = "Python microservice providing an API for the Inventory Management System."
 readme = "README.md"
 requires-python = ">=3.12"
-version = "1.0.1"
+version = "1.0.2"
 
 dependencies = [
     "cryptography",
