@@ -2,9 +2,15 @@
 Unit tests for the `UnitRepo` repository
 """
 
-from test.unit.repositories.mock_models import MOCK_CREATED_MODIFIED_TIME
-from test.unit.repositories.test_catalogue_category import CATALOGUE_CATEGORY_INFO
-from unittest.mock import MagicMock, call
+from test.mock_data import (
+    CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+    UNIT_IN_DATA_CM,
+    UNIT_IN_DATA_MM,
+)
+from test.unit.repositories.conftest import RepositoryTestHelpers
+from typing import Optional
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
 from bson import ObjectId
@@ -17,240 +23,402 @@ from inventory_management_system_api.core.exceptions import (
     PartOfCatalogueCategoryError,
 )
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
+from inventory_management_system_api.repositories.unit import UnitRepo
 
 
-def test_create(test_helpers, database_mock, unit_repository):
-    """
-    Test creating a unit.
+class UnitRepoDSL:
+    """Base class for `UnitRepo` unit tests."""
 
-    Verify that the `create` method properly handles the unit to be created,
-    checks that there is not a duplicate unit, and creates the unit.
-    """
-    # pylint: disable=duplicate-code
-    unit_in = UnitIn(value="mm", code="mm")
-    unit_info = unit_in.model_dump()
-    unit_out = UnitOut(
-        **unit_info,
-        id=str(ObjectId()),
-    )
-    session = MagicMock()
-    # pylint: enable=duplicate-code
+    mock_database: Mock
+    unit_repository: UnitRepo
+    units_collection: Mock
+    catalogue_categories_collection: Mock
 
-    # Mock `find_one` to return no duplicate units found
-    test_helpers.mock_find_one(database_mock.units, None)
-    # Mock 'insert one' to return object for inserted unit
-    test_helpers.mock_insert_one(database_mock.units, CustomObjectId(unit_out.id))
-    # Mock 'find_one' to return the inserted unit document
-    test_helpers.mock_find_one(
-        database_mock.units,
-        {
-            **unit_info,
-            "_id": CustomObjectId(unit_out.id),
-        },
-    )
+    mock_session = MagicMock()
 
-    created_unit = unit_repository.create(unit_in, session=session)
+    @pytest.fixture(autouse=True)
+    def setup(self, database_mock):
+        """Setup fixtures"""
+        self.mock_database = database_mock
+        self.unit_repository = UnitRepo(database_mock)
+        self.units_collection = database_mock.units
+        self.catalogue_categories_collection = database_mock.catalogue_categories
 
-    database_mock.units.insert_one.assert_called_once_with(unit_info, session=session)
-    database_mock.units.find_one.assert_has_calls(
-        [
-            call(
-                {
-                    "code": unit_out.code,
-                    "_id": {"$ne": None},
-                },
-                session=session,
-            ),
-            call({"_id": CustomObjectId(unit_out.id)}, session=session),
+        self.mock_session = MagicMock()
+        yield
+
+    def mock_is_duplicate_unit(self, duplicate_unit_in_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately for when the `_is_duplicate_unit` repo method will be called.
+
+        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a duplicate unit.
+        """
+        RepositoryTestHelpers.mock_find_one(
+            self.units_collection,
+            ({**UnitIn(**duplicate_unit_in_data).model_dump(), "_id": ObjectId()} if duplicate_unit_in_data else None),
+        )
+
+    def get_is_duplicate_unit_expected_find_one_call(self, unit_in: UnitIn, expected_unit_id: Optional[CustomObjectId]):
+        """
+        Returns the expected `find_one` calls that should occur when `_is_duplicate_unit` is called.
+
+        :param unit_in: `UnitIn` model containing the data about the unit.
+        :param expected_unit_id: Expected `unit_id` provided to `_is_duplicate_unit`.
+        :return: Expected `find_one` calls.
+        """
+        return call({"code": unit_in.code, "_id": {"$ne": expected_unit_id}}, session=self.mock_session)
+
+
+class CreateDSL(UnitRepoDSL):
+    """Base class for `create` tests."""
+
+    _unit_in: UnitIn
+    _expected_unit_out: UnitOut
+    _created_unit: UnitOut
+    _create_exception: pytest.ExceptionInfo
+
+    def mock_create(self, unit_in_data: dict, duplicate_unit_in_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately to test the `create` repo method.
+
+        :param unit_in_data: Dictionary containing the unit data as would be required for a `UnitIn` database model
+            (i.e. no ID or created and modified times required).
+        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a duplicate unit.
+        """
+        inserted_unit_id = CustomObjectId(str(ObjectId()))
+
+        # Pass through UnitIn first as need creation and modified times
+        self._unit_in = UnitIn(**unit_in_data)
+
+        self._expected_unit_out = UnitOut(**self._unit_in.model_dump(), id=inserted_unit_id)
+
+        self.mock_is_duplicate_unit(duplicate_unit_in_data)
+        # Mock `insert one` to return object for inserted unit
+        RepositoryTestHelpers.mock_insert_one(self.units_collection, inserted_unit_id)
+        # Mock `find_one` to return the inserted unit document
+        RepositoryTestHelpers.mock_find_one(
+            self.units_collection, {**self._unit_in.model_dump(), "_id": inserted_unit_id}
+        )
+
+    def call_create(self) -> None:
+        """Calls the `UnitRepo` `create` method with the appropriate data from a prior call to `mock_create`."""
+        self._created_unit = self.unit_repository.create(self._unit_in, session=self.mock_session)
+
+    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
+        """
+        Calls the `UnitRepo` `create` method with the appropriate data from a prior call to `mock_create` while
+        expecting an error to be raised.
+
+        :param error_type: Expected exception to be raised.
+        """
+        with pytest.raises(error_type) as exc:
+            self.unit_repository.create(self._unit_in, session=self.mock_session)
+        self._create_exception = exc
+
+    def check_create_success(self) -> None:
+        """Checks that a prior call to `call_create` worked as expected."""
+        unit_in_data = self._unit_in.model_dump()
+
+        # Obtain a list of expected find_one calls
+        expected_find_one_calls = [
+            # This is the check for the duplicate
+            self.get_is_duplicate_unit_expected_find_one_call(self._unit_in, None),
+            # This is the check for the newly inserted unit get
+            call({"_id": CustomObjectId(self._expected_unit_out.id)}, session=self.mock_session),
         ]
-    )
-    assert created_unit == unit_out
+        self.units_collection.insert_one.assert_called_once_with(unit_in_data, session=self.mock_session)
+        self.units_collection.find_one.assert_has_calls(expected_find_one_calls)
+
+        assert self._created_unit == self._expected_unit_out
+
+    def check_create_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception with the
+        correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+        self.units_collection.insert_one.assert_not_called()
+        assert str(self._create_exception.value) == message
 
 
-def test_create_unit_duplicate(test_helpers, database_mock, unit_repository):
-    """
-    Test creating a unit with a duplicate code
+class TestCreate(CreateDSL):
+    """Tests for creating a unit."""
 
-    Verify that the `create` method properly handles a unit with a duplicate name,
-    finds that there is a duplicate unit, and does not create the unit.
-    """
-    unit_in = UnitIn(value="mm", code="mm")
-    unit_info = unit_in.model_dump()
-    unit_out = UnitOut(
-        **unit_info,
-        id=str(ObjectId()),
-    )
+    def test_create(self):
+        """Test creating a unit."""
+        self.mock_create(UNIT_IN_DATA_MM)
+        self.call_create()
+        self.check_create_success()
 
-    # Mock `find_one` to return no duplicate units found
-    test_helpers.mock_find_one(
-        database_mock.units,
-        {
-            **unit_info,
-            "_id": CustomObjectId(unit_out.id),
-        },
-    )
-
-    with pytest.raises(DuplicateRecordError) as exc:
-        unit_repository.create(unit_out)
-    assert str(exc.value) == "Duplicate unit found"
+    def test_create_with_duplicate_name(self):
+        """Test creating a unit with a duplicate unit being found."""
+        self.mock_create(UNIT_IN_DATA_MM, duplicate_unit_in_data=UNIT_IN_DATA_MM)
+        self.call_create_expecting_error(DuplicateRecordError)
+        self.check_create_failed_with_exception("Duplicate unit found")
 
 
-def test_list(test_helpers, database_mock, unit_repository):
-    """Test getting all units"""
+class GetDSL(UnitRepoDSL):
+    """Base class for `get` tests."""
 
-    unit_1 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
+    _obtained_unit_id: str
+    _expected_unit_out: Optional[UnitOut]
+    _obtained_unit_out: UnitOut
+    _get_exception: pytest.ExceptionInfo
 
-    unit_2 = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="nm", code="nm")
+    def mock_get(self, unit_id: str, unit_in_data: Optional[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `get` repo method.
 
-    session = MagicMock()
+        :param unit_id: ID of the unit to be obtained.
+        :param unit_in_data: Either `None` or a dictionary containing the unit data as would be required for a `UnitIn`
+            database model (i.e. no ID or created and modified times required).
+        """
+        self._expected_unit_out = (
+            UnitOut(**UnitIn(**unit_in_data).model_dump(), id=CustomObjectId(unit_id)) if unit_in_data else None
+        )
 
-    test_helpers.mock_find(
-        database_mock.units,
-        [
-            {
-                **MOCK_CREATED_MODIFIED_TIME,
-                "_id": CustomObjectId(unit_1.id),
-                "code": unit_1.code,
-                "value": unit_1.value,
+        RepositoryTestHelpers.mock_find_one(
+            self.units_collection,
+            self._expected_unit_out.model_dump() if self._expected_unit_out else None,
+        )
+
+    def call_get(self, unit_id: str) -> None:
+        """
+        Calls the `UnitRepo` `get` method with the appropriate data from a prior call to `mock_get`.
+
+        :param unit_id: ID of the unit to be obtained.
+        """
+        self._obtained_unit_id = unit_id
+        self._obtained_unit_out = self.unit_repository.get(unit_id, session=self.mock_session)
+
+    def call_get_expecting_error(self, unit_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `UnitRepo` `get` method with the appropriate data from a prior call to `mock_get` while expecting an
+        error to be raised.
+
+        :param unit_id: ID of the unit to be obtained.
+        :param error_type: Expected exception to be raised.
+        """
+        with pytest.raises(error_type) as exc:
+            self.unit_repository.get(unit_id, session=self.mock_session)
+        self._get_exception = exc
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+        self.units_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._obtained_unit_id)}, session=self.mock_session
+        )
+        assert self._obtained_unit_out == self._expected_unit_out
+
+    def check_get_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception with the correct
+        message.
+
+        :param message: Expected message of the raised exception.
+        """
+        self.units_collection.find_one.assert_not_called()
+        assert str(self._get_exception.value) == message
+
+
+class TestGet(GetDSL):
+    """Tests for getting a unit."""
+
+    def test_get(self):
+        """Test getting a unit."""
+        unit_id = str(ObjectId())
+
+        self.mock_get(unit_id, UNIT_IN_DATA_MM)
+        self.call_get(unit_id)
+        self.check_get_success()
+
+    def test_get_with_non_existent_id(self):
+        """Testing getting a unit with a non-existent ID."""
+        unit_id = str(ObjectId())
+
+        self.mock_get(unit_id, None)
+        self.call_get(unit_id)
+        self.check_get_success()
+
+    def test_get_with_invalid_id(self):
+        """Test getting a unit with an invalid ID."""
+        unit_id = "invalid-id"
+
+        self.call_get_expecting_error(unit_id, InvalidObjectIdError)
+        self.check_get_failed_with_exception(f"Invalid ObjectId value '{unit_id}'")
+
+
+class ListDSL(UnitRepoDSL):
+    """Base class for `list` tests."""
+
+    _expected_units_out: list[UnitOut]
+    _obtained_units_out: list[UnitOut]
+
+    def mock_list(self, units_in_data: list[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `list` repo method.
+
+        :param units_in_data: List of dictionaries containing the unit data as would be required for a `UnitIn` database
+            model (i.e. no ID or created and modified times required).
+        """
+        self._expected_units_out = [
+            UnitOut(**UnitIn(**unit_in_data).model_dump(), id=ObjectId()) for unit_in_data in units_in_data
+        ]
+
+        RepositoryTestHelpers.mock_find(
+            self.units_collection,
+            [unit_out.model_dump() for unit_out in self._expected_units_out],
+        )
+
+    def call_list(self) -> None:
+        """Calls the `UnitRepo` `list method` method."""
+        self._obtained_units_out = self.unit_repository.list(session=self.mock_session)
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+        self.units_collection.find.assert_called_once_with(session=self.mock_session)
+        assert self._obtained_units_out == self._expected_units_out
+
+
+class TestList(ListDSL):
+    """Tests for listing units."""
+
+    def test_list(self):
+        """Test listing all units."""
+        self.mock_list([UNIT_IN_DATA_MM, UNIT_IN_DATA_CM])
+        self.call_list()
+        self.check_list_success()
+
+    def test_list_with_no_results(self):
+        """Test listing all units returning no results."""
+        self.mock_list([])
+        self.call_list()
+        self.check_list_success()
+
+
+class DeleteDSL(UnitRepoDSL):
+    """Base class for `delete` tests."""
+
+    _delete_unit_id: str
+    _delete_exception: pytest.ExceptionInfo
+    _mock_catalogue_category_data: Optional[dict]
+
+    def mock_delete(self, deleted_count: int, catalogue_category_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
+
+        :param deleted_count: Number of documents deleted successfully.
+        :param catalogue_category_data: Dictionary containing a catalogue category's data (or `None`).
+        """
+        self.mock_is_unit_in_catalogue_category(catalogue_category_data)
+        RepositoryTestHelpers.mock_delete_one(self.units_collection, deleted_count)
+
+    def call_delete(self, unit_id: str) -> None:
+        """
+        Calls the `UnitRepo` `delete` method with the appropriate data from a prior call to `mock_delete`.
+
+        :param unit_id: ID of the unit to be deleted.
+        """
+        self._delete_unit_id = unit_id
+        self.unit_repository.delete(unit_id, session=self.mock_session)
+
+    def call_delete_expecting_error(self, unit_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `UnitRepo` `delete` method with the appropriate data from a prior call to `mock_delete` while
+        expecting an error to be raised.
+
+        :param unit_id: ID of the unit to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+        self._delete_unit_id = unit_id
+        with pytest.raises(error_type) as exc:
+            self.unit_repository.delete(unit_id, session=self.mock_session)
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+        self.check_is_unit_in_catalogue_category_performed_expected_calls(self._delete_unit_id)
+        self.units_collection.delete_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._delete_unit_id)}, session=self.mock_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str, expecting_delete_one_called: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception with the
+        correct message.
+
+        :param message: Expected message of the raised exception.
+        :param expecting_delete_one_called: Whether the `delete_one` method is expected to be called or not.
+        """
+        if not expecting_delete_one_called:
+            self.units_collection.delete_one.assert_not_called()
+        else:
+            self.units_collection.delete_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._delete_unit_id)}, session=self.mock_session
+            )
+
+        assert str(self._delete_exception.value) == message
+
+    def mock_is_unit_in_catalogue_category(self, catalogue_category_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately for when the `_is_unit_in_catalogue_category` repo method will be called.
+
+        :param catalogue_category_data: Dictionary containing a catalogue category's data (or `None`).
+        """
+        self._mock_catalogue_category_data = catalogue_category_data
+        RepositoryTestHelpers.mock_find_one(self.catalogue_categories_collection, catalogue_category_data)
+
+    def check_is_unit_in_catalogue_category_performed_expected_calls(self, expected_unit_id: str) -> None:
+        """
+        Checks that a call to `_is_unit_in_catalogue_category` performed the expected method calls.
+
+        :param expected_unit_id: Expected unit ID used in the database calls.
+        """
+        self.catalogue_categories_collection.find_one.assert_called_once_with(
+            {"properties.unit_id": CustomObjectId(expected_unit_id)}, session=self.mock_session
+        )
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a unit."""
+
+    def test_delete(self):
+        """Test deleting a unit."""
+        self.mock_delete(deleted_count=1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_when_part_of_catalogue_category(self):
+        """Test deleting a unit when it is part of a catalogue category."""
+        unit_id = str(ObjectId())
+
+        self.mock_delete(
+            deleted_count=1,
+            catalogue_category_data={
+                **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
+                "properties": [
+                    {
+                        **CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+                        "unit_id": unit_id,
+                    }
+                ],
             },
-            {
-                **MOCK_CREATED_MODIFIED_TIME,
-                "_id": CustomObjectId(unit_2.id),
-                "code": unit_2.code,
-                "value": unit_2.value,
-            },
-        ],
-    )
+        )
+        self.call_delete_expecting_error(unit_id, PartOfCatalogueCategoryError)
+        self.check_delete_failed_with_exception(f"The unit with ID {unit_id} is a part of a Catalogue category")
 
-    retrieved_units = unit_repository.list(session=session)
+    def test_delete_non_existent_id(self):
+        """Test deleting a unit with a non-existent ID."""
+        unit_id = str(ObjectId())
 
-    database_mock.units.find.assert_called_once()
-    assert retrieved_units == [
-        unit_1,
-        unit_2,
-    ]
+        self.mock_delete(deleted_count=0)
+        self.call_delete_expecting_error(unit_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No unit found with ID: {unit_id}", expecting_delete_one_called=True)
 
+    def test_delete_with_invalid_id(self):
+        """Test deleting a unit with an invalid ID."""
+        unit_id = "invalid-id"
 
-def test_list_when_no_units(test_helpers, database_mock, unit_repository):
-    """Test trying to get all units when there are none in the database"""
-
-    test_helpers.mock_find(database_mock.units, [])
-    retrieved_units = unit_repository.list()
-
-    assert retrieved_units == []
-
-
-def test_get(test_helpers, database_mock, unit_repository):
-    """
-    Test getting a unit by id
-    """
-
-    unit = UnitOut(**MOCK_CREATED_MODIFIED_TIME, id=str(ObjectId()), value="mm", code="mm")
-
-    session = MagicMock()
-
-    test_helpers.mock_find_one(
-        database_mock.units,
-        {
-            **MOCK_CREATED_MODIFIED_TIME,
-            "_id": CustomObjectId(unit.id),
-            "code": unit.code,
-            "value": unit.value,
-        },
-    )
-    retrieved_unit = unit_repository.get(unit.id, session=session)
-    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit.id)}, session=session)
-    assert retrieved_unit == unit
-
-
-def test_get_with_invalid_id(unit_repository):
-    """
-    Test getting a unit with an Invalid ID
-    """
-
-    with pytest.raises(InvalidObjectIdError) as exc:
-        unit_repository.get("invalid")
-    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-
-
-def test_get_with_non_existent_id(test_helpers, database_mock, unit_repository):
-    """
-    Test getting a unit with an ID that does not exist
-    """
-
-    unit_id = str(ObjectId())
-    test_helpers.mock_find_one(database_mock.units, None)
-    retrieved_unit = unit_repository.get(unit_id)
-
-    assert retrieved_unit is None
-    database_mock.units.find_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=None)
-
-
-def test_delete(test_helpers, database_mock, unit_repository):
-    """Test trying to delete a unit"""
-    unit_id = str(ObjectId())
-    session = MagicMock()
-
-    test_helpers.mock_delete_one(database_mock.units, 1)
-
-    # Mock `find_one` to return no catalogue categories containing the unit
-    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
-
-    unit_repository.delete(unit_id, session=session)
-
-    database_mock.units.delete_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=session)
-
-
-def test_delete_with_an_invalid_id(unit_repository):
-    """Test trying to delete a unit with an invalid ID"""
-    unit_id = "invalid"
-
-    with pytest.raises(InvalidObjectIdError) as exc:
-        unit_repository.delete(unit_id)
-    assert str(exc.value) == "Invalid ObjectId value 'invalid'"
-
-
-def test_delete_with_a_non_existent_id(test_helpers, database_mock, unit_repository):
-    """Test trying to delete a manufacturer with a non-existent ID"""
-    unit_id = str(ObjectId())
-
-    test_helpers.mock_delete_one(database_mock.units, 0)
-
-    # Mock `find_one` to return no catalogue categories containing the unit
-    test_helpers.mock_find_one(database_mock.catalogue_categories, None)
-
-    with pytest.raises(MissingRecordError) as exc:
-        unit_repository.delete(unit_id)
-    assert str(exc.value) == f"No unit found with ID: {unit_id}"
-    database_mock.units.delete_one.assert_called_once_with({"_id": CustomObjectId(unit_id)}, session=None)
-
-
-def test_delete_unit_that_is_part_of_a_catalogue_category(test_helpers, database_mock, unit_repository):
-    """Test trying to delete a unit that is part of a Catalogue category"""
-    unit_id = str(ObjectId())
-
-    catalogue_category_id = str(ObjectId())
-
-    # pylint: disable=duplicate-code
-    # Mock find_one to return a catalogue category containing the unit
-    test_helpers.mock_find_one(
-        database_mock.catalogue_categories,
-        {
-            **CATALOGUE_CATEGORY_INFO,
-            "_id": CustomObjectId(str(ObjectId())),
-            "parent_id": catalogue_category_id,
-            "properties": [
-                {
-                    "name": "Property A",
-                    "type": "number",
-                    "unit": "mm",
-                    "unit_id": unit_id,
-                    "mandatory": False,
-                }
-            ],
-        },
-    )
-    # pylint: enable=duplicate-code
-    with pytest.raises(PartOfCatalogueCategoryError) as exc:
-        unit_repository.delete(unit_id)
-    assert str(exc.value) == f"The unit with ID {str(unit_id)} is a part of a Catalogue category"
+        self.call_delete_expecting_error(unit_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception(f"Invalid ObjectId value '{unit_id}'")

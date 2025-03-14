@@ -15,11 +15,11 @@ logger = logging.getLogger()
 
 def list_query(parent_id: Optional[str], entity_type: str) -> dict:
     """
-    Constructs filters for a pymongo collection based on a given parent_id
+    Constructs filters for a pymongo collection based on a given `parent_id`
     also logging the action
 
-    :param parent_id: parent_id to filter `entity_type` by (Converted to a uuid here - a string value of "null"
-                      indicates that the parent_id should be null, not that there shouldn't be a query)
+    :param parent_id: `parent_id` to filter `entity_type` by (Converted to a uuid here - a string value of "null"
+                      indicates that the `parent_id` should be null, not that there shouldn't be a query)
     :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging)
     :return: Dictionary representing the query to pass to a pymongo's Collection `find` function
     """
@@ -97,7 +97,7 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
                             (used for error messages)
     :raises MissingRecordError: If the entity with id 'entity_id' isn't found in the database
     :raises DatabaseIntegrityError: If the query returned less than the maximum allowed trail while not
-                                    giving the full trail - this indicates a parent_id is invalid or doesn't
+                                    giving the full trail - this indicates a `parent_id` is invalid or doesn't
                                     exist in the database which shouldn't occur
     :return: See BreadcrumbsGetSchema
     """

@@ -7,7 +7,6 @@ from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     LeafCatalogueCategoryError,
@@ -82,14 +81,6 @@ class CatalogueCategoryService:
             )
         )
 
-    def delete(self, catalogue_category_id: str) -> None:
-        """
-        Delete a catalogue category by its ID.
-
-        :param catalogue_category_id: The ID of the catalogue category to delete.
-        """
-        return self._catalogue_category_repository.delete(catalogue_category_id)
-
     def get(self, catalogue_category_id: str) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID.
@@ -112,7 +103,7 @@ class CatalogueCategoryService:
         """
         Retrieve catalogue categories based on the provided filters.
 
-        :param parent_id: The parent_id to filter catalogue categories by.
+        :param parent_id: The `parent_id` to filter catalogue categories by.
         :return: A list of catalogue categories, or an empty list if no catalogue categories are retrieved.
         """
         return self._catalogue_category_repository.list(parent_id)
@@ -144,9 +135,9 @@ class CatalogueCategoryService:
 
         # If any of these, need to ensure the category has no child elements
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
-            if self._catalogue_category_repository.has_child_elements(CustomObjectId(catalogue_category_id)):
+            if self._catalogue_category_repository.has_child_elements(catalogue_category_id):
                 raise ChildElementsExistError(
-                    f"Catalogue category with ID {str(catalogue_category_id)} has child elements and cannot be updated"
+                    f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
                 )
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
@@ -167,6 +158,14 @@ class CatalogueCategoryService:
         return self._catalogue_category_repository.update(
             catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
         )
+
+    def delete(self, catalogue_category_id: str) -> None:
+        """
+        Delete a catalogue category by its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete.
+        """
+        return self._catalogue_category_repository.delete(catalogue_category_id)
 
     def _add_property_unit_values(
         self,

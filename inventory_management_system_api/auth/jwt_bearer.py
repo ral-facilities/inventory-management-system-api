@@ -6,7 +6,7 @@ import logging
 
 import jwt
 from fastapi import HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.consts import PUBLIC_KEY
@@ -43,6 +43,8 @@ class JWTBearer(HTTPBearer):
         if not self._is_jwt_access_token_valid(credentials.credentials):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token or expired token")
 
+        request.state.token = credentials.credentials
+
         return credentials.credentials
 
     def _is_jwt_access_token_valid(self, access_token: str) -> bool:
@@ -57,7 +59,7 @@ class JWTBearer(HTTPBearer):
         logger.info("Checking if JWT access token is valid")
         try:
             payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
-        except Exception:  # pylint: disable=broad-exception-caught)
+        except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Error decoding JWT access token")
             payload = None
 

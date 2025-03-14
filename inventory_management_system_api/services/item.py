@@ -8,12 +8,14 @@ from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
 )
+from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import PropertyOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
@@ -33,6 +35,8 @@ class ItemService:
     Service for managing items.
     """
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def __init__(
         self,
         item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
@@ -40,7 +44,6 @@ class ItemService:
         catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
         system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
         usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)],
-        # pylint: disable=too-many-arguments
     ) -> None:
         """
         Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`,
@@ -97,13 +100,14 @@ class ItemService:
             ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
         )
 
-    def delete(self, item_id: str) -> None:
+    def get(self, item_id: str) -> Optional[ItemOut]:
         """
-        Delete an item by its ID.
+        Retrieve an item by its ID
 
-        :param item_id: The ID of the item to delete.
+        :param item_id: The ID of the item to retrieve
+        :return: The retrieved item, or `None` if not found
         """
-        return self._item_repository.delete(item_id)
+        return self._item_repository.get(item_id)
 
     def list(self, system_id: Optional[str], catalogue_item_id: Optional[str]) -> List[ItemOut]:
         """
@@ -114,15 +118,6 @@ class ItemService:
         :return: list of all items
         """
         return self._item_repository.list(system_id, catalogue_item_id)
-
-    def get(self, item_id: str) -> Optional[ItemOut]:
-        """
-        Retrieve an item by its ID
-
-        :param item_id: The ID of the item to retrieve
-        :return: The retrieved item, or `None` if not found
-        """
-        return self._item_repository.get(item_id)
 
     def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
         """
@@ -182,11 +177,25 @@ class ItemService:
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
+    def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
+        """
+        Delete an item by its ID.
+
+        :param item_id: The ID of the item to delete.
+        :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
+        """
+        # First, attempt to delete any attachments and/or images that might be associated with this item.
+        if config.object_storage.enabled:
+            ObjectStorageAPIClient.delete_attachments(item_id, access_token)
+            ObjectStorageAPIClient.delete_images(item_id, access_token)
+
+        return self._item_repository.delete(item_id)
+
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]
     ) -> List[PropertyPostSchema]:
         """
-        Merges the properties defined in a catalogue item with those that should be overriden for an item in
+        Merges the properties defined in a catalogue item with those that should be overridden for an item in
         the order they are defined in the catalogue item.
 
         :param properties: The list of property objects from the catalogue item.

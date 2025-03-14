@@ -6,8 +6,9 @@ service.
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
 
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -16,11 +17,14 @@ from inventory_management_system_api.core.exceptions import (
     MissingMandatoryProperty,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
+    ObjectStorageAPIAuthError,
+    ObjectStorageAPIServerError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
     CatalogueItemSchema,
+    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
 )
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
@@ -161,7 +165,9 @@ def partial_update_catalogue_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except ChildElementsExistError as exc:
-        message = "Catalogue item has child elements and cannot be updated"
+        message = "Catalogue item has child elements, so the following fields cannot be updated: " + ", ".join(
+            CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS
+        )
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except InvalidActionError as exc:
@@ -179,11 +185,12 @@ def partial_update_catalogue_item(
 def delete_catalogue_item(
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to delete")],
     catalogue_item_service: CatalogueItemServiceDep,
+    request: Request,
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
     try:
-        catalogue_item_service.delete(catalogue_item_id)
+        catalogue_item_service.delete(catalogue_item_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "Catalogue item not found"
         logger.exception(message)
@@ -192,3 +199,13 @@ def delete_catalogue_item(
         message = "Catalogue item has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    # pylint: disable=duplicate-code
+    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
+        message = "Unable to delete attachments and/or images"
+        logger.exception(message)
+
+        if exc.args[0] == "Invalid token or expired token":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    # pylint: enable=duplicate-code

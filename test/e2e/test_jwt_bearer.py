@@ -2,9 +2,9 @@
 End-to-end tests for the `JWTBearer` routers' dependency.
 """
 
-from test.conftest import (
-    INVALID_ACCESS_TOKEN,
+from test.mock_data import (
     EXPIRED_ACCESS_TOKEN,
+    INVALID_ACCESS_TOKEN,
     VALID_ACCESS_TOKEN,
     VALID_ACCESS_TOKEN_MISSING_USERNAME,
 )

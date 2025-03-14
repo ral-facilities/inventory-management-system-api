@@ -29,6 +29,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install .[code-analysis]
           python -m pip install -r requirements.txt
+
+      - name: Run black
+        run: black --check --line-length 120 inventory_management_system_api test
+
       - name: Run pylint
         run: pylint inventory_management_system_api test
 
@@ -56,6 +60,12 @@ jobs:
 
       - name: Run unit tests
         run: pytest -c test/pytest.ini test/unit/ --cov
+
+      - name: Upload coverage reports to Codecov
+        if: success()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   e2e-tests:
     needs: [unit-tests]
@@ -89,6 +99,10 @@ jobs:
 
       - name: Run e2e tests
         run: pytest -c test/pytest.ini test/e2e/ --cov
+
+      - name: Output docker logs (mongodb)
+        if: failure()
+        run: docker logs ims_api_mongodb_container
 
   docker:
     # This job triggers only if all the other jobs succeed. It builds the Docker image and if successful,

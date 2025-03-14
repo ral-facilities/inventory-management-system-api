@@ -3,11 +3,11 @@ Module for the overall configuration for the application.
 """
 
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 from pydantic_core.core_schema import ValidationInfo
-from pydantic_settings import SettingsConfigDict, BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class APIConfig(BaseModel):
@@ -37,13 +37,12 @@ class AuthenticationConfig(BaseModel):
     def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
         """
         Validator for the `public_key_path` and `jwt_algorithm` fields to make them mandatory if the value of the
-        `enabled` is `True`
-
-        It checks if the `enabled` field has been set to `True` and raises a `TypeError` if this is the case.
+        `enabled` field is `True`. It raises a `ValueError` if no value is provided for the field when the `enabled`
+        field has been set to `True`.
 
         :param field_value: The value of the field.
         :param info: Validation info from pydantic.
-        :raises ValueError: If no value is provided for the field when `enabled` is set to `True`.
+        :raises ValueError: If no value is provided for the field when the `enabled` field is set to `True`.
         :return: The value of the field.
         """
         if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
@@ -65,18 +64,47 @@ class DatabaseConfig(BaseModel):
     model_config = ConfigDict(hide_input_in_errors=True)
 
 
+class ObjectStorageConfig(BaseModel):
+    """
+    Configuration model for the Object Storage.
+    """
+
+    enabled: bool
+    api_request_timeout_seconds: Optional[int] = Field(default=None, validate_default=True)
+    api_url: Optional[str] = Field(default=None, validate_default=True)
+
+    @field_validator("api_request_timeout_seconds", "api_url")
+    @classmethod
+    def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
+        """
+        Validator for the `api_request_timeout_seconds` and `api_url` fields to make them mandatory if the value of the
+        `enabled` field is `True`. It raises a `ValueError` if no value is provided for the field when the `enabled`
+        field has been set to `True`.
+
+        :param field_value: The value of the field.
+        :param info: Validation info from pydantic.
+        :raises ValueError: If no value is provided for the field when the `enabled` field is set to `True`.
+        :return: The value of the field.
+        """
+        if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
+            raise ValueError("Field required")
+        return field_value
+
+
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
 
-    It includes attributes for the API and database configurations. The class inherits from `BaseSettings` and
-    automatically reads environment variables. If values are not passed in form of system environment variables at
-    runtime, it will attempt to read them from the .env file.
+    It includes attributes for the API, authentication and database configurations. The class inherits from
+    `BaseSettings` and automatically reads environment variables. If values are not passed in form of system environment
+    variables at runtime, it will attempt to read them from the .env file.
     """
 
     api: APIConfig
     authentication: AuthenticationConfig
     database: DatabaseConfig
+    object_storage: ObjectStorageConfig
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env",
         env_file_encoding="utf-8",

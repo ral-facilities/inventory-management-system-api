@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   inventory-management-system-api:
     container_name: inventory_management_system_api_container
@@ -16,7 +14,7 @@ services:
 
   mongo-db:
     image: mongo:7.0-jammy
-    container_name: mongodb_container
+    container_name: ims_api_mongodb_container
     command: ["--replSet", "rs0", "--keyFile", "/etc/mongodb/keys/rs_keyfile"]
     volumes:
       - ./mongodb/data:/data/db
