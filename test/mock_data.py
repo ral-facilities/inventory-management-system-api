@@ -515,7 +515,6 @@ CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "description": None,
     "cost_to_rework_gbp": None,
     "days_to_rework": None,
-    "expected_lifetime_days": None,
     "drawing_number": None,
     "drawing_link": None,
     "item_model_number": None,
@@ -534,7 +533,6 @@ CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "description": "Some description",
     "cost_to_rework_gbp": 9001,
     "days_to_rework": 3,
-    "expected_lifetime_days": 3002,
     "drawing_number": "12345-1",
     "drawing_link": "http://example.com/",
     "item_model_number": "123456-1",
@@ -646,6 +644,7 @@ ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "asset_number": None,
     "serial_number": None,
     "delivered_date": None,
+    "expected_lifetime_days": None,
     "notes": None,
     "properties": [],
 }
@@ -659,6 +658,7 @@ ITEM_DATA_ALL_VALUES_NO_PROPERTIES = {
     "asset_number": "1234-123456",
     "serial_number": "1234-123456-123",
     "delivered_date": "2012-12-05T12:00:00Z",
+    "expected_lifetime_days": 3002,
     "notes": "Test notes",
 }
 

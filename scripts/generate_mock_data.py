@@ -376,7 +376,6 @@ def generate_random_catalogue_item(
         "cost_to_rework_gbp": optional_catalogue_item_field(lambda: fake.random.randint(0, 1000)),
         "days_to_replace": fake.random.randint(0, 100),
         "days_to_rework": optional_catalogue_item_field(lambda: fake.random.randint(0, 100)),
-        "expected_lifetime_days": optional_catalogue_item_field(lambda: fake.random.randint(200, 3650)),
         "drawing_number": optional_catalogue_item_field(lambda: str(fake.random.randint(1000, 10000))),
         "drawing_link": optional_catalogue_item_field(fake.image_url),
         "item_model_number": optional_catalogue_item_field(fake.isbn13),
@@ -413,6 +412,7 @@ def generate_random_item(catalogue_item_id: str):
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),
         "delivered_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
+        "expected_lifetime_days": optional_item_field(lambda: fake.random.randint(200, 3650)),
         "notes": optional_item_field(lambda: fake.paragraph(nb_sentences=2)),
         "properties": properties,
     }
