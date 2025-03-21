@@ -13,7 +13,6 @@ from inventory_management_system_api.core.exceptions import (
     InvalidObjectIdError,
     MissingRecordError,
     PartOfItemError,
-    PartOfSettingError,
 )
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema, UsageStatusSchema
 from inventory_management_system_api.services.usage_status import UsageStatusService
@@ -100,9 +99,5 @@ def delete_usage_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfItemError as exc:
         message = "The specified usage status is part of an Item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except PartOfSettingError as exc:
-        message = "The specified usage status is part of a setting"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

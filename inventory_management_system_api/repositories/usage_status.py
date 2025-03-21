@@ -10,13 +10,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    MissingRecordError,
-    PartOfItemError,
-    PartOfSettingError,
-)
-from inventory_management_system_api.models.setting import SparesDefinitionIn
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 logger = logging.getLogger()
@@ -97,8 +91,6 @@ class UsageStatusRepo:
         usage_status_id = CustomObjectId(usage_status_id)
         if self._is_usage_status_in_item(usage_status_id, session=session):
             raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is a part of an Item")
-        if self._is_usage_status_in_setting(usage_status_id, session=session):
-            raise PartOfSettingError(f"The usage status with ID {str(usage_status_id)} is used in the settings")
 
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
         result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)
@@ -132,20 +124,3 @@ class UsageStatusRepo:
         :return: `True` if 1 or more items have the usage status ID, `False` otherwise.
         """
         return self._items_collection.find_one({"usage_status_id": usage_status_id}, session=session) is not None
-
-    def _is_usage_status_in_setting(
-        self, usage_status_id: CustomObjectId, session: Optional[ClientSession] = None
-    ) -> bool:
-        """Checks to see if any of the settings in the database refer to a specific usage status ID.
-
-        :param usage_status_id: The ID of the usage status that is looked for.
-        :param session: PyMongo ClientSession to use for database operations.
-        :return: `True` if 1 or more items have the usage status ID, `False` otherwise.
-        """
-        return (
-            self._settings_collection.find_one(
-                {"_id": SparesDefinitionIn.SETTING_ID, "usage_statuses": {"$elemMatch": {"id": usage_status_id}}},
-                session=session,
-            )
-            is not None
-        )
