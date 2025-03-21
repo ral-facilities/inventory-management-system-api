@@ -37,7 +37,6 @@ class NewItemBase(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
-    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
@@ -51,8 +50,6 @@ class NewItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
-
-    # pylint: enable=duplicate-code
 
 
 class NewItemIn(CreatedModifiedTimeInMixin, NewItemBase):
@@ -79,7 +76,6 @@ class OldItemBase(BaseModel):
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
-    # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any) -> Any:
@@ -93,8 +89,6 @@ class OldItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
-
-    # pylint: enable=duplicate-code
 
 
 class OldItemOut(CreatedModifiedTimeOutMixin, OldItemBase):
