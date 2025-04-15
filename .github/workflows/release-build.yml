@@ -18,7 +18,7 @@ jobs:
       - name: Login to Harbor
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
-          registry: ${{ secrets.HARBOR_URL }}
+          registry: ${{ vars.HARBOR_URL }}
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_TOKEN }}
 
@@ -26,7 +26,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
-          images: ${{ secrets.HARBOR_URL }}/ims-api
+          images: ${{ vars.HARBOR_URL }}/ims-api
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
