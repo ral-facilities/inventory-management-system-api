@@ -15,13 +15,11 @@ services:
   mongo-db:
     image: mongo:7.0-jammy
     container_name: ims_api_mongodb_container
-    entrypoint:
-      - mongodb_entrypoint.sh
-    # command: ["--replSet", "rs0", "--keyFile", "/etc/mongodb/keys/rs_keyfile"]
+    entrypoint: mongodb_entrypoint.sh
     volumes:
       - ./mongodb/data:/data/db
       - ./mongodb/keys:/etc/mongodb/keys
-      - ./mongodb_entrypoint.sh:/usr/local/bin/mongodb_entrypoint.sh:ro
+      - ./scripts/mongodb_entrypoint.sh:/usr/local/bin/mongodb_entrypoint.sh:ro
     restart: always
     ports:
       - 27017:27017
