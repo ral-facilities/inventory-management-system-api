@@ -49,7 +49,6 @@ class CatalogueItemBase(BaseModel):
     cost_to_rework_gbp: Optional[float] = None
     days_to_replace: float
     days_to_rework: Optional[float] = None
-    expected_lifetime_days: Optional[float] = None
     drawing_number: Optional[str] = None
     drawing_link: Optional[HttpUrl] = None
     item_model_number: Optional[str] = None

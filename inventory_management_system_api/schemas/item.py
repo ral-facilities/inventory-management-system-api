@@ -2,9 +2,9 @@
 Module for defining the API schema models for representing items.
 """
 
-from typing import Optional, List
+from typing import List, Optional
 
-from pydantic import BaseModel, Field, AwareDatetime
+from pydantic import AwareDatetime, BaseModel, Field
 
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema, PropertySchema
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
@@ -24,6 +24,9 @@ class ItemPostSchema(BaseModel):
     asset_number: Optional[str] = Field(default=None, description="The asset number of the item")
     serial_number: Optional[str] = Field(default=None, description="The serial number of the item")
     delivered_date: Optional[AwareDatetime] = Field(default=None, description="The date the item was delivered")
+    expected_lifetime_days: Optional[float] = Field(
+        default=None, description="The expected lifetime of the item in days"
+    )
     notes: Optional[str] = Field(default=None, description="Any notes about the item")
     properties: Optional[List[PropertyPostSchema]] = Field(
         default=None,

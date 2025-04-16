@@ -7,9 +7,7 @@ from typing import Any, List, Optional
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
-
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
@@ -28,6 +26,7 @@ class ItemBase(BaseModel):
     asset_number: Optional[str] = None
     serial_number: Optional[str] = None
     delivered_date: Optional[AwareDatetime] = None
+    expected_lifetime_days: Optional[float] = None
     notes: Optional[str] = None
     properties: List[PropertyIn] = []
 
