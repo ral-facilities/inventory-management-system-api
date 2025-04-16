@@ -69,7 +69,7 @@ class UnitRepo:
         Retrieve a Unit by its ID from a MongoDB database.
 
         :param unit_id: The ID of the unit to retrieve.
-        :param session: PyMongo ClientSession to use for database operations
+        :param sessin: PyMongo ClientSession to use for database operations
         :return: The retrieved unit, or `None` if not found.
         """
         unit_id = CustomObjectId(unit_id)
