@@ -87,7 +87,7 @@ def process_properties(
 
 
 def _create_properties_dict(
-    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]]
+    properties: Union[List[CatalogueCategoryPropertyOut], List[PropertyPostSchema]],
 ) -> Dict[str, Dict]:
     """
     Convert a list of property objects into a dictionary where the keys are the catalogue item
