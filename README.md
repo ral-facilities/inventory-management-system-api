@@ -225,7 +225,7 @@ replacing `<hostname>` with the actual hostname for the replica set.
 For docker you may use
 
 ```bash
-docker exec -i ims_api_mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'ims_api_mongodb_container:27017' }]})"
+docker exec -i ims_api_mongodb_container mongosh --username 'root' --password 'example' --authenticationDatabase=admin --eval "rs.initiate({ _id : 'rs0', members: [{ _id: 0, host: 'localhost:27017' }]})"
 ```
 
 ### Using mock data for testing [Optional]
