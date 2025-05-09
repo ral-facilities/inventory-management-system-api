@@ -1,11 +1,8 @@
 """Module defining a CLI Script for some common development tasks."""
 
 import argparse
-import json
 import logging
 import subprocess
-import sys
-import time
 from abc import ABC, abstractmethod
 from io import TextIOWrapper
 from pathlib import Path
@@ -93,77 +90,6 @@ class SubCommand(ABC):
     @abstractmethod
     def run(self, args: argparse.Namespace):
         """Run the command with the given parameters as added by 'setup'."""
-
-
-class CommandDBInit(SubCommand):
-    """Command that initialises the database.
-
-    - Generates a replica set keyfile and sets it's permissions (if it doesn't already exist)
-    - Starts the mongodb service (and waits 10 seconds after it starts)
-    - Initialises the replica set with a single host
-    - Outputs the replica set status
-    """
-
-    def __init__(self):
-        super().__init__(help_message="Initialise database for development (using docker on linux)")
-
-    def setup(self, parser: argparse.ArgumentParser):
-        add_mongodb_auth_args(parser)
-
-        parser.add_argument(
-            "-rsmh",
-            "--replicaSetMemberHost",
-            default="localhost",
-            help="Host to use for the replica set (default: 'localhost')",
-        )
-
-    def run(self, args: argparse.Namespace):
-        # Generate the keyfile (if it doesn't already exist - this part is linux specific)
-        rs_keyfile = Path("./mongodb/keys/rs_keyfile")
-        if not rs_keyfile.is_file():
-            logging.info("Generating replica set keyfile...")
-            with open(rs_keyfile, "w", encoding="utf-8") as file:
-                run_command(["openssl", "rand", "-base64", "756"], stdout=file)
-            logging.info("Assigning replica set keyfile ownership...")
-            run_command(["sudo", "chmod", "0400", "./mongodb/keys/rs_keyfile"])
-            run_command(["sudo", "chown", "999:999", "./mongodb/keys/rs_keyfile"])
-
-        start_group("Starting mongodb service", args)
-        run_command(["docker", "compose", "up", "-d", "--wait", "--wait-timeout", "30", "mongo-db"])
-
-        # Wait as cannot initialise immediately
-        time.sleep(10)
-        end_group(args)
-
-        start_group("Initialising replica set", args)
-        replica_set_config = json.dumps(
-            {"_id": "rs0", "members": [{"_id": 0, "host": f"{args.replicaSetMemberHost}:27017"}]}
-        )
-        run_mongodb_command(
-            [
-                "mongosh",
-            ]
-            + get_mongodb_auth_args(args)
-            + [
-                "--eval",
-                f"rs.initiate({replica_set_config})",
-            ]
-        )
-        end_group(args)
-
-        # Check the status
-        start_group("Checking replica set status", args)
-        run_mongodb_command(
-            [
-                "mongosh",
-            ]
-            + get_mongodb_auth_args(args)
-            + [
-                "--eval",
-                "rs.status()",
-            ],
-        )
-        end_group(args)
 
 
 class CommandDBImport(SubCommand):
@@ -258,7 +184,6 @@ class CommandDBGenerate(SubCommand):
 
 # List of subcommands
 commands: dict[str, SubCommand] = {
-    "db-init": CommandDBInit(),
     "db-import": CommandDBImport(),
     "db-generate": CommandDBGenerate(),
 }

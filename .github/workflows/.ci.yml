@@ -99,7 +99,8 @@ jobs:
       # the same time
       - name: Setup MongoDB database
         run: |
-          python ./scripts/dev_cli.py --ci db-init --replicaSetMemberHost localhost
+          docker compose up --detach mongo-db
+          sleep 10
           python ./scripts/dev_cli.py --ci db-import
 
       - name: Run e2e tests
