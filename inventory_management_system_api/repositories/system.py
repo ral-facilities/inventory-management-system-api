@@ -5,6 +5,7 @@ Module for providing a repository for managing systems in a MongoDB database
 import logging
 from typing import Optional
 
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -54,14 +55,7 @@ class SystemRepo:
         """
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id:
-            try:
-                self.get(parent_id, session=session)
-            except MissingRecordError as exc:
-                raise MissingRecordError(
-                    f"No parent system found with ID: {parent_id}",
-                    "The specified parent system does not exist",
-                    status_code=422,
-                ) from exc
+            self.get(parent_id, is_parent=True, session=session)
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError(
@@ -74,7 +68,9 @@ class SystemRepo:
         system = self.get(str(result.inserted_id), session=session)
         return system
 
-    def get(self, system_id: str, session: Optional[ClientSession] = None) -> Optional[SystemOut]:
+    def get(
+        self, system_id: str, is_parent: bool = False, session: Optional[ClientSession] = None
+    ) -> Optional[SystemOut]:
         """
         Retrieve a system by its ID from a MongoDB database
 
@@ -86,18 +82,17 @@ class SystemRepo:
         """
         logger.info("Retrieving system with ID: %s from the database", system_id)
 
-        try:
-            system_id = CustomObjectId(system_id)
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "System not found"
-            raise exc
-
+        entity_type = "parent system" if is_parent else "system"
+        system_id = CustomObjectId(system_id, entity_type=entity_type, not_found_if_invalid=not is_parent)
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
 
         if system:
             return SystemOut(**system)
-        raise MissingRecordError(detail=f"No system found with ID: {system_id}", response_detail="System not found")
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {system_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if is_parent else None,
+        )
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """
@@ -148,24 +143,21 @@ class SystemRepo:
         :raises DuplicateRecordError: If a duplicate system is found within the parent system
         :raises InvalidActionError: If attempting to change the `parent_id` to one of its own child system ids
         """
-        system_id = CustomObjectId(system_id)
+        system_id = CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)
 
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id:
-            try:
-                self.get(parent_id, session=session)
-            except MissingRecordError as exc:
-                raise MissingRecordError(
-                    detail=f"No parent system found with ID: {parent_id}",
-                    response_detail="The specified parent system does not exist",
-                ) from exc
+            self.get(parent_id, session=session, is_parent=True)
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
         if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(
             parent_id, system.code, system_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate system found within the parent system")
+            raise DuplicateRecordError(
+                "Duplicate system found within the parent system",
+                response_detail="A system with the same name already exists within the parent system",
+            )
 
         # Prevent a system from being moved to one of its own children
         if moving_system:
@@ -179,7 +171,10 @@ class SystemRepo:
                     )
                 )
             ):
-                raise InvalidActionError("Cannot move a system to one of its own children")
+                raise InvalidActionError(
+                    "Cannot move a system to one of its own children",
+                    response_detail="Cannot move a system to one of its own children",
+                )
 
         logger.info("Updating system with ID: %s in the database", system_id)
         self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
@@ -198,9 +193,11 @@ class SystemRepo:
         :raises MissingRecordError: If the system doesn't exist
         """
         logger.info("Deleting system with ID: %s from the database", system_id)
-        result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
+        result = self._systems_collection.delete_one(
+            {"_id": CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)}, session=session
+        )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
+            raise MissingRecordError(detail=f"No system found with ID: {system_id}", response_detail="System not found")
 
     def _is_duplicate_system(
         self,
@@ -236,7 +233,8 @@ class SystemRepo:
         :return: `True` if the system has child elements, `False` otherwise
         """
         logger.info("Checking if system with ID '%s' has child elements", system_id)
-        system_id = CustomObjectId(system_id)
+
+        system_id = CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)
         return (
             self._systems_collection.find_one({"parent_id": system_id}, session=session) is not None
             or self._items_collection.find_one({"system_id": system_id}, session=session) is not None

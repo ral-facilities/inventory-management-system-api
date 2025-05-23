@@ -58,7 +58,7 @@ class SystemService:
             )
         except InvalidObjectIdError as exc:
             # Provide more specific detail
-            exc.response_detail = "The specified parent system does not exist"
+            exc.response_detail = "Parent system not found"
             raise exc
         return self._system_repository.create(system_in)
 
@@ -107,7 +107,13 @@ class SystemService:
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
 
-        return self._system_repository.update(system_id, SystemIn(**{**stored_system.model_dump(), **update_data}))
+        try:
+            system_in = SystemIn(**{**stored_system.model_dump(), **update_data})
+        except InvalidObjectIdError as exc:
+            # Provide more specific detail
+            exc.response_detail = "Parent system not found"
+            raise exc
+        return self._system_repository.update(system_id, system_in)
 
     def delete(self, system_id: str, access_token: Optional[str] = None) -> None:
         """

@@ -134,11 +134,17 @@ class DatabaseIntegrityError(DatabaseError):
     Exception raised when something is found in the database that shouldn't have been
     """
 
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    response_detail = "Database integrity error"
+
 
 class InvalidActionError(DatabaseError):
     """
     Exception raised when trying to update an item's catalogue item ID
     """
+
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    response_detail = "Invalid action"
 
 
 class WriteConflictError(DatabaseError):

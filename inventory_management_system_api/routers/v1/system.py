@@ -11,9 +11,6 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, sta
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
-    DatabaseIntegrityError,
-    DuplicateRecordError,
-    InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
     ObjectStorageAPIAuthError,
@@ -84,13 +81,6 @@ def get_system_breadcrumbs(
         message = "System not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DatabaseIntegrityError as exc:
-        message = "Unable to obtain breadcrumbs"
-        logger.exception(message)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message,
-        ) from exc
     # pylint: enable=duplicate-code
 
 
@@ -100,28 +90,8 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
     logger.info("Partially updating system with ID: %s", system_id)
     logger.debug("System data: %s", system)
 
-    try:
-        updated_system = system_service.update(system_id, system)
-        return SystemSchema(**updated_system.model_dump())
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
-            message = "The specified parent system does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-
-        message = "System not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DuplicateRecordError as exc:
-        message = "A system with the same name already exists within the parent system"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    # pylint:disable=duplicate-code
-    except InvalidActionError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    # pylint:enable=duplicate-code
+    updated_system = system_service.update(system_id, system)
+    return SystemSchema(**updated_system.model_dump())
 
 
 @router.delete(
@@ -139,10 +109,6 @@ def delete_system(
     logger.info("Deleting system with ID: %s", system_id)
     try:
         system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "System not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except ChildElementsExistError as exc:
         message = "System has child elements and cannot be deleted"
         logger.exception(message)
