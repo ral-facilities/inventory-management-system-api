@@ -2,8 +2,42 @@
 Module for custom exception classes.
 """
 
+from typing import Optional
 
-class DatabaseError(Exception):
+from fastapi import status
+
+
+class BaseAPIException(Exception):
+    """Base exception for API errors."""
+
+    # Status code to return if this exception is raised
+    status_code: int
+
+    # Generic detail of the exception (That may be returned in a response)
+    response_detail: str
+
+    detail: str
+
+    def __init__(self, detail: str, response_detail: Optional[str] = None, status_code: Optional[int] = None):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
+                       and not returned in a response).
+        :param response_detail: Generic detail of the exception that will be returned in a response.
+        :param status_code: Status code that will be returned in a response.
+        """
+        super().__init__(detail)
+
+        self.detail = detail
+
+        if response_detail is not None:
+            self.response_detail = response_detail
+        if status_code is not None:
+            self.status_code = status_code
+
+
+class DatabaseError(BaseAPIException):
     """
     Database related error.
     """
@@ -46,9 +80,10 @@ class MissingMandatoryProperty(Exception):
 
 
 class DuplicateRecordError(DatabaseError):
-    """
-    The record being added to the database is a duplicate.
-    """
+    """The record being added to the database is a duplicate."""
+
+    status_code = status.HTTP_409_CONFLICT
+    response_detail = "Duplicate record found"
 
 
 class InvalidObjectIdError(DatabaseError):
@@ -56,11 +91,17 @@ class InvalidObjectIdError(DatabaseError):
     The provided value is not a valid ObjectId.
     """
 
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    response_detail = "Invalid ID given"
+
 
 class MissingRecordError(DatabaseError):
     """
     A specific database record was requested but could not be found.
     """
+
+    status_code = status.HTTP_404_NOT_FOUND
+    response_detail = "Requested record was not found"
 
 
 class ChildElementsExistError(DatabaseError):

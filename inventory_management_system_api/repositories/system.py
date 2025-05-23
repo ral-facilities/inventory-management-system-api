@@ -10,11 +10,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidActionError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -53,10 +49,17 @@ class SystemRepo:
         """
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
+            raise MissingRecordError(
+                f"No parent system found with ID: {parent_id}",
+                "The specified parent system does not exist",
+                status_code=422,
+            )
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
-            raise DuplicateRecordError("Duplicate system found within the parent system")
+            raise DuplicateRecordError(
+                "Duplicate system found within the parent system",
+                "A system with the same name already exists within the parent system",
+            )
 
         logger.info("Inserting the new system into the database")
         result = self._systems_collection.insert_one(system.model_dump(), session=session)

@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -40,17 +40,9 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new system")
     logger.debug("System data: %s", system)
-    try:
-        system = system_service.create(system)
-        return SystemSchema(**system.model_dump())
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "The specified parent system does not exist"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except DuplicateRecordError as exc:
-        message = "A system with the same name already exists within the parent system"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+    system = system_service.create(system)
+    return SystemSchema(**system.model_dump())
 
 
 @router.get(path="", summary="Get systems", response_description="List of systems")

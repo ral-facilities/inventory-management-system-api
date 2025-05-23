@@ -8,7 +8,11 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
+from inventory_management_system_api.core.exceptions import (
+    ChildElementsExistError,
+    InvalidObjectIdError,
+    MissingRecordError,
+)
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -42,8 +46,8 @@ class SystemService:
         parent_id = system.parent_id
 
         code = utils.generate_code(system.name, "system")
-        return self._system_repository.create(
-            SystemIn(
+        try:
+            system_in = SystemIn(
                 parent_id=parent_id,
                 description=system.description,
                 name=system.name,
@@ -52,7 +56,11 @@ class SystemService:
                 importance=system.importance,
                 code=code,
             )
-        )
+        except InvalidObjectIdError as exc:
+            # Provide more specific detail
+            exc.response_detail = "The specified parent system does not exist"
+            raise exc
+        return self._system_repository.create(system_in)
 
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
