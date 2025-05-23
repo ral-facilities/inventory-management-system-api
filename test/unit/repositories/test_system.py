@@ -286,6 +286,7 @@ class GetDSL(SystemRepoDSL):
         :param error_type: Expected exception to be raised.
         """
 
+        self._obtained_system_id = system_id
         with pytest.raises(error_type) as exc:
             self.system_repository.get(system_id)
         self._get_exception = exc
@@ -298,15 +299,22 @@ class GetDSL(SystemRepoDSL):
         )
         assert self._obtained_system == self._expected_system_out
 
-    def check_get_failed_with_exception(self, message: str) -> None:
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                           made.
         """
 
-        self.systems_collection.find_one.assert_not_called()
+        if assert_find:
+            self.systems_collection.find_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._obtained_system_id)}, session=None
+            )
+        else:
+            self.systems_collection.find_one.assert_not_called()
 
         assert str(self._get_exception.value) == message
 
@@ -329,8 +337,8 @@ class TestGet(GetDSL):
         system_id = str(ObjectId())
 
         self.mock_get(system_id, None)
-        self.call_get(system_id)
-        self.check_get_success()
+        self.call_get_expecting_error(system_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No system found with ID: {system_id}", assert_find=True)
 
     def test_get_with_invalid_id(self):
         """Test getting a system with an invalid ID."""

@@ -55,13 +55,8 @@ def get_systems(
     if parent_id:
         logger.debug("Parent ID filter: '%s'", parent_id)
 
-    try:
-        systems = system_service.list(parent_id)
-        return [SystemSchema(**system.model_dump()) for system in systems]
-    except InvalidObjectIdError:
-        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
-        # the same as a valid one that doesn't exist i.e. return an empty list
-        return []
+    systems = system_service.list(parent_id)
+    return [SystemSchema(**system.model_dump()) for system in systems]
 
 
 @router.get(path="/{system_id}", summary="Get a system by ID", response_description="Single system")
@@ -70,15 +65,9 @@ def get_system(
 ) -> SystemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting system with ID: %s", system_service)
-    message = "System not found"
-    try:
-        system = system_service.get(system_id)
-        if not system:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return SystemSchema(**system.model_dump())
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+    system = system_service.get(system_id)
+    return SystemSchema(**system.model_dump())
 
 
 @router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")

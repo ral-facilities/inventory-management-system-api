@@ -10,7 +10,12 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidActionError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    InvalidActionError,
+    InvalidObjectIdError,
+    MissingRecordError,
+)
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -48,12 +53,15 @@ class SystemRepo:
         :raises DuplicateRecordError: If a duplicate system is found within the parent system
         """
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(
-                f"No parent system found with ID: {parent_id}",
-                "The specified parent system does not exist",
-                status_code=422,
-            )
+        if parent_id:
+            try:
+                self.get(parent_id, session=session)
+            except MissingRecordError as exc:
+                raise MissingRecordError(
+                    f"No parent system found with ID: {parent_id}",
+                    "The specified parent system does not exist",
+                    status_code=422,
+                ) from exc
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError(
@@ -73,13 +81,23 @@ class SystemRepo:
         :param system_id: ID of the system to retrieve
         :param session: PyMongo ClientSession to use for database operations
         :return: Retrieved system or `None` if not found
+        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
-        system_id = CustomObjectId(system_id)
         logger.info("Retrieving system with ID: %s from the database", system_id)
+
+        try:
+            system_id = CustomObjectId(system_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "System not found"
+            raise exc
+
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
+
         if system:
             return SystemOut(**system)
-        return None
+        raise MissingRecordError(detail=f"No system found with ID: {system_id}", response_detail="System not found")
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """
@@ -109,7 +127,12 @@ class SystemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: List of systems or an empty list if no systems are retrieved
         """
-        query = utils.list_query(parent_id, "systems")
+        try:
+            query = utils.list_query(parent_id, "systems")
+        except InvalidObjectIdError:
+            # As this method filters, and to hide the database behaviour, we treat any invalid id
+            # the same as a valid one that doesn't exist i.e. return an empty list
+            return []
 
         systems = self._systems_collection.find(query, session=session)
         return [SystemOut(**system) for system in systems]
@@ -128,8 +151,14 @@ class SystemRepo:
         system_id = CustomObjectId(system_id)
 
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
+        if parent_id:
+            try:
+                self.get(parent_id, session=session)
+            except MissingRecordError as exc:
+                raise MissingRecordError(
+                    detail=f"No parent system found with ID: {parent_id}",
+                    response_detail="The specified parent system does not exist",
+                ) from exc
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
