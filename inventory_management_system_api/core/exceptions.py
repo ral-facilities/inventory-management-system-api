@@ -110,6 +110,9 @@ class ChildElementsExistError(DatabaseError):
     elements.
     """
 
+    status_code = status.HTTP_409_CONFLICT
+    response_detail = "Entity has child elements and cannot be deleted"
+
 
 class PartOfCatalogueItemError(DatabaseError):
     """

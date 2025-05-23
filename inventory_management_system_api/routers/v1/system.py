@@ -10,7 +10,6 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, sta
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
     InvalidObjectIdError,
     MissingRecordError,
     ObjectStorageAPIAuthError,
@@ -109,10 +108,6 @@ def delete_system(
     logger.info("Deleting system with ID: %s", system_id)
     try:
         system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
-    except ChildElementsExistError as exc:
-        message = "System has child elements and cannot be deleted"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     # pylint: disable=duplicate-code
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
         message = "Unable to delete attachments and/or images"

@@ -8,11 +8,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    InvalidObjectIdError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -46,8 +42,8 @@ class SystemService:
         parent_id = system.parent_id
 
         code = utils.generate_code(system.name, "system")
-        try:
-            system_in = SystemIn(
+        return self._system_repository.create(
+            SystemIn(
                 parent_id=parent_id,
                 description=system.description,
                 name=system.name,
@@ -56,11 +52,7 @@ class SystemService:
                 importance=system.importance,
                 code=code,
             )
-        except InvalidObjectIdError as exc:
-            # Provide more specific detail
-            exc.response_detail = "Parent system not found"
-            raise exc
-        return self._system_repository.create(system_in)
+        )
 
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
@@ -107,13 +99,7 @@ class SystemService:
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
 
-        try:
-            system_in = SystemIn(**{**stored_system.model_dump(), **update_data})
-        except InvalidObjectIdError as exc:
-            # Provide more specific detail
-            exc.response_detail = "Parent system not found"
-            raise exc
-        return self._system_repository.update(system_id, system_in)
+        return self._system_repository.update(system_id, SystemIn(**{**stored_system.model_dump(), **update_data}))
 
     def delete(self, system_id: str, access_token: Optional[str] = None) -> None:
         """
@@ -123,7 +109,10 @@ class SystemService:
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
         if self._system_repository.has_child_elements(system_id):
-            raise ChildElementsExistError(f"System with ID {system_id} has child elements and cannot be deleted")
+            raise ChildElementsExistError(
+                f"System with ID {system_id} has child elements and cannot be deleted",
+                response_detail="System has child elements and cannot be deleted",
+            )
 
         # First, attempt to delete any attachments and/or images that might be associated with this system.
         if config.object_storage.enabled:
