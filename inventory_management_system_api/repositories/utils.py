@@ -117,8 +117,11 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
     # to
     if not full_trail and len(trail) != BREADCRUMBS_TRAIL_MAX_LENGTH:
         raise DatabaseIntegrityError(
-            f"Unable to locate full trail for entity with id '{entity_id}' from the database "
-            f"collection '{collection_name}'"
+            detail=(
+                f"Unable to locate full trail for entity with id '{entity_id}' from the database "
+                f"collection '{collection_name}'"
+            ),
+            response_detail="Unable to obtain breadcrumbs",
         )
     return BreadcrumbsGetSchema(trail=trail, full_trail=full_trail)
 
