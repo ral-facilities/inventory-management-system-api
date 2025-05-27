@@ -143,7 +143,7 @@ class DatabaseIntegrityError(DatabaseError):
     response_detail = "Database integrity error"
 
 
-class InvalidActionError(DatabaseError):
+class InvalidActionError(BaseAPIException):
     """
     Exception raised when trying to update an item's catalogue item ID
     """
@@ -156,6 +156,8 @@ class WriteConflictError(DatabaseError):
     """
     Exception raised when a transaction has a write conflict.
     """
+
+    status_code = status.HTTP_409_CONFLICT
 
 
 class ObjectStorageAPIAuthError(ObjectStorageAPIError):

@@ -11,10 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     DuplicateCatalogueCategoryPropertyNameError,
-    InvalidActionError,
     InvalidObjectIdError,
     MissingRecordError,
-    WriteConflictError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -202,20 +200,10 @@ def create_property(
             message = "The specified unit does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        message = "Catalogue category not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+        raise exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    except InvalidActionError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except WriteConflictError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.patch(
@@ -245,26 +233,11 @@ def partial_update_property(
                 catalogue_category_id, property_id, catalogue_category_property
             ).model_dump()
         )
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        if property_id in str(exc):
-            message = "Catalogue category property not found"
-        else:
-            message = "Catalogue category not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     # pylint:disable=duplicate-code
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    except InvalidActionError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except ValueError as exc:
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except WriteConflictError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
