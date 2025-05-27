@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -91,8 +91,6 @@ class SystemService:
         :return: The updated system
         """
         stored_system = self.get(system_id)
-        if not stored_system:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
 
         update_data = system.model_dump(exclude_unset=True)
 

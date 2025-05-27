@@ -5,7 +5,7 @@ Module for providing an API router which defines routes for managing items using
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -15,8 +15,8 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
-    ObjectStorageAPIServerError,
     ObjectStorageAPIAuthError,
+    ObjectStorageAPIServerError,
 )
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
@@ -158,9 +158,7 @@ def partial_update_item(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
-            message = "The specified system does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise exc
         if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
             message = "The specified usage status does not exist"
             logger.exception(message)

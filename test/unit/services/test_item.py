@@ -691,7 +691,9 @@ class UpdateDSL(ItemServiceDSL):
         self.mock_item_repository.get.assert_called_once_with(self._updated_item_id)
 
         if self._updating_system:
-            self.mock_system_repository.get.assert_called_once_with(self._item_patch.system_id)
+            self.mock_system_repository.get.assert_called_once_with(
+                self._item_patch.system_id, entity_type_modifier="specified"
+            )
 
         if self._updating_usage_status:
             self.mock_usage_status_repository.get.assert_called_once_with(self._item_patch.usage_status_id)
@@ -799,21 +801,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(item_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_system_id(self):
-        """Test updating an item's `system_id` to a non-existent system."""
-
-        item_id = str(ObjectId())
-        system_id = str(ObjectId())
-
-        self.mock_update(
-            item_id,
-            item_update_data={"system_id": system_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            new_system_in_data=None,
-        )
-        self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
 
     def test_update_usage_status_id(self):
         """Test updating an item's `usage_status_id`."""

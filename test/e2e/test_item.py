@@ -884,7 +884,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": str(ObjectId())})
-        self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
+        self.check_patch_item_failed_with_detail(422, "Specified system not found")
 
     def test_partial_update_system_id_with_invalid_id(self):
         """Test updating the `system_id` of an item to an invalid ID."""
@@ -892,7 +892,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": "invalid-id"})
-        self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
+        self.check_patch_item_failed_with_detail(422, "Specified system not found")
 
     def test_partial_update_usage_status_id(self):
         """Test updating the `usage_status_id` of an item."""

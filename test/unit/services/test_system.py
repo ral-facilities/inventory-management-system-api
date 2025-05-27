@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
@@ -361,15 +361,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(system_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_id(self):
-        """Test updating a system with a non-existent ID."""
-
-        system_id = str(ObjectId())
-
-        self.mock_update(system_id, system_patch_data=SYSTEM_POST_DATA_NO_PARENT_B, stored_system_post_data=None)
-        self.call_update_expecting_error(system_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
 
 
 class DeleteDSL(SystemServiceDSL):

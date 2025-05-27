@@ -150,6 +150,9 @@ def create_catalogue_category(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
 
+PathIDString = Annotated[str, Path(description="The ID of the catalogue category to update")]
+
+
 @router.patch(
     path="/{catalogue_category_id}",
     summary="Update a catalogue category partially by ID",

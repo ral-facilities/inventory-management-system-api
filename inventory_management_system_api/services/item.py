@@ -143,9 +143,7 @@ class ItemService:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
 
         if "system_id" in update_data and item.system_id != stored_item.system_id:
-            system = self._system_repository.get(item.system_id)
-            if not system:
-                raise MissingRecordError(f"No system found with ID: {item.system_id}")
+            self._system_repository.get(item.system_id, entity_type_modifier="specified")
         if "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id:
             usage_status_id = item.usage_status_id
             usage_status = self._usage_status_repository.get(usage_status_id)

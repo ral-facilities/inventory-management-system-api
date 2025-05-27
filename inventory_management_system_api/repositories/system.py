@@ -55,7 +55,7 @@ class SystemRepo:
         """
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id:
-            self.get(parent_id, is_parent=True, session=session)
+            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError(
@@ -69,21 +69,24 @@ class SystemRepo:
         return system
 
     def get(
-        self, system_id: str, is_parent: bool = False, session: Optional[ClientSession] = None
+        self, system_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
     ) -> Optional[SystemOut]:
         """
         Retrieve a system by its ID from a MongoDB database
 
         :param system_id: ID of the system to retrieve
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
         :return: Retrieved system or `None` if not found
-        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
-        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
         logger.info("Retrieving system with ID: %s from the database", system_id)
 
-        entity_type = "parent system" if is_parent else "system"
-        system_id = CustomObjectId(system_id, entity_type=entity_type, not_found_if_invalid=not is_parent)
+        entity_type = f"{entity_type_modifier} system" if entity_type_modifier else "system"
+        system_id = CustomObjectId(
+            system_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
+        )
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
 
         if system:
@@ -91,7 +94,7 @@ class SystemRepo:
         raise MissingRecordError(
             detail=f"No {entity_type} found with ID: {system_id}",
             response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if is_parent else None,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
         )
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
@@ -139,7 +142,6 @@ class SystemRepo:
         :param system: System containing the update data
         :param session: PyMongo ClientSession to use for database operations
         :return: The updated system
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist
         :raises DuplicateRecordError: If a duplicate system is found within the parent system
         :raises InvalidActionError: If attempting to change the `parent_id` to one of its own child system ids
         """
@@ -147,7 +149,7 @@ class SystemRepo:
 
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id:
-            self.get(parent_id, session=session, is_parent=True)
+            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
