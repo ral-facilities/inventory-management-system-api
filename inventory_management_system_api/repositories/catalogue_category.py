@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -15,6 +16,7 @@ from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DuplicateRecordError,
     InvalidActionError,
+    InvalidObjectIdError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.catalogue_category import (
@@ -61,11 +63,14 @@ class CatalogueCategoryRepo:
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
-        if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+        if parent_id:
+            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
-            raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
+            raise DuplicateRecordError(
+                "Duplicate catalogue category found within the parent catalogue category",
+                "A catalogue category with the same name already exists within the parent catalogue category",
+            )
 
         logger.info("Inserting the new catalogue category into the database")
         result = self._catalogue_categories_collection.insert_one(
@@ -75,23 +80,37 @@ class CatalogueCategoryRepo:
         return catalogue_category
 
     def get(
-        self, catalogue_category_id: str, session: Optional[ClientSession] = None
+        self,
+        catalogue_category_id: str,
+        entity_type_modifier: Optional[str] = None,
+        session: Optional[ClientSession] = None,
     ) -> Optional[CatalogueCategoryOut]:
         """
         Retrieve a catalogue category by its ID from a MongoDB database.
 
         :param catalogue_category_id: The ID of the catalogue category to retrieve.
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. parent if its for a parent catalogue category.
         :param session: PyMongo ClientSession to use for database operations
-        :return: The retrieved catalogue category, or `None` if not found.
+        :return: The retrieved catalogue category.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
-        catalogue_category_id = CustomObjectId(catalogue_category_id)
+        entity_type = f"{entity_type_modifier} catalogue category" if entity_type_modifier else "catalogue category"
+        catalogue_category_id = CustomObjectId(
+            catalogue_category_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
+        )
+
         logger.info("Retrieving catalogue category with ID: %s from the database", catalogue_category_id)
         catalogue_category = self._catalogue_categories_collection.find_one(
             {"_id": catalogue_category_id}, session=session
         )
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
-        return None
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {catalogue_category_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+        )
 
     def get_breadcrumbs(
         self, catalogue_category_id: str, session: Optional[ClientSession] = None
@@ -126,7 +145,12 @@ class CatalogueCategoryRepo:
         :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
                  database.
         """
-        query = utils.list_query(parent_id, "catalogue categories")
+        try:
+            query = utils.list_query(parent_id, "catalogue categories")
+        except InvalidObjectIdError:
+            # As this method filters, and to hide the database behaviour, we treat any invalid id
+            # the same as a valid one that doesn't exist i.e. return an empty list
+            return []
 
         catalogue_categories = self._catalogue_categories_collection.find(query, session=session)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]
@@ -157,8 +181,8 @@ class CatalogueCategoryRepo:
         catalogue_category_id = CustomObjectId(catalogue_category_id)
 
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
-        if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+        if parent_id:
+            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         stored_catalogue_category = self.get(str(catalogue_category_id), session=session)
         moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
@@ -167,7 +191,10 @@ class CatalogueCategoryRepo:
         ) and self._is_duplicate_catalogue_category(
             parent_id, catalogue_category.code, catalogue_category_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
+            raise DuplicateRecordError(
+                "Duplicate catalogue category found within the parent catalogue category",
+                "A catalogue category with the same name already exists within the parent catalogue category",
+            )
 
         # Prevent a catalogue category from being moved to one of its own children
         if moving_catalogue_category:
@@ -183,7 +210,10 @@ class CatalogueCategoryRepo:
                     )
                 )
             ):
-                raise InvalidActionError("Cannot move a catalogue category to one of its own children")
+                raise InvalidActionError(
+                    "Cannot move a catalogue category to one of its own children",
+                    response_detail="Cannot move a catalogue category to one of its own children",
+                )
 
         logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
         self._catalogue_categories_collection.update_one(
@@ -204,17 +234,25 @@ class CatalogueCategoryRepo:
         :raises ChildElementsExistError: If the catalogue category has child elements.
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
+        converted_category_id = CustomObjectId(
+            catalogue_category_id, entity_type="catalogue category", not_found_if_invalid=True
+        )
         if self.has_child_elements(catalogue_category_id, session=session):
             raise ChildElementsExistError(
-                f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+                f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted",
+                response_detail="Catalogue category has child elements and cannot be deleted",
             )
 
         logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
         result = self._catalogue_categories_collection.delete_one(
-            {"_id": CustomObjectId(catalogue_category_id)}, session=session
+            {"_id": converted_category_id},
+            session=session,
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(
+                f"No catalogue category found with ID: {catalogue_category_id}",
+                response_detail="Catalogue category not found",
+            )
 
     def _is_duplicate_catalogue_category(
         self,

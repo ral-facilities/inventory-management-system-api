@@ -306,7 +306,7 @@ class GetDSL(SystemRepoDSL):
 
         :param message: Expected message of the raised exception.
         :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
-                           made.
+                            made.
         """
 
         if assert_find:

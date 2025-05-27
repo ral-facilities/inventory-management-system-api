@@ -58,7 +58,9 @@ class CatalogueCategoryService:
         :raises LeafCatalogueCategoryError: If the parent catalogue category is a leaf catalogue category.
         """
         parent_id = catalogue_category.parent_id
-        parent_catalogue_category = self.get(parent_id) if parent_id else None
+        parent_catalogue_category = (
+            self._catalogue_category_repository.get(parent_id, entity_type_modifier="parent") if parent_id else None
+        )
 
         if parent_catalogue_category and parent_catalogue_category.is_leaf:
             raise LeafCatalogueCategoryError("Cannot add catalogue category to a leaf parent catalogue category")
@@ -130,21 +132,25 @@ class CatalogueCategoryService:
         update_data = catalogue_category.model_dump(exclude_unset=True)
 
         stored_catalogue_category = self.get(catalogue_category_id)
-        if not stored_catalogue_category:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
 
         # If any of these, need to ensure the category has no child elements
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
             if self._catalogue_category_repository.has_child_elements(catalogue_category_id):
                 raise ChildElementsExistError(
-                    f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+                    f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated",
+                    "Catalogue category has child elements, so the following fields cannot be updated: "
+                    + ", ".join(CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS),
                 )
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
             update_data["code"] = utils.generate_code(catalogue_category.name, "catalogue category")
 
         if "parent_id" in update_data and catalogue_category.parent_id != stored_catalogue_category.parent_id:
-            parent_catalogue_category = self.get(catalogue_category.parent_id) if catalogue_category.parent_id else None
+            parent_catalogue_category = (
+                self._catalogue_category_repository.get(catalogue_category.parent_id, entity_type_modifier="parent")
+                if catalogue_category.parent_id
+                else None
+            )
 
             if parent_catalogue_category and parent_catalogue_category.is_leaf:
                 raise LeafCatalogueCategoryError("Cannot add catalogue category to a leaf parent catalogue category")

@@ -186,9 +186,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())}
         )
-        self.check_post_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_post_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_create_with_invalid_parent_id(self):
         """Test creating a catalogue category with an invalid parent ID."""
@@ -196,9 +194,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"}
         )
-        self.check_post_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_post_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a catalogue category with the same name as another within the parent catalogue category."""
@@ -860,18 +856,14 @@ class TestUpdate(UpdateDSL):
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": str(ObjectId())})
-        self.check_patch_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_patch_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_partial_update_parent_id_to_invalid_id(self):
         """Test updating the `parent_id` of a catalogue category to an invalid ID."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": "invalid-id"})
-        self.check_patch_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_patch_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_partial_update_name_to_duplicate(self):
         """Test updating the name of a catalogue category to conflict with a pre-existing one."""

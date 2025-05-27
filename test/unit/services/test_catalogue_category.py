@@ -581,7 +581,9 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         # Ensure obtained new parent if moving
         if self._moving_catalogue_category and self._catalogue_category_patch.parent_id:
-            expected_catalogue_category_get_calls.append(call(self._catalogue_category_patch.parent_id))
+            expected_catalogue_category_get_calls.append(
+                call(self._catalogue_category_patch.parent_id, entity_type_modifier="parent")
+            )
 
         self.mock_catalogue_category_repository.get.assert_has_calls(expected_catalogue_category_get_calls)
 
@@ -763,19 +765,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_id, LeafCatalogueCategoryError)
         self.check_update_failed_with_exception("Cannot add catalogue category to a leaf parent catalogue category")
-
-    def test_update_with_non_existent_id(self):
-        """Test updating a catalogue category with a non-existent ID."""
-
-        catalogue_category_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_category_id,
-            catalogue_category_update_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-            stored_catalogue_category_post_data=None,
-        )
-        self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
 
 
 class DeleteDSL(CatalogueCategoryServiceDSL):

@@ -78,15 +78,16 @@ class SystemRepo:
         :param entity_type_modifier: String value to put at the start of the entity type used in error messages
                                      e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
-        :return: Retrieved system or `None` if not found
+        :return: Retrieved system.
         :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
-        logger.info("Retrieving system with ID: %s from the database", system_id)
 
         entity_type = f"{entity_type_modifier} system" if entity_type_modifier else "system"
         system_id = CustomObjectId(
             system_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
         )
+
+        logger.info("Retrieving system with ID: %s from the database", system_id)
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
 
         if system:

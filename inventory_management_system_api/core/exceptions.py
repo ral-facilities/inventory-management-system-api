@@ -49,10 +49,13 @@ class ObjectStorageAPIError(Exception):
     """
 
 
-class LeafCatalogueCategoryError(Exception):
+class LeafCatalogueCategoryError(BaseAPIException):
     """
     Catalogue category is attempted to be added to a leaf parent catalogue category.
     """
+
+    status_code = status.HTTP_409_CONFLICT
+    response_detail = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
 
 
 class NonLeafCatalogueCategoryError(Exception):
@@ -111,7 +114,6 @@ class ChildElementsExistError(DatabaseError):
     """
 
     status_code = status.HTTP_409_CONFLICT
-    response_detail = "Entity has child elements and cannot be deleted"
 
 
 class PartOfCatalogueItemError(DatabaseError):
