@@ -5,6 +5,7 @@ Module for providing a repository for managing Units in a MongoDB database
 import logging
 from typing import Optional
 
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -45,7 +46,9 @@ class UnitRepo:
         """
 
         if self._is_duplicate_unit(unit.code, session=session):
-            raise DuplicateRecordError("Duplicate unit found")
+            raise DuplicateRecordError(
+                "Duplicate unit found", response_detail="A unit with the same value already exists"
+            )
 
         logger.info("Inserting new unit into database")
 
@@ -64,20 +67,32 @@ class UnitRepo:
         units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
 
-    def get(self, unit_id: str, session: Optional[ClientSession] = None) -> Optional[UnitOut]:
+    def get(
+        self, unit_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
+    ) -> Optional[UnitOut]:
         """
         Retrieve a Unit by its ID from a MongoDB database.
 
         :param unit_id: The ID of the unit to retrieve.
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. specified if its for a specified unit.
         :param session: PyMongo ClientSession to use for database operations
-        :return: The retrieved unit, or `None` if not found.
+        :return: The retrieved unit.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
-        unit_id = CustomObjectId(unit_id)
+
+        entity_type = f"{entity_type_modifier} unit" if entity_type_modifier else "unit"
+        unit_id = CustomObjectId(unit_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None)
+
         logger.info("Retrieving unit with ID: %s from the database", unit_id)
         unit = self._units_collection.find_one({"_id": unit_id}, session=session)
         if unit:
             return UnitOut(**unit)
-        return None
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {unit_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+        )
 
     def delete(self, unit_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -90,14 +105,17 @@ class UnitRepo:
         :raises PartOfCatalogueCategoryError: if unit is part of a catalogue category
         :raises MissingRecordError: if supplied unit ID does not exist in the database
         """
-        unit_id = CustomObjectId(unit_id)
+        unit_id = CustomObjectId(unit_id, entity_type="unit", not_found_if_invalid=True)
         if self._is_unit_in_catalogue_category(str(unit_id), session=session):
-            raise PartOfCatalogueCategoryError(f"The unit with ID {str(unit_id)} is a part of a Catalogue category")
+            raise PartOfCatalogueCategoryError(
+                f"The unit with ID {str(unit_id)} is a part of a Catalogue category",
+                response_detail="The specified unit is part of a Catalogue category",
+            )
 
         logger.info("Deleting unit with ID %s from the database", unit_id)
         result = self._units_collection.delete_one({"_id": unit_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No unit found with ID: {str(unit_id)}")
+            raise MissingRecordError(f"No unit found with ID: {str(unit_id)}", response_detail="Unit not found")
 
     def _is_duplicate_unit(
         self, code: str, unit_id: CustomObjectId = None, session: Optional[ClientSession] = None

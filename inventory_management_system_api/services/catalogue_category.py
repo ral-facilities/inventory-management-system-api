@@ -7,11 +7,7 @@ from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 
-from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    LeafCatalogueCategoryError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, LeafCatalogueCategoryError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
@@ -188,9 +184,7 @@ class CatalogueCategoryService:
         properties_with_units = []
         for prop in properties:
             if prop.unit_id is not None:
-                unit = self._unit_repository.get(prop.unit_id)
-                if not unit:
-                    raise MissingRecordError(f"No unit found with ID: {prop.unit_id}")
+                unit = self._unit_repository.get(prop.unit_id, entity_type_modifier="specified")
 
                 # Copy unit value to property
                 properties_with_units.append({**prop.model_dump(), "unit": unit.value})

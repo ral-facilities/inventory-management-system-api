@@ -64,10 +64,12 @@ class NonLeafCatalogueCategoryError(Exception):
     """
 
 
-class DuplicateCatalogueCategoryPropertyNameError(Exception):
+class DuplicateCatalogueCategoryPropertyNameError(BaseAPIException):
     """
     Catalogue category is attempted to be created with duplicate property names.
     """
+
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class InvalidPropertyTypeError(Exception):
@@ -122,16 +124,20 @@ class PartOfCatalogueItemError(DatabaseError):
     """
 
 
-class PartOfCatalogueCategoryError(DatabaseError):
+class PartOfCatalogueCategoryError(BaseAPIException):
     """
     Exception raised when attempting to delete a unit that is a part of a catalogue category
     """
+
+    status_code = status.HTTP_409_CONFLICT
 
 
 class PartOfItemError(DatabaseError):
     """
     Exception raised when attempting to delete a usage status that is a part of an item
     """
+
+    status_code = status.HTTP_409_CONFLICT
 
 
 class DatabaseIntegrityError(DatabaseError):

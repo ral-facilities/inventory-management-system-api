@@ -423,7 +423,7 @@ class TestCreate(CreateDSL):
         self.set_unit_value_and_id("mm", str(ObjectId()))
         self.post_property(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
 
-        self.check_post_property_failed_with_detail(422, "The specified unit does not exist")
+        self.check_post_property_failed_with_detail(422, "Specified unit not found")
 
     def test_create_with_invalid_unit_id(self):
         """Test creating a property with an invalid unit ID."""
@@ -432,7 +432,7 @@ class TestCreate(CreateDSL):
         self.set_unit_value_and_id("mm", "invalid_id")
         self.post_property(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT)
 
-        self.check_post_property_failed_with_detail(422, "The specified unit does not exist")
+        self.check_post_property_failed_with_detail(422, "Specified unit not found")
 
     def test_create_with_non_leaf_catalogue_category(self):
         """Test creating a property within a non-leaf catalogue category."""

@@ -229,14 +229,14 @@ class TestCreate(CreateDSL):
 
         self.set_unit_value_and_id("mm", str(ObjectId()))
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
-        self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_post_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_create_leaf_with_properties_with_invalid_unit_id(self):
         """Test creating a leaf catalogue category with a property with an invalid unit ID."""
 
         self.set_unit_value_and_id("mm", "invalid-id")
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
-        self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_post_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_create_leaf_with_duplicate_properties(self):
         """Test creating a leaf catalogue category with duplicate properties provided."""
@@ -1085,7 +1085,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(
             catalogue_category_id, {"properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]}
         )
-        self.check_patch_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_patch_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_partial_update_leaf_with_properties_with_invalid_unit_id(self):
         """Test updating a leaf catalogue category's properties to have a property with an invalid unit ID."""
@@ -1095,7 +1095,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(
             catalogue_category_id, {"properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]}
         )
-        self.check_patch_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_patch_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_partial_update_leaf_with_duplicate_properties(self):
         """Test updating a leaf catalogue category with duplicate properties provided."""

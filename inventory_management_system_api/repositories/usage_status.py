@@ -5,6 +5,7 @@ Module for providing a repository for managing Usage statuses in a MongoDB datab
 import logging
 from typing import Optional
 
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -43,7 +44,9 @@ class UsageStatusRepo:
         """
 
         if self._is_duplicate_usage_status(usage_status.code, session=session):
-            raise DuplicateRecordError("Duplicate usage status found")
+            raise DuplicateRecordError(
+                "Duplicate usage status found", response_detail="A usage status with the same value already exists"
+            )
 
         logger.info("Inserting new usage status into database")
 
@@ -62,20 +65,35 @@ class UsageStatusRepo:
         usage_statuses = self._usage_statuses_collection.find(session=session)
         return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
 
-    def get(self, usage_status_id: str, session: Optional[ClientSession] = None) -> Optional[UsageStatusOut]:
+    def get(
+        self, usage_status_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
+    ) -> Optional[UsageStatusOut]:
         """
         Retrieve a usage status by its ID from a MongoDB database.
 
         :param usage_status_id: The ID of the usage status to retrieve.
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
-        :return: The retrieved usage status, or `None` if not found.
+        :return: The retrieved usage status.
+        :raises MissingRecordError: If the supplied `usage_status_id` is non-existent.
         """
-        usage_status_id = CustomObjectId(usage_status_id)
+
+        entity_type = f"{entity_type_modifier} usage status" if entity_type_modifier else "usage status"
+        usage_status_id = CustomObjectId(
+            usage_status_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
+        )
+
         logger.info("Retrieving usage status with ID: %s from the database", usage_status_id)
         usage_status = self._usage_statuses_collection.find_one({"_id": usage_status_id}, session=session)
+
         if usage_status:
             return UsageStatusOut(**usage_status)
-        return None
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {usage_status_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+        )
 
     def delete(self, usage_status_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -88,14 +106,19 @@ class UsageStatusRepo:
         :raises PartOfItemError: if usage status is a part of a catalogue item
         :raises MissingRecordError: if supplied usage status ID does not exist in the database
         """
-        usage_status_id = CustomObjectId(usage_status_id)
+        usage_status_id = CustomObjectId(usage_status_id, entity_type="usage status", not_found_if_invalid=True)
         if self._is_usage_status_in_item(usage_status_id, session=session):
-            raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is a part of an Item")
+            raise PartOfItemError(
+                f"The usage status with ID {str(usage_status_id)} is a part of an Item",
+                response_detail="The specified usage status is part of an Item",
+            )
 
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
         result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
+            raise MissingRecordError(
+                f"No usage status found with ID: {str(usage_status_id)}", response_detail="Usage status not found"
+            )
 
     def _is_duplicate_usage_status(
         self, code: str, usage_status_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None

@@ -6,14 +6,8 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, Path, status
 
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidObjectIdError,
-    MissingRecordError,
-    PartOfItemError,
-)
 from inventory_management_system_api.schemas.usage_status import UsageStatusPostSchema, UsageStatusSchema
 from inventory_management_system_api.services.usage_status import UsageStatusService
 
@@ -37,14 +31,8 @@ def create_usage_status(
     logger.info("Creating a new usage status")
     logger.debug("Usage status data: %s", usage_status)
 
-    try:
-        usage_status = usage_status_service.create(usage_status)
-        return UsageStatusSchema(**usage_status.model_dump())
-
-    except DuplicateRecordError as exc:
-        message = "A usage status with the same value already exists"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    usage_status = usage_status_service.create(usage_status)
+    return UsageStatusSchema(**usage_status.model_dump())
 
 
 @router.get(
@@ -58,15 +46,8 @@ def get_usage_status(
 ) -> UsageStatusSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting usage status with ID %s", usage_status_id)
-    message = "Usage status not found"
-    try:
-        usage_status = usage_status_service.get(usage_status_id)
-        if not usage_status:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
+    usage_status = usage_status_service.get(usage_status_id)
     return UsageStatusSchema(**usage_status.model_dump())
 
 
@@ -91,13 +72,5 @@ def delete_usage_status(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting usage status with ID: %s", usage_status_id)
-    try:
-        usage_status_service.delete(usage_status_id)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Usage status not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except PartOfItemError as exc:
-        message = "The specified usage status is part of an Item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+    usage_status_service.delete(usage_status_id)
