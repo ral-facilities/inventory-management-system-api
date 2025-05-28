@@ -166,6 +166,7 @@ class GetDSL(CatalogueItemRepoDSL):
         :param error_type: Expected exception to be raised.
         """
 
+        self._obtained_catalogue_item_id = catalogue_item_id
         with pytest.raises(error_type) as exc:
             self.catalogue_item_repository.get(catalogue_item_id)
         self._get_exception = exc
@@ -178,15 +179,22 @@ class GetDSL(CatalogueItemRepoDSL):
         )
         assert self._obtained_catalogue_item == self._expected_catalogue_item_out
 
-    def check_get_failed_with_exception(self, message: str) -> None:
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
         """
 
-        self.catalogue_items_collection.find_one.assert_not_called()
+        if assert_find:
+            self.catalogue_items_collection.find_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._obtained_catalogue_item_id)}, session=None
+            )
+        else:
+            self.catalogue_items_collection.find_one.assert_not_called()
 
         assert str(self._get_exception.value) == message
 
@@ -209,8 +217,8 @@ class TestGet(GetDSL):
         catalogue_item_id = str(ObjectId())
 
         self.mock_get(catalogue_item_id, None)
-        self.call_get(catalogue_item_id)
-        self.check_get_success()
+        self.call_get_expecting_error(catalogue_item_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No catalogue item found with ID: {catalogue_item_id}", assert_find=True)
 
     def test_get_with_invalid_id(self):
         """Test getting a catalogue item with an invalid ID."""

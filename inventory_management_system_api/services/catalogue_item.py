@@ -12,7 +12,6 @@ from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
-    MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
@@ -67,23 +66,24 @@ class CatalogueItemService:
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
         """
         catalogue_category_id = catalogue_item.catalogue_category_id
-        catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
-        if not catalogue_category:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+        catalogue_category = self._catalogue_category_repository.get(
+            catalogue_category_id, entity_type_modifier="specified"
+        )
 
         if catalogue_category.is_leaf is False:
-            raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+            raise NonLeafCatalogueCategoryError(
+                "Cannot add catalogue item to a non-leaf catalogue category",
+                response_detail="Adding a catalogue item to a non-leaf catalogue category is not allowed",
+            )
 
         manufacturer_id = catalogue_item.manufacturer_id
-        manufacturer = self._manufacturer_repository.get(manufacturer_id)
-        if not manufacturer:
-            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
+        self._manufacturer_repository.get(manufacturer_id, entity_type_modifier="specified")
 
         obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
-        if obsolete_replacement_catalogue_item_id and not self._catalogue_item_repository.get(
-            obsolete_replacement_catalogue_item_id
-        ):
-            raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
+        if obsolete_replacement_catalogue_item_id:
+            self._catalogue_item_repository.get(
+                obsolete_replacement_catalogue_item_id, entity_type_modifier="replacement"
+            )
 
         defined_properties = catalogue_category.properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
@@ -135,14 +135,14 @@ class CatalogueItemService:
         update_data = catalogue_item.model_dump(exclude_unset=True)
 
         stored_catalogue_item = self.get(catalogue_item_id)
-        if not stored_catalogue_item:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
 
         # If any of these, need to ensure the catalogue item has no child elements
         if any(key in update_data for key in CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS):
             if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
                 raise ChildElementsExistError(
-                    f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated"
+                    f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated",
+                    response_detail="Catalogue item has child elements, so the following fields cannot be updated: "
+                    + ", ".join(CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS),
                 )
 
         catalogue_category = None
@@ -150,12 +150,15 @@ class CatalogueItemService:
             "catalogue_category_id" in update_data
             and catalogue_item.catalogue_category_id != stored_catalogue_item.catalogue_category_id
         ):
-            catalogue_category = self._catalogue_category_repository.get(catalogue_item.catalogue_category_id)
-            if not catalogue_category:
-                raise MissingRecordError(f"No catalogue category found with ID: {catalogue_item.catalogue_category_id}")
+            catalogue_category = self._catalogue_category_repository.get(
+                catalogue_item.catalogue_category_id, entity_type_modifier="specified"
+            )
 
             if catalogue_category.is_leaf is False:
-                raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
+                raise NonLeafCatalogueCategoryError(
+                    "Cannot add catalogue item to a non-leaf catalogue category",
+                    response_detail="Adding a catalogue item to a non-leaf catalogue category is not allowed",
+                )
 
             # If the catalogue category ID is updated but no catalogue item properties are supplied then we
             # only allow the item to be moved provided that the two categories expect exactly the same properties
@@ -170,14 +173,16 @@ class CatalogueItemService:
                     "specifying the new properties"
                 )
                 if len(current_catalogue_category.properties) != len(catalogue_category.properties):
-                    raise InvalidActionError(invalid_action_error_message)
+                    raise InvalidActionError(invalid_action_error_message, response_detail=invalid_action_error_message)
 
                 old_to_new_id_map = {}
                 for current_catalogue_category_prop, catalogue_category_prop in zip(
                     current_catalogue_category.properties, catalogue_category.properties
                 ):
                     if not current_catalogue_category_prop.is_equal_without_id(catalogue_category_prop):
-                        raise InvalidActionError(invalid_action_error_message)
+                        raise InvalidActionError(
+                            invalid_action_error_message, response_detail=invalid_action_error_message
+                        )
                     old_to_new_id_map[current_catalogue_category_prop.id] = catalogue_category_prop.id
 
                 # The IDs of the properties need to be updated to those of the new catalogue category
@@ -185,9 +190,7 @@ class CatalogueItemService:
                     stored_catalogue_item_prop.id = old_to_new_id_map[stored_catalogue_item_prop.id]
 
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
-            manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
-            if not manufacturer:
-                raise MissingRecordError(f"No manufacturer found with ID: {catalogue_item.manufacturer_id}")
+            self._manufacturer_repository.get(catalogue_item.manufacturer_id, entity_type_modifier="specified")
 
         if "obsolete_replacement_catalogue_item_id" in update_data:
             obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
@@ -195,9 +198,10 @@ class CatalogueItemService:
                 obsolete_replacement_catalogue_item_id
                 and obsolete_replacement_catalogue_item_id
                 != stored_catalogue_item.obsolete_replacement_catalogue_item_id
-                and not self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id)
             ):
-                raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
+                self._catalogue_item_repository.get(
+                    obsolete_replacement_catalogue_item_id, entity_type_modifier="replacement"
+                )
 
         if "properties" in update_data:
             if not catalogue_category:
@@ -223,7 +227,8 @@ class CatalogueItemService:
         """
         if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
             raise ChildElementsExistError(
-                f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+                f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted",
+                response_detail="Catalogue item has child elements and cannot be deleted",
             )
 
         # First, attempt to delete any attachments and/or images that might be associated with this catalogue item.

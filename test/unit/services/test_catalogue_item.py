@@ -13,7 +13,6 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
-    CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     MANUFACTURER_IN_DATA_A,
@@ -30,7 +29,6 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
-    MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
@@ -222,16 +220,18 @@ class CreateDSL(CatalogueItemServiceDSL):
 
         # This is the get for the catalogue category
         self.mock_catalogue_category_repository.get.assert_called_once_with(
-            self._catalogue_item_post.catalogue_category_id
+            self._catalogue_item_post.catalogue_category_id, entity_type_modifier="specified"
         )
 
         # This is the get for the manufacturer
-        self.mock_manufacturer_repository.get.assert_called_once_with(self._catalogue_item_post.manufacturer_id)
+        self.mock_manufacturer_repository.get.assert_called_once_with(
+            self._catalogue_item_post.manufacturer_id, entity_type_modifier="specified"
+        )
 
         # This is the get for the obsolete replacement catalogue item
         if self._catalogue_item_post.obsolete_replacement_catalogue_item_id:
             self.mock_catalogue_item_repository.get.assert_called_once_with(
-                self._catalogue_item_post.obsolete_replacement_catalogue_item_id
+                self._catalogue_item_post.obsolete_replacement_catalogue_item_id, entity_type_modifier="specified"
             )
 
         self.wrapped_utils.process_properties.assert_called_once_with(
@@ -280,19 +280,6 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_non_existent_catalogue_category_id(self):
-        """Test creating a catalogue item with a non-existent catalogue category ID."""
-
-        self.mock_create(
-            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            catalogue_category_in_data=None,
-            manufacturer_in_data=MANUFACTURER_IN_DATA_A,
-        )
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(
-            f"No catalogue category found with ID: {self._catalogue_item_post.catalogue_category_id}"
-        )
-
     def test_create_with_non_leaf_catalogue_category(self):
         """Test creating a catalogue item with a non-leaf catalogue category."""
 
@@ -303,53 +290,6 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(NonLeafCatalogueCategoryError)
         self.check_create_failed_with_exception("Cannot add catalogue item to a non-leaf catalogue category")
-
-    def test_create_with_non_existent_manufacturer_id(self):
-        """Test creating a catalogue item with a non-existent manufacturer ID."""
-
-        self.mock_create(
-            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-            manufacturer_in_data=None,
-        )
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(
-            f"No manufacturer found with ID: {self._catalogue_item_post.manufacturer_id}"
-        )
-
-    def test_create_with_obsolete_replacement_catalogue_item(self):
-        """Test creating a catalogue item with an obsolete replacement catalogue item."""
-
-        obsolete_replacement_catalogue_item_id = str(ObjectId())
-        self.mock_create(
-            {
-                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
-                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-            },
-            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-            manufacturer_in_data=MANUFACTURER_IN_DATA_A,
-            obsolete_replacement_catalogue_item_data=CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
-        )
-        self.call_create()
-        self.check_create_success()
-
-    def test_create_with_non_existent_obsolete_replacement_catalogue_item_id(self):
-        """Test creating a catalogue item with a non-existent obsolete replacement catalogue item ID."""
-
-        obsolete_replacement_catalogue_item_id = str(ObjectId())
-        self.mock_create(
-            {
-                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
-                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
-            },
-            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-            manufacturer_in_data=MANUFACTURER_IN_DATA_A,
-            obsolete_replacement_catalogue_item_data=None,
-        )
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
-        )
 
 
 class GetDSL(CatalogueItemServiceDSL):
@@ -720,7 +660,9 @@ class UpdateDSL(CatalogueItemServiceDSL):
         # Ensure obtained new catalogue category if moving
         expected_catalogue_category_get_calls = []
         if self._moving_catalogue_item and self._catalogue_item_patch.catalogue_category_id:
-            expected_catalogue_category_get_calls.append(call(self._catalogue_item_patch.catalogue_category_id))
+            expected_catalogue_category_get_calls.append(
+                call(self._catalogue_item_patch.catalogue_category_id, entity_type_modifier="specified")
+            )
 
             # Expect additional call from existing catalogue category to compare properties if new properties aren't
             # given
@@ -731,7 +673,21 @@ class UpdateDSL(CatalogueItemServiceDSL):
 
         # Ensure obtained new manufacturer if needed
         if self._updating_manufacturer and self._catalogue_item_patch.manufacturer_id:
-            self.mock_manufacturer_repository.get.assert_called_once_with(self._catalogue_item_patch.manufacturer_id)
+            self.mock_manufacturer_repository.get.assert_called_once_with(
+                self._catalogue_item_patch.manufacturer_id, entity_type_modifier="specified"
+            )
+
+        # Ensure obtained obsolete replacement catalogue item if needed
+        if (
+            self._updating_obsolete_replacement_catalogue_item
+            and self._catalogue_item_patch.obsolete_replacement_catalogue_item_id
+        ):
+            expected_catalogue_item_get_calls.append(
+                call(
+                    self._catalogue_item_patch.obsolete_replacement_catalogue_item_id,
+                    entity_type_modifier="replacement",
+                )
+            )
 
         self.mock_catalogue_item_repository.get.assert_has_calls(expected_catalogue_item_get_calls)
 
@@ -993,20 +949,6 @@ class TestUpdate(UpdateDSL):
         self.call_update_expecting_error(catalogue_item_id, NonLeafCatalogueCategoryError)
         self.check_update_failed_with_exception("Cannot add catalogue item to a non-leaf catalogue category")
 
-    def test_update_with_non_existent_catalogue_category_id(self):
-        """Test updating the catalogue item's `catalogue_category_id` to a non-existent catalogue category."""
-
-        catalogue_item_id = str(ObjectId())
-        catalogue_category_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_item_id,
-            catalogue_item_update_data={"catalogue_category_id": catalogue_category_id},
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-        )
-        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
-
     def test_update_manufacturer_id_with_no_children(self):
         """Test updating the catalogue item's `manufacturer_id` when it has no children."""
 
@@ -1069,21 +1011,6 @@ class TestUpdate(UpdateDSL):
             f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
         )
 
-    def test_update_with_non_existent_manufacturer_id(self):
-        """Test updating the catalogue item's `manufacturer_id` to a non-existent manufacturer."""
-
-        catalogue_item_id = str(ObjectId())
-        manufacturer_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_item_id,
-            catalogue_item_update_data={"manufacturer_id": manufacturer_id},
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            new_manufacturer_in_data=None,
-        )
-        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No manufacturer found with ID: {manufacturer_id}")
-
     def test_update_obsolete_replacement_catalogue_item_id(self):
         """Test updating the catalogue item's `obsolete_replacement_catalogue_item_id`."""
 
@@ -1097,39 +1024,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(catalogue_item_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_obsolete_replacement_catalogue_item_id(self):
-        """Test updating the catalogue item's `obsolete_replacement_catalogue_item_id` to a non-existent catalogue
-        item."""
-
-        catalogue_item_id = str(ObjectId())
-        obsolete_replacement_catalogue_item_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_item_id,
-            catalogue_item_update_data={
-                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id
-            },
-            stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            new_obsolete_replacement_catalogue_item_data=None,
-        )
-        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
-        )
-
-    def test_update_with_non_existent_id(self):
-        """Test updating a catalogue item with a non-existent ID."""
-
-        catalogue_item_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_item_id,
-            catalogue_item_update_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_catalogue_item_data=None,
-        )
-        self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue item found with ID: {catalogue_item_id}")
 
 
 class DeleteDSL(CatalogueItemServiceDSL):

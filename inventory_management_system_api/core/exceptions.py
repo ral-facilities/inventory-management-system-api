@@ -58,10 +58,12 @@ class LeafCatalogueCategoryError(BaseAPIException):
     response_detail = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
 
 
-class NonLeafCatalogueCategoryError(Exception):
+class NonLeafCatalogueCategoryError(BaseAPIException):
     """
     Catalogue item is attempted to be added to a non-leaf catalogue category.
     """
+
+    status_code = status.HTTP_409_CONFLICT
 
 
 class DuplicateCatalogueCategoryPropertyNameError(BaseAPIException):

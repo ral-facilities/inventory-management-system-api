@@ -7,12 +7,13 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 
 logger = logging.getLogger()
@@ -46,20 +47,37 @@ class CatalogueItemRepo:
         catalogue_item = self.get(str(result.inserted_id), session=session)
         return catalogue_item
 
-    def get(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> Optional[CatalogueItemOut]:
+    def get(
+        self,
+        catalogue_item_id: str,
+        entity_type_modifier: Optional[str] = None,
+        session: Optional[ClientSession] = None,
+    ) -> Optional[CatalogueItemOut]:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
 
         :param catalogue_item_id: The ID of the catalogue item to retrieve.
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved catalogue item, or `None` if not found.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
-        catalogue_item_id = CustomObjectId(catalogue_item_id)
+        entity_type = f"{entity_type_modifier} catalogue item" if entity_type_modifier else "catalogue item"
+        catalogue_item_id = CustomObjectId(
+            catalogue_item_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
+        )
+
         logger.info("Retrieving catalogue item with ID: %s from the database", catalogue_item_id)
         catalogue_item = self._catalogue_items_collection.find_one({"_id": catalogue_item_id}, session=session)
+
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
-        return None
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {catalogue_item_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+        )
 
     def list(
         self, catalogue_category_id: Optional[str], session: Optional[ClientSession] = None
@@ -73,7 +91,12 @@ class CatalogueItemRepo:
         """
         query = {}
         if catalogue_category_id:
-            catalogue_category_id = CustomObjectId(catalogue_category_id)
+            try:
+                catalogue_category_id = CustomObjectId(catalogue_category_id)
+            except InvalidObjectIdError:
+                # As this method filters, and to hide the database behaviour, we treat any invalid id
+                # the same as a valid one that doesn't exist i.e. return an empty list
+                return []
             query["catalogue_category_id"] = catalogue_category_id
 
         message = "Retrieving all catalogue items from the database"
@@ -116,10 +139,13 @@ class CatalogueItemRepo:
         """
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
         result = self._catalogue_items_collection.delete_one(
-            {"_id": CustomObjectId(catalogue_item_id)}, session=session
+            {"_id": CustomObjectId(catalogue_item_id, entity_type="catalogue item", not_found_if_invalid=True)},
+            session=session,
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+            raise MissingRecordError(
+                f"No catalogue item found with ID: {catalogue_item_id}", response_detail="Catalogue item not found"
+            )
 
     def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """
@@ -133,7 +159,12 @@ class CatalogueItemRepo:
         """
         logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
         item = self._items_collection.find_one(
-            {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
+            {
+                "catalogue_item_id": CustomObjectId(
+                    catalogue_item_id, entity_type="catalogue item", not_found_if_invalid=True
+                )
+            },
+            session=session,
         )
         return item is not None
 
