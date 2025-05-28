@@ -514,7 +514,7 @@ class TestCreate(CreateDSL):
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
+        self.check_post_item_failed_with_detail(422, "Specified catalogue item not found")
 
     def test_create_with_invalid_catalogue_item_id(self):
         """Test creating an item with an invalid catalogue item ID."""
@@ -524,7 +524,7 @@ class TestCreate(CreateDSL):
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
+        self.check_post_item_failed_with_detail(422, "Specified catalogue item not found")
 
     def test_create_with_non_existent_system_id(self):
         """Test creating an item with a non-existent system ID."""
@@ -560,7 +560,7 @@ class TestCreate(CreateDSL):
         self.add_usage_status_value_and_id(ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"], str(ObjectId()))
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
+        self.check_post_item_failed_with_detail(422, "Specified usage status not found")
 
     def test_create_with_invalid_usage_status_id(self):
         """Test creating an item with an invalid usage status ID."""
@@ -573,7 +573,7 @@ class TestCreate(CreateDSL):
         self.add_usage_status_value_and_id(ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"], "invalid-id")
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
+        self.check_post_item_failed_with_detail(422, "Specified usage status not found")
 
 
 class GetDSL(CreateDSL):
@@ -630,13 +630,13 @@ class TestGet(GetDSL):
         """Test getting an item with a non-existent ID."""
 
         self.get_item(str(ObjectId()))
-        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+        self.check_get_item_failed_with_detail(404, "Item not found")
 
     def test_get_with_invalid_id(self):
         """Test getting an item with an invalid ID."""
 
         self.get_item("invalid-id")
-        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+        self.check_get_item_failed_with_detail(404, "Item not found")
 
 
 class ListDSL(GetDSL):
@@ -911,7 +911,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"usage_status_id": str(ObjectId())})
-        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+        self.check_patch_item_failed_with_detail(422, "Specified usage status not found")
 
     def test_partial_update_usage_status_id_with_invalid_id(self):
         """Test updating the `usage_status_id` of an item to an invalid ID."""
@@ -919,7 +919,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"usage_status_id": "invalid-id"})
-        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+        self.check_patch_item_failed_with_detail(422, "Specified usage status not found")
 
     def test_partial_update_properties_with_no_properties_provided(self):
         """Test updating the `properties` of an item to override none of the catalogue item properties."""
@@ -1176,7 +1176,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_item_success()
 
         self.get_item(item_id)
-        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+        self.check_get_item_failed_with_detail(404, "Item not found")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent item."""

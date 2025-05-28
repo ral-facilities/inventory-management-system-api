@@ -7,12 +7,13 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 
@@ -51,20 +52,32 @@ class ItemRepo:
         item = self.get(str(result.inserted_id), session=session)
         return item
 
-    def get(self, item_id: str, session: Optional[ClientSession] = None) -> Optional[ItemOut]:
+    def get(
+        self, item_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
+    ) -> Optional[ItemOut]:
         """
         Retrieve an item by its ID from a MongoDB database.
 
         :param item_id: The ID of the item to retrieve
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. specified if its for a specified item.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved item, or `None` if not found.
         """
-        item_id = CustomObjectId(item_id)
+
+        entity_type = f"{entity_type_modifier} item" if entity_type_modifier else "item"
+        item_id = CustomObjectId(item_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None)
+
         logger.info("Retrieving item with ID %s from the database", item_id)
         item = self._items_collection.find_one({"_id": item_id}, session=session)
+
         if item:
             return ItemOut(**item)
-        return None
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {item_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+        )
 
     def list(
         self, system_id: Optional[str], catalogue_item_id: Optional[str], session: Optional[ClientSession] = None
@@ -78,12 +91,17 @@ class ItemRepo:
         :return List of items, or empty list if there are no items
         """
         query = {}
-        if system_id:
-            query["system_id"] = CustomObjectId(system_id)
+        try:
+            if system_id:
+                query["system_id"] = CustomObjectId(system_id)
 
-        if catalogue_item_id:
-            catalogue_item_id = CustomObjectId(catalogue_item_id)
-            query["catalogue_item_id"] = catalogue_item_id
+            if catalogue_item_id:
+                catalogue_item_id = CustomObjectId(catalogue_item_id)
+                query["catalogue_item_id"] = catalogue_item_id
+        except InvalidObjectIdError:
+            # As this method filters, and to hide the database behaviour, we treat any invalid id
+            # the same as a valid one that doesn't exist i.e. return an empty list
+            return []
 
         message = "Retrieving all items from the database"
         if not query:
@@ -121,11 +139,11 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :raises MissingRecordError: If the item doesn't exist
         """
-        item_id = CustomObjectId(item_id)
+        item_id = CustomObjectId(item_id, entity_type="item", not_found_if_invalid=True)
         logger.info("Deleting item with ID: %s from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+            raise MissingRecordError(f"No item found with ID: {str(item_id)}", response_detail="Item not found")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None

@@ -2,12 +2,10 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from test.mock_data import (
-    ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
-    PROPERTY_DATA_STRING_MANDATORY_TEXT,
-    SYSTEM_IN_DATA_NO_PARENT_A,
-)
+from test.mock_data import (ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
+                            ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+                            PROPERTY_DATA_STRING_MANDATORY_TEXT,
+                            SYSTEM_IN_DATA_NO_PARENT_A)
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
@@ -15,8 +13,10 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.core.custom_object_id import \
+    CustomObjectId
+from inventory_management_system_api.core.exceptions import (
+    InvalidObjectIdError, MissingRecordError)
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
 from inventory_management_system_api.models.system import SystemIn
@@ -204,6 +204,7 @@ class GetDSL(ItemRepoDSL):
         :param error_type: Expected exception to be raised.
         """
 
+        self._obtained_item_id = item_id
         with pytest.raises(error_type) as exc:
             self.item_repository.get(item_id)
         self._get_exception = exc
@@ -216,15 +217,22 @@ class GetDSL(ItemRepoDSL):
         )
         assert self._obtained_item == self._expected_item_out
 
-    def check_get_failed_with_exception(self, message: str) -> None:
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
         """
 
-        self.items_collection.find_one.assert_not_called()
+        if assert_find:
+            self.items_collection.find_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._obtained_item_id)}, session=None
+            )
+        else:
+            self.items_collection.find_one.assert_not_called()
 
         assert str(self._get_exception.value) == message
 
@@ -247,8 +255,8 @@ class TestGet(GetDSL):
         item_id = str(ObjectId())
 
         self.mock_get(item_id, None)
-        self.call_get(item_id)
-        self.check_get_success()
+        self.call_get_expecting_error(item_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No item found with ID: {item_id}", assert_find=True)
 
     def test_get_with_invalid_id(self):
         """Test getting an item with an invalid ID."""
