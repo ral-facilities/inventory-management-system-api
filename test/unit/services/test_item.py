@@ -251,6 +251,11 @@ class CreateDSL(ItemServiceDSL):
             self._item_post.catalogue_item_id, entity_type_modifier="specified"
         )
 
+        # This is the get for the system
+        self.mock_system_repository.get.assert_called_once_with(
+            self._item_post.system_id, entity_type_modifier="specified"
+        )
+
         # This is the get for the catalogue category
         self.mock_catalogue_category_repository.get.assert_called_once_with(
             self._catalogue_item_out.catalogue_category_id, entity_type_modifier="specified"

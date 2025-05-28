@@ -74,6 +74,8 @@ class ItemService:
         catalogue_item_id = item.catalogue_item_id
         catalogue_item = self._catalogue_item_repository.get(catalogue_item_id, entity_type_modifier="specified")
 
+        self._system_repository.get(item.system_id, entity_type_modifier="specified")
+
         try:
             catalogue_category_id = catalogue_item.catalogue_category_id
             catalogue_category = self._catalogue_category_repository.get(

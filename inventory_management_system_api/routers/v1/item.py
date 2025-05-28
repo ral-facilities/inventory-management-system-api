@@ -9,10 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, sta
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
-    InvalidObjectIdError,
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
-    MissingRecordError,
     ObjectStorageAPIAuthError,
     ObjectStorageAPIServerError,
 )
@@ -42,12 +40,6 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchem
     except InvalidPropertyTypeError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
-            message = "The specified system does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        raise exc
 
 
 @router.delete(

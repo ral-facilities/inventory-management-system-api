@@ -2,10 +2,11 @@
 Unit tests for the `ItemRepo` repository.
 """
 
-from test.mock_data import (ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
-                            ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
-                            PROPERTY_DATA_STRING_MANDATORY_TEXT,
-                            SYSTEM_IN_DATA_NO_PARENT_A)
+from test.mock_data import (
+    ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
+    ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    PROPERTY_DATA_STRING_MANDATORY_TEXT,
+)
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
@@ -13,13 +14,10 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.custom_object_id import \
-    CustomObjectId
-from inventory_management_system_api.core.exceptions import (
-    InvalidObjectIdError, MissingRecordError)
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
-from inventory_management_system_api.models.system import SystemIn
 from inventory_management_system_api.repositories.item import ItemRepo
 
 
@@ -29,7 +27,6 @@ class ItemRepoDSL:
     mock_database: Mock
     item_repository: ItemRepo
     items_collection: Mock
-    systems_collection: Mock
 
     mock_session = MagicMock()
 
@@ -40,7 +37,6 @@ class ItemRepoDSL:
         self.mock_database = database_mock
         self.item_repository = ItemRepo(database_mock)
         self.items_collection = database_mock.items
-        self.systems_collection = database_mock.systems
 
         self.mock_session = MagicMock()
 
@@ -56,14 +52,11 @@ class CreateDSL(ItemRepoDSL):
     def mock_create(
         self,
         item_in_data: dict,
-        system_in_data: Optional[dict] = None,
     ) -> None:
         """Mocks database methods appropriately to test the `create` repo method.
 
         :param item_in_data: Dictionary containing the item data as would be required for a `ItemIn` database model
                              (i.e. no ID or created and modified times required).
-        :param system_in_data: Either `None` or a dictionary system data as would be required for a `SystemIn` database
-                               model.
         """
 
         inserted_item_id = CustomObjectId(str(ObjectId()))
@@ -72,18 +65,6 @@ class CreateDSL(ItemRepoDSL):
         self._item_in = ItemIn(**item_in_data)
 
         self._expected_item_out = ItemOut(**self._item_in.model_dump(by_alias=True), id=inserted_item_id)
-
-        RepositoryTestHelpers.mock_find_one(
-            self.systems_collection,
-            (
-                {
-                    **SystemIn(**system_in_data).model_dump(),
-                    "_id": ObjectId(),
-                }
-                if system_in_data
-                else None
-            ),
-        )
 
         RepositoryTestHelpers.mock_insert_one(self.items_collection, inserted_item_id)
         RepositoryTestHelpers.mock_find_one(
@@ -113,8 +94,6 @@ class CreateDSL(ItemRepoDSL):
 
         item_in_data = self._item_in.model_dump(by_alias=True)
 
-        self.systems_collection.find_one.assert_called_with({"_id": self._item_in.system_id}, session=self.mock_session)
-
         self.items_collection.insert_one.assert_called_once_with(item_in_data, session=self.mock_session)
         self.items_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._expected_item_out.id)}, session=self.mock_session
@@ -141,18 +120,9 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an item."""
 
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY, system_in_data=SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
         self.call_create()
         self.check_create_success()
-
-    def test_create_with_non_existent_system_id(self):
-        """Test creating an item with a non-existent system ID."""
-
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(
-            f"No system found with ID: {ITEM_IN_DATA_REQUIRED_VALUES_ONLY["system_id"]}"
-        )
 
 
 class GetDSL(ItemRepoDSL):

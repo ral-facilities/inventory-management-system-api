@@ -536,7 +536,7 @@ class TestCreate(CreateDSL):
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_failed_with_detail(422, "The specified system does not exist")
+        self.check_post_item_failed_with_detail(422, "Specified system not found")
 
     def test_create_with_invalid_system_id(self):
         """Test creating an item with an invalid system ID."""
@@ -548,7 +548,7 @@ class TestCreate(CreateDSL):
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_failed_with_detail(422, "The specified system does not exist")
+        self.check_post_item_failed_with_detail(422, "Specified system not found")
 
     def test_create_with_non_existent_usage_status_id(self):
         """Test creating an item with a non-existent usage status ID."""
