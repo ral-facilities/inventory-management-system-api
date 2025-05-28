@@ -6,14 +6,8 @@ service.
 import logging
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, Path, status
 
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidObjectIdError,
-    MissingRecordError,
-    PartOfCatalogueItemError,
-)
 from inventory_management_system_api.schemas.manufacturer import (
     ManufacturerPatchSchema,
     ManufacturerPostSchema,
@@ -40,13 +34,8 @@ def create_manufacturer(
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new manufacturer")
     logger.debug("Manufacturer data is %s", manufacturer)
-    try:
-        manufacturer = manufacturer_service.create(manufacturer)
-        return ManufacturerSchema(**manufacturer.model_dump())
-    except DuplicateRecordError as exc:
-        message = "A manufacturer with the same name already exists"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    manufacturer = manufacturer_service.create(manufacturer)
+    return ManufacturerSchema(**manufacturer.model_dump())
 
 
 @router.get(
@@ -72,15 +61,8 @@ def get_manufacturer(
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturer with ID: %s", manufacturer_id)
-    message = "Manufacturer not found"
-    try:
-        manufacturer = manufacturer_service.get(manufacturer_id)
-        if not manufacturer:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return ManufacturerSchema(**manufacturer.model_dump())
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    manufacturer = manufacturer_service.get(manufacturer_id)
+    return ManufacturerSchema(**manufacturer.model_dump())
 
 
 @router.patch(
@@ -95,17 +77,8 @@ def partial_update_manufacturer(
 ) -> ManufacturerSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating manufacturer with ID: %s", manufacturer_id)
-    try:
-        updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
-        return ManufacturerSchema(**updated_manufacturer.model_dump())
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Manufacturer not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DuplicateRecordError as exc:
-        message = "A manufacturer with the same name already exists"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
+    return ManufacturerSchema(**updated_manufacturer.model_dump())
 
 
 @router.delete(
@@ -120,13 +93,4 @@ def delete_manufacturer(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting manufacturer with ID: %s", manufacturer_id)
-    try:
-        manufacturer_service.delete(manufacturer_id)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Manufacturer not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except PartOfCatalogueItemError as exc:
-        message = "The specified manufacturer is a part of a catalogue item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    manufacturer_service.delete(manufacturer_id)

@@ -123,6 +123,8 @@ class PartOfCatalogueItemError(DatabaseError):
     Exception raised when attempting to delete a manufacturer that is a part of a catalogue item
     """
 
+    status_code = status.HTTP_409_CONFLICT
+
 
 class PartOfCatalogueCategoryError(BaseAPIException):
     """

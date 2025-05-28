@@ -5,6 +5,7 @@ Module for providing a repository for managing manufacturers in a MongoDB databa
 import logging
 from typing import List, Optional
 
+from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -43,7 +44,9 @@ class ManufacturerRepo:
         :return: The created manufacturer.
         """
         if self._is_duplicate_manufacturer(manufacturer.code, session=session):
-            raise DuplicateRecordError("Duplicate manufacturer found")
+            raise DuplicateRecordError(
+                "Duplicate manufacturer found", response_detail="A manufacturer with the same name already exists"
+            )
 
         logger.info("Inserting the new manufacturer into database")
 
@@ -52,20 +55,35 @@ class ManufacturerRepo:
 
         return manufacturer
 
-    def get(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> Optional[ManufacturerOut]:
+    def get(
+        self, manufacturer_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
+    ) -> Optional[ManufacturerOut]:
         """
         Retrieve a manufacturer by its ID from a MondoDB database.
 
         :param manufacturer_id: The ID of the manufacturer to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
+        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
+                                     e.g. specified if its for a specified system.
         :return: The retrieved manufacturer, or `None` if not found.
+        :raises MissingRecordError: If the supplied `manufacturer_id` is non-existent.
         """
-        manufacturer_id = CustomObjectId(manufacturer_id)
+
+        entity_type = f"{entity_type_modifier} manufacturer" if entity_type_modifier else "manufacturer"
+        manufacturer_id = CustomObjectId(
+            manufacturer_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
+        )
+
         logger.info("Retrieving manufacturer with ID: %s from database", manufacturer_id)
         manufacturer = self._manufacturers_collection.find_one({"_id": manufacturer_id}, session=session)
+
         if manufacturer:
             return ManufacturerOut(**manufacturer)
-        return None
+        raise MissingRecordError(
+            detail=f"No {entity_type} found with ID: {manufacturer_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+        )
 
     def list(self, session: Optional[ClientSession] = None) -> List[ManufacturerOut]:
         """
@@ -90,20 +108,21 @@ class ManufacturerRepo:
         :raises DuplicateRecordError: If a duplicate manufacturer is found.
         :return: The updated manufacturer.
         """
-        manufacturer_id = CustomObjectId(manufacturer_id)
+        manufacturer_id = CustomObjectId(manufacturer_id, entity_type="manufacturer", not_found_if_invalid=True)
 
         stored_manufacturer = self.get(str(manufacturer_id), session=session)
         if stored_manufacturer.name != manufacturer.name:
             if self._is_duplicate_manufacturer(manufacturer.code, manufacturer_id, session=session):
-                raise DuplicateRecordError("Duplicate manufacturer found")
+                raise DuplicateRecordError(
+                    "Duplicate manufacturer found", response_detail="A manufacturer with the same name already exists"
+                )
 
         logger.info("Updating manufacturer with ID: %s", manufacturer_id)
         self._manufacturers_collection.update_one(
             {"_id": manufacturer_id}, {"$set": manufacturer.model_dump()}, session=session
         )
 
-        manufacturer = self.get(str(manufacturer_id), session=session)
-        return manufacturer
+        return self.get(str(manufacturer_id), session=session)
 
     def delete(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -117,14 +136,19 @@ class ManufacturerRepo:
         :raises PartOfCatalogueItemError: If the manufacturer is part of a catalogue item.
         :raises MissingRecordError: If the manufacturer doesn't exist.
         """
-        manufacturer_id = CustomObjectId(manufacturer_id)
+        manufacturer_id = CustomObjectId(manufacturer_id, entity_type="manufacturer", not_found_if_invalid=True)
         if self._is_manufacturer_in_catalogue_item(str(manufacturer_id), session=session):
-            raise PartOfCatalogueItemError(f"Manufacturer with ID '{str(manufacturer_id)}' is part of a catalogue item")
+            raise PartOfCatalogueItemError(
+                f"Manufacturer with ID '{str(manufacturer_id)}' is part of a catalogue item",
+                response_detail="The specified manufacturer is a part of a catalogue item",
+            )
 
         logger.info("Deleting manufacturer with ID: %s from the database", manufacturer_id)
         result = self._manufacturers_collection.delete_one({"_id": manufacturer_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
+            raise MissingRecordError(
+                f"No manufacturer found with ID: {str(manufacturer_id)}", response_detail="Manufacturer not found"
+            )
 
     def _is_duplicate_manufacturer(
         self, code: str, manufacturer_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None
