@@ -5,15 +5,9 @@ Module for providing an API router which defines routes for managing items using
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import (
-    InvalidPropertyTypeError,
-    MissingMandatoryProperty,
-    ObjectStorageAPIAuthError,
-    ObjectStorageAPIServerError,
-)
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
 
@@ -34,12 +28,9 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchem
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
-    try:
-        item = item_service.create(item)
-        return ItemSchema(**item.model_dump())
-    except InvalidPropertyTypeError as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    item = item_service.create(item)
+    return ItemSchema(**item.model_dump())
 
 
 @router.delete(
@@ -55,18 +46,7 @@ def delete_item(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting item with ID: %s", item_id)
-    try:
-        item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
-    # pylint: disable=duplicate-code
-    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
-
-        if exc.args[0] == "Invalid token or expired token":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: enable=duplicate-code
+    item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
 
 
 @router.get(path="", summary="Get items", response_description="List of items")
@@ -109,9 +89,6 @@ def partial_update_item(
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating item with ID: %s", item_id)
     logger.debug("Item data: %s", item)
-    try:
-        updated_item = item_service.update(item_id, item)
-        return ItemSchema(**updated_item.model_dump())
-    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    updated_item = item_service.update(item_id, item)
+    return ItemSchema(**updated_item.model_dump())

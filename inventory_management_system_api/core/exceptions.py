@@ -43,7 +43,7 @@ class DatabaseError(BaseAPIException):
     """
 
 
-class ObjectStorageAPIError(Exception):
+class ObjectStorageAPIError(BaseAPIException):
     """
     Object Storage API related error.
     """
@@ -74,16 +74,40 @@ class DuplicateCatalogueCategoryPropertyNameError(BaseAPIException):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-class InvalidPropertyTypeError(Exception):
+class InvalidPropertyTypeError(BaseAPIException):
     """
     The type of the provided value does not match the expected type of the property.
     """
 
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
-class MissingMandatoryProperty(Exception):
+    def __init__(self, detail: str):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take).
+        """
+        super().__init__(detail)
+
+        self.response_detail = detail
+
+
+class MissingMandatoryProperty(BaseAPIException):
     """
     A mandatory property is missing when a catalogue item or item is attempted to be created.
     """
+
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, detail: str):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take).
+        """
+        super().__init__(detail)
+
+        self.response_detail = detail
 
 
 class DuplicateRecordError(DatabaseError):
@@ -175,11 +199,17 @@ class ObjectStorageAPIAuthError(ObjectStorageAPIError):
     Exception raised for auth failures or expired tokens while communicating with the Object Storage API.
     """
 
+    status_code = status.HTTP_403_FORBIDDEN
+    response_detail = "Unable to delete attachments and/or images"
+
 
 class ObjectStorageAPIServerError(ObjectStorageAPIError):
     """
     Exception raised when server errors occur while communicating with the Object Storage API.
     """
+
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    response_detail = "Unable to delete attachments and/or images"
 
 
 class PropertyValueError(BaseAPIException, ValueError):

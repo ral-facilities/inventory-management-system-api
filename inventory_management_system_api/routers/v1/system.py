@@ -6,10 +6,9 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import ObjectStorageAPIAuthError, ObjectStorageAPIServerError
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
 from inventory_management_system_api.services.system import SystemService
@@ -95,15 +94,4 @@ def delete_system(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)
-    try:
-        system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
-    # pylint: disable=duplicate-code
-    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
-
-        if exc.args[0] == "Invalid token or expired token":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: enable=duplicate-code
+    system_service.delete(system_id, request.state.token if config.authentication.enabled else None)

@@ -6,15 +6,9 @@ service.
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import (
-    InvalidPropertyTypeError,
-    MissingMandatoryProperty,
-    ObjectStorageAPIAuthError,
-    ObjectStorageAPIServerError,
-)
 from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
@@ -71,12 +65,9 @@ def create_catalogue_item(
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new catalogue item")
     logger.debug("Catalogue item data: %s", catalogue_item)
-    try:
-        catalogue_item = catalogue_item_service.create(catalogue_item)
-        return CatalogueItemSchema(**catalogue_item.model_dump())
-    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    catalogue_item = catalogue_item_service.create(catalogue_item)
+    return CatalogueItemSchema(**catalogue_item.model_dump())
 
 
 @router.patch(
@@ -92,12 +83,9 @@ def partial_update_catalogue_item(
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating catalogue item with ID: %s", catalogue_item_id)
     logger.debug("Catalogue item data: %s", catalogue_item)
-    try:
-        updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
-        return CatalogueItemSchema(**updated_catalogue_item.model_dump())
-    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
+    return CatalogueItemSchema(**updated_catalogue_item.model_dump())
 
 
 @router.delete(
@@ -113,15 +101,4 @@ def delete_catalogue_item(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
-    try:
-        catalogue_item_service.delete(catalogue_item_id, request.state.token if config.authentication.enabled else None)
-    # pylint: disable=duplicate-code
-    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
-
-        if exc.args[0] == "Invalid token or expired token":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: enable=duplicate-code
+    catalogue_item_service.delete(catalogue_item_id, request.state.token if config.authentication.enabled else None)
