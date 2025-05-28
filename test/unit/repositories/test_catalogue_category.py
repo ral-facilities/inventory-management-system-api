@@ -461,7 +461,9 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
         """Checks that a prior call to `call_get_breadcrumbs` worked as expected."""
 
         self.mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
-            entity_id=self._obtained_catalogue_category_id, collection_name="catalogue_categories"
+            entity_id=self._obtained_catalogue_category_id,
+            collection_name="catalogue_categories",
+            entity_type="catalogue category",
         )
         self.catalogue_categories_collection.aggregate.assert_called_once_with(
             self._mock_aggregation_pipeline, session=self.mock_session
@@ -470,6 +472,7 @@ class GetBreadcrumbsDSL(CatalogueCategoryRepoDSL):
             list(self._breadcrumbs_query_result),
             entity_id=self._obtained_catalogue_category_id,
             collection_name="catalogue_categories",
+            entity_type="catalogue category",
         )
 
         assert self._obtained_breadcrumbs == self._expected_breadcrumbs

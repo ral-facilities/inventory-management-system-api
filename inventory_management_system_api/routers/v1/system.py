@@ -9,12 +9,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import (
-    InvalidObjectIdError,
-    MissingRecordError,
-    ObjectStorageAPIAuthError,
-    ObjectStorageAPIServerError,
-)
+from inventory_management_system_api.core.exceptions import ObjectStorageAPIAuthError, ObjectStorageAPIServerError
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
 from inventory_management_system_api.services.system import SystemService
@@ -72,15 +67,9 @@ def get_system_breadcrumbs(
     system_service: SystemServiceDep,
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
-    # pylint: disable=duplicate-code
+
     logger.info("Getting breadcrumbs for system with ID: %s", system_id)
-    try:
-        return system_service.get_breadcrumbs(system_id)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "System not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    # pylint: enable=duplicate-code
+    return system_service.get_breadcrumbs(system_id)
 
 
 @router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")

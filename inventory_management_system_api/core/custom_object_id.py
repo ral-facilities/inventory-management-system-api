@@ -21,6 +21,7 @@ class CustomObjectId(ObjectId):
         Construct a `CustomObjectId` from a string.
 
         :param value: The string value to be validated, representing the `ObjectId`.
+        :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
         :raises InvalidObjectIdError: If the string value is an invalid `ObjectId`.
         """
         response_detail = None if entity_type is None else f"{entity_type.capitalize()} not found"

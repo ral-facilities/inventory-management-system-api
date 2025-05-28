@@ -9,6 +9,7 @@ from typing import Annotated, Any, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
+from inventory_management_system_api.core.exceptions import PropertyValueError
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
@@ -88,7 +89,7 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
         :return: The value of the `unit_id` field.
         """
         if "type" in info.data and info.data["type"] == CatalogueCategoryPropertyType.BOOLEAN and unit_id is not None:
-            raise ValueError(f"Unit not allowed for boolean property '{info.data['name']}'")
+            raise PropertyValueError(f"Unit not allowed for boolean property '{info.data['name']}'")
         return unit_id
 
     @classmethod
@@ -109,7 +110,9 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
         if allowed_values is not None and "type" in property_data:
             # Ensure the type is not boolean
             if property_data["type"] == CatalogueCategoryPropertyType.BOOLEAN:
-                raise ValueError("allowed_values not allowed for a boolean property " f"'{property_data['name']}'")
+                raise PropertyValueError(
+                    "allowed_values not allowed for a boolean property " f"'{property_data['name']}'"
+                )
             # Check the type of allowed_values being used and validate them appropriately
             if isinstance(allowed_values, AllowedValuesListSchema):
                 # List type should have all values the same type and no duplicate values
@@ -120,7 +123,7 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
                     if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
                         expected_property_type=property_data["type"], property_value=allowed_value
                     ):
-                        raise ValueError(
+                        raise PropertyValueError(
                             "allowed_values of type 'list' must only contain values of the same type as the property "
                             "itself"
                         )
@@ -132,7 +135,9 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
                         else allowed_value.lower()
                     )
                     if seen_value in seen_values:
-                        raise ValueError(f"allowed_values of type 'list' contains a duplicate value: {allowed_value}")
+                        raise PropertyValueError(
+                            f"allowed_values of type 'list' contains a duplicate value: {allowed_value}"
+                        )
                     seen_values.add(seen_value)
 
     @field_validator("allowed_values")
@@ -237,7 +242,7 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
             if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
                 expected_property_type=info.data["type"], property_value=default_value
             ):
-                raise ValueError("default_value must be the same type as the property itself")
+                raise PropertyValueError("default_value must be the same type as the property itself")
             if "allowed_values" in info.data and info.data["allowed_values"]:
                 allowed_values = info.data["allowed_values"]
 
@@ -246,7 +251,7 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
                     isinstance(allowed_values, AllowedValuesListSchema)
                     and default_value not in info.data["allowed_values"].values
                 ):
-                    raise ValueError("default_value is not one of the allowed_values")
+                    raise PropertyValueError("default_value is not one of the allowed_values")
 
         return default_value
 

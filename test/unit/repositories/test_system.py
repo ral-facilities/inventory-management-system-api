@@ -386,13 +386,16 @@ class GetBreadcrumbsDSL(SystemRepoDSL):
         """Checks that a prior call to `call_get_breadcrumbs` worked as expected."""
 
         self.mock_utils.create_breadcrumbs_aggregation_pipeline.assert_called_once_with(
-            entity_id=self._obtained_system_id, collection_name="systems"
+            entity_id=self._obtained_system_id, collection_name="systems", entity_type="system"
         )
         self.systems_collection.aggregate.assert_called_once_with(
             self._mock_aggregation_pipeline, session=self.mock_session
         )
         self.mock_utils.compute_breadcrumbs.assert_called_once_with(
-            list(self._breadcrumbs_query_result), entity_id=self._obtained_system_id, collection_name="systems"
+            list(self._breadcrumbs_query_result),
+            entity_id=self._obtained_system_id,
+            collection_name="systems",
+            entity_type="system",
         )
 
         assert self._obtained_breadcrumbs == self._expected_breadcrumbs

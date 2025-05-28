@@ -6,13 +6,8 @@ Module for providing an API router which defines routes for managing catalogue c
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
-from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    InvalidObjectIdError,
-    MissingRecordError,
-)
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPatchSchema,
@@ -74,20 +69,9 @@ def get_catalogue_category_breadcrumbs(
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> BreadcrumbsGetSchema:
     # pylint: disable=missing-function-docstring
+
     logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
-    try:
-        return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Catalogue category not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DatabaseIntegrityError as exc:
-        message = "Unable to obtain breadcrumbs"
-        logger.exception(message)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message,
-        ) from exc
+    return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
 
 
 @router.post(
@@ -185,14 +169,8 @@ def partial_update_property(
     )
     logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
-    try:
-        return CatalogueCategoryPropertySchema(
-            **catalogue_category_property_service.update(
-                catalogue_category_id, property_id, catalogue_category_property
-            ).model_dump()
-        )
-    # pylint:disable=duplicate-code
-    except ValueError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    return CatalogueCategoryPropertySchema(
+        **catalogue_category_property_service.update(
+            catalogue_category_id, property_id, catalogue_category_property
+        ).model_dump()
+    )

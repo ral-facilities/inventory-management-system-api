@@ -110,12 +110,15 @@ class SystemRepo:
         return utils.compute_breadcrumbs(
             list(
                 self._systems_collection.aggregate(
-                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems"),
+                    utils.create_breadcrumbs_aggregation_pipeline(
+                        entity_id=system_id, collection_name="systems", entity_type="system"
+                    ),
                     session=session,
                 )
             ),
             entity_id=system_id,
             collection_name="systems",
+            entity_type="system",
         )
 
     def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> list[SystemOut]:

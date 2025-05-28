@@ -127,13 +127,16 @@ class CatalogueCategoryRepo:
             list(
                 self._catalogue_categories_collection.aggregate(
                     utils.create_breadcrumbs_aggregation_pipeline(
-                        entity_id=catalogue_category_id, collection_name="catalogue_categories"
+                        entity_id=catalogue_category_id,
+                        collection_name="catalogue_categories",
+                        entity_type="catalogue category",
                     ),
                     session=session,
                 )
             ),
             entity_id=catalogue_category_id,
             collection_name="catalogue_categories",
+            entity_type="catalogue category",
         )
 
     def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> List[CatalogueCategoryOut]:

@@ -176,3 +176,19 @@ class ObjectStorageAPIServerError(ObjectStorageAPIError):
     """
     Exception raised when server errors occur while communicating with the Object Storage API.
     """
+
+
+class PropertyValueError(BaseAPIException, ValueError):
+    """Exception raised when there is an error caused by a property value"""
+
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, detail: str):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take).
+        """
+        super().__init__(detail)
+
+        self.response_detail = detail

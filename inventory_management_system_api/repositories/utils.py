@@ -36,20 +36,21 @@ def list_query(parent_id: Optional[str], entity_type: str) -> dict:
     return query
 
 
-def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str) -> list:
+def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str, entity_type: str) -> list:
     """
     Returns an aggregate query for collecting breadcrumbs data
 
     :param entity_id: ID of the entity to look up the breadcrumbs for
     :param collection_name: Value of "from" to use for the $graphLookup query - Should be the name of
                             the collection
+    :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
 
     :raises InvalidObjectIdError: If the given entity_id is invalid
     :return: The query to feed to the collection's aggregate method. The value of list(result) should
              be passed to compute_breadcrumbs below.
     """
     return [
-        {"$match": {"_id": CustomObjectId(entity_id)}},
+        {"$match": {"_id": CustomObjectId(entity_id, entity_type=entity_type, not_found_if_invalid=True)}},
         {
             "$graphLookup": {
                 "from": collection_name,
@@ -84,7 +85,9 @@ def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str
     ]
 
 
-def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collection_name: str) -> BreadcrumbsGetSchema:
+def compute_breadcrumbs(
+    breadcrumb_query_result: list, entity_id: str, collection_name: str, entity_type: str
+) -> BreadcrumbsGetSchema:
     """
     Processes the result of running breadcrumb query using the pipeline returned by
     create_breadcrumbs_aggregation_pipeline above
@@ -95,6 +98,7 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
                                     create_breadcrumbs_aggregation_pipeline
     :param collection_name: Should be the same as the value passed to create_breadcrumbs_aggregation_pipeline
                             (used for error messages)
+    :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
     :raises MissingRecordError: If the entity with id 'entity_id' isn't found in the database
     :raises DatabaseIntegrityError: If the query returned less than the maximum allowed trail while not
                                     giving the full trail - this indicates a `parent_id` is invalid or doesn't
@@ -107,7 +111,8 @@ def compute_breadcrumbs(breadcrumb_query_result: list, entity_id: str, collectio
     result = breadcrumb_query_result[0]["result"]
     if len(result) == 0:
         raise MissingRecordError(
-            f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'"
+            f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'",
+            response_detail=f"{entity_type.capitalize()} not found",
         )
     for element in result:
         trail.append((str(element["_id"]), element["name"]))
