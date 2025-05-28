@@ -8,6 +8,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import ChildElementsExistError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
@@ -39,12 +40,16 @@ class SystemService:
         :param system: System to be created
         :return: Created system
         """
-        parent_id = system.parent_id
+
+        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
+        # SystemIn or move the parent_id check to the service)
+        if system.parent_id is not None:
+            CustomObjectId(system.parent_id, entity_type="parent system")
 
         code = utils.generate_code(system.name, "system")
         return self._system_repository.create(
             SystemIn(
-                parent_id=parent_id,
+                parent_id=system.parent_id,
                 description=system.description,
                 name=system.name,
                 location=system.location,
@@ -93,6 +98,11 @@ class SystemService:
         stored_system = self.get(system_id)
 
         update_data = system.model_dump(exclude_unset=True)
+
+        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
+        # SystemIn or move the parent_id check to the service)
+        if "parent_id" in update_data and system.parent_id != stored_system.parent_id and system.parent_id is not None:
+            CustomObjectId(system.parent_id, entity_type="parent system")
 
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
