@@ -48,6 +48,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Create logging configuration file
+        run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
+
       - name: Run unit tests
         run: |
           docker build --file Dockerfile --target test --tag inventory-management-system-api:test .
@@ -70,6 +73,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Create logging configuration file
+        run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
 
       # Used to use supercharge/mongodb-github-action, but it can't currently use auth and a replica set at
       # the same time
