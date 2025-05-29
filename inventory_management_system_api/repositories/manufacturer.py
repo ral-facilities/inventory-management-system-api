@@ -48,11 +48,8 @@ class ManufacturerRepo:
             )
 
         logger.info("Inserting the new manufacturer into database")
-
         result = self._manufacturers_collection.insert_one(manufacturer.model_dump(), session=session)
-        manufacturer = self.get(str(result.inserted_id), session=session)
-
-        return manufacturer
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self, manufacturer_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
@@ -119,7 +116,6 @@ class ManufacturerRepo:
         self._manufacturers_collection.update_one(
             {"_id": manufacturer_id}, {"$set": manufacturer.model_dump()}, session=session
         )
-
         return self.get(str(manufacturer_id), session=session)
 
     def delete(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> None:

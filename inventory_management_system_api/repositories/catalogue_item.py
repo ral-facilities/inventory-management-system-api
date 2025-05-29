@@ -43,8 +43,7 @@ class CatalogueItemRepo:
         """
         logger.info("Inserting the new catalogue item into the database")
         result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump(by_alias=True), session=session)
-        catalogue_item = self.get(str(result.inserted_id), session=session)
-        return catalogue_item
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self,
@@ -124,8 +123,7 @@ class CatalogueItemRepo:
         self._catalogue_items_collection.update_one(
             {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
         )
-        catalogue_item = self.get(str(catalogue_item_id), session=session)
-        return catalogue_item
+        return self.get(str(catalogue_item_id), session=session)
 
     def delete(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> None:
         """

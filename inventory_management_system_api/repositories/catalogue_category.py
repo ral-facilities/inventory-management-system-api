@@ -76,8 +76,7 @@ class CatalogueCategoryRepo:
         result = self._catalogue_categories_collection.insert_one(
             catalogue_category.model_dump(by_alias=True), session=session
         )
-        catalogue_category = self.get(str(result.inserted_id), session=session)
-        return catalogue_category
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self,
@@ -104,8 +103,10 @@ class CatalogueCategoryRepo:
         catalogue_category = self._catalogue_categories_collection.find_one(
             {"_id": catalogue_category_id}, session=session
         )
+
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
+
         raise MissingRecordError(
             entity_id=catalogue_category_id, entity_type=entity_type, use_422=entity_type_modifier is not None
         )
@@ -218,8 +219,7 @@ class CatalogueCategoryRepo:
         self._catalogue_categories_collection.update_one(
             {"_id": catalogue_category_id}, {"$set": catalogue_category.model_dump(by_alias=True)}, session=session
         )
-        catalogue_category = self.get(str(catalogue_category_id), session=session)
-        return catalogue_category
+        return self.get(str(catalogue_category_id), session=session)
 
     def delete(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -274,7 +274,6 @@ class CatalogueCategoryRepo:
         catalogue_category = self._catalogue_categories_collection.find_one(
             {"parent_id": parent_id, "code": code, "_id": {"$ne": catalogue_category_id}}, session=session
         )
-
         return catalogue_category is not None
 
     def has_child_elements(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> bool:

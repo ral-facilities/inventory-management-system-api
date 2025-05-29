@@ -76,8 +76,7 @@ class CatalogueItemService:
                 response_detail="Adding a catalogue item to a non-leaf catalogue category is not allowed",
             )
 
-        manufacturer_id = catalogue_item.manufacturer_id
-        self._manufacturer_repository.get(manufacturer_id, entity_type_modifier="specified")
+        self._manufacturer_repository.get(catalogue_item.manufacturer_id, entity_type_modifier="specified")
 
         obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
         if obsolete_replacement_catalogue_item_id:

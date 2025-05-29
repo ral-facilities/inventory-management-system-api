@@ -41,54 +41,40 @@ class BaseAPIException(Exception):
 
 
 class DatabaseError(BaseAPIException):
-    """
-    Database related error.
-    """
+    """Database related error."""
 
 
 class ObjectStorageAPIError(BaseAPIException):
-    """
-    Object Storage API related error.
-    """
+    """Object Storage API related error."""
 
 
 class LeafCatalogueCategoryError(BaseAPIException):
-    """
-    Catalogue category is attempted to be added to a leaf parent catalogue category.
-    """
+    """Catalogue category is attempted to be added to a leaf parent catalogue category."""
 
     status_code = status.HTTP_409_CONFLICT
     response_detail = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
 
 
 class NonLeafCatalogueCategoryError(BaseAPIException):
-    """
-    Catalogue item is attempted to be added to a non-leaf catalogue category.
-    """
+    """Catalogue item is attempted to be added to a non-leaf catalogue category."""
 
     status_code = status.HTTP_409_CONFLICT
 
 
 class DuplicateCatalogueCategoryPropertyNameError(BaseAPIException):
-    """
-    Catalogue category is attempted to be created with duplicate property names.
-    """
+    """Catalogue category is attempted to be created with duplicate property names."""
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class InvalidPropertyTypeError(BaseAPIException):
-    """
-    The type of the provided value does not match the expected type of the property.
-    """
+    """The type of the provided value does not match the expected type of the property."""
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class MissingMandatoryProperty(BaseAPIException):
-    """
-    A mandatory property is missing when a catalogue item or item is attempted to be created.
-    """
+    """A mandatory property is missing when a catalogue item or item is attempted to be created."""
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
@@ -101,18 +87,14 @@ class DuplicateRecordError(DatabaseError):
 
 
 class InvalidObjectIdError(DatabaseError):
-    """
-    The provided value is not a valid ObjectId.
-    """
+    """The provided value is not a valid ObjectId."""
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
     response_detail = "Invalid ID given"
 
 
 class MissingRecordError(DatabaseError):
-    """
-    A specific database record was requested but could not be found.
-    """
+    """A specific database record was requested but could not be found."""
 
     def __init__(self, entity_id: str, entity_type: str, use_422=False):
         """
@@ -139,67 +121,51 @@ class ChildElementsExistError(DatabaseError):
 
 
 class PartOfCatalogueItemError(DatabaseError):
-    """
-    Exception raised when attempting to delete a manufacturer that is a part of a catalogue item
-    """
+    """Exception raised when attempting to delete a manufacturer that is a part of a catalogue item"""
 
     status_code = status.HTTP_409_CONFLICT
 
 
 class PartOfCatalogueCategoryError(BaseAPIException):
-    """
-    Exception raised when attempting to delete a unit that is a part of a catalogue category
-    """
+    """Exception raised when attempting to delete a unit that is a part of a catalogue category"""
 
     status_code = status.HTTP_409_CONFLICT
 
 
 class PartOfItemError(DatabaseError):
-    """
-    Exception raised when attempting to delete a usage status that is a part of an item
-    """
+    """Exception raised when attempting to delete a usage status that is a part of an item"""
 
     status_code = status.HTTP_409_CONFLICT
 
 
 class DatabaseIntegrityError(DatabaseError):
-    """
-    Exception raised when something is found in the database that shouldn't have been
-    """
+    """Exception raised when something is found in the database that shouldn't have been"""
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     response_detail = "Database integrity error"
 
 
 class InvalidActionError(BaseAPIException):
-    """
-    Exception raised when trying to update an item's catalogue item ID
-    """
+    """Exception raised when trying to update an item's catalogue item ID"""
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class WriteConflictError(DatabaseError):
-    """
-    Exception raised when a transaction has a write conflict.
-    """
+    """Exception raised when a transaction has a write conflict."""
 
     status_code = status.HTTP_409_CONFLICT
 
 
 class ObjectStorageAPIAuthError(ObjectStorageAPIError):
-    """
-    Exception raised for auth failures or expired tokens while communicating with the Object Storage API.
-    """
+    """Exception raised for auth failures or expired tokens while communicating with the Object Storage API."""
 
     status_code = status.HTTP_403_FORBIDDEN
     response_detail = "Unable to delete attachments and/or images"
 
 
 class ObjectStorageAPIServerError(ObjectStorageAPIError):
-    """
-    Exception raised when server errors occur while communicating with the Object Storage API.
-    """
+    """Exception raised when server errors occur while communicating with the Object Storage API."""
 
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     response_detail = "Unable to delete attachments and/or images"

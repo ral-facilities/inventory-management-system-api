@@ -43,9 +43,7 @@ class ItemRepo:
         """
         logger.info("Inserting the new item into the database")
         result = self._items_collection.insert_one(item.model_dump(by_alias=True), session=session)
-
-        item = self.get(str(result.inserted_id), session=session)
-        return item
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self, item_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
@@ -121,8 +119,7 @@ class ItemRepo:
         item_id = CustomObjectId(item_id)
         logger.info("Updating item with ID: %s in the database", item_id)
         self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
-        item = self.get(str(item_id), session=session)
-        return item
+        return self.get(str(item_id), session=session)
 
     def delete(self, item_id: str, session: Optional[ClientSession] = None) -> None:
         """

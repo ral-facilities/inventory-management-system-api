@@ -41,28 +41,14 @@ class UsageStatusRepo:
         :return: The created usage status
         :raises DuplicateRecordError: If a duplicate usage status is found within collection
         """
-
         if self._is_duplicate_usage_status(usage_status.code, session=session):
             raise DuplicateRecordError(
                 "Duplicate usage status found", response_detail="A usage status with the same value already exists"
             )
 
         logger.info("Inserting new usage status into database")
-
         result = self._usage_statuses_collection.insert_one(usage_status.model_dump(), session=session)
-        usage_status = self.get(str(result.inserted_id), session=session)
-
-        return usage_status
-
-    def list(self, session: Optional[ClientSession] = None) -> list[UsageStatusOut]:
-        """
-        Retrieve Usage statuses from a MongoDB database
-
-        :param session: PyMongo ClientSession to use for database operations
-        :return: List of Usage statuses or an empty list if no Usage statuses are retrieved
-        """
-        usage_statuses = self._usage_statuses_collection.find(session=session)
-        return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self, usage_status_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
@@ -92,6 +78,16 @@ class UsageStatusRepo:
         raise MissingRecordError(
             entity_id=usage_status_id, entity_type=entity_type, use_422=entity_type_modifier is not None
         )
+
+    def list(self, session: Optional[ClientSession] = None) -> list[UsageStatusOut]:
+        """
+        Retrieve Usage statuses from a MongoDB database
+
+        :param session: PyMongo ClientSession to use for database operations
+        :return: List of Usage statuses or an empty list if no Usage statuses are retrieved
+        """
+        usage_statuses = self._usage_statuses_collection.find(session=session)
+        return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
 
     def delete(self, usage_status_id: str, session: Optional[ClientSession] = None) -> None:
         """

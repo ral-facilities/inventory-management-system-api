@@ -64,8 +64,7 @@ class SystemRepo:
 
         logger.info("Inserting the new system into the database")
         result = self._systems_collection.insert_one(system.model_dump(), session=session)
-        system = self.get(str(result.inserted_id), session=session)
-        return system
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self, system_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
@@ -177,7 +176,6 @@ class SystemRepo:
 
         logger.info("Updating system with ID: %s in the database", system_id)
         self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
-
         return self.get(str(system_id), session=session)
 
     def delete(self, system_id: str, session: Optional[ClientSession] = None) -> None:

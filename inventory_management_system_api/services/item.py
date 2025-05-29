@@ -70,8 +70,7 @@ class ItemService:
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         """
-        catalogue_item_id = item.catalogue_item_id
-        catalogue_item = self._catalogue_item_repository.get(catalogue_item_id, entity_type_modifier="specified")
+        catalogue_item = self._catalogue_item_repository.get(item.catalogue_item_id, entity_type_modifier="specified")
 
         self._system_repository.get(item.system_id, entity_type_modifier="specified")
 

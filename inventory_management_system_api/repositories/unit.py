@@ -43,28 +43,14 @@ class UnitRepo:
         :return: The created unit
         :raises DuplicateRecordError: If a duplicate unit is found within the collection
         """
-
         if self._is_duplicate_unit(unit.code, session=session):
             raise DuplicateRecordError(
                 "Duplicate unit found", response_detail="A unit with the same value already exists"
             )
 
         logger.info("Inserting new unit into database")
-
         result = self._units_collection.insert_one(unit.model_dump(), session=session)
-        unit = self.get(str(result.inserted_id), session=session)
-
-        return unit
-
-    def list(self, session: Optional[ClientSession] = None) -> list[UnitOut]:
-        """
-        Retrieve Units from a MongoDB database
-
-        :param session: PyMongo ClientSession to use for database operations
-        :return: List of Units or an empty list if no units are retrieved
-        """
-        units = self._units_collection.find(session=session)
-        return [UnitOut(**unit) for unit in units]
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self, unit_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
@@ -85,10 +71,21 @@ class UnitRepo:
 
         logger.info("Retrieving unit with ID: %s from the database", unit_id)
         unit = self._units_collection.find_one({"_id": unit_id}, session=session)
+
         if unit:
             return UnitOut(**unit)
 
         raise MissingRecordError(entity_id=unit_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
+
+    def list(self, session: Optional[ClientSession] = None) -> list[UnitOut]:
+        """
+        Retrieve Units from a MongoDB database
+
+        :param session: PyMongo ClientSession to use for database operations
+        :return: List of Units or an empty list if no units are retrieved
+        """
+        units = self._units_collection.find(session=session)
+        return [UnitOut(**unit) for unit in units]
 
     def delete(self, unit_id: str, session: Optional[ClientSession] = None) -> None:
         """
