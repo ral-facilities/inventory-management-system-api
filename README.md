@@ -86,6 +86,7 @@ application requires a MongoDB instance to run against and one can be started us
    docker run \
     --publish 8000:8000 \
     --name inventory-management-system-api \
+    --network host \
     --env-file ./.env \
     --volume ./inventory_management_system_api:/app/inventory_management_system_api \
     --volume ./keys/jwt-key.pub:/app/keys/jwt-key.pub \
