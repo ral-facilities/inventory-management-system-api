@@ -50,7 +50,7 @@ class ItemRepo:
 
     def get(
         self, item_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> Optional[ItemOut]:
+    ) -> ItemOut:
         """
         Retrieve an item by its ID from a MongoDB database.
 
@@ -58,7 +58,8 @@ class ItemRepo:
         :param entity_type_modifier: String value to put at the start of the entity type used in error messages
                                      e.g. specified if its for a specified item.
         :param session: PyMongo ClientSession to use for database operations
-        :return: The retrieved item, or `None` if not found.
+        :return: The retrieved item.
+        :raises MissingRecordError: If the supplied `item_id` is non-existent.
         """
 
         entity_type = f"{entity_type_modifier} item" if entity_type_modifier else "item"

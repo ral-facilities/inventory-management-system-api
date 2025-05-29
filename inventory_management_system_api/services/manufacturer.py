@@ -3,16 +3,13 @@ Module for providing a service for managing manufacturers using the `Manufacture
 """
 
 import logging
-
 from typing import Annotated, List, Optional
+
 from fastapi import Depends
-from inventory_management_system_api.core.exceptions import MissingRecordError
+
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
-from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchSchema,
-    ManufacturerPostSchema,
-)
+from inventory_management_system_api.schemas.manufacturer import ManufacturerPatchSchema, ManufacturerPostSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -76,8 +73,6 @@ class ManufacturerService:
         :return: The updated manufacturer.
         """
         stored_manufacturer = self.get(manufacturer_id)
-        if not stored_manufacturer:
-            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
         update_data = manufacturer.model_dump(exclude_unset=True)
 

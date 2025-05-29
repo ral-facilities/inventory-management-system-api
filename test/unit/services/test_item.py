@@ -773,7 +773,7 @@ class TestUpdate(UpdateDSL):
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
-        self.check_update_failed_with_exception("Cannot change the catalogue item the item belongs to")
+        self.check_update_failed_with_exception("Cannot change the catalogue item of an item")
 
     def test_update_system_id(self):
         """Test updating an item's `system_id`."""

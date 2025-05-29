@@ -50,10 +50,7 @@ def check_duplicate_property_names(
     for prop in properties:
         property_name = prop.name.lower().strip()
         if property_name in seen_property_names:
-            raise DuplicateCatalogueCategoryPropertyNameError(
-                f"Duplicate property name: {prop.name.strip()}",
-                response_detail=f"Duplicate property name: {prop.name.strip()}",
-            )
+            raise DuplicateCatalogueCategoryPropertyNameError(f"Duplicate property name: {prop.name.strip()}")
         seen_property_names.add(property_name)
 
 

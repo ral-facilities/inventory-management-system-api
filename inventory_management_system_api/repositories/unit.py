@@ -69,7 +69,7 @@ class UnitRepo:
 
     def get(
         self, unit_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> Optional[UnitOut]:
+    ) -> UnitOut:
         """
         Retrieve a Unit by its ID from a MongoDB database.
 
@@ -78,7 +78,7 @@ class UnitRepo:
                                      e.g. specified if its for a specified unit.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved unit.
-        :raises MissingRecordError: If the supplied `system_id` is non-existent.
+        :raises MissingRecordError: If the supplied `unit_id` is non-existent.
         """
 
         entity_type = f"{entity_type_modifier} unit" if entity_type_modifier else "unit"

@@ -78,20 +78,14 @@ class CatalogueCategoryPropertyService:
         # Mandatory properties must have a default value that is not None as they would need to be
         # populated down the subtree
         if catalogue_category_property.mandatory and catalogue_category_property.default_value is None:
-            raise InvalidActionError(
-                "Cannot add a mandatory property without a default value",
-                response_detail="Cannot add a mandatory property without a default value",
-            )
+            raise InvalidActionError("Cannot add a mandatory property without a default value")
 
         # Obtain the existing catalogue category to validate against
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
 
         # Must be a leaf catalogue category in order to have properties
         if not stored_catalogue_category.is_leaf:
-            raise InvalidActionError(
-                "Cannot add a property to a non-leaf catalogue category",
-                response_detail="Cannot add a property to a non-leaf catalogue category",
-            )
+            raise InvalidActionError("Cannot add a property to a non-leaf catalogue category")
 
         # Ensure the property is actually valid
         utils.check_duplicate_property_names(stored_catalogue_category.properties + [catalogue_category_property])
@@ -156,24 +150,15 @@ class CatalogueCategoryPropertyService:
 
         # Prevent adding allowed_values to an existing property
         if existing_allowed_values is None and new_allowed_values is not None:
-            raise InvalidActionError(
-                "Cannot add allowed_values to an existing property",
-                response_detail="Cannot add allowed_values to an existing property",
-            )
+            raise InvalidActionError("Cannot add allowed_values to an existing property")
 
         # Prevent removing allowed_values from an existing property
         if existing_allowed_values is not None and new_allowed_values is None:
-            raise InvalidActionError(
-                "Cannot remove allowed_values from an existing property",
-                response_detail="Cannot remove allowed_values from an existing property",
-            )
+            raise InvalidActionError("Cannot remove allowed_values from an existing property")
 
         # Prevent changing an allowed_values' type
         if existing_allowed_values.type != new_allowed_values.type:
-            raise InvalidActionError(
-                "Cannot modify a properties' allowed_values to have a different type",
-                response_detail="Cannot modify a properties' allowed_values to have a different type",
-            )
+            raise InvalidActionError("Cannot modify a properties' allowed_values to have a different type")
 
         # Ensure that a list type adds to the existing values (order doesn't matter)
         if existing_allowed_values.type == "list":
@@ -181,9 +166,7 @@ class CatalogueCategoryPropertyService:
                 if existing_value not in new_allowed_values.values:
                     raise InvalidActionError(
                         "Cannot modify existing values inside allowed_values of type 'list', you may only add more "
-                        "values",
-                        response_detail="Cannot modify existing values inside allowed_values of type 'list', you may "
-                        "only add more values",
+                        "values"
                     )
 
     def update(

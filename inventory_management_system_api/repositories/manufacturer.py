@@ -57,7 +57,7 @@ class ManufacturerRepo:
 
     def get(
         self, manufacturer_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> Optional[ManufacturerOut]:
+    ) -> ManufacturerOut:
         """
         Retrieve a manufacturer by its ID from a MondoDB database.
 

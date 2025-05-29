@@ -51,8 +51,7 @@ def start_session_transaction(action_description: str) -> Generator[ClientSessio
             except OperationFailure as exc:
                 if "write conflict" in str(exc).lower():
                     raise WriteConflictError(
-                        f"Write conflict while {action_description}. Please try again later.",
-                        response_detail=f"Write conflict while {action_description}. Please try again later.",
+                        f"Write conflict while {action_description}. Please try again later."
                     ) from exc
                 raise exc
 

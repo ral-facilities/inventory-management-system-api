@@ -143,10 +143,7 @@ class ItemService:
             raise MissingRecordError(f"No item found with ID: {item_id}")
 
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
-            raise InvalidActionError(
-                "Cannot change the catalogue item the item belongs to",
-                response_detail="Cannot change the catalogue item of an item",
-            )
+            raise InvalidActionError("Cannot change the catalogue item of an item")
 
         if "system_id" in update_data and item.system_id != stored_item.system_id:
             self._system_repository.get(item.system_id, entity_type_modifier="specified")

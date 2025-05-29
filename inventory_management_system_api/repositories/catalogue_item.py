@@ -52,7 +52,7 @@ class CatalogueItemRepo:
         catalogue_item_id: str,
         entity_type_modifier: Optional[str] = None,
         session: Optional[ClientSession] = None,
-    ) -> Optional[CatalogueItemOut]:
+    ) -> CatalogueItemOut:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
 
@@ -61,7 +61,7 @@ class CatalogueItemRepo:
                                      e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved catalogue item, or `None` if not found.
-        :raises MissingRecordError: If the supplied `system_id` is non-existent.
+        :raises MissingRecordError: If the supplied `catalogue_item_id` is non-existent.
         """
         entity_type = f"{entity_type_modifier} catalogue item" if entity_type_modifier else "catalogue item"
         catalogue_item_id = CustomObjectId(

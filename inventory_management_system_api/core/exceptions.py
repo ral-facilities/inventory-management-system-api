@@ -33,6 +33,9 @@ class BaseAPIException(Exception):
 
         if response_detail is not None:
             self.response_detail = response_detail
+        # If there is no response detail defined just use the detail
+        elif not hasattr(self, "response_detail"):
+            self.response_detail = detail
         if status_code is not None:
             self.status_code = status_code
 
@@ -81,16 +84,6 @@ class InvalidPropertyTypeError(BaseAPIException):
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def __init__(self, detail: str):
-        """
-        Initialise the exception.
-
-        :param detail: Specific detail of the exception (just like Exception would take).
-        """
-        super().__init__(detail)
-
-        self.response_detail = detail
-
 
 class MissingMandatoryProperty(BaseAPIException):
     """
@@ -98,16 +91,6 @@ class MissingMandatoryProperty(BaseAPIException):
     """
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-
-    def __init__(self, detail: str):
-        """
-        Initialise the exception.
-
-        :param detail: Specific detail of the exception (just like Exception would take).
-        """
-        super().__init__(detail)
-
-        self.response_detail = detail
 
 
 class DuplicateRecordError(DatabaseError):
@@ -183,7 +166,6 @@ class InvalidActionError(BaseAPIException):
     """
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-    response_detail = "Invalid action"
 
 
 class WriteConflictError(DatabaseError):
@@ -216,13 +198,3 @@ class PropertyValueError(BaseAPIException, ValueError):
     """Exception raised when there is an error caused by a property value"""
 
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
-
-    def __init__(self, detail: str):
-        """
-        Initialise the exception.
-
-        :param detail: Specific detail of the exception (just like Exception would take).
-        """
-        super().__init__(detail)
-
-        self.response_detail = detail

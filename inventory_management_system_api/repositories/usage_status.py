@@ -67,7 +67,7 @@ class UsageStatusRepo:
 
     def get(
         self, usage_status_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> Optional[UsageStatusOut]:
+    ) -> UsageStatusOut:
         """
         Retrieve a usage status by its ID from a MongoDB database.
 

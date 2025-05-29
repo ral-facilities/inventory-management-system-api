@@ -84,7 +84,7 @@ class CatalogueCategoryRepo:
         catalogue_category_id: str,
         entity_type_modifier: Optional[str] = None,
         session: Optional[ClientSession] = None,
-    ) -> Optional[CatalogueCategoryOut]:
+    ) -> CatalogueCategoryOut:
         """
         Retrieve a catalogue category by its ID from a MongoDB database.
 
@@ -213,10 +213,7 @@ class CatalogueCategoryRepo:
                     )
                 )
             ):
-                raise InvalidActionError(
-                    "Cannot move a catalogue category to one of its own children",
-                    response_detail="Cannot move a catalogue category to one of its own children",
-                )
+                raise InvalidActionError("Cannot move a catalogue category to one of its own children")
 
         logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
         self._catalogue_categories_collection.update_one(
