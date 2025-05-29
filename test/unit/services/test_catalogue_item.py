@@ -231,7 +231,7 @@ class CreateDSL(CatalogueItemServiceDSL):
         # This is the get for the obsolete replacement catalogue item
         if self._catalogue_item_post.obsolete_replacement_catalogue_item_id:
             self.mock_catalogue_item_repository.get.assert_called_once_with(
-                self._catalogue_item_post.obsolete_replacement_catalogue_item_id, entity_type_modifier="specified"
+                self._catalogue_item_post.obsolete_replacement_catalogue_item_id, entity_type_modifier="replacement"
             )
 
         self.wrapped_utils.process_properties.assert_called_once_with(
@@ -273,7 +273,7 @@ class TestCreate(CreateDSL):
         catalogue item."""
 
         self.mock_create(
-            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+            {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "obsolete_replacement_catalogue_item_id": str(ObjectId())},
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             manufacturer_in_data=MANUFACTURER_IN_DATA_A,
         )

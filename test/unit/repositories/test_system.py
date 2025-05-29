@@ -4,6 +4,7 @@ Unit tests for the `SystemRepo` repository.
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-lines
 
 from test.mock_data import ITEM_DATA_REQUIRED_VALUES_ONLY, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
@@ -445,13 +446,16 @@ class ListDSL(SystemRepoDSL):
 
         self._obtained_systems_out = self.system_repository.list(parent_id=parent_id, session=self.mock_session)
 
-    def check_list_success(self):
+    def check_list_success(self, assert_find: bool = True):
         """Checks that a prior call to `call_list` worked as expected."""
 
         self.mock_utils.list_query.assert_called_once_with(self._parent_id_filter, "systems")
-        self.systems_collection.find.assert_called_once_with(
-            self.mock_utils.list_query.return_value, session=self.mock_session
-        )
+        if assert_find:
+            self.systems_collection.find.assert_called_once_with(
+                self.mock_utils.list_query.return_value, session=self.mock_session
+            )
+        else:
+            self.systems_collection.find.assert_not_called()
 
         assert self._obtained_systems_out == self._expected_systems_out
 
@@ -486,6 +490,14 @@ class TestList(ListDSL):
         self.mock_list([])
         self.call_list(parent_id=str(ObjectId()))
         self.check_list_success()
+
+    def test_list_with_invalid_parent_id(self):
+        """Test listing all systems with an invalid `parent_id` filter returning no results."""
+
+        self.mock_list([])
+        self.mock_utils.list_query.side_effect = InvalidObjectIdError("Invalid ID")
+        self.call_list(parent_id="invalid-id")
+        self.check_list_success(assert_find=False)
 
 
 class UpdateDSL(SystemRepoDSL):

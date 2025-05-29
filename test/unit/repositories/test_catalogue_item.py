@@ -267,14 +267,21 @@ class ListDSL(CatalogueItemRepoDSL):
             catalogue_category_id=catalogue_category_id, session=self.mock_session
         )
 
-    def check_list_success(self) -> None:
-        """Checks that a prior call to `call_list` worked as expected."""
+    def check_list_success(self, assert_find: bool = True) -> None:
+        """Checks that a prior call to `call_list` worked as expected.
 
-        expected_query = {}
-        if self._catalogue_category_id_filter:
-            expected_query["catalogue_category_id"] = CustomObjectId(self._catalogue_category_id_filter)
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
+        """
 
-        self.catalogue_items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        if assert_find:
+            expected_query = {}
+            if self._catalogue_category_id_filter:
+                expected_query["catalogue_category_id"] = CustomObjectId(self._catalogue_category_id_filter)
+
+            self.catalogue_items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        else:
+            self.catalogue_items_collection.find.assert_not_called()
 
         assert self._obtained_catalogue_items_out == self._expected_catalogue_items_out
 
@@ -312,6 +319,13 @@ class TestList(ListDSL):
         self.mock_list([])
         self.call_list(catalogue_category_id=str(ObjectId()))
         self.check_list_success()
+
+    def test_list_with_invalid_catalogue_category_id_with_no_results(self):
+        """Test listing all catalogue categories with an invalid `catalogue_category_id` filter returning no results."""
+
+        self.mock_list([])
+        self.call_list(catalogue_category_id="invalid-id")
+        self.check_list_success(assert_find=False)
 
 
 class UpdateDSL(CatalogueItemRepoDSL):

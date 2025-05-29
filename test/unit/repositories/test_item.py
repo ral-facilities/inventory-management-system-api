@@ -275,16 +275,23 @@ class ListDSL(ItemRepoDSL):
             system_id=system_id, catalogue_item_id=catalogue_item_id, session=self.mock_session
         )
 
-    def check_list_success(self) -> None:
-        """Checks that a prior call to `call_list` worked as expected."""
+    def check_list_success(self, assert_find: bool = True) -> None:
+        """Checks that a prior call to `call_list` worked as expected.
 
-        expected_query = {}
-        if self._system_id_filter:
-            expected_query["system_id"] = CustomObjectId(self._system_id_filter)
-        if self._catalogue_item_id_filter:
-            expected_query["catalogue_item_id"] = CustomObjectId(self._catalogue_item_id_filter)
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
+        """
 
-        self.items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        if assert_find:
+            expected_query = {}
+            if self._system_id_filter:
+                expected_query["system_id"] = CustomObjectId(self._system_id_filter)
+            if self._catalogue_item_id_filter:
+                expected_query["catalogue_item_id"] = CustomObjectId(self._catalogue_item_id_filter)
+
+            self.items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        else:
+            self.items_collection.find.assert_not_called()
 
         assert self._obtained_items_out == self._expected_items_out
 
@@ -306,12 +313,26 @@ class TestList(ListDSL):
         self.call_list(system_id=str(ObjectId()), catalogue_item_id=None)
         self.check_list_success()
 
+    def test_list_with_invalid_system_id_filter(self):
+        """Test listing all items when giving an invalid `system_id`."""
+
+        self.mock_list([])
+        self.call_list(system_id="invalid-id", catalogue_item_id=None)
+        self.check_list_success(assert_find=False)
+
     def test_list_with_catalogue_category_id_filter(self):
         """Test listing all items with a given `catalogue_category_id`."""
 
         self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=str(ObjectId()))
         self.check_list_success()
+
+    def test_list_with_invalid_catalogue_category_id_filter(self):
+        """Test listing all items when given an invalid `catalogue_category_id`."""
+
+        self.mock_list([])
+        self.call_list(system_id=None, catalogue_item_id="invalid-id")
+        self.check_list_success(assert_find=False)
 
     def test_list_with_system_id_and_catalogue_category_id_with_no_results(self):
         """Test listing all items with a `system_id` and `catalogue_category_id` filter returning no results."""
