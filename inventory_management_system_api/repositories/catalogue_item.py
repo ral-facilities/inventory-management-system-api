@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
-from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -73,10 +72,9 @@ class CatalogueItemRepo:
 
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
+
         raise MissingRecordError(
-            detail=f"No {entity_type} found with ID: {catalogue_item_id}",
-            response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+            entity_id=catalogue_item_id, entity_type=entity_type, use_422=entity_type_modifier is not None
         )
 
     def list(
@@ -143,9 +141,7 @@ class CatalogueItemRepo:
             session=session,
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(
-                f"No catalogue item found with ID: {catalogue_item_id}", response_detail="Catalogue item not found"
-            )
+            raise MissingRecordError(entity_id=catalogue_item_id, entity_type="catalogue item")
 
     def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """

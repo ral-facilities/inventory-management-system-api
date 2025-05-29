@@ -6,7 +6,6 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -69,7 +68,8 @@ class CatalogueCategoryRepo:
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
             raise DuplicateRecordError(
                 "Duplicate catalogue category found within the parent catalogue category",
-                "A catalogue category with the same name already exists within the parent catalogue category",
+                response_detail="A catalogue category with the same name already exists within the parent catalogue "
+                "category",
             )
 
         logger.info("Inserting the new catalogue category into the database")
@@ -107,9 +107,7 @@ class CatalogueCategoryRepo:
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
         raise MissingRecordError(
-            detail=f"No {entity_type} found with ID: {catalogue_category_id}",
-            response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+            entity_id=catalogue_category_id, entity_type=entity_type, use_422=entity_type_modifier is not None
         )
 
     def get_breadcrumbs(
@@ -196,7 +194,8 @@ class CatalogueCategoryRepo:
         ):
             raise DuplicateRecordError(
                 "Duplicate catalogue category found within the parent catalogue category",
-                "A catalogue category with the same name already exists within the parent catalogue category",
+                response_detail="A catalogue category with the same name already exists within the parent catalogue "
+                "category",
             )
 
         # Prevent a catalogue category from being moved to one of its own children
@@ -249,10 +248,7 @@ class CatalogueCategoryRepo:
             session=session,
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(
-                f"No catalogue category found with ID: {catalogue_category_id}",
-                response_detail="Catalogue category not found",
-            )
+            raise MissingRecordError(entity_id=str(catalogue_category_id), entity_type="catalogue category")
 
     def _is_duplicate_catalogue_category(
         self,

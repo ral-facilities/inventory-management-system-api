@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from bson import ObjectId
-from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -70,11 +69,8 @@ class ItemRepo:
 
         if item:
             return ItemOut(**item)
-        raise MissingRecordError(
-            detail=f"No {entity_type} found with ID: {item_id}",
-            response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
-        )
+
+        raise MissingRecordError(entity_id=item_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
 
     def list(
         self, system_id: Optional[str], catalogue_item_id: Optional[str], session: Optional[ClientSession] = None
@@ -140,7 +136,7 @@ class ItemRepo:
         logger.info("Deleting item with ID: %s from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}", response_detail="Item not found")
+            raise MissingRecordError(entity_id=str(item_id), entity_type="item")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None

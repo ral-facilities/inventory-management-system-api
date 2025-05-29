@@ -131,7 +131,7 @@ class TestComputeBreadcrumbs:
                 entity_type="entity",
             )
 
-        assert str(exc.value) == f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'"
+        assert str(exc.value) == f"No entity found with ID: {entity_id}"
 
     def test_compute_breadcrumbs_when_invalid_parent_in_db(self):
         """

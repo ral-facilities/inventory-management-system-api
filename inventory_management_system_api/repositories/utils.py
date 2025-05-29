@@ -110,10 +110,7 @@ def compute_breadcrumbs(
 
     result = breadcrumb_query_result[0]["result"]
     if len(result) == 0:
-        raise MissingRecordError(
-            f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'",
-            response_detail=f"{entity_type.capitalize()} not found",
-        )
+        raise MissingRecordError(entity_id=entity_id, entity_type=entity_type)
     for element in result:
         trail.append((str(element["_id"]), element["name"]))
     full_trail = result[0]["parent_id"] is None

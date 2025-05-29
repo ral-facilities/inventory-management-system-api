@@ -13,7 +13,6 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
     InvalidObjectIdError,
-    MissingRecordError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import PropertyOut
@@ -139,8 +138,6 @@ class ItemService:
         update_data = item.model_dump(exclude_unset=True)
 
         stored_item = self.get(item_id)
-        if not stored_item:
-            raise MissingRecordError(f"No item found with ID: {item_id}")
 
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
             raise InvalidActionError("Cannot change the catalogue item of an item")

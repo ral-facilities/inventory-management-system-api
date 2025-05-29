@@ -202,8 +202,7 @@ class CatalogueCategoryPropertyService:
 
         if not existing_property_out:
             raise MissingRecordError(
-                f"No property found with ID: {catalogue_category_property_id}",
-                response_detail="Catalogue category property not found",
+                entity_id=catalogue_category_property_id, entity_type="catalogue category property"
             )
 
         # Modify the name if necessary and check it doesn't cause a conflict

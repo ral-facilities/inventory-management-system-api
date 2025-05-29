@@ -5,7 +5,6 @@ Module for providing a repository for managing Units in a MongoDB database
 import logging
 from typing import Optional
 
-from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -88,11 +87,8 @@ class UnitRepo:
         unit = self._units_collection.find_one({"_id": unit_id}, session=session)
         if unit:
             return UnitOut(**unit)
-        raise MissingRecordError(
-            detail=f"No {entity_type} found with ID: {unit_id}",
-            response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
-        )
+
+        raise MissingRecordError(entity_id=unit_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
 
     def delete(self, unit_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -115,7 +111,7 @@ class UnitRepo:
         logger.info("Deleting unit with ID %s from the database", unit_id)
         result = self._units_collection.delete_one({"_id": unit_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No unit found with ID: {str(unit_id)}", response_detail="Unit not found")
+            raise MissingRecordError(entity_id=str(unit_id), entity_type="unit")
 
     def _is_duplicate_unit(
         self, code: str, unit_id: CustomObjectId = None, session: Optional[ClientSession] = None

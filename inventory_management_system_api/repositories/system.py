@@ -5,7 +5,6 @@ Module for providing a repository for managing systems in a MongoDB database
 import logging
 from typing import Optional
 
-from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -60,7 +59,7 @@ class SystemRepo:
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError(
                 "Duplicate system found within the parent system",
-                "A system with the same name already exists within the parent system",
+                response_detail="A system with the same name already exists within the parent system",
             )
 
         logger.info("Inserting the new system into the database")
@@ -92,11 +91,8 @@ class SystemRepo:
 
         if system:
             return SystemOut(**system)
-        raise MissingRecordError(
-            detail=f"No {entity_type} found with ID: {system_id}",
-            response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
-        )
+
+        raise MissingRecordError(entity_id=system_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """
@@ -200,7 +196,7 @@ class SystemRepo:
             {"_id": CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)}, session=session
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(detail=f"No system found with ID: {system_id}", response_detail="System not found")
+            raise MissingRecordError(entity_id=system_id, entity_type="system")
 
     def _is_duplicate_system(
         self,

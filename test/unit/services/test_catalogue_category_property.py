@@ -680,4 +680,6 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_category_property_in_data=None,
         )
         self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No property found with ID: {catalogue_category_property_id}")
+        self.check_update_failed_with_exception(
+            f"No catalogue category property found with ID: {catalogue_category_property_id}"
+        )

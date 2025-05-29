@@ -25,11 +25,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    InvalidActionError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import DatabaseIntegrityError, InvalidActionError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
@@ -802,19 +798,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(item_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_id(self):
-        """Test updating an item with a non-existent ID."""
-
-        item_id = str(ObjectId())
-
-        self.mock_update(
-            item_id,
-            item_update_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_item_data=None,
-        )
-        self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No item found with ID: {item_id}")
 
 
 class DeleteDSL(ItemServiceDSL):

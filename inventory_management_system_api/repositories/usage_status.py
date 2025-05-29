@@ -5,7 +5,6 @@ Module for providing a repository for managing Usage statuses in a MongoDB datab
 import logging
 from typing import Optional
 
-from fastapi import status
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -89,10 +88,9 @@ class UsageStatusRepo:
 
         if usage_status:
             return UsageStatusOut(**usage_status)
+
         raise MissingRecordError(
-            detail=f"No {entity_type} found with ID: {usage_status_id}",
-            response_detail=f"{entity_type.capitalize()} not found",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if entity_type_modifier is not None else None,
+            entity_id=usage_status_id, entity_type=entity_type, use_422=entity_type_modifier is not None
         )
 
     def delete(self, usage_status_id: str, session: Optional[ClientSession] = None) -> None:
@@ -116,9 +114,7 @@ class UsageStatusRepo:
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
         result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(
-                f"No usage status found with ID: {str(usage_status_id)}", response_detail="Usage status not found"
-            )
+            raise MissingRecordError(entity_id=str(usage_status_id), entity_type="usage status")
 
     def _is_duplicate_usage_status(
         self, code: str, usage_status_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None

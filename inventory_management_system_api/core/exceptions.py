@@ -114,8 +114,19 @@ class MissingRecordError(DatabaseError):
     A specific database record was requested but could not be found.
     """
 
-    status_code = status.HTTP_404_NOT_FOUND
-    response_detail = "Requested record was not found"
+    def __init__(self, entity_id: str, entity_type: str, use_422=False):
+        """
+        Initialise the exception.
+
+        :param entity_id: ID of the record that was found to be missing.
+        :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
+        :param use_422: Whether the error returned if uncaught should be a 422 (default is 404 when false).
+        """
+        super().__init__(
+            detail=f"No {entity_type} found with ID: {entity_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if use_422 else status.HTTP_404_NOT_FOUND,
+        )
 
 
 class ChildElementsExistError(DatabaseError):
