@@ -2,9 +2,6 @@ FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4
 
 WORKDIR /app
 
-# Requirement when using a different workdir to get scripts to import correctly
-ENV PYTHONPATH="${PYTHONPATH}:/app"
-
 COPY pyproject.toml requirements.txt ./
 COPY inventory_management_system_api/ inventory_management_system_api/
 
