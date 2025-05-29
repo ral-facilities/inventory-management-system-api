@@ -28,7 +28,7 @@ This microservice requires a MongoDB instance to run against.
    it accordingly:
 
    ```bash
-   cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
+   cp logging.example.ini logging.ini
    ```
 
 3. (**Required only if JWT Auth is enabled**) Inside the keys directory in the root of the project directory, create a
@@ -86,20 +86,10 @@ application requires a MongoDB instance to run against and one can be started us
    docker run \
     --publish 8000:8000 \
     --name inventory-management-system-api \
+    --env-file ./.env \
     --volume ./inventory_management_system_api:/app/inventory_management_system_api \
     --volume ./keys/jwt-key.pub:/app/keys/jwt-key.pub \
-    inventory-management-system-api:dev
-   ```
-
-   or with values for the environment variables:
-
-   ```bash
-   docker run \
-    --publish 8000:8000 \
-    --name inventory-management-system-api \
-    --env DATABASE__NAME=ims \
-    --volume ./inventory_management_system_api:/app/inventory_management_system_api \
-    --volume ./keys/jwt-key.pub:/app/keys/jwt-key.pub \
+    --volume ./logging.ini:/app/logging.ini \
     inventory-management-system-api:dev
    ```
 
@@ -136,6 +126,7 @@ and one can be started using the `docker-compose.yml` file.
     --network host \
     --volume ./inventory_management_system_api:/app/inventory_management_system_api \
     --volume ./test:/app/test \
+    --volume ./logging.ini:/app/logging.ini \
     inventory-management-system-api:test
    ```
 
@@ -159,6 +150,7 @@ automatically be synced to the container next time you run the tests.
     --name inventory-management-system-api-test \
     --volume ./inventory_management_system_api:/app/inventory_management_system_api \
     --volume ./test:/app/test \
+    --volume ./logging.ini:/app/logging.ini \
     inventory-management-system-api:test \
     pytest --config-file test/pytest.ini --cov inventory_management_system_api --cov-report term-missing test/unit -v
    ```
@@ -191,6 +183,7 @@ and one can be started using the `docker-compose.yml` file.
     --network host \
     --volume ./inventory_management_system_api:/app/inventory_management_system_api \
     --volume ./test:/app/test \
+    --volume ./logging.ini:/app/logging.ini \
     inventory-management-system-api:test \
     pytest --config-file test/pytest.ini test/e2e -v
    ```
@@ -199,7 +192,7 @@ and one can be started using the `docker-compose.yml` file.
 
 #### Prerequisites
 
-- You must have access to a MongoDB instance with a replica set database.
+- You must have access to a MongoDB instance with at least one replica set.
 
 #### Running the API
 

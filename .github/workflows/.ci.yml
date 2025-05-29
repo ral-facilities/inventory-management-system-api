@@ -49,13 +49,14 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Create logging configuration file
-        run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
+        run: cp logging.example.ini logging.ini
 
       - name: Run unit tests
         run: |
           docker build --file Dockerfile --target test --tag inventory-management-system-api:test .
           docker run \
            --name inventory-management-system-api \
+           --volume ./logging.ini:/app/logging.ini \
            inventory-management-system-api:test \
            pytest --config-file test/pytest.ini --cov inventory_management_system_api --cov-report xml test/unit -v
           docker cp inventory-management-system-api:/app/coverage.xml coverage.xml
@@ -75,7 +76,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Create logging configuration file
-        run: cp inventory_management_system_api/logging.example.ini inventory_management_system_api/logging.ini
+        run: cp logging.example.ini logging.ini
 
       # Used to use supercharge/mongodb-github-action, but it can't currently use auth and a replica set at
       # the same time
@@ -91,6 +92,7 @@ jobs:
           docker run \
            --name inventory-management-system-api \
            --network host \
+           --volume ./logging.ini:/app/logging.ini \
            inventory-management-system-api:test \
            pytest --config-file test/pytest.ini test/e2e -v
 

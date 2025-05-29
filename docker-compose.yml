@@ -6,7 +6,8 @@ services:
       target: dev
     volumes:
       - ./inventory_management_system_api:/app/inventory_management_system_api
-      - ./keys:/app/keys
+      - ./keys/jwt-key.pub:/app/keys/jwt-key.pub
+      - ./logging.ini:/app/logging.ini
     ports:
       - 8000:8000
     restart: on-failure

@@ -2,9 +2,9 @@
 .vscode/
 mongodb/data/*
 !mongodb/data/.keep
-inventory_management_system_api/logging.ini
 /keys/jwt-key.pub
 /mongodb/keys/rs_keyfile
+logging.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
