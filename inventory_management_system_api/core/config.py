@@ -2,7 +2,6 @@
 Module for the overall configuration for the application.
 """
 
-from pathlib import Path
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
