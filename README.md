@@ -21,7 +21,7 @@ This microservice requires a MongoDB instance to run against.
    accordingly.
 
    ```bash
-   cp inventory_management_system_api/.env.example inventory_management_system_api/.env
+   cp .env.example .env
    ```
 
 2. Create a `logging.ini` file alongside the `logging.example.ini` file. Use the example file as a reference and modify
