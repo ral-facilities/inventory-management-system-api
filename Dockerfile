@@ -2,7 +2,6 @@ FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4
 
 WORKDIR /app
 
-COPY .env .env
 COPY pyproject.toml requirements.txt ./
 COPY inventory_management_system_api/ inventory_management_system_api/
 
