@@ -50,7 +50,7 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
             "docker",
             "exec",
             "-i",
-            "ims_api_mongodb_container",
+            "ims-api-mongodb",
         ]
         + args,
         stdin=stdin,
