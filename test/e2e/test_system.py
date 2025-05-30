@@ -112,13 +112,13 @@ class TestCreate(CreateDSL):
         """Test creating a system with a non-existent `parent_id`."""
 
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())})
-        self.check_post_system_failed_with_detail(422, "The specified parent system does not exist")
+        self.check_post_system_failed_with_detail(422, "Parent system not found")
 
     def test_create_with_invalid_parent_id(self):
         """Test creating a system with an invalid `parent_id`."""
 
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"})
-        self.check_post_system_failed_with_detail(422, "The specified parent system does not exist")
+        self.check_post_system_failed_with_detail(422, "Parent system not found")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a system with the same name as another within the parent system."""
@@ -505,14 +505,14 @@ class TestUpdate(UpdateDSL):
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": str(ObjectId())})
-        self.check_patch_system_failed_with_detail(422, "The specified parent system does not exist")
+        self.check_patch_system_failed_with_detail(422, "Parent system not found")
 
     def test_partial_update_parent_id_to_invalid_id(self):
         """Test updating the `parent_id` of a system to an invalid ID."""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": "invalid-id"})
-        self.check_patch_system_failed_with_detail(422, "The specified parent system does not exist")
+        self.check_patch_system_failed_with_detail(422, "Parent system not found")
 
     def test_partial_update_name_to_duplicate(self):
         """Test updating the name of a system to conflict with a pre-existing one."""

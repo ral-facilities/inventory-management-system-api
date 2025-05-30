@@ -13,7 +13,6 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
     InvalidObjectIdError,
-    MissingRecordError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import PropertyOut
@@ -71,23 +70,25 @@ class ItemService:
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         """
-        catalogue_item_id = item.catalogue_item_id
-        catalogue_item = self._catalogue_item_repository.get(catalogue_item_id)
-        if not catalogue_item:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+        catalogue_item = self._catalogue_item_repository.get(item.catalogue_item_id, entity_type_modifier="specified")
+
+        self._system_repository.get(item.system_id, entity_type_modifier="specified")
 
         try:
             catalogue_category_id = catalogue_item.catalogue_category_id
-            catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+            catalogue_category = self._catalogue_category_repository.get(
+                catalogue_category_id, entity_type_modifier="specified"
+            )
             if not catalogue_category:
-                raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+                raise DatabaseIntegrityError(
+                    f"No catalogue category found with ID: {catalogue_category_id}",
+                    response_detail="Unable to create item",
+                )
         except InvalidObjectIdError as exc:
-            raise DatabaseIntegrityError(str(exc)) from exc
+            raise DatabaseIntegrityError(str(exc), response_detail="Unable to create item") from exc
 
         usage_status_id = item.usage_status_id
-        usage_status = self._usage_status_repository.get(usage_status_id)
-        if not usage_status:
-            raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+        usage_status = self._usage_status_repository.get(usage_status_id, entity_type_modifier="specified")
 
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
@@ -136,21 +137,15 @@ class ItemService:
         update_data = item.model_dump(exclude_unset=True)
 
         stored_item = self.get(item_id)
-        if not stored_item:
-            raise MissingRecordError(f"No item found with ID: {item_id}")
 
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
-            raise InvalidActionError("Cannot change the catalogue item the item belongs to")
+            raise InvalidActionError("Cannot change the catalogue item of an item")
 
         if "system_id" in update_data and item.system_id != stored_item.system_id:
-            system = self._system_repository.get(item.system_id)
-            if not system:
-                raise MissingRecordError(f"No system found with ID: {item.system_id}")
+            self._system_repository.get(item.system_id, entity_type_modifier="specified")
         if "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id:
             usage_status_id = item.usage_status_id
-            usage_status = self._usage_status_repository.get(usage_status_id)
-            if not usage_status:
-                raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+            usage_status = self._usage_status_repository.get(usage_status_id, entity_type_modifier="specified")
             update_data["usage_status"] = usage_status.value
 
         # If catalogue item ID not supplied then it will be fetched, and its parent catalogue category.
@@ -164,9 +159,12 @@ class ItemService:
                 catalogue_category_id = catalogue_item.catalogue_category_id
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
                 if not catalogue_category:
-                    raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+                    raise DatabaseIntegrityError(
+                        f"No catalogue category found with ID: {catalogue_category_id}",
+                        response_detail="Unable to update item",
+                    )
             except InvalidObjectIdError as exc:
-                raise DatabaseIntegrityError(str(exc)) from exc
+                raise DatabaseIntegrityError(str(exc), response_detail="Unable to update item") from exc
 
             defined_properties = catalogue_category.properties
 

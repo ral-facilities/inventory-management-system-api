@@ -186,9 +186,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())}
         )
-        self.check_post_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_post_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_create_with_invalid_parent_id(self):
         """Test creating a catalogue category with an invalid parent ID."""
@@ -196,9 +194,7 @@ class TestCreate(CreateDSL):
         self.post_catalogue_category(
             {**CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"}
         )
-        self.check_post_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_post_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a catalogue category with the same name as another within the parent catalogue category."""
@@ -233,14 +229,14 @@ class TestCreate(CreateDSL):
 
         self.set_unit_value_and_id("mm", str(ObjectId()))
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
-        self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_post_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_create_leaf_with_properties_with_invalid_unit_id(self):
         """Test creating a leaf catalogue category with a property with an invalid unit ID."""
 
         self.set_unit_value_and_id("mm", "invalid-id")
         self.post_catalogue_category(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM)
-        self.check_post_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_post_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_create_leaf_with_duplicate_properties(self):
         """Test creating a leaf catalogue category with duplicate properties provided."""
@@ -860,18 +856,14 @@ class TestUpdate(UpdateDSL):
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": str(ObjectId())})
-        self.check_patch_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_patch_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_partial_update_parent_id_to_invalid_id(self):
         """Test updating the `parent_id` of a catalogue category to an invalid ID."""
 
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"parent_id": "invalid-id"})
-        self.check_patch_catalogue_category_failed_with_detail(
-            422, "The specified parent catalogue category does not exist"
-        )
+        self.check_patch_catalogue_category_failed_with_detail(422, "Parent catalogue category not found")
 
     def test_partial_update_name_to_duplicate(self):
         """Test updating the name of a catalogue category to conflict with a pre-existing one."""
@@ -1093,7 +1085,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(
             catalogue_category_id, {"properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]}
         )
-        self.check_patch_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_patch_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_partial_update_leaf_with_properties_with_invalid_unit_id(self):
         """Test updating a leaf catalogue category's properties to have a property with an invalid unit ID."""
@@ -1103,7 +1095,7 @@ class TestUpdate(UpdateDSL):
         self.patch_catalogue_category(
             catalogue_category_id, {"properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]}
         )
-        self.check_patch_catalogue_category_failed_with_detail(422, "The specified unit does not exist")
+        self.check_patch_catalogue_category_failed_with_detail(422, "Specified unit not found")
 
     def test_partial_update_leaf_with_duplicate_properties(self):
         """Test updating a leaf catalogue category with duplicate properties provided."""
