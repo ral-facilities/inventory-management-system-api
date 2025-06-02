@@ -91,9 +91,6 @@ def create_catalogue_category(
     return CatalogueCategorySchema(**catalogue_category.model_dump())
 
 
-PathIDString = Annotated[str, Path(description="The ID of the catalogue category to update")]
-
-
 @router.patch(
     path="/{catalogue_category_id}",
     summary="Update a catalogue category partially by ID",
