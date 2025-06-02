@@ -2,7 +2,6 @@
 Module for the overall configuration for the application.
 """
 
-from pathlib import Path
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
@@ -106,7 +105,7 @@ class Config(BaseSettings):
     object_storage: ObjectStorageConfig
 
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).parent.parent / ".env",
+        env_file=".env",
         env_file_encoding="utf-8",
         env_nested_delimiter="__",
         hide_input_in_errors=True,
