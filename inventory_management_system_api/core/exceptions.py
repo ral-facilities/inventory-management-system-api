@@ -13,9 +13,10 @@ class BaseAPIException(Exception):
     # Status code to return if this exception is raised
     status_code: int
 
-    # Generic detail of the exception (That may be returned in a response)
+    # Generic detail of the exception (That will be returned in a response if left uncaught)
     response_detail: str
 
+    # Specific detail of the exception (That will be logged if left uncaught)
     detail: str
 
     def __init__(self, detail: str, response_detail: Optional[str] = None, status_code: Optional[int] = None):
@@ -24,7 +25,7 @@ class BaseAPIException(Exception):
 
         :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
                        and not returned in a response).
-        :param response_detail: Generic detail of the exception that will be returned in a response.
+        :param response_detail: Generic detail of the exception that will be returned in a response if left uncaught.
         :param status_code: Status code that will be returned in a response.
         """
         super().__init__(detail)

@@ -22,6 +22,8 @@ class CustomObjectId(ObjectId):
 
         :param value: The string value to be validated, representing the `ObjectId`.
         :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
+        :param not_found_if_invalid: Whether an error due to an invalid ID should be raised as a not found error
+                                     or not. Unprocessable entity is used if left as the default  value False.
         :raises InvalidObjectIdError: If the string value is an invalid `ObjectId`.
         """
         response_detail = None if entity_type is None else f"{entity_type.capitalize()} not found"
