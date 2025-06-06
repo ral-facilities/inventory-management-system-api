@@ -201,7 +201,7 @@ def delete_catalogue_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except IsAReplacementForError as exc:
-        message = "Catalogue item is the replacement catalogue item for another catalogue item and cannot be deleted"
+        message = "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     # pylint: disable=duplicate-code

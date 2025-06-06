@@ -1611,7 +1611,7 @@ class TestDelete(DeleteDSL):
 
         self.delete_catalogue_item(catalogue_item_id)
         self.check_delete_catalogue_item_failed_with_detail(
-            422, "Catalogue item is the replacement catalogue item for another catalogue item and cannot be deleted"
+            422, "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
         )
 
     def test_delete_with_non_existent_id(self):
