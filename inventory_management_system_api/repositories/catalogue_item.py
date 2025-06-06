@@ -127,13 +127,30 @@ class CatalogueItemRepo:
 
         Child elements in this case means whether a catalogue item has child items
 
-        :param catalogue_item_id: The ID of the catalogue item to check
-        :param session: PyMongo ClientSession to use for database operations
+        :param catalogue_item_id: The ID of the catalogue item to check.
+        :param session: PyMongo ClientSession to use for database operations.
         :return: True if the catalogue item has child elements, False otherwise.
         """
         logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
         item = self._items_collection.find_one(
             {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
+        )
+        return item is not None
+
+    def is_a_replacement_for(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
+        """
+        Check if a catalogue item is an obsolete replacement catalogue item for at least one catalogue item.
+
+        :param catalogue_item_id: The ID of the catalogue item to check.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: True if the catalogue item is a replacement for another catalogue item, False otherwise.
+        """
+        logger.info(
+            "Checking if catalogue item with ID '%s' is a replacement for any obsolete catalogue item",
+            catalogue_item_id,
+        )
+        item = self._catalogue_items_collection.find_one(
+            {"obsolete_replacement_catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
         )
         return item is not None
 

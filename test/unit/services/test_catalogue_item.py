@@ -30,6 +30,7 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
+    IsAReplacementForError,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
 )
@@ -1138,14 +1139,19 @@ class DeleteDSL(CatalogueItemServiceDSL):
     _delete_catalogue_item_id: str
     _delete_exception: pytest.ExceptionInfo
 
-    def mock_delete(self, has_child_elements: Optional[bool] = False) -> None:
+    def mock_delete(
+        self, has_child_elements: Optional[bool] = False, is_a_replacement_for: Optional[bool] = False
+    ) -> None:
         """
         Mocks repo methods appropriately to test the `delete` service method.
 
         :param has_child_elements: Whether the catalogue item being deleted has child elements or not.
+        :param is_a_replacement_for: Whether the catalogue item being deleted is a replacement for another catalogue
+                                     item or not.
         """
 
         self.mock_catalogue_item_repository.has_child_elements.return_value = has_child_elements
+        self.mock_catalogue_item_repository.is_a_replacement_for.return_value = is_a_replacement_for
 
     def call_delete(self, catalogue_item_id: str) -> None:
         """
@@ -1205,4 +1211,16 @@ class TestDelete(DeleteDSL):
         self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
             f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+        )
+
+    def test_delete_when_is_a_replacement_for(self):
+        """Test deleting a catalogue item when it is the replacement for another catalogue item."""
+
+        catalogue_item_id = str(ObjectId())
+
+        self.mock_delete(is_a_replacement_for=True)
+        self.call_delete_expecting_error(catalogue_item_id, IsAReplacementForError)
+        self.check_delete_failed_with_exception(
+            f"Catalogue item with ID {catalogue_item_id} is the replacement catalogue item for at least one catalogue "
+            "item and cannot be deleted"
         )
