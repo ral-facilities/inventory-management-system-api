@@ -70,6 +70,12 @@ class ChildElementsExistError(DatabaseError):
     """
 
 
+class IsAReplacementForError(DatabaseError):
+    """
+    Exception raised when attempting to delete a catalogue item that is a replacement for another catalogue item.
+    """
+
+
 class PartOfCatalogueItemError(DatabaseError):
     """
     Exception raised when attempting to delete a manufacturer that is a part of a catalogue item
