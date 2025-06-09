@@ -14,12 +14,12 @@ from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     InvalidObjectIdError,
     InvalidPropertyTypeError,
-    IsAReplacementForError,
     MissingMandatoryProperty,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
     ObjectStorageAPIAuthError,
     ObjectStorageAPIServerError,
+    ReplacementForObsoleteCatalogueItemError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
@@ -200,7 +200,7 @@ def delete_catalogue_item(
         message = "Catalogue item has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except IsAReplacementForError as exc:
+    except ReplacementForObsoleteCatalogueItemError as exc:
         message = "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc

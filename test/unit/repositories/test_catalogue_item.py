@@ -613,17 +613,17 @@ class TestHasChildElements(HasChildElementsDSL):
         self.check_has_child_elements_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-class IsAReplacementForDSL(CatalogueItemRepoDSL):
-    """Base class for `is_a_replacement_for` tests"""
+class IsReplacementForDSL(CatalogueItemRepoDSL):
+    """Base class for `is_replacement_for` tests"""
 
     _mock_replacement_item_data: Optional[dict]
-    _is_a_replacement_for_catalogue_item_id: str
-    _is_a_replacement_for_result: bool
-    _is_a_replacement_for_exception: pytest.ExceptionInfo
+    _is_replacement_for_catalogue_item_id: str
+    _is_replacement_for_result: bool
+    _is_replacement_for_exception: pytest.ExceptionInfo
 
-    def mock_is_a_replacement_for(self, replacement_item_data: Optional[dict] = None) -> None:
+    def mock_is_replacement_for(self, replacement_item_data: Optional[dict] = None) -> None:
         """
-        Mocks database methods appropriately for when the `is_a_replacement_for` repo method will be called.
+        Mocks database methods appropriately for when the `is_replacement_for` repo method will be called.
 
         :param replacement_item_data: Dictionary containing a replacement item's data (or `None`).
         """
@@ -632,47 +632,47 @@ class IsAReplacementForDSL(CatalogueItemRepoDSL):
 
         RepositoryTestHelpers.mock_find_one(self.catalogue_items_collection, replacement_item_data)
 
-    def call_is_a_replacement_for(self, catalogue_item_id: str) -> None:
-        """Calls the `CatalogueItemRepo` `is_a_replacement_for` method.
+    def call_is_replacement_for(self, catalogue_item_id: str) -> None:
+        """Calls the `CatalogueItemRepo` `is_replacement_for` method.
 
         :param catalogue_item_id: ID of the catalogue item to check.
         """
 
-        self._is_a_replacement_for_catalogue_item_id = catalogue_item_id
-        self._is_a_replacement_for_result = self.catalogue_item_repository.is_a_replacement_for(
+        self._is_replacement_for_catalogue_item_id = catalogue_item_id
+        self._is_replacement_for_result = self.catalogue_item_repository.is_replacement_for(
             catalogue_item_id, session=self.mock_session
         )
 
-    def call_is_a_replacement_for_expecting_error(
+    def call_is_replacement_for_expecting_error(
         self, catalogue_category_id: str, error_type: type[BaseException]
     ) -> None:
         """
-        Calls the `CatalogueItemRepo` `is_a_replacement_for` method while expecting an error to be raised.
+        Calls the `CatalogueItemRepo` `is_replacement_for` method while expecting an error to be raised.
 
         :param catalogue_category_id: ID of the catalogue item to check.
         :param error_type: Expected exception to be raised.
         """
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_item_repository.is_a_replacement_for(catalogue_category_id)
-        self._is_a_replacement_for_exception = exc
+            self.catalogue_item_repository.is_replacement_for(catalogue_category_id)
+        self._is_replacement_for_exception = exc
 
-    def check_is_a_replacement_for_success(self, expected_result: bool) -> None:
-        """Checks that a prior call to `call_is_a_replacement_for` worked as expected.
+    def check_is_replacement_for_success(self, expected_result: bool) -> None:
+        """Checks that a prior call to `call_is_replacement_for` worked as expected.
 
-        :param expected_result: The expected result returned by `is_a_replacement_for`.
+        :param expected_result: The expected result returned by `is_replacement_for`.
         """
 
         self.catalogue_items_collection.find_one.assert_called_once_with(
-            {"obsolete_replacement_catalogue_item_id": CustomObjectId(self._is_a_replacement_for_catalogue_item_id)},
+            {"obsolete_replacement_catalogue_item_id": CustomObjectId(self._is_replacement_for_catalogue_item_id)},
             session=self.mock_session,
         )
 
-        assert self._is_a_replacement_for_result == expected_result
+        assert self._is_replacement_for_result == expected_result
 
-    def check_is_a_replacement_for_failed_with_exception(self, message: str) -> None:
+    def check_is_replacement_for_failed_with_exception(self, message: str) -> None:
         """
-        Checks that a prior call to `call_is_a_replacement_for` worked as expected, raising an exception with the
+        Checks that a prior call to `call_is_replacement_for` worked as expected, raising an exception with the
         correct message.
 
         :param message: Expected message of the raised exception.
@@ -680,33 +680,33 @@ class IsAReplacementForDSL(CatalogueItemRepoDSL):
 
         self.catalogue_items_collection.find_one.assert_not_called()
 
-        assert str(self._is_a_replacement_for_exception.value) == message
+        assert str(self._is_replacement_for_exception.value) == message
 
 
-class TestIsAReplacementFor(IsAReplacementForDSL):
-    """Tests for `is_a_replacement_for`."""
+class TestIsAReplacementFor(IsReplacementForDSL):
+    """Tests for `is_replacement_for`."""
 
-    def test_is_a_replacement_for_when_not_a_replacement_for(self):
-        """Test `is_a_replacement_for` when the item is not a replacement for another catalogue item."""
+    def test_is_replacement_for_when_not_a_replacement_for(self):
+        """Test `is_replacement_for` when the item is not a replacement for another catalogue item."""
 
-        self.mock_is_a_replacement_for(replacement_item_data=None)
-        self.call_is_a_replacement_for(str(ObjectId()))
-        self.check_is_a_replacement_for_success(expected_result=False)
+        self.mock_is_replacement_for(replacement_item_data=None)
+        self.call_is_replacement_for(str(ObjectId()))
+        self.check_is_replacement_for_success(expected_result=False)
 
-    def test_is_a_replacement_for_with_child_item(self):
-        """Test `is_a_replacement_for` when the item is a replacement for another catalogue item."""
+    def test_is_replacement_for_with_child_item(self):
+        """Test `is_replacement_for` when the item is a replacement for another catalogue item."""
 
-        self.mock_is_a_replacement_for(replacement_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
-        self.call_is_a_replacement_for(str(ObjectId()))
-        self.check_is_a_replacement_for_success(expected_result=True)
+        self.mock_is_replacement_for(replacement_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.call_is_replacement_for(str(ObjectId()))
+        self.check_is_replacement_for_success(expected_result=True)
 
-    def test_is_a_replacement_for_with_invalid_id(self):
-        """Test `is_a_replacement_for` with an invalid ID."""
+    def test_is_replacement_for_with_invalid_id(self):
+        """Test `is_replacement_for` with an invalid ID."""
 
         catalogue_item_id = "invalid-id"
 
-        self.call_is_a_replacement_for_expecting_error(catalogue_item_id, InvalidObjectIdError)
-        self.check_is_a_replacement_for_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+        self.call_is_replacement_for_expecting_error(catalogue_item_id, InvalidObjectIdError)
+        self.check_is_replacement_for_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
 class ListIDsDSL(CatalogueItemRepoDSL):

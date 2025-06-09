@@ -137,16 +137,17 @@ class CatalogueItemRepo:
         )
         return item is not None
 
-    def is_a_replacement_for(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
+    def is_replacement_for(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """
-        Check if a catalogue item is an obsolete replacement catalogue item for at least one catalogue item.
+        Check if a catalogue item is the replacement for at least one obsolete catalogue item.
 
         :param catalogue_item_id: The ID of the catalogue item to check.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: True if the catalogue item is a replacement for another catalogue item, False otherwise.
+        :return: True if the catalogue item is the replacement for at least one obsolete catalogue item, False
+                 otherwise.
         """
         logger.info(
-            "Checking if catalogue item with ID '%s' is a replacement for any obsolete catalogue item",
+            "Checking if catalogue item with ID '%s' is the replacement for an obsolete catalogue item",
             catalogue_item_id,
         )
         item = self._catalogue_items_collection.find_one(

@@ -70,9 +70,9 @@ class ChildElementsExistError(DatabaseError):
     """
 
 
-class IsAReplacementForError(DatabaseError):
+class ReplacementForObsoleteCatalogueItemError(DatabaseError):
     """
-    Exception raised when attempting to delete a catalogue item that is a replacement for another catalogue item.
+    Exception raised when attempting to delete a catalogue item that is the replacement for an obsolete catalogue item.
     """
 
 
