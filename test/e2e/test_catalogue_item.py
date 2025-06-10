@@ -1530,6 +1530,20 @@ class DeleteDSL(UpdateDSL):
 
     _delete_response_catalogue_item: Response
 
+    def post_obsolete_catalogue_item(self) -> Optional[str]:
+        """Utility method that posts a obsolete catalogue item with an replacement of last catalogue item posted.
+
+        :return: ID of the created catalogue item (or `None` if not successful).
+        """
+
+        return self.post_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "is_obsolete": True,
+                "obsolete_replacement_catalogue_item_id": self._post_response_catalogue_item.json()["id"],
+            }
+        )
+
     def delete_catalogue_item(self, catalogue_item_id: str) -> None:
         """
         Deletes a catalogue item with the given ID.
@@ -1585,6 +1599,19 @@ class TestDelete(DeleteDSL):
         self.delete_catalogue_item(catalogue_item_id)
         self.check_delete_catalogue_item_failed_with_detail(
             409, "Catalogue item has child elements and cannot be deleted"
+        )
+
+    def test_delete_when_is_a_replacement_for(self):
+        """Test deleting a catalogue item when it is the replacement for another catalogue item."""
+
+        catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_obsolete_catalogue_item()
+
+        self.delete_catalogue_item(catalogue_item_id)
+        self.check_delete_catalogue_item_failed_with_detail(
+            422, "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
         )
 
     def test_delete_with_non_existent_id(self):

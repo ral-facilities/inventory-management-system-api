@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -19,12 +19,13 @@ from inventory_management_system_api.core.exceptions import (
     NonLeafCatalogueCategoryError,
     ObjectStorageAPIAuthError,
     ObjectStorageAPIServerError,
+    ReplacementForObsoleteCatalogueItemError,
 )
 from inventory_management_system_api.schemas.catalogue_item import (
+    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
     CatalogueItemSchema,
-    CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
 )
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
@@ -199,6 +200,10 @@ def delete_catalogue_item(
         message = "Catalogue item has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except ReplacementForObsoleteCatalogueItemError as exc:
+        message = "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     # pylint: disable=duplicate-code
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
         message = "Unable to delete attachments and/or images"

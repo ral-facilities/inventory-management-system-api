@@ -14,6 +14,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
+    ReplacementForObsoleteCatalogueItemError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
@@ -220,10 +221,19 @@ class CatalogueItemService:
 
         :param catalogue_item_id: The ID of the catalogue item to delete.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
+        :raises ChildElementsExistError: If the catalogue item has child elements.
+        :raises ReplacementForObsoleteCatalogueItemError: If the catalogue item is the replacement for at least one
+                                                          obsolete catalogue item.
         """
         if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
             raise ChildElementsExistError(
                 f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+            )
+
+        if self._catalogue_item_repository.is_replacement_for(catalogue_item_id):
+            raise ReplacementForObsoleteCatalogueItemError(
+                f"Catalogue item with ID {catalogue_item_id} is the replacement for at least one obsolete catalogue "
+                "item and cannot be deleted"
             )
 
         # First, attempt to delete any attachments and/or images that might be associated with this catalogue item.
