@@ -121,6 +121,15 @@ class ChildElementsExistError(DatabaseError):
     status_code = status.HTTP_409_CONFLICT
 
 
+class ReplacementForObsoleteCatalogueItemError(DatabaseError):
+    """
+    Exception raised when attempting to delete a catalogue item that is the replacement for an obsolete catalogue item.
+    """
+
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    response_detail = "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
+
+
 class PartOfCatalogueItemError(DatabaseError):
     """Exception raised when attempting to delete a manufacturer that is a part of a catalogue item"""
 
