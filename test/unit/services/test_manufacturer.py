@@ -5,17 +5,15 @@ Unit tests for the `ManufacturerService` service.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from typing import Optional
-from unittest.mock import MagicMock, Mock, patch
-
 from test.mock_data import MANUFACTURER_POST_DATA_A, MANUFACTURER_POST_DATA_B
 from test.unit.services.conftest import ServiceTestHelpers
+from typing import Optional
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.schemas.manufacturer import ManufacturerPatchSchema, ManufacturerPostSchema
 from inventory_management_system_api.services import utils
@@ -291,16 +289,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(manufacturer_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_id(self):
-        """Test updating a manufacturer with a non-existent ID."""
-        manufacturer_id = str(ObjectId())
-
-        self.mock_update(
-            manufacturer_id, manufacturer_patch_data=MANUFACTURER_POST_DATA_A, stored_manufacturer_post_data=None
-        )
-        self.call_update_expecting_error(manufacturer_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No manufacturer found with ID: {manufacturer_id}")
 
 
 class DeleteDSL(ManufacturerServiceDSL):

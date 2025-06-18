@@ -200,6 +200,7 @@ class GetDSL(UnitRepoDSL):
         :param unit_id: ID of the unit to be obtained.
         :param error_type: Expected exception to be raised.
         """
+        self._obtained_unit_id = unit_id
         with pytest.raises(error_type) as exc:
             self.unit_repository.get(unit_id, session=self.mock_session)
         self._get_exception = exc
@@ -211,14 +212,22 @@ class GetDSL(UnitRepoDSL):
         )
         assert self._obtained_unit_out == self._expected_unit_out
 
-    def check_get_failed_with_exception(self, message: str) -> None:
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception with the correct
         message.
 
         :param message: Expected message of the raised exception.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
         """
-        self.units_collection.find_one.assert_not_called()
+
+        if assert_find:
+            self.units_collection.find_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._obtained_unit_id)}, session=self.mock_session
+            )
+        else:
+            self.units_collection.find_one.assert_not_called()
         assert str(self._get_exception.value) == message
 
 
@@ -238,8 +247,8 @@ class TestGet(GetDSL):
         unit_id = str(ObjectId())
 
         self.mock_get(unit_id, None)
-        self.call_get(unit_id)
-        self.check_get_success()
+        self.call_get_expecting_error(unit_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No unit found with ID: {unit_id}", assert_find=True)
 
     def test_get_with_invalid_id(self):
         """Test getting a unit with an invalid ID."""
