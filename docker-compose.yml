@@ -1,26 +1,29 @@
-version: "3.9"
-
 services:
   inventory-management-system-api:
-    container_name: inventory_management_system_api_container
-    build: .
+    container_name: inventory-management-system-api
+    build:
+      context: .
+      target: dev
     volumes:
-      - ./inventory_management_system_api:/inventory-management-system-api-run/inventory_management_system_api
-      - ./keys:/inventory-management-system-api-run/keys
+      - ./inventory_management_system_api:/app/inventory_management_system_api
+      - ./keys/jwt-key.pub:/app/keys/jwt-key.pub
+      - ./logging.ini:/app/logging.ini
     ports:
       - 8000:8000
     restart: on-failure
+    env_file:
+      - path: ./.env
     depends_on:
       - mongo-db
     network_mode: "host"
 
   mongo-db:
     image: mongo:7.0-jammy
-    container_name: mongodb_container
-    command: ["--replSet", "rs0", "--keyFile", "/etc/mongodb/keys/rs_keyfile"]
+    container_name: ims-api-mongodb
+    entrypoint: mongodb_entrypoint.sh
     volumes:
       - ./mongodb/data:/data/db
-      - ./mongodb/keys:/etc/mongodb/keys
+      - ./scripts/mongodb_entrypoint.sh:/usr/local/bin/mongodb_entrypoint.sh:ro
     restart: always
     ports:
       - 27017:27017

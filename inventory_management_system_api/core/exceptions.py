@@ -9,6 +9,12 @@ class DatabaseError(Exception):
     """
 
 
+class ObjectStorageAPIError(Exception):
+    """
+    Object Storage API related error.
+    """
+
+
 class LeafCatalogueCategoryError(Exception):
     """
     Catalogue category is attempted to be added to a leaf parent catalogue category.
@@ -64,6 +70,12 @@ class ChildElementsExistError(DatabaseError):
     """
 
 
+class ReplacementForObsoleteCatalogueItemError(DatabaseError):
+    """
+    Exception raised when attempting to delete a catalogue item that is the replacement for an obsolete catalogue item.
+    """
+
+
 class PartOfCatalogueItemError(DatabaseError):
     """
     Exception raised when attempting to delete a manufacturer that is a part of a catalogue item
@@ -91,4 +103,22 @@ class DatabaseIntegrityError(DatabaseError):
 class InvalidActionError(DatabaseError):
     """
     Exception raised when trying to update an item's catalogue item ID
+    """
+
+
+class WriteConflictError(DatabaseError):
+    """
+    Exception raised when a transaction has a write conflict.
+    """
+
+
+class ObjectStorageAPIAuthError(ObjectStorageAPIError):
+    """
+    Exception raised for auth failures or expired tokens while communicating with the Object Storage API.
+    """
+
+
+class ObjectStorageAPIServerError(ObjectStorageAPIError):
+    """
+    Exception raised when server errors occur while communicating with the Object Storage API.
     """

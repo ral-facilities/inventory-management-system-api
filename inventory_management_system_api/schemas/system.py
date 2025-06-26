@@ -1,5 +1,5 @@
 """
-Module for defining the API schema models for representing Systems
+Module for defining the API schema models for representing systems.
 """
 
 from enum import Enum
@@ -12,7 +12,7 @@ from inventory_management_system_api.schemas.mixins import CreatedModifiedSchema
 
 class SystemImportanceType(str, Enum):
     """
-    Enumeration for System importance types
+    Enumeration for system importance types
     """
 
     LOW = "low"
@@ -22,10 +22,10 @@ class SystemImportanceType(str, Enum):
 
 class SystemPostSchema(BaseModel):
     """
-    Schema model for a System creation request
+    Schema model for a system creation request
     """
 
-    parent_id: Optional[str] = Field(default=None, description="ID of the parent System (if applicable)")
+    parent_id: Optional[str] = Field(default=None, description="ID of the parent system (if applicable)")
     name: str = Field(description="Name of the system")
     description: Optional[str] = Field(default=None, description="Description of the system")
     location: Optional[str] = Field(default=None, description="Location of the system")
@@ -35,7 +35,7 @@ class SystemPostSchema(BaseModel):
 
 class SystemPatchSchema(SystemPostSchema):
     """
-    Schema model for a System update request
+    Schema model for a system update request
     """
 
     name: Optional[str] = Field(default=None, description="Name of the system")
@@ -44,8 +44,8 @@ class SystemPatchSchema(SystemPostSchema):
 
 class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
     """
-    Schema model for System get request response
+    Schema model for system get request response
     """
 
-    id: str = Field(description="ID of the System")
-    code: str = Field(description="Code of the System")
+    id: str = Field(description="ID of the system")
+    code: str = Field(description="Code of the system")

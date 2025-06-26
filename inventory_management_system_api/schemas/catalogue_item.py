@@ -43,6 +43,9 @@ class CatalogueItemPostSchema(BaseModel):
     cost_to_rework_gbp: Optional[float] = Field(default=None, description="The cost to rework the catalogue item")
     days_to_replace: float = Field(description="The number of days to replace the catalogue item")
     days_to_rework: Optional[float] = Field(default=None, description="The number of days to rework the catalogue item")
+    expected_lifetime_days: Optional[float] = Field(
+        default=None, description="The expected lifetime of the catalogue item in days"
+    )
     drawing_number: Optional[str] = Field(default=None, description="The drawing number of the catalogue item")
     drawing_link: Optional[HttpUrl] = Field(default=None, description="The link to the drawing of the catalogue item")
     item_model_number: Optional[str] = Field(default=None, description="The model number of the catalogue item")
@@ -91,4 +94,9 @@ class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostSchema):
     properties: List[PropertySchema] = Field(
         description="The properties specific to this catalogue item as defined "
         "in the corresponding catalogue category"
+    )
+
+    # Computed
+    number_of_spares: Optional[int] = Field(
+        default=None, description="The number of spares currently available within this catalogue item if known"
     )

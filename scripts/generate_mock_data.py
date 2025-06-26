@@ -1,3 +1,5 @@
+"""Module defining a script for populating the database with randomised data."""
+
 import logging
 from datetime import timezone
 from enum import StrEnum
@@ -10,9 +12,9 @@ fake = Faker("en_GB")
 
 API_URL = "http://localhost:8000"
 
-MAX_LEVELS_DEEP = 3
-MAX_NUMBER_PER_PARENT = 10
-PROBABILITY_CATEGORY_IS_LEAF = 0.3  # All MAX_LEVEL_DEEP categories are populated, this just allows them to end earlier
+MAX_LEVELS_DEEP = 2
+MAX_NUMBER_PER_PARENT = 8
+PROBABILITY_CATEGORY_IS_LEAF = 0.4  # All MAX_LEVEL_DEEP categories are populated, this just allows them to end earlier
 PROBABILITY_CATALOGUE_CATEGORY_HAS_EXTRA_FIELDS = 0.5
 MAX_EXTRA_CATALOGUE_CATEGORY_FIELDS = 2
 PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD = 0.5
@@ -24,6 +26,7 @@ MAX_NUMBER_OF_ITEMS_PER_CATALOGUE_ITEM = 5
 SEED = 0
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
 
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
@@ -78,6 +81,10 @@ catalogue_category_names = [
 
 
 class PropertyType(StrEnum):
+    """
+    Enumeration for catalogue category property types
+    """
+
     STRING = "string"
     NUMBER = "number"
     BOOLEAN = "boolean"
@@ -241,18 +248,29 @@ generated_usage_statuses: dict[str, list[dict]] = {}
 
 
 def optional_address_field(function):
+    """Either returns the result of executing the given function, or None while taking into account the fields
+    probability to be populated."""
+
     return function() if fake.random.random() < PROBABILITY_ADDRESS_HAS_OPTIONAL_FIELD else None
 
 
 def optional_catalogue_item_field(function):
+    """Either returns the result of executing the given function, or None while taking into account the fields
+    probability to be populated."""
+
     return function() if fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD else None
 
 
 def optional_item_field(function):
+    """Either returns the result of executing the given function, or None while taking into account the fields
+    probability to be populated."""
+
     return function() if fake.random.random() < PROBABILITY_ITEM_HAS_OPTIONAL_FIELD else None
 
 
 def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
+    """Generates randomised data for a catalogue category with a parent ID and whether it is a leaf category or not."""
+
     properties = (
         fake.random.sample(
             available_properties,
@@ -280,12 +298,20 @@ def generate_random_catalogue_category(parent_id: str, is_leaf: bool):
 
 
 def generate_unit(value: str):
-    return {
-        "value": value,
-    }
+    """Generates randomised data for a unit with a given value."""
+
+    return {"value": value}
+
+
+def generate_usage_status(value: str):
+    """Generates randomised data for a usage status with a given value."""
+
+    return {"value": value}
 
 
 def generate_random_manufacturer():
+    """Generates randomised data for a manufacturer."""
+
     return {
         "name": fake.random.choice(manufacturer_names),
         "url": fake.url(),
@@ -300,13 +326,10 @@ def generate_random_manufacturer():
     }
 
 
-def generate_usage_status(value: str):
-    return {
-        "value": value,
-    }
+def generate_random_property(catalogue_category_property: dict) -> dict:
+    """Generates randomised data for a catalogue item or item property given the generated data for the catalogue
+    category property it should fit into."""
 
-
-def generate_random_property(catalogue_category_property: dict):
     prop = {"id": catalogue_category_property["id"]}
 
     allowed_values = catalogue_category_property["allowed_values"]
@@ -315,17 +338,22 @@ def generate_random_property(catalogue_category_property: dict):
             return {**prop, "value": fake.random.choice(allowed_values["values"])}
     if catalogue_category_property["type"] == PropertyType.STRING:
         return {**prop, "value": fake.sentence()}
-    elif catalogue_category_property["type"] == PropertyType.NUMBER:
+    if catalogue_category_property["type"] == PropertyType.NUMBER:
         return {**prop, "value": fake.random.random() * 10}
-    elif catalogue_category_property["type"] == PropertyType.BOOLEAN:
+    if catalogue_category_property["type"] == PropertyType.BOOLEAN:
         return {**prop, "value": fake.random.random() < 0.5}
+
+    raise RuntimeError("Something went wrong while generating data")
 
 
 def generate_random_catalogue_item(
     catalogue_category_id: str,
     manufacturer_id: str,
-    properties: Optional[list[dict]],
+    catalogue_category_properties: Optional[list[dict]],
 ):
+    """Generates randomised data for a catalogue item given the catalogue category ID, manufacturer ID and the generated
+    catalogue category properties."""
+
     obsolete_replacement_catalogue_item_id = optional_catalogue_item_field(
         lambda: (
             fake.random.choice(list(generated_catalogue_items.keys())) if len(generated_catalogue_items) > 0 else None
@@ -333,11 +361,11 @@ def generate_random_catalogue_item(
     )
 
     generated_properties = None
-    if properties is not None:
+    if catalogue_category_properties is not None:
         generated_properties = []
-        for prop in properties:
-            if prop["mandatory"] or fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD:
-                generated_properties.append(generate_random_property(catalogue_category_property=prop))
+        for cc_prop in catalogue_category_properties:
+            if cc_prop["mandatory"] or fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_OPTIONAL_FIELD:
+                generated_properties.append(generate_random_property(catalogue_category_property=cc_prop))
 
     return {
         "catalogue_category_id": catalogue_category_id,
@@ -348,6 +376,7 @@ def generate_random_catalogue_item(
         "cost_to_rework_gbp": optional_catalogue_item_field(lambda: fake.random.randint(0, 1000)),
         "days_to_replace": fake.random.randint(0, 100),
         "days_to_rework": optional_catalogue_item_field(lambda: fake.random.randint(0, 100)),
+        "expected_lifetime_days": optional_catalogue_item_field(lambda: fake.random.randint(200, 3650)),
         "drawing_number": optional_catalogue_item_field(lambda: str(fake.random.randint(1000, 10000))),
         "drawing_link": optional_catalogue_item_field(fake.image_url),
         "item_model_number": optional_catalogue_item_field(fake.isbn13),
@@ -365,6 +394,8 @@ def generate_random_catalogue_item(
 
 
 def generate_random_item(catalogue_item_id: str):
+    """Generates randomised data for an item given the catalogue item ID."""
+
     properties = None
     category_properties = generated_catalogue_categories[generated_catalogue_items[catalogue_item_id]]["properties"]
     if category_properties is not None:
@@ -387,7 +418,9 @@ def generate_random_item(catalogue_item_id: str):
     }
 
 
-def generate_random_system(parent_id):
+def generate_random_system(parent_id: str):
+    """Generates randomised data for a system given the parent ID."""
+
     return {
         "name": fake.random.choice(system_names),
         "location": fake.address(),
@@ -400,10 +433,9 @@ def generate_random_system(parent_id):
 
 def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> dict[str, Any]:
     """Posts an entity's data to the given endpoint, but adds - n to the end to avoid
-    duplicates when a 409 is returned
+    duplicates when a 409 is returned.
 
-    Returns:
-        str - The ID of the entity created
+    :return: JSON data from the response.
     """
     index = 0
     status_code = 409
@@ -419,34 +451,50 @@ def post_avoiding_duplicates(endpoint: str, field: str, json: dict) -> dict[str,
 
 
 def create_manufacturer(manufacturer_data: dict) -> dict[str, Any]:
+    """Creates a manufacturer given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/manufacturers", field="name", json=manufacturer_data)
 
 
 def create_unit(unit_data: dict) -> dict[str, Any]:
+    """Creates a unit given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/units", field="value", json=unit_data)
 
 
 def create_usage_status(usage_status_data: dict) -> dict[str, Any]:
+    """Creates a usage status given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/usage-statuses", field="value", json=usage_status_data)
 
 
 def create_catalogue_category(category_data: dict) -> dict[str, Any]:
+    """Creates a catalogue category given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/catalogue-categories", field="name", json=category_data)
 
 
 def create_catalogue_item(item_data: dict) -> dict[str, Any]:
+    """Creates a catalogue item given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/catalogue-items", field="name", json=item_data)
 
 
 def create_system(system_data: dict) -> dict[str, Any]:
+    """Creates a system given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/systems", field="name", json=system_data)
 
 
 def create_item(item_data: dict) -> dict[str, Any]:
+    """Creates an item given its data."""
+
     return post_avoiding_duplicates(endpoint="/v1/items", field="name", json=item_data)
 
 
 def populate_random_manufacturers() -> list[str]:
+    """Randomly populates manufacturers returning a list of their generated IDs."""
+
     # Usually faster than append
     manufacturer_ids = [None] * NUMBER_OF_MANUFACTURERS
     for i in range(0, NUMBER_OF_MANUFACTURERS):
@@ -455,14 +503,18 @@ def populate_random_manufacturers() -> list[str]:
 
 
 def populate_units():
-    for i, unit in enumerate(units):
+    """Randomly populates units."""
+
+    for _, unit in enumerate(units):
         unit = generate_unit(unit)
         unit = create_unit(unit)
         generated_units[unit["value"]] = unit
 
 
 def populate_usage_statuses():
-    for i, usage_status in enumerate(usage_statuses):
+    """Randomly populates usage statuses."""
+
+    for _, usage_status in enumerate(usage_statuses):
         usage_status = generate_usage_status(usage_status)
         usage_status = create_usage_status(usage_status)
         generated_usage_statuses[usage_status["id"]] = usage_status
@@ -475,73 +527,82 @@ def populate_random_catalogue_categories(
     is_leaf: bool = False,
     parent_catalogue_category: Optional[dict] = None,
 ):
+    """Recursive function that randomly populates catalogue categories."""
+
     if levels_deep > MAX_LEVELS_DEEP:
         return
-    else:
-        logging.debug("Populating category with depth %s and is_leaf %s", levels_deep, is_leaf)
-        num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
 
-        for i in range(0, num_to_generate):
-            if is_leaf:
-                item = generate_random_catalogue_item(
-                    catalogue_category_id=parent_id,
-                    manufacturer_id=fake.random.choice(available_manufacturers),
-                    properties=(parent_catalogue_category["properties"] if parent_catalogue_category else None),
-                )
-                item_id = create_catalogue_item(item)["id"]
-                generated_catalogue_items[item_id] = parent_id
+    logger.debug("Populating category with depth %s and is_leaf %s", levels_deep, is_leaf)
+    num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
+
+    for _ in range(0, num_to_generate):
+        if is_leaf:
+            item = generate_random_catalogue_item(
+                catalogue_category_id=parent_id,
+                manufacturer_id=fake.random.choice(available_manufacturers),
+                catalogue_category_properties=(
+                    parent_catalogue_category["properties"] if parent_catalogue_category else None
+                ),
+            )
+            item_id = create_catalogue_item(item)["id"]
+            generated_catalogue_items[item_id] = parent_id
+        else:
+            # Always make the last level a leaf
+            if levels_deep == MAX_LEVELS_DEEP - 1:
+                new_is_leaf = True
             else:
-                # Always make the last level a leaf
-                if levels_deep == MAX_LEVELS_DEEP - 1:
-                    new_is_leaf = True
-                else:
-                    new_is_leaf = fake.random.random() < PROBABILITY_CATEGORY_IS_LEAF
-                catalogue_category = generate_random_catalogue_category(parent_id, new_is_leaf)
-                catalogue_category = create_catalogue_category(catalogue_category)
-                generated_catalogue_categories[catalogue_category["id"]] = catalogue_category
-                populate_random_catalogue_categories(
-                    available_manufacturers=available_manufacturers,
-                    levels_deep=levels_deep + 1,
-                    parent_id=catalogue_category["id"],
-                    is_leaf=new_is_leaf,
-                    parent_catalogue_category=catalogue_category,
-                )
+                new_is_leaf = fake.random.random() < PROBABILITY_CATEGORY_IS_LEAF
+            catalogue_category = generate_random_catalogue_category(parent_id, new_is_leaf)
+            catalogue_category = create_catalogue_category(catalogue_category)
+            generated_catalogue_categories[catalogue_category["id"]] = catalogue_category
+            populate_random_catalogue_categories(
+                available_manufacturers=available_manufacturers,
+                levels_deep=levels_deep + 1,
+                parent_id=catalogue_category["id"],
+                is_leaf=new_is_leaf,
+                parent_catalogue_category=catalogue_category,
+            )
 
 
 def populate_random_items():
+    """Randomly populates items."""
     for catalogue_item_id in list(generated_catalogue_items.keys()):
         if fake.random.random() < PROBABILITY_CATALOGUE_ITEM_HAS_ITEMS:
             number_to_generate = fake.random.randint(1, MAX_NUMBER_OF_ITEMS_PER_CATALOGUE_ITEM)
-            for i in range(0, number_to_generate):
+            for _ in range(0, number_to_generate):
                 item = generate_random_item(catalogue_item_id=catalogue_item_id)
                 create_item(item)
 
 
 def populate_random_systems(levels_deep: int = 0, parent_id=None):
-    if levels_deep > MAX_LEVELS_DEEP:
+    """Recursive function that randomly populates systems."""
+
+    if levels_deep >= MAX_LEVELS_DEEP:
         return
-    else:
-        logging.debug("Populating system with depth %s", levels_deep)
-        num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
-        for i in range(0, num_to_generate):
-            system = generate_random_system(parent_id)
-            system_id = create_system(system)["id"]
-            populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
-            generated_system_ids.append(system_id)
+
+    logger.debug("Populating system with depth %s", levels_deep)
+    num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
+    for _ in range(0, num_to_generate):
+        system = generate_random_system(parent_id)
+        system_id = create_system(system)["id"]
+        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
+        generated_system_ids.append(system_id)
 
 
 def generate_mock_data():
-    logging.info("Populating units...")
+    """Generates mock data for all the entities"""
+
+    logger.info("Populating units...")
     populate_units()
-    logging.info("Populating usage statuses...")
+    logger.info("Populating usage statuses...")
     populate_usage_statuses()
-    logging.info("Populating manufacturers...")
+    logger.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
-    logging.info("Populating catalogue categories...")
+    logger.info("Populating catalogue categories...")
     populate_random_catalogue_categories(available_manufacturers=manufacturer_ids)
-    logging.info("Populating systems...")
+    logger.info("Populating systems...")
     populate_random_systems()
-    logging.info("Populating items...")
+    logger.info("Populating items...")
     populate_random_items()
 
 

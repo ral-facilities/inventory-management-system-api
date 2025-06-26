@@ -2,7 +2,7 @@
 Module for providing common test configuration, test fixtures, and helper functions.
 """
 
-from typing import List, Type
+from typing import List
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -11,13 +11,6 @@ from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.database import Database
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
-
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
-from inventory_management_system_api.repositories.item import ItemRepo
-from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
-from inventory_management_system_api.repositories.unit import UnitRepo
-from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 
 
 @pytest.fixture(name="database_mock")
@@ -35,70 +28,8 @@ def fixture_database_mock() -> Mock:
     database_mock.systems = Mock(Collection)
     database_mock.units = Mock(Collection)
     database_mock.usage_statuses = Mock(Collection)
+    database_mock.settings = Mock(Collection)
     return database_mock
-
-
-@pytest.fixture(name="catalogue_category_repository")
-def fixture_catalogue_category_repository(database_mock: Mock) -> CatalogueCategoryRepo:
-    """
-    Fixture to create a `CatalogueCategoryRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `CatalogueCategoryRepo` instance with the mocked dependency.
-    """
-    return CatalogueCategoryRepo(database_mock)
-
-
-@pytest.fixture(name="catalogue_item_repository")
-def fixture_catalogue_item_repository(database_mock: Mock) -> CatalogueItemRepo:
-    """
-    Fixture to create a `CatalogueItemRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `CatalogueItemRepo` instance with the mocked dependency.
-    """
-    return CatalogueItemRepo(database_mock)
-
-
-@pytest.fixture(name="item_repository")
-def fixture_item_repository(database_mock: Mock) -> ItemRepo:
-    """
-    Fixture to create a `ItemRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `ItemRepo` instance with the mocked dependency.
-    """
-    return ItemRepo(database_mock)
-
-
-@pytest.fixture(name="manufacturer_repository")
-def fixture_manufacturer_repository(database_mock: Mock) -> ManufacturerRepo:
-    """
-    Fixture to create ManufacturerRepo instance
-    """
-    return ManufacturerRepo(database_mock)
-
-
-@pytest.fixture(name="unit_repository")
-def fixture_unit_repository(database_mock: Mock) -> UnitRepo:
-    """
-    Fixture to create a `UnitRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `UnitRepo` instance with the mocked dependency.
-    """
-    return UnitRepo(database_mock)
-
-
-@pytest.fixture(name="usage_status_repository")
-def fixture_usage_status_repository(database_mock: Mock) -> UsageStatusRepo:
-    """
-    Fixture to create a `UsageStatusRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `UsageStatusRepo` instance with the mocked dependency.
-    """
-    return UsageStatusRepo(database_mock)
 
 
 class RepositoryTestHelpers:
@@ -187,11 +118,3 @@ class RepositoryTestHelpers:
         update_many_result_mock = Mock(UpdateResult)
         update_many_result_mock.acknowledged = True
         collection_mock.update_many.return_value = update_many_result_mock
-
-
-@pytest.fixture(name="test_helpers")
-def fixture_test_helpers() -> Type[RepositoryTestHelpers]:
-    """
-    Fixture to provide a TestHelpers class.
-    """
-    return RepositoryTestHelpers

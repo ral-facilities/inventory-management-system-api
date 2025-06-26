@@ -13,7 +13,6 @@ from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
-
 logger = logging.getLogger()
 
 
@@ -31,8 +30,9 @@ class UsageStatusRepo:
         self._database = database
         self._usage_statuses_collection: Collection = self._database.usage_statuses
         self._items_collection: Collection = self._database.items
+        self._settings_collection: Collection = self._database.settings
 
-    def create(self, usage_status: UsageStatusIn, session: ClientSession = None) -> UsageStatusOut:
+    def create(self, usage_status: UsageStatusIn, session: Optional[ClientSession] = None) -> UsageStatusOut:
         """
         Create a new usage status in MongoDB database
 
@@ -52,7 +52,7 @@ class UsageStatusRepo:
 
         return usage_status
 
-    def list(self, session: ClientSession = None) -> list[UsageStatusOut]:
+    def list(self, session: Optional[ClientSession] = None) -> list[UsageStatusOut]:
         """
         Retrieve Usage statuses from a MongoDB database
 
@@ -62,7 +62,7 @@ class UsageStatusRepo:
         usage_statuses = self._usage_statuses_collection.find(session=session)
         return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
 
-    def get(self, usage_status_id: str, session: ClientSession = None) -> Optional[UsageStatusOut]:
+    def get(self, usage_status_id: str, session: Optional[ClientSession] = None) -> Optional[UsageStatusOut]:
         """
         Retrieve a usage status by its ID from a MongoDB database.
 
@@ -77,7 +77,7 @@ class UsageStatusRepo:
             return UsageStatusOut(**usage_status)
         return None
 
-    def delete(self, usage_status_id: str, session: ClientSession = None) -> None:
+    def delete(self, usage_status_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete a usage status by its ID from a MongoDB database.
 
@@ -89,7 +89,7 @@ class UsageStatusRepo:
         :raises MissingRecordError: if supplied usage status ID does not exist in the database
         """
         usage_status_id = CustomObjectId(usage_status_id)
-        if self._is_usage_status_in_item(str(usage_status_id), session=session):
+        if self._is_usage_status_in_item(usage_status_id, session=session):
             raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is a part of an Item")
 
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
@@ -98,7 +98,7 @@ class UsageStatusRepo:
             raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
 
     def _is_duplicate_usage_status(
-        self, code: str, usage_status_id: CustomObjectId = None, session: ClientSession = None
+        self, code: str, usage_status_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None
     ) -> bool:
         """
         Check if usage status with the same name already exists in the usage statuses collection
@@ -114,12 +114,13 @@ class UsageStatusRepo:
         )
         return usage_status is not None
 
-    def _is_usage_status_in_item(self, usage_status_id: str, session: ClientSession = None) -> bool:
-        """Checks to see if any of the items in the database have a specific usage status ID
+    def _is_usage_status_in_item(
+        self, usage_status_id: CustomObjectId, session: Optional[ClientSession] = None
+    ) -> bool:
+        """Checks to see if any of the items in the database have a specific usage status ID.
 
-        :param usage_status_id: The ID of the usage status that is looked for
-        :param session: PyMongo ClientSession to use for database operations
-        :return: `True` if 1 or more items have the usage status ID, `False` otherwise
+        :param usage_status_id: The ID of the usage status that is looked for.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: `True` if 1 or more items have the usage status ID, `False` otherwise.
         """
-        usage_status_id = CustomObjectId(usage_status_id)
         return self._items_collection.find_one({"usage_status_id": usage_status_id}, session=session) is not None
