@@ -1,0 +1,24 @@
+// Intialise replica sets if not already setup
+try {
+  rs.status();
+} catch (e) {
+  console.log("Initialising replica set...");
+  rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
+}
+
+// Setup the dev and test databases
+["ims", "ims-test"].forEach((databaseName) => {
+  db = db.getSiblingDB(databaseName);
+
+  // Add some system types if the collection doesn't already exist
+  if (!db.getCollectionNames().includes("system_types")) {
+    console.log(`Populating system types in ${databaseName}...`);
+
+    db.system_types.insertMany([
+      { value: "Storage" },
+      { value: "Operational" },
+      { value: "Quarantine" },
+      { value: "Scrapped" },
+    ]);
+  }
+});
