@@ -44,7 +44,6 @@ class UnitRepoDSL:
         self.units_collection = database_mock.units
         self.catalogue_categories_collection = database_mock.catalogue_categories
 
-        self.mock_session = MagicMock()
         yield
 
     def mock_is_duplicate_unit(self, duplicate_unit_in_data: Optional[dict] = None) -> None:
