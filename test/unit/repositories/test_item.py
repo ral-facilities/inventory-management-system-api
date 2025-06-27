@@ -42,8 +42,6 @@ class ItemRepoDSL:
         self.items_collection = database_mock.items
         self.systems_collection = database_mock.systems
 
-        self.mock_session = MagicMock()
-
 
 class CreateDSL(ItemRepoDSL):
     """Base class for `create` tests."""
