@@ -3,6 +3,7 @@
 import argparse
 import logging
 import subprocess
+import sys
 from abc import ABC, abstractmethod
 from io import TextIOWrapper
 from pathlib import Path
@@ -150,7 +151,7 @@ class CommandDBGenerate(SubCommand):
                     "db.dropDatabase()",
                 ]
             )
-            # Ensuring setup script is called so any required initial data is populated
+            # Ensure setup script is called so any required initial data is populated
             run_mongodb_command(
                 ["mongosh", "ims"]
                 + get_mongodb_auth_args(args)
@@ -191,10 +192,51 @@ class CommandDBGenerate(SubCommand):
                     )
 
 
+class CommandDBClear(SubCommand):
+    """Command to clear all data in mongodb
+
+    - Deletes all existing data (after confirmation)
+    """
+
+    def __init__(self):
+        super().__init__(help_message="Clears all data in the database")
+
+    def setup(self, parser: argparse.ArgumentParser):
+        add_mongodb_auth_args(parser)
+
+    def run(self, args: argparse.Namespace):
+        if args.ci:
+            sys.exit("Cannot use --ci with db-clear (currently has interactive input)")
+
+        # Firstly confirm ok with deleting
+        answer = input("This operation will replace all existing data, are you sure? ")
+        if answer in ("y", "yes"):
+            # Delete the existing data
+            logging.info("Deleting database contents...")
+            run_mongodb_command(
+                ["mongosh", "ims"]
+                + get_mongodb_auth_args(args)
+                + [
+                    "--eval",
+                    "db.dropDatabase()",
+                ]
+            )
+            # Ensure setup script is called so any required initial data is populated again
+            run_mongodb_command(
+                ["mongosh", "ims"]
+                + get_mongodb_auth_args(args)
+                + [
+                    "--file",
+                    "/usr/local/bin/setup.mongodb",
+                ]
+            )
+
+
 # List of subcommands
 commands: dict[str, SubCommand] = {
     "db-import": CommandDBImport(),
     "db-generate": CommandDBGenerate(),
+    "db-clear": CommandDBClear(),
 }
 
 
