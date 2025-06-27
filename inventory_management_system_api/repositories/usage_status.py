@@ -59,6 +59,7 @@ class UsageStatusRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: List of Usage statuses or an empty list if no Usage statuses are retrieved
         """
+        logger.info("Retrieving all usage statuses from the database")
         usage_statuses = self._usage_statuses_collection.find(session=session)
         return [UsageStatusOut(**usage_status) for usage_status in usage_statuses]
 

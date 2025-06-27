@@ -1,6 +1,5 @@
 """
-Module for providing an API router which defines routes for managing systems using the `SystemService`
-service.
+Module for providing an API router which defines routes for managing systems using the `SystemService` service.
 """
 
 import logging
