@@ -12,7 +12,7 @@ from inventory_management_system_api.schemas.mixins import CreatedModifiedSchema
 
 class SystemImportanceType(str, Enum):
     """
-    Enumeration for system importance types
+    Enumeration for system importance types.
     """
 
     LOW = "low"
@@ -22,7 +22,7 @@ class SystemImportanceType(str, Enum):
 
 class SystemPostSchema(BaseModel):
     """
-    Schema model for a system creation request
+    Schema model for a system creation request.
     """
 
     parent_id: Optional[str] = Field(default=None, description="ID of the parent system (if applicable)")
@@ -35,7 +35,7 @@ class SystemPostSchema(BaseModel):
 
 class SystemPatchSchema(SystemPostSchema):
     """
-    Schema model for a system update request
+    Schema model for a system update request.
     """
 
     name: Optional[str] = Field(default=None, description="Name of the system")
@@ -44,7 +44,7 @@ class SystemPatchSchema(SystemPostSchema):
 
 class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
     """
-    Schema model for system get request response
+    Schema model for system get request response.
     """
 
     id: str = Field(description="ID of the system")
