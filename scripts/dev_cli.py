@@ -150,7 +150,7 @@ class CommandDBGenerate(SubCommand):
                     "db.dropDatabase()",
                 ]
             )
-            # Ensuring setup script is called so any required intial data is populated
+            # Ensuring setup script is called so any required initial data is populated
             run_mongodb_command(
                 ["mongosh", "ims"]
                 + get_mongodb_auth_args(args)
