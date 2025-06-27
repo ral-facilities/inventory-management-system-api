@@ -8,7 +8,8 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.exceptions import ChildElementsExistError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -39,12 +40,16 @@ class SystemService:
         :param system: System to be created
         :return: Created system
         """
-        parent_id = system.parent_id
+
+        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
+        # SystemIn or move the parent_id check to the service)
+        if system.parent_id is not None:
+            CustomObjectId(system.parent_id, entity_type="parent system")
 
         code = utils.generate_code(system.name, "system")
         return self._system_repository.create(
             SystemIn(
-                parent_id=parent_id,
+                parent_id=system.parent_id,
                 description=system.description,
                 name=system.name,
                 location=system.location,
@@ -91,10 +96,13 @@ class SystemService:
         :return: The updated system
         """
         stored_system = self.get(system_id)
-        if not stored_system:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
 
         update_data = system.model_dump(exclude_unset=True)
+
+        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
+        # SystemIn or move the parent_id check to the service)
+        if "parent_id" in update_data and system.parent_id != stored_system.parent_id and system.parent_id is not None:
+            CustomObjectId(system.parent_id, entity_type="parent system")
 
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
@@ -109,7 +117,10 @@ class SystemService:
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
         if self._system_repository.has_child_elements(system_id):
-            raise ChildElementsExistError(f"System with ID {system_id} has child elements and cannot be deleted")
+            raise ChildElementsExistError(
+                f"System with ID {system_id} has child elements and cannot be deleted",
+                response_detail="System has child elements and cannot be deleted",
+            )
 
         # First, attempt to delete any attachments and/or images that might be associated with this system.
         if config.object_storage.enabled:
