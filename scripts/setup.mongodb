@@ -7,7 +7,7 @@ try {
 }
 
 // Setup the dev and test databases
-["ims", "ims-test"].forEach((databaseName) => {
+["ims", "test-ims"].forEach((databaseName) => {
   db = db.getSiblingDB(databaseName);
 
   // Add some system types if the collection doesn't already exist
