@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -42,8 +42,9 @@ class SystemService:
         return self._system_repository.create(
             SystemIn(
                 parent_id=parent_id,
-                description=system.description,
                 name=system.name,
+                type_id=system.type_id,
+                description=system.description,
                 location=system.location,
                 owner=system.owner,
                 importance=system.importance,

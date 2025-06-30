@@ -787,6 +787,7 @@ SYSTEM_TYPES_GET_DATA = [
 
 SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY = {
     "name": "System Test Required Values Only",
+    "type_id": SYSTEM_TYPES_GET_DATA[0]["id"],
     "importance": "low",
 }
 
@@ -805,8 +806,8 @@ SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY = {
 
 SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT = {
     **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    "name": "System Test All Values",
     "parent_id": None,
+    "name": "System Test All Values",
     "description": "Test description",
     "location": "Test location",
     "owner": "Test owner",
@@ -825,6 +826,7 @@ SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT = {
 SYSTEM_POST_DATA_NO_PARENT_A = {
     "parent_id": None,
     "name": "Test name A",
+    "type_id": SYSTEM_TYPES_GET_DATA[0]["id"],
     "description": "Test description A",
     "location": "Test location A",
     "owner": "Test owner A",
@@ -839,6 +841,7 @@ SYSTEM_IN_DATA_NO_PARENT_A = {
 SYSTEM_POST_DATA_NO_PARENT_B = {
     "parent_id": None,
     "name": "Test name B",
+    "type_id": SYSTEM_TYPES_GET_DATA[0]["id"],
     "description": "Test description B",
     "location": "Test location B",
     "owner": "Test owner B",
