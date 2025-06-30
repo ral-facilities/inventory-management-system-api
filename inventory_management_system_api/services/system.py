@@ -47,8 +47,9 @@ class SystemService:
         return self._system_repository.create(
             SystemIn(
                 parent_id=system.parent_id,
-                description=system.description,
                 name=system.name,
+                type_id=system.type_id,
+                description=system.description,
                 location=system.location,
                 owner=system.owner,
                 importance=system.importance,
