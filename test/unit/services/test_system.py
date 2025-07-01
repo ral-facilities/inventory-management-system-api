@@ -5,7 +5,13 @@ Unit tests for the `SystemService` service.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
+from test.mock_data import (
+    SYSTEM_IN_DATA_NO_PARENT_A,
+    SYSTEM_POST_DATA_NO_PARENT_A,
+    SYSTEM_POST_DATA_NO_PARENT_B,
+    SYSTEM_TYPES_GET_DATA,
+    SYSTEM_TYPES_OUT_DATA,
+)
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
@@ -14,8 +20,9 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, InvalidActionError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.system import SystemService
@@ -26,12 +33,14 @@ class SystemServiceDSL:
 
     wrapped_utils: Mock
     mock_system_repository: Mock
+    mock_system_type_repository: Mock
     system_service: SystemService
 
     @pytest.fixture(autouse=True)
     def setup(
         self,
         system_repository_mock,
+        system_type_repository_mock,
         system_service,
         # Ensures all created and modified times are mocked throughout
         # pylint: disable=unused-argument
@@ -40,6 +49,7 @@ class SystemServiceDSL:
         """Setup fixtures."""
 
         self.mock_system_repository = system_repository_mock
+        self.mock_system_type_repository = system_type_repository_mock
         self.system_service = system_service
 
         with patch("inventory_management_system_api.services.system.utils", wraps=utils) as wrapped_utils:
@@ -54,15 +64,43 @@ class CreateDSL(SystemServiceDSL):
     _expected_system_in: SystemIn
     _expected_system_out: SystemOut
     _created_system: SystemOut
+    _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, system_post_data: dict) -> None:
+    def mock_create(
+        self,
+        system_post_data: dict,
+        parent_system_in_data: Optional[dict] = None,
+        system_type_out_data: Optional[dict] = None,
+    ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
 
         :param system_post_data: Dictionary containing the basic system data as would be required for a
                                  `SystemPostSchema` (i.e. no ID, code or created and modified times required).
+        :param parent_system_in_data: Either `None` or a dictionary containing the parent system data as would be
+                                      required for a `SystemIn` database model.
+        :param system_type_out_data: Either `None` or a dictionary containing the system type data as would be required
+                                     for a `SystemTypeOut` database model.
         """
 
+        # Parent system
+        if system_post_data["parent_id"]:
+            ServiceTestHelpers.mock_get(
+                self.mock_system_repository,
+                SystemOut(
+                    **{
+                        **SystemIn(**parent_system_in_data).model_dump(by_alias=True),
+                        "_id": system_post_data["parent_id"],
+                    }
+                ),
+            )
+
+        # System type
+        ServiceTestHelpers.mock_get(
+            self.mock_system_type_repository, SystemTypeOut(**system_type_out_data) if system_type_out_data else None
+        )
+
+        # System
         self._system_post = SystemPostSchema(**system_post_data)
 
         self._expected_system_in = SystemIn(
@@ -77,13 +115,56 @@ class CreateDSL(SystemServiceDSL):
 
         self._created_system = self.system_service.create(self._system_post)
 
+    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
+        """
+        Calls the `SystemService` `create` method with the appropriate data from a prior call to `mock_create` while
+        expecting an error to be raised.
+
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.system_service.create(self._system_post)
+        self._create_exception = exc
+
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
+        if self._system_post.parent_id is not None:
+            self.mock_system_repository.get.assert_called_once_with(
+                self._system_post.parent_id, entity_type_modifier="parent"
+            )
+        else:
+            self.mock_system_repository.get.assert_not_called()
+
+        self.mock_system_type_repository.get.assert_called_once_with(
+            self._system_post.type_id, entity_type_modifier="specified"
+        )
         self.wrapped_utils.generate_code.assert_called_once_with(self._expected_system_out.name, "system")
         self.mock_system_repository.create.assert_called_once_with(self._expected_system_in)
 
         assert self._created_system == self._expected_system_out
+
+    def check_create_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        if self._system_post.parent_id is not None:
+            self.mock_system_repository.get.assert_called_once_with(
+                self._system_post.parent_id, entity_type_modifier="parent"
+            )
+        else:
+            self.mock_system_repository.get.assert_not_called()
+
+        self.mock_system_type_repository.get.assert_not_called()
+
+        self.wrapped_utils.generate_code.assert_not_called()
+        self.mock_system_repository.create.assert_not_called()
+        assert str(self._create_exception.value) == message
 
 
 class TestCreate(CreateDSL):
@@ -97,11 +178,26 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_parent_id(self):
-        """Test creating a system with a parent ID."""
+        """Test creating a system with a `parent_id`."""
 
-        self.mock_create({**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())})
+        self.mock_create(
+            {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            system_type_out_data=SYSTEM_TYPES_OUT_DATA[0],
+        )
         self.call_create()
         self.check_create_success()
+
+    def test_create_with_different_type_id_to_parent(self):
+        """Test creating a system with a different `type_id` to its parent."""
+
+        self.mock_create(
+            {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId()), "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            system_type_out_data=SYSTEM_TYPES_OUT_DATA[1],
+        )
+        self.call_create_expecting_error(InvalidActionError)
+        self.check_create_failed_with_exception("Cannot use a different type_id to the parent system")
 
 
 class GetDSL(SystemServiceDSL):

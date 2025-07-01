@@ -7,10 +7,15 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    ChildElementsExistError,
+    InvalidActionError,
+    MissingRecordError,
+)
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
+from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
@@ -21,13 +26,19 @@ class SystemService:
     Service for managing systems
     """
 
-    def __init__(self, system_repository: Annotated[SystemRepo, Depends(SystemRepo)]) -> None:
+    def __init__(
+        self,
+        system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
+        system_type_repository: Annotated[SystemTypeRepo, Depends(SystemTypeRepo)],
+    ) -> None:
         """
-        Initialise the `SystemService` with a `SystemRepo` repository
+        Initialise the `SystemService` with a `SystemRepo` repository.
 
-        :param system_repository: `SystemRepo` repository to use
+        :param system_repository: `SystemRepo` repository to use.
+        :param system_type_repo: `SystemTypeRepo` repository to use.
         """
         self._system_repository = system_repository
+        self._system_type_repository = system_type_repository
 
     def create(self, system: SystemPostSchema) -> SystemOut:
         """
@@ -35,13 +46,23 @@ class SystemService:
 
         :param system: System to be created
         :return: Created system
+        :raise InvalidActionError: If the system being created has a different `type_id` to its parent.
         """
-        parent_id = system.parent_id
 
+        # If there is a parent, must use the same type as it
+        if system.parent_id is not None:
+            parent_system = self._system_repository.get(system.parent_id, entity_type_modifier="parent")
+            if system.type_id != parent_system.type_id:
+                raise InvalidActionError("Cannot use a different type_id to the parent system")
+
+        # Ensure system type exists
+        self._system_type_repository.get(system.type_id, entity_type_modifier="specified")
+
+        # Create the system
         code = utils.generate_code(system.name, "system")
         return self._system_repository.create(
             SystemIn(
-                parent_id=parent_id,
+                parent_id=system.parent_id,
                 name=system.name,
                 type_id=system.type_id,
                 description=system.description,
