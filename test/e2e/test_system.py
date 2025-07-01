@@ -4,6 +4,7 @@ End-to-End tests for the system router.
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-public-methods
 
 from test.e2e.conftest import E2ETestHelpers
 from test.mock_data import (
@@ -515,6 +516,159 @@ class TestUpdate(UpdateDSL):
             409, "A system with the same name already exists within the parent system"
         )
 
+    def test_partial_update_parent_id_to_one_with_a_different_type(self):
+        """Test updating the `parent_id` of a system to one that has a different type."""
+
+        parent_id = self.post_system(
+            {**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]}
+        )
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_system(system_id, {"parent_id": parent_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot move a system into one with a different type")
+
+    def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type(self):
+        """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
+        match."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": type_id})
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
+        self.check_patch_system_success(
+            {**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id, "type_id": type_id}
+        )
+
+    def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type_with_subsystem(self):
+        """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
+        match while the system has a subsystem."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": type_id})
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type_with_item(self):
+        """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
+        match while the system has an item."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": type_id})
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+        # Create a child item
+        # pylint: disable=duplicate-code
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+            "usage_status_id": usage_status_id,
+        }
+        self.test_client.post("/v1/items", json=item_post)
+        # pylint: enable=duplicate-code
+
+        self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_parent_id_to_none(self):
+        """Test updating the `parent_id` of a system to None."""
+
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        self.patch_system(system_id, {"parent_id": None})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": None})
+
+    def test_partial_update_parent_id_to_none_while_changing_type(self):
+        """Test updating the `parent_id` of a system to None while also changing the `type_id`."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": None, "type_id": type_id})
+
+    def test_partial_update_parent_id_to_none_while_changing_type_with_subsystem(self):
+        """Test updating the `parent_id` of a system to None while also changing the `type_id` while the system has
+        a subsystem."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_parent_id_to_none_while_changing_type_with_item(self):
+        """Test updating the `parent_id` of a system to None while also changing the `type_id` while the system has
+        an item."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+        # Create a child item
+        # pylint: disable=duplicate-code
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+            "usage_status_id": usage_status_id,
+        }
+        self.test_client.post("/v1/items", json=item_post)
+        # pylint: enable=duplicate-code
+
+        self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
     def test_partial_update_parent_id_to_child_of_self(self):
         """Test updating the `parent_id` of a system to one of its own children."""
 
@@ -545,6 +699,143 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_failed_with_detail(
             409, "A system with the same name already exists within the parent system"
         )
+
+    def test_partial_update_type_id_without_parent(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "type_id": type_id})
+
+    def test_partial_update_type_id_without_parent_with_subsystem(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system but has a subsystem."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_without_parent_with_item(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system but has an item."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+        # Create a child item
+        # pylint: disable=duplicate-code
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+            "usage_status_id": usage_status_id,
+        }
+        self.test_client.post("/v1/items", json=item_post)
+        # pylint: enable=duplicate-code
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_with_parent(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot update the system's type to be different to its parent")
+
+    def test_partial_update_type_id_with_parent_and_subsystem(self):
+        """Test updating the `type_id` of a system when it has a parent system and a subsystem."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_with_parent_and_item(self):
+        """Test updating the `type_id` of a system when it has a parent system and an item."""
+
+        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+        # Create a child item
+        # pylint: disable=duplicate-code
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": system_id,
+            "usage_status_id": usage_status_id,
+        }
+        self.test_client.post("/v1/items", json=item_post)
+        # pylint: enable=duplicate-code
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_to_non_existent(self):
+        """Test updating the `type_id` of a system to a non-existent system type."""
+
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"type_id": str(ObjectId())})
+        self.check_patch_system_failed_with_detail(422, "Specified system type not found")
+
+    def test_partial_update_type_id_to_invalid_id(self):
+        """Test updating the `type_id` of a system to an invalid ID."""
+
+        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"type_id": "invalid-id"})
+        self.check_patch_system_failed_with_detail(422, "Specified system type not found")
 
     def test_partial_update_name_capitalisation(self):
         """Test updating the capitalisation of the name of a system (to ensure it the check doesn't confuse with

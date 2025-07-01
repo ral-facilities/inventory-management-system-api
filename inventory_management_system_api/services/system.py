@@ -7,7 +7,6 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import ChildElementsExistError, InvalidActionError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
@@ -104,16 +103,45 @@ class SystemService:
         :param system_id: ID of the system to updated
         :param system: System containing the fields to be updated
         :raises MissingRecordError: When the system with the given ID doesn't exist
+        :raises InvalidActionError: When attempting to change the system type while the system has child elements.
+        :raises InvalidActionError: When attempting to change the parent of the system to one with a different type
+                                    without also changing the type to match.
         :return: The updated system
         """
         stored_system = self.get(system_id)
 
         update_data = system.model_dump(exclude_unset=True)
 
-        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
-        # SystemIn or move the parent_id check to the service)
-        if "parent_id" in update_data and system.parent_id != stored_system.parent_id and system.parent_id is not None:
-            CustomObjectId(system.parent_id, entity_type="parent system")
+        if "parent_id" in update_data or "type_id" in update_data:
+            parent_system = None
+            moving_system = False
+            if "parent_id" in update_data and system.parent_id != stored_system.parent_id:
+                # Parent is being updated
+                moving_system = True
+                if system.parent_id is not None:
+                    parent_system = self._system_repository.get(system.parent_id, entity_type_modifier="parent")
+            elif stored_system.parent_id is not None:
+                # Parent is not being updated
+                parent_system = self._system_repository.get(stored_system.parent_id, entity_type_modifier="parent")
+
+            type_id = stored_system.type_id
+            if "type_id" in update_data and system.type_id != stored_system.type_id:
+                # Type is being updated
+                type_id = system.type_id
+
+                if self._system_repository.has_child_elements(system_id):
+                    raise InvalidActionError("Cannot change the type of a system when it has children")
+
+                # Ensure system type exists
+                self._system_type_repository.get(system.type_id, entity_type_modifier="specified")
+
+            # Ensure the system type matches the parent system type if there is a parent
+            if parent_system is not None and type_id != parent_system.type_id:
+                raise InvalidActionError(
+                    "Cannot move a system into one with a different type"
+                    if moving_system
+                    else "Cannot update the system's type to be different to its parent"
+                )
 
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
