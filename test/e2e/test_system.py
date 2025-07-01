@@ -15,6 +15,7 @@ from test.mock_data import (
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_TYPES_GET_DATA,
     USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Optional
@@ -130,6 +131,27 @@ class TestCreate(CreateDSL):
         self.check_post_system_failed_with_detail(
             409, "A system with the same name already exists within the parent system"
         )
+
+    def test_create_with_different_type_id_to_parent(self):
+        """Test creating a system with a different `type_id` to its parent."""
+
+        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(
+            {**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]}
+        )
+        self.check_post_system_failed_with_detail(422, "Cannot use a different type_id to the parent system")
+
+    def test_create_with_non_existent_type_id(self):
+        """Test creating a system with a non-existent `type_id`."""
+
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": str(ObjectId())})
+        self.check_post_system_failed_with_detail(422, "Specified system type not found")
+
+    def test_create_with_invalid_type_id(self):
+        """Test creating a system with an invalid `type_id`."""
+
+        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": "invalid-id"})
+        self.check_post_system_failed_with_detail(422, "Specified system type not found")
 
     def test_create_with_invalid_importance(self):
         """Test creating a system with an invalid importance."""

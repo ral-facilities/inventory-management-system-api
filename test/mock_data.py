@@ -767,7 +767,6 @@ MANUFACTURER_IN_DATA_B = {
     "code": "manufacturer-b",
 }
 
-
 # ---------------------------- SYSTEM TYPES -----------------------------
 
 SYSTEM_TYPES_OUT_DATA = [
