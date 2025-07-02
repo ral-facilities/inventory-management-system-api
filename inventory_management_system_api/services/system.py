@@ -114,20 +114,20 @@ class SystemService:
 
         update_data = system.model_dump(exclude_unset=True)
 
-        if "parent_id" in update_data or "type_id" in update_data:
+        parent_id_changing = "parent_id" in update_data and system.parent_id != stored_system.parent_id
+        type_id_changing = "type_id" in update_data and system.type_id != stored_system.type_id
+        if parent_id_changing or type_id_changing:
             parent_system = None
-            moving_system = False
-            if "parent_id" in update_data and system.parent_id != stored_system.parent_id:
+            if parent_id_changing:
                 # Parent is being updated
-                moving_system = True
                 if system.parent_id is not None:
                     parent_system = self._system_repository.get(system.parent_id, entity_type_modifier="parent")
             elif stored_system.parent_id is not None:
-                # Parent is not being updated
+                # Parent is not being updated but are updating the type so obtain the current parent
                 parent_system = self._system_repository.get(stored_system.parent_id, entity_type_modifier="parent")
 
             type_id = stored_system.type_id
-            if "type_id" in update_data and system.type_id != stored_system.type_id:
+            if type_id_changing:
                 # Type is being updated
                 type_id = system.type_id
 
@@ -141,7 +141,7 @@ class SystemService:
             if parent_system is not None and type_id != parent_system.type_id:
                 raise InvalidActionError(
                     "Cannot move a system into one with a different type"
-                    if moving_system
+                    if parent_id_changing
                     else "Cannot update the system's type to be different to its parent"
                 )
 
