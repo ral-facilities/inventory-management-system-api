@@ -10,6 +10,7 @@ Unit tests for the `SystemService` service.
 
 from test.mock_data import (
     SYSTEM_IN_DATA_NO_PARENT_A,
+    SYSTEM_IN_DATA_NO_PARENT_B,
     SYSTEM_POST_DATA_NO_PARENT_A,
     SYSTEM_POST_DATA_NO_PARENT_B,
     SYSTEM_TYPES_GET_DATA,
@@ -399,7 +400,6 @@ class UpdateDSL(SystemServiceDSL):
                             SystemOut(
                                 **SystemIn(
                                     **new_parent_system_in_data,
-                                    code=utils.generate_code(new_parent_system_in_data["name"], "system"),
                                 ).model_dump(),
                                 id=CustomObjectId(system_id),
                             )
@@ -407,14 +407,13 @@ class UpdateDSL(SystemServiceDSL):
                             else None
                         ),
                     )
-            elif self._stored_system is not None:
+            elif self._stored_system.parent_id is not None:
                 ServiceTestHelpers.mock_get(
                     self.mock_system_repository,
                     (
                         SystemOut(
                             **SystemIn(
                                 **stored_parent_system_in_data,
-                                code=utils.generate_code(stored_parent_system_in_data["name"], "system"),
                             ).model_dump(),
                             id=CustomObjectId(system_id),
                         )
@@ -482,13 +481,15 @@ class UpdateDSL(SystemServiceDSL):
             if self._parent_id_changing:
                 if self._system_patch.parent_id is not None:
                     expected_system_get_calls.append(call(self._system_patch.parent_id, entity_type_modifier="parent"))
-            elif self._stored_system is not None:
+            elif self._stored_system.parent_id is not None:
                 expected_system_get_calls.append(call(self._stored_system.parent_id, entity_type_modifier="parent"))
 
         # Ensure checking children and obtained type id if needed
         if self._type_id_changing:
             self.mock_system_repository.has_child_elements.assert_called_once_with(self._updated_system_id)
-            self.mock_system_type_repository.assert_called_once_with(self._system_patch.type_id)
+            self.mock_system_type_repository.get.assert_called_once_with(
+                self._system_patch.type_id, entity_type_modifier="specified"
+            )
 
         self.mock_system_repository.get.assert_has_calls(expected_system_get_calls)
 
@@ -528,6 +529,140 @@ class TestUpdate(UpdateDSL):
             system_id,
             system_patch_data=SYSTEM_POST_DATA_NO_PARENT_B,
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_from_none(self):
+        """Test updating the parent ID of a system from a value of None."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId())},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_one_with_a_different_type(self):
+        """Test updating the parent ID of a system to one that has a different type."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId())},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+        )
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot move a system into one with a different type")
+
+    def test_update_parent_id_to_one_with_a_different_type_while_changing_type(self):
+        """Test updating the parent ID of a system to one that hass a different type while also changing the type to
+        match."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_one_with_a_different_type_while_changing_type_with_child_elements(self):
+        """Test updating the parent ID of a system to one that hass a different type while also changing the type to
+        match whenthe system has child elements."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot change the type of a system when it has children")
+
+    def test_update_parent_id_to_none(self):
+        """Test updating the parent ID of a system from a value to none."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_none_while_changing_type(self):
+        """Test updating the parent ID of a system to None while also changing the type ID."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_none_while_changing_type_with_child_elements(self):
+        """Test updating the parent ID of a system to None while also changing the type ID."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot change the type of a system when it has children")
+
+    def test_update_type_id_without_parent(self):
+        """Test updating the type ID of a system that doesn't have a parent."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_system_type_out_data=SYSTEM_TYPES_OUT_DATA[1],
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_type_id_with_parent(self):
+        """Test updating the type ID of a system that has a parent."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            new_system_type_out_data=SYSTEM_TYPES_OUT_DATA[1],
         )
         self.call_update(system_id)
         self.check_update_success()
