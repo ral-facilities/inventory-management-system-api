@@ -492,8 +492,8 @@ class TestUpdate(UpdateDSL):
         self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.check_patch_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
 
-    def test_partial_update_parent_id(self):
-        """Test updating the `parent_id` of a system."""
+    def test_partial_update_parent_id_from_none(self):
+        """Test updating the `parent_id` of a system froma  value of None."""
 
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
