@@ -16,7 +16,7 @@ from test.mock_data import (
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    SYSTEM_TYPES_GET_DATA,
+    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Optional
@@ -138,7 +138,11 @@ class TestCreate(CreateDSL):
 
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_system(
-            {**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]}
+            {
+                **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+                "parent_id": parent_id,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            }
         )
         self.check_post_system_failed_with_detail(422, "Cannot use a different type_id to the parent system")
 
@@ -455,6 +459,38 @@ class UpdateDSL(ListDSL):
 
         self._patch_response_system = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
+    def post_child_item_to_system(self) -> None:
+        """Posts an item and its pre-requisites to the last posted system."""
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": self._post_response_system.json()["id"],
+            "usage_status_id": usage_status_id,
+        }
+        self.test_client.post("/v1/items", json=item_post)
+
     def check_patch_system_success(self, expected_system_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_system` gave a successful response with the expected data returned.
@@ -520,7 +556,7 @@ class TestUpdate(UpdateDSL):
         """Test updating the `parent_id` of a system to one that has a different type."""
 
         parent_id = self.post_system(
-            {**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]}
+            {**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]}
         )
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
@@ -531,7 +567,7 @@ class TestUpdate(UpdateDSL):
         """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
         match."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": type_id})
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
@@ -544,7 +580,7 @@ class TestUpdate(UpdateDSL):
         """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
         match while the system has a subsystem."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": type_id})
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
@@ -556,41 +592,10 @@ class TestUpdate(UpdateDSL):
         """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
         match while the system has an item."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": type_id})
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-        # Create a child item
-        # pylint: disable=duplicate-code
-        response = self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
-        )
-        catalogue_category = response.json()
-
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        manufacturer_id = response.json()["id"]
-
-        catalogue_item_post = {
-            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_category_id": catalogue_category["id"],
-            "manufacturer_id": manufacturer_id,
-        }
-        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
-        item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
-            "usage_status_id": usage_status_id,
-        }
-        self.test_client.post("/v1/items", json=item_post)
-        # pylint: enable=duplicate-code
+        self.post_child_item_to_system()
 
         self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
         self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
@@ -607,7 +612,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_parent_id_to_none_while_changing_type(self):
         """Test updating the `parent_id` of a system to None while also changing the `type_id`."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
@@ -618,7 +623,7 @@ class TestUpdate(UpdateDSL):
         """Test updating the `parent_id` of a system to None while also changing the `type_id` while the system has
         a subsystem."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
@@ -630,41 +635,10 @@ class TestUpdate(UpdateDSL):
         """Test updating the `parent_id` of a system to None while also changing the `type_id` while the system has
         an item."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
-
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-        # Create a child item
-        # pylint: disable=duplicate-code
-        response = self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
-        )
-        catalogue_category = response.json()
-
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        manufacturer_id = response.json()["id"]
-
-        catalogue_item_post = {
-            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_category_id": catalogue_category["id"],
-            "manufacturer_id": manufacturer_id,
-        }
-        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
-        item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
-            "usage_status_id": usage_status_id,
-        }
-        self.test_client.post("/v1/items", json=item_post)
-        # pylint: enable=duplicate-code
+        self.post_child_item_to_system()
 
         self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
         self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
@@ -703,7 +677,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_type_id_without_parent(self):
         """Test updating the `type_id` of a system when it doesn't have a parent system."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
 
         self.patch_system(system_id, {"type_id": type_id})
@@ -712,7 +686,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_type_id_without_parent_with_subsystem(self):
         """Test updating the `type_id` of a system when it doesn't have a parent system but has a subsystem."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
 
@@ -722,40 +696,9 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_type_id_without_parent_with_item(self):
         """Test updating the `type_id` of a system when it doesn't have a parent system but has an item."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-        # Create a child item
-        # pylint: disable=duplicate-code
-        response = self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
-        )
-        catalogue_category = response.json()
-
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        manufacturer_id = response.json()["id"]
-
-        catalogue_item_post = {
-            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_category_id": catalogue_category["id"],
-            "manufacturer_id": manufacturer_id,
-        }
-        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
-        item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
-            "usage_status_id": usage_status_id,
-        }
-        self.test_client.post("/v1/items", json=item_post)
-        # pylint: enable=duplicate-code
+        self.post_child_item_to_system()
 
         self.patch_system(system_id, {"type_id": type_id})
         self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
@@ -763,7 +706,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_type_id_with_parent(self):
         """Test updating the `type_id` of a system when it doesn't have a parent system."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
@@ -773,7 +716,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_type_id_with_parent_and_subsystem(self):
         """Test updating the `type_id` of a system when it has a parent system and a subsystem."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
         self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": system_id})
@@ -784,41 +727,10 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_type_id_with_parent_and_item(self):
         """Test updating the `type_id` of a system when it has a parent system and an item."""
 
-        type_id = SYSTEM_TYPES_GET_DATA[1]["id"]
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
-
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-        # Create a child item
-        # pylint: disable=duplicate-code
-        response = self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
-        )
-        catalogue_category = response.json()
-
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        manufacturer_id = response.json()["id"]
-
-        catalogue_item_post = {
-            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_category_id": catalogue_category["id"],
-            "manufacturer_id": manufacturer_id,
-        }
-        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
-        item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
-            "usage_status_id": usage_status_id,
-        }
-        self.test_client.post("/v1/items", json=item_post)
-        # pylint: enable=duplicate-code
+        self.post_child_item_to_system()
 
         self.patch_system(system_id, {"type_id": type_id})
         self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
@@ -917,38 +829,7 @@ class TestDelete(DeleteDSL):
         """Test deleting a system with a child system."""
 
         system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-        # Create a child item
-        # pylint: disable=duplicate-code
-        response = self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
-        )
-        catalogue_category = response.json()
-
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        manufacturer_id = response.json()["id"]
-
-        catalogue_item_post = {
-            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_category_id": catalogue_category["id"],
-            "manufacturer_id": manufacturer_id,
-        }
-        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
-        item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
-            "usage_status_id": usage_status_id,
-        }
-        self.test_client.post("/v1/items", json=item_post)
-        # pylint: enable=duplicate-code
+        self.post_child_item_to_system()
 
         self.delete_system(system_id)
         self.check_delete_system_failed_with_detail(409, "System has child elements and cannot be deleted")

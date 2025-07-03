@@ -29,8 +29,6 @@ class ListDSL:
         """Gets a list of system types."""
 
         self._get_response_system_type = self.test_client.get("/v1/system-types")
-        print("HELLO")
-        print(self._get_response_system_type)
 
     def check_get_systems_success(self, expected_system_types_get_data: list[dict]) -> None:
         """

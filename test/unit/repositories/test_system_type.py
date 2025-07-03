@@ -5,7 +5,7 @@ Unit tests for the `SystemTypeRepo` repository.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.mock_data import SYSTEM_TYPES_OUT_DATA
+from test.mock_data import SYSTEM_TYPE_GET_DATA_STORAGE, SYSTEM_TYPE_OUT_DATA_STORAGE, SYSTEM_TYPES_OUT_DATA
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock
@@ -115,9 +115,9 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting a system type."""
 
-        system_type_id = str(SYSTEM_TYPES_OUT_DATA[0]["_id"])
+        system_type_id = str(SYSTEM_TYPE_GET_DATA_STORAGE["id"])
 
-        self.mock_get(SYSTEM_TYPES_OUT_DATA[0])
+        self.mock_get(SYSTEM_TYPE_OUT_DATA_STORAGE)
         self.call_get(system_type_id)
         self.check_get_success()
 
