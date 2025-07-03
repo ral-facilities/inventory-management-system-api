@@ -780,13 +780,21 @@ SYSTEM_TYPES_GET_DATA = [
     {"id": str(system_type_out["_id"]), "value": system_type_out["value"]} for system_type_out in SYSTEM_TYPES_OUT_DATA
 ]
 
+# Storage
+SYSTEM_TYPE_OUT_DATA_STORAGE = SYSTEM_TYPES_OUT_DATA[0]
+SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
+
+# Operational
+SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
+SYSTEM_TYPE_GET_DATA_OPERATIONAL = SYSTEM_TYPES_GET_DATA[1]
+
 # --------------------------------- SYSTEMS ---------------------------------
 
 # No parent, Required values only
 
 SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY = {
     "name": "System Test Required Values Only",
-    "type_id": SYSTEM_TYPES_GET_DATA[0]["id"],
+    "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "importance": "low",
 }
 
@@ -825,7 +833,7 @@ SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT = {
 SYSTEM_POST_DATA_NO_PARENT_A = {
     "parent_id": None,
     "name": "Test name A",
-    "type_id": SYSTEM_TYPES_GET_DATA[0]["id"],
+    "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "description": "Test description A",
     "location": "Test location A",
     "owner": "Test owner A",
@@ -840,7 +848,7 @@ SYSTEM_IN_DATA_NO_PARENT_A = {
 SYSTEM_POST_DATA_NO_PARENT_B = {
     "parent_id": None,
     "name": "Test name B",
-    "type_id": SYSTEM_TYPES_GET_DATA[0]["id"],
+    "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "description": "Test description B",
     "location": "Test location B",
     "owner": "Test owner B",

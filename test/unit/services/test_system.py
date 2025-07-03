@@ -13,8 +13,9 @@ from test.mock_data import (
     SYSTEM_IN_DATA_NO_PARENT_B,
     SYSTEM_POST_DATA_NO_PARENT_A,
     SYSTEM_POST_DATA_NO_PARENT_B,
-    SYSTEM_TYPES_GET_DATA,
-    SYSTEM_TYPES_OUT_DATA,
+    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    SYSTEM_TYPE_OUT_DATA_STORAGE,
 )
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
@@ -187,7 +188,7 @@ class TestCreate(CreateDSL):
         self.mock_create(
             {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
             parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
-            system_type_out_data=SYSTEM_TYPES_OUT_DATA[0],
+            system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
         )
         self.call_create()
         self.check_create_success()
@@ -196,9 +197,13 @@ class TestCreate(CreateDSL):
         """Test creating a system with a different `type_id` to its parent."""
 
         self.mock_create(
-            {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId()), "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            {
+                **SYSTEM_POST_DATA_NO_PARENT_A,
+                "parent_id": str(ObjectId()),
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
             parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
-            system_type_out_data=SYSTEM_TYPES_OUT_DATA[1],
+            system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
         )
         self.call_create_expecting_error(InvalidActionError)
         self.check_create_failed_with_exception("Cannot use a different type_id to the parent system")
@@ -556,7 +561,7 @@ class TestUpdate(UpdateDSL):
             system_id,
             system_patch_data={"parent_id": str(ObjectId())},
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
         )
         self.call_update_expecting_error(system_id, InvalidActionError)
         self.check_update_failed_with_exception("Cannot move a system into one with a different type")
@@ -569,9 +574,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -584,9 +589,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             has_child_elements=True,
         )
         self.call_update_expecting_error(system_id, InvalidActionError)
@@ -614,7 +619,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
             new_parent_system_in_data=None,
@@ -629,7 +634,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
             new_parent_system_in_data=None,
@@ -645,9 +650,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data={"type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
-            new_system_type_out_data=SYSTEM_TYPES_OUT_DATA[1],
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -659,10 +664,13 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data={"type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
+            system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
             stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPES_GET_DATA[1]["id"]},
-            new_system_type_out_data=SYSTEM_TYPES_OUT_DATA[1],
+            stored_parent_system_in_data={
+                **SYSTEM_IN_DATA_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
         )
         self.call_update(system_id)
         self.check_update_success()
