@@ -29,10 +29,8 @@ class ListDSL:
         """Gets a list of system types."""
 
         self._get_response_system_type = self.test_client.get("/v1/system-types")
-        print("HELLO")
-        print(self._get_response_system_type)
 
-    def check_get_systems_success(self, expected_system_types_get_data: list[dict]) -> None:
+    def check_get_system_types_success(self, expected_system_types_get_data: list[dict]) -> None:
         """
         Checks that a prior call to `get_system_types` gave a successful response with the expected data returned
 
@@ -51,4 +49,4 @@ class TestList(ListDSL):
         """Test getting a list of all system types."""
 
         self.get_system_types()
-        self.check_get_systems_success(SYSTEM_TYPES_GET_DATA)
+        self.check_get_system_types_success(SYSTEM_TYPES_GET_DATA)
