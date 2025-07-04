@@ -4,18 +4,34 @@ Unit tests for the `SystemService` service.
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 
-from test.mock_data import SYSTEM_POST_DATA_NO_PARENT_A, SYSTEM_POST_DATA_NO_PARENT_B
+from test.mock_data import (
+    SYSTEM_IN_DATA_NO_PARENT_A,
+    SYSTEM_IN_DATA_NO_PARENT_B,
+    SYSTEM_POST_DATA_NO_PARENT_A,
+    SYSTEM_POST_DATA_NO_PARENT_B,
+    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    SYSTEM_TYPE_OUT_DATA_STORAGE,
+)
 from test.unit.services.conftest import ServiceTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import ChildElementsExistError, InvalidObjectIdError
+from inventory_management_system_api.core.exceptions import (
+    ChildElementsExistError,
+    InvalidActionError,
+    InvalidObjectIdError,
+)
 from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.system import SystemService
@@ -26,12 +42,14 @@ class SystemServiceDSL:
 
     wrapped_utils: Mock
     mock_system_repository: Mock
+    mock_system_type_repository: Mock
     system_service: SystemService
 
     @pytest.fixture(autouse=True)
     def setup(
         self,
         system_repository_mock,
+        system_type_repository_mock,
         system_service,
         # Ensures all created and modified times are mocked throughout
         # pylint: disable=unused-argument
@@ -40,6 +58,7 @@ class SystemServiceDSL:
         """Setup fixtures."""
 
         self.mock_system_repository = system_repository_mock
+        self.mock_system_type_repository = system_type_repository_mock
         self.system_service = system_service
 
         with patch("inventory_management_system_api.services.system.utils", wraps=utils) as wrapped_utils:
@@ -54,15 +73,43 @@ class CreateDSL(SystemServiceDSL):
     _expected_system_in: SystemIn
     _expected_system_out: SystemOut
     _created_system: SystemOut
+    _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, system_post_data: dict) -> None:
+    def mock_create(
+        self,
+        system_post_data: dict,
+        parent_system_in_data: Optional[dict] = None,
+        system_type_out_data: Optional[dict] = None,
+    ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
 
         :param system_post_data: Dictionary containing the basic system data as would be required for a
                                  `SystemPostSchema` (i.e. no ID, code or created and modified times required).
+        :param parent_system_in_data: Either `None` or a dictionary containing the parent system data as would be
+                                      required for a `SystemIn` database model.
+        :param system_type_out_data: Either `None` or a dictionary containing the system type data as would be required
+                                     for a `SystemTypeOut` database model.
         """
 
+        # Parent system
+        if system_post_data["parent_id"]:
+            ServiceTestHelpers.mock_get(
+                self.mock_system_repository,
+                SystemOut(
+                    **{
+                        **SystemIn(**parent_system_in_data).model_dump(by_alias=True),
+                        "_id": system_post_data["parent_id"],
+                    }
+                ),
+            )
+
+        # System type
+        ServiceTestHelpers.mock_get(
+            self.mock_system_type_repository, SystemTypeOut(**system_type_out_data) if system_type_out_data else None
+        )
+
+        # System
         self._system_post = SystemPostSchema(**system_post_data)
 
         self._expected_system_in = SystemIn(
@@ -77,13 +124,56 @@ class CreateDSL(SystemServiceDSL):
 
         self._created_system = self.system_service.create(self._system_post)
 
+    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
+        """
+        Calls the `SystemService` `create` method with the appropriate data from a prior call to `mock_create` while
+        expecting an error to be raised.
+
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.system_service.create(self._system_post)
+        self._create_exception = exc
+
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
+        if self._system_post.parent_id is not None:
+            self.mock_system_repository.get.assert_called_once_with(
+                self._system_post.parent_id, entity_type_modifier="parent"
+            )
+        else:
+            self.mock_system_repository.get.assert_not_called()
+
+        self.mock_system_type_repository.get.assert_called_once_with(
+            self._system_post.type_id, entity_type_modifier="specified"
+        )
         self.wrapped_utils.generate_code.assert_called_once_with(self._expected_system_out.name, "system")
         self.mock_system_repository.create.assert_called_once_with(self._expected_system_in)
 
         assert self._created_system == self._expected_system_out
+
+    def check_create_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        if self._system_post.parent_id is not None:
+            self.mock_system_repository.get.assert_called_once_with(
+                self._system_post.parent_id, entity_type_modifier="parent"
+            )
+        else:
+            self.mock_system_repository.get.assert_not_called()
+
+        self.mock_system_type_repository.get.assert_not_called()
+
+        self.wrapped_utils.generate_code.assert_not_called()
+        self.mock_system_repository.create.assert_not_called()
+        assert str(self._create_exception.value) == message
 
 
 class TestCreate(CreateDSL):
@@ -97,11 +187,30 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
     def test_create_with_parent_id(self):
-        """Test creating a system with a parent ID."""
+        """Test creating a system with a `parent_id`."""
 
-        self.mock_create({**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())})
+        self.mock_create(
+            {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
+        )
         self.call_create()
         self.check_create_success()
+
+    def test_create_with_different_type_id_to_parent(self):
+        """Test creating a system with a different `type_id` to its parent."""
+
+        self.mock_create(
+            {
+                **SYSTEM_POST_DATA_NO_PARENT_A,
+                "parent_id": str(ObjectId()),
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
+        )
+        self.call_create_expecting_error(InvalidActionError)
+        self.check_create_failed_with_exception("Cannot use a different type_id to the parent system")
 
 
 class GetDSL(SystemServiceDSL):
@@ -241,7 +350,19 @@ class UpdateDSL(SystemServiceDSL):
     _updated_system: MagicMock
     _update_exception: pytest.ExceptionInfo
 
-    def mock_update(self, system_id: str, system_patch_data: dict, stored_system_post_data: Optional[dict]) -> None:
+    _parent_id_changing: bool
+    _type_id_changing: bool
+
+    def mock_update(
+        self,
+        system_id: str,
+        system_patch_data: dict,
+        stored_system_post_data: Optional[dict],
+        stored_parent_system_in_data: Optional[dict] = None,
+        new_parent_system_in_data: Optional[dict] = None,
+        has_child_elements: bool = False,
+        new_system_type_out_data: Optional[dict] = None,
+    ) -> None:
         """
         Mocks repository methods appropriately to test the `update` service method.
 
@@ -251,6 +372,13 @@ class UpdateDSL(SystemServiceDSL):
         :param stored_system_post_data: Dictionary containing the system data for the existing stored system.
                                         as would be required for a `SystemPostSchema` (i.e. no ID, code or created and
                                         modified times required).
+        :param stored_parent_system_in_data: Either `None` or a dictionary containing the stored parent system data as
+                                             would be required for a `SystemIn` database model.
+        :param new_parent_system_in_data: Either `None` or a dictionary containing the new parent system data as would
+                                      be required for a `SystemIn` database model.
+        :param has_child_elements: Boolean of whether the system being updated has child elements or not.
+        :param new_system_type_out_data: Either `None` or a dictionary containing the new system type data as would be
+                                     required for a `SystemTypeOut` database model.
         """
 
         # Stored system
@@ -265,6 +393,51 @@ class UpdateDSL(SystemServiceDSL):
             else None
         )
         ServiceTestHelpers.mock_get(self.mock_system_repository, self._stored_system)
+
+        self._parent_id_changing = (
+            "parent_id" in system_patch_data and self._stored_system.parent_id != system_patch_data["parent_id"]
+        )
+        self._type_id_changing = (
+            "type_id" in system_patch_data and self._stored_system.type_id != system_patch_data["type_id"]
+        )
+        if self._parent_id_changing or self._type_id_changing:
+            if self._parent_id_changing:
+                if system_patch_data["parent_id"] is not None:
+                    ServiceTestHelpers.mock_get(
+                        self.mock_system_repository,
+                        (
+                            SystemOut(
+                                **SystemIn(
+                                    **new_parent_system_in_data,
+                                ).model_dump(),
+                                id=CustomObjectId(system_id),
+                            )
+                            if new_parent_system_in_data
+                            else None
+                        ),
+                    )
+            elif self._stored_system.parent_id is not None:
+                ServiceTestHelpers.mock_get(
+                    self.mock_system_repository,
+                    (
+                        SystemOut(
+                            **SystemIn(
+                                **stored_parent_system_in_data,
+                            ).model_dump(),
+                            id=CustomObjectId(system_id),
+                        )
+                        if stored_parent_system_in_data
+                        else None
+                    ),
+                )
+
+            if self._type_id_changing:
+                self.mock_system_repository.has_child_elements.return_value = has_child_elements
+
+                ServiceTestHelpers.mock_get(
+                    self.mock_system_type_repository,
+                    SystemTypeOut(**new_system_type_out_data) if new_system_type_out_data is not None else None,
+                )
 
         # Patch schema
         self._system_patch = SystemPatchSchema(**system_patch_data)
@@ -309,8 +482,28 @@ class UpdateDSL(SystemServiceDSL):
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
 
+        # Obtain a list of expected system get calls
+        expected_system_get_calls = []
+
         # Ensure obtained old system
-        self.mock_system_repository.get.assert_called_once_with(self._updated_system_id)
+        expected_system_get_calls.append(call(self._updated_system_id))
+
+        # Ensure obtained parent if needed
+        if self._parent_id_changing or self._type_id_changing:
+            if self._parent_id_changing:
+                if self._system_patch.parent_id is not None:
+                    expected_system_get_calls.append(call(self._system_patch.parent_id, entity_type_modifier="parent"))
+            elif self._stored_system.parent_id is not None:
+                expected_system_get_calls.append(call(self._stored_system.parent_id, entity_type_modifier="parent"))
+
+        # Ensure checking children and obtained type id if needed
+        if self._type_id_changing:
+            self.mock_system_repository.has_child_elements.assert_called_once_with(self._updated_system_id)
+            self.mock_system_type_repository.get.assert_called_once_with(
+                self._system_patch.type_id, entity_type_modifier="specified"
+            )
+
+        self.mock_system_repository.get.assert_has_calls(expected_system_get_calls)
 
         # Ensure new code was obtained if patching name
         if self._system_patch.name:
@@ -339,8 +532,8 @@ class UpdateDSL(SystemServiceDSL):
 class TestUpdate(UpdateDSL):
     """Tests for updating a system."""
 
-    def test_update_all_fields_except_parent_id(self):
-        """Test updating all fields of a system except its parent ID."""
+    def test_update_all_fields_except_parent_and_type_id(self):
+        """Test updating all fields of a system except its parent and type ID."""
 
         system_id = str(ObjectId())
 
@@ -352,8 +545,8 @@ class TestUpdate(UpdateDSL):
         self.call_update(system_id)
         self.check_update_success()
 
-    def test_update_parent_id(self):
-        """Test updating the parent ID of a system."""
+    def test_update_parent_id_from_none(self):
+        """Test updating the parent ID of a system from a value of None."""
 
         system_id = str(ObjectId())
 
@@ -361,22 +554,133 @@ class TestUpdate(UpdateDSL):
             system_id,
             system_patch_data={"parent_id": str(ObjectId())},
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
         )
         self.call_update(system_id)
         self.check_update_success()
 
-    def test_update_invalid_parent_id(self):
-        """Test updating the parent ID of a system to an invalid ID."""
+    def test_update_parent_id_to_one_with_a_different_type(self):
+        """Test updating the parent ID of a system to one that has a different type."""
 
         system_id = str(ObjectId())
 
         self.mock_update(
             system_id,
-            system_patch_data={"parent_id": "invalid-id"},
+            system_patch_data={"parent_id": str(ObjectId())},
             stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
         )
-        self.call_update_expecting_error(system_id, InvalidObjectIdError)
-        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot move a system into one with a different type")
+
+    def test_update_parent_id_to_one_with_a_different_type_while_changing_type(self):
+        """Test updating the parent ID of a system to one that hass a different type while also changing the type to
+        match."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_one_with_a_different_type_while_changing_type_with_child_elements(self):
+        """Test updating the parent ID of a system to one that hass a different type while also changing the type to
+        match whenthe system has child elements."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot change the type of a system when it has children")
+
+    def test_update_parent_id_to_none(self):
+        """Test updating the parent ID of a system from a value to none."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_none_while_changing_type(self):
+        """Test updating the parent ID of a system to None while also changing the type ID."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_none_while_changing_type_with_child_elements(self):
+        """Test updating the parent ID of a system to None while also changing the type ID."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+            has_child_elements=True,
+        )
+        self.call_update_expecting_error(system_id, InvalidActionError)
+        self.check_update_failed_with_exception("Cannot change the type of a system when it has children")
+
+    def test_update_type_id_without_parent(self):
+        """Test updating the type ID of a system that doesn't have a parent."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_type_id_with_parent(self):
+        """Test updating the type ID of a system that has a parent."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data={
+                **SYSTEM_IN_DATA_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
 
     def test_update_description_only(self):
         """Test updating system's description field only (code should not need regenerating as name doesn't change)."""
