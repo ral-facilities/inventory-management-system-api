@@ -43,8 +43,8 @@ class ListDSL(SystemTypeRepoDSL):
         """
         Mocks database methods appropriately to test the `list` repo method.
 
-        :param system_types_out_data: List of dictionaries containing the system data as would be required for a
-                                      `SystemOut` database model.
+        :param system_types_out_data: List of dictionaries containing the system type data as would be required for a
+                                      `SystemTypeOut` database model.
         """
 
         self._expected_systems_types_out = [

@@ -18,7 +18,7 @@ SystemTypeServiceDep = Annotated[SystemTypeService, Depends(SystemTypeService)]
 
 
 @router.get(path="", summary="Get system types", response_description="List of system types")
-def get_systems(
+def get_system_types(
     system_type_service: SystemTypeServiceDep,
 ) -> list[SystemTypeSchema]:
     # pylint: disable=missing-function-docstring
