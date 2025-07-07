@@ -8,4 +8,5 @@ coverage:
       default:
         target: 75
 ignore:
-  - "test/"
+  - "test/",
+  - "inventory_management_system_api/migrations/scripts/*" # ignore migration scripts

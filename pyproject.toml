@@ -44,5 +44,11 @@ dev = [
     "inventory-management-system-api[scripts]"
 ]
 
+[tool.coverage.run]
+omit = [
+    # Exclude migration scripts from coverage measurement
+    "inventory_management_system_api/migrations/scripts/*"
+]
+
 [tool.setuptools.packages.find]
 include  = ["inventory_management_system_api", "inventory_management_system_api*"]
