@@ -8,4 +8,6 @@ coverage:
       default:
         target: 75
 ignore:
-  - "test/"
+  - "test/",
+  - "inventory_management_system_api/migrations/scripts/*", # ignore migration scripts
+  - "inventory_management_system_api/routers/v1/*" # ignore routers as they are tested in the e2e tests
