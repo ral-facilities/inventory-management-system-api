@@ -5,11 +5,14 @@ Module for providing a service for managing systems using the `SystemRepo` repos
 import logging
 from typing import Annotated, Optional
 
-from fastapi import Depends
+from fastapi import Depends, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import ChildElementsExistError
+from inventory_management_system_api.core.exceptions import (
+    ChildElementsExistError,
+    InvalidObjectIdError,
+    MissingRecordError,
+)
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -41,10 +44,8 @@ class SystemService:
         :return: Created system
         """
 
-        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
-        # SystemIn or move the parent_id check to the service)
         if system.parent_id is not None:
-            CustomObjectId(system.parent_id, entity_type="parent system")
+            self._get_parent(system.parent_id)
 
         code = utils.generate_code(system.name, "system")
         return self._system_repository.create(
@@ -59,23 +60,37 @@ class SystemService:
             )
         )
 
-    def get(self, system_id: str) -> Optional[SystemOut]:
+    def get(self, system_id: str) -> SystemOut:
         """
-        Retrieve a system by its ID
+        Retrieve a system by its ID.
 
-        :param system_id: ID of the system to retrieve
-        :return: Retrieved system or `None` if not found
+        :param system_id: ID of the system to retrieve.
+        :return: Retrieved system.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `system_id` is invalid.
         """
-        return self._system_repository.get(system_id)
+        try:
+            return self._system_repository.get(system_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "System not found"
+            raise exc
 
     def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
         """
-        Retrieve the breadcrumbs for a specific system
+        Retrieve the breadcrumbs for a specific system.
 
-        :param system_id: ID of the system to retrieve breadcrumbs for
-        :return: Breadcrumbs
+        :param system_id: ID of the system to retrieve breadcrumbs for.
+        :return: Breadcrumbs.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `system_id` is invalid.
         """
-        return self._system_repository.get_breadcrumbs(system_id)
+        try:
+            return self._system_repository.get_breadcrumbs(system_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "System not found"
+            raise exc
 
     def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """
@@ -99,10 +114,8 @@ class SystemService:
 
         update_data = system.model_dump(exclude_unset=True)
 
-        # Check here so can raise appropriate error (alternative methods would be to have a custom type in
-        # SystemIn or move the parent_id check to the service)
         if "parent_id" in update_data and system.parent_id != stored_system.parent_id and system.parent_id is not None:
-            CustomObjectId(system.parent_id, entity_type="parent system")
+            self._get_parent(system.parent_id)
 
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
@@ -115,16 +128,38 @@ class SystemService:
 
         :param system_id: ID of the system to delete
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `system_id` is invalid.
         """
-        if self._system_repository.has_child_elements(system_id):
-            raise ChildElementsExistError(
-                f"System with ID {system_id} has child elements and cannot be deleted",
-                response_detail="System has child elements and cannot be deleted",
-            )
+        try:
+            if self._system_repository.has_child_elements(system_id):
+                raise ChildElementsExistError(
+                    f"System with ID {system_id} has child elements and cannot be deleted",
+                    response_detail="System has child elements and cannot be deleted",
+                )
 
-        # First, attempt to delete any attachments and/or images that might be associated with this system.
-        if config.object_storage.enabled:
-            ObjectStorageAPIClient.delete_attachments(system_id, access_token)
-            ObjectStorageAPIClient.delete_images(system_id, access_token)
+            # First, attempt to delete any attachments and/or images that might be associated with this system.
+            if config.object_storage.enabled:
+                ObjectStorageAPIClient.delete_attachments(system_id, access_token)
+                ObjectStorageAPIClient.delete_images(system_id, access_token)
 
-        self._system_repository.delete(system_id)
+            self._system_repository.delete(system_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "System not found"
+            raise exc
+
+    def _get_parent(self, parent_id: str) -> SystemOut:
+        """
+        Retrieve a parent system by its ID.
+
+        :param parent_id: ID of the parent system to retrieve.
+        :raises MissingRecordError: If the supplied `parent_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `parent_id` is invalid.
+        """
+        try:
+            return self._system_repository.get(parent_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+            exc.response_detail = "Parent system not found"
+            raise exc

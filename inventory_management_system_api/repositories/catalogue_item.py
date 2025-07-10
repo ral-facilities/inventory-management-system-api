@@ -48,23 +48,17 @@ class CatalogueItemRepo:
     def get(
         self,
         catalogue_item_id: str,
-        entity_type_modifier: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> CatalogueItemOut:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
 
         :param catalogue_item_id: The ID of the catalogue item to retrieve.
-        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
-                                     e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved catalogue item, or `None` if not found.
         :raises MissingRecordError: If the supplied `catalogue_item_id` is non-existent.
         """
-        entity_type = f"{entity_type_modifier} catalogue item" if entity_type_modifier else "catalogue item"
-        catalogue_item_id = CustomObjectId(
-            catalogue_item_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
-        )
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
 
         logger.info("Retrieving catalogue item with ID: %s from the database", catalogue_item_id)
         catalogue_item = self._catalogue_items_collection.find_one({"_id": catalogue_item_id}, session=session)
@@ -72,9 +66,7 @@ class CatalogueItemRepo:
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
 
-        raise MissingRecordError(
-            entity_id=catalogue_item_id, entity_type=entity_type, use_422=entity_type_modifier is not None
-        )
+        raise MissingRecordError(entity_id=catalogue_item_id, entity_type="catalogue item")
 
     def list(
         self, catalogue_category_id: Optional[str], session: Optional[ClientSession] = None
@@ -135,7 +127,7 @@ class CatalogueItemRepo:
         """
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
         result = self._catalogue_items_collection.delete_one(
-            {"_id": CustomObjectId(catalogue_item_id, entity_type="catalogue item", not_found_if_invalid=True)},
+            {"_id": CustomObjectId(catalogue_item_id)},
             session=session,
         )
         if result.deleted_count == 0:
@@ -153,11 +145,7 @@ class CatalogueItemRepo:
         """
         logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
         item = self._items_collection.find_one(
-            {
-                "catalogue_item_id": CustomObjectId(
-                    catalogue_item_id, entity_type="catalogue item", not_found_if_invalid=True
-                )
-            },
+            {"catalogue_item_id": CustomObjectId(catalogue_item_id)},
             session=session,
         )
         return item is not None

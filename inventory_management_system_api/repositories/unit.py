@@ -52,22 +52,16 @@ class UnitRepo:
         result = self._units_collection.insert_one(unit.model_dump(), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(
-        self, unit_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> UnitOut:
+    def get(self, unit_id: str, session: Optional[ClientSession] = None) -> UnitOut:
         """
         Retrieve a Unit by its ID from a MongoDB database.
 
         :param unit_id: The ID of the unit to retrieve.
-        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
-                                     e.g. specified if its for a specified unit.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved unit.
         :raises MissingRecordError: If the supplied `unit_id` is non-existent.
         """
-
-        entity_type = f"{entity_type_modifier} unit" if entity_type_modifier else "unit"
-        unit_id = CustomObjectId(unit_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None)
+        unit_id = CustomObjectId(unit_id)
 
         logger.info("Retrieving unit with ID: %s from the database", unit_id)
         unit = self._units_collection.find_one({"_id": unit_id}, session=session)
@@ -75,7 +69,7 @@ class UnitRepo:
         if unit:
             return UnitOut(**unit)
 
-        raise MissingRecordError(entity_id=unit_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
+        raise MissingRecordError(entity_id=unit_id, entity_type="unit")
 
     def list(self, session: Optional[ClientSession] = None) -> list[UnitOut]:
         """
@@ -98,7 +92,7 @@ class UnitRepo:
         :raises PartOfCatalogueCategoryError: if unit is part of a catalogue category
         :raises MissingRecordError: if supplied unit ID does not exist in the database
         """
-        unit_id = CustomObjectId(unit_id, entity_type="unit", not_found_if_invalid=True)
+        unit_id = CustomObjectId(unit_id)
         if self._is_unit_in_catalogue_category(str(unit_id), session=session):
             raise PartOfCatalogueCategoryError(
                 f"The unit with ID {str(unit_id)} is a part of a Catalogue category",

@@ -6,16 +6,18 @@ propagation down through their child catalogue items and items using their respe
 import logging
 from typing import Annotated, Optional
 
-from fastapi import Depends
+from fastapi import Depends, status
 
 from inventory_management_system_api.core.database import start_session_transaction
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidActionError, InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
+    CatalogueCategoryOut,
     CatalogueCategoryPropertyIn,
     CatalogueCategoryPropertyOut,
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn
+from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
@@ -81,7 +83,7 @@ class CatalogueCategoryPropertyService:
             raise InvalidActionError("Cannot add a mandatory property without a default value")
 
         # Obtain the existing catalogue category to validate against
-        stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+        stored_catalogue_category = self._get_catalogue_category(catalogue_category_id)
 
         # Must be a leaf catalogue category in order to have properties
         if not stored_catalogue_category.is_leaf:
@@ -93,7 +95,7 @@ class CatalogueCategoryPropertyService:
         unit_value = None
         if catalogue_category_property.unit_id is not None:
             # Obtain the specified unit value if a unit ID is given
-            unit = self._unit_repository.get(catalogue_category_property.unit_id, entity_type_modifier="specified")
+            unit = self._get_specified_unit(catalogue_category_property.unit_id)
             unit_value = unit.value
 
         catalogue_category_property_in = CatalogueCategoryPropertyIn(
@@ -191,7 +193,7 @@ class CatalogueCategoryPropertyService:
         update_data = catalogue_category_property.model_dump(exclude_unset=True)
 
         # Obtain the existing catalogue category to validate against
-        stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+        stored_catalogue_category = self._get_catalogue_category(catalogue_category_id)
 
         # Attempt to locate the property
         existing_property_out: Optional[CatalogueCategoryPropertyOut] = None
@@ -239,3 +241,36 @@ class CatalogueCategoryPropertyService:
                 )
 
         return property_out
+
+    # pylint: disable=duplicate-code
+    def _get_catalogue_category(self, catalogue_category_id: str) -> CatalogueCategoryOut:
+        """
+        Retrieve a catalogue category by its ID.
+
+        :param catalogue_category_id: ID of the specified catalogue category to retrieve.
+        :raises MissingRecordError: If the supplied `catalogue_category_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `catalogue_category_id` is invalid.
+        """
+        try:
+            return self._catalogue_category_repository.get(catalogue_category_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Catalogue category not found"
+            raise exc
+
+    def _get_specified_unit(self, unit_id: str) -> UnitOut:
+        """
+        Retrieve a specified unit by its ID.
+
+        :param unit_id: ID of the unit to retrieve.
+        :raises MissingRecordError: If the supplied `unit_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `unit_id` is invalid.
+        """
+        try:
+            return self._unit_repository.get(unit_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+            exc.response_detail = "Specified unit not found"
+            raise exc
+
+    # pylint: enable=duplicate-code

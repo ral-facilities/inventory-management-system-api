@@ -51,24 +51,16 @@ class ManufacturerRepo:
         result = self._manufacturers_collection.insert_one(manufacturer.model_dump(), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(
-        self, manufacturer_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> ManufacturerOut:
+    def get(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> ManufacturerOut:
         """
         Retrieve a manufacturer by its ID from a MondoDB database.
 
         :param manufacturer_id: The ID of the manufacturer to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
-        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
-                                     e.g. specified if its for a specified system.
         :return: The retrieved manufacturer, or `None` if not found.
         :raises MissingRecordError: If the supplied `manufacturer_id` is non-existent.
         """
-
-        entity_type = f"{entity_type_modifier} manufacturer" if entity_type_modifier else "manufacturer"
-        manufacturer_id = CustomObjectId(
-            manufacturer_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
-        )
+        manufacturer_id = CustomObjectId(manufacturer_id)
 
         logger.info("Retrieving manufacturer with ID: %s from database", manufacturer_id)
         manufacturer = self._manufacturers_collection.find_one({"_id": manufacturer_id}, session=session)
@@ -76,9 +68,7 @@ class ManufacturerRepo:
         if manufacturer:
             return ManufacturerOut(**manufacturer)
 
-        raise MissingRecordError(
-            entity_id=manufacturer_id, entity_type=entity_type, use_422=entity_type_modifier is not None
-        )
+        raise MissingRecordError(entity_id=manufacturer_id, entity_type="manufacturer")
 
     def list(self, session: Optional[ClientSession] = None) -> List[ManufacturerOut]:
         """
@@ -103,7 +93,7 @@ class ManufacturerRepo:
         :raises DuplicateRecordError: If a duplicate manufacturer is found.
         :return: The updated manufacturer.
         """
-        manufacturer_id = CustomObjectId(manufacturer_id, entity_type="manufacturer", not_found_if_invalid=True)
+        manufacturer_id = CustomObjectId(manufacturer_id)
 
         stored_manufacturer = self.get(str(manufacturer_id), session=session)
         if stored_manufacturer.name != manufacturer.name:
@@ -130,7 +120,7 @@ class ManufacturerRepo:
         :raises PartOfCatalogueItemError: If the manufacturer is part of a catalogue item.
         :raises MissingRecordError: If the manufacturer doesn't exist.
         """
-        manufacturer_id = CustomObjectId(manufacturer_id, entity_type="manufacturer", not_found_if_invalid=True)
+        manufacturer_id = CustomObjectId(manufacturer_id)
         if self._is_manufacturer_in_catalogue_item(str(manufacturer_id), session=session):
             raise PartOfCatalogueItemError(
                 f"Manufacturer with ID '{str(manufacturer_id)}' is part of a catalogue item",

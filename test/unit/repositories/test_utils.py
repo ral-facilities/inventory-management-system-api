@@ -62,9 +62,7 @@ class TestCreateBreadcrumbsAggregationPipeline:
         collection_name = MagicMock()
 
         with pytest.raises(InvalidObjectIdError) as exc:
-            utils.create_breadcrumbs_aggregation_pipeline(
-                entity_id=entity_id, collection_name=collection_name, entity_type="entity"
-            )
+            utils.create_breadcrumbs_aggregation_pipeline(entity_id=entity_id, collection_name=collection_name)
 
         assert str(exc.value) == f"Invalid ObjectId value '{entity_id}'"
 
