@@ -5,7 +5,7 @@ Module for providing an API router which defines routes for managing systems usi
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -42,7 +42,13 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
     try:
         system = system_service.create(system)
         return SystemSchema(**system.model_dump())
+    # pylint: disable=duplicate-code
     except (MissingRecordError, InvalidObjectIdError) as exc:
+        if system.type_id in str(exc) or "system type" in str(exc).lower():
+            message = "The specified system type does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
         message = "The specified parent system does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
@@ -50,6 +56,11 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
         message = "A system with the same name already exists within the parent system"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    # pylint: enable=duplicate-code
 
 
 @router.get(path="", summary="Get systems", response_description="List of systems")
@@ -124,6 +135,10 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
             message = "The specified parent system does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        if system.type_id and system.type_id in str(exc) or "system type" in str(exc).lower():
+            message = "The specified system type does not exist"
             logger.exception(message)
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 

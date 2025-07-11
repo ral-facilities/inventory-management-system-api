@@ -17,6 +17,7 @@ class SystemBase(BaseModel):
 
     parent_id: Optional[CustomObjectIdField] = None
     name: str
+    type_id: CustomObjectIdField = None
     description: Optional[str] = None
     location: Optional[str] = None
     owner: Optional[str] = None
@@ -39,5 +40,6 @@ class SystemOut(CreatedModifiedTimeOutMixin, SystemBase):
 
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
+    type_id: StringObjectIdField
 
     model_config = ConfigDict(populate_by_name=True)
