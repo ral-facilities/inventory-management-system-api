@@ -23,6 +23,7 @@ services:
     entrypoint: mongodb_entrypoint.sh
     volumes:
       - ./mongodb/data:/data/db
+      - ./scripts/setup.mongodb:/usr/local/bin/setup.mongodb:ro
       - ./scripts/mongodb_entrypoint.sh:/usr/local/bin/mongodb_entrypoint.sh:ro
     restart: always
     ports:
