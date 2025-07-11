@@ -43,16 +43,33 @@ class UnitRepo:
         :return: The created unit
         :raises DuplicateRecordError: If a duplicate unit is found within the collection
         """
-
         if self._is_duplicate_unit(unit.code, session=session):
-            raise DuplicateRecordError("Duplicate unit found")
+            raise DuplicateRecordError(
+                "Duplicate unit found", response_detail="A unit with the same value already exists"
+            )
 
         logger.info("Inserting new unit into database")
-
         result = self._units_collection.insert_one(unit.model_dump(), session=session)
-        unit = self.get(str(result.inserted_id), session=session)
+        return self.get(str(result.inserted_id), session=session)
 
-        return unit
+    def get(self, unit_id: str, session: Optional[ClientSession] = None) -> UnitOut:
+        """
+        Retrieve a Unit by its ID from a MongoDB database.
+
+        :param unit_id: The ID of the unit to retrieve.
+        :param session: PyMongo ClientSession to use for database operations
+        :return: The retrieved unit.
+        :raises MissingRecordError: If the supplied `unit_id` is non-existent.
+        """
+        unit_id = CustomObjectId(unit_id)
+
+        logger.info("Retrieving unit with ID: %s from the database", unit_id)
+        unit = self._units_collection.find_one({"_id": unit_id}, session=session)
+
+        if unit:
+            return UnitOut(**unit)
+
+        raise MissingRecordError(entity_id=unit_id, entity_type="unit")
 
     def list(self, session: Optional[ClientSession] = None) -> list[UnitOut]:
         """
@@ -64,21 +81,6 @@ class UnitRepo:
         logger.info("Retrieving all units from the database")
         units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
-
-    def get(self, unit_id: str, session: Optional[ClientSession] = None) -> Optional[UnitOut]:
-        """
-        Retrieve a Unit by its ID from a MongoDB database.
-
-        :param unit_id: The ID of the unit to retrieve.
-        :param session: PyMongo ClientSession to use for database operations
-        :return: The retrieved unit, or `None` if not found.
-        """
-        unit_id = CustomObjectId(unit_id)
-        logger.info("Retrieving unit with ID: %s from the database", unit_id)
-        unit = self._units_collection.find_one({"_id": unit_id}, session=session)
-        if unit:
-            return UnitOut(**unit)
-        return None
 
     def delete(self, unit_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -93,12 +95,15 @@ class UnitRepo:
         """
         unit_id = CustomObjectId(unit_id)
         if self._is_unit_in_catalogue_category(str(unit_id), session=session):
-            raise PartOfCatalogueCategoryError(f"The unit with ID {str(unit_id)} is a part of a Catalogue category")
+            raise PartOfCatalogueCategoryError(
+                f"The unit with ID {str(unit_id)} is a part of a Catalogue category",
+                response_detail="The specified unit is part of a Catalogue category",
+            )
 
         logger.info("Deleting unit with ID %s from the database", unit_id)
         result = self._units_collection.delete_one({"_id": unit_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No unit found with ID: {str(unit_id)}")
+            raise MissingRecordError(entity_id=str(unit_id), entity_type="unit")
 
     def _is_duplicate_unit(
         self, code: str, unit_id: CustomObjectId = None, session: Optional[ClientSession] = None

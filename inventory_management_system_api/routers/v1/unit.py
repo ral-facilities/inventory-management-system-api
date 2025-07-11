@@ -6,14 +6,8 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, Path, status
 
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidObjectIdError,
-    MissingRecordError,
-    PartOfCatalogueCategoryError,
-)
 from inventory_management_system_api.schemas.unit import UnitPostSchema, UnitSchema
 from inventory_management_system_api.services.unit import UnitService
 
@@ -35,13 +29,8 @@ def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep) -> UnitSchem
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)
 
-    try:
-        unit = unit_service.create(unit)
-        return UnitSchema(**unit.model_dump())
-    except DuplicateRecordError as exc:
-        message = "A unit with the same value already exists"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    unit = unit_service.create(unit)
+    return UnitSchema(**unit.model_dump())
 
 
 @router.get(
@@ -54,15 +43,8 @@ def get_unit(
 ) -> UnitSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting unit with ID %s", unit_id)
-    message = "Unit not found"
-    try:
-        unit = unit_service.get(unit_id)
-        if not unit:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
 
+    unit = unit_service.get(unit_id)
     return UnitSchema(**unit.model_dump())
 
 
@@ -86,13 +68,4 @@ def delete_unit(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting unit with ID: %s", unit_id)
-    try:
-        unit_service.delete(unit_id)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Unit not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except PartOfCatalogueCategoryError as exc:
-        message = "The specified unit is part of a Catalogue category"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    unit_service.delete(unit_id)

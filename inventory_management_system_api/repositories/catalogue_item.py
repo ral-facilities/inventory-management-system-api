@@ -12,7 +12,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
 
 logger = logging.getLogger()
@@ -43,23 +43,30 @@ class CatalogueItemRepo:
         """
         logger.info("Inserting the new catalogue item into the database")
         result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump(by_alias=True), session=session)
-        catalogue_item = self.get(str(result.inserted_id), session=session)
-        return catalogue_item
+        return self.get(str(result.inserted_id), session=session)
 
-    def get(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> Optional[CatalogueItemOut]:
+    def get(
+        self,
+        catalogue_item_id: str,
+        session: Optional[ClientSession] = None,
+    ) -> CatalogueItemOut:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
 
         :param catalogue_item_id: The ID of the catalogue item to retrieve.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved catalogue item, or `None` if not found.
+        :raises MissingRecordError: If the supplied `catalogue_item_id` is non-existent.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
+
         logger.info("Retrieving catalogue item with ID: %s from the database", catalogue_item_id)
         catalogue_item = self._catalogue_items_collection.find_one({"_id": catalogue_item_id}, session=session)
+
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
-        return None
+
+        raise MissingRecordError(entity_id=catalogue_item_id, entity_type="catalogue item")
 
     def list(
         self, catalogue_category_id: Optional[str], session: Optional[ClientSession] = None
@@ -73,7 +80,12 @@ class CatalogueItemRepo:
         """
         query = {}
         if catalogue_category_id:
-            catalogue_category_id = CustomObjectId(catalogue_category_id)
+            try:
+                catalogue_category_id = CustomObjectId(catalogue_category_id)
+            except InvalidObjectIdError:
+                # As this method filters, and to hide the database behaviour, we treat any invalid id
+                # the same as a valid one that doesn't exist i.e. return an empty list
+                return []
             query["catalogue_category_id"] = catalogue_category_id
 
         message = "Retrieving all catalogue items from the database"
@@ -103,8 +115,7 @@ class CatalogueItemRepo:
         self._catalogue_items_collection.update_one(
             {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
         )
-        catalogue_item = self.get(str(catalogue_item_id), session=session)
-        return catalogue_item
+        return self.get(str(catalogue_item_id), session=session)
 
     def delete(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -116,10 +127,11 @@ class CatalogueItemRepo:
         """
         logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
         result = self._catalogue_items_collection.delete_one(
-            {"_id": CustomObjectId(catalogue_item_id)}, session=session
+            {"_id": CustomObjectId(catalogue_item_id)},
+            session=session,
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+            raise MissingRecordError(entity_id=catalogue_item_id, entity_type="catalogue item")
 
     def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """
@@ -133,7 +145,8 @@ class CatalogueItemRepo:
         """
         logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
         item = self._items_collection.find_one(
-            {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
+            {"catalogue_item_id": CustomObjectId(catalogue_item_id)},
+            session=session,
         )
         return item is not None
 
