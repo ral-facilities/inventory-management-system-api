@@ -465,6 +465,8 @@ class TestUpdate(UpdateDSL):
             MANUFACTURER_IN_DATA_A,
             duplicate_manufacturer_in_data={**MANUFACTURER_IN_DATA_A, "name": duplicate_name},
         )
+        self.call_update_expecting_error(manufacturer_id, DuplicateRecordError)
+        self.check_update_failed_with_exception("Duplicate manufacturer found")
 
     def test_update_with_invalid_id(self):
         """Test updating a manufacturer with an invalid ID."""
