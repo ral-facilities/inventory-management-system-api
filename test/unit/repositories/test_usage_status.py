@@ -42,7 +42,6 @@ class UsageStatusRepoDSL:
         self.usage_statuses_collection = database_mock.usage_statuses
         self.items_collection = database_mock.items
 
-        self.mock_session = MagicMock()
         yield
 
     def mock_is_duplicate_usage_status(self, duplicate_usage_status_in_data: Optional[dict] = None) -> None:

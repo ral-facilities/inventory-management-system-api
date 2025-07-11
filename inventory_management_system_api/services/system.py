@@ -2,7 +2,6 @@
 Module for providing a service for managing systems using the `SystemRepo` repository.
 """
 
-import logging
 from typing import Annotated, Optional
 
 from fastapi import Depends, status
@@ -19,8 +18,6 @@ from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
-
-logger = logging.getLogger()
 
 
 class SystemService:

@@ -68,8 +68,6 @@ class CatalogueCategoryRepoDSL:
         self.catalogue_categories_collection = database_mock.catalogue_categories
         self.catalogue_items_collection = database_mock.catalogue_items
 
-        self.mock_session = MagicMock()
-
         with patch("inventory_management_system_api.repositories.catalogue_category.utils") as mock_utils:
             self.mock_utils = mock_utils
             yield

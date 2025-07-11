@@ -55,8 +55,6 @@ class SystemRepoDSL:
         self.systems_collection = database_mock.systems
         self.items_collection = database_mock.items
 
-        self.mock_session = MagicMock()
-
         with patch("inventory_management_system_api.repositories.system.utils") as mock_utils:
             self.mock_utils = mock_utils
             yield
@@ -421,7 +419,8 @@ class ListDSL(SystemRepoDSL):
     _obtained_systems_out: list[SystemOut]
 
     def mock_list(self, systems_in_data: list[dict]):
-        """Mocks database methods appropriately to test the `list` repo method.
+        """
+        Mocks database methods appropriately to test the `list` repo method.
 
         :param systems_in_data: List of dictionaries containing the system data as would be required for a
                                 `SystemIn` database model (i.e. no ID or created and modified times required).

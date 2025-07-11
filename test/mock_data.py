@@ -767,6 +767,20 @@ MANUFACTURER_IN_DATA_B = {
     "code": "manufacturer-b",
 }
 
+
+# ---------------------------- SYSTEM TYPES -----------------------------
+
+SYSTEM_TYPES_OUT_DATA = [
+    {"_id": ObjectId("685e5dce6e347e39d459c5ea"), "value": "Storage"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5eb"), "value": "Operational"},
+    {"_id": ObjectId("685d52f4b1095c1837c69dac"), "value": "Quarantine"},
+    {"_id": ObjectId("685d52f4b1095c1837c69dad"), "value": "Scrapped"},
+]
+
+SYSTEM_TYPES_GET_DATA = [
+    {"id": str(system_type_out["_id"]), "value": system_type_out["value"]} for system_type_out in SYSTEM_TYPES_OUT_DATA
+]
+
 # --------------------------------- SYSTEMS ---------------------------------
 
 # No parent, Required values only
