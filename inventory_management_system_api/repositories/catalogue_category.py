@@ -62,8 +62,6 @@ class CatalogueCategoryRepo:
         :raises DuplicateRecordError: If a duplicate catalogue category is found within the parent catalogue category.
         """
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
-        if parent_id:
-            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
             raise DuplicateRecordError(
@@ -81,7 +79,6 @@ class CatalogueCategoryRepo:
     def get(
         self,
         catalogue_category_id: str,
-        entity_type_modifier: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryOut:
         """
@@ -92,12 +89,9 @@ class CatalogueCategoryRepo:
                                      e.g. parent if its for a parent catalogue category.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved catalogue category.
-        :raises MissingRecordError: If the supplied `system_id` is non-existent.
+        :raises MissingRecordError: If the supplied `catalogue_category_id` is non-existent.
         """
-        entity_type = f"{entity_type_modifier} catalogue category" if entity_type_modifier else "catalogue category"
-        catalogue_category_id = CustomObjectId(
-            catalogue_category_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
-        )
+        catalogue_category_id = CustomObjectId(catalogue_category_id)
 
         logger.info("Retrieving catalogue category with ID: %s from the database", catalogue_category_id)
         catalogue_category = self._catalogue_categories_collection.find_one(
@@ -107,9 +101,7 @@ class CatalogueCategoryRepo:
         if catalogue_category:
             return CatalogueCategoryOut(**catalogue_category)
 
-        raise MissingRecordError(
-            entity_id=catalogue_category_id, entity_type=entity_type, use_422=entity_type_modifier is not None
-        )
+        raise MissingRecordError(entity_id=catalogue_category_id, entity_type="catalogue category")
 
     def get_breadcrumbs(
         self, catalogue_category_id: str, session: Optional[ClientSession] = None
@@ -128,7 +120,6 @@ class CatalogueCategoryRepo:
                     utils.create_breadcrumbs_aggregation_pipeline(
                         entity_id=catalogue_category_id,
                         collection_name="catalogue_categories",
-                        entity_type="catalogue category",
                     ),
                     session=session,
                 )
@@ -183,8 +174,6 @@ class CatalogueCategoryRepo:
         catalogue_category_id = CustomObjectId(catalogue_category_id)
 
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
-        if parent_id:
-            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         stored_catalogue_category = self.get(str(catalogue_category_id), session=session)
         moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
@@ -233,9 +222,7 @@ class CatalogueCategoryRepo:
         :raises ChildElementsExistError: If the catalogue category has child elements.
         :raises MissingRecordError: If the catalogue category doesn't exist.
         """
-        converted_category_id = CustomObjectId(
-            catalogue_category_id, entity_type="catalogue category", not_found_if_invalid=True
-        )
+        converted_category_id = CustomObjectId(catalogue_category_id)
         if self.has_child_elements(catalogue_category_id, session=session):
             raise ChildElementsExistError(
                 f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted",

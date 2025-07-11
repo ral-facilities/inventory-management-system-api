@@ -45,9 +45,7 @@ class ItemRepo:
         result = self._items_collection.insert_one(item.model_dump(by_alias=True), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(
-        self, item_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> ItemOut:
+    def get(self, item_id: str, session: Optional[ClientSession] = None) -> ItemOut:
         """
         Retrieve an item by its ID from a MongoDB database.
 
@@ -58,9 +56,7 @@ class ItemRepo:
         :return: The retrieved item.
         :raises MissingRecordError: If the supplied `item_id` is non-existent.
         """
-
-        entity_type = f"{entity_type_modifier} item" if entity_type_modifier else "item"
-        item_id = CustomObjectId(item_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None)
+        item_id = CustomObjectId(item_id)
 
         logger.info("Retrieving item with ID %s from the database", item_id)
         item = self._items_collection.find_one({"_id": item_id}, session=session)
@@ -68,7 +64,7 @@ class ItemRepo:
         if item:
             return ItemOut(**item)
 
-        raise MissingRecordError(entity_id=item_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
+        raise MissingRecordError(entity_id=item_id, entity_type="item")
 
     def list(
         self, system_id: Optional[str], catalogue_item_id: Optional[str], session: Optional[ClientSession] = None
@@ -129,7 +125,7 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :raises MissingRecordError: If the item doesn't exist
         """
-        item_id = CustomObjectId(item_id, entity_type="item", not_found_if_invalid=True)
+        item_id = CustomObjectId(item_id)
         logger.info("Deleting item with ID: %s from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:

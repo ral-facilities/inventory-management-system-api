@@ -2,12 +2,14 @@
 Module for providing a service for managing Units using the `UnitRepo` repository
 """
 
-from typing import Annotated, Optional
-from fastapi import Depends
+from typing import Annotated
+
+from fastapi import Depends, status
+
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.unit import UnitPostSchema
-
 from inventory_management_system_api.services import utils
 
 
@@ -34,14 +36,21 @@ class UnitService:
         code = utils.generate_code(unit.value, "unit")
         return self._unit_repository.create(UnitIn(**unit.model_dump(), code=code))
 
-    def get(self, unit_id: str) -> Optional[UnitOut]:
+    def get(self, unit_id: str) -> UnitOut:
         """
         Get Unit by its ID.
 
-        :param unit_id: The ID of the requested unit
-        :return: The retrieved unit, or None if not found
+        :param unit_id: The ID of the requested unit.
+        :return: The retrieved unit.
+        :raises MissingRecordError: If the supplied `unit_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `unit_id` is invalid.
         """
-        return self._unit_repository.get(unit_id)
+        try:
+            return self._unit_repository.get(unit_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Unit not found"
+            raise exc
 
     def list(self) -> list[UnitOut]:
         """
@@ -56,5 +65,12 @@ class UnitService:
         Delete a unit by its ID
 
         :param unit_id: The ID of the unit to delete
+        :raises MissingRecordError: If the supplied `unit_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `unit_id` is invalid.
         """
-        return self._unit_repository.delete(unit_id)
+        try:
+            return self._unit_repository.delete(unit_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Unit not found"
+            raise exc

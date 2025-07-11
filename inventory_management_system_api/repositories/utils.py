@@ -36,21 +36,20 @@ def list_query(parent_id: Optional[str], entity_type: str) -> dict:
     return query
 
 
-def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str, entity_type: str) -> list:
+def create_breadcrumbs_aggregation_pipeline(entity_id: str, collection_name: str) -> list:
     """
     Returns an aggregate query for collecting breadcrumbs data
 
     :param entity_id: ID of the entity to look up the breadcrumbs for
     :param collection_name: Value of "from" to use for the $graphLookup query - Should be the name of
                             the collection
-    :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
 
     :raises InvalidObjectIdError: If the given entity_id is invalid
     :return: The query to feed to the collection's aggregate method. The value of list(result) should
              be passed to compute_breadcrumbs below.
     """
     return [
-        {"$match": {"_id": CustomObjectId(entity_id, entity_type=entity_type, not_found_if_invalid=True)}},
+        {"$match": {"_id": CustomObjectId(entity_id)}},
         {
             "$graphLookup": {
                 "from": collection_name,
