@@ -45,8 +45,6 @@ class CatalogueItemRepoDSL:
         self.catalogue_items_collection = database_mock.catalogue_items
         self.items_collection = database_mock.items
 
-        self.mock_session = MagicMock()
-
 
 class CreateDSL(CatalogueItemRepoDSL):
     """Base class for `create` tests."""

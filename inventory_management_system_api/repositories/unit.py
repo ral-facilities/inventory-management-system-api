@@ -61,6 +61,7 @@ class UnitRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: List of Units or an empty list if no units are retrieved
         """
+        logger.info("Retrieving all units from the database")
         units = self._units_collection.find(session=session)
         return [UnitOut(**unit) for unit in units]
 

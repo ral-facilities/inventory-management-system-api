@@ -12,7 +12,7 @@ from inventory_management_system_api.models.mixins import CreatedModifiedTimeInM
 
 class SystemBase(BaseModel):
     """
-    Base database model for a system
+    Base database model for a system.
     """
 
     parent_id: Optional[CustomObjectIdField] = None
@@ -28,13 +28,13 @@ class SystemBase(BaseModel):
 
 class SystemIn(CreatedModifiedTimeInMixin, SystemBase):
     """
-    Input database model for a system
+    Input database model for a system.
     """
 
 
 class SystemOut(CreatedModifiedTimeOutMixin, SystemBase):
     """
-    Output database model for a system
+    Output database model for a system.
     """
 
     id: StringObjectIdField = Field(alias="_id")

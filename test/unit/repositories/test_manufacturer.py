@@ -42,7 +42,6 @@ class ManufacturerRepoDSL:
         self.manufacturers_collection = database_mock.manufacturers
         self.catalogue_items_collection = database_mock.catalogue_items
 
-        self.mock_session = MagicMock()
         yield
 
     def mock_is_duplicate_manufacturer(self, duplicate_manufacturer_in_data: Optional[dict] = None) -> None:
