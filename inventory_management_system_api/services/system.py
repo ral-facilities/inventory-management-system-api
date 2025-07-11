@@ -7,7 +7,11 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    ChildElementsExistError,
+    InvalidActionError,
+    MissingRecordError,
+)
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -47,12 +51,14 @@ class SystemService:
 
         # If there is a parent, must use the same type as it
         if system.parent_id is not None:
-            parent_system = self._system_repository.get(system.parent_id, entity_type_modifier="parent")
+            parent_system = self._system_repository.get(system.parent_id)
+            if not parent_system:
+                raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
             if system.type_id != parent_system.type_id:
                 raise InvalidActionError("Cannot use a different type_id to the parent system")
 
-        # Ensure system type exists
-        self._system_type_repository.get(system.type_id, entity_type_modifier="specified")
+        if not self._system_type_repository.get(system.type_id):
+            raise MissingRecordError(f"No system type found with ID: {system.type_id}")
 
         # Create the system
         code = utils.generate_code(system.name, "system")
@@ -121,10 +127,12 @@ class SystemService:
             if parent_id_changing:
                 # Parent is being updated
                 if system.parent_id is not None:
-                    parent_system = self._system_repository.get(system.parent_id, entity_type_modifier="parent")
+                    parent_system = self._system_repository.get(system.parent_id)
+                    if not parent_system:
+                        raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
             elif stored_system.parent_id is not None:
                 # Parent is not being updated but are updating the type so obtain the current parent
-                parent_system = self._system_repository.get(stored_system.parent_id, entity_type_modifier="parent")
+                parent_system = self._system_repository.get(stored_system.parent_id)
 
             type_id = stored_system.type_id
             if type_id_changing:
@@ -134,8 +142,8 @@ class SystemService:
                 if self._system_repository.has_child_elements(system_id):
                     raise InvalidActionError("Cannot change the type of a system when it has children")
 
-                # Ensure system type exists
-                self._system_type_repository.get(system.type_id, entity_type_modifier="specified")
+                if not self._system_type_repository.get(system.type_id):
+                    raise MissingRecordError(f"No system type found with ID: {system.type_id}")
 
             # Ensure the system type matches the parent system type if there is a parent
             if parent_system is not None and type_id != parent_system.type_id:

@@ -127,8 +127,8 @@ class TestGet(GetDSL):
         system_type_id = str(ObjectId())
 
         self.mock_get(None)
-        self.call_get_expecting_error(system_type_id, MissingRecordError)
-        self.check_get_failed_with_exception(f"No system type found with ID: {system_type_id}", assert_find=True)
+        self.call_get(system_type_id)
+        self.check_get_success()
 
     def test_get_with_invalid_id(self):
         """Test getting a system type with an invalid ID."""
