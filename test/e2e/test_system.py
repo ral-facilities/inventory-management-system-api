@@ -150,13 +150,13 @@ class TestCreate(CreateDSL):
         """Test creating a system with a non-existent `type_id`."""
 
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": str(ObjectId())})
-        self.check_post_system_failed_with_detail(422, "Specified system type not found")
+        self.check_post_system_failed_with_detail(422, "The specified system type does not exist")
 
     def test_create_with_invalid_type_id(self):
         """Test creating a system with an invalid `type_id`."""
 
         self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "type_id": "invalid-id"})
-        self.check_post_system_failed_with_detail(422, "Specified system type not found")
+        self.check_post_system_failed_with_detail(422, "The specified system type does not exist")
 
     def test_create_with_invalid_importance(self):
         """Test creating a system with an invalid importance."""
@@ -740,14 +740,14 @@ class TestUpdate(UpdateDSL):
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"type_id": str(ObjectId())})
-        self.check_patch_system_failed_with_detail(422, "Specified system type not found")
+        self.check_patch_system_failed_with_detail(422, "The specified system type does not exist")
 
     def test_partial_update_type_id_to_invalid_id(self):
         """Test updating the `type_id` of a system to an invalid ID."""
 
         system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"type_id": "invalid-id"})
-        self.check_patch_system_failed_with_detail(422, "Specified system type not found")
+        self.check_patch_system_failed_with_detail(422, "The specified system type does not exist")
 
     def test_partial_update_name_capitalisation(self):
         """Test updating the capitalisation of the name of a system (to ensure it the check doesn't confuse with

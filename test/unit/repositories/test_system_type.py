@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError
 from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 

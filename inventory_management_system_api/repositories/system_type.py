@@ -10,7 +10,6 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import MissingRecordError
 from inventory_management_system_api.models.system_type import SystemTypeOut
 
 logger = logging.getLogger()
