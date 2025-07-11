@@ -23,7 +23,7 @@ from inventory_management_system_api.services import utils
 
 class SystemService:
     """
-    Service for managing systems
+    Service for managing systems.
     """
 
     def __init__(
@@ -46,7 +46,9 @@ class SystemService:
 
         :param system: System to be created
         :return: Created system
-        :raise InvalidActionError: If the system being created has a different `type_id` to its parent.
+        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
+        :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
+        :raises InvalidActionError: If the system being created has a different `type_id` to its parent.
         """
 
         # If there is a parent, must use the same type as it
@@ -109,6 +111,8 @@ class SystemService:
         :param system_id: ID of the system to updated
         :param system: System containing the fields to be updated
         :raises MissingRecordError: When the system with the given ID doesn't exist
+        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
+        :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
         :raises InvalidActionError: When attempting to change the system type while the system has child elements.
         :raises InvalidActionError: When attempting to change the parent of the system to one with a different type
                                     without also changing the type to match.
