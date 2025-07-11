@@ -49,12 +49,8 @@ class SystemRepo:
         :param system: System to be created
         :param session: PyMongo ClientSession to use for database operations
         :return: Created system
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist
-        :raises DuplicateRecordError: If a duplicate system is found within the parent system
         """
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id:
-            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError(
@@ -66,24 +62,16 @@ class SystemRepo:
         result = self._systems_collection.insert_one(system.model_dump(), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(
-        self, system_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> SystemOut:
+    def get(self, system_id: str, session: Optional[ClientSession] = None) -> SystemOut:
         """
         Retrieve a system by its ID from a MongoDB database
 
         :param system_id: ID of the system to retrieve
-        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
-                                     e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
         :return: Retrieved system.
         :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
-
-        entity_type = f"{entity_type_modifier} system" if entity_type_modifier else "system"
-        system_id = CustomObjectId(
-            system_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
-        )
+        system_id = CustomObjectId(system_id)
 
         logger.info("Retrieving system with ID: %s from the database", system_id)
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
@@ -91,7 +79,7 @@ class SystemRepo:
         if system:
             return SystemOut(**system)
 
-        raise MissingRecordError(entity_id=system_id, entity_type=entity_type, use_422=entity_type_modifier is not None)
+        raise MissingRecordError(entity_id=system_id, entity_type="system")
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """
@@ -105,9 +93,7 @@ class SystemRepo:
         return utils.compute_breadcrumbs(
             list(
                 self._systems_collection.aggregate(
-                    utils.create_breadcrumbs_aggregation_pipeline(
-                        entity_id=system_id, collection_name="systems", entity_type="system"
-                    ),
+                    utils.create_breadcrumbs_aggregation_pipeline(entity_id=system_id, collection_name="systems"),
                     session=session,
                 )
             ),
@@ -144,11 +130,9 @@ class SystemRepo:
         :raises DuplicateRecordError: If a duplicate system is found within the parent system
         :raises InvalidActionError: If attempting to change the `parent_id` to one of its own child system ids
         """
-        system_id = CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)
+        system_id = CustomObjectId(system_id)
 
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id:
-            self.get(parent_id, entity_type_modifier="parent", session=session)
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
@@ -190,9 +174,7 @@ class SystemRepo:
         :raises MissingRecordError: If the system doesn't exist
         """
         logger.info("Deleting system with ID: %s from the database", system_id)
-        result = self._systems_collection.delete_one(
-            {"_id": CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)}, session=session
-        )
+        result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
         if result.deleted_count == 0:
             raise MissingRecordError(entity_id=system_id, entity_type="system")
 
@@ -231,7 +213,7 @@ class SystemRepo:
         """
         logger.info("Checking if system with ID '%s' has child elements", system_id)
 
-        system_id = CustomObjectId(system_id, entity_type="system", not_found_if_invalid=True)
+        system_id = CustomObjectId(system_id)
         return (
             self._systems_collection.find_one({"parent_id": system_id}, session=session) is not None
             or self._items_collection.find_one({"system_id": system_id}, session=session) is not None

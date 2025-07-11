@@ -6,17 +6,21 @@ repositories.
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import Depends
+from fastapi import Depends, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
+    InvalidObjectIdError,
+    MissingRecordError,
     NonLeafCatalogueCategoryError,
     ReplacementForObsoleteCatalogueItemError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
+from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
@@ -66,10 +70,7 @@ class CatalogueItemService:
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
         """
-        catalogue_category_id = catalogue_item.catalogue_category_id
-        catalogue_category = self._catalogue_category_repository.get(
-            catalogue_category_id, entity_type_modifier="specified"
-        )
+        catalogue_category = self._get_specified_catalogue_category(catalogue_item.catalogue_category_id)
 
         if catalogue_category.is_leaf is False:
             raise NonLeafCatalogueCategoryError(
@@ -77,13 +78,11 @@ class CatalogueItemService:
                 response_detail="Adding a catalogue item to a non-leaf catalogue category is not allowed",
             )
 
-        self._manufacturer_repository.get(catalogue_item.manufacturer_id, entity_type_modifier="specified")
+        self._get_specified_manufacturer(catalogue_item.manufacturer_id)
 
         obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
         if obsolete_replacement_catalogue_item_id:
-            self._catalogue_item_repository.get(
-                obsolete_replacement_catalogue_item_id, entity_type_modifier="replacement"
-            )
+            self._get_replacement_catalogue_item(obsolete_replacement_catalogue_item_id)
 
         defined_properties = catalogue_category.properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
@@ -99,14 +98,21 @@ class CatalogueItemService:
             )
         )
 
-    def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
+    def get(self, catalogue_item_id: str) -> CatalogueItemOut:
         """
         Retrieve a catalogue item by its ID.
 
         :param catalogue_item_id: The ID of the catalogue item to retrieve.
-        :return: The retrieved catalogue item, or `None` if not found.
+        :return: The retrieved catalogue item.
+        :raises MissingRecordError: If the supplied `catalogue_item_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `catalogue_item_id` is invalid.
         """
-        return self._catalogue_item_repository.get(catalogue_item_id)
+        try:
+            return self._catalogue_item_repository.get(catalogue_item_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Catalogue item not found"
+            raise exc
 
     def list(self, catalogue_category_id: Optional[str]) -> List[CatalogueItemOut]:
         """
@@ -150,9 +156,7 @@ class CatalogueItemService:
             "catalogue_category_id" in update_data
             and catalogue_item.catalogue_category_id != stored_catalogue_item.catalogue_category_id
         ):
-            catalogue_category = self._catalogue_category_repository.get(
-                catalogue_item.catalogue_category_id, entity_type_modifier="specified"
-            )
+            catalogue_category = self._get_specified_catalogue_category(catalogue_item.catalogue_category_id)
 
             if catalogue_category.is_leaf is False:
                 raise NonLeafCatalogueCategoryError(
@@ -188,7 +192,7 @@ class CatalogueItemService:
                     stored_catalogue_item_prop.id = old_to_new_id_map[stored_catalogue_item_prop.id]
 
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
-            self._manufacturer_repository.get(catalogue_item.manufacturer_id, entity_type_modifier="specified")
+            self._get_specified_manufacturer(catalogue_item.manufacturer_id)
 
         if "obsolete_replacement_catalogue_item_id" in update_data:
             obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
@@ -197,9 +201,7 @@ class CatalogueItemService:
                 and obsolete_replacement_catalogue_item_id
                 != stored_catalogue_item.obsolete_replacement_catalogue_item_id
             ):
-                self._catalogue_item_repository.get(
-                    obsolete_replacement_catalogue_item_id, entity_type_modifier="replacement"
-                )
+                self._get_replacement_catalogue_item(obsolete_replacement_catalogue_item_id)
 
         if "properties" in update_data:
             if not catalogue_category:
@@ -225,22 +227,77 @@ class CatalogueItemService:
         :raises ChildElementsExistError: If the catalogue item has child elements.
         :raises ReplacementForObsoleteCatalogueItemError: If the catalogue item is the replacement for at least one
                                                           obsolete catalogue item.
+        :raises MissingRecordError: If the supplied `catalogue_item_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `catalogue_item_id` is invalid.
         """
-        if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
-            raise ChildElementsExistError(
-                f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted",
-                response_detail="Catalogue item has child elements and cannot be deleted",
-            )
+        try:
+            if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
+                raise ChildElementsExistError(
+                    f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted",
+                    response_detail="Catalogue item has child elements and cannot be deleted",
+                )
 
-        if self._catalogue_item_repository.is_replacement_for(catalogue_item_id):
-            raise ReplacementForObsoleteCatalogueItemError(
-                f"Catalogue item with ID {catalogue_item_id} is the replacement for at least one obsolete catalogue "
-                "item and cannot be deleted"
-            )
+            if self._catalogue_item_repository.is_replacement_for(catalogue_item_id):
+                raise ReplacementForObsoleteCatalogueItemError(
+                    f"Catalogue item with ID {catalogue_item_id} is the replacement for at least one obsolete "
+                    "catalogue item and cannot be deleted"
+                )
 
-        # First, attempt to delete any attachments and/or images that might be associated with this catalogue item.
-        if config.object_storage.enabled:
-            ObjectStorageAPIClient.delete_attachments(catalogue_item_id, access_token)
-            ObjectStorageAPIClient.delete_images(catalogue_item_id, access_token)
+            # First, attempt to delete any attachments and/or images that might be associated with this catalogue item.
+            if config.object_storage.enabled:
+                ObjectStorageAPIClient.delete_attachments(catalogue_item_id, access_token)
+                ObjectStorageAPIClient.delete_images(catalogue_item_id, access_token)
 
-        self._catalogue_item_repository.delete(catalogue_item_id)
+            self._catalogue_item_repository.delete(catalogue_item_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Catalogue item not found"
+            raise exc
+
+    # pylint: disable=duplicate-code
+    def _get_specified_catalogue_category(self, catalogue_category_id: str) -> CatalogueCategoryOut:
+        """
+        Retrieve a specified catalogue category by its ID.
+
+        :param catalogue_category_id: ID of the specified catalogue category to retrieve.
+        :raises MissingRecordError: If the supplied `catalogue_category_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `catalogue_category_id` is invalid.
+        """
+        try:
+            return self._catalogue_category_repository.get(catalogue_category_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+            exc.response_detail = "Specified catalogue category not found"
+            raise exc
+
+    def _get_specified_manufacturer(self, manufactuer_id: str) -> ManufacturerOut:
+        """
+        Retrieve a specified manufacturer by its ID.
+
+        :param manufactuer_id: ID of the specified manufacturer to retrieve.
+        :raises MissingRecordError: If the supplied `manufactuer_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `manufactuer_id` is invalid.
+        """
+        try:
+            return self._manufacturer_repository.get(manufactuer_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+            exc.response_detail = "Specified manufacturer not found"
+            raise exc
+
+    def _get_replacement_catalogue_item(self, catalogue_item_id: str) -> CatalogueItemOut:
+        """
+        Retrieve a specified catalogue item by its ID.
+
+        :param catalogue_item_id: ID of the replacement catalogue item to retrieve.
+        :raises MissingRecordError: If the supplied `catalogue_item_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `catalogue_item_id` is invalid.
+        """
+        try:
+            return self._catalogue_item_repository.get(catalogue_item_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+            exc.response_detail = "Replacement catalogue item not found"
+            raise exc
+
+    # pylint: enable=duplicate-code

@@ -50,24 +50,16 @@ class UsageStatusRepo:
         result = self._usage_statuses_collection.insert_one(usage_status.model_dump(), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(
-        self, usage_status_id: str, entity_type_modifier: Optional[str] = None, session: Optional[ClientSession] = None
-    ) -> UsageStatusOut:
+    def get(self, usage_status_id: str, session: Optional[ClientSession] = None) -> UsageStatusOut:
         """
         Retrieve a usage status by its ID from a MongoDB database.
 
         :param usage_status_id: The ID of the usage status to retrieve.
-        :param entity_type_modifier: String value to put at the start of the entity type used in error messages
-                                     e.g. parent if its for a parent system.
         :param session: PyMongo ClientSession to use for database operations
         :return: The retrieved usage status.
         :raises MissingRecordError: If the supplied `usage_status_id` is non-existent.
         """
-
-        entity_type = f"{entity_type_modifier} usage status" if entity_type_modifier else "usage status"
-        usage_status_id = CustomObjectId(
-            usage_status_id, entity_type=entity_type, not_found_if_invalid=entity_type_modifier is None
-        )
+        usage_status_id = CustomObjectId(usage_status_id)
 
         logger.info("Retrieving usage status with ID: %s from the database", usage_status_id)
         usage_status = self._usage_statuses_collection.find_one({"_id": usage_status_id}, session=session)
@@ -75,9 +67,7 @@ class UsageStatusRepo:
         if usage_status:
             return UsageStatusOut(**usage_status)
 
-        raise MissingRecordError(
-            entity_id=usage_status_id, entity_type=entity_type, use_422=entity_type_modifier is not None
-        )
+        raise MissingRecordError(entity_id=usage_status_id, entity_type="usage status")
 
     def list(self, session: Optional[ClientSession] = None) -> list[UsageStatusOut]:
         """
@@ -100,7 +90,7 @@ class UsageStatusRepo:
         :raises PartOfItemError: if usage status is a part of a catalogue item
         :raises MissingRecordError: if supplied usage status ID does not exist in the database
         """
-        usage_status_id = CustomObjectId(usage_status_id, entity_type="usage status", not_found_if_invalid=True)
+        usage_status_id = CustomObjectId(usage_status_id)
         if self._is_usage_status_in_item(usage_status_id, session=session):
             raise PartOfItemError(
                 f"The usage status with ID {str(usage_status_id)} is a part of an Item",
