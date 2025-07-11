@@ -3,7 +3,6 @@ Module for providing a service for managing properties at the catalogue category
 propagation down through their child catalogue items and items using their respective repositories
 """
 
-import logging
 from typing import Annotated, Optional
 
 from fastapi import Depends
@@ -27,8 +26,6 @@ from inventory_management_system_api.schemas.catalogue_category import (
     CatalogueCategoryPropertyPostSchema,
 )
 from inventory_management_system_api.services import utils
-
-logger = logging.getLogger()
 
 
 class CatalogueCategoryPropertyService:
