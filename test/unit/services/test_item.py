@@ -595,7 +595,9 @@ class UpdateDSL(ItemServiceDSL):
             )
 
         # Stored usage status
-        self._updating_usage_status = "usage_status_id" in item_update_data
+        self._updating_usage_status = "usage_status_id" in item_update_data and (
+            stored_item_data and item_update_data["usage_status_id"] != stored_item_data["usage_status_id"]
+        )
 
         if self._updating_usage_status:
             item_update_data["usage_status"] = (
@@ -750,9 +752,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={
-                key: value for key, value in ITEM_DATA_ALL_VALUES_NO_PROPERTIES.items() if key != "usage_status_id"
-            },
+            item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
@@ -766,9 +766,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={
-                key: value for key, value in ITEM_DATA_ALL_VALUES_NO_PROPERTIES.items() if key != "usage_status_id"
-            },
+            item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
@@ -786,11 +784,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={
-                key: value
-                for key, value in ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY.items()
-                if key != "usage_status_id"
-            },
+            item_update_data=ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
