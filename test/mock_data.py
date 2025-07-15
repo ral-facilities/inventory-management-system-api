@@ -772,8 +772,7 @@ MANUFACTURER_IN_DATA_B = {
 SYSTEM_TYPES_OUT_DATA = [
     {"_id": ObjectId("685e5dce6e347e39d459c5ea"), "value": "Storage"},
     {"_id": ObjectId("685e5dce6e347e39d459c5eb"), "value": "Operational"},
-    {"_id": ObjectId("685d52f4b1095c1837c69dac"), "value": "Quarantine"},
-    {"_id": ObjectId("685d52f4b1095c1837c69dad"), "value": "Scrapped"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5ec"), "value": "Scrapped"},
 ]
 
 SYSTEM_TYPES_GET_DATA = [

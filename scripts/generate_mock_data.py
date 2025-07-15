@@ -32,8 +32,7 @@ logger = logging.getLogger()
 system_types = [
     {"id": "685e5dce6e347e39d459c5ea", "value": "Storage"},
     {"id": "685e5dce6e347e39d459c5eb", "value": "Operational"},
-    {"id": "685d52f4b1095c1837c69dac", "value": "Quarantine"},
-    {"id": "685d52f4b1095c1837c69dad", "value": "Scrapped"},
+    {"id": "685e5dce6e347e39d459c5ec", "value": "Scrapped"},
 ]
 
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]

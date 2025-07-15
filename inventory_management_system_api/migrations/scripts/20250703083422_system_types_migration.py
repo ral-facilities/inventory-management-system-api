@@ -18,7 +18,7 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 # Pre-defined system types to create and apply
-SYSTEM_TYPE_VALUES = ["Storage", "Operational", "Quarantine", "Scrapped"]
+SYSTEM_TYPE_VALUES = ["Storage", "Operational", "Scrapped"]
 
 
 class NewSystemBase(BaseModel):
