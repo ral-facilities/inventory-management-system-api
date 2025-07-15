@@ -28,8 +28,8 @@ try {
 
     db.usage_statuses.insertMany([
       createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a0"), "New"),
-      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a1"), "Used"),
-      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a2"), "In Use"),
+      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a1"), "In Use"),
+      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a2"), "Used"),
       createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a3"), "Scrapped"),
     ]);
   }

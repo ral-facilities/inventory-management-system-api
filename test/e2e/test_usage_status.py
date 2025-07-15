@@ -8,10 +8,12 @@ from test.mock_data import (
     ITEM_DATA_REQUIRED_VALUES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    USAGE_STATUS_GET_DATA_CUSTOM,
+    USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_NEW,
+    USAGE_STATUS_GET_DATA_SCRAPPED,
     USAGE_STATUS_GET_DATA_USED,
-    USAGE_STATUS_POST_DATA_NEW,
-    USAGE_STATUS_POST_DATA_USED,
+    USAGE_STATUS_POST_DATA_CUSTOM,
 )
 from typing import Optional
 
@@ -94,14 +96,14 @@ class TestCreate(CreateDSL):
     def test_create_usage_status(self):
         """Test creating a usage status."""
 
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
+        self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_CUSTOM)
 
     def test_create_usage_status_with_duplicate_value(self):
         """Test creating a usage status with a duplicate value."""
 
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
         self.check_post_usage_status_failed_with_detail(409, "A usage status with the same value already exists")
 
 
@@ -144,9 +146,9 @@ class TestGet(GetDSL):
 
     def test_get(self):
         """Test getting a usage status."""
-        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
         self.get_usage_status(usage_status_id)
-        self.check_get_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
+        self.check_get_usage_status_success(USAGE_STATUS_GET_DATA_CUSTOM)
 
     def test_get_with_non_existent_id(self):
         """Test getting a usage status with a non-existent ID."""
@@ -182,15 +184,17 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test getting a list of all usage statuses."""
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_USED)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
         self.get_usage_statuses()
-        self.check_get_usage_statuses_success([USAGE_STATUS_GET_DATA_NEW, USAGE_STATUS_GET_DATA_USED])
-
-    def test_list_no_usage_statuses(self):
-        """Test getting a list of all usage statuses when there are no usage statuses."""
-        self.get_usage_statuses()
-        self.check_get_usage_statuses_success([])
+        self.check_get_usage_statuses_success(
+            [
+                USAGE_STATUS_GET_DATA_NEW,
+                USAGE_STATUS_GET_DATA_IN_USE,
+                USAGE_STATUS_GET_DATA_USED,
+                USAGE_STATUS_GET_DATA_SCRAPPED,
+                USAGE_STATUS_GET_DATA_CUSTOM,
+            ]
+        )
 
 
 class DeleteDSL(ListDSL):
@@ -226,7 +230,7 @@ class TestDelete(DeleteDSL):
 
     def test_delete(self):
         """Test deleting a usage status."""
-        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
         self.delete_usage_status(usage_status_id)
         self.check_delete_usage_status_success()
 
@@ -235,7 +239,7 @@ class TestDelete(DeleteDSL):
 
     def test_delete_when_part_of_item(self):
         """Test deleting a usage status when it is part of an item."""
-        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
 
         response = self.test_client.post(
             "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES

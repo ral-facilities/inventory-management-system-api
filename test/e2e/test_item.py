@@ -38,8 +38,8 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    USAGE_STATUS_OUT_DATA_NEW,
     USAGE_STATUS_POST_DATA_IN_USE,
-    USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Any, Optional
 
@@ -94,7 +94,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         Adds required IDs to some expected item get data based on what has already been posted.
 
         :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for an
-                                       `ItemSchema`. Does not need mandatory IDs (e.g. `system_id`) as they will be
+                                       `ItemSchema`. Does not need some mandatory IDs (e.g. `system_id`) as they will be
                                        added here.
         """
         # Where there are properties add the property ID, unit ID and unit value
@@ -110,7 +110,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             **expected_item_get_data,
             "catalogue_item_id": self.catalogue_item_id,
             "system_id": self.system_id,
-            "usage_status_id": self.usage_status_value_id_dict[expected_item_get_data["usage_status"]],
         }
 
     def post_catalogue_item(self, catalogue_item_data: dict) -> Optional[str]:
@@ -163,7 +162,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             full_item_data["catalogue_item_id"] = self.catalogue_item_id
         if self.system_id:
             full_item_data["system_id"] = self.system_id
-        full_item_data["usage_status_id"] = self.usage_status_value_id_dict.get(full_item_data["usage_status"])
 
         self._post_response_item = self.test_client.post("/v1/items", json=full_item_data)
 
@@ -171,13 +169,12 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
 
     def post_item_and_prerequisites_no_properties(self, item_data: dict) -> Optional[str]:
         """
-        Utility method that posts an item with the given data and also its prerequisite system, usage status, catalogue
-        item and catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item and
-        USAGE_STATUS_DATA_IN_USE for the usage status.
+        Utility method that posts an item with the given data and also its prerequisite system, catalogue item and
+        catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
 
         :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
-                          mandatory IDs missing and any `id`'s replaced by the `name` value in its properties as the IDs
-                          will be added automatically.
+                          some mandatory IDs missing and any `id`'s replaced by the `name` value in its properties as
+                          the IDs will be added automatically.
         :return: ID of the created item (or `None` if not successful).
         """
 
@@ -185,7 +182,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item(item_data)
 
@@ -557,8 +553,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.add_usage_status_value_and_id(ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"], str(ObjectId()))
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item({**ITEM_DATA_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -570,8 +565,7 @@ class TestCreate(CreateDSL):
         )
         self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.add_usage_status_value_and_id(ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"], "invalid-id")
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item({**ITEM_DATA_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -681,19 +675,16 @@ class ListDSL(GetDSL):
                 **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_item_id": catalogue_item_a_id,
                 "system_id": system_a_id,
-                "usage_status_id": self.usage_status_value_id_dict[ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"]],
             },
             {
                 **ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES,
                 "catalogue_item_id": catalogue_item_a_id,
                 "system_id": system_b_id,
-                "usage_status_id": self.usage_status_value_id_dict[ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"]],
             },
             {
                 **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_item_id": catalogue_item_b_id,
                 "system_id": system_b_id,
-                "usage_status_id": self.usage_status_value_id_dict[ITEM_DATA_REQUIRED_VALUES_ONLY["usage_status"]],
             },
         ]
 
@@ -811,7 +802,7 @@ class UpdateDSL(ListDSL):
         Also merges in any properties that were defined in the catalogue item but are not given in the expected data.
 
         :param expected_item_get_data: Dictionary containing the expected item data returned as would
-                                                 be required for an `ItemSchema`. Does not need mandatory IDs
+                                                 be required for an `ItemSchema`. Does not need some mandatory IDs
                                                  (e.g. `system_id`) as they will be added automatically to check
                                                  they are as expected.
         """
@@ -898,11 +889,14 @@ class TestUpdate(UpdateDSL):
         """Test updating the `usage_status_id` of an item."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
-        new_usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
 
-        self.patch_item(item_id, {"usage_status_id": new_usage_status_id})
+        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_OUT_DATA_NEW["id"]})
         self.check_patch_item_success(
-            {**ITEM_GET_DATA_REQUIRED_VALUES_ONLY, "usage_status": USAGE_STATUS_POST_DATA_NEW["value"]}
+            {
+                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "usage_status_id": USAGE_STATUS_OUT_DATA_NEW["id"],
+                "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
+            }
         )
 
     def test_partial_update_usage_status_id_with_non_existent_id(self):

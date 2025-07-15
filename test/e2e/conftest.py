@@ -3,7 +3,7 @@ Module providing test fixtures for the e2e tests.
 """
 
 from datetime import datetime
-from test.mock_data import VALID_ACCESS_TOKEN
+from test.mock_data import PREDEFINED_USAGE_STATUS_IDS, VALID_ACCESS_TOKEN
 from typing import Optional
 
 import pytest
@@ -37,7 +37,8 @@ def fixture_cleanup_database_collections():
     database.manufacturers.delete_many({})
     database.systems.delete_many({})
     database.units.delete_many({})
-    database.usage_statuses.delete_many({})
+    # Remove extra usage statuses but leave predefined ones
+    database.usage_statuses.delete_many({"_id": {"$nin": PREDEFINED_USAGE_STATUS_IDS}})
     database.settings.delete_many({})
 
 

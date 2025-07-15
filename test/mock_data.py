@@ -51,6 +51,13 @@ INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN + "1"
 
 # ---------------------------- USAGE STATUSES -----------------------------
 
+PREDEFINED_USAGE_STATUS_IDS = [
+    ObjectId("6874cf5dee233ec6441860a0"),  # New
+    ObjectId("6874cf5dee233ec6441860a1"),  # In Use
+    ObjectId("6874cf5dee233ec6441860a2"),  # Used
+    ObjectId("6874cf5dee233ec6441860a3"),  # Scrapped
+]
+
 # New
 USAGE_STATUS_POST_DATA_NEW = {"value": "New"}
 
@@ -60,7 +67,7 @@ USAGE_STATUS_IN_DATA_NEW = {
 }
 
 USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=str(ObjectId())
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[0]
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_NEW = {
@@ -75,6 +82,17 @@ USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
 
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
 
+USAGE_STATUS_OUT_DATA_IN_USE = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[1]
+).model_dump()
+
+USAGE_STATUS_GET_DATA_IN_USE = {
+    **USAGE_STATUS_POST_DATA_IN_USE,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "code": "in-use",
+    "id": ANY,
+}
+
 # Used
 USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
 
@@ -84,13 +102,51 @@ USAGE_STATUS_IN_DATA_USED = {
 }
 
 USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=str(ObjectId())
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[2]
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "code": "used",
+    "id": ANY,
+}
+
+# Scrapped
+USAGE_STATUS_POST_DATA_SCRAPPED = {"value": "Scrapped"}
+
+USAGE_STATUS_IN_DATA_SCRAPPED = {
+    **USAGE_STATUS_POST_DATA_SCRAPPED,
+    "code": "scrapped",
+}
+
+USAGE_STATUS_OUT_DATA_SCRAPPED = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[3]
+).model_dump()
+
+USAGE_STATUS_GET_DATA_SCRAPPED = {
+    **USAGE_STATUS_POST_DATA_SCRAPPED,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "code": "scrapped",
+    "id": ANY,
+}
+
+# Custom
+USAGE_STATUS_POST_DATA_CUSTOM = {"value": "Custom"}
+
+USAGE_STATUS_IN_DATA_CUSTOM = {
+    **USAGE_STATUS_POST_DATA_CUSTOM,
+    "code": "custom",
+}
+
+USAGE_STATUS_OUT_DATA_CUSTOM = UsageStatusOut(
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=str(ObjectId())
+).model_dump()
+
+USAGE_STATUS_GET_DATA_CUSTOM = {
+    **USAGE_STATUS_POST_DATA_CUSTOM,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "code": "custom",
     "id": ANY,
 }
 
@@ -626,20 +682,21 @@ BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTI
 
 ITEM_DATA_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
-    "usage_status": "In Use",
+    "usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["id"],
 }
 
 ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_REQUIRED_VALUES_ONLY,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status_id": str(ObjectId()),
+    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
 }
 
 ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
+    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
     "purchase_order_number": None,
     "warranty_end_date": None,
     "asset_number": None,
@@ -665,14 +722,14 @@ ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES = {
     **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status_id": str(ObjectId()),
-    "usage_status": "In Use",
+    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
 }
 
 ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES = {
     **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
+    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
     "properties": [],
 }
 
@@ -697,6 +754,7 @@ ITEM_DATA_WITH_ALL_PROPERTIES = {
 
 ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
     **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
     "properties": [
         PROPERTY_GET_DATA_BOOLEAN_MANDATORY_FALSE,
         PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,

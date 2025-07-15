@@ -15,7 +15,6 @@ from test.mock_data import (
     SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    USAGE_STATUS_POST_DATA_NEW,
 )
 from typing import Optional
 
@@ -625,14 +624,10 @@ class TestDelete(DeleteDSL):
         response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
         catalogue_item_id = response.json()["id"]
 
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
         item_post = {
             **ITEM_DATA_REQUIRED_VALUES_ONLY,
             "catalogue_item_id": catalogue_item_id,
             "system_id": system_id,
-            "usage_status_id": usage_status_id,
         }
         self.test_client.post("/v1/items", json=item_post)
         # pylint: enable=duplicate-code
