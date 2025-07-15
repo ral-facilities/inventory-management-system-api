@@ -591,11 +591,12 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None, parent_type_id
     logger.debug("Populating system with depth %s", levels_deep)
     num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
     for _ in range(0, num_to_generate):
-        if parent_id is None and parent_type_id is None:
-            parent_type_id = fake.random.choice(system_types)["id"]
-        system = generate_random_system(parent_id, parent_type_id)
+        chosen_parent_type_id = parent_type_id
+        if parent_id is None and chosen_parent_type_id is None:
+            chosen_parent_type_id = fake.random.choice(system_types)["id"]
+        system = generate_random_system(parent_id, chosen_parent_type_id)
         system_id = create_system(system)["id"]
-        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id, parent_type_id=parent_type_id)
+        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id, parent_type_id=chosen_parent_type_id)
         generated_system_ids.append(system_id)
 
 
