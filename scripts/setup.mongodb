@@ -1,3 +1,15 @@
+/* Creates a database input model for a usage status given its name and value (Should match UsageStatusIn) */
+function createUsageStatusIn(id, value) {
+  var currentTime = new Date();
+  return {
+    _id: id,
+    value: value,
+    code: value.toLowerCase().trim().replace(/\s+/g, "-"),
+    created_time: currentTime,
+    modified_time: currentTime,
+  };
+}
+
 // Intialise replica sets if not already setup
 try {
   rs.status();
@@ -9,6 +21,18 @@ try {
 // Setup the dev and test databases
 ["ims", "test-ims"].forEach((databaseName) => {
   db = db.getSiblingDB(databaseName);
+
+  // Add some usage statuses if the collection doesnt already exist
+  if (!db.getCollectionNames().includes("usage_statuses")) {
+    console.log(`Populating usage statuses in ${databaseName}...`);
+
+    db.usage_statuses.insertMany([
+      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a0"), "New"),
+      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a1"), "Used"),
+      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a2"), "In Use"),
+      createUsageStatusIn(ObjectId("6874cf5dee233ec6441860a3"), "Scrapped"),
+    ]);
+  }
 
   // Add some system types if the collection doesn't already exist
   if (!db.getCollectionNames().includes("system_types")) {
