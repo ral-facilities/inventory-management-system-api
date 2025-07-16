@@ -71,10 +71,8 @@ USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_NEW = {
-    **USAGE_STATUS_POST_DATA_NEW,
+    **USAGE_STATUS_OUT_DATA_NEW,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "new",
-    "id": ANY,
 }
 
 # In Use
@@ -87,10 +85,8 @@ USAGE_STATUS_OUT_DATA_IN_USE = UsageStatusOut(
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_IN_USE = {
-    **USAGE_STATUS_POST_DATA_IN_USE,
+    **USAGE_STATUS_OUT_DATA_IN_USE,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "in-use",
-    "id": ANY,
 }
 
 # Used
@@ -106,10 +102,8 @@ USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_USED = {
-    **USAGE_STATUS_POST_DATA_USED,
+    **USAGE_STATUS_OUT_DATA_USED,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "used",
-    "id": ANY,
 }
 
 # Scrapped
@@ -125,10 +119,8 @@ USAGE_STATUS_OUT_DATA_SCRAPPED = UsageStatusOut(
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_SCRAPPED = {
-    **USAGE_STATUS_POST_DATA_SCRAPPED,
+    **USAGE_STATUS_OUT_DATA_SCRAPPED,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "scrapped",
-    "id": ANY,
 }
 
 # Custom
@@ -140,13 +132,12 @@ USAGE_STATUS_IN_DATA_CUSTOM = {
 }
 
 USAGE_STATUS_OUT_DATA_CUSTOM = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=str(ObjectId())
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), _id=str(ObjectId())
 ).model_dump()
 
 USAGE_STATUS_GET_DATA_CUSTOM = {
-    **USAGE_STATUS_POST_DATA_CUSTOM,
+    **USAGE_STATUS_OUT_DATA_CUSTOM,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "custom",
     "id": ANY,
 }
 
