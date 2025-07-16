@@ -35,7 +35,7 @@ class SystemService:
         Initialise the `SystemService` with a `SystemRepo` repository.
 
         :param system_repository: `SystemRepo` repository to use.
-        :param system_type_repo: `SystemTypeRepo` repository to use.
+        :param system_type_repository: `SystemTypeRepo` repository to use.
         """
         self._system_repository = system_repository
         self._system_type_repository = system_type_repository
@@ -46,10 +46,13 @@ class SystemService:
 
         :param system: System to be created
         :return: Created system
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
         :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
+        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
         :raises InvalidActionError: If the system being created has a different `type_id` to its parent.
         """
+
+        if not self._system_type_repository.get(system.type_id):
+            raise MissingRecordError(f"No system type found with ID: {system.type_id}")
 
         # If there is a parent, must use the same type as it
         if system.parent_id is not None:
@@ -58,9 +61,6 @@ class SystemService:
                 raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
             if system.type_id != parent_system.type_id:
                 raise InvalidActionError("Cannot use a different type_id to the parent system")
-
-        if not self._system_type_repository.get(system.type_id):
-            raise MissingRecordError(f"No system type found with ID: {system.type_id}")
 
         # Create the system
         code = utils.generate_code(system.name, "system")
@@ -124,20 +124,9 @@ class SystemService:
 
         update_data = system.model_dump(exclude_unset=True)
 
-        parent_id_changing = "parent_id" in update_data and system.parent_id != stored_system.parent_id
         type_id_changing = "type_id" in update_data and system.type_id != stored_system.type_id
-        if parent_id_changing or type_id_changing:
-            parent_system = None
-            if parent_id_changing:
-                # Parent is being updated
-                if system.parent_id is not None:
-                    parent_system = self._system_repository.get(system.parent_id)
-                    if not parent_system:
-                        raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
-            elif stored_system.parent_id is not None:
-                # Parent is not being updated but are updating the type so obtain the current parent
-                parent_system = self._system_repository.get(stored_system.parent_id)
-
+        parent_id_changing = "parent_id" in update_data and system.parent_id != stored_system.parent_id
+        if type_id_changing or parent_id_changing:
             type_id = stored_system.type_id
             if type_id_changing:
                 # Type is being updated
@@ -148,6 +137,17 @@ class SystemService:
 
                 if not self._system_type_repository.get(system.type_id):
                     raise MissingRecordError(f"No system type found with ID: {system.type_id}")
+
+            parent_system = None
+            if parent_id_changing:
+                # Parent is being updated
+                if system.parent_id is not None:
+                    parent_system = self._system_repository.get(system.parent_id)
+                    if not parent_system:
+                        raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
+            elif stored_system.parent_id is not None:
+                # Parent is not being updated but are updating the type so obtain the current parent
+                parent_system = self._system_repository.get(stored_system.parent_id)
 
             # Ensure the system type matches the parent system type if there is a parent
             if parent_system is not None and type_id != parent_system.type_id:
