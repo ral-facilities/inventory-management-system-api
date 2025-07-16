@@ -94,6 +94,12 @@ class PartOfItemError(DatabaseError):
     """
 
 
+class PartOfRuleError(DatabaseError):
+    """
+    Exception raised when attempting to delete a usage status that is a part of a rule
+    """
+
+
 class DatabaseIntegrityError(DatabaseError):
     """
     Exception raised when something is found in the database that shouldn't have been
