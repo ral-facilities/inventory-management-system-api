@@ -29,7 +29,7 @@ def fixture_database_mock() -> Mock:
     database_mock.system_types = Mock(Collection)
     database_mock.units = Mock(Collection)
     database_mock.usage_statuses = Mock(Collection)
-    database_mock.settings = Mock(Collection)
+    database_mock.rules = Mock(Collection)
     return database_mock
 
 
