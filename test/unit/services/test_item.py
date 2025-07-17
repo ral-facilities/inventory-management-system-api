@@ -490,10 +490,10 @@ class UpdateDSL(ItemServiceDSL):
 
         :param item_id: ID of the item that will be obtained.
         :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
-                                 but without some mandatory IDs or property IDs.
+                                 but without mandatory IDs (except usage_status_id) or property IDs.
         :param stored_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item data for
                                  the existing stored catalogue item as would be required for a `ItemPostSchema` but
-                                 without some mandatory IDs or property IDs.
+                                 without mandatory (except usage_status_id) IDs or property IDs.
         :param stored_usage_status_in_data: Dictionary containing the basic usage status data as would be required for a
                                      `UsageStatusIn` database model.
         :param stored_catalogue_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item

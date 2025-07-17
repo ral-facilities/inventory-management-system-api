@@ -94,8 +94,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         Adds required IDs to some expected item get data based on what has already been posted.
 
         :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for an
-                                       `ItemSchema`. Does not need some mandatory IDs (e.g. `system_id`) as they will be
-                                       added here.
+                                       `ItemSchema`. Does not need mandatory IDs other than `usage_status_id` as they
+                                       will be added here.
         """
         # Where there are properties add the property ID, unit ID and unit value
         expected_item_get_data = E2ETestHelpers.add_property_ids_to_properties(
@@ -173,8 +173,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
 
         :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
-                          some mandatory IDs missing and any `id`'s replaced by the `name` value in its properties as
-                          the IDs will be added automatically.
+                          mandatory IDs other than `usage_status_id` missing and any `id`'s replaced by the `name` value
+                          in its properties as the IDs will be added automatically.
         :return: ID of the created item (or `None` if not successful).
         """
 
@@ -801,10 +801,9 @@ class UpdateDSL(ListDSL):
 
         Also merges in any properties that were defined in the catalogue item but are not given in the expected data.
 
-        :param expected_item_get_data: Dictionary containing the expected item data returned as would
-                                                 be required for an `ItemSchema`. Does not need some mandatory IDs
-                                                 (e.g. `system_id`) as they will be added automatically to check
-                                                 they are as expected.
+        :param expected_item_get_data: Dictionary containing the expected item data returned as would be required for
+                                       an `ItemSchema`. Does not need mandatory IDs other than `usage_status_id` as
+                                       they will be added automatically to check they are as expected.
         """
 
         # Where properties are involved in the catalogue item, need to merge them
