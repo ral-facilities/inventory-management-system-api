@@ -178,8 +178,8 @@ class SystemService:
                 if self._system_repository.has_child_elements(system_id):
                     raise InvalidActionError("Cannot change the type of a system when it has children")
 
-                if not self._system_type_repository.get(system.type_id):
-                    raise MissingRecordError(f"No system type found with ID: {system.type_id}")
+                if not self._system_type_repository.get(type_id):
+                    raise MissingRecordError(f"No system type found with ID: {type_id}")
 
             # Find the current/new parent (For verifying it with the type at the end)
             parent_system = None
