@@ -2,7 +2,8 @@
 Module for providing a service for managing systems using the `SystemRepo` repository.
 """
 
-from typing import Annotated, Optional
+import logging
+from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
@@ -12,7 +13,7 @@ from inventory_management_system_api.core.object_storage_api_client import Objec
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
-from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
+from inventory_management_system_api.schemas.system import SystemNodeSchema, SystemPatchSchema, SystemPostSchema
 from inventory_management_system_api.services import utils
 
 
@@ -68,6 +69,17 @@ class SystemService:
         :return: Breadcrumbs
         """
         return self._system_repository.get_breadcrumbs(system_id)
+    
+    def get_system_tree(self, system_id: str, max_subsystems:Optional[int]) -> List[SystemNodeSchema]:
+        """
+        Retrieve the system tree starting from a specific system.
+
+        :param system_id: ID of the root system to retrieve the tree for.
+        :return: The system tree as a list of `SystemNodeSchema`.
+        """
+
+        logger.info("test please",self._system_repository.get_systems_tree(system_id, max_subsystems))
+        return self._system_repository.get_systems_tree(system_id, max_subsystems)
 
     def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """

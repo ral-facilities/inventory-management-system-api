@@ -3,8 +3,9 @@ Module for defining the API schema models for representing systems.
 """
 
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
+from inventory_management_system_api.schemas.catalogue_item import CatalogueItemSchema
 from pydantic import BaseModel, Field
 
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
@@ -49,3 +50,36 @@ class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
 
     id: str = Field(description="ID of the system")
     code: str = Field(description="Code of the system")
+
+
+class CatalogueItemNodeSchema(BaseModel):
+    """
+    Schema model for the catalogue items for a single node in the systems tree 
+    """
+    id: str = Field(description="ID of the system")
+    catalogue_item: CatalogueItemSchema
+    itemsQuantity: int = Field(description="Quantity of items in the system")
+
+
+class SystemNodeSchema(SystemPostSchema):
+    """
+    Schema model for a single node in the system tree
+    """
+
+    id: str = Field(description="ID of the system")
+    code: str = Field(description="Code of the system")
+
+    subsystems: Optional[List["SystemNodeSchema"]] = Field(
+        default=[], description="List of subsystems nested under this system"
+    )
+    catalogue_items: Optional[List[CatalogueItemNodeSchema]] = Field(
+        default=[], description="List of catalogue items under this system"
+    )
+
+    fullTree: Optional[bool] = Field(
+        default=[], description="Is this the full tree"
+    )
+
+
+# Enable recursive models in Pydantic
+SystemNodeSchema.update_forward_refs()

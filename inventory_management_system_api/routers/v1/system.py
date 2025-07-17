@@ -3,7 +3,7 @@ Module for providing an API router which defines routes for managing systems usi
 """
 
 import logging
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
 
@@ -19,7 +19,7 @@ from inventory_management_system_api.core.exceptions import (
     ObjectStorageAPIServerError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
-from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
+from inventory_management_system_api.schemas.system import SystemNodeSchema, SystemPatchSchema, SystemPostSchema, SystemSchema
 from inventory_management_system_api.services.system import SystemService
 
 logger = logging.getLogger()
@@ -104,6 +104,36 @@ def get_system_breadcrumbs(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
         message = "Unable to obtain breadcrumbs"
+        logger.exception(message)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=message,
+        ) from exc
+    # pylint: enable=duplicate-code
+
+
+@router.get(path="/{system_id}/tree", summary="Get the system tree for a system")
+def get_system_tree(
+    system_id: Annotated[str, Path(description="The ID of the system to get the tree for")],
+    system_service: SystemServiceDep,
+    max_subsystems: Annotated[Optional[int], Query(description="Filter items by system ID")] = None,
+) -> List[SystemNodeSchema]:
+    """
+    Retrieve the system tree starting from the given system ID.
+
+    :param system_id: The ID of the root system.
+    :param system_service: The system service dependency.
+    :return: The system tree as a list of `SystemNodeSchema`.
+    """
+    logger.info("Getting system tree for system with ID: %s", system_id)
+    try:
+        return system_service.get_system_tree(system_id, max_subsystems)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "System not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to obtain system tree"
         logger.exception(message)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

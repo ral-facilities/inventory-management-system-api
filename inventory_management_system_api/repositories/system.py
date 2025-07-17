@@ -15,7 +15,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     MissingRecordError,
 )
-from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.models.system import SystemIn, SystemNodeOut, SystemOut
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
@@ -98,7 +98,31 @@ class SystemRepo:
             collection_name="systems",
         )
 
-    def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> list[SystemOut]:
+    def get_systems_tree(self, system_id: str,max_subsystems:Optional[int], session: ClientSession = None) -> list:
+        """
+        Retrieve the system tree starting from a specific system
+
+        :param system_id: ID of the root system to retrieve the tree for
+        :param session: PyMongo ClientSession to use for database operations
+        :return: System tree as a nested list
+        """
+        logger.info("Querying systems tree for system with id '%s'", system_id)
+    
+        # Convert the result of the aggregation to a list and log it correctly
+        aggregation_result = list(
+            self._systems_collection.aggregate(
+                utils.create_system_tree_aggregation_pipeline(parent_id=system_id,max_subsystems=max_subsystems),
+                session=session,
+            )
+        )
+        logger.info("Systems tree aggregation result: %s", aggregation_result)
+
+        
+        
+        return [SystemNodeOut(**result) for result in aggregation_result] 
+
+
+    def list(self, parent_id: Optional[str], session: ClientSession = None) -> list[SystemOut]:
         """
         Retrieve systems from a MongoDB database based on the provided filters
 
