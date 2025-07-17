@@ -3,9 +3,9 @@ Module for providing an API router which defines routes for managing systems usi
 """
 
 import logging
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -19,7 +19,12 @@ from inventory_management_system_api.core.exceptions import (
     ObjectStorageAPIServerError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
-from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
+from inventory_management_system_api.schemas.system import (
+    SystemPatchSchema,
+    SystemPostSchema,
+    SystemSchema,
+    SystemTreeNode,
+)
 from inventory_management_system_api.services.system import SystemService
 
 logger = logging.getLogger()
@@ -86,6 +91,15 @@ def get_system(
     except InvalidObjectIdError as exc:
         logger.exception("The ID is not a valid ObjectId value")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.get(path="/{system_id}/tree", summary="Get a system by ID", response_description="Single system")
+def get_system_tree(
+    system_id: Annotated[str, Path(description="ID of the system to get")], system_service: SystemServiceDep
+) -> List[SystemTreeNode]:
+    # pylint: disable=missing-function-docstring
+    # pylint: disable=duplicate-code
+    return system_service.get_tree(system_id)
 
 
 @router.get(path="/{system_id}/breadcrumbs", summary="Get breadcrumbs data for a system")

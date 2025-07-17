@@ -3,6 +3,7 @@ Module for providing a repository for managing systems in a MongoDB database
 """
 
 import logging
+import time
 from typing import Optional
 
 from pymongo.client_session import ClientSession
@@ -10,12 +11,8 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidActionError,
-    MissingRecordError,
-)
-from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidActionError, MissingRecordError
+from inventory_management_system_api.models.system import SystemIn, SystemOut, SystemTreeNodeOut
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 
@@ -77,6 +74,228 @@ class SystemRepo:
         if system:
             return SystemOut(**system)
         return None
+
+    def build_system_tree(self, systems):
+        start = time.time()
+        # Index systems by _id
+        system_map = {system["_id"]: {**system, "subsystems": []} for system in systems}
+
+        # Build tree (assume root is whatever doesnt have a parent in the fetched data)
+        root_systems = []
+        for system in system_map.values():
+            parent_id = system.get("parent_id")
+            parent = system_map.get(parent_id) if parent_id else None
+            if parent:
+                parent["subsystems"].append(system)
+            else:
+                root_systems.append(system)
+        logger.debug("HELLO")
+        logger.debug(time.time() - start)
+        return root_systems
+
+    def get_tree(self, system_id: str, session: Optional[ClientSession] = None) -> dict:
+        """
+        Retrieve a system by its ID from a MongoDB database
+
+        :param system_id: ID of the system to retrieve
+        :param session: PyMongo ClientSession to use for database operations
+        :return: Retrieved system or `None` if not found
+        """
+        system_id = CustomObjectId(system_id)
+
+        # Potential optimisations
+        # - Dont need items for system tree, rather just the number there are of each - perhaps just count them and return to save space
+        # - Indexing of IDs when doing lookups
+
+        pipeline = [
+            {"$match": {"_id": system_id}},
+            {
+                "$graphLookup": {
+                    "from": "systems",
+                    "startWith": "$_id",
+                    "connectFromField": "_id",
+                    "connectToField": "parent_id",
+                    "as": "subsystems",
+                }
+            },
+            {
+                "$addFields": {
+                    "allSystems": {
+                        "$concatArrays": [
+                            ["$$ROOT"],
+                            "$subsystems",
+                        ]
+                    }
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "items",
+                    "localField": "allSystems._id",
+                    "foreignField": "system_id",
+                    "as": "allItems",
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "catalogue_items",
+                    "localField": "allItems.catalogue_item_id",
+                    "foreignField": "_id",
+                    "as": "catalogueItemDetails",
+                }
+            },
+            {
+                "$addFields": {
+                    "allSystems": {
+                        "$map": {
+                            "input": "$allSystems",
+                            "as": "system",
+                            "in": {
+                                "$mergeObjects": [
+                                    "$$system",
+                                    {
+                                        "catalogue_items": {
+                                            "$reduce": {
+                                                "input": {
+                                                    "$map": {
+                                                        "input": {
+                                                            "$filter": {
+                                                                "input": "$allItems",
+                                                                "as": "item",
+                                                                "cond": {"$eq": ["$$item.system_id", "$$system._id"]},
+                                                            }
+                                                        },
+                                                        "as": "item",
+                                                        "in": {
+                                                            "$mergeObjects": [
+                                                                {"_id": "$$item.catalogue_item_id"},
+                                                                {
+                                                                    "$arrayElemAt": [
+                                                                        {
+                                                                            "$filter": {
+                                                                                "input": "$catalogueItemDetails",
+                                                                                "as": "catalogueItem",
+                                                                                "cond": {
+                                                                                    "$eq": [
+                                                                                        "$$catalogueItem._id",
+                                                                                        "$$item.catalogue_item_id",
+                                                                                    ]
+                                                                                },
+                                                                            }
+                                                                        },
+                                                                        0,
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "items": {
+                                                                        "$filter": {
+                                                                            "input": "$allItems",
+                                                                            "as": "innerItem",
+                                                                            "cond": {
+                                                                                "$and": [
+                                                                                    {
+                                                                                        "$eq": [
+                                                                                            "$$innerItem.catalogue_item_id",
+                                                                                            "$$item.catalogue_item_id",
+                                                                                        ]
+                                                                                    },
+                                                                                    {
+                                                                                        "$eq": [
+                                                                                            "$$innerItem.system_id",
+                                                                                            "$$system._id",
+                                                                                        ]
+                                                                                    },
+                                                                                ]
+                                                                            },
+                                                                        }
+                                                                    }
+                                                                },
+                                                            ]
+                                                        },
+                                                    }
+                                                },
+                                                "initialValue": [],
+                                                "in": {
+                                                    "$cond": [
+                                                        {
+                                                            "$in": [
+                                                                "$$this._id",
+                                                                {
+                                                                    "$map": {
+                                                                        "input": "$$value",
+                                                                        "as": "v",
+                                                                        "in": "$$v._id",
+                                                                    }
+                                                                },
+                                                            ]
+                                                        },
+                                                        "$$value",
+                                                        {"$concatArrays": ["$$value", ["$$this"]]},
+                                                    ]
+                                                },
+                                            }
+                                        },
+                                        "subsystems": [],
+                                    },
+                                ]
+                            },
+                        }
+                    }
+                }
+            },
+            {"$project": {"_id": 1, "allSystems": 1}},
+        ]
+        result = self._systems_collection.aggregate(pipeline, session=session)
+        result = self.build_system_tree(list(result)[0]["allSystems"])
+        # logger.debug(result)
+        return [SystemTreeNodeOut(**system_node) for system_node in result]
+
+    # def get_tree(self, system_id: str, session: Optional[ClientSession] = None) -> dict:
+    #     """
+    #     Retrieve a system by its ID from a MongoDB database
+
+    #     :param system_id: ID of the system to retrieve
+    #     :param session: PyMongo ClientSession to use for database operations
+    #     :return: Retrieved system or `None` if not found
+    #     """
+    #     system_id = CustomObjectId(system_id)
+
+    #     pipeline = [
+    #         # Lookup the requested system
+    #         {"$match": {"_id": system_id}},
+    #         # Fetch all subsystems
+    #         {
+    #             "$graphLookup": {
+    #                 "from": "systems",
+    #                 "startWith": "$_id",
+    #                 "connectFromField": "_id",
+    #                 "connectToField": "parent_id",
+    #                 "as": "subsystems",
+    #             }
+    #         },
+    #         # Fetch all items in those subsystems
+    #         {
+    #             "$lookup": {
+    #                 "from": "items",
+    #                 "localField": "subsystems._id",
+    #                 "foreignField": "system_id",
+    #                 "as": "items",
+    #             }
+    #         },
+    #         # Fetch all catalogue items in those items
+    #         {
+    #             "$lookup": {
+    #                 "from": "catalogue_items",
+    #                 "localField": "items.catalogue_item_id",
+    #                 "foreignField": "_id",
+    #                 "as": "catalogue_items",
+    #             }
+    #         },
+    #     ]
+    #     result = self._systems_collection.aggregate(pipeline, session=session)
+    #     result = list(result)[0]
+    #     logger.debug(result)
+    #     return result
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """

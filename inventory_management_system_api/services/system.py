@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import MissingRecordError, ChildElementsExistError
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, MissingRecordError
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories.system import SystemRepo
@@ -59,6 +59,15 @@ class SystemService:
         :return: Retrieved system or `None` if not found
         """
         return self._system_repository.get(system_id)
+
+    def get_tree(self, system_id: str) -> dict:
+        """
+        Retrieve a system by its ID
+
+        :param system_id: ID of the system to retrieve
+        :return: Retrieved system or `None` if not found
+        """
+        return self._system_repository.get_tree(system_id)
 
     def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
         """

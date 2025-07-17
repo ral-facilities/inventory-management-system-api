@@ -2,11 +2,13 @@
 Module for defining the database models for representing systems.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from inventory_management_system_api.models.catalogue_item import CatalogueItemOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
@@ -41,3 +43,13 @@ class SystemOut(CreatedModifiedTimeOutMixin, SystemBase):
     parent_id: Optional[StringObjectIdField] = None
 
     model_config = ConfigDict(populate_by_name=True)
+
+
+class CatalogueItemNodeOut(CatalogueItemOut):
+    items: List[ItemOut]
+
+
+class SystemTreeNodeOut(SystemOut):
+
+    subsystems: List["SystemTreeNodeOut"]
+    catalogue_items: List[CatalogueItemNodeOut]

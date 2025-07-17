@@ -12,8 +12,8 @@ fake = Faker("en_GB")
 
 API_URL = "http://localhost:8000"
 
-MAX_LEVELS_DEEP = 2
-MAX_NUMBER_PER_PARENT = 8
+MAX_LEVELS_DEEP = 4
+MAX_NUMBER_PER_PARENT = 10
 PROBABILITY_CATEGORY_IS_LEAF = 0.4  # All MAX_LEVEL_DEEP categories are populated, this just allows them to end earlier
 PROBABILITY_CATALOGUE_CATEGORY_HAS_EXTRA_FIELDS = 0.5
 MAX_EXTRA_CATALOGUE_CATEGORY_FIELDS = 2
@@ -22,7 +22,7 @@ PROBABILITY_ADDRESS_HAS_OPTIONAL_FIELD = 0.5
 PROBABILITY_ITEM_HAS_OPTIONAL_FIELD = 0.5
 NUMBER_OF_MANUFACTURERS = 20
 PROBABILITY_CATALOGUE_ITEM_HAS_ITEMS = 0.5
-MAX_NUMBER_OF_ITEMS_PER_CATALOGUE_ITEM = 5
+MAX_NUMBER_OF_ITEMS_PER_CATALOGUE_ITEM = 12
 SEED = 0
 
 logging.basicConfig(level=logging.INFO)
@@ -577,11 +577,11 @@ def populate_random_items():
 def populate_random_systems(levels_deep: int = 0, parent_id=None):
     """Recursive function that randomly populates systems."""
 
-    if levels_deep >= MAX_LEVELS_DEEP:
+    if levels_deep >= 5:
         return
 
     logger.debug("Populating system with depth %s", levels_deep)
-    num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
+    num_to_generate = 1 if levels_deep == 0 else fake.random.randint(1, MAX_NUMBER_PER_PARENT)
     for _ in range(0, num_to_generate):
         system = generate_random_system(parent_id)
         system_id = create_system(system)["id"]

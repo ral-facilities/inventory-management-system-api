@@ -3,10 +3,12 @@ Module for defining the API schema models for representing systems.
 """
 
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from inventory_management_system_api.schemas.catalogue_item import CatalogueItemSchema
+from inventory_management_system_api.schemas.item import ItemSchema
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
@@ -49,3 +51,13 @@ class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
 
     id: str = Field(description="ID of the system")
     code: str = Field(description="Code of the system")
+
+
+class CatalogueItemNode(CatalogueItemSchema):
+    items: List[ItemSchema]
+
+
+class SystemTreeNode(SystemSchema):
+
+    subsystems: List["SystemTreeNode"]
+    catalogue_items: List[CatalogueItemNode]
