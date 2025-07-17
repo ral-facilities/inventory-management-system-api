@@ -14,6 +14,7 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.models.system import SystemOut
+from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
@@ -224,14 +225,15 @@ def fixture_system_type_service(system_type_repository_mock: Mock) -> SystemType
 
 
 @pytest.fixture(name="system_service")
-def fixture_system_service(system_repository_mock: Mock) -> SystemService:
+def fixture_system_service(system_repository_mock: Mock, system_type_repository_mock: Mock) -> SystemService:
     """
     Fixture to create a `SystemService` instance with a mocked `SystemRepo` dependency.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
+    :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
     :return: `SystemService` instance with the mocked dependency.
     """
-    return SystemService(system_repository_mock)
+    return SystemService(system_repository_mock, system_type_repository_mock)
 
 
 @pytest.fixture(name="unit_service")
@@ -283,7 +285,15 @@ class ServiceTestHelpers:
     def mock_get(
         repository_mock: Mock,
         repo_obj: Union[
-            CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, UsageStatusOut, None
+            CatalogueCategoryOut,
+            CatalogueItemOut,
+            ItemOut,
+            ManufacturerOut,
+            SystemTypeOut,
+            SystemOut,
+            UnitOut,
+            UsageStatusOut,
+            None,
         ],
     ) -> None:
         """
