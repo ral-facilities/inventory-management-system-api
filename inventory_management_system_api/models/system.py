@@ -47,9 +47,11 @@ class SystemOut(CreatedModifiedTimeOutMixin, SystemBase):
 
 class CatalogueItemNodeOut(CatalogueItemOut):
     items: List[ItemOut]
+    flagged: bool
 
 
 class SystemTreeNodeOut(SystemOut):
 
     subsystems: List["SystemTreeNodeOut"]
     catalogue_items: List[CatalogueItemNodeOut]
+    flagged: bool

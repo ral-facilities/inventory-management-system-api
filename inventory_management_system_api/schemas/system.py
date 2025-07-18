@@ -55,9 +55,11 @@ class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
 
 class CatalogueItemNode(CatalogueItemSchema):
     items: List[ItemSchema]
+    flagged: bool
 
 
 class SystemTreeNode(SystemSchema):
 
     subsystems: List["SystemTreeNode"]
     catalogue_items: List[CatalogueItemNode]
+    flagged: bool
