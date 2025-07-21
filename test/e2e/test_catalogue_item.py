@@ -358,9 +358,7 @@ class TestCreate(CreateDSL):
             }
         )
 
-        self.check_post_catalogue_item_failed_with_detail(
-            422, "The specified replacement catalogue item does not exist"
-        )
+        self.check_post_catalogue_item_failed_with_detail(422, "Replacement catalogue item not found")
 
     def test_create_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
         """Test creating an obsolete catalogue item an invalid `obsolete_replacement_catalogue_item_id`."""
@@ -372,9 +370,7 @@ class TestCreate(CreateDSL):
             }
         )
 
-        self.check_post_catalogue_item_failed_with_detail(
-            422, "The specified replacement catalogue item does not exist"
-        )
+        self.check_post_catalogue_item_failed_with_detail(422, "Replacement catalogue item not found")
 
     def test_create_with_all_properties_provided(self):
         """Test creating a catalogue item with all properties within the catalogue category being defined."""
@@ -576,7 +572,7 @@ class TestCreate(CreateDSL):
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
+        self.check_post_catalogue_item_failed_with_detail(422, "Specified catalogue category not found")
 
     def test_create_with_invalid_catalogue_category_id(self):
         """Test creating a catalogue item with an invalid catalogue category ID."""
@@ -585,7 +581,7 @@ class TestCreate(CreateDSL):
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
         self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
+        self.check_post_catalogue_item_failed_with_detail(422, "Specified catalogue category not found")
 
     def test_create_with_non_existent_manufacturer_id(self):
         """Test creating a catalogue item with a non-existent manufacturer ID."""
@@ -594,7 +590,7 @@ class TestCreate(CreateDSL):
         self.manufacturer_id = str(ObjectId())
         self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+        self.check_post_catalogue_item_failed_with_detail(422, "Specified manufacturer not found")
 
     def test_create_with_invalid_manufacturer_id(self):
         """Test creating a catalogue item with an invalid manufacturer ID."""
@@ -603,7 +599,7 @@ class TestCreate(CreateDSL):
         self.manufacturer_id = "invalid-id"
         self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_post_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+        self.check_post_catalogue_item_failed_with_detail(422, "Specified manufacturer not found")
 
 
 class GetDSL(CreateDSL):
@@ -1153,7 +1149,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": str(ObjectId())})
-        self.check_patch_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
+        self.check_patch_catalogue_item_failed_with_detail(422, "Specified catalogue category not found")
 
     def test_partial_update_catalogue_category_id_with_invalid_id(self):
         """Test updating the `catalogue_category_id` of a catalogue item to an invalid ID."""
@@ -1163,7 +1159,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"catalogue_category_id": "invalid-id"})
-        self.check_patch_catalogue_item_failed_with_detail(422, "The specified catalogue category does not exist")
+        self.check_patch_catalogue_item_failed_with_detail(422, "Specified catalogue category not found")
 
     def test_partial_update_manufacturer_id_with_no_children(self):
         """Test updating the `manufacturer_id` of a catalogue item when it has no children."""
@@ -1200,7 +1196,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": str(ObjectId())})
-        self.check_patch_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+        self.check_patch_catalogue_item_failed_with_detail(422, "Specified manufacturer not found")
 
     def test_partial_update_manufacturer_id_with_invalid_id(self):
         """Test updating the `manufacturer_id` of a catalogue item to an invalid ID."""
@@ -1210,7 +1206,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"manufacturer_id": "invalid-id"})
-        self.check_patch_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+        self.check_patch_catalogue_item_failed_with_detail(422, "Specified manufacturer not found")
 
     def test_partial_update_properties_with_no_children(self):
         """Test updating the `properties` of a catalogue item when it has no children."""
@@ -1496,9 +1492,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"obsolete_replacement_catalogue_item_id": str(ObjectId())})
-        self.check_patch_catalogue_item_failed_with_detail(
-            422, "The specified replacement catalogue item does not exist"
-        )
+        self.check_patch_catalogue_item_failed_with_detail(422, "Replacement catalogue item not found")
 
     def test_partial_update_obsolete_replacement_catalogue_item_id_with_invalid_id(self):
         """Test updating the `obsolete_replacement_catalogue_item` of a catalogue item to an invalid ID."""
@@ -1508,9 +1502,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.patch_catalogue_item(catalogue_item_id, {"obsolete_replacement_catalogue_item_id": "invalid-id"})
-        self.check_patch_catalogue_item_failed_with_detail(
-            422, "The specified replacement catalogue item does not exist"
-        )
+        self.check_patch_catalogue_item_failed_with_detail(422, "Replacement catalogue item not found")
 
     def test_partial_update_with_non_existent_id(self):
         """Test updating a non-existent catalogue item."""

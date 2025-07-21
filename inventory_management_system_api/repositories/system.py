@@ -13,6 +13,7 @@ from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidActionError,
+    InvalidObjectIdError,
     MissingRecordError,
 )
 from inventory_management_system_api.models.system import SystemIn, SystemOut
@@ -48,35 +49,37 @@ class SystemRepo:
         :param system: System to be created
         :param session: PyMongo ClientSession to use for database operations
         :return: Created system
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist
-        :raises DuplicateRecordError: If a duplicate system is found within the parent system
         """
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
-            raise DuplicateRecordError("Duplicate system found within the parent system")
+            raise DuplicateRecordError(
+                "Duplicate system found within the parent system",
+                response_detail="A system with the same name already exists within the parent system",
+            )
 
         logger.info("Inserting the new system into the database")
         result = self._systems_collection.insert_one(system.model_dump(), session=session)
-        system = self.get(str(result.inserted_id), session=session)
-        return system
+        return self.get(str(result.inserted_id), session=session)
 
-    def get(self, system_id: str, session: Optional[ClientSession] = None) -> Optional[SystemOut]:
+    def get(self, system_id: str, session: Optional[ClientSession] = None) -> SystemOut:
         """
         Retrieve a system by its ID from a MongoDB database
 
         :param system_id: ID of the system to retrieve
         :param session: PyMongo ClientSession to use for database operations
-        :return: Retrieved system or `None` if not found
+        :return: Retrieved system.
+        :raises MissingRecordError: If the supplied `system_id` is non-existent.
         """
         system_id = CustomObjectId(system_id)
+
         logger.info("Retrieving system with ID: %s from the database", system_id)
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
+
         if system:
             return SystemOut(**system)
-        return None
+
+        raise MissingRecordError(entity_id=system_id, entity_type="system")
 
     def get_breadcrumbs(self, system_id: str, session: Optional[ClientSession] = None) -> BreadcrumbsGetSchema:
         """
@@ -96,6 +99,7 @@ class SystemRepo:
             ),
             entity_id=system_id,
             collection_name="systems",
+            entity_type="system",
         )
 
     def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> list[SystemOut]:
@@ -106,7 +110,12 @@ class SystemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: List of systems or an empty list if no systems are retrieved
         """
-        query = utils.list_query(parent_id, "systems")
+        try:
+            query = utils.list_query(parent_id, "systems")
+        except InvalidObjectIdError:
+            # As this method filters, and to hide the database behaviour, we treat any invalid id
+            # the same as a valid one that doesn't exist i.e. return an empty list
+            return []
 
         systems = self._systems_collection.find(query, session=session)
         return [SystemOut(**system) for system in systems]
@@ -118,22 +127,22 @@ class SystemRepo:
         :param system: System containing the update data
         :param session: PyMongo ClientSession to use for database operations
         :return: The updated system
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist
         :raises DuplicateRecordError: If a duplicate system is found within the parent system
         :raises InvalidActionError: If attempting to change the `parent_id` to one of its own child system ids
         """
         system_id = CustomObjectId(system_id)
 
         parent_id = str(system.parent_id) if system.parent_id else None
-        if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
         if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(
             parent_id, system.code, system_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate system found within the parent system")
+            raise DuplicateRecordError(
+                "Duplicate system found within the parent system",
+                response_detail="A system with the same name already exists within the parent system",
+            )
 
         # Prevent a system from being moved to one of its own children
         if moving_system:
@@ -151,7 +160,6 @@ class SystemRepo:
 
         logger.info("Updating system with ID: %s in the database", system_id)
         self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
-
         return self.get(str(system_id), session=session)
 
     def delete(self, system_id: str, session: Optional[ClientSession] = None) -> None:
@@ -168,7 +176,7 @@ class SystemRepo:
         logger.info("Deleting system with ID: %s from the database", system_id)
         result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
+            raise MissingRecordError(entity_id=system_id, entity_type="system")
 
     def _is_duplicate_system(
         self,
@@ -204,6 +212,7 @@ class SystemRepo:
         :return: `True` if the system has child elements, `False` otherwise
         """
         logger.info("Checking if system with ID '%s' has child elements", system_id)
+
         system_id = CustomObjectId(system_id)
         return (
             self._systems_collection.find_one({"parent_id": system_id}, session=session) is not None

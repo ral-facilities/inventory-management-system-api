@@ -79,7 +79,10 @@ class TestComputeBreadcrumbs:
         collection_name = MagicMock()
 
         result = utils.compute_breadcrumbs(
-            entity_id=entity_id, breadcrumb_query_result=breadcrumb_query_result, collection_name=collection_name
+            entity_id=entity_id,
+            breadcrumb_query_result=breadcrumb_query_result,
+            collection_name=collection_name,
+            entity_type="entity",
         )
 
         assert result.trail == expected_trail
@@ -123,9 +126,10 @@ class TestComputeBreadcrumbs:
                 entity_id=entity_id,
                 breadcrumb_query_result=MOCK_BREADCRUMBS_QUERY_RESULT_NON_EXISTENT_ID,
                 collection_name=collection_name,
+                entity_type="entity",
             )
 
-        assert str(exc.value) == f"Entity with the ID '{entity_id}' was not found in the collection '{collection_name}'"
+        assert str(exc.value) == f"No entity found with ID: {entity_id}"
 
     def test_compute_breadcrumbs_when_invalid_parent_in_db(self):
         """
@@ -139,6 +143,7 @@ class TestComputeBreadcrumbs:
                 entity_id=entity_id,
                 breadcrumb_query_result=MOCK_BREADCRUMBS_QUERY_RESULT_INVALID_PARENT_IN_DB,
                 collection_name=collection_name,
+                entity_type="entity",
             )
 
         assert str(exc.value) == (

@@ -6,7 +6,6 @@ from test.mock_data import (
     ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
     ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
-    SYSTEM_IN_DATA_NO_PARENT_A,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
@@ -19,7 +18,6 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
-from inventory_management_system_api.models.system import SystemIn
 from inventory_management_system_api.repositories.item import ItemRepo
 
 
@@ -29,7 +27,6 @@ class ItemRepoDSL:
     mock_database: Mock
     item_repository: ItemRepo
     items_collection: Mock
-    systems_collection: Mock
 
     mock_session = MagicMock()
 
@@ -40,7 +37,6 @@ class ItemRepoDSL:
         self.mock_database = database_mock
         self.item_repository = ItemRepo(database_mock)
         self.items_collection = database_mock.items
-        self.systems_collection = database_mock.systems
 
 
 class CreateDSL(ItemRepoDSL):
@@ -54,14 +50,11 @@ class CreateDSL(ItemRepoDSL):
     def mock_create(
         self,
         item_in_data: dict,
-        system_in_data: Optional[dict] = None,
     ) -> None:
         """Mocks database methods appropriately to test the `create` repo method.
 
         :param item_in_data: Dictionary containing the item data as would be required for a `ItemIn` database model
                              (i.e. no ID or created and modified times required).
-        :param system_in_data: Either `None` or a dictionary system data as would be required for a `SystemIn` database
-                               model.
         """
 
         inserted_item_id = CustomObjectId(str(ObjectId()))
@@ -70,18 +63,6 @@ class CreateDSL(ItemRepoDSL):
         self._item_in = ItemIn(**item_in_data)
 
         self._expected_item_out = ItemOut(**self._item_in.model_dump(by_alias=True), id=inserted_item_id)
-
-        RepositoryTestHelpers.mock_find_one(
-            self.systems_collection,
-            (
-                {
-                    **SystemIn(**system_in_data).model_dump(),
-                    "_id": ObjectId(),
-                }
-                if system_in_data
-                else None
-            ),
-        )
 
         RepositoryTestHelpers.mock_insert_one(self.items_collection, inserted_item_id)
         RepositoryTestHelpers.mock_find_one(
@@ -111,8 +92,6 @@ class CreateDSL(ItemRepoDSL):
 
         item_in_data = self._item_in.model_dump(by_alias=True)
 
-        self.systems_collection.find_one.assert_called_with({"_id": self._item_in.system_id}, session=self.mock_session)
-
         self.items_collection.insert_one.assert_called_once_with(item_in_data, session=self.mock_session)
         self.items_collection.find_one.assert_called_once_with(
             {"_id": CustomObjectId(self._expected_item_out.id)}, session=self.mock_session
@@ -139,18 +118,9 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an item."""
 
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY, system_in_data=SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
         self.call_create()
         self.check_create_success()
-
-    def test_create_with_non_existent_system_id(self):
-        """Test creating an item with a non-existent system ID."""
-
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(
-            f"No system found with ID: {ITEM_IN_DATA_REQUIRED_VALUES_ONLY["system_id"]}"
-        )
 
 
 class GetDSL(ItemRepoDSL):
@@ -202,6 +172,7 @@ class GetDSL(ItemRepoDSL):
         :param error_type: Expected exception to be raised.
         """
 
+        self._obtained_item_id = item_id
         with pytest.raises(error_type) as exc:
             self.item_repository.get(item_id)
         self._get_exception = exc
@@ -214,15 +185,22 @@ class GetDSL(ItemRepoDSL):
         )
         assert self._obtained_item == self._expected_item_out
 
-    def check_get_failed_with_exception(self, message: str) -> None:
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
         """
 
-        self.items_collection.find_one.assert_not_called()
+        if assert_find:
+            self.items_collection.find_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._obtained_item_id)}, session=None
+            )
+        else:
+            self.items_collection.find_one.assert_not_called()
 
         assert str(self._get_exception.value) == message
 
@@ -245,8 +223,8 @@ class TestGet(GetDSL):
         item_id = str(ObjectId())
 
         self.mock_get(item_id, None)
-        self.call_get(item_id)
-        self.check_get_success()
+        self.call_get_expecting_error(item_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No item found with ID: {item_id}", assert_find=True)
 
     def test_get_with_invalid_id(self):
         """Test getting an item with an invalid ID."""
@@ -295,16 +273,23 @@ class ListDSL(ItemRepoDSL):
             system_id=system_id, catalogue_item_id=catalogue_item_id, session=self.mock_session
         )
 
-    def check_list_success(self) -> None:
-        """Checks that a prior call to `call_list` worked as expected."""
+    def check_list_success(self, assert_find: bool = True) -> None:
+        """Checks that a prior call to `call_list` worked as expected.
 
-        expected_query = {}
-        if self._system_id_filter:
-            expected_query["system_id"] = CustomObjectId(self._system_id_filter)
-        if self._catalogue_item_id_filter:
-            expected_query["catalogue_item_id"] = CustomObjectId(self._catalogue_item_id_filter)
+        :param assert_find: If `True` it asserts whether a `find_one` call was made, else it asserts that no call was
+                            made.
+        """
 
-        self.items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        if assert_find:
+            expected_query = {}
+            if self._system_id_filter:
+                expected_query["system_id"] = CustomObjectId(self._system_id_filter)
+            if self._catalogue_item_id_filter:
+                expected_query["catalogue_item_id"] = CustomObjectId(self._catalogue_item_id_filter)
+
+            self.items_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        else:
+            self.items_collection.find.assert_not_called()
 
         assert self._obtained_items_out == self._expected_items_out
 
@@ -326,12 +311,26 @@ class TestList(ListDSL):
         self.call_list(system_id=str(ObjectId()), catalogue_item_id=None)
         self.check_list_success()
 
+    def test_list_with_invalid_system_id_filter(self):
+        """Test listing all items when giving an invalid `system_id`."""
+
+        self.mock_list([])
+        self.call_list(system_id="invalid-id", catalogue_item_id=None)
+        self.check_list_success(assert_find=False)
+
     def test_list_with_catalogue_category_id_filter(self):
         """Test listing all items with a given `catalogue_category_id`."""
 
         self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=str(ObjectId()))
         self.check_list_success()
+
+    def test_list_with_invalid_catalogue_category_id_filter(self):
+        """Test listing all items when given an invalid `catalogue_category_id`."""
+
+        self.mock_list([])
+        self.call_list(system_id=None, catalogue_item_id="invalid-id")
+        self.check_list_success(assert_find=False)
 
     def test_list_with_system_id_and_catalogue_category_id_with_no_results(self):
         """Test listing all items with a `system_id` and `catalogue_category_id` filter returning no results."""

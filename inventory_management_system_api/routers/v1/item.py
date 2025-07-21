@@ -5,19 +5,9 @@ Module for providing an API router which defines routes for managing items using
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    InvalidActionError,
-    InvalidObjectIdError,
-    InvalidPropertyTypeError,
-    MissingMandatoryProperty,
-    MissingRecordError,
-    ObjectStorageAPIServerError,
-    ObjectStorageAPIAuthError,
-)
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
 
@@ -38,29 +28,9 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchem
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
-    try:
-        item = item_service.create(item)
-        return ItemSchema(**item.model_dump())
-    except InvalidPropertyTypeError as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
-            message = "The specified system does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
-            message = "The specified usage status does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
-        message = "The specified catalogue item does not exist"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except DatabaseIntegrityError as exc:
-        message = "Unable to create item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    item = item_service.create(item)
+    return ItemSchema(**item.model_dump())
 
 
 @router.delete(
@@ -76,22 +46,7 @@ def delete_item(
 ) -> None:
     # pylint: disable=missing-function-docstring
     logger.info("Deleting item with ID: %s", item_id)
-    try:
-        item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Item not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    # pylint: disable=duplicate-code
-    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
-
-        if exc.args[0] == "Invalid token or expired token":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: enable=duplicate-code
+    item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
 
 
 @router.get(path="", summary="Get items", response_description="List of items")
@@ -106,18 +61,9 @@ def get_items(
         logger.debug("System ID filter: '%s'", system_id)
     if catalogue_item_id:
         logger.debug("Catalogue item ID filter: '%s'", catalogue_item_id)
-    try:
-        items = item_service.list(system_id, catalogue_item_id)
-        return [ItemSchema(**item.model_dump()) for item in items]
 
-    except InvalidObjectIdError:
-        if system_id:
-            logger.exception("The provided system ID filter value is not a valid ObjectId value")
-
-        if catalogue_item_id:
-            logger.exception("The provided catalogue item ID filter value is not a valid ObjectId value")
-
-        return []
+    items = item_service.list(system_id, catalogue_item_id)
+    return [ItemSchema(**item.model_dump()) for item in items]
 
 
 @router.get(path="/{item_id}", summary="Get an item by ID", response_description="Single item")
@@ -126,15 +72,8 @@ def get_item(
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
-    message = "An item with such ID was not found"
-    try:
-        item = item_service.get(item_id)
-        if not item:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return ItemSchema(**item.model_dump())
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    item = item_service.get(item_id)
+    return ItemSchema(**item.model_dump())
 
 
 @router.patch(
@@ -150,29 +89,6 @@ def partial_update_item(
     # pylint: disable=missing-function-docstring
     logger.info("Partially updating item with ID: %s", item_id)
     logger.debug("Item data: %s", item)
-    try:
-        updated_item = item_service.update(item_id, item)
-        return ItemSchema(**updated_item.model_dump())
-    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
-            message = "The specified system does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
-            message = "The specified usage status does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-        message = "Item not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DatabaseIntegrityError as exc:
-        message = "Unable to update item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    except InvalidActionError as exc:
-        message = "Cannot change the catalogue item of an item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+
+    updated_item = item_service.update(item_id, item)
+    return ItemSchema(**updated_item.model_dump())

@@ -25,11 +25,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.exceptions import (
-    DatabaseIntegrityError,
-    InvalidActionError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import DatabaseIntegrityError, InvalidActionError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
@@ -247,15 +243,24 @@ class CreateDSL(ItemServiceDSL):
         """Checks that a prior call to `call_create` worked as expected."""
 
         # This is the get for the catalogue item
-        self.mock_catalogue_item_repository.get.assert_called_once_with(self._item_post.catalogue_item_id)
+        self.mock_catalogue_item_repository.get.assert_called_once_with(
+            self._item_post.catalogue_item_id, entity_type_modifier="specified"
+        )
+
+        # This is the get for the system
+        self.mock_system_repository.get.assert_called_once_with(
+            self._item_post.system_id, entity_type_modifier="specified"
+        )
 
         # This is the get for the catalogue category
         self.mock_catalogue_category_repository.get.assert_called_once_with(
-            self._catalogue_item_out.catalogue_category_id
+            self._catalogue_item_out.catalogue_category_id, entity_type_modifier="specified"
         )
 
         # This is the get for the usage status
-        self.mock_usage_status_repository.get.assert_called_once_with(self._item_post.usage_status_id)
+        self.mock_usage_status_repository.get.assert_called_once_with(
+            self._item_post.usage_status_id, entity_type_modifier="specified"
+        )
 
         self.wrapped_utils.process_properties.assert_called_once_with(
             self._catalogue_category_out.properties, self._expected_merged_properties
@@ -316,18 +321,6 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_non_existent_catalogue_item_id(self):
-        """Test creating an item with a non-existent catalogue item ID."""
-
-        self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
-            catalogue_item_data=None,
-            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-        )
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No catalogue item found with ID: {self._item_post.catalogue_item_id}")
-
     def test_create_with_catalogue_item_with_non_existent_catalogue_category_id(self):
         """Test creating an item with a catalogue item that has a non-existent catalogue category ID."""
 
@@ -341,18 +334,6 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(
             f"No catalogue category found with ID: {self._catalogue_item_out.catalogue_category_id}"
         )
-
-    def test_create_with_non_existent_usage_status_id(self):
-        """Test creating an item with a non-existent usage status ID."""
-
-        self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
-            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-            usage_status_in_data=None,
-        )
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No usage status found with ID: {self._item_post.usage_status_id}")
 
 
 class GetDSL(ItemServiceDSL):
@@ -691,10 +672,14 @@ class UpdateDSL(ItemServiceDSL):
         self.mock_item_repository.get.assert_called_once_with(self._updated_item_id)
 
         if self._updating_system:
-            self.mock_system_repository.get.assert_called_once_with(self._item_patch.system_id)
+            self.mock_system_repository.get.assert_called_once_with(
+                self._item_patch.system_id, entity_type_modifier="specified"
+            )
 
         if self._updating_usage_status:
-            self.mock_usage_status_repository.get.assert_called_once_with(self._item_patch.usage_status_id)
+            self.mock_usage_status_repository.get.assert_called_once_with(
+                self._item_patch.usage_status_id, entity_type_modifier="specified"
+            )
 
         if self._updating_properties:
             self.mock_catalogue_item_repository.get.assert_called_once_with(self._stored_item.catalogue_item_id)
@@ -784,7 +769,7 @@ class TestUpdate(UpdateDSL):
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
-        self.check_update_failed_with_exception("Cannot change the catalogue item the item belongs to")
+        self.check_update_failed_with_exception("Cannot change the catalogue item of an item")
 
     def test_update_system_id(self):
         """Test updating an item's `system_id`."""
@@ -800,21 +785,6 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
-    def test_update_with_non_existent_system_id(self):
-        """Test updating an item's `system_id` to a non-existent system."""
-
-        item_id = str(ObjectId())
-        system_id = str(ObjectId())
-
-        self.mock_update(
-            item_id,
-            item_update_data={"system_id": system_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            new_system_in_data=None,
-        )
-        self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
-
     def test_update_usage_status_id(self):
         """Test updating an item's `usage_status_id`."""
 
@@ -828,34 +798,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(item_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_usage_status_id(self):
-        """Test updating an item's `usage_status_id` to a non-existent usage status."""
-
-        item_id = str(ObjectId())
-        usage_status_id = str(ObjectId())
-
-        self.mock_update(
-            item_id,
-            item_update_data={"usage_status_id": usage_status_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            new_usage_status_in_data=None,
-        )
-        self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No usage status found with ID: {usage_status_id}")
-
-    def test_update_with_non_existent_id(self):
-        """Test updating an item with a non-existent ID."""
-
-        item_id = str(ObjectId())
-
-        self.mock_update(
-            item_id,
-            item_update_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_item_data=None,
-        )
-        self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No item found with ID: {item_id}")
 
 
 class DeleteDSL(ItemServiceDSL):

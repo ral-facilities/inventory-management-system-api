@@ -24,11 +24,7 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import (
-    ChildElementsExistError,
-    LeafCatalogueCategoryError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import ChildElementsExistError, LeafCatalogueCategoryError
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -102,7 +98,7 @@ class CatalogueCategoryServiceDSL(BaseCatalogueServiceDSL):
         expected_unit_repo_calls = []
         for prop in expected_properties:
             if prop.unit_id:
-                expected_unit_repo_calls.append(call(prop.unit_id))
+                expected_unit_repo_calls.append(call(prop.unit_id, entity_type_modifier="specified"))
 
         self.mock_unit_repository.get.assert_has_calls(expected_unit_repo_calls)
 
@@ -255,13 +251,6 @@ class TestCreate(CreateDSL):
         self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[UNIT_IN_DATA_MM])
         self.call_create()
         self.check_create_success()
-
-    def test_create_with_properties_with_non_existent_unit_id(self):
-        """Test creating a catalogue category with properties with a non-existent unit ID."""
-
-        self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[None])
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
 
     def test_create_with_non_leaf_parent(self):
         """Test creating a catalogue category with a non-leaf parent catalogue category."""
@@ -581,7 +570,9 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         # Ensure obtained new parent if moving
         if self._moving_catalogue_category and self._catalogue_category_patch.parent_id:
-            expected_catalogue_category_get_calls.append(call(self._catalogue_category_patch.parent_id))
+            expected_catalogue_category_get_calls.append(
+                call(self._catalogue_category_patch.parent_id, entity_type_modifier="parent")
+            )
 
         self.mock_catalogue_category_repository.get.assert_has_calls(expected_catalogue_category_get_calls)
 
@@ -719,23 +710,6 @@ class TestUpdate(UpdateDSL):
             f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
         )
 
-    def test_update_leaf_properties_with_non_existent_unit_id(self):
-        """Test updating the properties of a leaf catalogue category when given a property with an non-existent unit
-        ID."""
-
-        catalogue_category_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_category_id,
-            catalogue_category_update_data={
-                "properties": [CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT]
-            },
-            stored_catalogue_category_post_data=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-            units_in_data=[None],
-        )
-        self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
-
     def test_update_parent_id(self):
         """Test updating a catalogue category's `parent_id` to move it."""
 
@@ -763,19 +737,6 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_id, LeafCatalogueCategoryError)
         self.check_update_failed_with_exception("Cannot add catalogue category to a leaf parent catalogue category")
-
-    def test_update_with_non_existent_id(self):
-        """Test updating a catalogue category with a non-existent ID."""
-
-        catalogue_category_id = str(ObjectId())
-
-        self.mock_update(
-            catalogue_category_id,
-            catalogue_category_update_data=CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-            stored_catalogue_category_post_data=None,
-        )
-        self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
 
 
 class DeleteDSL(CatalogueCategoryServiceDSL):

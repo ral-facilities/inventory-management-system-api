@@ -3,16 +3,14 @@ Module for providing a service for managing manufacturers using the `Manufacture
 """
 
 import logging
+from typing import Annotated, List
 
-from typing import Annotated, List, Optional
-from fastapi import Depends
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from fastapi import Depends, status
+
+from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
-from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchSchema,
-    ManufacturerPostSchema,
-)
+from inventory_management_system_api.schemas.manufacturer import ManufacturerPatchSchema, ManufacturerPostSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -50,14 +48,19 @@ class ManufacturerService:
             )
         )
 
-    def get(self, manufacturer_id: str) -> Optional[ManufacturerOut]:
+    def get(self, manufacturer_id: str) -> ManufacturerOut:
         """
         Retrieve a manufacturer by its ID.
 
         :param manufacturer_id: The ID of the manufacturer to retrieve.
-        :return: The retrieved manufacturer, or `None` if not found.
+        :return: The retrieved manufacturer.
         """
-        return self._manufacturer_repository.get(manufacturer_id)
+        try:
+            return self._manufacturer_repository.get(manufacturer_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Manufacturer not found"
+            raise exc
 
     def list(self) -> List[ManufacturerOut]:
         """
@@ -76,8 +79,6 @@ class ManufacturerService:
         :return: The updated manufacturer.
         """
         stored_manufacturer = self.get(manufacturer_id)
-        if not stored_manufacturer:
-            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
 
         update_data = manufacturer.model_dump(exclude_unset=True)
 
@@ -95,5 +96,12 @@ class ManufacturerService:
         Delete a manufacturer by its ID.
 
         :param manufacturer_id: The ID of the manufacturer to delete.
+        :raises MissingRecordError: If the supplied `manufacturer_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `manufacturer_id` is invalid.
         """
-        return self._manufacturer_repository.delete(manufacturer_id)
+        try:
+            return self._manufacturer_repository.delete(manufacturer_id)
+        except (MissingRecordError, InvalidObjectIdError) as exc:
+            exc.status_code = status.HTTP_404_NOT_FOUND
+            exc.response_detail = "Manufacturer not found"
+            raise exc

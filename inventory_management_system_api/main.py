@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.exceptions import BaseAPIException
 from inventory_management_system_api.core.logger_setup import setup_logger
 from inventory_management_system_api.routers.v1 import (
     catalogue_category,
@@ -28,6 +29,22 @@ app = FastAPI(title=config.api.title, description=config.api.description, root_p
 setup_logger()
 logger = logging.getLogger()
 logger.info("Logging now setup")
+
+
+@app.exception_handler(BaseAPIException)
+async def custom_base_api_exception_handler(_: Request, exc: BaseAPIException) -> JSONResponse:
+    """
+    Custom exception handler for FastAPI to handle `BaseAPIException`'s.
+
+    This handler ensures that these exceptions return the appropriate response code and generalised detail
+    while logging any specific detail.
+
+    :param _: Unused.
+    :param exc: The exception object representing the `BaseAPIException`.
+    :return: A JSON response with exception details.
+    """
+    logger.exception(exc.detail)
+    return JSONResponse(content={"detail": exc.response_detail}, status_code=exc.status_code)
 
 
 @app.exception_handler(Exception)
