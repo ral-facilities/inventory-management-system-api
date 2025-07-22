@@ -68,25 +68,25 @@ try {
       },
       {
         // Deletion of items in storage
-        src_system_id: SYSTEM_TYPE_ID_STORAGE,
+        src_system_type_id: SYSTEM_TYPE_ID_STORAGE,
         dst_system_type_id: null,
         dst_usage_status_id: null,
       },
       {
         // Movement of an item from a storage system to an operational one -> In Use
-        src_system_id: SYSTEM_TYPE_ID_STORAGE,
+        src_system_type_id: SYSTEM_TYPE_ID_STORAGE,
         dst_system_type_id: SYSTEM_TYPE_ID_OPERATIONAL,
         dst_usage_status_id: USAGE_STATUS_ID_IN_USE,
       },
       {
         // Movement of an item from an operational system to a storage one -> Used
-        src_system_id: SYSTEM_TYPE_ID_OPERATIONAL,
+        src_system_type_id: SYSTEM_TYPE_ID_OPERATIONAL,
         dst_system_type_id: SYSTEM_TYPE_ID_STORAGE,
         dst_usage_status_id: USAGE_STATUS_ID_USED,
       },
       {
         // Movement of an item from an operational system to a scrapped one -> Scrapped
-        src_system_id: SYSTEM_TYPE_ID_OPERATIONAL,
+        src_system_type_id: SYSTEM_TYPE_ID_OPERATIONAL,
         dst_system_type_id: SYSTEM_TYPE_ID_SCRAPPED,
         dst_usage_status_id: USAGE_STATUS_ID_SCRAPPED,
       },
