@@ -5,7 +5,7 @@ Module for providing an API router which defines routes for managing items using
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -15,8 +15,8 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
     MissingRecordError,
-    ObjectStorageAPIServerError,
     ObjectStorageAPIAuthError,
+    ObjectStorageAPIServerError,
 )
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
 from inventory_management_system_api.services.item import ItemService
@@ -126,7 +126,7 @@ def get_item(
 ) -> ItemSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
-    message = "An item with such ID was not found"
+    message = "Item not found"
     try:
         item = item_service.get(item_id)
         if not item:
