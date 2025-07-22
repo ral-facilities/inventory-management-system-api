@@ -193,13 +193,14 @@ class CommandDBGenerate(SubCommand):
 
 
 class CommandDBClear(SubCommand):
-    """Command to clear all data in mongodb
+    """Command to clear all data in mongodb and repopulate only with what is necessary.
 
     - Deletes all existing data (after confirmation)
+    - Repopulates only data necessary for development and testing
     """
 
     def __init__(self):
-        super().__init__(help_message="Clears all data in the database")
+        super().__init__(help_message="Clears all data in the database and repopulates any necessary data from scratch")
 
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
@@ -212,18 +213,19 @@ class CommandDBClear(SubCommand):
         answer = input("This operation will replace all existing data, are you sure? ")
         if answer in ("y", "yes"):
             # Delete the existing data
-            logging.info("Deleting database contents...")
-            run_mongodb_command(
-                ["mongosh", "ims"]
-                + get_mongodb_auth_args(args)
-                + [
-                    "--eval",
-                    "db.dropDatabase()",
-                ]
-            )
+            for database_name in ["ims", "test-ims"]:
+                logging.info("Deleting database contents of %s...", database_name)
+                run_mongodb_command(
+                    ["mongosh", database_name]
+                    + get_mongodb_auth_args(args)
+                    + [
+                        "--eval",
+                        "db.dropDatabase()",
+                    ]
+                )
             # Ensure setup script is called so any required initial data is populated again
             run_mongodb_command(
-                ["mongosh", "ims"]
+                ["mongosh"]
                 + get_mongodb_auth_args(args)
                 + [
                     "--file",
