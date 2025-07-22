@@ -142,4 +142,4 @@ class UsageStatusRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :return: `True` if 1 or more rules have the usage status ID, `False` otherwise.
         """
-        return self._rules_collection.find_one({"usage_status_id": usage_status_id}, session=session) is not None
+        return self._rules_collection.find_one({"dst_usage_status_id": usage_status_id}, session=session) is not None

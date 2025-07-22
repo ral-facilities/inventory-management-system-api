@@ -418,7 +418,7 @@ class DeleteDSL(UsageStatusRepoDSL):
         :param expected_usage_status_id: Expected usage status ID used in the database calls.
         """
         self.rules_collection.find_one.assert_called_once_with(
-            {"usage_status_id": CustomObjectId(expected_usage_status_id)}, session=self.mock_session
+            {"dst_usage_status_id": CustomObjectId(expected_usage_status_id)}, session=self.mock_session
         )
 
 
