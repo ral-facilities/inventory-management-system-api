@@ -18,8 +18,7 @@ const USAGE_STATUS_ID_SCRAPPED = ObjectId("6874cf5dee233ec6441860a3");
 
 const SYSTEM_TYPE_ID_STORAGE = ObjectId("685e5dce6e347e39d459c5ea");
 const SYSTEM_TYPE_ID_OPERATIONAL = ObjectId("685e5dce6e347e39d459c5eb");
-const SYSTEM_TYPE_ID_QUARANTINE = ObjectId("685d52f4b1095c1837c69dac");
-const SYSTEM_TYPE_ID_SCRAPPED = ObjectId("685d52f4b1095c1837c69dad");
+const SYSTEM_TYPE_ID_SCRAPPED = ObjectId("685e5dce6e347e39d459c5ec");
 
 // Intialise replica sets if not already setup
 try {
@@ -52,7 +51,6 @@ try {
     db.system_types.insertMany([
       { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage" },
       { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational" },
-      { _id: SYSTEM_TYPE_ID_QUARANTINE, value: "Quarantine" },
       { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped" },
     ]);
   }

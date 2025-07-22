@@ -29,6 +29,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
+system_types = [
+    {"id": "685e5dce6e347e39d459c5ea", "value": "Storage"},
+    {"id": "685e5dce6e347e39d459c5eb", "value": "Operational"},
+    {"id": "685e5dce6e347e39d459c5ec", "value": "Scrapped"},
+]
+
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 
 usage_status_ids = [
@@ -423,16 +429,17 @@ def generate_random_item(catalogue_item_id: str):
     }
 
 
-def generate_random_system(parent_id: str):
-    """Generates randomised data for a system given the parent ID."""
+def generate_random_system(parent_id: str, type_id: str):
+    """Generates randomised data for a system given the parent and type IDs."""
 
     return {
+        "parent_id": parent_id,
         "name": fake.random.choice(system_names),
+        "type_id": type_id,
+        "description": fake.paragraph(nb_sentences=2),
         "location": fake.address(),
         "owner": fake.name(),
         "importance": fake.random.choice(["low", "medium", "high"]),
-        "description": fake.paragraph(nb_sentences=2),
-        "parent_id": parent_id,
     }
 
 
@@ -570,7 +577,7 @@ def populate_random_items():
                 create_item(item)
 
 
-def populate_random_systems(levels_deep: int = 0, parent_id=None):
+def populate_random_systems(levels_deep: int = 0, parent_id=None, parent_type_id=None):
     """Recursive function that randomly populates systems."""
 
     if levels_deep >= MAX_LEVELS_DEEP:
@@ -579,9 +586,12 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
     logger.debug("Populating system with depth %s", levels_deep)
     num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
     for _ in range(0, num_to_generate):
-        system = generate_random_system(parent_id)
+        chosen_parent_type_id = parent_type_id
+        if parent_id is None and chosen_parent_type_id is None:
+            chosen_parent_type_id = fake.random.choice(system_types)["id"]
+        system = generate_random_system(parent_id, chosen_parent_type_id)
         system_id = create_system(system)["id"]
-        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
+        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id, parent_type_id=chosen_parent_type_id)
         generated_system_ids.append(system_id)
 
 
