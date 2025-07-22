@@ -3,7 +3,6 @@ Module for providing a service for managing catalogue items using the `Catalogue
 repositories.
 """
 
-import logging
 from typing import Annotated, List, Optional
 
 from fastapi import Depends
@@ -27,8 +26,6 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
 )
 from inventory_management_system_api.services import utils
-
-logger = logging.getLogger()
 
 
 class CatalogueItemService:

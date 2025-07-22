@@ -624,13 +624,13 @@ class TestGet(GetDSL):
         """Test getting an item with a non-existent ID."""
 
         self.get_item(str(ObjectId()))
-        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+        self.check_get_item_failed_with_detail(404, "Item not found")
 
     def test_get_with_invalid_id(self):
         """Test getting an item with an invalid ID."""
 
         self.get_item("invalid-id")
-        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+        self.check_get_item_failed_with_detail(404, "Item not found")
 
 
 class ListDSL(GetDSL):
@@ -1169,7 +1169,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_item_success()
 
         self.get_item(item_id)
-        self.check_get_item_failed_with_detail(404, "An item with such ID was not found")
+        self.check_get_item_failed_with_detail(404, "Item not found")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent item."""

@@ -3,7 +3,6 @@ Module for providing a service for managing items using the `ItemRepo`, `Catalog
 repositories.
 """
 
-import logging
 from typing import Annotated, List, Optional
 
 from fastapi import Depends
@@ -26,8 +25,6 @@ from inventory_management_system_api.repositories.usage_status import UsageStatu
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
 from inventory_management_system_api.services import utils
-
-logger = logging.getLogger()
 
 
 class ItemService:
