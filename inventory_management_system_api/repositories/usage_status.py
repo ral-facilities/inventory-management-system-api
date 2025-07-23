@@ -10,7 +10,12 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import DuplicateRecordError, MissingRecordError, PartOfItemError
+from inventory_management_system_api.core.exceptions import (
+    DuplicateRecordError,
+    MissingRecordError,
+    PartOfItemError,
+    PartOfRuleError,
+)
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 logger = logging.getLogger()
@@ -30,7 +35,7 @@ class UsageStatusRepo:
         self._database = database
         self._usage_statuses_collection: Collection = self._database.usage_statuses
         self._items_collection: Collection = self._database.items
-        self._settings_collection: Collection = self._database.settings
+        self._rules_collection: Collection = self._database.rules
 
     def create(self, usage_status: UsageStatusIn, session: Optional[ClientSession] = None) -> UsageStatusOut:
         """
@@ -82,16 +87,19 @@ class UsageStatusRepo:
         """
         Delete a usage status by its ID from a MongoDB database.
 
-        Checks if usage status is a part of an item, and does not delete if it is
+        Checks if usage status is part of an item, and does not delete if it is.
 
-        :param usage_status_id: The ID of the usage status to delete
-        :param session: PyMongo ClientSession to use for database operations
-        :raises PartOfItemError: if usage status is a part of a catalogue item
-        :raises MissingRecordError: if supplied usage status ID does not exist in the database
+        :param usage_status_id: The ID of the usage status to delete.
+        :param session: PyMongo ClientSession to use for database operations.
+        :raises PartOfItemError: If usage status is part of a catalogue item.
+        :raises PartOfItemError: If usage status is part of a rule.
+        :raises MissingRecordError: If supplied usage status ID does not exist in the database.
         """
         usage_status_id = CustomObjectId(usage_status_id)
         if self._is_usage_status_in_item(usage_status_id, session=session):
-            raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is a part of an Item")
+            raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is part of an item")
+        if self._is_usage_status_in_rule(usage_status_id, session=session):
+            raise PartOfRuleError(f"The usage status with ID {str(usage_status_id)} is part of a rule")
 
         logger.info("Deleting usage status with ID %s from the database", usage_status_id)
         result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)
@@ -120,8 +128,19 @@ class UsageStatusRepo:
     ) -> bool:
         """Checks to see if any of the items in the database have a specific usage status ID.
 
-        :param usage_status_id: The ID of the usage status that is looked for.
+        :param usage_status_id: The ID of the usage status to look for.
         :param session: PyMongo ClientSession to use for database operations.
         :return: `True` if 1 or more items have the usage status ID, `False` otherwise.
         """
         return self._items_collection.find_one({"usage_status_id": usage_status_id}, session=session) is not None
+
+    def _is_usage_status_in_rule(
+        self, usage_status_id: CustomObjectId, session: Optional[ClientSession] = None
+    ) -> bool:
+        """Checks to see if any of the rules in the database have a specific usage status ID.
+
+        :param usage_status_id: The ID of the usage status to look for.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: `True` if 1 or more rules have the usage status ID, `False` otherwise.
+        """
+        return self._rules_collection.find_one({"dst_usage_status_id": usage_status_id}, session=session) is not None

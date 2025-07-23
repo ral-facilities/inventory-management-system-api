@@ -1,3 +1,25 @@
+/* Creates a database input model for a usage status given its name and value (Should match UsageStatusIn) */
+function createUsageStatusIn(id, value) {
+  var currentTime = new Date();
+  return {
+    _id: id,
+    value: value,
+    code: value.toLowerCase().trim().replace(/\s+/g, "-"),
+    created_time: currentTime,
+    modified_time: currentTime,
+  };
+}
+
+/* Some constants for reuse below */
+const USAGE_STATUS_ID_NEW = ObjectId("6874cf5dee233ec6441860a0");
+const USAGE_STATUS_ID_IN_USE = ObjectId("6874cf5dee233ec6441860a1");
+const USAGE_STATUS_ID_USED = ObjectId("6874cf5dee233ec6441860a2");
+const USAGE_STATUS_ID_SCRAPPED = ObjectId("6874cf5dee233ec6441860a3");
+
+const SYSTEM_TYPE_ID_STORAGE = ObjectId("685e5dce6e347e39d459c5ea");
+const SYSTEM_TYPE_ID_OPERATIONAL = ObjectId("685e5dce6e347e39d459c5eb");
+const SYSTEM_TYPE_ID_SCRAPPED = ObjectId("685e5dce6e347e39d459c5ec");
+
 // Intialise replica sets if not already setup
 try {
   rs.status();
@@ -10,14 +32,64 @@ try {
 ["ims", "test-ims"].forEach((databaseName) => {
   db = db.getSiblingDB(databaseName);
 
+  // Add some usage statuses if the collection doesnt already exist
+  if (!db.getCollectionNames().includes("usage_statuses")) {
+    console.log(`Populating usage statuses in ${databaseName}...`);
+
+    db.usage_statuses.insertMany([
+      createUsageStatusIn(USAGE_STATUS_ID_NEW, "New"),
+      createUsageStatusIn(USAGE_STATUS_ID_IN_USE, "In Use"),
+      createUsageStatusIn(USAGE_STATUS_ID_USED, "Used"),
+      createUsageStatusIn(USAGE_STATUS_ID_SCRAPPED, "Scrapped"),
+    ]);
+  }
+
   // Add some system types if the collection doesn't already exist
   if (!db.getCollectionNames().includes("system_types")) {
     console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
-      { _id: ObjectId("685e5dce6e347e39d459c5ea"), value: "Storage" },
-      { _id: ObjectId("685e5dce6e347e39d459c5eb"), value: "Operational" },
-      { _id: ObjectId("685e5dce6e347e39d459c5ec"), value: "Scrapped" },
+      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage" },
+      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational" },
+      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped" },
+    ]);
+  }
+
+  // Add some rules if the collection doesn't already exist
+  if (!db.getCollectionNames().includes("rules")) {
+    console.log(`Populating rules in ${databaseName}...`);
+
+    db.rules.insertMany([
+      {
+        // Creation of items in storage -> New
+        src_system_type_id: null,
+        dst_system_type_id: SYSTEM_TYPE_ID_STORAGE,
+        dst_usage_status_id: USAGE_STATUS_ID_NEW,
+      },
+      {
+        // Deletion of items in storage
+        src_system_type_id: SYSTEM_TYPE_ID_STORAGE,
+        dst_system_type_id: null,
+        dst_usage_status_id: null,
+      },
+      {
+        // Movement of an item from a storage system to an operational one -> In Use
+        src_system_type_id: SYSTEM_TYPE_ID_STORAGE,
+        dst_system_type_id: SYSTEM_TYPE_ID_OPERATIONAL,
+        dst_usage_status_id: USAGE_STATUS_ID_IN_USE,
+      },
+      {
+        // Movement of an item from an operational system to a storage one -> Used
+        src_system_type_id: SYSTEM_TYPE_ID_OPERATIONAL,
+        dst_system_type_id: SYSTEM_TYPE_ID_STORAGE,
+        dst_usage_status_id: USAGE_STATUS_ID_USED,
+      },
+      {
+        // Movement of an item from an operational system to a scrapped one -> Scrapped
+        src_system_type_id: SYSTEM_TYPE_ID_OPERATIONAL,
+        dst_system_type_id: SYSTEM_TYPE_ID_SCRAPPED,
+        dst_usage_status_id: USAGE_STATUS_ID_SCRAPPED,
+      },
     ]);
   }
 });

@@ -17,6 +17,8 @@ from test.mock_data import (
     ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
     SYSTEM_IN_DATA_NO_PARENT_A,
     USAGE_STATUS_IN_DATA_IN_USE,
+    USAGE_STATUS_IN_DATA_NEW,
+    USAGE_STATUS_OUT_DATA_NEW,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import List, Optional
@@ -123,12 +125,10 @@ class CreateDSL(ItemServiceDSL):
         # Generate mandatory IDs to be inserted where needed
         catalogue_item_id = str(ObjectId())
         system_id = str(ObjectId())
-        usage_status_id = str(ObjectId())
 
         ids_to_insert = {
             "catalogue_item_id": catalogue_item_id,
             "system_id": system_id,
-            "usage_status_id": usage_status_id,
         }
 
         # Catalogue category
@@ -187,7 +187,9 @@ class CreateDSL(ItemServiceDSL):
             usage_status_in = UsageStatusIn(**usage_status_in_data)
 
         self._usage_status_out = (
-            UsageStatusOut(**{**usage_status_in.model_dump(), "_id": usage_status_id}) if usage_status_in else None
+            UsageStatusOut(**{**usage_status_in.model_dump(), "_id": item_data["usage_status_id"]})
+            if usage_status_in
+            else None
         )
         ServiceTestHelpers.mock_get(self.mock_usage_status_repository, self._usage_status_out)
 
@@ -221,7 +223,14 @@ class CreateDSL(ItemServiceDSL):
                 self._catalogue_category_out.properties, self._expected_merged_properties
             )
 
-        self._expected_item_in = ItemIn(**{**item_data, **ids_to_insert, "properties": expected_properties_in})
+        self._expected_item_in = ItemIn(
+            **{
+                **item_data,
+                **ids_to_insert,
+                "usage_status": self._usage_status_out.value if self._usage_status_out else "unknown",
+                "properties": expected_properties_in,
+            }
+        )
         self._expected_item_out = ItemOut(**self._expected_item_in.model_dump(), id=ObjectId())
 
         ServiceTestHelpers.mock_create(self.mock_item_repository, self._expected_item_out)
@@ -470,6 +479,7 @@ class UpdateDSL(ItemServiceDSL):
         item_id: str,
         item_update_data: dict,
         stored_item_data: Optional[dict],
+        stored_usage_status_in_data: dict,
         stored_catalogue_item_data: Optional[dict] = None,
         stored_catalogue_category_in_data: Optional[dict] = None,
         new_system_in_data: Optional[dict] = None,
@@ -480,10 +490,12 @@ class UpdateDSL(ItemServiceDSL):
 
         :param item_id: ID of the item that will be obtained.
         :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
-                                 but without any mandatory IDs or property IDs.
+                                 but without mandatory IDs (except usage_status_id) or property IDs.
         :param stored_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item data for
                                  the existing stored catalogue item as would be required for a `ItemPostSchema` but
-                                 without any mandatory IDs or property IDs.
+                                 without mandatory (except usage_status_id) IDs or property IDs.
+        :param stored_usage_status_in_data: Dictionary containing the basic usage status data as would be required for a
+                                     `UsageStatusIn` database model.
         :param stored_catalogue_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item
                                  data for the existing stored catalogue item as would be required for a
                                  `CatalogueItemPostSchema` but without any mandatory IDs or property IDs.
@@ -544,7 +556,6 @@ class UpdateDSL(ItemServiceDSL):
         stored_ids_to_insert = {
             "catalogue_item_id": catalogue_category_id,
             "system_id": str(ObjectId()),
-            "usage_status_id": str(ObjectId()),
         }
 
         # Stored item
@@ -554,6 +565,7 @@ class UpdateDSL(ItemServiceDSL):
                     **{
                         **stored_item_data,
                         **stored_ids_to_insert,
+                        "usage_status": stored_usage_status_in_data["value"],
                         "properties": expected_stored_item_properties_in,
                     },
                 ).model_dump(),
@@ -583,9 +595,15 @@ class UpdateDSL(ItemServiceDSL):
             )
 
         # Stored usage status
-        self._updating_usage_status = "usage_status_id" in item_update_data
+        self._updating_usage_status = "usage_status_id" in item_update_data and (
+            stored_item_data and item_update_data["usage_status_id"] != stored_item_data["usage_status_id"]
+        )
 
         if self._updating_usage_status:
+            item_update_data["usage_status"] = (
+                new_usage_status_in_data["value"] if new_usage_status_in_data else "unknown"
+            )
+
             ServiceTestHelpers.mock_get(
                 self.mock_usage_status_repository,
                 (
@@ -656,8 +674,9 @@ class UpdateDSL(ItemServiceDSL):
 
         # Construct the expected input for the repository
         merged_item_data = {
-            **(stored_item_data or {}),
+            **(self._stored_item.model_dump() if self._stored_item else {}),
             **stored_ids_to_insert,
+            "usage_status": stored_usage_status_in_data["value"],
             **item_update_data,
         }
         self._expected_item_in = ItemIn(**{**merged_item_data, "properties": expected_properties_in})
@@ -735,6 +754,7 @@ class TestUpdate(UpdateDSL):
             item_id,
             item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -747,6 +767,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -764,6 +785,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data=ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -782,6 +804,7 @@ class TestUpdate(UpdateDSL):
             item_id,
             item_update_data={"catalogue_item_id": str(ObjectId())},
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
         self.check_update_failed_with_exception("Cannot change the catalogue item the item belongs to")
@@ -795,6 +818,7 @@ class TestUpdate(UpdateDSL):
             item_id,
             item_update_data={"system_id": str(ObjectId())},
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
         )
         self.call_update(item_id)
@@ -810,6 +834,7 @@ class TestUpdate(UpdateDSL):
             item_id,
             item_update_data={"system_id": system_id},
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data=None,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
@@ -822,9 +847,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"usage_status_id": str(ObjectId())},
+            item_update_data={"usage_status_id": USAGE_STATUS_OUT_DATA_NEW["id"]},
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -839,6 +865,7 @@ class TestUpdate(UpdateDSL):
             item_id,
             item_update_data={"usage_status_id": usage_status_id},
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_usage_status_in_data=None,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
@@ -853,6 +880,7 @@ class TestUpdate(UpdateDSL):
             item_id,
             item_update_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
             stored_item_data=None,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No item found with ID: {item_id}")

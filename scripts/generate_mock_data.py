@@ -37,7 +37,12 @@ system_types = [
 
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 
-usage_statuses = ["New", "Used", "In Use", "Scrapped"]
+usage_status_ids = [
+    "6874cf5dee233ec6441860a0",
+    "6874cf5dee233ec6441860a1",
+    "6874cf5dee233ec6441860a2",
+    "6874cf5dee233ec6441860a3",
+]
 
 manufacturer_names = [
     "Tech Innovators Inc.",
@@ -414,7 +419,7 @@ def generate_random_item(catalogue_item_id: str):
         "system_id": fake.random.choice(generated_system_ids),
         "purchase_order_number": fake.isbn10(),
         "is_defective": fake.random.randint(0, 100) > 90,
-        "usage_status_id": fake.random.choice(list(generated_usage_statuses.keys())),
+        "usage_status_id": fake.random.choice(usage_status_ids),
         "warranty_end_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),
@@ -518,15 +523,6 @@ def populate_units():
         generated_units[unit["value"]] = unit
 
 
-def populate_usage_statuses():
-    """Randomly populates usage statuses."""
-
-    for _, usage_status in enumerate(usage_statuses):
-        usage_status = generate_usage_status(usage_status)
-        usage_status = create_usage_status(usage_status)
-        generated_usage_statuses[usage_status["id"]] = usage_status
-
-
 def populate_random_catalogue_categories(
     available_manufacturers: list[str],
     levels_deep: int = 0,
@@ -604,8 +600,6 @@ def generate_mock_data():
 
     logger.info("Populating units...")
     populate_units()
-    logger.info("Populating usage statuses...")
-    populate_usage_statuses()
     logger.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
     logger.info("Populating catalogue categories...")

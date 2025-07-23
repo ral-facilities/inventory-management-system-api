@@ -46,7 +46,7 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     SYSTEM_POST_DATA_NO_PARENT_A,
     UNIT_POST_DATA_MM,
-    USAGE_STATUS_POST_DATA_NEW,
+    USAGE_STATUS_OUT_DATA_IN_USE,
 )
 from typing import Any, Optional
 
@@ -803,9 +803,6 @@ class UpdateDSL(ListDSL):
         response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_NO_PARENT_A)
         system_id = response.json()["id"]
 
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
         item_post = {
             "is_defective": False,
             "warranty_end_date": "2015-11-15T23:59:59Z",
@@ -814,7 +811,7 @@ class UpdateDSL(ListDSL):
             "notes": "Test notes",
             "catalogue_item_id": self._post_response_catalogue_item.json()["id"],
             "system_id": system_id,
-            "usage_status_id": usage_status_id,
+            "usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["id"],
             "properties": [],
         }
         self.test_client.post("/v1/items", json=item_post)
