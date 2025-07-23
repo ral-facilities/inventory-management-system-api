@@ -87,12 +87,13 @@ class UsageStatusRepo:
         """
         Delete a usage status by its ID from a MongoDB database.
 
-        Checks if usage status is a part of an item, and does not delete if it is
+        Checks if usage status is part of an item, and does not delete if it is.
 
-        :param usage_status_id: The ID of the usage status to delete
-        :param session: PyMongo ClientSession to use for database operations
-        :raises PartOfItemError: if usage status is a part of a catalogue item
-        :raises MissingRecordError: if supplied usage status ID does not exist in the database
+        :param usage_status_id: The ID of the usage status to delete.
+        :param session: PyMongo ClientSession to use for database operations.
+        :raises PartOfItemError: If usage status is part of a catalogue item.
+        :raises PartOfItemError: If usage status is part of a rule.
+        :raises MissingRecordError: If supplied usage status ID does not exist in the database.
         """
         usage_status_id = CustomObjectId(usage_status_id)
         if self._is_usage_status_in_item(usage_status_id, session=session):
