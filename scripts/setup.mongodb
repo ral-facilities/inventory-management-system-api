@@ -55,6 +55,18 @@ try {
     ]);
   }
 
+  // Add some default settings if the collection doesn't already exist
+  if (!db.getCollectionNames().includes("settings")) {
+    console.log(`Populating settings in ${databaseName}...`);
+
+    db.settings.insertMany([
+      {
+        _id: "spares_definition",
+        system_type_ids: [SYSTEM_TYPE_ID_STORAGE],
+      },
+    ]);
+  }
+
   // Add some rules if the collection doesn't already exist
   if (!db.getCollectionNames().includes("rules")) {
     console.log(`Populating rules in ${databaseName}...`);
