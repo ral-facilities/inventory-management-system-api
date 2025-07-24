@@ -182,3 +182,21 @@ class ItemRepo:
         )
 
     # pylint:enable=duplicate-code
+
+    def count_in_catalogue_item_with_system_type_one_of(
+        self,
+        catalogue_item_id: str,
+        system_type_ids: List[str],
+        session: Optional[ClientSession] = None,
+    ) -> int:
+        """
+        Counts the number of items within a catalogue item that are also in systems with one of the given system type
+        IDs.
+
+        :param catalogue_item_id: ID of the catalogue item for which items should be counted.
+        :param system_type_ids: List of system type IDs which should be included in the count.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: Number of items counted.
+        """
+        # TODO: Implement
+        return 0

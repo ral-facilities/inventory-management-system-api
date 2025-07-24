@@ -3,11 +3,16 @@ Module for providing a service for managing items using the `ItemRepo`, `Catalog
 repositories.
 """
 
-from typing import Annotated, List, Optional
+import logging
+from contextlib import contextmanager
+from typing import Annotated, Generator, List, Optional
 
 from fastapi import Depends
+from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
@@ -17,14 +22,18 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
 from inventory_management_system_api.models.catalogue_item import PropertyOut
 from inventory_management_system_api.models.item import ItemIn, ItemOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
 from inventory_management_system_api.services import utils
+
+logger = logging.getLogger()
 
 
 class ItemService:
@@ -41,6 +50,7 @@ class ItemService:
         catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
         system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
         usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)],
+        setting_repository: Annotated[SettingRepo, Depends(SettingRepo)],
     ) -> None:
         """
         Initialise the `ItemService` with an `ItemRepo`, `CatalogueCategoryRepo`,
@@ -51,12 +61,14 @@ class ItemService:
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param system_repository: The `SystemRepo` repository to use.
         :param usage_status_repository: The `UsageStatusRepo` repository to use.
+        :param setting_repository: The `SettingRepo` repository to use.
         """
         self._item_repository = item_repository
         self._catalogue_category_repository = catalogue_category_repository
         self._catalogue_item_repository = catalogue_item_repository
         self._system_repository = system_repository
         self._usage_status_repository = usage_status_repository
+        self._setting_repository = setting_repository
 
     def create(self, item: ItemPostSchema) -> ItemOut:
         """
@@ -93,9 +105,12 @@ class ItemService:
         defined_properties = catalogue_category.properties
         properties = utils.process_properties(defined_properties, supplied_properties)
 
-        return self._item_repository.create(
-            ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value})
-        )
+        # Update number of spares when creating
+        with self._start_transaction_impacting_number_of_spares("creating item", catalogue_item_id) as session:
+            return self._item_repository.create(
+                ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
+                session=session,
+            )
 
     def get(self, item_id: str) -> Optional[ItemOut]:
         """
@@ -213,3 +228,49 @@ class ItemService:
             else:
                 merged_properties.append(PropertyPostSchema(**prop.model_dump()))
         return merged_properties
+
+    @contextmanager
+    def _start_transaction_impacting_number_of_spares(
+        self, action_description: str, catalogue_item_id: str
+    ) -> Generator[Optional[ClientSession], None, None]:
+        """
+        Handles recalculation of the `number_of_spares` of a catalogue item for updates that will impact it but only
+        when there is a spares defintion is set.
+
+        Starts a MongoDB session and transaction, then write locks the catalogue item before yielding to allow an
+        update to take place using the returned session. Once any tasks using the session context have finished it will
+        finish by recalculating the number of spares for the catalogue item before finishing the transaction. This write
+        lock prevents similar actions from occuring during the update to prevent an incorrect update e.g. if another
+        item was added between counting the documents and then updating the number of spares field it would cause a
+        miscount. It also ensures any action executed using the session will either fail or succeed with the spares
+        update.
+
+        :param action_description: Description of what the contents of the transaction is doing so it can be used in
+                                   any logging or raise errors.
+        :param catalogue_item_id: ID of the effected catalogue item which will need its `number_of_spares` field
+                                  updating.
+        """
+
+        # Firstly obtain the spares defintion, to figure out if it is defined or not
+        spares_definition = self._setting_repository.get(SparesDefinitionOut)
+
+        if spares_definition is None:
+            # No session/transaction is needed as there is no spares update to perform
+            yield None
+        else:
+            with start_session_transaction(action_description) as session:
+                # Write lock the catalogue item to prevent any other updates from occuring during the rest of the
+                # transaction
+                self._catalogue_item_repository.update_number_of_spares(catalogue_item_id, None, session=session)
+
+                # Allow any other updates to occur using the same session
+                yield session
+
+                # Obtain and update the number of spares
+                logger.info("Updating the number of spares of the catalogue item with ID %s", catalogue_item_id)
+                number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
+                    catalogue_item_id, spares_definition.system_type_ids, session=session
+                )
+                self._catalogue_item_repository.update_number_of_spares(
+                    catalogue_item_id, number_of_spares, session=session
+                )

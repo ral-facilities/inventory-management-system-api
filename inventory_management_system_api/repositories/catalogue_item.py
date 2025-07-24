@@ -229,3 +229,25 @@ class CatalogueItemRepo:
             array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
+
+    def update_number_of_spares(
+        self,
+        catalogue_item_id: str,
+        number_of_spares: Optional[int],
+        session: Optional[ClientSession] = None,
+    ) -> None:
+        """
+        Updates the `number_of_spares` field using a given catalogue item id filter.
+
+        :param catalogue_item-_id: The ID of the catalogue item to update.
+        :param number_of_spares: New number of spares to update to. A value of `None` can be used to write lock the
+                                 document when updating within a transaction as the actual value will be assigned later
+                                 but the document should be write locked immediately.
+        :param session: PyMongo ClientSession to use for database operations.
+        """
+
+        self._catalogue_items_collection.update_one(
+            {"_id": CustomObjectId(catalogue_item_id)},
+            {"$set": {"number_of_spares": number_of_spares}},
+            session=session,
+        )
