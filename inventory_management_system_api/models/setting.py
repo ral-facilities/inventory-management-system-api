@@ -5,7 +5,7 @@ Module for defining the database models for representing settings.
 from abc import ABC, abstractmethod
 from typing import ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
 
@@ -22,6 +22,8 @@ class SettingOutBase(BaseModel, ABC):
         """ID of the setting. Ensures this calue can be obtained from the classs type itself as a static variable."""
 
     id: StringObjectIdField = Field(alias="_id")
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class SparesDefinitionOut(SettingOutBase):

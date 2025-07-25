@@ -17,6 +17,7 @@ from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 # ---------------------------- GENERAL -----------------------------
@@ -906,4 +907,12 @@ SYSTEM_POST_DATA_NO_PARENT_B = {
 SYSTEM_IN_DATA_NO_PARENT_B = {
     **SYSTEM_POST_DATA_NO_PARENT_B,
     "code": "test-name-b",
+}
+
+# --------------------------------- SETTINGS ---------------------------------
+
+# Spares definition, Storage
+SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_OUT_DATA_STORAGE["_id"]],
 }

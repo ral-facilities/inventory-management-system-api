@@ -130,6 +130,7 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
+    # pylint:disable=too-many-locals
     def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
         """
         Update an item by its ID.
@@ -200,6 +201,8 @@ class ItemService:
                 )
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
+
+    # pylint:enable=too-many-locals
 
     def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
         """
