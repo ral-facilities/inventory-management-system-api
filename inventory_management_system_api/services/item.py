@@ -188,8 +188,8 @@ class ItemService:
 
             update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
-        # When moving system the update could effect the number of spares of the catalogue item as the system type
-        # could be different so need to recalculate if necessary
+        # Moving system could effect the number of spares of the catalogue item as the type of the system might be
+        # different
         if moving_system:
             # Can't currently move items, so just use the stored catalogue item
             with self._start_transaction_impacting_number_of_spares(
@@ -207,13 +207,20 @@ class ItemService:
 
         :param item_id: The ID of the item to delete.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
+        :raises MissingRecordError: If the item doesn't exist.
         """
+        item = self.get(item_id)
+        if item is None:
+            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+
         # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
             ObjectStorageAPIClient.delete_attachments(item_id, access_token)
             ObjectStorageAPIClient.delete_images(item_id, access_token)
 
-        return self._item_repository.delete(item_id)
+        # Deleting could effect the number of spares of the catalogue item if this one is currently a spare
+        with self._start_transaction_impacting_number_of_spares("deleting item", item.catalogue_item_id) as session:
+            return self._item_repository.delete(item_id, session=session)
 
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]
