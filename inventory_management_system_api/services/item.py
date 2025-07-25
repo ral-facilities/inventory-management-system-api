@@ -11,7 +11,6 @@ from fastapi import Depends
 from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
@@ -154,7 +153,9 @@ class ItemService:
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
 
-        if "system_id" in update_data and item.system_id != stored_item.system_id:
+        moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
+        if moving_system:
+            moving_system = True
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
@@ -186,6 +187,17 @@ class ItemService:
             supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
 
             update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
+
+        # When moving system the update could effect the number of spares of the catalogue item as the system type
+        # could be different so need to recalculate if necessary
+        if moving_system:
+            # Can't currently move items, so just use the stored catalogue item
+            with self._start_transaction_impacting_number_of_spares(
+                "updating item", stored_item.catalogue_item_id
+            ) as session:
+                return self._item_repository.update(
+                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
+                )
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
