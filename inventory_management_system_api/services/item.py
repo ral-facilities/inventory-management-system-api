@@ -156,7 +156,6 @@ class ItemService:
 
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
         if moving_system:
-            moving_system = True
             system = self._system_repository.get(item.system_id)
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
