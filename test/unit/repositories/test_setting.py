@@ -10,7 +10,11 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from inventory_management_system_api.models.setting import SettingOutBase, SparesDefinitionOut
-from inventory_management_system_api.repositories.setting import SettingOutBaseT, SettingRepo
+from inventory_management_system_api.repositories.setting import (
+    SPARES_DEFINITION_GET_AGGREGATION_PIPELINE,
+    SettingOutBaseT,
+    SettingRepo,
+)
 
 
 class ExampleSettingOut(SettingOutBase):
@@ -56,9 +60,13 @@ class GetDSL(SettingRepoDSL):
         """
         self._expected_setting_out = out_model_type(**setting_out_data) if setting_out_data is not None else None
 
-        RepositoryTestHelpers.mock_find_one(
-            self.settings_collection, self._expected_setting_out.model_dump() if self._expected_setting_out else None
-        )
+        if out_model_type is SparesDefinitionOut:
+            self.settings_collection.aggregate.return_value = [setting_out_data] if setting_out_data is not None else []
+        else:
+            RepositoryTestHelpers.mock_find_one(
+                self.settings_collection,
+                self._expected_setting_out.model_dump() if self._expected_setting_out else None,
+            )
 
     def call_get(self, out_model_type: Type[SettingOutBaseT]) -> None:
         """Calls the `SettingRepo` `get` method with the appropriate data from a prior call to `mock_get`.
@@ -72,9 +80,14 @@ class GetDSL(SettingRepoDSL):
     def check_get_success(self) -> None:
         """Checks that a prior call to `call_get` worked as expected."""
 
-        self.settings_collection.find_one.assert_called_once_with(
-            {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session
-        )
+        if self._obtained_out_model_type is SparesDefinitionOut:
+            self.settings_collection.aggregate.assert_called_once_with(
+                SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=self.mock_session
+            )
+        else:
+            self.settings_collection.find_one.assert_called_once_with(
+                {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session
+            )
         assert self._obtained_setting == self._expected_setting_out
 
 

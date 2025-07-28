@@ -8,7 +8,23 @@ from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.models.setting import SettingOutBase
+from inventory_management_system_api.models.setting import SettingOutBase, SparesDefinitionOut
+
+# Aggregation pipeline for getting the spares definition complete with system type data
+SPARES_DEFINITION_GET_AGGREGATION_PIPELINE = [
+    [
+        {"$match": {"_id": SparesDefinitionOut.SETTING_ID}},
+        {
+            "$lookup": {
+                "from": "system_types",
+                "localField": "system_type_ids",
+                "foreignField": "_id",
+                "as": "system_types",
+            }
+        },
+        {"$project": {"system_types": 1}},
+    ],
+]
 
 # Template type for models inheriting from SettingOutBase so this repo can be used generically for multiple settings
 SettingOutBaseT = TypeVar("SettingOutBaseT", bound=SettingOutBase)
@@ -39,7 +55,19 @@ class SettingRepo:
         :return: Retireved setting or `None` if not found.
         """
 
-        setting = self._settings_collection.find_one({"_id": out_model_type.SETTING_ID}, session=session)
+        setting = None
+
+        # Check for any special cases that are not typical find_one queries
+        if out_model_type is SparesDefinitionOut:
+            # The spares defintion contains a list of system type ids - use an aggregate query here to obtain the actual
+            # system type entities instead of just their IDs
+            result = self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=session)
+            result = list(result)
+            if len(result) > 0:
+                setting = result[0]
+        else:
+            setting = self._settings_collection.find_one({"_id": out_model_type.SETTING_ID}, session=session)
+
         if setting:
             return out_model_type(**setting)
         return None

@@ -8,6 +8,7 @@ from typing import ClassVar
 from pydantic import BaseModel, ConfigDict, Field
 
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
+from inventory_management_system_api.models.system_type import SystemTypeOut
 
 
 class SettingOutBase(BaseModel, ABC):
@@ -33,4 +34,4 @@ class SparesDefinitionOut(SettingOutBase):
 
     SETTING_ID: ClassVar[str] = "spares_definition"
 
-    system_type_ids: list[StringObjectIdField]
+    system_types: list[SystemTypeOut]

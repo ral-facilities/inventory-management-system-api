@@ -291,7 +291,9 @@ class ItemService:
                 # Obtain and update the number of spares
                 logger.info("Updating the number of spares of the catalogue item with ID %s", catalogue_item_id)
                 number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
-                    catalogue_item_id, spares_definition.system_type_ids, session=session
+                    catalogue_item_id,
+                    [system_type.id for system_type in spares_definition.system_types],
+                    session=session,
                 )
                 self._catalogue_item_repository.update_number_of_spares(
                     catalogue_item_id, number_of_spares, session=session

@@ -914,5 +914,5 @@ SYSTEM_IN_DATA_NO_PARENT_B = {
 # Spares definition, Storage
 SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE = {
     "_id": SparesDefinitionOut.SETTING_ID,
-    "system_type_ids": [SYSTEM_TYPE_OUT_DATA_STORAGE["_id"]],
+    "system_types": [SYSTEM_TYPE_OUT_DATA_STORAGE],
 }
