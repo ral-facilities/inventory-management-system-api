@@ -2,6 +2,11 @@
 Module for providing an API router which defines routes for managing items using the `ItemService` service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated, List, Optional
 
@@ -36,7 +41,6 @@ ItemServiceDep = Annotated[ItemService, Depends(ItemService)]
     status_code=status.HTTP_201_CREATED,
 )
 def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
     try:
@@ -62,47 +66,10 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchem
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: disable=duplicate-code
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    # pylint: enable=duplicate-code
-
-
-@router.delete(
-    path="/{item_id}",
-    summary="Delete an item by ID",
-    response_description="Item deleted successfully",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def delete_item(
-    item_id: Annotated[str, Path(description="The ID of the item to delete")],
-    item_service: ItemServiceDep,
-    request: Request,
-) -> None:
-    # pylint: disable=missing-function-docstring
-    logger.info("Deleting item with ID: %s", item_id)
-    try:
-        item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Item not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    # pylint: disable=duplicate-code
-    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
-
-        if exc.args[0] == "Invalid token or expired token":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
-
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    except WriteConflictError as exc:
-        message = str(exc)
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    # pylint: enable=duplicate-code
 
 
 @router.get(path="", summary="Get items", response_description="List of items")
@@ -135,7 +102,6 @@ def get_items(
 def get_item(
     item_id: Annotated[str, Path(description="The ID of the item to get")], item_service: ItemServiceDep
 ) -> ItemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting item with ID %s", item_id)
     message = "Item not found"
     try:
@@ -158,7 +124,6 @@ def partial_update_item(
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
 ) -> ItemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Partially updating item with ID: %s", item_id)
     logger.debug("Item data: %s", item)
     try:
@@ -187,9 +152,39 @@ def partial_update_item(
         message = "Cannot change the catalogue item of an item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    # pylint: disable=duplicate-code
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    # pylint: enable=duplicate-code
+
+
+@router.delete(
+    path="/{item_id}",
+    summary="Delete an item by ID",
+    response_description="Item deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_item(
+    item_id: Annotated[str, Path(description="The ID of the item to delete")],
+    item_service: ItemServiceDep,
+    request: Request,
+) -> None:
+    logger.info("Deleting item with ID: %s", item_id)
+    try:
+        item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "Item not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
+        message = "Unable to delete attachments and/or images"
+        logger.exception(message)
+
+        if exc.args[0] == "Invalid token or expired token":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
+
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

@@ -197,8 +197,6 @@ def fixture_catalogue_item_service(
 
 # pylint:disable=too-many-arguments
 # pylint:disable=too-many-positional-arguments
-
-
 @pytest.fixture(name="item_service")
 def fixture_item_service(
     item_repository_mock: Mock,

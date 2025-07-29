@@ -3,6 +3,11 @@ Module for providing an API router which defines routes for managing catalogue i
 service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated, List, Optional
 
@@ -36,46 +41,6 @@ router = APIRouter(prefix="/v1/catalogue-items", tags=["catalogue items"])
 CatalogueItemServiceDep = Annotated[CatalogueItemService, Depends(CatalogueItemService)]
 
 
-@router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
-def get_catalogue_items(
-    catalogue_item_service: CatalogueItemServiceDep,
-    catalogue_category_id: Annotated[
-        Optional[str], Query(description="Filter catalogue items by catalogue category ID")
-    ] = None,
-) -> List[CatalogueItemSchema]:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting catalogue items")
-    if catalogue_category_id:
-        logger.debug("Catalogue category ID filter: '%s'", catalogue_category_id)
-
-    try:
-        catalogue_items = catalogue_item_service.list(catalogue_category_id)
-        return [CatalogueItemSchema(**catalogue_item.model_dump()) for catalogue_item in catalogue_items]
-    except InvalidObjectIdError:
-        logger.exception("The provided catalogue category ID filter value is not a valid ObjectId value")
-        return []
-
-
-@router.get(
-    path="/{catalogue_item_id}", summary="Get a catalogue item by ID", response_description="Single catalogue item"
-)
-def get_catalogue_item(
-    catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to get")],
-    catalogue_item_service: CatalogueItemServiceDep,
-) -> CatalogueItemSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
-    message = "Catalogue item not found"
-    try:
-        catalogue_item = catalogue_item_service.get(catalogue_item_id)
-        if not catalogue_item:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return CatalogueItemSchema(**catalogue_item.model_dump())
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-
-
 @router.post(
     path="",
     summary="Create a new catalogue item",
@@ -85,7 +50,6 @@ def get_catalogue_item(
 def create_catalogue_item(
     catalogue_item: CatalogueItemPostSchema, catalogue_item_service: CatalogueItemServiceDep
 ) -> CatalogueItemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new catalogue item")
     logger.debug("Catalogue item data: %s", catalogue_item)
     try:
@@ -113,6 +77,44 @@ def create_catalogue_item(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
+@router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
+def get_catalogue_items(
+    catalogue_item_service: CatalogueItemServiceDep,
+    catalogue_category_id: Annotated[
+        Optional[str], Query(description="Filter catalogue items by catalogue category ID")
+    ] = None,
+) -> List[CatalogueItemSchema]:
+    logger.info("Getting catalogue items")
+    if catalogue_category_id:
+        logger.debug("Catalogue category ID filter: '%s'", catalogue_category_id)
+
+    try:
+        catalogue_items = catalogue_item_service.list(catalogue_category_id)
+        return [CatalogueItemSchema(**catalogue_item.model_dump()) for catalogue_item in catalogue_items]
+    except InvalidObjectIdError:
+        logger.exception("The provided catalogue category ID filter value is not a valid ObjectId value")
+        return []
+
+
+@router.get(
+    path="/{catalogue_item_id}", summary="Get a catalogue item by ID", response_description="Single catalogue item"
+)
+def get_catalogue_item(
+    catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to get")],
+    catalogue_item_service: CatalogueItemServiceDep,
+) -> CatalogueItemSchema:
+    logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
+    message = "Catalogue item not found"
+    try:
+        catalogue_item = catalogue_item_service.get(catalogue_item_id)
+        if not catalogue_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
+        return CatalogueItemSchema(**catalogue_item.model_dump())
+    except InvalidObjectIdError as exc:
+        logger.exception("The ID is not a valid ObjectId value")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
 @router.patch(
     path="/{catalogue_item_id}",
     summary="Update a catalogue item partially by ID",
@@ -123,7 +125,6 @@ def partial_update_catalogue_item(
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to update")],
     catalogue_item_service: CatalogueItemServiceDep,
 ) -> CatalogueItemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Partially updating catalogue item with ID: %s", catalogue_item_id)
     logger.debug("Catalogue item data: %s", catalogue_item)
     try:
@@ -188,7 +189,6 @@ def delete_catalogue_item(
     catalogue_item_service: CatalogueItemServiceDep,
     request: Request,
 ) -> None:
-    # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
     try:
         catalogue_item_service.delete(catalogue_item_id, request.state.token if config.authentication.enabled else None)
@@ -204,7 +204,6 @@ def delete_catalogue_item(
         message = "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    # pylint: disable=duplicate-code
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
         message = "Unable to delete attachments and/or images"
         logger.exception(message)
@@ -213,4 +212,3 @@ def delete_catalogue_item(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: enable=duplicate-code

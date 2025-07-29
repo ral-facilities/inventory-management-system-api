@@ -2,6 +2,11 @@
 Module for providing an API router which defines routes for managing system types using the `SystemTypeService` service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated
 
@@ -21,7 +26,6 @@ SystemTypeServiceDep = Annotated[SystemTypeService, Depends(SystemTypeService)]
 def get_system_types(
     system_type_service: SystemTypeServiceDep,
 ) -> list[SystemTypeSchema]:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting system types")
 
     system_types = system_type_service.list()
