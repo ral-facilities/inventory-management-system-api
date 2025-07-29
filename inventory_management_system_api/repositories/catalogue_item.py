@@ -239,7 +239,7 @@ class CatalogueItemRepo:
         """
         Updates the `number_of_spares` field using a given catalogue item id filter.
 
-        :param catalogue_item-_id: The ID of the catalogue item to update.
+        :param catalogue_item_id: The ID of the catalogue item to update.
         :param number_of_spares: New number of spares to update to. A value of `None` can be used to write lock the
                                  document when updating within a transaction as the actual value will be assigned later
                                  but the document should be write locked immediately.

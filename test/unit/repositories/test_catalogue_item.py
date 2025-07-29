@@ -843,3 +843,42 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 
         self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
         self.check_update_names_of_all_properties_with_id()
+
+
+class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
+    """Base class for `update_number_of_spares` tests."""
+
+    _update_number_of_spares_catalogue_item_id: str
+    _update_number_of_spares_number_of_spares: Optional[int]
+
+    def call_update_number_of_spares(self, catalogue_item_id: str, number_of_spares: Optional[int]) -> None:
+        """Calls the `CatalogueItemRepo` `update_number_of_spares` method.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param number_of_spares: New number of spares to update to.
+        """
+
+        self._update_number_of_spares_catalogue_item_id = catalogue_item_id
+        self._update_number_of_spares_number_of_spares = number_of_spares
+        self.catalogue_item_repository.update_number_of_spares(
+            catalogue_item_id, number_of_spares, session=self.mock_session
+        )
+
+    def check_update_number_of_spares(self) -> None:
+        """Checks that a prior call to `update_number_of_spares` worked as expected."""
+
+        self.catalogue_items_collection.update_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._update_number_of_spares_catalogue_item_id)},
+            {"$set": {"number_of_spares": self._update_number_of_spares_number_of_spares}},
+            session=self.mock_session,
+        )
+
+
+class TestUpdateNumberOfSpares(UpdateNumberOfSparesDSL):
+    """Tests for `update_number_of_spares`."""
+
+    def test_update_number_of_spares(self):
+        """Test `update_number_of_spares`."""
+
+        self.call_update_number_of_spares(str(ObjectId()), 42)
+        self.check_update_number_of_spares()
