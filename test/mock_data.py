@@ -912,7 +912,18 @@ SYSTEM_IN_DATA_NO_PARENT_B = {
 # --------------------------------- SETTINGS ---------------------------------
 
 # Spares definition, Storage
+SETTING_SPARES_DEFINITION_IN_DATA_STORAGE = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_OUT_DATA_STORAGE["_id"]],
+}
+
 SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE = {
     "_id": SparesDefinitionOut.SETTING_ID,
     "system_types": [SYSTEM_TYPE_OUT_DATA_STORAGE],
+}
+
+# Spares definition, Storage or Operational
+SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_OUT_DATA_STORAGE["_id"], SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"]],
 }
