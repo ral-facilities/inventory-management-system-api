@@ -12,18 +12,16 @@ from inventory_management_system_api.models.setting import SettingOutBase, Spare
 
 # Aggregation pipeline for getting the spares definition complete with system type data
 SPARES_DEFINITION_GET_AGGREGATION_PIPELINE = [
-    [
-        {"$match": {"_id": SparesDefinitionOut.SETTING_ID}},
-        {
-            "$lookup": {
-                "from": "system_types",
-                "localField": "system_type_ids",
-                "foreignField": "_id",
-                "as": "system_types",
-            }
-        },
-        {"$project": {"system_types": 1}},
-    ],
+    {"$match": {"_id": SparesDefinitionOut.SETTING_ID}},
+    {
+        "$lookup": {
+            "from": "system_types",
+            "localField": "system_type_ids",
+            "foreignField": "_id",
+            "as": "system_types",
+        }
+    },
+    {"$project": {"system_types": 1}},
 ]
 
 # Template type for models inheriting from SettingOutBase so this repo can be used generically for multiple settings
