@@ -2,13 +2,16 @@
 Module for providing a repository for managing settings in a MongoDB database.
 """
 
+import logging
 from typing import Optional, Type, TypeVar
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.models.setting import SettingOutBase, SparesDefinitionOut
+from inventory_management_system_api.models.setting import SettingInBase, SettingOutBase, SparesDefinitionOut
+
+logger = logging.getLogger()
 
 # Aggregation pipeline for getting the spares definition complete with system type data
 SPARES_DEFINITION_GET_AGGREGATION_PIPELINE = [
@@ -24,7 +27,8 @@ SPARES_DEFINITION_GET_AGGREGATION_PIPELINE = [
     {"$project": {"system_types": 1}},
 ]
 
-# Template type for models inheriting from SettingOutBase so this repo can be used generically for multiple settings
+# Template type for models inheriting from SettingIn/OutBase so this repo can be used generically for multiple settings
+SettingInBaseT = TypeVar("SettingInBaseT", bound=SettingInBase)
 SettingOutBaseT = TypeVar("SettingOutBaseT", bound=SettingOutBase)
 
 
@@ -42,6 +46,24 @@ class SettingRepo:
         self._database = database
         self._settings_collection: Collection = self._database.settings
 
+    def upsert(
+        self, setting: SettingInBaseT, out_model_type: Type[SettingOutBaseT], session: Optional[ClientSession] = None
+    ) -> SettingOutBaseT:
+        """
+        Update or insert a setting in a MongoDB database depending on whether it already exists.
+
+        :param setting: Setting containing the fields to be updated. Also contains the ID for lookup.
+        :param out_model_type: Output type of the setting's model.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: The updated setting.
+        """
+
+        logger.info("Assigning setting with ID: %s in the database", setting.SETTING_ID)
+        self._settings_collection.update_one(
+            {"_id": setting.SETTING_ID}, {"$set": setting.model_dump()}, upsert=True, session=session
+        )
+        return self.get(out_model_type, session=session)
+
     def get(
         self, out_model_type: Type[SettingOutBaseT], session: Optional[ClientSession] = None
     ) -> Optional[SettingOutBaseT]:
@@ -50,10 +72,11 @@ class SettingRepo:
 
         :param out_model_type: Output type of the setting's model. Also contains the ID for the lookup.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: Retireved setting or `None` if not found.
+        :return: Retrieved setting or `None` if not found.
         """
 
         setting = None
+        logger.info("Retrieving setting with ID: %s from the database", out_model_type.SETTING_ID)
 
         # Check for any special cases that are not typical find_one queries
         if out_model_type is SparesDefinitionOut:

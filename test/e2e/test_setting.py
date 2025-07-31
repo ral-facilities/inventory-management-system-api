@@ -23,9 +23,10 @@ from typing import Optional
 
 import pytest
 from httpx import Response
-from pymongo.database import Database
 
 from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
+from inventory_management_system_api.repositories.setting import SettingRepo
 
 # class SetSparesDefinitionDSL:
 
@@ -33,7 +34,7 @@ from inventory_management_system_api.core.database import get_database
 class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
     """Base class for spares definition tests."""
 
-    _database: Database
+    _setting_repo: SettingRepo
     _system_type_map: dict[str, str]
     _catalogue_item_ids: list[str]
     _post_responses_catalogue_items: list[Response]
@@ -42,7 +43,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
     def setup_spares_definition_dsl(self):
         """Setup fixtures"""
 
-        self._database = get_database()
+        self._setting_repo = SettingRepo(get_database())
 
     def set_spares_definition(self, spares_definition_in_data: dict) -> None:
         """
@@ -51,9 +52,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
         :param spares_definition_in_data: Dictionary containing the spares definition data to insert into the database.
         """
 
-        self._database.settings.update_one(
-            {"_id": spares_definition_in_data["_id"]}, {"$set": spares_definition_in_data}, upsert=True
-        )
+        self._setting_repo.upsert(SparesDefinitionIn(**spares_definition_in_data), SparesDefinitionOut)
 
     def post_system_with_type_id(self, type_id: str) -> Optional[str]:
         """
