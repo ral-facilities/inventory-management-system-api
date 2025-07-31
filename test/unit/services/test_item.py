@@ -32,6 +32,7 @@ from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
     MissingRecordError,
+    WriteConflictError,
 )
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
@@ -60,6 +61,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
     item_service: ItemService
 
     mock_transaction_session: Mock
+    _raise_write_conflict_once: bool
     _expected_spares_definition_out: Optional[SparesDefinitionOut]
 
     # pylint:disable=too-many-arguments
@@ -96,13 +98,17 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                 self.mock_start_session_transaction = mocked_start_session_transaction
                 yield
 
-    def _mock_start_transaction_impacting_number_of_spares(self, spares_definition_out_data: Optional[dict]) -> None:
+    def _mock_start_transaction_impacting_number_of_spares(
+        self, spares_definition_out_data: Optional[dict], raise_write_conflict_once: bool
+    ) -> None:
         """
         Mocks methods appropirately for when the `_start_transaction_impacting_number_of_spares` repo method will be
         called.
 
         :param spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as would
                                            be required for a `SparesDefinitionOut` database model.
+        :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
+                                          test the retrying functionality.
         """
 
         # Mock the transaction session itself - this will be the value ultimately returned by
@@ -116,8 +122,22 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         )
         ServiceTestHelpers.mock_get(self.mock_setting_repository, self._expected_spares_definition_out)
 
+        # Raise a write conflict if requested
+        self._raise_write_conflict_once = raise_write_conflict_once
+        if self._raise_write_conflict_once:
+            # Strictly speaking this error is not right, it would give an OperationFailure that
+            # start_session_transaction will turn into a write conflict, but as thats mocked we just raise it directly
+            # here instead
+            self.mock_catalogue_item_repository.update_number_of_spares.side_effect = [
+                WriteConflictError("Test"),
+                None,
+                None,
+            ]
+
     def _check_start_transition_impacting_number_of_spares_performed_expected_calls(
-        self, expected_action_description: str, expected_catalogue_item_id: str
+        self,
+        expected_action_description: str,
+        expected_catalogue_item_id: str,
     ) -> None:
         """
         Checks that a call to `_start_transaction_impacting_number_of_spares` performed the expected function calls.
@@ -130,23 +150,49 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
 
         # The rest of the calls only occur if there is a spares definition
         if self._expected_spares_definition_out:
-            self.mock_start_session_transaction.assert_called_with(expected_action_description)
-
-            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of(
-                expected_catalogue_item_id,
-                [system_type.id for system_type in self._expected_spares_definition_out.system_types],
-                session=self.mock_transaction_session,
-            )
-            self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
-                [
-                    call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                    call(
-                        expected_catalogue_item_id,
-                        self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
-                        session=self.mock_transaction_session,
-                    ),
+            if self._raise_write_conflict_once:
+                assert self.mock_start_session_transaction.call_args_list == [
+                    call(expected_action_description),
+                    call(expected_action_description),
                 ]
-            )
+                self.mock_start_session_transaction.return_value.__enter__.assert_has_calls([call(), call()])
+
+                self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
+                    expected_catalogue_item_id,
+                    [system_type.id for system_type in self._expected_spares_definition_out.system_types],
+                    session=self.mock_transaction_session,
+                )
+
+                self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
+                    [
+                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
+                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
+                        call(
+                            expected_catalogue_item_id,
+                            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
+                            session=self.mock_transaction_session,
+                        ),
+                    ]
+                )
+            else:
+                self.mock_start_session_transaction.assert_called_once_with(expected_action_description)
+                self.mock_start_session_transaction.return_value.__enter__.assert_called_once()
+
+                self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
+                    expected_catalogue_item_id,
+                    [system_type.id for system_type in self._expected_spares_definition_out.system_types],
+                    session=self.mock_transaction_session,
+                )
+                self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
+                    [
+                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
+                        call(
+                            expected_catalogue_item_id,
+                            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
+                            session=self.mock_transaction_session,
+                        ),
+                    ]
+                )
 
 
 class CreateDSL(ItemServiceDSL):
@@ -174,6 +220,7 @@ class CreateDSL(ItemServiceDSL):
         catalogue_category_in_data: Optional[dict] = None,
         usage_status_in_data: Optional[dict] = None,
         stored_spares_definition_out_data: Optional[dict] = None,
+        raise_write_conflict_once: bool = False,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
@@ -189,6 +236,8 @@ class CreateDSL(ItemServiceDSL):
                                      `UsageStatusIn` database model.
         :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
                                                   would be required for a `SparesDefinitionOut` database model.
+        :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
+                                          test the retrying functionality.
         """
 
         # Generate mandatory IDs to be inserted where needed
@@ -292,7 +341,9 @@ class CreateDSL(ItemServiceDSL):
                 self._catalogue_category_out.properties, self._expected_merged_properties
             )
 
-        self._mock_start_transaction_impacting_number_of_spares(stored_spares_definition_out_data)
+        self._mock_start_transaction_impacting_number_of_spares(
+            stored_spares_definition_out_data, raise_write_conflict_once
+        )
 
         self._expected_item_in = ItemIn(
             **{
@@ -411,6 +462,20 @@ class TestCreate(CreateDSL):
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_spares_defintion_defined_write_conflict(self):
+        """Test creating an item when there is a spares defintion defined and a write conflict occurs."""
+
+        self.mock_create(
+            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            raise_write_conflict_once=True,
         )
         self.call_create()
         self.check_create_success()
@@ -575,6 +640,7 @@ class UpdateDSL(ItemServiceDSL):
         stored_spares_definition_out_data: Optional[dict] = None,
         new_system_in_data: Optional[dict] = None,
         new_usage_status_in_data: Optional[dict] = None,
+        raise_write_conflict_once: bool = False,
     ) -> None:
         """
         Mocks repository methods appropriately to test the `update` service method.
@@ -599,6 +665,8 @@ class UpdateDSL(ItemServiceDSL):
                                    would be required for a `SystemIn` database model.
         :param new_usage_status_in_data: Either `None` or a dictionary containing the usage status data for the new
                                          stored usage status as would be required for a `UsageStatus` database model.
+        :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
+                                          test the retrying functionality.
         """
 
         # Add property ids to the stored catalogue item and item if needed
@@ -762,7 +830,9 @@ class UpdateDSL(ItemServiceDSL):
 
             item_update_data["properties"] = property_post_schemas
 
-        self._mock_start_transaction_impacting_number_of_spares(stored_spares_definition_out_data)
+        self._mock_start_transaction_impacting_number_of_spares(
+            stored_spares_definition_out_data, raise_write_conflict_once
+        )
 
         # Updated item
         self._expected_item_out = MagicMock()
@@ -951,6 +1021,23 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
+    def test_update_system_id_with_spares_defintion_defined_write_conflict(self):
+        """Test updating an item's `system_id` when there is a spares definition defined and a write conflict occurs."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId())},
+            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            raise_write_conflict_once=True,
+        )
+        self.call_update(item_id)
+        self.check_update_success()
+
     def test_update_with_non_existent_system_id(self):
         """Test updating an item's `system_id` to a non-existent system."""
 
@@ -1021,7 +1108,10 @@ class DeleteDSL(ItemServiceDSL):
     _delete_exception: pytest.ExceptionInfo
 
     def mock_delete(
-        self, stored_item_data: Optional[dict], stored_spares_definition_out_data: Optional[dict] = None
+        self,
+        stored_item_data: Optional[dict],
+        stored_spares_definition_out_data: Optional[dict] = None,
+        raise_write_conflict_once: bool = False,
     ) -> None:
         """
         Mocks repository methods appropriately to test the `delete` service method.
@@ -1031,6 +1121,8 @@ class DeleteDSL(ItemServiceDSL):
                                  property IDs.
         :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
                                                   would be required for a `SparesDefinitionOut` database model.
+        :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
+                                          test the retrying functionality.
         """
 
         self._stored_item = (
@@ -1049,7 +1141,9 @@ class DeleteDSL(ItemServiceDSL):
         )
         ServiceTestHelpers.mock_get(self.mock_item_repository, self._stored_item)
 
-        self._mock_start_transaction_impacting_number_of_spares(stored_spares_definition_out_data)
+        self._mock_start_transaction_impacting_number_of_spares(
+            stored_spares_definition_out_data, raise_write_conflict_once
+        )
 
     def call_delete(self, item_id: str) -> None:
         """
@@ -1114,6 +1208,17 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(
             ITEM_DATA_REQUIRED_VALUES_ONLY, stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE
+        )
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_with_spares_definition_defined_write_conflict(self):
+        """Test deleting an item when there is a spares definition defined and a write conflict occurs."""
+
+        self.mock_delete(
+            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            raise_write_conflict_once=True,
         )
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
