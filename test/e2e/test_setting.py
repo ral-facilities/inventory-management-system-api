@@ -27,8 +27,6 @@ from pymongo.database import Database
 
 from inventory_management_system_api.core.database import get_database
 
-# class SetSparesDefinitionDSL:
-
 
 class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
     """Base class for spares definition tests."""
@@ -57,7 +55,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
 
     def post_system_with_type_id(self, type_id: str) -> Optional[str]:
         """
-        Utility mnethod that posts a system with a specified type ID.
+        Utility method that posts a system with a specified type ID.
 
         :param type_id: Type ID of the system to create.
         """

@@ -259,12 +259,12 @@ class ItemService:
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles recalculation of the `number_of_spares` of a catalogue item for updates that will impact it but only
-        when there is a spares defintion is set.
+        when there is a spares definition is set.
 
         Starts a MongoDB session and transaction, then write locks the catalogue item before yielding to allow an
         update to take place using the returned session. Once any tasks using the session context have finished it will
         finish by recalculating the number of spares for the catalogue item before finishing the transaction. This write
-        lock prevents similar actions from occuring during the update to prevent an incorrect update e.g. if another
+        lock prevents similar actions from occurring during the update to prevent an incorrect update e.g. if another
         item was added between counting the documents and then updating the number of spares field it would cause a
         miscount. It also ensures any action executed using the session will either fail or succeed with the spares
         update.
@@ -275,7 +275,7 @@ class ItemService:
                                   updating.
         """
 
-        # Firstly obtain the spares defintion, to figure out if it is defined or not
+        # Firstly obtain the spares definition, to figure out if it is defined or not
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
 
         if spares_definition is None:
@@ -290,7 +290,7 @@ class ItemService:
             while retry:
                 try:
                     with start_session_transaction(action_description) as session:
-                        # Write lock the catalogue item to prevent any other updates from occuring during the rest of
+                        # Write lock the catalogue item to prevent any other updates from occurring during the rest of
                         # the transaction
                         self._catalogue_item_repository.update_number_of_spares(
                             catalogue_item_id, None, session=session

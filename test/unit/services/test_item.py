@@ -102,7 +102,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         self, spares_definition_out_data: Optional[dict], raise_write_conflict_once: bool
     ) -> None:
         """
-        Mocks methods appropirately for when the `_start_transaction_impacting_number_of_spares` repo method will be
+        Mocks methods appropriately for when the `_start_transaction_impacting_number_of_spares` repo method will be
         called.
 
         :param spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as would
@@ -126,7 +126,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         self._raise_write_conflict_once = raise_write_conflict_once
         if self._raise_write_conflict_once:
             # Strictly speaking this error is not right, it would give an OperationFailure that
-            # start_session_transaction will turn into a write conflict, but as thats mocked we just raise it directly
+            # start_session_transaction will turn into a write conflict, but as that's mocked we just raise it directly
             # here instead
             self.mock_catalogue_item_repository.update_number_of_spares.side_effect = [
                 WriteConflictError("Test"),
@@ -453,8 +453,8 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_spares_defintion_defined(self):
-        """Test creating an item when there is a spares defintion defined."""
+    def test_create_with_spares_definition_defined(self):
+        """Test creating an item when there is a spares definition defined."""
 
         self.mock_create(
             ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -466,8 +466,8 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_spares_defintion_defined_write_conflict(self):
-        """Test creating an item when there is a spares defintion defined and a write conflict occurs."""
+    def test_create_with_spares_definition_defined_write_conflict(self):
+        """Test creating an item when there is a spares definition defined and a write conflict occurs."""
 
         self.mock_create(
             ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -1005,7 +1005,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
-    def test_update_system_id_with_spares_defintion_defined(self):
+    def test_update_system_id_with_spares_definition_defined(self):
         """Test updating an item's `system_id` when there is a spares definition defined."""
 
         item_id = str(ObjectId())
@@ -1021,7 +1021,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
-    def test_update_system_id_with_spares_defintion_defined_write_conflict(self):
+    def test_update_system_id_with_spares_definition_defined_write_conflict(self):
         """Test updating an item's `system_id` when there is a spares definition defined and a write conflict occurs."""
 
         item_id = str(ObjectId())
@@ -1131,7 +1131,7 @@ class DeleteDSL(ItemServiceDSL):
                     **stored_item_data,
                     catalogue_item_id=str(ObjectId()),
                     system_id=str(ObjectId()),
-                    # Need a value here but doesnt matter if it matches the usage status or not
+                    # Need a value here but doesn't matter if it matches the usage status or not
                     usage_status="test",
                 ).model_dump(),
                 id=str(ObjectId()),

@@ -20,7 +20,7 @@ class SettingOutBase(BaseModel, ABC):
     @staticmethod
     @abstractmethod
     def SETTING_ID() -> str:  # pylint: disable=invalid-name
-        """ID of the setting. Ensures this calue can be obtained from the classs type itself as a static variable."""
+        """ID of the setting. Ensures this value can be obtained from the class type itself as a static variable."""
 
     id: StringObjectIdField = Field(alias="_id")
 
@@ -29,7 +29,7 @@ class SettingOutBase(BaseModel, ABC):
 
 class SparesDefinitionOut(SettingOutBase):
     """
-    Output database model for the spares defintion.
+    Output database model for the spares definition.
     """
 
     SETTING_ID: ClassVar[str] = "spares_definition"
