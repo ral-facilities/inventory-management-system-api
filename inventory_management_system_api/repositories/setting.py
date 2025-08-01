@@ -68,7 +68,7 @@ class SettingRepo:
         self, out_model_type: Type[SettingOutBaseT], session: Optional[ClientSession] = None
     ) -> Optional[SettingOutBaseT]:
         """
-        Retrive a setting from a MongoDB database.
+        Retrieve a setting from a MongoDB database.
 
         :param out_model_type: Output type of the setting's model. Also contains the ID for the lookup.
         :param session: PyMongo ClientSession to use for database operations.
@@ -80,8 +80,8 @@ class SettingRepo:
 
         # Check for any special cases that are not typical find_one queries
         if out_model_type is SparesDefinitionOut:
-            # The spares defintion contains a list of system type ids - use an aggregate query here to obtain the actual
-            # system type entities instead of just their IDs
+            # The spares definition contains a list of system type ids - use an aggregate query here to obtain the
+            # actual system type entities instead of just their IDs
             result = self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=session)
             result = list(result)
             if len(result) > 0:

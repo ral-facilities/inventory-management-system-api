@@ -120,7 +120,7 @@ class CreateDSL(CatalogueItemServiceDSL):
                                      any `unit_id`'s replaced by the `unit` value in its properties as the IDs will be
                                      added automatically.
         :param spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as would
-                                           be required for a `SparesDefinitonOut` database model.
+                                           be required for a `SparesDefinitionOut` database model.
         """
 
         # Generate mandatory IDs to be inserted where needed

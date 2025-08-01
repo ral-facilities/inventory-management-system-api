@@ -20,7 +20,7 @@ const SYSTEM_TYPE_ID_STORAGE = ObjectId("685e5dce6e347e39d459c5ea");
 const SYSTEM_TYPE_ID_OPERATIONAL = ObjectId("685e5dce6e347e39d459c5eb");
 const SYSTEM_TYPE_ID_SCRAPPED = ObjectId("685e5dce6e347e39d459c5ec");
 
-// Intialise replica sets if not already setup
+// Initialise replica sets if not already setup
 try {
   rs.status();
 } catch (e) {
@@ -32,7 +32,7 @@ try {
 ["ims", "test-ims"].forEach((databaseName) => {
   db = db.getSiblingDB(databaseName);
 
-  // Add some usage statuses if the collection doesnt already exist
+  // Add some usage statuses if the collection doesn't already exist
   if (!db.getCollectionNames().includes("usage_statuses")) {
     console.log(`Populating usage statuses in ${databaseName}...`);
 
