@@ -61,7 +61,7 @@ class SettingService:
                 raise MissingRecordError(f"No system type found with ID: {system_type_id}")
 
         # Need all updates to the number of spares to succeed or fail together with assigning the new definition
-        with start_session_transaction("updating spares definition") as session:
+        with start_session_transaction("setting spares definition") as session:
             # Update the spares definition (being done first means two assignments at the same time would conflict
             # early)
             new_spares_definition = self._setting_repository.upsert(
