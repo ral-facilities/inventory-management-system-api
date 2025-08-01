@@ -132,7 +132,7 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
             self._spares_definition_in, SparesDefinitionOut, session=expected_session
         )
 
-        # Ensure obtained list of all catalogue item ids recalculated th enumber of spares for each
+        # Ensure obtained list of all catalogue item ids recalculated the number of spares for each
         self.mock_catalogue_item_repository.list_ids.assert_called_once_with()
 
         expected_count_in_catalogue_item_with_system_type_one_of_calls = []
@@ -151,7 +151,7 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
 
         assert self._updated_spares_definition == self._expected_spares_definition_out
 
-    def check_set_spares_defition_failed_with_exception(self, message: str) -> None:
+    def check_set_spares_definition_failed_with_exception(self, message: str) -> None:
         """
         Checks that a prior call to `call_set_spares_definition_expecting_error` worked as expected, raising an
         exception with the correct message.
@@ -184,6 +184,6 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
             SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL, [SYSTEM_TYPE_OUT_DATA_STORAGE, None]
         )
         self.call_set_spares_definition_expecting_error(MissingRecordError)
-        self.check_set_spares_defition_failed_with_exception(
+        self.check_set_spares_definition_failed_with_exception(
             f"No system type found with ID: {self._spares_definition_in.system_type_ids[1]}"
         )

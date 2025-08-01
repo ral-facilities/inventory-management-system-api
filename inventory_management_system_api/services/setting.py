@@ -40,15 +40,15 @@ class SettingService:
         """
         self._setting_repository = setting_repository
         self._system_type_repository = system_type_repository
-        self._catalogue_item_repoistory = catalogue_item_repository
+        self._catalogue_item_repository = catalogue_item_repository
         self._item_repository = item_repository
 
     def set_spares_definition(self, spares_definition: SparesDefinitionIn) -> SparesDefinitionOut:
         """
         Sets the spares definition to a new value.
 
-        No write locks are used on the calogue items, it is assumed that the system should be in maintanance mode
-        at the time of assinging it to ensure no miscounts can occurr.
+        No write locks are used on the catalogue items, it is assumed that the system should be in a state where users
+        are not able to access the API and no requests are currently in progress.
 
         :param spares_definition: New spares definition.
         :return: Updated spares definition.
@@ -69,7 +69,7 @@ class SettingService:
             )
 
             # Obtain a list of all catalogue item ids (all will need a recount)
-            catalogue_item_ids = self._catalogue_item_repoistory.list_ids()
+            catalogue_item_ids = self._catalogue_item_repository.list_ids()
 
             # Recalculate the number of spares for each catalogue item
             logger.info("Updating the number of spares for all catalogue items")
@@ -77,7 +77,7 @@ class SettingService:
                 number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
                     catalogue_item_id, spares_definition.system_type_ids, session=session
                 )
-                self._catalogue_item_repoistory.update_number_of_spares(
+                self._catalogue_item_repository.update_number_of_spares(
                     catalogue_item_id, number_of_spares, session=session
                 )
 

@@ -749,7 +749,7 @@ class TestListIDs(ListIDsDSL):
         self.check_list_ids_success()
 
     def test_list_ids_with_catalogue_category_id_filter(self):
-        """Test `list_ids` with a `catalouge_category_id` filter."""
+        """Test `list_ids` with a `catalogue_category_id` filter."""
 
         self.call_list_ids(catalogue_category_id=str(ObjectId()))
         self.check_list_ids_success()
