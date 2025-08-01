@@ -110,7 +110,7 @@ class UpsertDSL(SettingRepoDSL):
         assert self._upserted_setting == self._expected_setting_out
 
 
-class TestUpdate(UpsertDSL):
+class TestUpsert(UpsertDSL):
     """Tests for upserting a setting."""
 
     def test_upsert(self):
@@ -160,7 +160,7 @@ class GetDSL(SettingRepoDSL):
         else:
             RepositoryTestHelpers.mock_find_one(
                 self.settings_collection,
-                self._expected_setting_out.model_dump() if self._expected_setting_out else None,
+                (self._expected_setting_out.model_dump() if self._expected_setting_out else None),
             )
 
     def call_get(self, out_model_type: Type[SettingOutBaseT]) -> None:
@@ -181,7 +181,8 @@ class GetDSL(SettingRepoDSL):
             )
         else:
             self.settings_collection.find_one.assert_called_once_with(
-                {"_id": self._obtained_out_model_type.SETTING_ID}, session=self.mock_session
+                {"_id": self._obtained_out_model_type.SETTING_ID},
+                session=self.mock_session,
             )
         assert self._obtained_setting == self._expected_setting_out
 
