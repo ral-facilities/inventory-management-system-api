@@ -120,7 +120,7 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
 
         # Ensure checked all of the system types
         self.mock_system_type_repository.get.assert_has_calls(
-            [call(system_type_id) for system_type_id in self._spares_definition_in.system_type_ids]
+            [call(str(system_type_id)) for system_type_id in self._spares_definition_in.system_type_ids]
         )
 
         # Ensure started a transaction

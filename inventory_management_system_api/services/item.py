@@ -256,7 +256,7 @@ class ItemService:
 
     @contextmanager
     def _start_transaction_impacting_number_of_spares(
-        self, action_description: str, catalogue_item_id: str
+        self, action_description: str, catalogue_item_id: CustomObjectId
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles recalculation of the `number_of_spares` of a catalogue item for updates that will impact it but only
@@ -275,6 +275,9 @@ class ItemService:
         :param catalogue_item_id: ID of the effected catalogue item which will need its `number_of_spares` field
                                   updating.
         """
+
+        # Use ObjectIDs from here on to avoid unecessary conversions particurly for when we set the spares definition
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
 
         # Firstly obtain the spares defintion, to figure out if it is defined or not
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
@@ -303,7 +306,7 @@ class ItemService:
                         # Obtain and update the number of spares
                         logger.info("Updating the number of spares of the catalogue item with ID %s", catalogue_item_id)
                         number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
-                            CustomObjectId(catalogue_item_id),
+                            catalogue_item_id,
                             [CustomObjectId(system_type.id) for system_type in spares_definition.system_types],
                             session=session,
                         )

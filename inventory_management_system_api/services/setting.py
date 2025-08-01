@@ -57,7 +57,7 @@ class SettingService:
 
         # Ensure all the given system types exist
         for system_type_id in spares_definition.system_type_ids:
-            if not self._system_type_repository.get(system_type_id):
+            if not self._system_type_repository.get(str(system_type_id)):
                 raise MissingRecordError(f"No system type found with ID: {system_type_id}")
 
         # Need all updates to the number of spares to succeed or fail together with assigning the new definition

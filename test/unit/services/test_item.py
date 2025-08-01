@@ -147,6 +147,8 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         :param expected_catalogue_item_id: Expected `catalogue_item_id` the function should have been called with.
         """
 
+        expected_catalogue_item_id = CustomObjectId(expected_catalogue_item_id)
+
         self.mock_setting_repository.get.assert_called_once_with(SparesDefinitionOut)
 
         # The rest of the calls only occur if there is a spares definition
@@ -159,7 +161,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                 self.mock_start_session_transaction.return_value.__enter__.assert_has_calls([call(), call()])
 
                 self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
-                    CustomObjectId(expected_catalogue_item_id),
+                    expected_catalogue_item_id,
                     [
                         CustomObjectId(system_type.id)
                         for system_type in self._expected_spares_definition_out.system_types
@@ -183,7 +185,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                 self.mock_start_session_transaction.return_value.__enter__.assert_called_once()
 
                 self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
-                    CustomObjectId(expected_catalogue_item_id),
+                    expected_catalogue_item_id,
                     [
                         CustomObjectId(system_type.id)
                         for system_type in self._expected_spares_definition_out.system_types

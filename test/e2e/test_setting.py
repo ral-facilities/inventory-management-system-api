@@ -25,16 +25,18 @@ import pytest
 from httpx import Response
 
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
+from inventory_management_system_api.models.setting import SparesDefinitionIn
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
-
-# class SetSparesDefinitionDSL:
+from inventory_management_system_api.repositories.system_type import SystemTypeRepo
+from inventory_management_system_api.services.setting import SettingService
 
 
 class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
     """Base class for spares definition tests."""
 
-    _setting_repo: SettingRepo
+    _setting_service: SettingService
     _system_type_map: dict[str, str]
     _catalogue_item_ids: list[str]
     _post_responses_catalogue_items: list[Response]
@@ -43,7 +45,10 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
     def setup_spares_definition_dsl(self):
         """Setup fixtures"""
 
-        self._setting_repo = SettingRepo(get_database())
+        database = get_database()
+        self._setting_service = SettingService(
+            SettingRepo(database), SystemTypeRepo(database), CatalogueItemRepo(database), ItemRepo(database)
+        )
 
     def set_spares_definition(self, spares_definition_in_data: dict) -> None:
         """
@@ -52,11 +57,11 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
         :param spares_definition_in_data: Dictionary containing the spares definition data to insert into the database.
         """
 
-        self._setting_repo.upsert(SparesDefinitionIn(**spares_definition_in_data), SparesDefinitionOut)
+        self._setting_service.set_spares_definition(SparesDefinitionIn(**spares_definition_in_data))
 
     def post_system_with_type_id(self, type_id: str) -> Optional[str]:
         """
-        Utility mnethod that posts a system with a specified type ID.
+        Utility method that posts a system with a specified type ID.
 
         :param type_id: Type ID of the system to create.
         """
@@ -235,4 +240,19 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
 
         # Delete the second spare item and ensure only its catalogue item is updated
         self.delete_item(item_id)
+        self.check_catalogue_item_spares([0, 1])
+
+    def test_set_spares_definition_with_existing_items(self):
+        """Test setting the spares definition when there are existing items."""
+
+        self.post_items_and_prerequisites_with_system_types(
+            [
+                [SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
+                [SYSTEM_TYPE_GET_DATA_STORAGE["id"], SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
+            ]
+        )
+        self.check_catalogue_item_spares([None, None])
+
+        # Set the spares definition and ensure the catalogue items are updated
+        self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
         self.check_catalogue_item_spares([0, 1])

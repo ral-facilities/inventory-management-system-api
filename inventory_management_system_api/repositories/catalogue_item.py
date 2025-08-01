@@ -239,7 +239,7 @@ class CatalogueItemRepo:
 
     def update_number_of_spares(
         self,
-        catalogue_item_id: str,
+        catalogue_item_id: CustomObjectId,
         number_of_spares: Optional[int],
         session: Optional[ClientSession] = None,
     ) -> None:
@@ -254,7 +254,7 @@ class CatalogueItemRepo:
         """
 
         self._catalogue_items_collection.update_one(
-            {"_id": CustomObjectId(catalogue_item_id)},
+            {"_id": catalogue_item_id},
             {"$set": {"number_of_spares": number_of_spares}},
             session=session,
         )
