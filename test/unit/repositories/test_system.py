@@ -4,6 +4,7 @@ Unit tests for the `SystemRepo` repository.
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-lines
 
 from test.mock_data import ITEM_DATA_REQUIRED_VALUES_ONLY, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
@@ -978,3 +979,64 @@ class TestHasChildElements(HasChildElementsDSL):
 
         self.call_has_child_elements_expecting_error(system_id, InvalidObjectIdError)
         self.check_has_child_elements_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class WriteLockDSL(SystemRepoDSL):
+    """Base class for `write_lock` tests."""
+
+    _write_locked_system_id: str
+    _expected_system_out: Optional[SystemOut]
+
+    def mock_write_lock(self, system_id: str, system_in_data: Optional[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `write_lock` repo method.
+
+        :param system_id: ID of the system to write lock.
+        :param system_in_data: Either `None` or a dictionary containing the system data as would be required for a
+                               `SystemIn` database model (i.e. No ID or created and modified times required).
+        """
+
+        self._expected_system_out = (
+            SystemOut(**SystemIn(**system_in_data).model_dump(), id=CustomObjectId(system_id))
+            if system_in_data
+            else None
+        )
+
+        RepositoryTestHelpers.mock_find_one(
+            self.systems_collection, self._expected_system_out.model_dump() if self._expected_system_out else None
+        )
+
+    def call_write_lock(self, system_id: str) -> None:
+        """
+        Calls the `SystemRepo` `write_lock` method with the appropriate data from a prior call to `mock_write_lock`.
+
+        :param system_id: ID of the system to write lock.
+        """
+
+        self._write_locked_system_id = system_id
+        self.system_repository.write_lock(system_id, session=self.mock_session)
+
+    def check_write_lock_success(self) -> None:
+        """Checks that a prior call to `call_write_lock` worked as expected."""
+
+        self.systems_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._write_locked_system_id)}, session=self.mock_session
+        )
+        self.systems_collection.update_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._write_locked_system_id)},
+            {"$set": {"importance": self._expected_system_out.importance}},
+            session=self.mock_session,
+        )
+
+
+class TestWriteLock(WriteLockDSL):
+    """Tests for write locking a system."""
+
+    def test_write_lock(self):
+        """Test write locking a setting."""
+
+        system_id = str(ObjectId())
+
+        self.mock_write_lock(system_id, SYSTEM_IN_DATA_NO_PARENT_A)
+        self.call_write_lock(system_id)
+        self.check_write_lock_success()

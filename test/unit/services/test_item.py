@@ -139,12 +139,14 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         self,
         expected_action_description: str,
         expected_catalogue_item_id: str,
+        expected_dest_system_id: Optional[str] = None,
     ) -> None:
         """
         Checks that a call to `_start_transaction_impacting_number_of_spares` performed the expected function calls.
 
         :param expected_action_description: Expected `action_description` the function should have been called with.
         :param expected_catalogue_item_id: Expected `catalogue_item_id` the function should have been called with.
+        :param expected_dest_system_id: Expected `dest_system_id` the function should have been called with.
         """
 
         expected_catalogue_item_id = CustomObjectId(expected_catalogue_item_id)
@@ -159,6 +161,13 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                     call(expected_action_description),
                 ]
                 self.mock_start_session_transaction.return_value.__enter__.assert_has_calls([call(), call()])
+
+                if expected_dest_system_id:
+                    self.mock_system_repository.write_lock.assert_called_once_with(
+                        expected_dest_system_id, self.mock_transaction_session
+                    )
+                else:
+                    self.mock_system_repository.write_lock.assert_not_called()
 
                 self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
                     expected_catalogue_item_id,
@@ -183,6 +192,13 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
             else:
                 self.mock_start_session_transaction.assert_called_once_with(expected_action_description)
                 self.mock_start_session_transaction.return_value.__enter__.assert_called_once()
+
+                if expected_dest_system_id:
+                    self.mock_system_repository.write_lock.assert_called_once_with(
+                        expected_dest_system_id, self.mock_transaction_session
+                    )
+                else:
+                    self.mock_system_repository.write_lock.assert_not_called()
 
                 self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
                     expected_catalogue_item_id,
@@ -402,7 +418,7 @@ class CreateDSL(ItemServiceDSL):
         )
 
         self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
-            "creating item", str(self._expected_item_in.catalogue_item_id)
+            "creating item", str(self._expected_item_in.catalogue_item_id), str(self._expected_item_in.system_id)
         )
 
         self.mock_item_repository.create.assert_called_once_with(
@@ -909,7 +925,9 @@ class UpdateDSL(ItemServiceDSL):
 
         if self._moving_system:
             self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
-                "updating item", self._stored_item.catalogue_item_id
+                "updating item",
+                self._stored_item.catalogue_item_id,  # expected_dest_system_id=self._item_patch.system_id
+                str(self._expected_item_in.system_id),
             )
             self.mock_item_repository.update.assert_called_once_with(
                 self._updated_item_id, self._expected_item_in, session=self.mock_transaction_session

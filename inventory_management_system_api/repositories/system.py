@@ -10,11 +10,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidActionError,
-    MissingRecordError,
-)
+from inventory_management_system_api.core.exceptions import DuplicateRecordError, InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.repositories import utils
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -208,4 +204,16 @@ class SystemRepo:
         return (
             self._systems_collection.find_one({"parent_id": system_id}, session=session) is not None
             or self._items_collection.find_one({"system_id": system_id}, session=session) is not None
+        )
+
+    def write_lock(self, system_id: str, session: ClientSession) -> bool:
+        """Write locks a system document given its ID by setting a value in the document to itself.
+
+        :param system_id: ID of the system document to write lock.
+        :param session: PyMongo ClientSession to use for database operations.
+        """
+        logger.info("Write locking system with ID: %s", system_id)
+        system = self.get(system_id, session=session)
+        self._systems_collection.update_one(
+            {"_id": CustomObjectId(system_id)}, {"$set": {"importance": system.importance}}, session=session
         )

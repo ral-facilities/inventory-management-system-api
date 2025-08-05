@@ -256,15 +256,18 @@ def fixture_system_type_service(system_type_repository_mock: Mock) -> SystemType
 
 
 @pytest.fixture(name="system_service")
-def fixture_system_service(system_repository_mock: Mock, system_type_repository_mock: Mock) -> SystemService:
+def fixture_system_service(
+    system_repository_mock: Mock, system_type_repository_mock: Mock, setting_repository_mock: Mock
+) -> SystemService:
     """
     Fixture to create a `SystemService` instance with a mocked `SystemRepo` dependency.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
     :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `SystemService` instance with the mocked dependency.
     """
-    return SystemService(system_repository_mock, system_type_repository_mock)
+    return SystemService(system_repository_mock, system_type_repository_mock, setting_repository_mock)
 
 
 @pytest.fixture(name="unit_service")

@@ -9,6 +9,7 @@ Unit tests for the `SystemService` service.
 # pylint: disable=too-many-positional-arguments
 
 from test.mock_data import (
+    SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
     SYSTEM_IN_DATA_NO_PARENT_A,
     SYSTEM_IN_DATA_NO_PARENT_B,
     SYSTEM_POST_DATA_NO_PARENT_A,
@@ -30,6 +31,7 @@ from inventory_management_system_api.core.exceptions import (
     InvalidActionError,
     MissingRecordError,
 )
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema
@@ -43,13 +45,20 @@ class SystemServiceDSL:
     wrapped_utils: Mock
     mock_system_repository: Mock
     mock_system_type_repository: Mock
+    mock_setting_repository: Mock
+    mock_start_session_transaction: Mock
     system_service: SystemService
+
+    mock_transaction_session: Mock
+    _expected_spares_definition_out: Optional[SparesDefinitionOut]
+    _expect_transaction: bool
 
     @pytest.fixture(autouse=True)
     def setup(
         self,
         system_repository_mock,
         system_type_repository_mock,
+        setting_repository_mock,
         system_service,
         # Ensures all created and modified times are mocked throughout
         # pylint: disable=unused-argument
@@ -59,11 +68,80 @@ class SystemServiceDSL:
 
         self.mock_system_repository = system_repository_mock
         self.mock_system_type_repository = system_type_repository_mock
+        self.mock_setting_repository = setting_repository_mock
         self.system_service = system_service
 
         with patch("inventory_management_system_api.services.system.utils", wraps=utils) as wrapped_utils:
-            self.wrapped_utils = wrapped_utils
-            yield
+            with patch(
+                "inventory_management_system_api.services.system.start_session_transaction"
+            ) as mocked_start_session_transaction:
+                self.wrapped_utils = wrapped_utils
+                self.mock_start_session_transaction = mocked_start_session_transaction
+                yield
+
+    def _mock_start_transaction_effected_by_spares_calculation(
+        self,
+        spares_definition_out_data: Optional[dict],
+        system: SystemPatchSchema,
+        stored_system: SystemOut,
+        update_data: dict,
+    ) -> None:
+        """
+        Mocks methods appropriately for when the `_start_transaction_effected_by_spares_calculation` service method
+        will be called.
+
+        :param spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as would
+                                           be required for a `SparesDefinitionOut` database model.
+        :param system: System containing the fields to be updated.
+        :param stored_system: Current stored system from the database.
+        :param update_data: Dictionary containing the update data.
+        """
+
+        # Only require the transaction there is a spares definition, the `type_id` is being changed, and the
+        # current/new `parent_system_id` is None
+        self._expect_transaction = (
+            spares_definition_out_data
+            and ("type_id" in update_data and system.type_id != stored_system.type_id)
+            and (system.parent_id is None if "parent_id" in update_data else stored_system.parent_id is None)
+        )
+
+        # Mock the transaction session itself - this will be the value ultimately returned by
+        # _start_transaction_effected_by_spares_calculation
+        self.mock_transaction_session = MagicMock() if self._expect_transaction else None
+        self.mock_start_session_transaction.return_value.__enter__.return_value = self.mock_transaction_session
+
+        # Mock the spares definition get
+        self._expected_spares_definition_out = (
+            SparesDefinitionOut(**spares_definition_out_data)
+            if spares_definition_out_data
+            and (system.type_id and system.type_id != stored_system.type_id)
+            and (system.parent_id is None if system.parent_id else stored_system.parent_id is None)
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_setting_repository, self._expected_spares_definition_out)
+
+    def _check_start_transaction_effected_by_spares_calculation_performed_expected_calls(
+        self,
+        expected_action_description: str,
+        expected_system_id: str,
+    ) -> None:
+        """
+        Checks that a call to `_start_transaction_effected_by_spares_calculation` performed the expected function
+        calls.
+
+        :param expected_action_description: Expected `action_description` the function should have been called with.
+        :param expected_system_id: Expected `system_id` the function should have been called with.
+        """
+
+        self.mock_setting_repository.get.assert_called_once_with(SparesDefinitionOut)
+
+        if self._expect_transaction:
+            self.mock_start_session_transaction.assert_called_once_with(expected_action_description)
+            self.mock_start_session_transaction.return_value.__enter__.assert_called_once()
+
+            self.mock_system_repository.write_lock.assert_called_once_with(
+                expected_system_id, self.mock_transaction_session
+            )
 
 
 class CreateDSL(SystemServiceDSL):
@@ -376,6 +454,7 @@ class UpdateDSL(SystemServiceDSL):
         system_patch_data: dict,
         stored_system_post_data: Optional[dict],
         stored_parent_system_in_data: Optional[dict] = None,
+        stored_spares_definition_out_data: Optional[dict] = None,
         new_system_type_out_data: Optional[dict] = None,
         new_parent_system_in_data: Optional[dict] = None,
         has_child_elements: bool = False,
@@ -391,6 +470,8 @@ class UpdateDSL(SystemServiceDSL):
                                         modified times required).
         :param stored_parent_system_in_data: Either `None` or a dictionary containing the stored parent system data as
                                              would be required for a `SystemIn` database model.
+        :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
+                                                  would be required for `SparesDefinitionOut` database model.
         :param new_system_type_out_data: Either `None` or a dictionary containing the new system type data as would be
                                          required for a `SystemTypeOut` database model.
         :param new_parent_system_in_data: Either `None` or a dictionary containing the new parent system data as would
@@ -463,6 +544,10 @@ class UpdateDSL(SystemServiceDSL):
         # Patch schema
         self._system_patch = SystemPatchSchema(**system_patch_data)
 
+        self._mock_start_transaction_effected_by_spares_calculation(
+            stored_spares_definition_out_data, self._system_patch, self._stored_system, system_patch_data
+        )
+
         # Updated system
         self._expected_system_out = MagicMock()
         ServiceTestHelpers.mock_update(self.mock_system_repository, self._expected_system_out)
@@ -506,6 +591,10 @@ class UpdateDSL(SystemServiceDSL):
         # Ensure obtained old system
         expected_system_get_calls.append(call(self._updated_system_id))
 
+        self._check_start_transaction_effected_by_spares_calculation_performed_expected_calls(
+            "updating system", self._updated_system_id
+        )
+
         # Ensure obtained parent if needed
         if self._type_id_changing or self._parent_id_changing:
             # Ensure checking children and obtained type id if needed
@@ -528,7 +617,9 @@ class UpdateDSL(SystemServiceDSL):
             self.wrapped_utils.generate_code.assert_not_called()
 
         # Ensure updated with expected data
-        self.mock_system_repository.update.assert_called_once_with(self._updated_system_id, self._expected_system_in)
+        self.mock_system_repository.update.assert_called_once_with(
+            self._updated_system_id, self._expected_system_in, session=self.mock_transaction_session
+        )
 
         assert self._updated_system == self._expected_system_out
 
@@ -575,6 +666,22 @@ class TestUpdate(UpdateDSL):
         self.call_update(system_id)
         self.check_update_success()
 
+    def test_update_type_id_without_parent_with_spares_definition_defined(self):
+        """Test updating the type ID of a system that doesn't have a parent when there is a spares definition
+        defined."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
     def test_update_type_id_with_parent(self):
         """Test updating the type ID of a system that has a parent."""
 
@@ -588,6 +695,25 @@ class TestUpdate(UpdateDSL):
                 **SYSTEM_IN_DATA_NO_PARENT_B,
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
             },
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_type_id_with_parent_with_spares_definition_defined(self):
+        """Test updating the type ID of a system that has a parent when there is a spares definition defined."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data={
+                **SYSTEM_IN_DATA_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
         )
         self.call_update(system_id)
@@ -637,7 +763,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Cannot move a system into one with a different type")
 
     def test_update_parent_id_to_one_with_a_different_type_while_changing_type(self):
-        """Test updating the parent ID of a system to one that hass a different type while also changing the type to
+        """Test updating the parent ID of a system to one that has a different type while also changing the type to
         match."""
 
         system_id = str(ObjectId())
@@ -652,9 +778,26 @@ class TestUpdate(UpdateDSL):
         self.call_update(system_id)
         self.check_update_success()
 
+    def test_update_parent_id_to_one_with_a_different_type_while_changing_type_with_spares_definition_defined(self):
+        """Test updating the parent ID of a system to one that has a different type while also changing the type to
+        match when there is a spares definition defined."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
     def test_update_parent_id_to_one_with_a_different_type_while_changing_type_with_child_elements(self):
-        """Test updating the parent ID of a system to one that hass a different type while also changing the type to
-        match whenthe system has child elements."""
+        """Test updating the parent ID of a system to one that has a different type while also changing the type to
+        match when the system has child elements."""
 
         system_id = str(ObjectId())
 
@@ -679,6 +822,22 @@ class TestUpdate(UpdateDSL):
             system_patch_data={"parent_id": None},
             stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_parent_system_in_data=None,
+        )
+        self.call_update(system_id)
+        self.check_update_success()
+
+    def test_update_parent_id_to_none_with_spares_definition_defined(self):
+        """Test updating the parent ID of a system from a value to none when there is a spares definition defined."""
+
+        system_id = str(ObjectId())
+
+        self.mock_update(
+            system_id,
+            system_patch_data={"parent_id": None},
+            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             new_parent_system_in_data=None,
         )
         self.call_update(system_id)
