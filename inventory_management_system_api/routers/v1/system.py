@@ -22,6 +22,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     ObjectStorageAPIAuthError,
     ObjectStorageAPIServerError,
+    WriteConflictError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
@@ -149,6 +150,10 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.delete(

@@ -108,7 +108,9 @@ class ItemService:
         properties = utils.process_properties(defined_properties, supplied_properties)
 
         # Update number of spares when creating
-        with self._start_transaction_impacting_number_of_spares("creating item", catalogue_item_id) as session:
+        with self._start_transaction_impacting_number_of_spares(
+            "creating item", catalogue_item_id, item.system_id
+        ) as session:
             return self._item_repository.create(
                 ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
                 session=session,
@@ -196,7 +198,7 @@ class ItemService:
         if moving_system:
             # Can't currently move items, so just use the stored catalogue item
             with self._start_transaction_impacting_number_of_spares(
-                "updating item", stored_item.catalogue_item_id
+                "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
             ) as session:
                 return self._item_repository.update(
                     item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
@@ -255,27 +257,29 @@ class ItemService:
 
     @contextmanager
     def _start_transaction_impacting_number_of_spares(
-        self, action_description: str, catalogue_item_id: str
+        self, action_description: str, catalogue_item_id: str, dest_system_id: Optional[str] = None
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles recalculation of the `number_of_spares` of a catalogue item for updates that will impact it but only
         when there is a spares definition is set.
 
-        Starts a MongoDB session and transaction, then write locks the catalogue item before yielding to allow an
-        update to take place using the returned session. Once any tasks using the session context have finished it will
-        finish by recalculating the number of spares for the catalogue item before finishing the transaction. This write
-        lock prevents similar actions from occurring during the update to prevent an incorrect update e.g. if another
-        item was added between counting the documents and then updating the number of spares field it would cause a
-        miscount. It also ensures any action executed using the session will either fail or succeed with the spares
-        update.
+        When necessary, starts a MongoDB session and transaction, then write locks the catalogue item before yielding to
+        allow an update to take place using the returned session. Once any tasks using the session context have finished
+        it will finish by recalculating the number of spares for the catalogue item before finishing the transaction.
+        This write lock prevents similar actions from occurring during the update to prevent an incorrect update e.g. if
+        another item was added between counting the documents and then updating the number of spares field it would
+        cause a miscount. It also ensures any action executed using the session will either fail or succeed with the
+        spares update.
 
         :param action_description: Description of what the contents of the transaction is doing so it can be used in
                                    any logging or raise errors.
         :param catalogue_item_id: ID of the effected catalogue item which will need its `number_of_spares` field
                                   updating.
+        :param system_id: ID of the system being put in/moved to (if applicable). Will be write locked to prevent
+                          editing of system type after counting spares to avoid miscounts.
         """
 
-        # Firstly obtain the spares definition, to figure out if it is defined or not
+        # Firstly obtain the spares definition to figure out if it is defined or not
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
 
         if spares_definition is None:
@@ -295,6 +299,13 @@ class ItemService:
                         self._catalogue_item_repository.update_number_of_spares(
                             catalogue_item_id, None, session=session
                         )
+
+                        # Write lock the destination system
+                        # This will prevent the case where a system has no items currently, allowing the system type to
+                        # be modified after the count but before the update finishes and instead force conflicts with
+                        # system type modifications.
+                        if dest_system_id:
+                            self._system_repository.write_lock(dest_system_id, session)
 
                         # Allow any other updates to occur using the same session
                         yield session
