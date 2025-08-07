@@ -837,6 +837,23 @@ SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
 SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
 SYSTEM_TYPE_GET_DATA_OPERATIONAL = SYSTEM_TYPES_GET_DATA[1]
 
+# ---------------------------------- RULES ----------------------------------
+
+RULES_OUT_DATA = [
+    {
+        "_id": ObjectId(),
+        "src_system_type": None,
+        "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+        "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
+    },
+    {
+        "_id": ObjectId(),
+        "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+        "dst_system_type": None,
+        "dst_usage_status": None,
+    },
+]
+
 # --------------------------------- SYSTEMS ---------------------------------
 
 # No parent, Required values only

@@ -27,8 +27,8 @@ class RuleService:
         """
         Retrieve rules based on the provided filters.
 
-        :param src_system_type_id: `src_system_type_id` to filter rules by.
-        :param dst_system_type_id: `dst_system_type_id` to filter rules by.
+        :param src_system_type_id: `src_system_type_id` to filter the rules by or `None`.
+        :param dst_system_type_id: `dst_system_type_id` to filter the rules by or `None`.
         :return: List of rules or an empty list if no rules are retrieved.
         """
         return self._rule_repository.list(src_system_type_id, dst_system_type_id)

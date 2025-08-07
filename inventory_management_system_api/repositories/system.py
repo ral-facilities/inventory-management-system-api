@@ -98,7 +98,7 @@ class SystemRepo:
         """
         Retrieve systems from a MongoDB database based on the provided filters.
 
-        :param parent_id: `parent_id` to filter systems by.
+        :param parent_id: `parent_id` to filter the systems by or `None`.
         :param session: PyMongo ClientSession to use for database operations.
         :return: List of systems or an empty list if no systems are retrieved.
         """

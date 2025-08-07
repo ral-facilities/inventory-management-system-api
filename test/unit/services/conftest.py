@@ -21,6 +21,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
+from inventory_management_system_api.repositories.rule import RuleRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
@@ -34,6 +35,7 @@ from inventory_management_system_api.services.catalogue_category_property import
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
+from inventory_management_system_api.services.rule import RuleService
 from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system import SystemService
 from inventory_management_system_api.services.system_type import SystemTypeService
@@ -129,6 +131,16 @@ def fixture_setting_repository_mock() -> Mock:
     :return: Mocked `SettingRepo` instance.
     """
     return Mock(SettingRepo)
+
+
+@pytest.fixture(name="rule_repository_mock")
+def fixture_rule_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `RuleRepo` dependency.
+
+    :return: Mocked `RuleRepo` instance.
+    """
+    return Mock(RuleRepo)
 
 
 @pytest.fixture(name="catalogue_category_service")
@@ -260,12 +272,12 @@ def fixture_system_service(
     system_repository_mock: Mock, system_type_repository_mock: Mock, setting_repository_mock: Mock
 ) -> SystemService:
     """
-    Fixture to create a `SystemService` instance with a mocked `SystemRepo` dependency.
+    Fixture to create a `SystemService` instance with mocked `SystemRepo` and `SystemTypeRepo` dependencies.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
     :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
     :param setting_repository_mock: Mocked `SettingRepo` instance.
-    :return: `SystemService` instance with the mocked dependency.
+    :return: `SystemService` instance with the mocked dependencies.
     """
     return SystemService(system_repository_mock, system_type_repository_mock, setting_repository_mock)
 
@@ -307,10 +319,22 @@ def fixture_setting_service(
     :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param item_repository_mock: Mocked `ItemRepo` instance.
+    :return: `SettingService` instance with the mocked dependencies.
     """
     return SettingService(
         setting_repository_mock, system_type_repository_mock, catalogue_item_repository_mock, item_repository_mock
     )
+
+
+@pytest.fixture(name="rule_service")
+def fixture_rule_service(rule_repository_mock: Mock) -> RuleService:
+    """
+    Fixture to create a `RuleService` instance with a mocked `RuleRepo` dependency.
+
+    :param rule_repository_mock: Mocked `RuleRepo` instance.
+    :return: `RuleService` instance with the mocked dependencies.
+    """
+    return RuleService(rule_repository_mock)
 
 
 class ServiceTestHelpers:

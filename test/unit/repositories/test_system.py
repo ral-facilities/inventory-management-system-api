@@ -427,12 +427,12 @@ class ListDSL(SystemRepoDSL):
         """
         Calls the `SystemRepo` `list` method.
 
-        :param parent_id: ID of the parent system to query by, or `None`.
+        :param parent_id: `parent_id` to filter the systems by or `None`.
         """
 
         self._parent_id_filter = parent_id
 
-        self._obtained_systems_out = self.system_repository.list(parent_id=parent_id, session=self.mock_session)
+        self._obtained_systems_out = self.system_repository.list(parent_id, session=self.mock_session)
 
     def check_list_success(self):
         """Checks that a prior call to `call_list` worked as expected."""
