@@ -427,7 +427,7 @@ class ListDSL(SystemRepoDSL):
         """
         Calls the `SystemRepo` `list` method.
 
-        :param parent_id: `parent_id` to filter the systems by or `None`.
+        :param parent_id: ID of the parent system to query by, or `None`.
         """
 
         self._parent_id_filter = parent_id

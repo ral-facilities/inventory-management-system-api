@@ -63,8 +63,8 @@ class ListDSL(RuleRepoDSL):
         """
         Calls the `RuleRepo` `list` method.
 
-        :param src_system_type_id: `src_system_type_id` to filter the rules by or `None`.
-        :param dst_system_type_id: `dst_system_type_id` to filter the rules by or `None`.
+        :param src_system_type_id: ID of the source system type to query by, or `None`.
+        :param dst_system_type_id: ID of the destination system type to query by, or `None`.
         """
 
         self._src_system_type_id_filter = src_system_type_id

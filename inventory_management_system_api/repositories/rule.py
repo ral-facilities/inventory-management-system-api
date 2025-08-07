@@ -69,8 +69,8 @@ class RuleRepo:
         """
         Retrieve rules from a MongoDB database based on the provided filters.
 
-        :param src_system_type_id: `src_system_type_id` to filter the rules by or `None`.
-        :param dst_system_type_id: `dst_system_type_id` to filter the rules by or `None`.
+        :param src_system_type_id: ID of the source system type to query by, or `None`.
+        :param dst_system_type_id: ID of the destination system type to query by, or `None`.
         :param session: PyMongo ClientSession to use for database operations.
         :return: List of rules or an empty list if no rules are retrieved.
         """
