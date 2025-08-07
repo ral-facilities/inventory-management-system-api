@@ -46,7 +46,7 @@ class SystemPatchSchema(SystemPostSchema):
 
 class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
     """
-    Schema model for system get request response.
+    Schema model for system get request responses.
     """
 
     id: str = Field(description="ID of the system")

@@ -102,8 +102,8 @@ def get_catalogue_categories(
             CatalogueCategorySchema(**catalogue_category.model_dump()) for catalogue_category in catalogue_categories
         ]
     except InvalidObjectIdError:
-        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
-        # the same as a valid one that doesn't exist i.e. return an empty list
+        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id the same as a valid one
+        # that doesn't exist i.e. return an empty list
         return []
 
 

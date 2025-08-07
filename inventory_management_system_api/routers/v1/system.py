@@ -71,7 +71,7 @@ def get_systems(
     system_service: SystemServiceDep,
     parent_id: Annotated[Optional[str], Query(description="Filter systems by parent ID")] = None,
 ) -> list[SystemSchema]:
-    logger.info("Getting Systems")
+    logger.info("Getting systems")
     if parent_id:
         logger.debug("Parent ID filter: '%s'", parent_id)
 
@@ -79,8 +79,8 @@ def get_systems(
         systems = system_service.list(parent_id)
         return [SystemSchema(**system.model_dump()) for system in systems]
     except InvalidObjectIdError:
-        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
-        # the same as a valid one that doesn't exist i.e. return an empty list
+        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id the same as a valid one
+        # that doesn't exist i.e. return an empty list
         return []
 
 

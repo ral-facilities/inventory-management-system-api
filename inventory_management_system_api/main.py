@@ -17,6 +17,7 @@ from inventory_management_system_api.routers.v1 import (
     catalogue_item,
     item,
     manufacturer,
+    rule,
     system,
     system_type,
     unit,
@@ -94,6 +95,7 @@ app.include_router(system.router, dependencies=router_dependencies)
 app.include_router(system_type.router, dependencies=router_dependencies)
 app.include_router(unit.router, dependencies=router_dependencies)
 app.include_router(usage_status.router, dependencies=router_dependencies)
+app.include_router(rule.router, dependencies=router_dependencies)
 
 
 @app.get("/")
