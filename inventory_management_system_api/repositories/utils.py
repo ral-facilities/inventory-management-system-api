@@ -19,9 +19,9 @@ def list_query(id_fields: dict[str, Optional[str]], entity_type: str) -> dict:
     action.
 
     :param id_fields: List of ID filters to filter `entity_type` by. Each key value is the name of the ID field,
-                      and each value is the value to filter by. The value is converted to a uuid here - a string value
-                      of "null" indicates that the relevant ID should be null, not that there shouldn't be a query on
-                      it.
+                      and each value is the value to filter by. The value is converted to a CustomObjectId here - a
+                      string value of "null" indicates that the relevant ID should be null, not that there shouldn't be
+                      a query on it.
     :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging)
     :return: Dictionary representing the query to pass to a pymongo's Collection `find` function or aggregate pipeline
              match stage.
