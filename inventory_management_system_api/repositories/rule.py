@@ -9,6 +9,7 @@ from pymongo.collection import Collection
 
 from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.models.rule import RuleOut
+from inventory_management_system_api.repositories import utils
 
 
 class RuleRepo:
@@ -25,15 +26,27 @@ class RuleRepo:
         self._database = database
         self._rules_collection: Collection = self._database.rules
 
-    def list(self, session: Optional[ClientSession] = None) -> list[RuleOut]:
+    def list(
+        self,
+        src_system_type_id: Optional[str],
+        dst_system_type_id: Optional[str],
+        session: Optional[ClientSession] = None,
+    ) -> list[RuleOut]:
         """
         Retrieve rules from a MongoDB database based on the provided filters.
 
+        :param src_system_type_id: `src_system_type_id` to filter rules by.
+        :param dst_system_type_id: `dst_system_type_id` to filter rules by.
         :param session: PyMongo ClientSession to use for database operations.
         :return: List of rules or an empty list if no rules are retrieved.
         """
         result = self._rules_collection.aggregate(
             [
+                {
+                    "$match": utils.list_query(
+                        {"src_system_type_id": src_system_type_id, "dst_system_type_id": dst_system_type_id}, "rules"
+                    )
+                },
                 {
                     "$lookup": {
                         "from": "system_types",

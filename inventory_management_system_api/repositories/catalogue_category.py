@@ -126,7 +126,7 @@ class CatalogueCategoryRepo:
         :return: A list of catalogue categories, or an empty list if no catalogue categories are returned by the
                  database.
         """
-        query = utils.list_query(parent_id, "catalogue categories")
+        query = utils.list_query({"parent_id": parent_id}, "catalogue categories")
 
         catalogue_categories = self._catalogue_categories_collection.find(query, session=session)
         return [CatalogueCategoryOut(**catalogue_category) for catalogue_category in catalogue_categories]

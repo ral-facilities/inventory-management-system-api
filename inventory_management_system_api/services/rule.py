@@ -2,7 +2,7 @@
 Module for providing a service for managing rules using the `RuleRepo` repository.
 """
 
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import Depends
 
@@ -23,10 +23,12 @@ class RuleService:
         """
         self._rule_repository = rule_repository
 
-    def list(self) -> list[RuleOut]:
+    def list(self, src_system_type_id: Optional[str], dst_system_type_id: Optional[str]) -> list[RuleOut]:
         """
         Retrieve rules based on the provided filters.
 
+        :param src_system_type_id: `src_system_type_id` to filter rules by.
+        :param dst_system_type_id: `dst_system_type_id` to filter rules by.
         :return: List of rules or an empty list if no rules are retrieved.
         """
-        return self._rule_repository.list()
+        return self._rule_repository.list(src_system_type_id, dst_system_type_id)
