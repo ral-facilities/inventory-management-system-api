@@ -13,7 +13,6 @@ from test.mock_data import (
     USAGE_STATUS_GET_DATA_NEW,
     USAGE_STATUS_GET_DATA_SCRAPPED,
     USAGE_STATUS_GET_DATA_USED,
-    USAGE_STATUS_OUT_DATA_NEW,
     USAGE_STATUS_POST_DATA_CUSTOM,
 )
 from typing import Optional
@@ -256,7 +255,7 @@ class TestDelete(DeleteDSL):
 
     def test_delete_when_part_of_rule(self):
         """Test deleting a usage status when it is part of a rule."""
-        self.delete_usage_status(str(USAGE_STATUS_OUT_DATA_NEW["id"]))
+        self.delete_usage_status(str(USAGE_STATUS_GET_DATA_NEW["id"]))
         self.check_delete_usage_status_failed_with_detail(409, "The specified usage status is part of a rule")
 
     def test_delete_with_non_existent_id(self):

@@ -46,7 +46,7 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     SYSTEM_POST_DATA_NO_PARENT_A,
     UNIT_POST_DATA_MM,
-    USAGE_STATUS_OUT_DATA_IN_USE,
+    USAGE_STATUS_GET_DATA_IN_USE,
 )
 from typing import Any, Optional
 
@@ -811,7 +811,7 @@ class UpdateDSL(ListDSL):
             "notes": "Test notes",
             "catalogue_item_id": self._post_response_catalogue_item.json()["id"],
             "system_id": system_id,
-            "usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["id"],
+            "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
             "properties": [],
         }
         self.test_client.post("/v1/items", json=item_post)

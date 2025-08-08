@@ -38,7 +38,7 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    USAGE_STATUS_OUT_DATA_NEW,
+    USAGE_STATUS_GET_DATA_NEW,
     USAGE_STATUS_POST_DATA_IN_USE,
 )
 from typing import Any, Optional
@@ -889,12 +889,12 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_OUT_DATA_NEW["id"]})
+        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]})
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
-                "usage_status_id": USAGE_STATUS_OUT_DATA_NEW["id"],
-                "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
+                "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
+                "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
             }
         )
 

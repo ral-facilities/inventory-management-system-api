@@ -69,12 +69,13 @@ USAGE_STATUS_IN_DATA_NEW = {
     "code": "new",
 }
 
-USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[0]
-).model_dump()
+USAGE_STATUS_OUT_DATA_NEW = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[0],
+}
 
 USAGE_STATUS_GET_DATA_NEW = {
-    **USAGE_STATUS_OUT_DATA_NEW,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_NEW).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -83,12 +84,13 @@ USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
 
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
 
-USAGE_STATUS_OUT_DATA_IN_USE = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[1]
-).model_dump()
+USAGE_STATUS_OUT_DATA_IN_USE = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[1],
+}
 
 USAGE_STATUS_GET_DATA_IN_USE = {
-    **USAGE_STATUS_OUT_DATA_IN_USE,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_IN_USE).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -100,12 +102,13 @@ USAGE_STATUS_IN_DATA_USED = {
     "code": "used",
 }
 
-USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[2]
-).model_dump()
+USAGE_STATUS_OUT_DATA_USED = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[2],
+}
 
 USAGE_STATUS_GET_DATA_USED = {
-    **USAGE_STATUS_OUT_DATA_USED,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_USED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -117,12 +120,13 @@ USAGE_STATUS_IN_DATA_SCRAPPED = {
     "code": "scrapped",
 }
 
-USAGE_STATUS_OUT_DATA_SCRAPPED = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[3]
-).model_dump()
+USAGE_STATUS_OUT_DATA_SCRAPPED = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[3],
+}
 
 USAGE_STATUS_GET_DATA_SCRAPPED = {
-    **USAGE_STATUS_OUT_DATA_SCRAPPED,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_SCRAPPED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -134,12 +138,10 @@ USAGE_STATUS_IN_DATA_CUSTOM = {
     "code": "custom",
 }
 
-USAGE_STATUS_OUT_DATA_CUSTOM = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), _id=str(ObjectId())
-).model_dump()
+USAGE_STATUS_OUT_DATA_CUSTOM = {**UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), "_id": ObjectId()}
 
 USAGE_STATUS_GET_DATA_CUSTOM = {
-    **USAGE_STATUS_OUT_DATA_CUSTOM,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_CUSTOM).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
 }
@@ -676,21 +678,21 @@ BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTI
 
 ITEM_DATA_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
-    "usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["id"],
+    "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
 }
 
 ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_REQUIRED_VALUES_ONLY,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
 }
 
 ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
     "purchase_order_number": None,
     "warranty_end_date": None,
     "asset_number": None,
