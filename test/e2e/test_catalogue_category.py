@@ -427,8 +427,6 @@ class TestGet(GetDSL):
 class GetBreadcrumbsDSL(GetDSL):
     """Base class for breadcrumbs tests."""
 
-    _get_response_catalogue_category: Response
-
     _posted_catalogue_categories_get_data: list[dict]
 
     @pytest.fixture(autouse=True)

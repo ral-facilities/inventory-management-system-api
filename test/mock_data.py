@@ -20,6 +20,8 @@ from bson import ObjectId
 from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
+# pylint: disable=too-many-lines
+
 # ---------------------------- GENERAL -----------------------------
 
 # Used for _GET_DATA's as when comparing these will not be possible to know at runtime
@@ -831,28 +833,15 @@ SYSTEM_TYPES_GET_DATA = [
 
 # Storage
 SYSTEM_TYPE_OUT_DATA_STORAGE = SYSTEM_TYPES_OUT_DATA[0]
-SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
+SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
 
 # Operational
-SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
+SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
 SYSTEM_TYPE_GET_DATA_OPERATIONAL = SYSTEM_TYPES_GET_DATA[1]
 
-# ---------------------------------- RULES ----------------------------------
-
-RULES_OUT_DATA = [
-    {
-        "_id": ObjectId(),
-        "src_system_type": None,
-        "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
-        "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
-    },
-    {
-        "_id": ObjectId(),
-        "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
-        "dst_system_type": None,
-        "dst_usage_status": None,
-    },
-]
+# Scrapped
+SYSTEM_TYPE_OUT_DATA_SCRAPPED = SYSTEM_TYPES_OUT_DATA[2]
+SYSTEM_TYPE_GET_DATA_SCRAPPED = SYSTEM_TYPES_GET_DATA[2]
 
 # --------------------------------- SYSTEMS ---------------------------------
 
@@ -944,3 +933,97 @@ SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
     "_id": SparesDefinitionOut.SETTING_ID,
     "system_type_ids": [SYSTEM_TYPE_GET_DATA_STORAGE["id"], SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
 }
+
+# ---------------------------------- RULES ----------------------------------
+
+# Creation in storage
+RULE_OUT_DATA_STORAGE_CREATION = {
+    "_id": ObjectId(),
+    "src_system_type": None,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
+}
+
+RULE_GET_DATA_STORAGE_CREATION = {
+    "id": ANY,
+    "src_system_type": None,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_NEW,
+}
+
+# Deletion from storage
+RULE_OUT_DATA_STORAGE_DELETION = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_system_type": None,
+    "dst_usage_status": None,
+}
+
+RULE_GET_DATA_STORAGE_DELETION = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_system_type": None,
+    "dst_usage_status": None,
+}
+
+# Storage to operational
+RULE_OUT_DATA_STORAGE_TO_OPERATIONAL = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_IN_USE,
+}
+
+RULE_GET_DATA_STORAGE_TO_OPERATIONAL = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_IN_USE,
+}
+
+# Operational to storage
+RULE_OUT_DATA_OPERATIONAL_TO_STORAGE = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_USED,
+}
+
+RULE_GET_DATA_OPERATIONAL_TO_STORAGE = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_USED,
+}
+
+# Operational to scrapped
+RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_SCRAPPED,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_SCRAPPED,
+}
+
+RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_SCRAPPED,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_SCRAPPED,
+}
+
+
+RULES_OUT_DATA = [
+    RULE_OUT_DATA_STORAGE_CREATION,
+    RULE_OUT_DATA_STORAGE_DELETION,
+    RULE_OUT_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_OUT_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED,
+]
+
+RULES_GET_DATA = [
+    RULE_GET_DATA_STORAGE_CREATION,
+    RULE_GET_DATA_STORAGE_DELETION,
+    RULE_GET_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_GET_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED,
+]
