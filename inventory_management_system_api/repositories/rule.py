@@ -7,6 +7,7 @@ from typing import Optional
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.models.rule import RuleOut
 from inventory_management_system_api.repositories import utils
@@ -89,3 +90,29 @@ class RuleRepo:
         )
         rules = list(result)
         return [RuleOut(**rule) for rule in rules]
+
+    def check_exists(
+        self,
+        src_system_type_id: Optional[str],
+        dst_system_type_id: Optional[str],
+        dst_usage_status_id: Optional[str],
+        session: Optional[ClientSession] = None,
+    ) -> bool:
+        """Checks whether a rule with the given system type and usage status IDs exists, for checking if an operation
+        is valid or not.
+
+        :param src_system_type_id: ID of the source system type to query by.
+        :param dst_system_type_id: ID of the destination system type to query by.
+        :param dst_usage_status_id: ID of the destination usage status to query by.
+        :session: PyMongo ClientSession to use for database operations.
+        :return: Whether at least one rule with the given parameters was found or not.
+        """
+        rule = self._rules_collection.find_one(
+            {
+                "src_system_type_id": CustomObjectId(src_system_type_id) if src_system_type_id else None,
+                "dst_system_type_id": CustomObjectId(dst_system_type_id) if dst_system_type_id else None,
+                "dst_usage_status_id": CustomObjectId(dst_usage_status_id) if dst_usage_status_id else None,
+            },
+            session=session,
+        )
+        return rule is not None
