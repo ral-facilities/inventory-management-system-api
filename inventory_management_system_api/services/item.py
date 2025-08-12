@@ -175,10 +175,10 @@ class ItemService:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
 
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
-        changing_usage_status = "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id
+        updating_usage_status = "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id
 
         usage_status_id = stored_item.usage_status_id
-        if changing_usage_status:
+        if updating_usage_status:
             if not moving_system:
                 raise InvalidActionError(
                     "Cannot change usage status without moving between systems according to a defined rule"
@@ -195,9 +195,9 @@ class ItemService:
             if not system:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
 
+            current_system = self._system_repository.get(stored_item.system_id)
             if current_system.type_id != system.type_id:
                 # System type is changing - Ensure the moving operation is allowed by a rule
-                current_system = self._system_repository.get(stored_item.system_id)
                 if not self._rule_repository.check_exists(
                     src_system_type_id=current_system.type_id,
                     dst_system_type_id=system.type_id,
@@ -206,7 +206,7 @@ class ItemService:
                     raise InvalidActionError(
                         "No rule found for moving between the given system's types with the same final usage status"
                     )
-            elif changing_usage_status:
+            elif updating_usage_status:
                 # When system type is not changing - Ensure the usage status is unchanged
                 raise InvalidActionError(
                     "Cannot change usage status of an item when moving between two systems of the same type"
