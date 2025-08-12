@@ -38,7 +38,11 @@ from test.mock_data import (
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
     SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    SYSTEM_TYPE_GET_DATA_SCRAPPED,
+    USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_NEW,
+    USAGE_STATUS_GET_DATA_SCRAPPED,
     USAGE_STATUS_POST_DATA_IN_USE,
 )
 from typing import Any, Optional
@@ -857,7 +861,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"catalogue_item_id": str(ObjectId())})
-        self.check_patch_item_failed_with_detail(422, "Cannot change the catalogue item of an item")
+        self.check_patch_item_failed_with_detail(422, "Cannot change the catalogue item the item belongs to")
 
     def test_partial_update_system_id(self):
         """Test updating the `system_id` of an item."""
@@ -884,35 +888,90 @@ class TestUpdate(UpdateDSL):
         self.patch_item(item_id, {"system_id": "invalid-id"})
         self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
 
+    def test_partial_update_system_and_usage_status_ids(self):
+        """Test updating the `system_id` and `usage_status_id` of an item."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(
+            {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]}
+        )
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
+        self.check_patch_item_success(
+            {
+                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
+                "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
+            }
+        )
+
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_system_types(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when there isn't a rule defined for the change
+        of system types (due to the transition itself not being defined, not just the final usage status)."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(
+            {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "type_id": SYSTEM_TYPE_GET_DATA_SCRAPPED["id"]}
+        )
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "No rule found for moving between the given system's types with the same final usage status"
+        )
+
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_usage_status(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when there isn't a rule defined for the change
+        of system types (due to the final usage status being wrong, not the transition itself)."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(
+            {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]}
+        )
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "No rule found for moving between the given system's types with the same final usage status"
+        )
+
+    def test_partial_update_system_and_usage_status_ids_when_systems_have_same_type(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when the current and new systems have the same
+        type."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "Cannot change usage status of an item when moving between two systems of the same type"
+        )
+
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_usage_status_id(self):
+        """Test updating the `system_id` while also updating its `usage_status_id` to a non-existent usage status."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": str(ObjectId())})
+        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+
+    def test_partial_update_system_and_usage_status_ids_with_invalid_usage_status_id(self):
+        """Test updating the `system_id` while also updating its `usage_status_id` to an invalid ID."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": "invalid-id"})
+        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+
     def test_partial_update_usage_status_id(self):
         """Test updating the `usage_status_id` of an item."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]})
-        self.check_patch_item_success(
-            {
-                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
-                "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
-                "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
-            }
+        self.check_patch_item_failed_with_detail(
+            422, "Cannot change usage status without moving between systems according to a defined rule"
         )
-
-    def test_partial_update_usage_status_id_with_non_existent_id(self):
-        """Test updating the `usage_status_id` of an item to a non-existent system."""
-
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
-
-        self.patch_item(item_id, {"usage_status_id": str(ObjectId())})
-        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
-
-    def test_partial_update_usage_status_id_with_invalid_id(self):
-        """Test updating the `usage_status_id` of an item to an invalid ID."""
-
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
-
-        self.patch_item(item_id, {"usage_status_id": "invalid-id"})
-        self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
 
     def test_partial_update_properties_with_no_properties_provided(self):
         """Test updating the `properties` of an item to override none of the catalogue item properties."""

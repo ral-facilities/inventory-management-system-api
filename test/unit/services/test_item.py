@@ -1147,7 +1147,6 @@ class TestUpdate(UpdateDSL):
             stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
             stored_rule_exists=True,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
-            # TODO: Rename systems to mention what type???
             new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
         )
         self.call_update(item_id)
@@ -1167,7 +1166,6 @@ class TestUpdate(UpdateDSL):
             stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
             stored_rule_exists=False,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
-            # TODO: Rename systems to mention what type???
             new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
@@ -1176,7 +1174,8 @@ class TestUpdate(UpdateDSL):
         )
 
     def test_update_system_and_usage_status_ids_when_systems_have_same_type(self):
-        """Test updating an item's `system_id` and `usage_status_id` when the systems have the same type."""
+        """Test updating an item's `system_id` and `usage_status_id` when the current and new systems have the same
+        type."""
 
         item_id = str(ObjectId())
 

@@ -18,6 +18,7 @@ from test.mock_data import (
     SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     SYSTEM_TYPE_GET_DATA_STORAGE,
+    USAGE_STATUS_GET_DATA_USED,
 )
 from typing import Optional
 
@@ -124,19 +125,20 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
             for system_type_id in system_type_ids:
                 self.post_item_in_system_with_type_id(system_type_id)
 
-    def patch_item_system_id_to_one_with_type_id(self, item_id: str, system_type_id: str) -> None:
+    def patch_item_system_id_to_one_with_type_id(self, item_id: str, system_type_id: str, usage_status_id: str) -> None:
         """
         Utility method that patches an item's `system_id` to one that has the specified type ID.
 
         :param item_id: ID of the item to patch.
         :param system_type_id: Type ID of the system the item should be put in.
+        :param usage_status_id: Usage status ID to use when moving the item.
         """
 
         # First ensure there is a system to place the item in
         system_id = self._system_type_map.get(system_type_id)
         if not system_id:
             system_id = self.post_system_with_type_id(system_type_id)
-        self.patch_item(item_id, {"system_id": system_id})
+        self.patch_item(item_id, {"system_id": system_id, "usage_status_id": usage_status_id})
 
     def check_catalogue_item_spares(self, expected_number_of_spares_list: list[Optional[int]]) -> None:
         """
@@ -223,7 +225,9 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         self.check_catalogue_item_spares([0, 1])
 
         # Update the item's `system_id` so it becomes a spare and ensure only its catalogue item is updated
-        self.patch_item_system_id_to_one_with_type_id(item_id, SYSTEM_TYPE_GET_DATA_STORAGE["id"])
+        self.patch_item_system_id_to_one_with_type_id(
+            item_id, SYSTEM_TYPE_GET_DATA_STORAGE["id"], USAGE_STATUS_GET_DATA_USED["id"]
+        )
         self.check_catalogue_item_spares([0, 2])
 
     def test_delete_item_after_spares_definition_set(self):
