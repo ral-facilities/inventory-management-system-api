@@ -142,8 +142,6 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
-    # pylint:disable=too-many-locals
-    # pylint:disable=too-many-branches
     def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
         """
         Update an item by its ID.
@@ -155,14 +153,6 @@ class ItemService:
         :param item: The item containing the fields that need to be updated.
         :raises MissingRecordError: If the item doesn't exist.
         :raises InvalidActionError: If attempting to change the catalogue item of the item.
-        :raises InvalidActionError: If attempting to change the usage status without also moving the item between
-                                    systems.
-        :raises MissingRecordError: If the usage status doesn't exist.
-        :raises MissingRecordError: If the system doesn't exist.
-        :raises InvalidActionError: If moving the item between systems of different type and the moving rule doesn't
-                                    exist.
-        :raises InvalidActionError: If moving the item between systems of the same type and trying to change the usage
-                                    status.
         :return: The updated item.
         """
         update_data = item.model_dump(exclude_unset=True)
@@ -175,6 +165,65 @@ class ItemService:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
 
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
+
+        self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system)
+        self._handle_properties_update(item, stored_item, update_data)
+
+        # Moving system could effect the number of spares of the catalogue item as the type of the system might be
+        # different
+        if moving_system:
+            # Can't currently move items, so just use the stored catalogue item
+            with self._start_transaction_impacting_number_of_spares(
+                "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
+            ) as session:
+                return self._item_repository.update(
+                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
+                )
+
+        return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
+
+    def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
+        """
+        Delete an item by its ID.
+
+        :param item_id: The ID of the item to delete.
+        :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
+        :raises MissingRecordError: If the item doesn't exist.
+        """
+        item = self.get(item_id)
+        if item is None:
+            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+
+        # First, attempt to delete any attachments and/or images that might be associated with this item.
+        if config.object_storage.enabled:
+            ObjectStorageAPIClient.delete_attachments(item_id, access_token)
+            ObjectStorageAPIClient.delete_images(item_id, access_token)
+
+        # Deleting could effect the number of spares of the catalogue item if this one is currently a spare
+        with self._start_transaction_impacting_number_of_spares("deleting item", item.catalogue_item_id) as session:
+            return self._item_repository.delete(item_id, session=session)
+
+    def _handle_system_and_usage_status_id_update(
+        self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict, moving_system: bool
+    ) -> None:
+        """
+        Handle an update request that could modify the `system_id` or `usage_status_id` of the item.
+
+        Also inserts the new usage status value into `update_data` when updating the `usage_status_id`.
+
+        :param item: Item containing the fields to be updated.
+        :param stored_item: Current stored item from the database.
+        :param update_data: Dictionary containing the update data.
+        :raises InvalidActionError: If attempting to change the usage status without also moving the item between
+                                    systems.
+        :raises MissingRecordError: If the usage status doesn't exist.
+        :raises MissingRecordError: If the system doesn't exist.
+        :raises InvalidActionError: If moving the item between systems of different type and the moving rule doesn't
+                                    exist.
+        :raises InvalidActionError: If moving the item between systems of the same type and trying to change the usage
+                                    status.
+        """
+
         updating_usage_status = "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id
 
         usage_status_id = stored_item.usage_status_id
@@ -212,9 +261,17 @@ class ItemService:
                     "Cannot change usage status of an item when moving between two systems of the same type"
                 )
 
-        # If catalogue item ID not supplied then it will be fetched, and its parent catalogue category.
-        # the defined (at a catalogue category level) and supplied properties will be used to find
-        # missing supplied properties. They will then be processed and validated.
+    def _handle_properties_update(self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict) -> None:
+        """
+        Handle an update request that could modify the `properties` of the item.
+
+        Also inserts the new properties value into `update_data` when updating the `properties`.
+
+        :param item: Item containing the fields to be updated.
+        :param stored_item: Current stored item from the database.
+        :param update_data: Dictionary containing the update data.
+        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        """
 
         if "properties" in update_data:
             catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
@@ -233,43 +290,6 @@ class ItemService:
             supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
 
             update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
-
-        # Moving system could effect the number of spares of the catalogue item as the type of the system might be
-        # different
-        if moving_system:
-            # Can't currently move items, so just use the stored catalogue item
-            with self._start_transaction_impacting_number_of_spares(
-                "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
-            ) as session:
-                return self._item_repository.update(
-                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
-                )
-
-        return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
-
-    # pylint:enable=too-many-branches
-    # pylint:enable=too-many-locals
-
-    def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
-        """
-        Delete an item by its ID.
-
-        :param item_id: The ID of the item to delete.
-        :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
-        :raises MissingRecordError: If the item doesn't exist.
-        """
-        item = self.get(item_id)
-        if item is None:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
-
-        # First, attempt to delete any attachments and/or images that might be associated with this item.
-        if config.object_storage.enabled:
-            ObjectStorageAPIClient.delete_attachments(item_id, access_token)
-            ObjectStorageAPIClient.delete_images(item_id, access_token)
-
-        # Deleting could effect the number of spares of the catalogue item if this one is currently a spare
-        with self._start_transaction_impacting_number_of_spares("deleting item", item.catalogue_item_id) as session:
-            return self._item_repository.delete(item_id, session=session)
 
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]
