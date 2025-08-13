@@ -20,7 +20,6 @@ from test.mock_data import (
     SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     USAGE_STATUS_GET_DATA_IN_USE,
-    USAGE_STATUS_GET_DATA_NEW,
     USAGE_STATUS_IN_DATA_IN_USE,
     USAGE_STATUS_IN_DATA_NEW,
 )
@@ -1203,12 +1202,12 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
             stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_rule_exists=True,
-            new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data={
                 **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
@@ -1225,12 +1224,12 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
             stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_rule_exists=False,
-            new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data={
                 **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
@@ -1253,7 +1252,7 @@ class TestUpdate(UpdateDSL):
             stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
-            new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)

@@ -36,10 +36,9 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
+    SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY,
     SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT,
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
-    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
-    SYSTEM_TYPE_GET_DATA_SCRAPPED,
     USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_SCRAPPED,
     USAGE_STATUS_POST_DATA_IN_USE,
@@ -172,8 +171,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
 
     def post_item_and_prerequisites_no_properties(self, item_data: dict) -> Optional[str]:
         """
-        Utility method that posts an item with the given data and also its prerequisite system, catalogue item and
-        catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
+        Utility method that posts an item with the given data and also its prerequisite system (with a storage type),
+        catalogue item and catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
 
         :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
                           mandatory IDs other than `usage_status_id` missing and any `id`'s replaced by the `name` value
@@ -897,9 +896,7 @@ class TestUpdate(UpdateDSL):
         """Test updating the `system_id` and `usage_status_id` of an item."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
-        new_system_id = self.post_system(
-            {**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]}
-        )
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
         self.check_patch_item_success(
@@ -915,9 +912,7 @@ class TestUpdate(UpdateDSL):
         of system types (due to the transition itself not being defined, not just the final usage status)."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
-        new_system_id = self.post_system(
-            {**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "type_id": SYSTEM_TYPE_GET_DATA_SCRAPPED["id"]}
-        )
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
         self.check_patch_item_failed_with_detail(
@@ -929,9 +924,7 @@ class TestUpdate(UpdateDSL):
         of system types (due to the final usage status being wrong, not the transition itself)."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
-        new_system_id = self.post_system(
-            {**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]}
-        )
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
         self.check_patch_item_failed_with_detail(

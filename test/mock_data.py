@@ -702,7 +702,7 @@ ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY = {
     "properties": [],
 }
 
-# All values, no properties
+# New, All values, no properties
 
 ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
     **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -850,7 +850,7 @@ SYSTEM_TYPE_GET_DATA_SCRAPPED = SYSTEM_TYPES_GET_DATA[2]
 # Storage, No parent, Required values only
 
 SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
-    "name": "System Test Required Values Only",
+    "name": "Storage System Required Values Only",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "importance": "low",
 }
@@ -863,7 +863,7 @@ SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
     "description": None,
     "location": None,
     "owner": None,
-    "code": "system-test-required-values-only",
+    "code": "storage-system-required-values-only",
 }
 
 # Storage, No parent, All values
@@ -871,7 +871,7 @@ SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
 SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
     **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     "parent_id": None,
-    "name": "System Test All Values",
+    "name": "Storage System All Values",
     "description": "Test description",
     "location": "Test location",
     "owner": "Test owner",
@@ -882,7 +882,7 @@ SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
-    "code": "system-test-all-values",
+    "code": "storage-system-all-values",
 }
 
 # Storage, No parent
@@ -915,6 +915,22 @@ SYSTEM_POST_DATA_STORAGE_NO_PARENT_B = {
 SYSTEM_IN_DATA_STORAGE_NO_PARENT_B = {
     **SYSTEM_POST_DATA_STORAGE_NO_PARENT_B,
     "code": "test-name-b",
+}
+
+# Operational, No parent, Required values only
+
+SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY = {
+    "name": "Operational System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+    "importance": "low",
+}
+
+# Scrapped, No parent, Required values only
+
+SYSTEM_POST_DATA_SCRAPPED_REQUIRED_VALUES_ONLY = {
+    "name": "Scrapped System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_SCRAPPED["id"],
+    "importance": "low",
 }
 
 # --------------------------------- SETTINGS ---------------------------------
