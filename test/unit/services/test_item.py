@@ -11,14 +11,15 @@ from test.mock_data import (
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+    ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY,
     SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
-    SYSTEM_IN_DATA_NO_PARENT_A,
-    SYSTEM_IN_DATA_NO_PARENT_B,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_NEW,
     USAGE_STATUS_IN_DATA_IN_USE,
     USAGE_STATUS_IN_DATA_NEW,
@@ -451,7 +452,7 @@ class TestCreate(CreateDSL):
         """Test creating an item without any properties in the catalogue item or item."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -463,7 +464,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when none of the properties present in the catalogue item are defined in the item."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -475,7 +476,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when all properties present in the catalogue item are defined in the item."""
 
         self.mock_create(
-            ITEM_DATA_WITH_ALL_PROPERTIES,
+            ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -487,7 +488,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when there is a spares definition defined."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -500,7 +501,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when there is a spares definition defined and a write conflict occurs."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -514,7 +515,7 @@ class TestCreate(CreateDSL):
         """Test creating an item with a non-existent catalogue item ID."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=None,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -526,7 +527,7 @@ class TestCreate(CreateDSL):
         """Test creating an item with a catalogue item that has a non-existent catalogue category ID."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=None,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -540,7 +541,7 @@ class TestCreate(CreateDSL):
         """Test creating an item with a non-existent usage status ID."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=None,
@@ -1071,8 +1072,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data=ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update(item_id)
@@ -1085,11 +1086,11 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+            item_update_data=ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             stored_catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
         )
@@ -1103,11 +1104,11 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+            item_update_data=ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             stored_catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
         )
@@ -1122,7 +1123,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"catalogue_item_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
@@ -1136,10 +1137,10 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -1152,11 +1153,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -1169,11 +1170,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             raise_write_conflict_once=True,
         )
         self.call_update(item_id)
@@ -1188,7 +1189,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": system_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data=None,
         )
@@ -1203,12 +1204,15 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_rule_exists=True,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
-            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            new_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -1222,12 +1226,15 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_rule_exists=False,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
-            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            new_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
         self.check_update_failed_with_exception(
@@ -1242,12 +1249,12 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
         self.check_update_failed_with_exception(
@@ -1264,7 +1271,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId()), "usage_status_id": usage_status_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_usage_status_in_data=None,
         )
@@ -1278,8 +1285,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data={"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
         )
@@ -1295,7 +1302,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_item_data=None,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
@@ -1402,7 +1409,7 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting an item."""
 
-        self.mock_delete(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_delete(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
@@ -1410,7 +1417,8 @@ class TestDelete(DeleteDSL):
         """Test deleting an item when there is a spares definition defined."""
 
         self.mock_delete(
-            ITEM_DATA_REQUIRED_VALUES_ONLY, stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
         )
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
@@ -1419,7 +1427,7 @@ class TestDelete(DeleteDSL):
         """Test deleting an item when there is a spares definition defined and a write conflict occurs."""
 
         self.mock_delete(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             raise_write_conflict_once=True,
         )

@@ -5,9 +5,9 @@ End-to-End tests for the usage status router.
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
-    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     USAGE_STATUS_GET_DATA_CUSTOM,
     USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_NEW,
@@ -228,7 +228,7 @@ class TestDelete(DeleteDSL):
         )
         catalogue_category = response.json()
 
-        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         system_id = response.json()["id"]
 
         response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -243,7 +243,7 @@ class TestDelete(DeleteDSL):
         catalogue_item = response.json()
 
         item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             "catalogue_item_id": catalogue_item["id"],
             "system_id": system_id,
             "usage_status_id": usage_status_id,

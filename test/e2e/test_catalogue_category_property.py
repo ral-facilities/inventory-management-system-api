@@ -27,7 +27,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_MANDATORY,
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
-    ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+    ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
     PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
@@ -210,7 +210,7 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
         self.get_item(self.item_id)
         self.check_get_item_success(
             {
-                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [
                     PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
                     expected_property_get_data,
@@ -574,7 +574,7 @@ class UpdateDSL(CreateDSL):
         self.get_item(self.item_id)
         self.check_get_item_success(
             {
-                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [
                     PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
                     expected_property_get_data,

@@ -12,10 +12,10 @@ from test.e2e.test_item import DeleteDSL as ItemDeleteDSL
 from test.mock_data import (
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
-    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     SYSTEM_TYPE_GET_DATA_STORAGE,
     USAGE_STATUS_GET_DATA_USED,
@@ -69,7 +69,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
 
         system_id = self.post_system(
             {
-                **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+                **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
                 # Avoid duplicate error
                 "name": f"System {len(self._system_type_map)}",
                 "type_id": type_id,
@@ -93,7 +93,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
 
         # Create an item in the chosen system and current catalogue category
         self.system_id = system_id
-        return self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        return self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
     def post_items_and_prerequisites_with_system_types(self, system_type_ids_lists: list[list[str]]) -> None:
         """

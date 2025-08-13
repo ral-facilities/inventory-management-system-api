@@ -7,13 +7,14 @@ Unit tests for the `SystemService` service.
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-positional-arguments
+# pylint: disable=too-many-lines
 
 from test.mock_data import (
     SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
-    SYSTEM_IN_DATA_NO_PARENT_A,
-    SYSTEM_IN_DATA_NO_PARENT_B,
-    SYSTEM_POST_DATA_NO_PARENT_A,
-    SYSTEM_POST_DATA_NO_PARENT_B,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+    SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
+    SYSTEM_POST_DATA_STORAGE_NO_PARENT_B,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     SYSTEM_TYPE_OUT_DATA_STORAGE,
@@ -252,7 +253,7 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating a system."""
 
-        self.mock_create(SYSTEM_POST_DATA_NO_PARENT_A, system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE)
+        self.mock_create(SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE)
         self.call_create()
         self.check_create_success()
 
@@ -260,9 +261,9 @@ class TestCreate(CreateDSL):
         """Test creating a system with a `parent_id`."""
 
         self.mock_create(
-            {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            {**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
             system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
-            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
         )
         self.call_create()
         self.check_create_success()
@@ -273,7 +274,7 @@ class TestCreate(CreateDSL):
         parent_id = str(ObjectId())
 
         self.mock_create(
-            {**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": parent_id},
+            {**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": parent_id},
             system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
             parent_system_in_data=None,
         )
@@ -285,12 +286,12 @@ class TestCreate(CreateDSL):
 
         self.mock_create(
             {
-                **SYSTEM_POST_DATA_NO_PARENT_A,
+                **SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
                 "parent_id": str(ObjectId()),
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
             },
             system_type_out_data=SYSTEM_TYPE_OUT_DATA_STORAGE,
-            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
         )
         self.call_create_expecting_error(InvalidActionError)
         self.check_create_failed_with_exception("Cannot use a different type_id to the parent system")
@@ -301,7 +302,7 @@ class TestCreate(CreateDSL):
         type_id = str(ObjectId())
 
         self.mock_create(
-            {**SYSTEM_POST_DATA_NO_PARENT_A, "type_id": type_id},
+            {**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "type_id": type_id},
             system_type_out_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
@@ -646,8 +647,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            system_patch_data=SYSTEM_POST_DATA_NO_PARENT_B,
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            system_patch_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_B,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -660,7 +661,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
         )
         self.call_update(system_id)
@@ -675,7 +676,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
         )
@@ -690,9 +691,9 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_post_data={**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_parent_system_in_data={
-                **SYSTEM_IN_DATA_NO_PARENT_B,
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
             },
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
@@ -708,9 +709,9 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_post_data={**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_parent_system_in_data={
-                **SYSTEM_IN_DATA_NO_PARENT_B,
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
             },
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
@@ -728,7 +729,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"type_id": new_type_id},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             new_system_type_out_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
@@ -742,8 +743,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": str(ObjectId())},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
-            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -756,8 +757,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": str(ObjectId())},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
+            new_parent_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
         )
         self.call_update_expecting_error(system_id, InvalidActionError)
         self.check_update_failed_with_exception("Cannot move a system into one with a different type")
@@ -771,9 +775,12 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            new_parent_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -787,10 +794,13 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            new_parent_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -804,9 +814,12 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": str(ObjectId()), "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
-            new_parent_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_B, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
+            new_parent_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
             has_child_elements=True,
         )
         self.call_update_expecting_error(system_id, InvalidActionError)
@@ -820,8 +833,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": None},
-            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_system_post_data={**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             new_parent_system_in_data=None,
         )
         self.call_update(system_id)
@@ -835,8 +848,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": None},
-            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_system_post_data={**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             new_parent_system_in_data=None,
         )
@@ -851,8 +864,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_system_post_data={**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             new_system_type_out_data=SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
             new_parent_system_in_data=None,
         )
@@ -867,8 +880,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": None, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]},
-            stored_system_post_data={**SYSTEM_POST_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            stored_system_post_data={**SYSTEM_POST_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             new_parent_system_in_data=None,
             has_child_elements=True,
         )
@@ -884,7 +897,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"parent_id": new_parent_id},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
             new_parent_system_in_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
@@ -898,7 +911,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             system_id,
             system_patch_data={"description": "A new description"},
-            stored_system_post_data=SYSTEM_POST_DATA_NO_PARENT_A,
+            stored_system_post_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
         )
         self.call_update(system_id)
         self.check_update_success()
@@ -908,7 +921,9 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, system_patch_data=SYSTEM_POST_DATA_NO_PARENT_B, stored_system_post_data=None)
+        self.mock_update(
+            system_id, system_patch_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_B, stored_system_post_data=None
+        )
         self.call_update_expecting_error(system_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
 
