@@ -23,7 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 code-analysis = [
     "black==25.1.0",
-    "pylint==3.3.7",
+    "pylint==3.3.8",
     "inventory-management-system-api[test]"
 ]
 
