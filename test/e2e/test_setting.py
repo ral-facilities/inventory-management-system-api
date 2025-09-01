@@ -191,7 +191,7 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
 
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
 
-        # Create two catalogue items, the first with one item (no spares) and the second with two items (one spare)
+        # Create two catalogue items, the first with one item (one spare) and the second with two items (two spares)
         self.post_items_and_prerequisites_with_system_types(
             [
                 [SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],

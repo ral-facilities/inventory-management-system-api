@@ -206,7 +206,7 @@ class SystemRepo:
             or self._items_collection.find_one({"system_id": system_id}, session=session) is not None
         )
 
-    def write_lock(self, system_id: str, session: ClientSession) -> bool:
+    def write_lock(self, system_id: str, session: ClientSession) -> None:
         """Write locks a system document given its ID by setting a value in the document to itself.
 
         :param system_id: ID of the system document to write lock.

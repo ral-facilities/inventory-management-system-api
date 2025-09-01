@@ -643,7 +643,7 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 
 
 class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
-    """Base class for `count_in_catalogue_item_with_system_type_once_of` tests."""
+    """Base class for `count_in_catalogue_item_with_system_type_one_of` tests."""
 
     _catalogue_item_id: str
     _system_type_ids: list[str]
