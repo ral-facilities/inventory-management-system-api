@@ -185,8 +185,8 @@ class ItemRepo:
 
     def count_in_catalogue_item_with_system_type_one_of(
         self,
-        catalogue_item_id: CustomObjectId,
-        system_type_ids: List[CustomObjectId],
+        catalogue_item_id: ObjectId,
+        system_type_ids: List[ObjectId],
         session: Optional[ClientSession] = None,
     ) -> int:
         """

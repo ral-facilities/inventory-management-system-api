@@ -856,10 +856,10 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
     """Base class for `update_number_of_spares` tests."""
 
-    _update_number_of_spares_catalogue_item_id: CustomObjectId
+    _update_number_of_spares_catalogue_item_id: ObjectId
     _update_number_of_spares_number_of_spares: Optional[int]
 
-    def call_update_number_of_spares(self, catalogue_item_id: CustomObjectId, number_of_spares: Optional[int]) -> None:
+    def call_update_number_of_spares(self, catalogue_item_id: ObjectId, number_of_spares: Optional[int]) -> None:
         """Calls the `CatalogueItemRepo` `update_number_of_spares` method.
 
         :param catalogue_item_id: The ID of the catalogue item to update.

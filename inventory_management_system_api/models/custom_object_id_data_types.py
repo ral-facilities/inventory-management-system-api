@@ -11,7 +11,7 @@ from pydantic_core import CoreSchema, core_schema
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 
 
-class CustomObjectIdField(ObjectId):
+class CustomObjectIdField(CustomObjectId):
     """
     Custom data type for handling MongoDB ObjectId validation.
     """
