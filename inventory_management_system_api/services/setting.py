@@ -31,7 +31,7 @@ class SettingService:
         item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
     ) -> None:
         """
-        Initialise the `SettingService` with `SettingRepo`, `CatalogueItemRepo` and `SystemTypeRepo` repos.
+        Initialise the `SettingService` with `SettingRepo`, `SystemTypeRepo`, `CatalogueItemRepo` and `ItemRepo` repos.
 
         :param setting_repository: `SettingRepo` repository to use.
         :param system_type_repository: `SystemTypeRepo` repository to use.
@@ -75,7 +75,9 @@ class SettingService:
             logger.info("Updating the number of spares for all catalogue items")
             for catalogue_item_id in catalogue_item_ids:
                 number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
-                    catalogue_item_id, spares_definition.system_type_ids, session=session
+                    catalogue_item_id,
+                    spares_definition.system_type_ids,
+                    session=session,
                 )
                 self._catalogue_item_repository.update_number_of_spares(
                     catalogue_item_id, number_of_spares, session=session

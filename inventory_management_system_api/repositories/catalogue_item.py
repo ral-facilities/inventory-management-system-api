@@ -164,7 +164,7 @@ class CatalogueItemRepo:
 
         :param catalogue_category_id: Either `None` or the ID of the catalogue category to filter catalogue items by.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: A list object catalogue item ObjectId's or an empty list if no catalogue items are returned by the
+        :return: A list of catalogue item ObjectId's or an empty list if no catalogue items are returned by the
                  database.
         """
         query = {}
@@ -239,7 +239,7 @@ class CatalogueItemRepo:
 
     def update_number_of_spares(
         self,
-        catalogue_item_id: CustomObjectId,
+        catalogue_item_id: ObjectId,
         number_of_spares: Optional[int],
         session: Optional[ClientSession] = None,
     ) -> None:
