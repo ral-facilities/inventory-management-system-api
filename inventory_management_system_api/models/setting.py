@@ -2,7 +2,6 @@
 Module for defining the database models for representing settings.
 """
 
-from abc import ABC, abstractmethod
 from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -11,16 +10,12 @@ from inventory_management_system_api.models.custom_object_id_data_types import C
 from inventory_management_system_api.models.system_type import SystemTypeOut
 
 
-class SettingInBase(BaseModel, ABC):
+class SettingInBase(BaseModel):
     """
     Base input database model for a setting.
     """
 
-    @property
-    @staticmethod
-    @abstractmethod
-    def SETTING_ID() -> str:  # pylint: disable=invalid-name
-        """ID of the setting. Ensures this value can be obtained from the class type itself as a static variable."""
+    SETTING_ID: ClassVar[str]
 
 
 class SettingOutBase(SettingInBase):
