@@ -643,11 +643,11 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 
 
 class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
-    """Base class for `count_in_catalogue_item_with_system_type_once_of` tests."""
+    """Base class for `count_in_catalogue_item_with_system_type_one_of` tests."""
 
-    _catalogue_item_id: str
-    _system_type_ids: list[str]
-    _expected_count: Optional[None]
+    _catalogue_item_id: ObjectId
+    _system_type_ids: list[ObjectId]
+    _expected_count: Optional[int]
     _obtained_count: int
 
     def mock_count_in_catalogue_item_with_system_type_one_of(self, count: Optional[int]):
@@ -663,7 +663,7 @@ class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
         self.items_collection.aggregate.return_value = [] if count is None else [{"matching_items": count}]
 
     def call_count_in_catalogue_item_with_system_type_one_of(
-        self, catalogue_item_id: str, system_type_ids: list[str]
+        self, catalogue_item_id: ObjectId, system_type_ids: list[ObjectId]
     ) -> None:
         """Calls the `ItemRepo` `count_in_catalogue_item_with_system_type_one_of` method.
 

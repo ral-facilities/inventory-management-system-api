@@ -191,8 +191,8 @@ def fixture_catalogue_item_service(
     setting_repository_mock: Mock,
 ) -> CatalogueItemService:
     """
-    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo` and `CatalogueCategoryRepo`
-    dependencies.
+    Fixture to create a `CatalogueItemService` instance with mocked `CatalogueItemRepo`, `CatalogueCategoryRepo`,
+    `ManufacturerRepo` and `SettingRepo` dependencies.
 
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
@@ -272,7 +272,8 @@ def fixture_system_service(
     system_repository_mock: Mock, system_type_repository_mock: Mock, setting_repository_mock: Mock
 ) -> SystemService:
     """
-    Fixture to create a `SystemService` instance with mocked `SystemRepo` and `SystemTypeRepo` dependencies.
+    Fixture to create a `SystemService` instance with mocked `SystemRepo`, `SystemTypeRepo` and `SettingRepo`
+    dependencies.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
     :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.

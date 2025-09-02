@@ -227,16 +227,16 @@ class SystemService:
         When necessary starts a MongoDB session and transaction, then write locks the system before yielding to allow
         an update to take place using the returned session. This transaction and write lock is only performed in the
         specific case when:
-        - The spares definition is defined.
-        - The `type_id` is being changed.
-        - The current/new `parent_id` will be `None`.
+        1. The spares definition is defined.
+        2. The `type_id` is being changed.
+        3. The current/new `parent_id` will be `None`.
         This in-turn prevents the following issue:
-        - You have a spares definition defined and move an item to a system with nothing currently in it
-        - Another request changes the system type of the system, after the spares have been recounted but before the
-          update is complete.
-        - The request succeeds because the transaction for the move hasn't completed, so the system is still empty.
-        - This leads to a miscalculation of spares. Instead here we force a conflict in such a case instead so the
-          update fails when there is an ongoing move.
+        1. You have a spares definition defined and move an item to a system with nothing currently in it.
+        2. Another request changes the system type of the system, after the spares have been recounted but before the
+           update is complete.
+        3. The request succeeds because the transaction for the move hasn't completed, so the system is still empty.
+        4. This leads to a miscalculation of spares. Instead here we force a conflict in such a case instead so the
+           update fails when there is an ongoing move.
 
         :param action_description: Description of what the contents of the transaction is doing so it can be used in
                                    any logging or raise errors.

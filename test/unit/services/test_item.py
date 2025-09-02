@@ -491,8 +491,9 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_spares_definition_defined_write_conflict(self):
-        """Test creating an item when there is a spares definition defined and a write conflict occurs."""
+    def test_create_with_spares_definition_defined_write_conflict_once(self):
+        """Test creating an item when there is a spares definition defined and a write conflict occurs once and then
+        the create succeeds on retry."""
 
         self.mock_create(
             ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -926,7 +927,7 @@ class UpdateDSL(ItemServiceDSL):
         if self._moving_system:
             self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
                 "updating item",
-                self._stored_item.catalogue_item_id,  # expected_dest_system_id=self._item_patch.system_id
+                self._stored_item.catalogue_item_id,
                 str(self._expected_item_in.system_id),
             )
             self.mock_item_repository.update.assert_called_once_with(
@@ -1048,8 +1049,9 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
-    def test_update_system_id_with_spares_definition_defined_write_conflict(self):
-        """Test updating an item's `system_id` when there is a spares definition defined and a write conflict occurs."""
+    def test_update_system_id_with_spares_definition_defined_write_conflict_once(self):
+        """Test updating an item's `system_id` when there is a spares definition defined and a write conflict occurs
+        once and then the update succeeds on a retry."""
 
         item_id = str(ObjectId())
 
@@ -1239,8 +1241,9 @@ class TestDelete(DeleteDSL):
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
-    def test_delete_with_spares_definition_defined_write_conflict(self):
-        """Test deleting an item when there is a spares definition defined and a write conflict occurs."""
+    def test_delete_with_spares_definition_defined_write_conflict_once(self):
+        """Test deleting an item when there is a spares definition defined and a write conflict occurs once and then
+        the delete succeeds on a retry."""
 
         self.mock_delete(
             ITEM_DATA_REQUIRED_VALUES_ONLY,

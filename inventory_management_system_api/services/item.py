@@ -197,7 +197,8 @@ class ItemService:
         # Moving system could effect the number of spares of the catalogue item as the type of the system might be
         # different
         if moving_system:
-            # Can't currently move items, so just use the stored catalogue item
+            # Can't currently move items, so we can just write lock the stored catalogue item as opposed to checking
+            # the update data.
             with self._start_transaction_impacting_number_of_spares(
                 "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
             ) as session:
@@ -219,7 +220,7 @@ class ItemService:
         """
         item = self.get(item_id)
         if item is None:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+            raise MissingRecordError(f"No item found with ID: {item_id}")
 
         # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
@@ -261,14 +262,14 @@ class ItemService:
         self, action_description: str, catalogue_item_id: str, dest_system_id: Optional[str] = None
     ) -> Generator[Optional[ClientSession], None, None]:
         """
-        Handles recalculation of the `number_of_spares` of a catalogue item for updates that will impact it but only
-        when there is a spares definition is set.
+        Handles recalculation of the `number_of_spares` field of a catalogue item for updates that will impact it but
+        only when there is a spares definition is set.
 
         When necessary, starts a MongoDB session and transaction, then write locks the catalogue item before yielding to
         allow an update to take place using the returned session. Once any tasks using the session context have finished
         it will finish by recalculating the number of spares for the catalogue item before finishing the transaction.
         This write lock prevents similar actions from occurring during the update to prevent an incorrect update e.g. if
-        another item was added between counting the documents and then updating the number of spares field it would
+        another item was added between counting the documents and then updating the `number_of_spares` field it would
         cause a miscount. It also ensures any action executed using the session will either fail or succeed with the
         spares update.
 
@@ -276,8 +277,8 @@ class ItemService:
                                    any logging or raise errors.
         :param catalogue_item_id: ID of the effected catalogue item which will need its `number_of_spares` field
                                   updating.
-        :param system_id: ID of the system being put in/moved to (if applicable). Will be write locked to prevent
-                          editing of system type after counting spares to avoid miscounts.
+        :param dest_system_id: ID of the system being put in/moved to (if applicable). Will be write locked to prevent
+                               editing of system type after counting spares to avoid miscounts.
         """
 
         # Use ObjectIDs from here on to avoid unnecessary conversions particularly for when we set the spares definition
@@ -326,8 +327,8 @@ class ItemService:
                         )
                         retry = False
                 except WriteConflictError as exc:
-                    # Keep retrying, but only we have been retrying for less than 5 seconds so we dont let the request
-                    # take too long and leave potential for it to block other requests if the threadpool is full
+                    # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
+                    # request take too long and leave potential for it to block other requests if the threadpool is full
                     if time.time() - start_time > 5:
                         raise exc
                     # Wait some random time as there is no point in retrying immediately if we are already write
