@@ -2,6 +2,11 @@
 Module for providing an API router which defines routes for managing systems using the `SystemService` service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated, Optional
 
@@ -17,6 +22,7 @@ from inventory_management_system_api.core.exceptions import (
     MissingRecordError,
     ObjectStorageAPIAuthError,
     ObjectStorageAPIServerError,
+    WriteConflictError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.system import SystemPatchSchema, SystemPostSchema, SystemSchema
@@ -36,13 +42,11 @@ SystemServiceDep = Annotated[SystemService, Depends(SystemService)]
     status_code=status.HTTP_201_CREATED,
 )
 def create_system(system: SystemPostSchema, system_service: SystemServiceDep) -> SystemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new system")
     logger.debug("System data: %s", system)
     try:
         system = system_service.create(system)
         return SystemSchema(**system.model_dump())
-    # pylint: disable=duplicate-code
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if system.type_id in str(exc) or "system type" in str(exc).lower():
             message = "The specified system type does not exist"
@@ -60,7 +64,6 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    # pylint: enable=duplicate-code
 
 
 @router.get(path="", summary="Get systems", response_description="List of systems")
@@ -68,7 +71,6 @@ def get_systems(
     system_service: SystemServiceDep,
     parent_id: Annotated[Optional[str], Query(description="Filter systems by parent ID")] = None,
 ) -> list[SystemSchema]:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting Systems")
     if parent_id:
         logger.debug("Parent ID filter: '%s'", parent_id)
@@ -86,7 +88,6 @@ def get_systems(
 def get_system(
     system_id: Annotated[str, Path(description="ID of the system to get")], system_service: SystemServiceDep
 ) -> SystemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting system with ID: %s", system_service)
     message = "System not found"
     try:
@@ -104,8 +105,6 @@ def get_system_breadcrumbs(
     system_id: Annotated[str, Path(description="The ID of the system to get the breadcrumbs for")],
     system_service: SystemServiceDep,
 ) -> BreadcrumbsGetSchema:
-    # pylint: disable=missing-function-docstring
-    # pylint: disable=duplicate-code
     logger.info("Getting breadcrumbs for system with ID: %s", system_id)
     try:
         return system_service.get_breadcrumbs(system_id)
@@ -120,12 +119,10 @@ def get_system_breadcrumbs(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=message,
         ) from exc
-    # pylint: enable=duplicate-code
 
 
 @router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")
 def partial_update_system(system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Partially updating system with ID: %s", system_id)
     logger.debug("System data: %s", system)
 
@@ -149,12 +146,14 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
         message = "A system with the same name already exists within the parent system"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    # pylint:disable=duplicate-code
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    # pylint:enable=duplicate-code
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
 @router.delete(
@@ -168,7 +167,6 @@ def delete_system(
     system_service: SystemServiceDep,
     request: Request,
 ) -> None:
-    # pylint: disable=missing-function-docstring
     logger.info("Deleting system with ID: %s", system_id)
     try:
         system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
@@ -180,7 +178,6 @@ def delete_system(
         message = "System has child elements and cannot be deleted"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    # pylint: disable=duplicate-code
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
         message = "Unable to delete attachments and/or images"
         logger.exception(message)
@@ -189,4 +186,3 @@ def delete_system(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
-    # pylint: enable=duplicate-code

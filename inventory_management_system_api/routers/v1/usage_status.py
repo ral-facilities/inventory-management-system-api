@@ -3,6 +3,11 @@ Module for providing an API router which defines routes for managing Usage statu
 service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated
 
@@ -34,7 +39,6 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
 def create_usage_status(
     usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep
 ) -> UsageStatusSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new usage status")
     logger.debug("Usage status data: %s", usage_status)
 
@@ -48,6 +52,14 @@ def create_usage_status(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
+@router.get(path="", summary="Get usage statuses", response_description="List of usage statuses")
+def get_usage_statuses(usage_status_service: UsageStatusServiceDep) -> list[UsageStatusSchema]:
+    logger.info("Getting Usage statuses")
+
+    usage_statuses = usage_status_service.list()
+    return [UsageStatusSchema(**usage_status.model_dump()) for usage_status in usage_statuses]
+
+
 @router.get(
     path="/{usage_status_id}",
     summary="Get a usage status by ID",
@@ -57,7 +69,6 @@ def get_usage_status(
     usage_status_id: Annotated[str, Path(description="The ID of the usage status to be retrieved")],
     usage_status_service: UsageStatusServiceDep,
 ) -> UsageStatusSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting usage status with ID %s", usage_status_id)
     message = "Usage status not found"
     try:
@@ -71,15 +82,6 @@ def get_usage_status(
     return UsageStatusSchema(**usage_status.model_dump())
 
 
-@router.get(path="", summary="Get usage statuses", response_description="List of usage statuses")
-def get_usage_statuses(usage_status_service: UsageStatusServiceDep) -> list[UsageStatusSchema]:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting Usage statuses")
-
-    usage_statuses = usage_status_service.list()
-    return [UsageStatusSchema(**usage_status.model_dump()) for usage_status in usage_statuses]
-
-
 @router.delete(
     path="/{usage_status_id}",
     summary="Delete a usage status by its ID",
@@ -90,7 +92,6 @@ def delete_usage_status(
     usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],
     usage_status_service: UsageStatusServiceDep,
 ) -> None:
-    # pylint: disable=missing-function-docstring
     logger.info("Deleting usage status with ID: %s", usage_status_id)
     try:
         usage_status_service.delete(usage_status_id)

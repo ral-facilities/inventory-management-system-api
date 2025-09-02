@@ -3,6 +3,11 @@ Module for providing an API router which defines routes for managing catalogue c
 `CatalogueCategoryService` service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated, List, Optional
 
@@ -43,73 +48,6 @@ CatalogueCategoryPropertyServiceDep = Annotated[
 ]
 
 
-@router.get(path="", summary="Get catalogue categories", response_description="List of catalogue categories")
-def get_catalogue_categories(
-    catalogue_category_service: CatalogueCategoryServiceDep,
-    parent_id: Annotated[Optional[str], Query(description="Filter catalogue categories by parent ID")] = None,
-) -> List[CatalogueCategorySchema]:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting catalogue categories")
-    if parent_id:
-        logger.debug("Parent ID filter: '%s'", parent_id)
-
-    try:
-        catalogue_categories = catalogue_category_service.list(parent_id)
-        return [
-            CatalogueCategorySchema(**catalogue_category.model_dump()) for catalogue_category in catalogue_categories
-        ]
-    except InvalidObjectIdError:
-        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
-        # the same as a valid one that doesn't exist i.e. return an empty list
-        return []
-
-
-@router.get(
-    path="/{catalogue_category_id}",
-    summary="Get a catalogue category by ID",
-    response_description="Single catalogue category",
-)
-def get_catalogue_category(
-    catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to get")],
-    catalogue_category_service: CatalogueCategoryServiceDep,
-) -> CatalogueCategorySchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
-    message = "Catalogue category not found"
-    try:
-        catalogue_category = catalogue_category_service.get(catalogue_category_id)
-        if not catalogue_category:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return CatalogueCategorySchema(**catalogue_category.model_dump())
-    except InvalidObjectIdError as exc:
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-
-
-@router.get(path="/{catalogue_category_id}/breadcrumbs", summary="Get breadcrumbs data for a catalogue category")
-def get_catalogue_category_breadcrumbs(
-    catalogue_category_id: Annotated[
-        str, Path(description="The ID of the catalogue category to get the breadcrumbs for")
-    ],
-    catalogue_category_service: CatalogueCategoryServiceDep,
-) -> BreadcrumbsGetSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
-    try:
-        return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        message = "Catalogue category not found"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    except DatabaseIntegrityError as exc:
-        message = "Unable to obtain breadcrumbs"
-        logger.exception(message)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message,
-        ) from exc
-
-
 @router.post(
     path="",
     summary="Create a new catalogue category",
@@ -119,7 +57,6 @@ def get_catalogue_category_breadcrumbs(
 def create_catalogue_category(
     catalogue_category: CatalogueCategoryPostSchema, catalogue_category_service: CatalogueCategoryServiceDep
 ) -> CatalogueCategorySchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new catalogue category")
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
@@ -150,6 +87,70 @@ def create_catalogue_category(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
 
+@router.get(path="", summary="Get catalogue categories", response_description="List of catalogue categories")
+def get_catalogue_categories(
+    catalogue_category_service: CatalogueCategoryServiceDep,
+    parent_id: Annotated[Optional[str], Query(description="Filter catalogue categories by parent ID")] = None,
+) -> List[CatalogueCategorySchema]:
+    logger.info("Getting catalogue categories")
+    if parent_id:
+        logger.debug("Parent ID filter: '%s'", parent_id)
+
+    try:
+        catalogue_categories = catalogue_category_service.list(parent_id)
+        return [
+            CatalogueCategorySchema(**catalogue_category.model_dump()) for catalogue_category in catalogue_categories
+        ]
+    except InvalidObjectIdError:
+        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
+        # the same as a valid one that doesn't exist i.e. return an empty list
+        return []
+
+
+@router.get(
+    path="/{catalogue_category_id}",
+    summary="Get a catalogue category by ID",
+    response_description="Single catalogue category",
+)
+def get_catalogue_category(
+    catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to get")],
+    catalogue_category_service: CatalogueCategoryServiceDep,
+) -> CatalogueCategorySchema:
+    logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
+    message = "Catalogue category not found"
+    try:
+        catalogue_category = catalogue_category_service.get(catalogue_category_id)
+        if not catalogue_category:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
+        return CatalogueCategorySchema(**catalogue_category.model_dump())
+    except InvalidObjectIdError as exc:
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+
+@router.get(path="/{catalogue_category_id}/breadcrumbs", summary="Get breadcrumbs data for a catalogue category")
+def get_catalogue_category_breadcrumbs(
+    catalogue_category_id: Annotated[
+        str, Path(description="The ID of the catalogue category to get the breadcrumbs for")
+    ],
+    catalogue_category_service: CatalogueCategoryServiceDep,
+) -> BreadcrumbsGetSchema:
+    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
+    try:
+        return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "Catalogue category not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to obtain breadcrumbs"
+        logger.exception(message)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=message,
+        ) from exc
+
+
 @router.patch(
     path="/{catalogue_category_id}",
     summary="Update a catalogue category partially by ID",
@@ -160,7 +161,6 @@ def partial_update_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to update")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Partially updating catalogue category with ID: %s", catalogue_category_id)
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
@@ -219,7 +219,6 @@ def delete_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to delete")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> None:
-    # pylint: disable=missing-function-docstring
     logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
     try:
         catalogue_category_service.delete(catalogue_category_id)
@@ -244,7 +243,6 @@ def create_property(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to add a property to")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new property at the catalogue category level")
     logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
@@ -292,7 +290,6 @@ def partial_update_property(
     property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
-    # pylint: disable=missing-function-docstring
     logger.info(
         "Partially updating catalogue category with ID %s's property with ID: %s",
         catalogue_category_id,
@@ -313,7 +310,6 @@ def partial_update_property(
             message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    # pylint:disable=duplicate-code
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc

@@ -2,18 +2,23 @@
 Module for providing a service for managing systems using the `SystemRepo` repository.
 """
 
-from typing import Annotated, Optional
+from contextlib import contextmanager
+from typing import Annotated, Generator, Optional
 
 from fastapi import Depends
+from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
     MissingRecordError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.system import SystemIn, SystemOut
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -30,6 +35,7 @@ class SystemService:
         self,
         system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
         system_type_repository: Annotated[SystemTypeRepo, Depends(SystemTypeRepo)],
+        setting_repository: Annotated[SettingRepo, Depends(SettingRepo)],
     ) -> None:
         """
         Initialise the `SystemService` with a `SystemRepo` repository.
@@ -39,6 +45,7 @@ class SystemService:
         """
         self._system_repository = system_repository
         self._system_type_repository = system_type_repository
+        self._setting_repository = setting_repository
 
     def create(self, system: SystemPostSchema) -> SystemOut:
         """
@@ -111,11 +118,6 @@ class SystemService:
         :param system_id: ID of the system to updated
         :param system: System containing the fields to be updated
         :raises MissingRecordError: When the system with the given ID doesn't exist
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
-        :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
-        :raises InvalidActionError: When attempting to change the system type while the system has child elements.
-        :raises InvalidActionError: When attempting to change the parent of the system to one with a different type
-                                    without also changing the type to match.
         :return: The updated system
         """
         stored_system = self.get(system_id)
@@ -124,12 +126,19 @@ class SystemService:
 
         update_data = system.model_dump(exclude_unset=True)
 
-        self._validate_type_and_parent_update(system_id, system, stored_system, update_data)
-
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
 
-        return self._system_repository.update(system_id, SystemIn(**{**stored_system.model_dump(), **update_data}))
+        with self._start_transaction_effected_by_spares_calculation(
+            "updating system", system_id, system, stored_system, update_data
+        ) as session:
+            # Perform this validation after any potential write lock to ensure no further updates occur after
+            # the validation until the update is fully complete
+            self._validate_type_and_parent_update(system_id, system, stored_system, update_data)
+
+            return self._system_repository.update(
+                system_id, SystemIn(**{**stored_system.model_dump(), **update_data}), session=session
+            )
 
     def delete(self, system_id: str, access_token: Optional[str] = None) -> None:
         """
@@ -200,3 +209,62 @@ class SystemService:
                     if parent_id_changing
                     else "Cannot update the system's type to be different to its parent"
                 )
+
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
+    @contextmanager
+    def _start_transaction_effected_by_spares_calculation(
+        self,
+        action_description: str,
+        system_id: str,
+        system: SystemPatchSchema,
+        stored_system: SystemOut,
+        update_data: dict,
+    ) -> Generator[Optional[ClientSession], None, None]:
+        """
+        Handles write locking to prevent unintended impacts to spares calculations.
+
+        When necessary starts a MongoDB session and transaction, then write locks the system before yielding to allow
+        an update to take place using the returned session. This transaction and write lock is only performed in the
+        specific case when:
+        1. The spares definition is defined.
+        2. The `type_id` is being changed.
+        3. The current/new `parent_id` will be `None`.
+        This in-turn prevents the following issue:
+        1. You have a spares definition defined and move an item to a system with nothing currently in it.
+        2. Another request changes the system type of the system, after the spares have been recounted but before the
+           update is complete.
+        3. The request succeeds because the transaction for the move hasn't completed, so the system is still empty.
+        4. This leads to a miscalculation of spares. Instead here we force a conflict in such a case instead so the
+           update fails when there is an ongoing move.
+
+        :param action_description: Description of what the contents of the transaction is doing so it can be used in
+                                   any logging or raise errors.
+        :param system_id: ID of the effected system which may need write locking.
+        :param system: System containing the fields to be updated.
+        :param stored_system: Current stored system from the database.
+        :param update_data: Dictionary containing the update data.
+        """
+
+        # Firstly obtain the spares definition to figure out if it is defined or not
+        spares_definition = self._setting_repository.get(SparesDefinitionOut)
+
+        type_id_changing = "type_id" in update_data and system.type_id != stored_system.type_id
+
+        if (
+            # No spares definition => Can't have any spares calculation
+            spares_definition is None
+            # Only need to conflict with a spares update when the type is being changed in a root system (non-root
+            # systems are required to have the same type id as their parent anyway)
+            or not type_id_changing
+            or (system.parent_id is not None if "parent_id" in update_data else stored_system.parent_id is not None)
+        ):
+            yield None
+        else:
+            with start_session_transaction(action_description) as session:
+                self._system_repository.write_lock(system_id, session)
+
+                yield session
+
+    # pylint:enable=too-many-arguments
+    # pylint:enable=too-many-positional-arguments

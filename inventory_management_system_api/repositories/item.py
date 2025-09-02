@@ -125,7 +125,7 @@ class ItemRepo:
         logger.info("Deleting item with ID: %s from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+            raise MissingRecordError(f"No item found with ID: {item_id}")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
@@ -182,3 +182,40 @@ class ItemRepo:
         )
 
     # pylint:enable=duplicate-code
+
+    def count_in_catalogue_item_with_system_type_one_of(
+        self,
+        catalogue_item_id: str,
+        system_type_ids: List[str],
+        session: Optional[ClientSession] = None,
+    ) -> int:
+        """
+        Counts the number of items within a catalogue item that are also in systems with one of the given system type
+        IDs.
+
+        :param catalogue_item_id: ID of the catalogue item for which items should be counted.
+        :param system_type_ids: List of system type IDs which should be included in the count.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: Number of items counted.
+        """
+        system_type_ids = [CustomObjectId(system_type_id) for system_type_id in system_type_ids]
+        result = self._items_collection.aggregate(
+            [
+                # Obtain a list of items with the same catalogue item ID
+                {"$match": {"catalogue_item_id": CustomObjectId(catalogue_item_id)}},
+                # Obtain the system the item is in (will be stored as a list but will only be one)
+                {"$lookup": {"from": "systems", "localField": "system_id", "foreignField": "_id", "as": "system"}},
+                # Can unwind so the `system` list becomes just a single field instead of a list, but as we can only
+                # have one system there is no need here (The following line will just match on any of the (one) systems)
+                # {"$unwind": "$system"},
+                # Obtain a list of only those matching the given system types
+                {"$match": {"system.type_id": {"$in": system_type_ids}}},
+                # Obtain the number of matching documents
+                {"$count": "matching_items"},
+            ],
+            session=session,
+        )
+        result = list(result)
+        if len(result) > 0:
+            return result[0]["matching_items"]
+        return 0

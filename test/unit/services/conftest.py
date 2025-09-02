@@ -21,6 +21,7 @@ from inventory_management_system_api.repositories.catalogue_category import Cata
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
@@ -119,6 +120,16 @@ def fixture_usage_status_repository_mock() -> Mock:
     return Mock(UsageStatusRepo)
 
 
+@pytest.fixture(name="setting_repository_mock")
+def fixture_setting_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `SettingRepo` dependency.
+
+    :return: Mocked `SettingRepo` instance.
+    """
+    return Mock(SettingRepo)
+
+
 @pytest.fixture(name="catalogue_category_service")
 def fixture_catalogue_category_service(
     catalogue_category_repository_mock: Mock, unit_repository_mock: Mock
@@ -161,21 +172,31 @@ def fixture_catalogue_category_property_service(
 
 @pytest.fixture(name="catalogue_item_service")
 def fixture_catalogue_item_service(
-    catalogue_item_repository_mock: Mock, catalogue_category_repository_mock: Mock, manufacturer_repository_mock: Mock
+    catalogue_item_repository_mock: Mock,
+    catalogue_category_repository_mock: Mock,
+    manufacturer_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> CatalogueItemService:
     """
-    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo` and `CatalogueCategoryRepo`
-    dependencies.
+    Fixture to create a `CatalogueItemService` instance with mocked `CatalogueItemRepo`, `CatalogueCategoryRepo`,
+    `ManufacturerRepo` and `SettingRepo` dependencies.
 
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `CatalogueItemService` instance with the mocked dependencies.
     """
     return CatalogueItemService(
-        catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock
+        catalogue_item_repository_mock,
+        catalogue_category_repository_mock,
+        manufacturer_repository_mock,
+        setting_repository_mock,
     )
 
 
+# pylint:disable=too-many-arguments
+# pylint:disable=too-many-positional-arguments
 @pytest.fixture(name="item_service")
 def fixture_item_service(
     item_repository_mock: Mock,
@@ -183,6 +204,7 @@ def fixture_item_service(
     catalogue_item_repository_mock: Mock,
     system_repository_mock: Mock,
     usage_status_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> ItemService:
     """
     Fixture to create an `ItemService` instance with mocked `ItemRepo`, `CatalogueItemRepo`, `CatalogueCategoryRepo`,
@@ -191,6 +213,9 @@ def fixture_item_service(
     :param item_repository_mock: Mocked `ItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param system_repository_mock: Mocked `SystemRepo` instance.
+    :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `ItemService` instance with the mocked dependencies.
     """
     return ItemService(
@@ -199,7 +224,12 @@ def fixture_item_service(
         catalogue_item_repository_mock,
         system_repository_mock,
         usage_status_repository_mock,
+        setting_repository_mock,
     )
+
+
+# pylint:enable=too-many-arguments
+# pylint:enable=too-many-positional-arguments
 
 
 @pytest.fixture(name="manufacturer_service")
@@ -225,15 +255,19 @@ def fixture_system_type_service(system_type_repository_mock: Mock) -> SystemType
 
 
 @pytest.fixture(name="system_service")
-def fixture_system_service(system_repository_mock: Mock, system_type_repository_mock: Mock) -> SystemService:
+def fixture_system_service(
+    system_repository_mock: Mock, system_type_repository_mock: Mock, setting_repository_mock: Mock
+) -> SystemService:
     """
-    Fixture to create a `SystemService` instance with a mocked `SystemRepo` dependency.
+    Fixture to create a `SystemService` instance with mocked `SystemRepo`, `SystemTypeRepo` and `SettingRepo`
+    dependencies.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
     :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `SystemService` instance with the mocked dependency.
     """
-    return SystemService(system_repository_mock, system_type_repository_mock)
+    return SystemService(system_repository_mock, system_type_repository_mock, setting_repository_mock)
 
 
 @pytest.fixture(name="unit_service")
