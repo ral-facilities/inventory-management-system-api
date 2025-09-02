@@ -927,7 +927,7 @@ class UpdateDSL(ItemServiceDSL):
         if self._moving_system:
             self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
                 "updating item",
-                self._stored_item.catalogue_item_id,  # expected_dest_system_id=self._item_patch.system_id
+                self._stored_item.catalogue_item_id,
                 str(self._expected_item_in.system_id),
             )
             self.mock_item_repository.update.assert_called_once_with(

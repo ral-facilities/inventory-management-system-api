@@ -220,7 +220,7 @@ class ItemService:
         """
         item = self.get(item_id)
         if item is None:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+            raise MissingRecordError(f"No item found with ID: {item_id}")
 
         # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
