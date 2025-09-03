@@ -645,9 +645,9 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
     """Base class for `count_in_catalogue_item_with_system_type_one_of` tests."""
 
-    _catalogue_item_id: str
-    _system_type_ids: list[str]
-    _expected_count: Optional[None]
+    _catalogue_item_id: ObjectId
+    _system_type_ids: list[ObjectId]
+    _expected_count: Optional[int]
     _obtained_count: int
 
     def mock_count_in_catalogue_item_with_system_type_one_of(self, count: Optional[int]):
@@ -663,7 +663,7 @@ class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
         self.items_collection.aggregate.return_value = [] if count is None else [{"matching_items": count}]
 
     def call_count_in_catalogue_item_with_system_type_one_of(
-        self, catalogue_item_id: str, system_type_ids: list[str]
+        self, catalogue_item_id: ObjectId, system_type_ids: list[ObjectId]
     ) -> None:
         """Calls the `ItemRepo` `count_in_catalogue_item_with_system_type_one_of` method.
 
@@ -680,13 +680,12 @@ class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
     def check_count_in_catalogue_item_with_system_type_one_of(self) -> None:
         """Checks that a prior call to `count_in_catalogue_item_with_system_type_one_of` worked as expected."""
 
-        expected_system_type_ids = [CustomObjectId(system_type_id) for system_type_id in self._system_type_ids]
         self.items_collection.aggregate.assert_called_once_with(
             [
                 # Obtain a list of items with the same catalogue item ID
-                {"$match": {"catalogue_item_id": CustomObjectId(self._catalogue_item_id)}},
+                {"$match": {"catalogue_item_id": self._catalogue_item_id}},
                 {"$lookup": {"from": "systems", "localField": "system_id", "foreignField": "_id", "as": "system"}},
-                {"$match": {"system.type_id": {"$in": expected_system_type_ids}}},
+                {"$match": {"system.type_id": {"$in": self._system_type_ids}}},
                 {"$count": "matching_items"},
             ],
             session=self.mock_session,
@@ -701,12 +700,12 @@ class TestCountInCatalogueItemWithSystemTypeOneOf(CountInCatalogueItemWithSystem
         """Test `count_in_catalogue_item_with_system_type_one_of`."""
 
         self.mock_count_in_catalogue_item_with_system_type_one_of(42)
-        self.call_count_in_catalogue_item_with_system_type_one_of(str(ObjectId()), [str(ObjectId()), str(ObjectId())])
+        self.call_count_in_catalogue_item_with_system_type_one_of(ObjectId(), [ObjectId(), ObjectId()])
         self.check_count_in_catalogue_item_with_system_type_one_of()
 
     def test_count_in_catalogue_item_with_system_type_one_of_when_no_result(self):
         """Test `count_in_catalogue_item_with_system_type_one_of` when there is no result."""
 
         self.mock_count_in_catalogue_item_with_system_type_one_of(None)
-        self.call_count_in_catalogue_item_with_system_type_one_of(str(ObjectId()), [str(ObjectId()), str(ObjectId())])
+        self.call_count_in_catalogue_item_with_system_type_one_of(ObjectId(), [ObjectId(), ObjectId()])
         self.check_count_in_catalogue_item_with_system_type_one_of()

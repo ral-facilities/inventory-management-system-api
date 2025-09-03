@@ -43,8 +43,8 @@ class CatalogueItemService:
         setting_repository: Annotated[SettingRepo, Depends(SettingRepo)],
     ) -> None:
         """
-        Initialise the `CatalogueItemService` with a `CatalogueItemRepo`, `CatalogueCategoryRepo`
-        and `ManufacturerRepo` repos.
+        Initialise the `CatalogueItemService` with `CatalogueItemRepo`, `CatalogueCategoryRepo` and `ManufacturerRepo`
+        repos.
 
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param catalogue_category_repository: The `CatalogueCategoryRepo` repository to use.

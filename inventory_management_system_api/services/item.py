@@ -13,6 +13,7 @@ from fastapi import Depends
 from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
@@ -280,6 +281,9 @@ class ItemService:
                                editing of system type after counting spares to avoid miscounts.
         """
 
+        # Use ObjectIDs from here on to avoid unnecessary conversions particularly for when we set the spares definition
+        catalogue_item_id = CustomObjectId(catalogue_item_id)
+
         # Firstly obtain the spares definition to figure out if it is defined or not
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
 
@@ -315,7 +319,7 @@ class ItemService:
                         logger.info("Updating the number of spares of the catalogue item with ID %s", catalogue_item_id)
                         number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
                             catalogue_item_id,
-                            [system_type.id for system_type in spares_definition.system_types],
+                            [CustomObjectId(system_type.id) for system_type in spares_definition.system_types],
                             session=session,
                         )
                         self._catalogue_item_repository.update_number_of_spares(

@@ -34,6 +34,7 @@ from inventory_management_system_api.services.catalogue_category_property import
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
+from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system import SystemService
 from inventory_management_system_api.services.system_type import SystemTypeService
 from inventory_management_system_api.services.unit import UnitService
@@ -290,6 +291,27 @@ def fixture_usage_status_service(usage_status_repository_mock: Mock) -> UsageSta
     :return: `UsageStatusService` instance with the mocked dependency.
     """
     return UsageStatusService(usage_status_repository_mock)
+
+
+@pytest.fixture(name="setting_service")
+def fixture_setting_service(
+    setting_repository_mock: Mock,
+    system_type_repository_mock: Mock,
+    catalogue_item_repository_mock: Mock,
+    item_repository_mock: Mock,
+) -> SettingService:
+    """
+    Fixture to create a `SettingService` instance with mocked `SettingRepo`, `SystemTypeRepo`, `CatalogueItemRepo` and
+    `ItemRepo` dependencies.
+
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
+    :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
+    :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param item_repository_mock: Mocked `ItemRepo` instance.
+    """
+    return SettingService(
+        setting_repository_mock, system_type_repository_mock, catalogue_item_repository_mock, item_repository_mock
+    )
 
 
 class ServiceTestHelpers:

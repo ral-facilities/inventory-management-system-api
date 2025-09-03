@@ -155,28 +155,35 @@ class CatalogueItemRepo:
         )
         return item is not None
 
-    def list_ids(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> List[ObjectId]:
+    def list_ids(
+        self, catalogue_category_id: Optional[str] = None, session: Optional[ClientSession] = None
+    ) -> List[ObjectId]:
         """
-        Retrieve a list of all catalogue item ids with a specific catalogue_category_id from a MongoDB
-        database. Performs a projection to only include _id. (Required for mass updates of properties
-        to reduce memory usage)
+        Retrieve a list of all catalogue item ids (optionally with a specific catalogue_category_id) from a MongoDB
+        database. Performs a projection to only include _id. (Required for mass updates of to reduce memory usage)
 
-        :param catalogue_category_id: The ID of the catalogue category to filter catalogue items by.
-        :param session: PyMongo ClientSession to use for database operations
-        :return: A list object catalogue item ObjectId's or an empty list if no catalogue items are returned by
-                 the database.
+        :param catalogue_category_id: Either `None` or the ID of the catalogue category to filter catalogue items by.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: A list of catalogue item ObjectId's or an empty list if no catalogue items are returned by the
+                 database.
         """
-        logger.info(
-            "Finding the id's of all catalogue items within the catalogue category with ID '%s' in the database",
-            catalogue_category_id,
-        )
+        query = {}
+        if catalogue_category_id:
+            query["catalogue_category_id"] = CustomObjectId(catalogue_category_id)
+
+        # pylint: disable=duplicate-code
+        message = "Retrieving IDs of all catalogue items from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided filter(s)", message)
+            logger.debug("Provided filter(s): %s", query)
+        # pylint: enable=duplicate-code
 
         # Using distinct has a 16MB limit
         # https://stackoverflow.com/questions/29771192/how-do-i-get-a-list-of-just-the-objectids-using-pymongo
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
-        return self._catalogue_items_collection.find(
-            {"catalogue_category_id": CustomObjectId(catalogue_category_id)}, {"_id": 1}, session=session
-        ).distinct("_id")
+        return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
     def insert_property_to_all_matching(
         self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
@@ -232,7 +239,7 @@ class CatalogueItemRepo:
 
     def update_number_of_spares(
         self,
-        catalogue_item_id: str,
+        catalogue_item_id: ObjectId,
         number_of_spares: Optional[int],
         session: Optional[ClientSession] = None,
     ) -> None:
@@ -247,7 +254,7 @@ class CatalogueItemRepo:
         """
 
         self._catalogue_items_collection.update_one(
-            {"_id": CustomObjectId(catalogue_item_id)},
+            {"_id": catalogue_item_id},
             {"$set": {"number_of_spares": number_of_spares}},
             session=session,
         )

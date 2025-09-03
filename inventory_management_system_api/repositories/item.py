@@ -185,8 +185,8 @@ class ItemRepo:
 
     def count_in_catalogue_item_with_system_type_one_of(
         self,
-        catalogue_item_id: str,
-        system_type_ids: List[str],
+        catalogue_item_id: ObjectId,
+        system_type_ids: List[ObjectId],
         session: Optional[ClientSession] = None,
     ) -> int:
         """
@@ -198,11 +198,10 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :return: Number of items counted.
         """
-        system_type_ids = [CustomObjectId(system_type_id) for system_type_id in system_type_ids]
         result = self._items_collection.aggregate(
             [
                 # Obtain a list of items with the same catalogue item ID
-                {"$match": {"catalogue_item_id": CustomObjectId(catalogue_item_id)}},
+                {"$match": {"catalogue_item_id": catalogue_item_id}},
                 # Obtain the system the item is in (will be stored as a list but will only be one)
                 {"$lookup": {"from": "systems", "localField": "system_id", "foreignField": "_id", "as": "system"}},
                 # Can unwind so the `system` list becomes just a single field instead of a list, but as we can only
