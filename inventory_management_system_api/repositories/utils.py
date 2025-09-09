@@ -28,6 +28,7 @@ def list_query(id_fields: dict[str, Optional[str]], entity_type: str) -> dict:
     """
     query = {}
     for field_name, field_value in id_fields.items():
+        # Only add to query when the value is defined as the default value is always None when a user doesn't specify it
         if field_value:
             query[field_name] = None if field_value == "null" else CustomObjectId(field_value)
 
