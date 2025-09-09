@@ -49,10 +49,10 @@ class SystemService:
 
     def create(self, system: SystemPostSchema) -> SystemOut:
         """
-        Create a new system
+        Create a new system.
 
-        :param system: System to be created
-        :return: Created system
+        :param system: System to be created.
+        :return: Created system.
         :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
         :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
         :raises InvalidActionError: If the system being created has a different `type_id` to its parent.
@@ -86,39 +86,39 @@ class SystemService:
 
     def get(self, system_id: str) -> Optional[SystemOut]:
         """
-        Retrieve a system by its ID
+        Retrieve a system by its ID.
 
-        :param system_id: ID of the system to retrieve
-        :return: Retrieved system or `None` if not found
+        :param system_id: ID of the system to retrieve.
+        :return: Retrieved system or `None` if not found.
         """
         return self._system_repository.get(system_id)
 
     def get_breadcrumbs(self, system_id: str) -> BreadcrumbsGetSchema:
         """
-        Retrieve the breadcrumbs for a specific system
+        Retrieve the breadcrumbs for a specific system.
 
-        :param system_id: ID of the system to retrieve breadcrumbs for
-        :return: Breadcrumbs
+        :param system_id: ID of the system to retrieve breadcrumbs for.
+        :return: Breadcrumbs.
         """
         return self._system_repository.get_breadcrumbs(system_id)
 
     def list(self, parent_id: Optional[str]) -> list[SystemOut]:
         """
-        Retrieve systems based on the provided filters
+        Retrieve systems based on the provided filters.
 
-        :param parent_id: `parent_id` to filter systems by
-        :return: List of systems or an empty list if no systems are retrieved
+        :param parent_id: ID of the parent system to query by, or `None`.
+        :return: List of systems or an empty list if no systems are retrieved.
         """
         return self._system_repository.list(parent_id)
 
     def update(self, system_id: str, system: SystemPatchSchema) -> SystemOut:
         """
-        Update a system by its ID
+        Update a system by its ID.
 
-        :param system_id: ID of the system to updated
-        :param system: System containing the fields to be updated
-        :raises MissingRecordError: When the system with the given ID doesn't exist
-        :return: The updated system
+        :param system_id: ID of the system to updated.
+        :param system: System containing the fields to be updated.
+        :raises MissingRecordError: When the system with the given ID doesn't exist.
+        :return: The updated system.
         """
         stored_system = self.get(system_id)
         if not stored_system:
@@ -142,9 +142,9 @@ class SystemService:
 
     def delete(self, system_id: str, access_token: Optional[str] = None) -> None:
         """
-        Delete a system by its ID
+        Delete a system by its ID.
 
-        :param system_id: ID of the system to delete
+        :param system_id: ID of the system to delete.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
         if self._system_repository.has_child_elements(system_id):
@@ -163,8 +163,8 @@ class SystemService:
         """
         Validate an update request that could modify the `type_id` or `parent_id` of the system.
 
-        :param system_id: ID of the system to updated
-        :param system: System containing the fields to be updated
+        :param system_id: ID of the system to updated.
+        :param system: System containing the fields to be updated.
         :param stored_system: Current stored system from the database.
         :param update_data: Dictionary containing the update data.
         :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.

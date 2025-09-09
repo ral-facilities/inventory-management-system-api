@@ -517,7 +517,9 @@ class ListDSL(CatalogueCategoryRepoDSL):
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
 
-        self.mock_utils.list_query.assert_called_once_with(self._parent_id_filter, "catalogue categories")
+        self.mock_utils.list_query.assert_called_once_with(
+            {"parent_id": self._parent_id_filter}, "catalogue categories"
+        )
         self.catalogue_categories_collection.find.assert_called_once_with(
             self.mock_utils.list_query.return_value, session=self.mock_session
         )

@@ -17,9 +17,9 @@ from test.mock_data import (
     ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
     SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
     SYSTEM_IN_DATA_NO_PARENT_A,
+    USAGE_STATUS_GET_DATA_NEW,
     USAGE_STATUS_IN_DATA_IN_USE,
     USAGE_STATUS_IN_DATA_NEW,
-    USAGE_STATUS_OUT_DATA_NEW,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import List, Optional
@@ -1090,7 +1090,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"usage_status_id": USAGE_STATUS_OUT_DATA_NEW["id"]},
+            item_update_data={"usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
             stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,

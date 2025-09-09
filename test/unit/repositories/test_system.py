@@ -432,12 +432,12 @@ class ListDSL(SystemRepoDSL):
 
         self._parent_id_filter = parent_id
 
-        self._obtained_systems_out = self.system_repository.list(parent_id=parent_id, session=self.mock_session)
+        self._obtained_systems_out = self.system_repository.list(parent_id, session=self.mock_session)
 
     def check_list_success(self):
         """Checks that a prior call to `call_list` worked as expected."""
 
-        self.mock_utils.list_query.assert_called_once_with(self._parent_id_filter, "systems")
+        self.mock_utils.list_query.assert_called_once_with({"parent_id": self._parent_id_filter}, "systems")
         self.systems_collection.find.assert_called_once_with(
             self.mock_utils.list_query.return_value, session=self.mock_session
         )

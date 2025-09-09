@@ -20,6 +20,8 @@ from bson import ObjectId
 from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
+# pylint: disable=too-many-lines
+
 # ---------------------------- GENERAL -----------------------------
 
 # Used for _GET_DATA's as when comparing these will not be possible to know at runtime
@@ -67,12 +69,13 @@ USAGE_STATUS_IN_DATA_NEW = {
     "code": "new",
 }
 
-USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[0]
-).model_dump()
+USAGE_STATUS_OUT_DATA_NEW = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[0],
+}
 
 USAGE_STATUS_GET_DATA_NEW = {
-    **USAGE_STATUS_OUT_DATA_NEW,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_NEW).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -81,12 +84,13 @@ USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
 
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
 
-USAGE_STATUS_OUT_DATA_IN_USE = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[1]
-).model_dump()
+USAGE_STATUS_OUT_DATA_IN_USE = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[1],
+}
 
 USAGE_STATUS_GET_DATA_IN_USE = {
-    **USAGE_STATUS_OUT_DATA_IN_USE,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_IN_USE).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -98,12 +102,13 @@ USAGE_STATUS_IN_DATA_USED = {
     "code": "used",
 }
 
-USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[2]
-).model_dump()
+USAGE_STATUS_OUT_DATA_USED = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[2],
+}
 
 USAGE_STATUS_GET_DATA_USED = {
-    **USAGE_STATUS_OUT_DATA_USED,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_USED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -115,12 +120,13 @@ USAGE_STATUS_IN_DATA_SCRAPPED = {
     "code": "scrapped",
 }
 
-USAGE_STATUS_OUT_DATA_SCRAPPED = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(), _id=PREDEFINED_USAGE_STATUS_IDS[3]
-).model_dump()
+USAGE_STATUS_OUT_DATA_SCRAPPED = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[3],
+}
 
 USAGE_STATUS_GET_DATA_SCRAPPED = {
-    **USAGE_STATUS_OUT_DATA_SCRAPPED,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_SCRAPPED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
 
@@ -132,12 +138,10 @@ USAGE_STATUS_IN_DATA_CUSTOM = {
     "code": "custom",
 }
 
-USAGE_STATUS_OUT_DATA_CUSTOM = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), _id=str(ObjectId())
-).model_dump()
+USAGE_STATUS_OUT_DATA_CUSTOM = {**UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), "_id": ObjectId()}
 
 USAGE_STATUS_GET_DATA_CUSTOM = {
-    **USAGE_STATUS_OUT_DATA_CUSTOM,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_CUSTOM).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
 }
@@ -674,21 +678,21 @@ BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTI
 
 ITEM_DATA_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
-    "usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["id"],
+    "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
 }
 
 ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_REQUIRED_VALUES_ONLY,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
 }
 
 ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
     "purchase_order_number": None,
     "warranty_end_date": None,
     "asset_number": None,
@@ -831,11 +835,15 @@ SYSTEM_TYPES_GET_DATA = [
 
 # Storage
 SYSTEM_TYPE_OUT_DATA_STORAGE = SYSTEM_TYPES_OUT_DATA[0]
-SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
+SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
 
 # Operational
-SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
+SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
 SYSTEM_TYPE_GET_DATA_OPERATIONAL = SYSTEM_TYPES_GET_DATA[1]
+
+# Scrapped
+SYSTEM_TYPE_OUT_DATA_SCRAPPED = SYSTEM_TYPES_OUT_DATA[2]
+SYSTEM_TYPE_GET_DATA_SCRAPPED = SYSTEM_TYPES_GET_DATA[2]
 
 # --------------------------------- SYSTEMS ---------------------------------
 
@@ -927,3 +935,97 @@ SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
     "_id": SparesDefinitionOut.SETTING_ID,
     "system_type_ids": [SYSTEM_TYPE_GET_DATA_STORAGE["id"], SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
 }
+
+# ---------------------------------- RULES ----------------------------------
+
+# Creation in storage
+RULE_OUT_DATA_STORAGE_CREATION = {
+    "_id": ObjectId(),
+    "src_system_type": None,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
+}
+
+RULE_GET_DATA_STORAGE_CREATION = {
+    "id": ANY,
+    "src_system_type": None,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_NEW,
+}
+
+# Deletion from storage
+RULE_OUT_DATA_STORAGE_DELETION = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_system_type": None,
+    "dst_usage_status": None,
+}
+
+RULE_GET_DATA_STORAGE_DELETION = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_system_type": None,
+    "dst_usage_status": None,
+}
+
+# Storage to operational
+RULE_OUT_DATA_STORAGE_TO_OPERATIONAL = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_IN_USE,
+}
+
+RULE_GET_DATA_STORAGE_TO_OPERATIONAL = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_IN_USE,
+}
+
+# Operational to storage
+RULE_OUT_DATA_OPERATIONAL_TO_STORAGE = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_USED,
+}
+
+RULE_GET_DATA_OPERATIONAL_TO_STORAGE = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_USED,
+}
+
+# Operational to scrapped
+RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "_id": ObjectId(),
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_SCRAPPED,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_SCRAPPED,
+}
+
+RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "id": ANY,
+    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_GET_DATA_SCRAPPED,
+    "dst_usage_status": USAGE_STATUS_GET_DATA_SCRAPPED,
+}
+
+
+RULES_OUT_DATA = [
+    RULE_OUT_DATA_STORAGE_CREATION,
+    RULE_OUT_DATA_STORAGE_DELETION,
+    RULE_OUT_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_OUT_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED,
+]
+
+RULES_GET_DATA = [
+    RULE_GET_DATA_STORAGE_CREATION,
+    RULE_GET_DATA_STORAGE_DELETION,
+    RULE_GET_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_GET_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED,
+]
