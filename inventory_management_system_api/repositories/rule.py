@@ -98,13 +98,14 @@ class RuleRepo:
         dst_usage_status_id: Optional[str],
         session: Optional[ClientSession] = None,
     ) -> bool:
-        """Checks whether a rule with the given system type and usage status IDs exists, for checking if an operation
-        is valid or not.
+        """
+        Checks whether a rule with the given system type and usage status IDs exists, for checking if an operation is
+        valid or not.
 
         :param src_system_type_id: ID of the source system type to query by.
         :param dst_system_type_id: ID of the destination system type to query by.
         :param dst_usage_status_id: ID of the destination usage status to query by.
-        :session: PyMongo ClientSession to use for database operations.
+        :param session: PyMongo ClientSession to use for database operations.
         :return: Whether at least one rule with the given parameters was found or not.
         """
         rule = self._rules_collection.find_one(

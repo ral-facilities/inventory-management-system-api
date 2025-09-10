@@ -146,8 +146,8 @@ class ItemService:
         """
         Update an item by its ID.
 
-        When updating properties, existing properties must all be supplied, or they will
-        be overwritten by the properties.
+        When updating properties, existing properties must all be supplied, or they will be overwritten by the
+        properties.
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
