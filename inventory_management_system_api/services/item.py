@@ -167,7 +167,8 @@ class ItemService:
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
 
         self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system)
-        self._handle_properties_update(item, stored_item, update_data)
+        if "properties" in update_data:
+            self._handle_properties_update(item, stored_item, update_data)
 
         # Moving system could effect the number of spares of the catalogue item as the type of the system might be
         # different
@@ -264,7 +265,7 @@ class ItemService:
 
     def _handle_properties_update(self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict) -> None:
         """
-        Handle an update request that could modify the `properties` of the item.
+        Handle an update request that modifies the `properties` of the item.
 
         Also inserts the new properties value into `update_data` when updating the `properties`.
 
@@ -274,23 +275,22 @@ class ItemService:
         :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
         """
 
-        if "properties" in update_data:
-            catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
+        catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
 
-            try:
-                catalogue_category_id = catalogue_item.catalogue_category_id
-                catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
-                if not catalogue_category:
-                    raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
-            except InvalidObjectIdError as exc:
-                raise DatabaseIntegrityError(str(exc)) from exc
+        try:
+            catalogue_category_id = catalogue_item.catalogue_category_id
+            catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+            if not catalogue_category:
+                raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+        except InvalidObjectIdError as exc:
+            raise DatabaseIntegrityError(str(exc)) from exc
 
-            defined_properties = catalogue_category.properties
+        defined_properties = catalogue_category.properties
 
-            # Inherit the missing properties from the corresponding catalogue item
-            supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
+        # Inherit the missing properties from the corresponding catalogue item
+        supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
 
-            update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
+        update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]

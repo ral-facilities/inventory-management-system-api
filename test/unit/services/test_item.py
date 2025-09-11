@@ -791,7 +791,10 @@ class UpdateDSL(ItemServiceDSL):
             new_system_in_data,
         )
 
-        expected_properties_in = self._mock_handle_properties_update(item_update_data, stored_catalogue_category_in)
+        expected_properties_in = []
+        self._updating_properties = "properties" in item_update_data
+        if self._updating_properties:
+            expected_properties_in = self._mock_handle_properties_update(item_update_data, stored_catalogue_category_in)
 
         self._mock_start_transaction_impacting_number_of_spares(
             stored_spares_definition_out_data, raise_write_conflict_once
@@ -971,50 +974,48 @@ class UpdateDSL(ItemServiceDSL):
         :return: A list of expected processed and validated supplied properties for the Item.
         """
 
-        self._updating_properties = "properties" in item_update_data
-
         # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
         property_post_schemas = []
         expected_properties_in = []
-        if self._updating_properties:
-            # Catalogue item
-            ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._stored_catalogue_item_out)
 
-            # Catalogue category
-            self._stored_catalogue_category_out = (
-                CatalogueCategoryOut(
-                    **stored_catalogue_category_in.model_dump(by_alias=True),
-                    id=self._stored_catalogue_item_out.catalogue_category_id,
-                )
-                if stored_catalogue_category_in
-                else None
+        # Catalogue item
+        ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._stored_catalogue_item_out)
+
+        # Catalogue category
+        self._stored_catalogue_category_out = (
+            CatalogueCategoryOut(
+                **stored_catalogue_category_in.model_dump(by_alias=True),
+                id=self._stored_catalogue_item_out.catalogue_category_id,
             )
-            ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
+            if stored_catalogue_category_in
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
 
-            if self._updating_properties and item_update_data["properties"]:
-                _, property_post_schemas = self.construct_properties_in_and_post_with_ids(
-                    stored_catalogue_category_in.properties, item_update_data["properties"]
+        if self._updating_properties and item_update_data["properties"]:
+            _, property_post_schemas = self.construct_properties_in_and_post_with_ids(
+                stored_catalogue_category_in.properties, item_update_data["properties"]
+            )
+
+        # Any missing properties should be inherited from the catalogue item
+        supplied_properties = property_post_schemas
+        supplied_properties_dict = {
+            supplied_property.id: supplied_property for supplied_property in supplied_properties
+        }
+        self._expected_merged_properties = []
+
+        if self._stored_catalogue_item_out and self._stored_catalogue_category_out:
+            for prop in self._stored_catalogue_item_out.properties:
+                supplied_property = supplied_properties_dict.get(prop.id)
+                self._expected_merged_properties.append(
+                    supplied_property if supplied_property else PropertyPostSchema(**prop.model_dump())
                 )
 
-            # Any missing properties should be inherited from the catalogue item
-            supplied_properties = property_post_schemas
-            supplied_properties_dict = {
-                supplied_property.id: supplied_property for supplied_property in supplied_properties
-            }
-            self._expected_merged_properties = []
+            expected_properties_in = utils.process_properties(
+                self._stored_catalogue_category_out.properties, self._expected_merged_properties
+            )
 
-            if self._stored_catalogue_item_out and self._stored_catalogue_category_out:
-                for prop in self._stored_catalogue_item_out.properties:
-                    supplied_property = supplied_properties_dict.get(prop.id)
-                    self._expected_merged_properties.append(
-                        supplied_property if supplied_property else PropertyPostSchema(**prop.model_dump())
-                    )
-
-                expected_properties_in = utils.process_properties(
-                    self._stored_catalogue_category_out.properties, self._expected_merged_properties
-                )
-
-            item_update_data["properties"] = property_post_schemas
+        item_update_data["properties"] = property_post_schemas
 
         return expected_properties_in
 
