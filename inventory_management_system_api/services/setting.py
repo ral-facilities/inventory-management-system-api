@@ -3,7 +3,7 @@ Module for providing a service for managing settings using the `SettingRepo` rep
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Callable, Iterable, Optional
 
 from fastapi import Depends
 
@@ -43,7 +43,9 @@ class SettingService:
         self._catalogue_item_repository = catalogue_item_repository
         self._item_repository = item_repository
 
-    def set_spares_definition(self, spares_definition: SparesDefinitionIn) -> SparesDefinitionOut:
+    def set_spares_definition(
+        self, spares_definition: SparesDefinitionIn, tracker: Optional[Callable[[Iterable], Iterable]] = None
+    ) -> SparesDefinitionOut:
         """
         Sets the spares definition to a new value.
 
@@ -51,6 +53,7 @@ class SettingService:
         are not able to access the API and no requests are currently in progress.
 
         :param spares_definition: New spares definition.
+        :param tracker: Tracker function to use for tracking progress e.g. Rich's track function.
         :return: Updated spares definition.
         :raises MissingRecordError: If any of the system types specified by the given IDs don't exist.
         """
@@ -73,7 +76,7 @@ class SettingService:
 
             # Recalculate the number of spares for each catalogue item
             logger.info("Updating the number of spares for all catalogue items")
-            for catalogue_item_id in catalogue_item_ids:
+            for catalogue_item_id in tracker(catalogue_item_ids) if tracker is not None else catalogue_item_ids:
                 number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
                     catalogue_item_id,
                     spares_definition.system_type_ids,
