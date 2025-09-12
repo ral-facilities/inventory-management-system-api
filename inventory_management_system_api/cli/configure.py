@@ -60,7 +60,7 @@ def display_current_spares_definition(
 T = TypeVar("T")
 
 
-def ask_user_for_indices_selection(message: str, options: list[T]) -> Tuple[list[str], list[T]]:
+def ask_user_for_indices_selection(message: str, options: list[T]) -> Tuple[list[int], list[T]]:
     """Asks the user for a selection of indices and returns the resulting selected indices and the options they
     represent."""
 
@@ -119,6 +119,7 @@ def spares_definition():
     )
 
     cont = typer.confirm("Are you sure you want to select this as your new spares definition?")
+    console.print()
 
     if cont:
         # Now set the spares definition with a progress bar
