@@ -11,13 +11,15 @@ from test.mock_data import (
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+    ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+    ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY,
     SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
-    SYSTEM_IN_DATA_NO_PARENT_A,
-    USAGE_STATUS_GET_DATA_NEW,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_IN_DATA_IN_USE,
     USAGE_STATUS_IN_DATA_NEW,
 )
@@ -57,6 +59,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
     mock_catalogue_category_repository: Mock
     mock_system_repository: Mock
     mock_usage_status_repository: Mock
+    mock_rule_repository: Mock
     mock_setting_repository: Mock
     mock_start_session_transaction: Mock
     item_service: ItemService
@@ -75,6 +78,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         catalogue_category_repository_mock,
         system_repository_mock,
         usage_status_repository_mock,
+        rule_repository_mock,
         setting_repository_mock,
         item_service,
         # Ensures all created and modified times are mocked throughout
@@ -88,6 +92,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         self.mock_catalogue_category_repository = catalogue_category_repository_mock
         self.mock_system_repository = system_repository_mock
         self.mock_usage_status_repository = usage_status_repository_mock
+        self.mock_rule_repository = rule_repository_mock
         self.mock_setting_repository = setting_repository_mock
         self.item_service = item_service
 
@@ -446,7 +451,7 @@ class TestCreate(CreateDSL):
         """Test creating an item without any properties in the catalogue item or item."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -458,7 +463,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when none of the properties present in the catalogue item are defined in the item."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -470,7 +475,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when all properties present in the catalogue item are defined in the item."""
 
         self.mock_create(
-            ITEM_DATA_WITH_ALL_PROPERTIES,
+            ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -482,7 +487,7 @@ class TestCreate(CreateDSL):
         """Test creating an item when there is a spares definition defined."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -496,7 +501,7 @@ class TestCreate(CreateDSL):
         the create succeeds on retry."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -510,7 +515,7 @@ class TestCreate(CreateDSL):
         """Test creating an item with a non-existent catalogue item ID."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=None,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -522,7 +527,7 @@ class TestCreate(CreateDSL):
         """Test creating an item with a catalogue item that has a non-existent catalogue category ID."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=None,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
@@ -536,7 +541,7 @@ class TestCreate(CreateDSL):
         """Test creating an item with a non-existent usage status ID."""
 
         self.mock_create(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             usage_status_in_data=None,
@@ -638,8 +643,10 @@ class UpdateDSL(ItemServiceDSL):
     """Base class for `update` tests."""
 
     _stored_item: Optional[ItemOut]
+    _stored_system_out: Optional[SystemOut]
     _stored_catalogue_item_out: Optional[CatalogueItemOut]
     _stored_catalogue_category_out: Optional[CatalogueCategoryOut]
+    _new_system_out: Optional[SystemOut]
     _item_patch: ItemPatchSchema
     _expected_item_in: ItemIn
     _expected_item_out: MagicMock
@@ -661,11 +668,13 @@ class UpdateDSL(ItemServiceDSL):
         item_update_data: dict,
         stored_item_data: Optional[dict],
         stored_usage_status_in_data: dict,
+        stored_system_in_data: Optional[dict] = None,
         stored_catalogue_item_data: Optional[dict] = None,
         stored_catalogue_category_in_data: Optional[dict] = None,
         stored_spares_definition_out_data: Optional[dict] = None,
-        new_system_in_data: Optional[dict] = None,
+        stored_rule_exists: Optional[bool] = None,
         new_usage_status_in_data: Optional[dict] = None,
+        new_system_in_data: Optional[dict] = None,
         raise_write_conflict_once: bool = False,
     ) -> None:
         """
@@ -679,6 +688,8 @@ class UpdateDSL(ItemServiceDSL):
                                  without mandatory (except usage_status_id) IDs or property IDs.
         :param stored_usage_status_in_data: Dictionary containing the basic usage status data as would be required for a
                                      `UsageStatusIn` database model.
+        :param stored_system_in_data: Dictionary containing the system data for the current stored system as would be
+                                      required for a `SystemIn` database model.
         :param stored_catalogue_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item
                                  data for the existing stored catalogue item as would be required for a
                                  `CatalogueItemPostSchema` but without any mandatory IDs or property IDs.
@@ -687,10 +698,12 @@ class UpdateDSL(ItemServiceDSL):
                                                   `CatalogueCategoryIn` database model.
         :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
                                                   would be required for `SparesDefinitionOut` database model.
-        :param new_system_in_data: Either `None` or a dictionary containing the system data for the new stored system as
-                                   would be required for a `SystemIn` database model.
+        :param stored_rule_exists: Whether a stored rule exists for the update operation (only applicable for moving
+                                   between systems of different types).
         :param new_usage_status_in_data: Either `None` or a dictionary containing the usage status data for the new
                                          stored usage status as would be required for a `UsageStatus` database model.
+        :param new_system_in_data: Either `None` or a dictionary containing the system data for the new stored system as
+                                   would be required for a `SystemIn` database model.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
         """
@@ -763,98 +776,25 @@ class UpdateDSL(ItemServiceDSL):
         )
         ServiceTestHelpers.mock_get(self.mock_item_repository, self._stored_item)
 
-        # Stored system
         self._moving_system = (
             "system_id" in item_update_data
             and self._stored_item is not None
             and self._stored_item.system_id != item_update_data["system_id"]
         )
 
-        if self._moving_system:
-            ServiceTestHelpers.mock_get(
-                self.mock_system_repository,
-                (
-                    SystemOut(
-                        **{
-                            **SystemIn(**new_system_in_data).model_dump(),
-                            "_id": item_update_data["system_id"],
-                        },
-                    )
-                    if new_system_in_data
-                    else None
-                ),
-            )
-
-        # Stored usage status
-        self._updating_usage_status = "usage_status_id" in item_update_data and (
-            stored_item_data and item_update_data["usage_status_id"] != stored_item_data["usage_status_id"]
+        self._mock_handle_system_and_usage_status_id_update(
+            item_update_data,
+            stored_item_data,
+            stored_system_in_data,
+            stored_rule_exists,
+            new_usage_status_in_data,
+            new_system_in_data,
         )
 
-        if self._updating_usage_status:
-            item_update_data["usage_status"] = (
-                new_usage_status_in_data["value"] if new_usage_status_in_data else "unknown"
-            )
-
-            ServiceTestHelpers.mock_get(
-                self.mock_usage_status_repository,
-                (
-                    UsageStatusOut(
-                        **{
-                            **UsageStatusIn(**new_usage_status_in_data).model_dump(),
-                            "_id": item_update_data["usage_status_id"],
-                        },
-                    )
-                    if new_usage_status_in_data
-                    else None
-                ),
-            )
-
-        # Item
-
-        self._updating_properties = "properties" in item_update_data
-
-        # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
-        property_post_schemas = []
         expected_properties_in = []
+        self._updating_properties = "properties" in item_update_data
         if self._updating_properties:
-            # Catalogue item
-            ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._stored_catalogue_item_out)
-
-            # Catalogue category
-            self._stored_catalogue_category_out = (
-                CatalogueCategoryOut(
-                    **stored_catalogue_category_in.model_dump(by_alias=True),
-                    id=self._stored_catalogue_item_out.catalogue_category_id,
-                )
-                if stored_catalogue_category_in_data
-                else None
-            )
-            ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
-
-            if self._updating_properties and item_update_data["properties"]:
-                _, property_post_schemas = self.construct_properties_in_and_post_with_ids(
-                    stored_catalogue_category_in.properties, item_update_data["properties"]
-                )
-
-            # Any missing properties should be inherited from the catalogue item
-            supplied_properties = property_post_schemas
-            supplied_properties_dict = {
-                supplied_property.id: supplied_property for supplied_property in supplied_properties
-            }
-            self._expected_merged_properties = []
-
-            if self._stored_catalogue_item_out and self._stored_catalogue_category_out:
-                for prop in self._stored_catalogue_item_out.properties:
-                    supplied_property = supplied_properties_dict.get(prop.id)
-                    self._expected_merged_properties.append(
-                        supplied_property if supplied_property else PropertyPostSchema(**prop.model_dump())
-                    )
-
-                expected_properties_in = utils.process_properties(
-                    self._stored_catalogue_category_out.properties, self._expected_merged_properties
-                )
-
-            item_update_data["properties"] = property_post_schemas
+            expected_properties_in = self._mock_handle_properties_update(item_update_data, stored_catalogue_category_in)
 
         self._mock_start_transaction_impacting_number_of_spares(
             stored_spares_definition_out_data, raise_write_conflict_once
@@ -904,25 +844,8 @@ class UpdateDSL(ItemServiceDSL):
 
         self.mock_item_repository.get.assert_called_once_with(self._updated_item_id)
 
-        if self._moving_system:
-            self.mock_system_repository.get.assert_called_once_with(self._item_patch.system_id)
-
-        if self._updating_usage_status:
-            self.mock_usage_status_repository.get.assert_called_once_with(self._item_patch.usage_status_id)
-
-        if self._updating_properties:
-            self.mock_catalogue_item_repository.get.assert_called_once_with(self._stored_item.catalogue_item_id)
-
-            self.mock_catalogue_category_repository.get.assert_called_once_with(
-                self._stored_catalogue_item_out.catalogue_category_id
-            )
-
-            self.wrapped_utils.process_properties.assert_called_once_with(
-                self._stored_catalogue_category_out.properties, self._expected_merged_properties
-            )
-        else:
-            self.mock_catalogue_category_repository.get.assert_not_called()
-            self.wrapped_utils.process_properties.assert_not_called()
+        self._check_handle_system_and_usage_status_id_update_success()
+        self._check_handle_properties_update_success()
 
         if self._moving_system:
             self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
@@ -950,6 +873,195 @@ class UpdateDSL(ItemServiceDSL):
 
         assert str(self._update_exception.value) == message
 
+    def _mock_handle_system_and_usage_status_id_update(
+        self,
+        item_update_data: dict,
+        stored_item_data: Optional[dict],
+        stored_system_in_data: Optional[dict],
+        stored_rule_exists: Optional[bool],
+        new_usage_status_in_data: Optional[dict],
+        new_system_in_data: Optional[dict],
+    ) -> None:
+        """
+        Mocks repository methods appropriately for a call to `_handle_system_and_usage_status_id_update`.
+
+        :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
+                                 but without mandatory IDs (except usage_status_id) or property IDs.
+        :param stored_item_data: Either `None` or a dictionary containing the catalogue basic catalogue item data for
+                                 the existing stored catalogue item as would be required for a `ItemPostSchema` but
+                                 without mandatory (except usage_status_id) IDs or property IDs.
+        :param stored_system_in_data: Dictionary containing the system data for the current stored system as would be
+                                      required for a `SystemIn` database model.
+        :param stored_rule_exists: Whether a stored rule exists for the update operation (only applicable for moving
+                                   between systems of different types).
+        :param new_usage_status_in_data: Either `None` or a dictionary containing the usage status data for the new
+                                         stored usage status as would be required for a `UsageStatus` database model.
+        :param new_system_in_data: Either `None` or a dictionary containing the system data for the new stored system as
+                                   would be required for a `SystemIn` database model.
+        """
+
+        self._updating_usage_status = "usage_status_id" in item_update_data and (
+            stored_item_data and item_update_data["usage_status_id"] != stored_item_data["usage_status_id"]
+        )
+
+        # Stored system
+        if self._moving_system:
+            self._new_system_out = (
+                SystemOut(
+                    **{
+                        **SystemIn(**new_system_in_data).model_dump(),
+                        "_id": item_update_data["system_id"],
+                    },
+                )
+                if new_system_in_data
+                else None
+            )
+            ServiceTestHelpers.mock_get(self.mock_system_repository, self._new_system_out)
+
+            self._stored_system_out = (
+                SystemOut(
+                    **{
+                        **SystemIn(**stored_system_in_data).model_dump(),
+                        "_id": self._stored_item.system_id,
+                    },
+                )
+                if stored_system_in_data
+                else None
+            )
+            ServiceTestHelpers.mock_get(
+                self.mock_system_repository,
+                self._stored_system_out,
+            )
+
+            if (
+                self._stored_system_out
+                and self._new_system_out
+                and self._stored_system_out.type_id != self._new_system_out.type_id
+            ):
+                self.mock_rule_repository.check_exists.return_value = stored_rule_exists
+
+        # Stored usage status
+        if self._updating_usage_status:
+            item_update_data["usage_status"] = (
+                new_usage_status_in_data["value"] if new_usage_status_in_data else "unknown"
+            )
+
+            ServiceTestHelpers.mock_get(
+                self.mock_usage_status_repository,
+                (
+                    UsageStatusOut(
+                        **{
+                            **UsageStatusIn(**new_usage_status_in_data).model_dump(),
+                            "_id": item_update_data["usage_status_id"],
+                        },
+                    )
+                    if new_usage_status_in_data
+                    else None
+                ),
+            )
+
+    def _mock_handle_properties_update(
+        self, item_update_data: dict, stored_catalogue_category_in: Optional[CatalogueCategoryIn]
+    ) -> List[dict]:
+        """
+        Mocks repository methods appropriately for a call to `_handle_properties_update`.
+
+        Also inserts the relevant IDs into the properties in `item_update_data`.
+
+        :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
+                                 but without mandatory IDs (except usage_status_id) or property IDs.
+        :param stored_catalogue_category_in: Stored catalogue category in database model.
+        :return: A list of expected processed and validated supplied properties for the Item.
+        """
+
+        # When properties are given need to add any property `id`s and ensure the expected data inserts them as well
+        property_post_schemas = []
+        expected_properties_in = []
+
+        # Catalogue item
+        ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._stored_catalogue_item_out)
+
+        # Catalogue category
+        self._stored_catalogue_category_out = (
+            CatalogueCategoryOut(
+                **stored_catalogue_category_in.model_dump(by_alias=True),
+                id=self._stored_catalogue_item_out.catalogue_category_id,
+            )
+            if stored_catalogue_category_in
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
+
+        if self._updating_properties and item_update_data["properties"]:
+            _, property_post_schemas = self.construct_properties_in_and_post_with_ids(
+                stored_catalogue_category_in.properties, item_update_data["properties"]
+            )
+
+        # Any missing properties should be inherited from the catalogue item
+        supplied_properties = property_post_schemas
+        supplied_properties_dict = {
+            supplied_property.id: supplied_property for supplied_property in supplied_properties
+        }
+        self._expected_merged_properties = []
+
+        if self._stored_catalogue_item_out and self._stored_catalogue_category_out:
+            for prop in self._stored_catalogue_item_out.properties:
+                supplied_property = supplied_properties_dict.get(prop.id)
+                self._expected_merged_properties.append(
+                    supplied_property if supplied_property else PropertyPostSchema(**prop.model_dump())
+                )
+
+            expected_properties_in = utils.process_properties(
+                self._stored_catalogue_category_out.properties, self._expected_merged_properties
+            )
+
+        item_update_data["properties"] = property_post_schemas
+
+        return expected_properties_in
+
+    def _check_handle_system_and_usage_status_id_update_success(self) -> None:
+        """Checks that a call to `_handle_system_and_usage_status_id_update` worked as expected."""
+
+        if self._moving_system:
+            self.mock_system_repository.get.assert_has_calls(
+                [call(self._item_patch.system_id), call(self._stored_item.system_id)]
+            )
+
+            if self._stored_system_out.type_id != self._new_system_out.type_id:
+                self.mock_rule_repository.check_exists.assert_called_once_with(
+                    src_system_type_id=self._stored_system_out.type_id,
+                    dst_system_type_id=self._new_system_out.type_id,
+                    dst_usage_status_id=(
+                        self._item_patch.usage_status_id
+                        if self._updating_usage_status
+                        else self._stored_item.usage_status_id
+                    ),
+                )
+            else:
+                self.mock_rule_repository.check_exists.assert_not_called()
+        else:
+            self.mock_rule_repository.check_exists.assert_not_called()
+
+        if self._updating_usage_status:
+            self.mock_usage_status_repository.get.assert_called_once_with(self._item_patch.usage_status_id)
+
+    def _check_handle_properties_update_success(self) -> None:
+        """Checks that a call to `_handle_properties_update` worked as expected."""
+
+        if self._updating_properties:
+            self.mock_catalogue_item_repository.get.assert_called_once_with(self._stored_item.catalogue_item_id)
+
+            self.mock_catalogue_category_repository.get.assert_called_once_with(
+                self._stored_catalogue_item_out.catalogue_category_id
+            )
+
+            self.wrapped_utils.process_properties.assert_called_once_with(
+                self._stored_catalogue_category_out.properties, self._expected_merged_properties
+            )
+        else:
+            self.mock_catalogue_category_repository.get.assert_not_called()
+            self.wrapped_utils.process_properties.assert_not_called()
+
 
 class TestUpdate(UpdateDSL):
     """Tests for updating an item."""
@@ -961,8 +1073,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data=ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update(item_id)
@@ -975,11 +1087,11 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+            item_update_data=ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             stored_catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
         )
@@ -993,11 +1105,11 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+            item_update_data=ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             # Strictly speaking we wouldn't allow this in the first place - the stored data is missing a mandatory
             # property but it is irrelevant for this test and saves creating a new version
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             stored_catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
         )
@@ -1012,7 +1124,7 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"catalogue_item_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update_expecting_error(item_id, InvalidActionError)
@@ -1026,9 +1138,10 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -1041,10 +1154,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_update(item_id)
         self.check_update_success()
@@ -1058,10 +1172,11 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": str(ObjectId())},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            new_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             raise_write_conflict_once=True,
         )
         self.call_update(item_id)
@@ -1076,12 +1191,94 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             item_id,
             item_update_data={"system_id": system_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_system_in_data=None,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
+
+    def test_update_system_and_usage_status_ids(self):
+        """Test updating an item's `system_id` and `usage_status_id`."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            stored_rule_exists=True,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+        )
+        self.call_update(item_id)
+        self.check_update_success()
+
+    def test_update_system_and_usage_status_ids_with_non_existent_rule(self):
+        """Test updating an item's `system_id` and `usage_status_id` when there isn't a rule defined for the change
+        of system types."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            stored_rule_exists=False,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+        )
+        self.call_update_expecting_error(item_id, InvalidActionError)
+        self.check_update_failed_with_exception(
+            "No rule found for moving between the given system's types with the same final usage status"
+        )
+
+    def test_update_system_and_usage_status_ids_when_systems_have_same_type(self):
+        """Test updating an item's `system_id` and `usage_status_id` when the current and new systems have the same
+        type."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+        )
+        self.call_update_expecting_error(item_id, InvalidActionError)
+        self.check_update_failed_with_exception(
+            "Cannot change usage status of an item when moving between two systems of the same type"
+        )
+
+    def test_update_system_and_usage_status_ids_with_non_existent_usage_status_id(self):
+        """Test updating an item's `system_id` while also updating its `usage_status_id` to a non-existent usage
+        status."""
+
+        item_id = str(ObjectId())
+        usage_status_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": usage_status_id},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_usage_status_in_data=None,
+        )
+        self.call_update_expecting_error(item_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No usage status found with ID: {usage_status_id}")
 
     def test_update_usage_status_id(self):
         """Test updating an item's `usage_status_id`."""
@@ -1090,29 +1287,15 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data={"usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data={"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
         )
-        self.call_update(item_id)
-        self.check_update_success()
-
-    def test_update_with_non_existent_usage_status_id(self):
-        """Test updating an item's `usage_status_id` to a non-existent usage status."""
-
-        item_id = str(ObjectId())
-        usage_status_id = str(ObjectId())
-
-        self.mock_update(
-            item_id,
-            item_update_data={"usage_status_id": usage_status_id},
-            stored_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
-            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
-            new_usage_status_in_data=None,
+        self.call_update_expecting_error(item_id, InvalidActionError)
+        self.check_update_failed_with_exception(
+            "Cannot change usage status without moving between systems according to a defined rule"
         )
-        self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No usage status found with ID: {usage_status_id}")
 
     def test_update_with_non_existent_id(self):
         """Test updating an item with a non-existent ID."""
@@ -1121,7 +1304,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             item_id,
-            item_update_data=ITEM_DATA_REQUIRED_VALUES_ONLY,
+            item_update_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_item_data=None,
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
@@ -1228,7 +1411,7 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting an item."""
 
-        self.mock_delete(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_delete(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
@@ -1236,7 +1419,8 @@ class TestDelete(DeleteDSL):
         """Test deleting an item when there is a spares definition defined."""
 
         self.mock_delete(
-            ITEM_DATA_REQUIRED_VALUES_ONLY, stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
         )
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
@@ -1246,7 +1430,7 @@ class TestDelete(DeleteDSL):
         the delete succeeds on a retry."""
 
         self.mock_delete(
-            ITEM_DATA_REQUIRED_VALUES_ONLY,
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             raise_write_conflict_once=True,
         )

@@ -6,7 +6,11 @@ Unit tests for the `SystemRepo` repository.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-lines
 
-from test.mock_data import ITEM_DATA_REQUIRED_VALUES_ONLY, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B
+from test.mock_data import (
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+)
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from test.unit.repositories.test_utils import (
     MOCK_BREADCRUMBS_QUERY_RESULT_LESS_THAN_MAX_LENGTH,
@@ -204,7 +208,7 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating a system."""
 
-        self.mock_create(SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_create(SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_create()
         self.check_create_success()
 
@@ -212,8 +216,8 @@ class TestCreate(CreateDSL):
         """Test creating a system with a valid `parent_id`."""
 
         self.mock_create(
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
         )
         self.call_create()
         self.check_create_success()
@@ -223,7 +227,7 @@ class TestCreate(CreateDSL):
 
         parent_id = str(ObjectId())
 
-        self.mock_create({**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": parent_id}, parent_system_in_data=None)
+        self.mock_create({**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": parent_id}, parent_system_in_data=None)
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(f"No parent system found with ID: {parent_id}")
 
@@ -231,9 +235,9 @@ class TestCreate(CreateDSL):
         """Test creating a system with a duplicate system being found in the parent system."""
 
         self.mock_create(
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
-            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
         )
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate system found within the parent system")
@@ -318,7 +322,7 @@ class TestGet(GetDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_get(system_id, SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_get(system_id, SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_get(system_id)
         self.check_get_success()
 
@@ -451,21 +455,21 @@ class TestList(ListDSL):
     def test_list(self):
         """Test listing all systems."""
 
-        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
+        self.mock_list([SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, SYSTEM_IN_DATA_STORAGE_NO_PARENT_B])
         self.call_list(parent_id=None)
         self.check_list_success()
 
     def test_list_with_parent_id_filter(self):
         """Test listing all systems with a given `parent_id`."""
 
-        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
+        self.mock_list([SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, SYSTEM_IN_DATA_STORAGE_NO_PARENT_B])
         self.call_list(parent_id=str(ObjectId()))
         self.check_list_success()
 
     def test_list_with_null_parent_id_filter(self):
         """Test listing all systems with a 'null' `parent_id`."""
 
-        self.mock_list([SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B])
+        self.mock_list([SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, SYSTEM_IN_DATA_STORAGE_NO_PARENT_B])
         self.call_list(parent_id="null")
         self.check_list_success()
 
@@ -664,7 +668,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_B)
+        self.mock_update(system_id, SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, SYSTEM_IN_DATA_STORAGE_NO_PARENT_B)
         self.call_update(system_id)
         self.check_update_success()
 
@@ -673,7 +677,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_update(system_id, SYSTEM_IN_DATA_NO_PARENT_A, SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_update(system_id, SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_update(system_id)
         self.check_update_success()
 
@@ -684,9 +688,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id=system_id,
-            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
-            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_system_in_data={**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             duplicate_system_in_data=None,
             valid_move_result=True,
         )
@@ -700,9 +704,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id=system_id,
-            new_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": str(ObjectId())},
-            stored_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
-            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
+            new_system_in_data={**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+            new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             duplicate_system_in_data=None,
             valid_move_result=False,
         )
@@ -717,8 +721,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": new_parent_id},
-            SYSTEM_IN_DATA_NO_PARENT_A,
+            {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": new_parent_id},
+            SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             new_parent_system_in_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
@@ -732,9 +736,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "name": duplicate_name},
-            SYSTEM_IN_DATA_NO_PARENT_A,
-            duplicate_system_in_data={**SYSTEM_IN_DATA_NO_PARENT_A, "name": duplicate_name},
+            {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "name": duplicate_name},
+            SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            duplicate_system_in_data={**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "name": duplicate_name},
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate system found within the parent system")
@@ -748,10 +752,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             system_id,
-            {**SYSTEM_IN_DATA_NO_PARENT_A, "parent_id": new_parent_id},
-            SYSTEM_IN_DATA_NO_PARENT_A,
-            new_parent_system_in_data=SYSTEM_IN_DATA_NO_PARENT_B,
-            duplicate_system_in_data=SYSTEM_IN_DATA_NO_PARENT_A,
+            {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": new_parent_id},
+            SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+            duplicate_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
         self.check_update_failed_with_exception("Duplicate system found within the parent system")
@@ -761,7 +765,7 @@ class TestUpdate(UpdateDSL):
 
         system_id = "invalid-id"
 
-        self.set_update_data(SYSTEM_IN_DATA_NO_PARENT_A)
+        self.set_update_data(SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_update_expecting_error(system_id, InvalidObjectIdError)
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -961,14 +965,14 @@ class TestHasChildElements(HasChildElementsDSL):
     def test_has_child_elements_with_child_system(self):
         """Test `has_child_elements` when there is a child system but no child items."""
 
-        self.mock_has_child_elements(child_system_data=SYSTEM_IN_DATA_NO_PARENT_A, child_item_data=None)
+        self.mock_has_child_elements(child_system_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, child_item_data=None)
         self.call_has_child_elements(str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
 
     def test_has_child_elements_with_child_item(self):
         """Test `has_child_elements` when there are no child systems but there is a child item."""
 
-        self.mock_has_child_elements(child_system_data=None, child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_has_child_elements(child_system_data=None, child_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_has_child_elements(str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
 
@@ -1037,6 +1041,6 @@ class TestWriteLock(WriteLockDSL):
 
         system_id = str(ObjectId())
 
-        self.mock_write_lock(system_id, SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_write_lock(system_id, SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_write_lock(system_id)
         self.check_write_lock_success()

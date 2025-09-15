@@ -20,12 +20,12 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_WITH_ALL_PROPERTIES,
-    ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+    ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+    ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+    ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
+    ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
     PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
@@ -36,9 +36,11 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
-    SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
-    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    USAGE_STATUS_GET_DATA_NEW,
+    SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT,
+    SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
+    USAGE_STATUS_GET_DATA_IN_USE,
+    USAGE_STATUS_GET_DATA_SCRAPPED,
     USAGE_STATUS_POST_DATA_IN_USE,
 )
 from typing import Any, Optional
@@ -169,8 +171,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
 
     def post_item_and_prerequisites_no_properties(self, item_data: dict) -> Optional[str]:
         """
-        Utility method that posts an item with the given data and also its prerequisite system, catalogue item and
-        catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
+        Utility method that posts an item with the given data and also its prerequisite system (with a storage type),
+        catalogue item and catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
 
         :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
                           mandatory IDs other than `usage_status_id` missing and any `id`'s replaced by the `name` value
@@ -181,7 +183,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
         return self.post_item(item_data)
 
@@ -200,7 +202,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
             CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
         )
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item(item_data)
@@ -214,7 +216,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         """
         Utility method that posts an item with specific given properties and also its prerequisite system, usage status,
         catalogue item and catalogue category. Uses BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM and
-        ITEM_DATA_WITH_ALL_PROPERTIES as a base.
+        ITEM_DATA_NEW_WITH_ALL_PROPERTIES as a base.
 
         :param catalogue_category_properties_data: List of dictionaries containing the basic catalogue category property
                         data as would be required for a `CatalogueCategoryPostPropertySchema` but with any `unit_id`'s
@@ -231,10 +233,10 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
             catalogue_category_properties_data, catalogue_item_properties_data
         )
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
-        return self.post_item({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": item_properties_data})
+        return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data})
 
     def post_item_and_prerequisites_with_allowed_values(
         self,
@@ -258,11 +260,11 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
             property_type, allowed_values_post_data, catalogue_item_property_value
         )
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         return self.post_item(
             {
-                **ITEM_DATA_REQUIRED_VALUES_ONLY,
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "properties": [{"name": "property", "value": item_property_value}],
             }
         )
@@ -314,47 +316,53 @@ class TestCreate(CreateDSL):
     def test_create_with_only_required_values_provided(self):
         """Test creating an item with only required values provided."""
 
-        self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
     def test_create_with_all_values_except_properties(self):
         """Test creating an item with all values provided except `properties`."""
 
-        self.post_item_and_prerequisites_no_properties(ITEM_DATA_ALL_VALUES_NO_PROPERTIES)
+        self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
 
-        self.check_post_item_success(ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES)
+        self.check_post_item_success(ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
 
     def test_create_with_no_properties_provided(self):
         """Test creating an item when none of the properties present in the catalogue item are defined in the item."""
 
-        self.post_item_and_prerequisites_with_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.check_post_item_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
     def test_create_with_some_properties_provided(self):
         """Test creating an item when only some properties present in the catalogue item are defined in the item."""
 
         self.post_item_and_prerequisites_with_properties(
-            {**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": ITEM_DATA_WITH_ALL_PROPERTIES["properties"][1::]}
+            {**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": ITEM_DATA_NEW_WITH_ALL_PROPERTIES["properties"][1::]}
         )
 
         self.check_post_item_success(
-            {**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]}
+            {
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
+                "properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"][1::],
+            }
         )
 
     def test_create_with_all_properties_provided(self):
         """Test creating an item when all properties present in the catalogue item are defined in the item."""
 
-        self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+        self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
-        self.check_post_item_success(ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+        self.check_post_item_success(ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES)
 
     def test_create_with_mandatory_property_given_none(self):
         """Test creating an item when a mandatory property is given a value of `None` in the item."""
 
         self.post_item_and_prerequisites_with_properties(
-            {**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}]}
+            {
+                **ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+                "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}],
+            }
         )
 
         self.check_post_item_failed_with_detail(
@@ -368,14 +376,14 @@ class TestCreate(CreateDSL):
 
         self.post_item_and_prerequisites_with_properties(
             {
-                **ITEM_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}],
             }
         )
 
         self.check_post_item_success(
             {
-                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [{**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}],
             }
         )
@@ -447,7 +455,7 @@ class TestCreate(CreateDSL):
         )
         self.check_post_item_success(
             {
-                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [
                     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
                     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
@@ -506,9 +514,9 @@ class TestCreate(CreateDSL):
         """Test creating an item with a non-existent catalogue item ID."""
 
         self.catalogue_item_id = str(ObjectId())
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
 
@@ -516,9 +524,9 @@ class TestCreate(CreateDSL):
         """Test creating an item with an invalid catalogue item ID."""
 
         self.catalogue_item_id = "invalid-id"
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
 
@@ -530,7 +538,7 @@ class TestCreate(CreateDSL):
         )
         self.system_id = str(ObjectId())
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
 
@@ -542,7 +550,7 @@ class TestCreate(CreateDSL):
         )
         self.system_id = "invalid-id"
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
 
@@ -552,8 +560,8 @@ class TestCreate(CreateDSL):
         self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_item({**ITEM_DATA_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())})
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -563,9 +571,9 @@ class TestCreate(CreateDSL):
         self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item({**ITEM_DATA_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"})
+        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -615,10 +623,10 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting an item."""
 
-        catalogue_item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        catalogue_item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.get_item(catalogue_item_id)
-        self.check_get_item_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_get_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
     def test_get_with_non_existent_id(self):
         """Test getting an item with a non-existent ID."""
@@ -657,32 +665,32 @@ class ListDSL(GetDSL):
         """
 
         # First item
-        self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         system_a_id = self.system_id
         catalogue_item_a_id = self.catalogue_item_id
 
         # Second item
-        system_b_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Another system"})
-        self.post_item(ITEM_DATA_ALL_VALUES_NO_PROPERTIES)
+        system_b_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "name": "Another system"})
+        self.post_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
 
         # Third item
         self.post_catalogue_item({**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "Another catalogue item"})
         catalogue_item_b_id = self.catalogue_item_id
-        self.post_item(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         return [
             {
-                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "catalogue_item_id": catalogue_item_a_id,
                 "system_id": system_a_id,
             },
             {
-                **ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES,
+                **ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
                 "catalogue_item_id": catalogue_item_a_id,
                 "system_id": system_b_id,
             },
             {
-                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+                **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "catalogue_item_id": catalogue_item_b_id,
                 "system_id": system_b_id,
             },
@@ -846,32 +854,32 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_all_fields_except_ids_or_properties(self):
         """Test updating all fields of an item except any of its `_id` fields or properties."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, ITEM_DATA_ALL_VALUES_NO_PROPERTIES)
-        self.check_patch_item_success(ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES)
+        self.patch_item(item_id, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+        self.check_patch_item_success(ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
 
     def test_partial_update_catalogue_item_id(self):
         """Test updating the `catalogue_item_id` of an item."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"catalogue_item_id": str(ObjectId())})
-        self.check_patch_item_failed_with_detail(422, "Cannot change the catalogue item of an item")
+        self.check_patch_item_failed_with_detail(422, "Cannot change the catalogue item the item belongs to")
 
     def test_partial_update_system_id(self):
         """Test updating the `system_id` of an item."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
-        new_system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
         self.patch_item(item_id, {"system_id": new_system_id})
-        self.check_patch_item_success(ITEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_patch_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
     def test_partial_update_system_id_with_non_existent_id(self):
         """Test updating the `system_id` of an item to a non-existent system."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": str(ObjectId())})
         self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
@@ -879,74 +887,130 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_system_id_with_invalid_id(self):
         """Test updating the `system_id` of an item to an invalid ID."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.patch_item(item_id, {"system_id": "invalid-id"})
         self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
 
-    def test_partial_update_usage_status_id(self):
-        """Test updating the `usage_status_id` of an item."""
+    def test_partial_update_system_and_usage_status_ids(self):
+        """Test updating the `system_id` and `usage_status_id` of an item."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"]})
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
         self.check_patch_item_success(
             {
-                **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
-                "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
-                "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
+                **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
+                "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
             }
         )
 
-    def test_partial_update_usage_status_id_with_non_existent_id(self):
-        """Test updating the `usage_status_id` of an item to a non-existent system."""
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_system_types(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when there isn't a rule defined for the change
+        of system types (due to the transition itself not being defined, not just the final usage status)."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"usage_status_id": str(ObjectId())})
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "No rule found for moving between the given system's types with the same final usage status"
+        )
+
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_usage_status(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when there isn't a rule defined for the change
+        of system types (due to the final usage status being wrong, not the transition itself)."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "No rule found for moving between the given system's types with the same final usage status"
+        )
+
+    def test_partial_update_system_and_usage_status_ids_when_systems_have_same_type(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when the current and new systems have the same
+        type."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "Cannot change usage status of an item when moving between two systems of the same type"
+        )
+
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_usage_status_id(self):
+        """Test updating the `system_id` while also updating its `usage_status_id` to a non-existent usage status."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": str(ObjectId())})
         self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
 
-    def test_partial_update_usage_status_id_with_invalid_id(self):
-        """Test updating the `usage_status_id` of an item to an invalid ID."""
+    def test_partial_update_system_and_usage_status_ids_with_invalid_usage_status_id(self):
+        """Test updating the `system_id` while also updating its `usage_status_id` to an invalid ID."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-        self.patch_item(item_id, {"usage_status_id": "invalid-id"})
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": "invalid-id"})
         self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
+
+    def test_partial_update_usage_status_id(self):
+        """Test updating the `usage_status_id` of an item."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
+        self.check_patch_item_failed_with_detail(
+            422, "Cannot change usage status without moving between systems according to a defined rule"
+        )
 
     def test_partial_update_properties_with_no_properties_provided(self):
         """Test updating the `properties` of an item to override none of the catalogue item properties."""
 
         # All properties overridden to start with, then set to empty list to reset
-        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
         self.patch_item(item_id, {"properties": []})
-        self.check_patch_item_success({**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": []})
+        self.check_patch_item_success({**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": []})
 
     def test_partial_update_properties_with_some_properties_provided(self):
         """Test updating the `properties` of an item to override some of the catalogue item properties."""
 
         # No properties overridden to start with, then override some of them
-        item_id = self.post_item_and_prerequisites_with_properties({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
+        item_id = self.post_item_and_prerequisites_with_properties(
+            {**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": []}
+        )
 
-        self.patch_item(item_id, {"properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]})
+        self.patch_item(item_id, {"properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"][1::]})
         self.check_patch_item_success(
-            {**ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"][1::]}
+            {
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
+                "properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"][1::],
+            }
         )
 
     def test_partial_update_properties_with_all_properties_provided(self):
         """Test updating the `properties` of an item to override all of the catalogue item properties."""
 
         # No properties overridden to start with, then override all of them
-        item_id = self.post_item_and_prerequisites_with_properties({**ITEM_DATA_WITH_ALL_PROPERTIES, "properties": []})
+        item_id = self.post_item_and_prerequisites_with_properties(
+            {**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": []}
+        )
 
-        self.patch_item(item_id, {"properties": ITEM_GET_DATA_WITH_ALL_PROPERTIES["properties"]})
-        self.check_patch_item_success(ITEM_GET_DATA_WITH_ALL_PROPERTIES)
+        self.patch_item(item_id, {"properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"]})
+        self.check_patch_item_success(ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES)
 
     def test_partial_update_properties_with_mandatory_property_given_none(self):
         """Test updating the `properties` of an item to have a mandatory property with a value of `None`."""
 
-        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
         self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}]})
         self.check_patch_item_failed_with_detail(
@@ -958,12 +1022,12 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_properties_with_non_mandatory_property_given_none(self):
         """Test updating the `properties` of an item to have a non-mandatory property with a value of `None`."""
 
-        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_WITH_ALL_PROPERTIES)
+        item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
         self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]})
         self.check_patch_item_success(
             {
-                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [{**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}],
             }
         )
@@ -1047,7 +1111,7 @@ class TestUpdate(UpdateDSL):
         )
         self.check_patch_item_success(
             {
-                **ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
                 "properties": [
                     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_2,
                     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
@@ -1163,7 +1227,7 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting an item."""
 
-        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_REQUIRED_VALUES_ONLY)
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.delete_item(item_id)
         self.check_delete_item_success()

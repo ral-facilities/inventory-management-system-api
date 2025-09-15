@@ -9,7 +9,7 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
@@ -598,7 +598,7 @@ class TestHasChildElements(HasChildElementsDSL):
     def test_has_child_elements_with_child_item(self):
         """Test `has_child_elements` when there is a child item."""
 
-        self.mock_has_child_elements(child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_has_child_elements(child_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_has_child_elements(str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
 

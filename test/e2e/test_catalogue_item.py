@@ -44,7 +44,7 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
-    SYSTEM_POST_DATA_NO_PARENT_A,
+    SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
     UNIT_POST_DATA_MM,
     USAGE_STATUS_GET_DATA_IN_USE,
 )
@@ -800,7 +800,7 @@ class UpdateDSL(ListDSL):
         # pylint:disable=fixme
         # TODO: This should be cleaned up in future
 
-        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_NO_PARENT_A)
+        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A)
         system_id = response.json()["id"]
 
         item_post = {
