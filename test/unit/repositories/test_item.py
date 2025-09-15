@@ -3,10 +3,10 @@ Unit tests for the `ItemRepo` repository.
 """
 
 from test.mock_data import (
-    ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+    ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
-    SYSTEM_IN_DATA_NO_PARENT_A,
+    SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
@@ -139,17 +139,17 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an item."""
 
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY, system_in_data=SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_create(ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_non_existent_system_id(self):
         """Test creating an item with a non-existent system ID."""
 
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_create(ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No system found with ID: {ITEM_IN_DATA_REQUIRED_VALUES_ONLY["system_id"]}"
+            f"No system found with ID: {ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY["system_id"]}"
         )
 
 
@@ -235,7 +235,7 @@ class TestGet(GetDSL):
 
         item_id = str(ObjectId())
 
-        self.mock_get(item_id, ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_get(item_id, ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_get(item_id)
         self.check_get_success()
 
@@ -315,21 +315,21 @@ class TestList(ListDSL):
     def test_list(self):
         """Test listing all items."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
+        self.mock_list([ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=None)
         self.check_list_success()
 
     def test_list_with_system_id_filter(self):
         """Test listing all items with a given `system_id`."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
+        self.mock_list([ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=str(ObjectId()), catalogue_item_id=None)
         self.check_list_success()
 
     def test_list_with_catalogue_category_id_filter(self):
         """Test listing all items with a given `catalogue_category_id`."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
+        self.mock_list([ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=str(ObjectId()))
         self.check_list_success()
 
@@ -437,7 +437,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = str(ObjectId())
 
-        self.mock_update(item_id, ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_update(item_id, ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_update(item_id)
         self.check_update_success()
 
@@ -446,7 +446,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = "invalid-id"
 
-        self.set_update_data(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.set_update_data(ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_update_expecting_error(item_id, InvalidObjectIdError)
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 

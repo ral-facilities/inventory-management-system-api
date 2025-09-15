@@ -29,6 +29,7 @@ from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
+from inventory_management_system_api.repositories.rule import RuleRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
@@ -53,6 +54,7 @@ class ItemService:
         catalogue_item_repository: Annotated[CatalogueItemRepo, Depends(CatalogueItemRepo)],
         system_repository: Annotated[SystemRepo, Depends(SystemRepo)],
         usage_status_repository: Annotated[UsageStatusRepo, Depends(UsageStatusRepo)],
+        rule_repository: Annotated[RuleRepo, Depends(RuleRepo)],
         setting_repository: Annotated[SettingRepo, Depends(SettingRepo)],
     ) -> None:
         """
@@ -64,6 +66,7 @@ class ItemService:
         :param catalogue_item_repository: The `CatalogueItemRepo` repository to use.
         :param system_repository: The `SystemRepo` repository to use.
         :param usage_status_repository: The `UsageStatusRepo` repository to use.
+        :param rule_repository: The `RuleRepo` repository to use.
         :param setting_repository: The `SettingRepo` repository to use.
         """
         self._item_repository = item_repository
@@ -71,6 +74,7 @@ class ItemService:
         self._catalogue_item_repository = catalogue_item_repository
         self._system_repository = system_repository
         self._usage_status_repository = usage_status_repository
+        self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
     def create(self, item: ItemPostSchema) -> ItemOut:
@@ -82,6 +86,8 @@ class ItemService:
         :param item: The item to be created.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
+        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        :raises MissingRecordError: If the usage status does not exist.
         """
         catalogue_item_id = item.catalogue_item_id
         catalogue_item = self._catalogue_item_repository.get(catalogue_item_id)
@@ -136,19 +142,17 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
-    # pylint:disable=too-many-locals
     def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
         """
         Update an item by its ID.
 
-        The method checks if the item exists in the database and raises a `MissingRecordError` if it does
-        not. If the system ID is being updated, it checks if the system ID with such ID exists and raises
-        a `MissingRecordError` if it does not. It raises a `ChildElementsExistError` if a catalogue item
-        ID is supplied. When updating properties, existing properties must all be supplied, or they will
-        be overwritten by the properties.
+        When updating properties, existing properties must all be supplied, or they will be overwritten by the
+        properties.
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
+        :raises MissingRecordError: If the item doesn't exist.
+        :raises InvalidActionError: If attempting to change the catalogue item of the item.
         :return: The updated item.
         """
         update_data = item.model_dump(exclude_unset=True)
@@ -161,38 +165,10 @@ class ItemService:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
 
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
-        if moving_system:
-            system = self._system_repository.get(item.system_id)
-            if not system:
-                raise MissingRecordError(f"No system found with ID: {item.system_id}")
-        if "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id:
-            usage_status_id = item.usage_status_id
-            usage_status = self._usage_status_repository.get(usage_status_id)
-            if not usage_status:
-                raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
-            update_data["usage_status"] = usage_status.value
 
-        # If catalogue item ID not supplied then it will be fetched, and its parent catalogue category.
-        # the defined (at a catalogue category level) and supplied properties will be used to find
-        # missing supplied properties. They will then be processed and validated.
-
+        self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system)
         if "properties" in update_data:
-            catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
-
-            try:
-                catalogue_category_id = catalogue_item.catalogue_category_id
-                catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
-                if not catalogue_category:
-                    raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
-            except InvalidObjectIdError as exc:
-                raise DatabaseIntegrityError(str(exc)) from exc
-
-            defined_properties = catalogue_category.properties
-
-            # Inherit the missing properties from the corresponding catalogue item
-            supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
-
-            update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
+            self._handle_properties_update(item, stored_item, update_data)
 
         # Moving system could effect the number of spares of the catalogue item as the type of the system might be
         # different
@@ -207,8 +183,6 @@ class ItemService:
                 )
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
-
-    # pylint:enable=too-many-locals
 
     def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
         """
@@ -230,6 +204,93 @@ class ItemService:
         # Deleting could effect the number of spares of the catalogue item if this one is currently a spare
         with self._start_transaction_impacting_number_of_spares("deleting item", item.catalogue_item_id) as session:
             return self._item_repository.delete(item_id, session=session)
+
+    def _handle_system_and_usage_status_id_update(
+        self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict, moving_system: bool
+    ) -> None:
+        """
+        Handle an update request that could modify the `system_id` or `usage_status_id` of the item.
+
+        Also inserts the new usage status value into `update_data` when updating the `usage_status_id`.
+
+        :param item: Item containing the fields to be updated.
+        :param stored_item: Current stored item from the database.
+        :param update_data: Dictionary containing the update data.
+        :raises InvalidActionError: If attempting to change the usage status without also moving the item between
+                                    systems.
+        :raises MissingRecordError: If the usage status doesn't exist.
+        :raises MissingRecordError: If the system doesn't exist.
+        :raises InvalidActionError: If moving the item between systems of different type and the moving rule doesn't
+                                    exist.
+        :raises InvalidActionError: If moving the item between systems of the same type and trying to change the usage
+                                    status.
+        """
+
+        updating_usage_status = "usage_status_id" in update_data and item.usage_status_id != stored_item.usage_status_id
+
+        usage_status_id = stored_item.usage_status_id
+        if updating_usage_status:
+            if not moving_system:
+                raise InvalidActionError(
+                    "Cannot change usage status without moving between systems according to a defined rule"
+                )
+
+            usage_status_id = item.usage_status_id
+            usage_status = self._usage_status_repository.get(usage_status_id)
+            if not usage_status:
+                raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+            update_data["usage_status"] = usage_status.value
+
+        if moving_system:
+            system = self._system_repository.get(item.system_id)
+            if not system:
+                raise MissingRecordError(f"No system found with ID: {item.system_id}")
+
+            current_system = self._system_repository.get(stored_item.system_id)
+            if current_system.type_id != system.type_id:
+                # System type is changing - Ensure the moving operation is allowed by a rule
+                if not self._rule_repository.check_exists(
+                    src_system_type_id=current_system.type_id,
+                    dst_system_type_id=system.type_id,
+                    dst_usage_status_id=usage_status_id,
+                ):
+                    raise InvalidActionError(
+                        "No rule found for moving between the given system's types with the same final usage status"
+                    )
+            elif updating_usage_status:
+                # When system type is not changing - Ensure the usage status is unchanged
+                raise InvalidActionError(
+                    "Cannot change usage status of an item when moving between two systems of the same type"
+                )
+
+    def _handle_properties_update(self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict) -> None:
+        """
+        Handle an update request that modifies the `properties` of the item.
+
+        Also inserts the new properties value into `update_data` when updating the `properties`.
+
+        :param item: Item containing the fields to be updated.
+        :param stored_item: Current stored item from the database.
+        :param update_data: Dictionary containing the update data.
+        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        """
+
+        catalogue_item = self._catalogue_item_repository.get(stored_item.catalogue_item_id)
+
+        try:
+            catalogue_category_id = catalogue_item.catalogue_category_id
+            catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+            if not catalogue_category:
+                raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+        except InvalidObjectIdError as exc:
+            raise DatabaseIntegrityError(str(exc)) from exc
+
+        defined_properties = catalogue_category.properties
+
+        # Inherit the missing properties from the corresponding catalogue item
+        supplied_properties = self._merge_missing_properties(catalogue_item.properties, item.properties)
+
+        update_data["properties"] = utils.process_properties(defined_properties, supplied_properties)
 
     def _merge_missing_properties(
         self, properties: List[PropertyOut], supplied_properties: List[PropertyPostSchema]

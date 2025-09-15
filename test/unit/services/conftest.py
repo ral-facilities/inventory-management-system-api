@@ -217,6 +217,7 @@ def fixture_item_service(
     catalogue_item_repository_mock: Mock,
     system_repository_mock: Mock,
     usage_status_repository_mock: Mock,
+    rule_repository_mock: Mock,
     setting_repository_mock: Mock,
 ) -> ItemService:
     """
@@ -228,6 +229,7 @@ def fixture_item_service(
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param system_repository_mock: Mocked `SystemRepo` instance.
     :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
+    :param rule_repository_mock: Mocked `RuleRepo` instance.
     :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `ItemService` instance with the mocked dependencies.
     """
@@ -237,6 +239,7 @@ def fixture_item_service(
         catalogue_item_repository_mock,
         system_repository_mock,
         usage_status_repository_mock,
+        rule_repository_mock,
         setting_repository_mock,
     )
 

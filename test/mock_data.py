@@ -674,25 +674,25 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
 BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
 
 
-# Required values only
+# New, Required values only
 
-ITEM_DATA_REQUIRED_VALUES_ONLY = {
+ITEM_DATA_NEW_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
-    "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
+    "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
 }
 
-ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
 }
 
-ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
     "purchase_order_number": None,
     "warranty_end_date": None,
     "asset_number": None,
@@ -702,10 +702,10 @@ ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "properties": [],
 }
 
-# All values, no properties
+# New, All values, no properties
 
-ITEM_DATA_ALL_VALUES_NO_PROPERTIES = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "purchase_order_number": "1234-123",
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "asset_number": "1234-123456",
@@ -714,33 +714,33 @@ ITEM_DATA_ALL_VALUES_NO_PROPERTIES = {
     "notes": "Test notes",
 }
 
-ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES = {
-    **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
 }
 
-ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES = {
-    **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+    "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
     "properties": [],
 }
 
 
-# Only mandatory properties
+# New, Only mandatory properties
 
-ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE],
 }
 
-# All properties
+# New, All properties
 
-ITEM_DATA_WITH_ALL_PROPERTIES = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_DATA_NEW_WITH_ALL_PROPERTIES = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "properties": [
         PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
         PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
@@ -748,9 +748,9 @@ ITEM_DATA_WITH_ALL_PROPERTIES = {
     ],
 }
 
-ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
-    **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
-    "usage_status": USAGE_STATUS_OUT_DATA_IN_USE["value"],
+ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES = {
+    **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
+    "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
     "properties": [
         PROPERTY_GET_DATA_BOOLEAN_MANDATORY_FALSE,
         PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
@@ -847,47 +847,47 @@ SYSTEM_TYPE_GET_DATA_SCRAPPED = SYSTEM_TYPES_GET_DATA[2]
 
 # --------------------------------- SYSTEMS ---------------------------------
 
-# No parent, Required values only
+# Storage, No parent, Required values only
 
-SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY = {
-    "name": "System Test Required Values Only",
+SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
+    "name": "Storage System Required Values Only",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "importance": "low",
 }
 
-SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY = {
-    **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
+    **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "description": None,
     "location": None,
     "owner": None,
-    "code": "system-test-required-values-only",
+    "code": "storage-system-required-values-only",
 }
 
-# No parent, All values
+# Storage, No parent, All values
 
-SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT = {
-    **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
+    **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     "parent_id": None,
-    "name": "System Test All Values",
+    "name": "Storage System All Values",
     "description": "Test description",
     "location": "Test location",
     "owner": "Test owner",
 }
 
-SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT = {
-    **SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
+SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
+    **SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
-    "code": "system-test-all-values",
+    "code": "storage-system-all-values",
 }
 
-# No parent
+# Storage, No parent
 
-SYSTEM_POST_DATA_NO_PARENT_A = {
+SYSTEM_POST_DATA_STORAGE_NO_PARENT_A = {
     "parent_id": None,
     "name": "Test name A",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
@@ -897,12 +897,12 @@ SYSTEM_POST_DATA_NO_PARENT_A = {
     "importance": "low",
 }
 
-SYSTEM_IN_DATA_NO_PARENT_A = {
-    **SYSTEM_POST_DATA_NO_PARENT_A,
+SYSTEM_IN_DATA_STORAGE_NO_PARENT_A = {
+    **SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
     "code": "test-name-a",
 }
 
-SYSTEM_POST_DATA_NO_PARENT_B = {
+SYSTEM_POST_DATA_STORAGE_NO_PARENT_B = {
     "parent_id": None,
     "name": "Test name B",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
@@ -912,9 +912,25 @@ SYSTEM_POST_DATA_NO_PARENT_B = {
     "importance": "low",
 }
 
-SYSTEM_IN_DATA_NO_PARENT_B = {
-    **SYSTEM_POST_DATA_NO_PARENT_B,
+SYSTEM_IN_DATA_STORAGE_NO_PARENT_B = {
+    **SYSTEM_POST_DATA_STORAGE_NO_PARENT_B,
     "code": "test-name-b",
+}
+
+# Operational, No parent, Required values only
+
+SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY = {
+    "name": "Operational System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+    "importance": "low",
+}
+
+# Scrapped, No parent, Required values only
+
+SYSTEM_POST_DATA_SCRAPPED_REQUIRED_VALUES_ONLY = {
+    "name": "Scrapped System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_SCRAPPED["id"],
+    "importance": "low",
 }
 
 # --------------------------------- SETTINGS ---------------------------------

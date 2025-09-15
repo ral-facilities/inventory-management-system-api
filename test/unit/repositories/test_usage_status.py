@@ -5,7 +5,7 @@ Unit tests for the `UsageStatusRepo` repository.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.mock_data import ITEM_DATA_REQUIRED_VALUES_ONLY, USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
+from test.mock_data import ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
 from unittest.mock import MagicMock, Mock, call
@@ -438,7 +438,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(
             deleted_count=1,
             item_data={
-                **ITEM_DATA_REQUIRED_VALUES_ONLY,
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "catalogue_item_id": str(ObjectId()),
                 "system_id": str(ObjectId()),
                 "usage_status_id": usage_status_id,

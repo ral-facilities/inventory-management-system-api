@@ -130,13 +130,19 @@ class CatalogueItemService:
         """
         Update a catalogue item by its ID.
 
-        The method checks if the catalogue item exists in the database and raises a `MissingRecordError` if it does
-        not. If the catalogue category ID is being updated, it checks if catalogue category with such ID exists and
-        raises a MissingRecordError` if it does not. It also checks if the category is not a leaf category and raises a
-        `NonLeafCatalogueCategoryError` if it is. If the properties are being updated, it also processes them.
+        If the properties are being updated, it also processes them.
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the fields that need to be updated.
+        :raises MissingRecordError: If the catalogue item doesn't exist.
+        :raises ChildElementsExistError: If updating a property that is not allowed to be edited when there are child
+                                         entities, and there are child entities currently.
+        :raises MissingRecordError: If the catalogue category doesn't exist.
+        :raises NonLeafCatalogueCategoryError: If the catalogue category isn't a leaf category.
+        :raises InvalidActionError: If moving the catalogue item between categories with different properties without
+                                    explicitly specifying them.
+        :raises MissingRecordError: If the manufacturer doesn't exist.
+        :raises MissingRecordError: If the obsolete replacement catalogue item doesn't exist.
         :return: The updated catalogue item.
         """
         update_data = catalogue_item.model_dump(exclude_unset=True)
