@@ -412,7 +412,9 @@ of spares you have for each catalogue item. To configure the spares definition a
 ims configure spares-definition
 ```
 
-and follow its instructions. This will calculate and update the `number_of_spares` field on all catalogue items.
+and follow its instructions. This will calculate and update the `number_of_spares` field on all catalogue items and may also be used to change the spares definition once already setup.
+
+NOTE: Please ensure that no one is using ims-api when executing this. Otherwise it is possible to miscount the number of spares. If using a reverse proxy to provide access, we recommend first shutting it down before doing this.
 
 Subsequently, whenever a new item is added, moved or deleted and would effect the number of spares, the number of spares
 inside the effected catalogue item will be recalculated.

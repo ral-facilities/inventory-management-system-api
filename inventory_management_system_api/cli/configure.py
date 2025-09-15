@@ -108,6 +108,7 @@ def spares_definition():
     console.print(
         "[red bold] This operation will recalculate the 'number_of_spares' field of all existing catalogue items![/]"
     )
+    console.print("[red bold] Please ensure no one else is using ims-api to avoid any miscalculations.[/]")
     console.print("[red bold] Should an error occur at any point during this process no changes will be made.[/]")
     console.print()
     console.print(f"[red bold]{":warning: " * 48}[/]")
