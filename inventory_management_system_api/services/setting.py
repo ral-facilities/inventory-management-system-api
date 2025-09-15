@@ -76,7 +76,7 @@ class SettingService:
 
             # Recalculate the number of spares for each catalogue item
             logger.info("Updating the number of spares for all catalogue items")
-            for catalogue_item_id in tracker(catalogue_item_ids) if tracker is not None else catalogue_item_ids:
+            for catalogue_item_id in catalogue_item_ids if tracker is None else tracker(catalogue_item_ids):
                 number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
                     catalogue_item_id,
                     spares_definition.system_type_ids,
