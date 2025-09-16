@@ -73,7 +73,7 @@ def get_router_dependencies() -> list:
         # pylint:disable=import-outside-toplevel
         from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 
-        dependencies.append(Depends(JWTBearer()))
+        dependencies.append(Depends(JWTBearer(check_role=False)))
     return dependencies
 
 

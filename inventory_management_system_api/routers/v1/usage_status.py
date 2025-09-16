@@ -13,6 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -35,6 +36,7 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
     summary="Create a new usage status",
     response_description="The created usage status",
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(JWTBearer(check_role=True))]
 )
 def create_usage_status(
     usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep
@@ -87,6 +89,7 @@ def get_usage_status(
     summary="Delete a usage status by its ID",
     response_description="Usage status deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(JWTBearer(check_role=True))]
 )
 def delete_usage_status(
     usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],

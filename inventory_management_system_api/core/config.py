@@ -30,6 +30,7 @@ class AuthenticationConfig(BaseModel):
     enabled: bool
     public_key_path: Optional[str] = Field(default=None, validate_default=True)
     jwt_algorithm: Optional[str] = Field(default=None, validate_default=True)
+    privileged_roles: List[str] = Field(default=[], validate_default=True)
 
     @field_validator("public_key_path", "jwt_algorithm")
     @classmethod
