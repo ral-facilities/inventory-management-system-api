@@ -18,7 +18,6 @@ dependencies = [
 "Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
 
 [project.scripts]
-"ims-migrate" = "inventory_management_system_api.migrations.script:main"
 "ims" = "inventory_management_system_api.cli.main:main"
 
 [project.optional-dependencies]

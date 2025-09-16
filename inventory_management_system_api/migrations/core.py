@@ -1,15 +1,16 @@
 """Module for providing the core functionality for database migrations."""
 
 import importlib
-import logging
 import sys
 from typing import Optional
+
+from rich.console import Console
 
 from inventory_management_system_api.core.database import get_database, start_session_transaction
 from inventory_management_system_api.migrations.base import BaseMigration
 
 database = get_database()
-logger = logging.getLogger()
+console = Console()
 
 
 def load_migration(name: str) -> BaseMigration:
@@ -103,9 +104,9 @@ def load_migrations_forward_to(name: str) -> dict[str, BaseMigration]:
         try:
             start_index = find_migration_index(previous_migration, available_migrations) + 1
         except ValueError:
-            logger.warning(
-                "Previous migration applied '%s' not found in current migrations. Have you skipped a version?",
-                previous_migration,
+            console.print(
+                f"[orange2]Previous migration applied '{previous_migration}' not found in current migrations. Have you "
+                "skipped a version?[/]",
             )
 
     try:
@@ -186,12 +187,14 @@ def execute_migrations_forward(migrations: dict[str, BaseMigration]) -> None:
     # Run migration inside a session to lock writes and revert the changes if it fails
     with start_session_transaction("forward migration") as session:
         for name, migration in migrations.items():
-            logger.info("Performing forward migration for '%s'...", name)
+            console.print(
+                f"Performing forward migration for [green]'{name}'[/]...",
+            )
             migration.forward(session)
         set_previous_migration(list(migrations.keys())[-1])
     # Run some things outside the transaction e.g. if needing to drop a collection
     for name, migration in migrations.items():
-        logger.info("Finalising forward migration for '%s'...", name)
+        console.print(f"Finalising forward migration for [green]'{name}'[/]...")
         migration.forward_after_transaction()
 
 
@@ -210,10 +213,10 @@ def execute_migrations_backward(migrations: dict[str, BaseMigration], final_prev
     # Run migration inside a session to lock writes and revert the changes if it fails
     with start_session_transaction("backward migration") as session:
         for name, migration in migrations.items():
-            logger.info("Performing backward migration for '%s'...", name)
+            console.print(f"Performing backward migration for [green]'{name}'[/]...")
             migration.backward(session)
         set_previous_migration(final_previous_migration_name)
     # Run some things outside the transaction e.g. if needing to drop a collection
     for name, migration in migrations.items():
-        logger.info("Finalising backward migration for '%s'...", name)
+        console.print(f"Finalising backward migration for [green]'{name}'[/]...")
         migration.backward_after_transaction()
