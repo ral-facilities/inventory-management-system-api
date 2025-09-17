@@ -6,6 +6,7 @@ from typing import Optional
 
 from rich.console import Console
 
+from inventory_management_system_api.cli.core import create_progress_bar
 from inventory_management_system_api.core.database import get_database, start_session_transaction
 from inventory_management_system_api.migrations.base import BaseMigration
 
@@ -186,16 +187,16 @@ def execute_migrations_forward(migrations: dict[str, BaseMigration]) -> None:
 
     # Run migration inside a session to lock writes and revert the changes if it fails
     with start_session_transaction("forward migration") as session:
-        for name, migration in migrations.items():
-            console.print(
-                f"Performing forward migration for [green]'{name}'[/]...",
-            )
-            migration.forward(session)
-        set_previous_migration(list(migrations.keys())[-1])
+        with create_progress_bar() as progress:
+            for name, migration in progress.track(migrations.items()):
+                progress.print(f"Performing forward migration for [green]'{name}'[/]...")
+                migration.forward(session)
+            set_previous_migration(list(migrations.keys())[-1])
     # Run some things outside the transaction e.g. if needing to drop a collection
-    for name, migration in migrations.items():
-        console.print(f"Finalising forward migration for [green]'{name}'[/]...")
-        migration.forward_after_transaction()
+    with create_progress_bar() as progress:
+        for name, migration in progress.track(migrations.items()):
+            progress.print(f"Finalising forward migration for [green]'{name}'[/]...")
+            migration.forward_after_transaction()
 
 
 def execute_migrations_backward(migrations: dict[str, BaseMigration], final_previous_migration_name: Optional[str]):
@@ -212,11 +213,13 @@ def execute_migrations_backward(migrations: dict[str, BaseMigration], final_prev
     """
     # Run migration inside a session to lock writes and revert the changes if it fails
     with start_session_transaction("backward migration") as session:
-        for name, migration in migrations.items():
-            console.print(f"Performing backward migration for [green]'{name}'[/]...")
-            migration.backward(session)
-        set_previous_migration(final_previous_migration_name)
+        with create_progress_bar() as progress:
+            for name, migration in progress.track(migrations.items()):
+                progress.print(f"Performing backward migration for [green]'{name}'[/]...")
+                migration.backward(session)
+            set_previous_migration(final_previous_migration_name)
     # Run some things outside the transaction e.g. if needing to drop a collection
-    for name, migration in migrations.items():
-        console.print(f"Finalising backward migration for [green]'{name}'[/]...")
-        migration.backward_after_transaction()
+    with create_progress_bar() as progress:
+        for name, migration in progress.track(migrations.items()):
+            progress.print(f"Finalising backward migration for [green]'{name}'[/]...")
+            migration.backward_after_transaction()
