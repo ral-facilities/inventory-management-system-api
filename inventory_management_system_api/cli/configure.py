@@ -52,7 +52,7 @@ def display_current_spares_definition(
         current_type_values = [system_type.value for system_type in definition.system_types]
         current_type_indices = []
         for system_type in definition.system_types:
-            current_type_indices.append(str(system_type_ids.index(system_type.id) + 1))
+            current_type_indices.append(system_type_ids.index(system_type.id) + 1)
 
         display_indices_selection("The current spares definition is", current_type_indices, current_type_values)
 
