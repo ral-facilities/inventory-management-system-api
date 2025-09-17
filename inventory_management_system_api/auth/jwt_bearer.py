@@ -65,11 +65,11 @@ class JWTBearer(HTTPBearer):
         """
         Check if the JWT access token is authorised.
 
-        It does this by checking that the token's payload contains roles, and that (at least) one of 
+        It does this by checking that the token's payload contains roles, and that (at least) one of
         these roles is one of the configured privileged_roles
 
         :param access_token: The JWT access token to check
-        :return `True` if the JWT access token's payload contains roles, and overlaps the configured 
+        :return `True` if the JWT access token's payload contains roles, and overlaps the configured
         privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
