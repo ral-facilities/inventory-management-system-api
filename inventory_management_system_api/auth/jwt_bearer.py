@@ -34,13 +34,10 @@ class JWTBearer(HTTPBearer):
         Callable method for JWT access token authentication/authorization.
 
         This method is called when `JWTBearer` is used as a dependency in a FastAPI route. It performs authentication/
-        authorization by calling the parent class method and then verifying the JWT access token, and optionally verifying
-        the role in the tokens payload
+        authorization by calling the parent class method and then verifying the JWT access token.
         :param request: The FastAPI `Request` object.
-        :param check_role: If `True` the token's payload role will be verified to ensure it is authorised for the route
         :return: The JWT access token if authentication is successful.
-        :raises HTTPException: If the supplied JWT access token is invalid or has expired; or if the user's role does not
-        authorise them to make the request
+        :raises HTTPException: If the supplied JWT access token is invalid or has expired.
         """
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)
 
@@ -63,23 +60,29 @@ class JWTBearer(HTTPBearer):
         logger.info("Checking if JWT access token is valid")
         payload = self._decode_jwt_access_token(access_token)
         return payload is not None and "username" in payload
-        
-    
-    def _is_jwt_access_token_authorised(self, access_token: str) -> bool:
+
+    def is_jwt_access_token_authorised(self, access_token: str) -> bool:
         """
         Check if the JWT access token is authorised.
 
-        It does this by checking that the token's payload contains roles, and that (at least) one of these roles is one of
-        the configured privileged_roles
+        It does this by checking that the token's payload contains roles, and that (at least) one of 
+        these roles is one of the configured privileged_roles
 
         :param access_token: The JWT access token to check
-        :return `True` if the JWT access token's payload contains roles, and overlaps the configured privileged_roles, `False` otherwise.
+        :return `True` if the JWT access token's payload contains roles, and overlaps the configured 
+        privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
-        payload = self._decode_jwt_access_token(access_token)
-        return payload is not None and "roles" in payload and any(role in config.authentication.privileged_roles for role in payload["roles"])
+        if config.authentication.enabled:  # only verify authorisation if authentication is enabled
 
+            payload = self._decode_jwt_access_token(access_token)
+            return (
+                payload is not None
+                and "roles" in payload
+                and any(role in config.authentication.privileged_roles for role in payload["roles"])
+            )
 
+        return True
 
     def _decode_jwt_access_token(self, access_token: str) -> Any | None:
         """
@@ -95,4 +98,3 @@ class JWTBearer(HTTPBearer):
             payload = None
 
         return payload
-

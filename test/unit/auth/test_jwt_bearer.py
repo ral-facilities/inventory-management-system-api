@@ -96,7 +96,7 @@ async def test_jwt_bearer_authorization_request_authorised_roles_in_bearer_token
 
     jwt_bearer = JWTBearer()
 
-    assert jwt_bearer._is_jwt_access_token_authorised(VALID_ACCESS_TOKEN) is True
+    assert jwt_bearer.is_jwt_access_token_authorised(VALID_ACCESS_TOKEN) is True
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
@@ -110,7 +110,7 @@ async def test_jwt_bearer_authorization_request_unauthorised_roles_in_bearer_tok
 
     jwt_bearer = JWTBearer()
 
-    assert jwt_bearer._is_jwt_access_token_authorised(VALID_ACCESS_TOKEN) is False
+    assert jwt_bearer.is_jwt_access_token_authorised(VALID_ACCESS_TOKEN) is False
 
 
 async def test_jwt_bearer_authorization_request_missing_authorization_header(request_mock):
