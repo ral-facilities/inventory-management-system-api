@@ -2,11 +2,12 @@
 
 import typer
 
-from inventory_management_system_api.cli import configure, migrate
+from inventory_management_system_api.cli import add, configure, migrate
 
 app = typer.Typer()
 app.add_typer(configure.app, name="configure", help="Configure IMS.")
 app.add_typer(migrate.app, name="migrate", help="Manage database migrations in IMS.")
+app.add_typer(add.app, name="add", help="Add entities to IMS.")
 
 
 def main():
