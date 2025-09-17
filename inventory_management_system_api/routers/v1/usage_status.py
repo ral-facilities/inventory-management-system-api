@@ -11,7 +11,7 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 
 from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 from inventory_management_system_api.core.exceptions import (
@@ -36,13 +36,17 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
     summary="Create a new usage status",
     response_description="The created usage status",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(JWTBearer(check_role=True))]
 )
 def create_usage_status(
-    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep
+    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep, request: Request
 ) -> UsageStatusSchema:
     logger.info("Creating a new usage status")
     logger.debug("Usage status data: %s", usage_status)
+
+    # check user is authorised to perform operation
+    jwtBearer = JWTBearer()
+    if not jwtBearer._is_jwt_access_token_authorised(request.state.token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
 
     try:
         usage_status = usage_status_service.create(usage_status)
@@ -89,13 +93,18 @@ def get_usage_status(
     summary="Delete a usage status by its ID",
     response_description="Usage status deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(JWTBearer(check_role=True))]
 )
 def delete_usage_status(
     usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],
     usage_status_service: UsageStatusServiceDep,
+    request: Request
 ) -> None:
     logger.info("Deleting usage status with ID: %s", usage_status_id)
+    # check user is authorised to perform operation
+    jwtBearer = JWTBearer()
+    if not jwtBearer._is_jwt_access_token_authorised(request.state.token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+    
     try:
         usage_status_service.delete(usage_status_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:

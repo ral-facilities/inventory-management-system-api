@@ -20,7 +20,7 @@ class JWTBearer(HTTPBearer):
     Extends the FastAPI `HTTPBearer` class to provide JSON Web Token (JWT) based authentication/authorization.
     """
 
-    def __init__(self, check_role: bool, auto_error: bool = True) -> None:
+    def __init__(self, auto_error: bool = True) -> None:
         """
         Initialize the `JWTBearer`.
 
@@ -28,7 +28,6 @@ class JWTBearer(HTTPBearer):
             (in an `Authorization` header).
         """
         super().__init__(auto_error=auto_error)
-        self.check_role = check_role
 
     async def __call__(self, request: Request) -> str:
         """
@@ -45,44 +44,41 @@ class JWTBearer(HTTPBearer):
         """
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)
 
-        token_payload = self._decode_jwt_access_token(credentials.credentials)
-
-        if not self._is_jwt_access_token_valid(token_payload):
+        if not self._is_jwt_access_token_valid(credentials.credentials):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token or expired token")
-        
-        if self.check_role and not self._is_jwt_access_token_authorised(token_payload):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
 
         request.state.token = credentials.credentials
 
         return credentials.credentials
 
-    def _is_jwt_access_token_valid(self, payload: Any) -> bool:
+    def _is_jwt_access_token_valid(self, access_token: str) -> bool:
         """
         Check if the JWT access token is valid.
 
         It does this by checking that it was signed by the corresponding private key and has not expired. It also
         requires the payload to contain a username.
-        :param payload: The JWT access token to check.
+        :param access_token: The JWT access token to check.
         :return: `True` if the JWT access token is valid and its payload contains a username, `False` otherwise.
         """
         logger.info("Checking if JWT access token is valid")
-        print(payload)
+        payload = self._decode_jwt_access_token(access_token)
         return payload is not None and "username" in payload
         
     
-    def _is_jwt_access_token_authorised(self, payload: Any) -> bool:
+    def _is_jwt_access_token_authorised(self, access_token: str) -> bool:
         """
         Check if the JWT access token is authorised.
 
         It does this by checking that the token's payload contains roles, and that (at least) one of these roles is one of
         the configured privileged_roles
 
-        :param payload: The JWT access token's payload to check
+        :param access_token: The JWT access token to check
         :return `True` if the JWT access token's payload contains roles, and overlaps the configured privileged_roles, `False` otherwise.
         """
-        logging.info("Checking if JWT access token is authorised")
+        logging.info("Checking if JWT access token is authorised for operation")
+        payload = self._decode_jwt_access_token(access_token)
         return payload is not None and "roles" in payload and any(role in config.authentication.privileged_roles for role in payload["roles"])
+
 
 
     def _decode_jwt_access_token(self, access_token: str) -> Any | None:
