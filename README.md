@@ -9,7 +9,7 @@ This microservice requires a MongoDB instance to run against.
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.12 and MongoDB 7.0 installed on your machine (if you are not using Docker)
+- Python 3.13 and MongoDB 7.0 installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorization is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
   a GUI)
@@ -466,20 +466,22 @@ the expected state.
 
 #### Setting the spares definition
 
-The spares definition is a list of system types that define what systems contain spares. E.g. If you have system type
-of `Storage`, and define the spares definition as `Storage`. Then a spare of a given catalogue item will be defined
-as any item that is within a system of with a type of `Storage`.
+The spares definition is a list of system types that define which systems contain spares. E.g. If you have system type
+of `Storage`, and define the spares definition as `Storage`. Then a spare of a given catalogue item will be defined as
+any item that is within a system of with a type of `Storage`.
 
-When first setup IMS does not have a spares definition assigned and so will not attempt to calculate the number
-of spares you have for each catalogue item. To configure the spares definition and enable this functionality use
+When first setup, IMS does not have a spares definition assigned and so will not attempt to calculate the number of
+spares you have for each catalogue item. To configure the spares definition and enable this functionality use
 
 ```bash
 ims configure spares-definition
 ```
 
-and follow its instructions. This will calculate and update the `number_of_spares` field on all catalogue items and may also be used to change the spares definition once already setup.
+and follow its instructions. This will calculate and update the `number_of_spares` field on all catalogue items and may
+also be used to change the spares definition once already setup.
 
-NOTE: Please ensure that no one is using ims-api when executing this. Otherwise it is possible to miscount the number of spares. If using a reverse proxy to provide access, we recommend first shutting it down before doing this.
+NOTE: Please ensure that no one is using ims-api when executing this. Otherwise it is possible to miscount the number of
+spares. If using a reverse proxy to provide access, we recommend first shutting it down before doing this.
 
-Subsequently, whenever a new item is added, moved or deleted and would effect the number of spares, the number of spares
-inside the effected catalogue item will be recalculated.
+Subsequently, whenever a new item is added, moved or deleted, the number of spares inside the effected catalogue item
+will be recalculated accordingly

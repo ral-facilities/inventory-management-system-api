@@ -29,6 +29,7 @@ DEFINED_PROPERTIES = [
         unit_id=str(ObjectId()),
         unit="mm",
         mandatory=True,
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         allowed_values=AllowedValues(type="list", values=[2, 4, 6]),
     ),
     CatalogueCategoryPropertyOut(
@@ -36,6 +37,7 @@ DEFINED_PROPERTIES = [
         name="Property E",
         type="string",
         mandatory=False,
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         allowed_values=AllowedValues(type="list", values=["red", "green"]),
     ),
 ]
