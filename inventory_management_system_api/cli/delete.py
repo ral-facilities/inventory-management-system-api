@@ -50,6 +50,16 @@ def system_type():
     # pylint:disable=protected-access
     current_spares_definition = setting_service._setting_repository.get(SparesDefinitionOut)
 
+    console.print(f"[red bold]{":warning: " * 48}[/]")
+    console.print()
+    console.print(
+        "[red bold] Please ensure no one else is using ims-api to avoid deleting a system type that is currently[/]"
+    )
+    console.print("[red bold] not in use but will be at the time of deletion.[/]")
+    console.print()
+    console.print(f"[red bold]{":warning: " * 48}[/]")
+    console.print()
+
     if (
         systems_collection.find_one({"system_type_id": selected_type_id})
         or rules_collection.find_one({"src_system_type_id": selected_type_id})
@@ -62,6 +72,7 @@ def system_type():
         )
 
     console.print(f"You have selected: [green]{selected_type_index}[/] [orange1]({selected_type.value})[/]")
+    console.print()
     cont = typer.confirm("Are you sure you want to delete this?")
     console.print()
 
