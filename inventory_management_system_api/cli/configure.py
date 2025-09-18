@@ -4,10 +4,10 @@ import sys
 from typing import Optional, Tuple, TypeVar
 
 import typer
-from rich.console import Console
 from rich.prompt import Prompt
 
 from inventory_management_system_api.cli.core import (
+    console,
     create_progress_bar,
     display_indexed_system_types,
     display_user_selection,
@@ -24,7 +24,6 @@ from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system_type import SystemTypeService
 
 app = typer.Typer()
-console = Console()
 
 
 def display_current_spares_definition(

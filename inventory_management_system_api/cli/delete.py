@@ -3,10 +3,10 @@
 import sys
 
 import typer
-from rich.console import Console
 from rich.prompt import IntPrompt
 
 from inventory_management_system_api.cli.core import (
+    console,
     display_indexed_system_types,
     display_user_selection,
     display_warning_message,
@@ -22,7 +22,6 @@ from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system_type import SystemTypeService
 
 app = typer.Typer()
-console = Console()
 
 
 @app.command()

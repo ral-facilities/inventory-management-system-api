@@ -4,16 +4,14 @@ import re
 import sys
 
 import typer
-from rich.console import Console
 from rich.prompt import Prompt
 
-from inventory_management_system_api.cli.core import display_indexed_system_types
+from inventory_management_system_api.cli.core import console, display_indexed_system_types
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.services.system_type import SystemTypeService
 
 app = typer.Typer()
-console = Console()
 
 
 @app.command()
@@ -31,7 +29,7 @@ def system_type():
     display_indexed_system_types(current_system_types)
 
     # Obtain name of the new system type and ensure it doesn't already exist (case insensitive)
-    new_system_type_value = Prompt.ask("Please enter the name of the new system type")
+    new_system_type_value = Prompt.ask("Please enter the value of the new system type")
     if system_types_collection.find_one({"value": re.compile(new_system_type_value, re.IGNORECASE)}):
         sys.exit("Already exists!")
 

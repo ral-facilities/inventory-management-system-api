@@ -5,8 +5,8 @@ import sys
 from typing import Annotated, Optional
 
 import typer
-from rich.console import Console
 
+from inventory_management_system_api.cli.core import console
 from inventory_management_system_api.migrations.core import (
     execute_migrations_backward,
     execute_migrations_forward,
@@ -20,7 +20,6 @@ from inventory_management_system_api.migrations.core import (
 )
 
 app = typer.Typer()
-console = Console()
 
 
 YesConfirmOption = Annotated[bool, typer.Option("--yes", "-y", help="Specify to skip all are you sure prompts.")]
