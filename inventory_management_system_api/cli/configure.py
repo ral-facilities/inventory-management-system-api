@@ -1,17 +1,16 @@
 """Module for providing a subcommand for configuring IMS."""
 
+import sys
 from typing import Optional, Tuple, TypeVar
 
 import typer
 from rich.console import Console
 from rich.prompt import Prompt
-from rich.table import Table
 
-from inventory_management_system_api.cli.core import create_progress_bar
+from inventory_management_system_api.cli.core import create_progress_bar, display_indexed_system_types
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
 from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
-from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -21,17 +20,6 @@ from inventory_management_system_api.services.system_type import SystemTypeServi
 
 app = typer.Typer()
 console = Console()
-
-
-def display_indexed_system_types(system_types: list[SystemTypeOut]):
-    """Displays a list of system types in an indexed table."""
-
-    table = Table("Index", "Value")
-    for i, system_type in enumerate(system_types, start=1):
-        table.add_row(str(i), system_type.value)
-
-    console.print(table)
-    console.print()
 
 
 def display_indices_selection(message: str, indices: list[int], values: list[str]):
@@ -122,15 +110,15 @@ def spares_definition():
     cont = typer.confirm("Are you sure you want to select this as your new spares definition?")
     console.print()
 
-    if cont:
-        # Now set the spares definition with a progress bar
-        console.print("Updating catalogue items...")
-        with create_progress_bar() as progress:
-            setting_service.set_spares_definition(
-                SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
-                tracker=progress.track,
-            )
+    if not cont:
+        sys.exit("Cancelled")
 
-        console.print("Success! :party_popper:")
-    else:
-        console.print("Cancelled")
+    # Now set the spares definition with a progress bar
+    console.print("Updating catalogue items...")
+    with create_progress_bar() as progress:
+        setting_service.set_spares_definition(
+            SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
+            tracker=progress.track,
+        )
+
+    console.print("Success! :party_popper:")
