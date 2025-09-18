@@ -30,9 +30,11 @@ def system_type():
     console.print("Below is the current list of system types available:")
     display_indexed_system_types(current_system_types)
 
+    # Obtain name of the new system type and ensure it doesn't already exist (case insensitive)
     new_system_type_value = Prompt.ask("Please enter the name of the new system type")
     if system_types_collection.find_one({"value": re.compile(new_system_type_value, re.IGNORECASE)}):
         sys.exit("Already exists!")
 
+    # Insert the new system type
     system_types_collection.insert_one({"value": new_system_type_value})
     console.print("Success! :party_popper:")
