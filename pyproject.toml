@@ -19,6 +19,7 @@ dependencies = [
 
 [project.scripts]
 "ims-migrate" = "inventory_management_system_api.migrations.script:main"
+"ims" = "inventory_management_system_api.cli.main:main"
 
 [project.optional-dependencies]
 code-analysis = [

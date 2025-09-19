@@ -384,6 +384,42 @@ payload, and it has not expired. This means that any microservice can be used to
 it meets the above criteria. The [LDAP-JWT Authentication Service](https://github.com/ral-facilities/ldap-jwt-auth) is
 a microservice that provides user authentication against an LDAP server and returns a JWT access token.
 
+### IMS System Administrator CLI
+
+IMS includes a command line interface intended to help a system administrator manage the system. This can be accessed
+using the command `ims` e.g.
+
+```bash
+ims --help
+```
+
+or in Docker
+
+```bash
+docker exec -it inventory-management-system-api ims --help
+```
+
+#### Setting the spares definition
+
+The spares definition is a list of system types that define what systems contain spares. E.g. If you have system type of
+`Storage`, and define the spares definition as `Storage`. Then a spare of a given catalogue item will be defined as any
+item that is within a system of with a type of `Storage`.
+When first setup, IMS does not have a spares definition assigned and so will not attempt to calculate the number of
+spares you have for each catalogue item. To configure the spares definition and enable this functionality use
+
+```bash
+ims configure spares-definition
+```
+
+and follow its instructions. This will calculate and update the `number_of_spares` field on all catalogue items and may
+also be used to change the spares definition once already setup.
+
+NOTE: Please ensure that no one is using ims-api when executing this. Otherwise it is possible to miscount the number of
+spares. If using a reverse proxy to provide access, we recommend first shutting it down before doing this.
+
+Subsequently, whenever a new item is added, moved or deleted and would effect the number of spares, the number of spares
+inside the effected catalogue item will be recalculated.
+
 ### Migrations
 
 #### Adding a migration
