@@ -4,10 +4,10 @@ from typing import Optional, Tuple, TypeVar
 
 import typer
 from rich.console import Console
-from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.prompt import Prompt
 from rich.table import Table
 
+from inventory_management_system_api.cli.core import create_progress_bar
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
 from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
@@ -125,19 +125,10 @@ def spares_definition():
     if cont:
         # Now set the spares definition with a progress bar
         console.print("Updating catalogue items...")
-        progress_bar = Progress(
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            TextColumn("•"),
-            TimeElapsedColumn(),
-            TextColumn("•"),
-            TimeRemainingColumn(),
-        )
-        with progress_bar as p:
+        with create_progress_bar() as progress:
             setting_service.set_spares_definition(
                 SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
-                tracker=p.track,
+                tracker=progress.track,
             )
 
         console.print("Success! :party_popper:")

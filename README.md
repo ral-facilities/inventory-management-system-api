@@ -399,11 +399,77 @@ or in Docker
 docker exec -it inventory-management-system-api ims --help
 ```
 
+#### Migrations
+
+##### Adding a migration
+
+To add a migration first use
+
+```bash
+ims migrate create <migration_name> <migration_description>
+```
+
+to create a new one inside the `inventory_management_system/migrations/scripts` directory. Then add the code necessary
+to perform the migration. See `_example_migration.py` for an example on how to implement one.
+
+##### Performing forward migrations
+
+Before performing a migration you can first check the current status of the database and any outstanding migrations
+using
+
+```bash
+ims migrate status
+```
+
+or in Docker
+
+```bash
+docker exec -it inventory-management-system-api ims migrate status
+```
+
+Then to perform all outstanding migrations up to the latest one use
+
+```bash
+ims migrate forward latest
+```
+
+You may also specify a specific migration name to apply instead which will apply all migrations between the current
+applied one and the specified one. A prompt will be shown to ensure the migrations being applied are sensible.
+
+##### Performing backward migrations
+
+To revert the database by performing backwards migrations you can first use
+
+```bash
+ims migrate status
+```
+
+to check the current status of the database and available migrations and then use
+
+```bash
+ims migrate backward <migration_name>
+```
+
+to perform all backward migrations to get from the current database state back to the state prior to the chosen
+migration name (i.e. it also performs the backward migration for the given migration name).
+
+##### Forcing migration state
+
+If for some reason the migration state is different to what you expect it may be forced via
+
+```bash
+ims migrate set <migration_name>
+```
+
+This is already set to `latest` automatically when using the `dev_cli` to regenerate mock data so that the dump retains
+the expected state.
+
 #### Setting the spares definition
 
-The spares definition is a list of system types that define what systems contain spares. E.g. If you have system type of
-`Storage`, and define the spares definition as `Storage`. Then a spare of a given catalogue item will be defined as any
-item that is within a system of with a type of `Storage`.
+The spares definition is a list of system types that define which systems contain spares. E.g. If you have system type
+of `Storage`, and define the spares definition as `Storage`. Then a spare of a given catalogue item will be defined as
+any item that is within a system of with a type of `Storage`.
+
 When first setup, IMS does not have a spares definition assigned and so will not attempt to calculate the number of
 spares you have for each catalogue item. To configure the spares definition and enable this functionality use
 
@@ -417,70 +483,5 @@ also be used to change the spares definition once already setup.
 NOTE: Please ensure that no one is using ims-api when executing this. Otherwise it is possible to miscount the number of
 spares. If using a reverse proxy to provide access, we recommend first shutting it down before doing this.
 
-Subsequently, whenever a new item is added, moved or deleted and would effect the number of spares, the number of spares
-inside the effected catalogue item will be recalculated.
-
-### Migrations
-
-#### Adding a migration
-
-To add a migration first use
-
-```bash
-ims-migrate create <migration_name> <migration_description>
-```
-
-to create a new one inside the `inventory_management_system/migrations/scripts` directory. Then add the code necessary
-to perform the migration. See `_example_migration.py` for an example on how to implement one.
-
-#### Performing forward migrations
-
-Before performing a migration you can first check the current status of the database and any outstanding migrations
-using
-
-```bash
-ims-migrate status
-```
-
-or in Docker
-
-```bash
-docker exec -it inventory-management-system-api ims-migrate status
-```
-
-Then to perform all outstanding migrations up to the latest one use
-
-```bash
-ims-migrate forward latest
-```
-
-You may also specify a specific migration name to apply instead which will apply all migrations between the current
-applied one and the specified one. A prompt will be shown to ensure the migrations being applied are sensible.
-
-#### Performing backward migrations
-
-To revert the database by performing backwards migrations you can first use
-
-```bash
-ims-migrate status
-```
-
-to check the current status of the database and available migrations and then use
-
-```bash
-ims-migrate backward <migration_name>
-```
-
-to perform all backward migrations to get from the current database state back to the state prior to the chosen
-migration name (i.e. it also performs the backward migration for the given migration name).
-
-#### Forcing migration state
-
-If for some reason the migration state is different to what you expect it may be forced via
-
-```bash
-ims-migrate set <migration_name>
-```
-
-This is already set to `latest` automatically when using the `dev_cli` to regenerate mock data so that the dump retains
-the expected state.
+Subsequently, whenever a new item is added, moved or deleted, the number of spares inside the effected catalogue item
+will be recalculated accordingly
