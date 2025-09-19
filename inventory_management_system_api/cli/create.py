@@ -1,4 +1,4 @@
-"""Module for providing a subcommand for adding entities to IMS."""
+"""Module for providing a subcommand for creating entities in IMS."""
 
 import re
 import sys
@@ -16,7 +16,7 @@ app = typer.Typer()
 
 @app.command()
 def system_type():
-    """Adds a system type."""
+    """Creates a system type."""
 
     # Acquire the required services/collections
     database = get_database()
