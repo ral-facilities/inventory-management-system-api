@@ -142,7 +142,7 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
-    def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
+    def update(self, item_id: str, item: ItemPatchSchema, is_authorised: bool) -> ItemOut:
         """
         Update an item by its ID.
 
@@ -166,7 +166,7 @@ class ItemService:
 
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
 
-        self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system)
+        self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system, is_authorised)
         if "properties" in update_data:
             self._handle_properties_update(item, stored_item, update_data)
 
@@ -206,7 +206,7 @@ class ItemService:
             return self._item_repository.delete(item_id, session=session)
 
     def _handle_system_and_usage_status_id_update(
-        self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict, moving_system: bool
+        self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict, moving_system: bool, is_authorised: bool
     ) -> None:
         """
         Handle an update request that could modify the `system_id` or `usage_status_id` of the item.
@@ -230,7 +230,7 @@ class ItemService:
 
         usage_status_id = stored_item.usage_status_id
         if updating_usage_status:
-            if not moving_system:
+            if not moving_system and not is_authorised:
                 raise InvalidActionError(
                     "Cannot change usage status without moving between systems according to a defined rule"
                 )
@@ -247,7 +247,9 @@ class ItemService:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
 
             current_system = self._system_repository.get(stored_item.system_id)
-            if current_system.type_id != system.type_id:
+            
+            # bypass rule check if authorised
+            if current_system.type_id != system.type_id and not is_authorised:
                 # System type is changing - Ensure the moving operation is allowed by a rule
                 if not self._rule_repository.check_exists(
                     src_system_type_id=current_system.type_id,
@@ -257,7 +259,7 @@ class ItemService:
                     raise InvalidActionError(
                         "No rule found for moving between the given system's types with the same final usage status"
                     )
-            elif updating_usage_status:
+            elif updating_usage_status and not is_authorised:
                 # When system type is not changing - Ensure the usage status is unchanged
                 raise InvalidActionError(
                     "Cannot change usage status of an item when moving between two systems of the same type"

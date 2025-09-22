@@ -12,6 +12,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
+from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
@@ -123,11 +124,17 @@ def partial_update_item(
     item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
+    request: Request
 ) -> ItemSchema:
     logger.info("Partially updating item with ID: %s", item_id)
     logger.debug("Item data: %s", item)
+
+    # check user is authorised to bypass rules
+    jwt_bearer = JWTBearer()
+    is_authorised = jwt_bearer.is_jwt_access_token_authorised(request.state.token)
+
     try:
-        updated_item = item_service.update(item_id, item)
+        updated_item = item_service.update(item_id, item, is_authorised)
         return ItemSchema(**updated_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
