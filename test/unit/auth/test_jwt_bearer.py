@@ -115,7 +115,7 @@ async def test_jwt_bearer_authorization_request_unauthorised_roles_in_bearer_tok
 
 async def test_jwt_bearer_authorization_request_missing_authorization_header(request_mock):
     """
-    Test `JWTBearer` with missing authorization header.
+    Test `JWTBearer` with missing authorisation header.
     """
     jwt_bearer = JWTBearer()
 
@@ -126,7 +126,7 @@ async def test_jwt_bearer_authorization_request_missing_authorization_header(req
 
 async def test_jwt_bearer_authorization_request_empty_authorization_header(request_mock):
     """
-    Test `JWTBearer` with empty authorization header.
+    Test `JWTBearer` with empty authorisation header.
     """
     request_mock.headers = {"Authorization": ""}
 
@@ -152,7 +152,7 @@ async def test_jwt_bearer_authorization_request_missing_bearer_token(request_moc
 
 async def test_jwt_bearer_authorization_request_invalid_authorization_scheme(request_mock):
     """
-    Test `JWTBearer` with invalid authorization scheme.
+    Test `JWTBearer` with invalid authorisation scheme.
     """
     request_mock.headers = {"Authorization": f"Invalid-Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
 
