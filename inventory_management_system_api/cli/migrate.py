@@ -1,13 +1,13 @@
 """Module for providing a subcommand that manages database migrations within IMS."""
 
 import datetime
-import sys
 from typing import Annotated, Optional
 
 import typer
 
-from inventory_management_system_api.cli.core import console
+from inventory_management_system_api.cli.core import console, exit_with_error
 from inventory_management_system_api.migrations.core import (
+    MigrationError,
     execute_migrations_backward,
     execute_migrations_forward,
     find_available_migrations,
@@ -132,7 +132,10 @@ def forward(
 ):
     """Performs forward database migration."""
 
-    migrations = load_migrations_forward_to(name)
+    try:
+        migrations = load_migrations_forward_to(name)
+    except MigrationError as exc:
+        exit_with_error(str(exc))
 
     console.print("This operation will apply the following migrations:")
     for key in migrations.keys():
@@ -153,7 +156,10 @@ def backward(
 ):
     """Performs a backward database migration."""
 
-    migrations, final_previous_migration_name = load_migrations_backward_to(name)
+    try:
+        migrations, final_previous_migration_name = load_migrations_backward_to(name)
+    except MigrationError as exc:
+        exit_with_error(str(exc))
 
     console.print("This operation will revert the following migrations:")
     for key in migrations.keys():
@@ -177,7 +183,7 @@ def set(
     try:
         end_index = find_migration_index(name, available_migrations)
     except ValueError:
-        sys.exit(f"Migration '{name}' was not found in the available list of migrations")
+        exit_with_error(f"Migration '{name}' was not found in the available list of migrations")
 
     if check_user_sure(
         message=f"This operation will forcibly set the latest migration to '{available_migrations[end_index]}'",

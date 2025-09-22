@@ -1,7 +1,6 @@
 """Module for providing the core functionality for database migrations."""
 
 import importlib
-import sys
 from typing import Optional
 
 from rich.console import Console
@@ -12,6 +11,10 @@ from inventory_management_system_api.migrations.base import BaseMigration
 
 database = get_database()
 console = Console()
+
+
+class MigrationError(Exception):
+    """Raised when an exception occurs related to migrations."""
 
 
 def load_migration(name: str) -> BaseMigration:
@@ -94,6 +97,8 @@ def load_migrations_forward_to(name: str) -> dict[str, BaseMigration]:
     :param name: Name of the last migration forward to apply. 'latest' will just use the latest one.
     :returns: List of dicts containing the names and instances of the migrations that need to be applied in the order
               they should be applied.
+    :raises MigrationError: If the given migration doesn't exist.
+    :raises MigrationError: If The selected migration is before the previous migration applied.
     """
 
     available_migrations = find_available_migrations()
@@ -112,11 +117,11 @@ def load_migrations_forward_to(name: str) -> dict[str, BaseMigration]:
 
     try:
         end_index = find_migration_index(name, available_migrations)
-    except ValueError:
-        sys.exit(f"Migration '{name}' was not found in the available list of migrations.")
+    except ValueError as exc:
+        raise MigrationError(f"Migration '{name}' was not found in the available list of migrations.") from exc
 
     if start_index > end_index:
-        sys.exit(
+        raise MigrationError(
             f"Migration '{name}' is before the previous migration applied '{previous_migration}'. So there is nothing "
             "to migrate."
         )
@@ -135,6 +140,10 @@ def load_migrations_backward_to(name: str) -> tuple[dict[str, BaseMigration], Op
               - List of dicts containing the names and instances of the migrations that need to be applied in the order
                 they should be applied.
               - Either the name of the last migration before the one given or `None` if there aren't any.
+    :raises MigrationError: If the previous migration applied doesn't exist.
+    :raises MigrationError: If there are no migrations to revert.
+    :raises MigrationError: If the given migration doesn't exist.
+    :raises MigrationError: If The selected migration is after the previous migration applied.
     """
 
     available_migrations = find_available_migrations()
@@ -143,21 +152,21 @@ def load_migrations_backward_to(name: str) -> tuple[dict[str, BaseMigration], Op
     if previous_migration is not None:
         try:
             start_index = find_migration_index(previous_migration, available_migrations)
-        except ValueError:
-            sys.exit(
+        except ValueError as exc:
+            raise MigrationError(
                 f"Previous migration applied '{previous_migration}' not found in current migrations. "
                 "Have you skipped a version?"
-            )
+            ) from exc
     else:
-        sys.exit("No migrations to revert.")
+        raise MigrationError("No migrations to revert.")
 
     try:
         end_index = find_migration_index(name, available_migrations) - 1
-    except ValueError:
-        sys.exit(f"Migration '{name}' was not found in the available list of migrations.")
+    except ValueError as exc:
+        raise MigrationError(f"Migration '{name}' was not found in the available list of migrations.") from exc
 
     if start_index <= end_index:
-        sys.exit(
+        raise MigrationError(
             f"Migration '{name}' is already reverted or after the previous migration applied '{previous_migration}'. "
             "So there is nothing to migrate."
         )

@@ -2,6 +2,7 @@
 
 import textwrap
 
+import typer
 from rich.console import Console
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.table import Table
@@ -58,3 +59,10 @@ def display_user_selection(message: str, selection: str | int | list[str | int],
 
     console.print(f"{message}: [green]{" ".join(selections)}[/] [orange1]({",".join(values)})[/]")
     console.print()
+
+
+def exit_with_error(message: str):
+    """Displays an error message in red and then exits."""
+
+    console.print(f"[red bold]{message}[/]")
+    raise typer.Exit(1)

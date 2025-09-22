@@ -1,6 +1,5 @@
 """Module for providing a subcommand for configuring IMS."""
 
-import sys
 from typing import Optional, Tuple, TypeVar
 
 import typer
@@ -12,6 +11,7 @@ from inventory_management_system_api.cli.core import (
     display_indexed_system_types,
     display_user_selection,
     display_warning_message,
+    exit_with_error,
 )
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
@@ -106,7 +106,7 @@ def spares_definition():
     console.print()
 
     if not cont:
-        sys.exit("Cancelled")
+        exit_with_error("Cancelled")
 
     # Now set the spares definition with a progress bar
     console.print("Updating catalogue items...")

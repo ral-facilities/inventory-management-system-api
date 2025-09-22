@@ -1,7 +1,5 @@
 """Module for providing a subcommand for deleting entities from IMS."""
 
-import sys
-
 import typer
 from rich.prompt import IntPrompt
 
@@ -10,6 +8,7 @@ from inventory_management_system_api.cli.core import (
     display_indexed_system_types,
     display_user_selection,
     display_warning_message,
+    exit_with_error,
 )
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
@@ -52,12 +51,6 @@ def system_type():
     selected_type = current_system_types[selected_type_index - 1]
     selected_type_id = CustomObjectId(selected_type.id)
 
-    # Display a warning message requesting that the user check no one else is using the system to avoid issues
-    display_warning_message(
-        "Please ensure no one else is using ims-api to avoid deleting a system type that is currently not in use but "
-        "will be at the time of deletion."
-    )
-
     # Obtain the current spares definition
     # pylint:disable=fixme
     # TODO: Obtain from the setting service directly rather than via the repo once implemented in #549
@@ -66,15 +59,21 @@ def system_type():
 
     # Ensure the system type is not used in any system, rule or the spares definition
     if (
-        systems_collection.find_one({"system_type_id": selected_type_id})
+        systems_collection.find_one({"type_id": selected_type_id})
         or rules_collection.find_one({"src_system_type_id": selected_type_id})
         or rules_collection.find_one({"dst_system_type_id": selected_type_id})
         or any(system_type.id == selected_type.id for system_type in current_spares_definition.system_types)
     ):
-        sys.exit(
-            "This system type is currently in use in a system, rule or the spares definition, please remove all usage "
-            "first before deleting."
+        exit_with_error(
+            "[red]This system type is currently in use in a system, rule or the spares definition, please remove all "
+            "usage first before deleting.[/]"
         )
+
+    # Display a warning message requesting that the user check no one else is using the system to avoid issues
+    display_warning_message(
+        "Please ensure no one else is using ims-api to avoid deleting a system type that is currently not in use but "
+        "will be at the time of deletion."
+    )
 
     # Output the selected system type and request confirmation before deleting it
     display_user_selection("You have selected", selected_type_index, selected_type.value)
@@ -82,10 +81,10 @@ def system_type():
     console.print()
 
     if not cont:
-        sys.exit("Cancelled")
+        exit_with_error("Cancelled")
 
     # Now delete the system type
     result = system_types_collection.delete_one({"_id": selected_type_id})
     if result.deleted_count == 0:
-        sys.exit("Failed to delete")
+        exit_with_error("Failed to delete")
     console.print("Success! :party_popper:")

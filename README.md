@@ -401,7 +401,8 @@ docker exec -it inventory-management-system-api ims --help
 
 #### Managing system types
 
-System types are used to distinguish different types of systems from each other and are required to exist before any systems can be created. They are also used in the spares definition and rules.
+System types are used to distinguish different types of systems from each other and are required to exist before any
+systems can be created. They are also used in the spares definition and rules.
 
 System types can be created, updated and deleted using the following interactive commands:
 

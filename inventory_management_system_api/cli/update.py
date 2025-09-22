@@ -1,11 +1,14 @@
 """Module for providing a subcommand for updating entities in IMS."""
 
-import sys
-
 import typer
 from rich.prompt import IntPrompt, Prompt
 
-from inventory_management_system_api.cli.core import console, display_indexed_system_types, display_user_selection
+from inventory_management_system_api.cli.core import (
+    console,
+    display_indexed_system_types,
+    display_user_selection,
+    exit_with_error,
+)
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
@@ -47,7 +50,7 @@ def system_type():
     console.print()
 
     if not cont:
-        sys.exit("Cancelled")
+        exit_with_error("Cancelled")
 
     # Now update the system type
     system_types_collection.update_one({"_id": selected_type_id}, {"$set": {"value": new_type_value}})
