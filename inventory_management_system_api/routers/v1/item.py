@@ -124,7 +124,7 @@ def partial_update_item(
     item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
-    request: Request
+    request: Request,
 ) -> ItemSchema:
     logger.info("Partially updating item with ID: %s", item_id)
     logger.debug("Item data: %s", item)

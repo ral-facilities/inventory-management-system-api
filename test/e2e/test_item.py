@@ -804,7 +804,11 @@ class UpdateDSL(ListDSL):
             item_update_data, self.property_name_id_dict
         )
 
-        self._patch_response_item = self.test_client.patch(f"/v1/items/{item_id}", json=item_update_data, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE if token is None else token}"})
+        self._patch_response_item = self.test_client.patch(
+            f"/v1/items/{item_id}",
+            json=item_update_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE if token is None else token}"},
+        )
 
     def check_patch_item_success(self, expected_item_get_data: dict) -> None:
         """
@@ -901,7 +905,9 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None)
+        self.patch_item(
+            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
+        )
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -917,18 +923,24 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, None)
+        self.patch_item(
+            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, None
+        )
         self.check_patch_item_failed_with_detail(
             422, "No rule found for moving between the given system's types with the same final usage status"
         )
-    
+
     def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_when_authorised(self):
         """Test updating the `system_id` and `usage_status_id` of an item when the user is authorised."""
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, VALID_ACCESS_TOKEN_ADMIN_ROLE)
+        self.patch_item(
+            item_id,
+            {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]},
+            VALID_ACCESS_TOKEN_ADMIN_ROLE,
+        )
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -944,7 +956,9 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, None)
+        self.patch_item(
+            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, None
+        )
         self.check_patch_item_failed_with_detail(
             422, "No rule found for moving between the given system's types with the same final usage status"
         )
@@ -956,7 +970,9 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None)
+        self.patch_item(
+            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
+        )
         self.check_patch_item_failed_with_detail(
             422, "Cannot change usage status of an item when moving between two systems of the same type"
         )
@@ -988,7 +1004,7 @@ class TestUpdate(UpdateDSL):
         self.check_patch_item_failed_with_detail(
             422, "Cannot change usage status without moving between systems according to a defined rule"
         )
-        
+
     def test_partial_update_usage_status_id_when_authorised(self):
         """Test updating the `usage_status_id` of an item when user is authorised"""
 
@@ -1056,7 +1072,9 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
-        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]}, None)
+        self.patch_item(
+            item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]}, None
+        )
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
@@ -1091,7 +1109,9 @@ class TestUpdate(UpdateDSL):
             item_properties_data=[],
         )
 
-        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": "42"}]}, None)
+        self.patch_item(
+            item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": "42"}]}, None
+        )
 
         self.check_patch_item_failed_with_detail(
             422,
@@ -1140,7 +1160,7 @@ class TestUpdate(UpdateDSL):
                     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
                 ]
             },
-            None
+            None,
         )
         self.check_patch_item_success(
             {

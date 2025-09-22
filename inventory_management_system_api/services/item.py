@@ -247,7 +247,7 @@ class ItemService:
                 raise MissingRecordError(f"No system found with ID: {item.system_id}")
 
             current_system = self._system_repository.get(stored_item.system_id)
-            
+
             # bypass rule check if authorised
             if current_system.type_id != system.type_id and not is_authorised:
                 # System type is changing - Ensure the moving operation is allowed by a rule
