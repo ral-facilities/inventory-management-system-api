@@ -138,7 +138,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
         system_id = self._system_type_map.get(system_type_id)
         if not system_id:
             system_id = self.post_system_with_type_id(system_type_id)
-        self.patch_item(item_id, {"system_id": system_id, "usage_status_id": usage_status_id})
+        self.patch_item(item_id, {"system_id": system_id, "usage_status_id": usage_status_id}, None)
 
     def check_catalogue_item_spares(self, expected_number_of_spares_list: list[Optional[int]]) -> None:
         """
