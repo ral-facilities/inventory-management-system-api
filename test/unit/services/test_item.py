@@ -1032,7 +1032,7 @@ class UpdateDSL(ItemServiceDSL):
                 [call(self._item_patch.system_id), call(self._stored_item.system_id)]
             )
 
-            if self._stored_system_out.type_id != self._new_system_out.type_id:
+            if self._stored_system_out.type_id != self._new_system_out.type_id and not self._user_authorised:
                 self.mock_rule_repository.check_exists.assert_called_once_with(
                     src_system_type_id=self._stored_system_out.type_id,
                     dst_system_type_id=self._new_system_out.type_id,
@@ -1224,6 +1224,28 @@ class TestUpdate(UpdateDSL):
         self.call_update(item_id)
         self.check_update_success()
 
+    def test_update_system_and_usage_status_ids_when_authorised(self):
+        """Test updating an item's `system_id` and `usage_status_id` when the user is authorised."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            stored_rule_exists=False,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_system_in_data={
+                **SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            },
+            user_is_authorised=True
+        )
+        self.call_update(item_id)
+        self.check_update_success()
+    
     def test_update_system_and_usage_status_ids_with_non_existent_rule(self):
         """Test updating an item's `system_id` and `usage_status_id` when there isn't a rule defined for the change
         of system types."""
@@ -1267,6 +1289,25 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception(
             "Cannot change usage status of an item when moving between two systems of the same type"
         )
+        
+    def test_update_system_and_usage_status_ids_when_systems_have_same_type_when_authorised(self):
+        """Test updating an item's `system_id` and `usage_status_id` when the current and new systems have the same
+        type, and when the user is authorised."""
+
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"system_id": str(ObjectId()), "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
+            user_is_authorised=True
+        )
+        self.call_update(item_id)
+        self.check_update_success()
 
     def test_update_system_and_usage_status_ids_with_non_existent_usage_status_id(self):
         """Test updating an item's `system_id` while also updating its `usage_status_id` to a non-existent usage
@@ -1301,6 +1342,21 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception(
             "Cannot change usage status without moving between systems according to a defined rule"
         )
+    def test_update_usage_status_id_when_authorised(self):
+        """Test updating an item's `usage_status_id` when the user is authorised"""
+        item_id = str(ObjectId())
+
+        self.mock_update(
+            item_id,
+            item_update_data={"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]},
+            stored_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            new_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            user_is_authorised=True
+        )
+        
+        self.call_update(item_id)
+        self.check_update_success()
 
     def test_update_with_non_existent_id(self):
         """Test updating an item with a non-existent ID."""
