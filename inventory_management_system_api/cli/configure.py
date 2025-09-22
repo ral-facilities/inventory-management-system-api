@@ -3,15 +3,19 @@
 from typing import Optional, Tuple, TypeVar
 
 import typer
-from rich.console import Console
 from rich.prompt import Prompt
-from rich.table import Table
 
-from inventory_management_system_api.cli.core import create_progress_bar
+from inventory_management_system_api.cli.core import (
+    console,
+    create_progress_bar,
+    display_indexed_system_types,
+    display_user_selection,
+    display_warning_message,
+    exit_with_error,
+)
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
 from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
-from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -20,25 +24,6 @@ from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system_type import SystemTypeService
 
 app = typer.Typer()
-console = Console()
-
-
-def display_indexed_system_types(system_types: list[SystemTypeOut]):
-    """Displays a list of system types in an indexed table."""
-
-    table = Table("Index", "Value")
-    for i, system_type in enumerate(system_types, start=1):
-        table.add_row(str(i), system_type.value)
-
-    console.print(table)
-    console.print()
-
-
-def display_indices_selection(message: str, indices: list[int], values: list[str]):
-    """Displays a list of indices and their corresponding values after a message."""
-
-    console.print(f"{message}: [green]{",".join(str(index) for index in indices)}[/] [orange1]({",".join(values)})")
-    console.print()
 
 
 def display_current_spares_definition(
@@ -54,7 +39,7 @@ def display_current_spares_definition(
         for system_type in definition.system_types:
             current_type_indices.append(system_type_ids.index(system_type.id) + 1)
 
-        display_indices_selection("The current spares definition is", current_type_indices, current_type_values)
+        display_user_selection("The current spares definition is", current_type_indices, current_type_values)
 
 
 T = TypeVar("T")
@@ -100,37 +85,35 @@ def spares_definition():
     selected_type_indices, selected_types = ask_user_for_indices_selection(
         "Please enter a new list of system types separated by commas e.g. [green]1,2,3[/]", system_types
     )
+    console.print()
 
-    # Display a warning message explaining the consequences of continuing
-    console.print()
-    console.print(f"[red bold]{":warning: " * 48}[/]")
-    console.print()
-    console.print(
-        "[red bold] This operation will recalculate the 'number_of_spares' field of all existing catalogue items![/]"
+    # Display a warning message explaining the consequences of continuing and requesting that the user check no one else
+    # is using the system to avoid issues
+    display_warning_message(
+        [
+            "This operation will recalculate the 'number_of_spares' field of all existing catalogue items!",
+            "Please ensure no one else is using ims-api to avoid any miscalculations.",
+            "Should an error occur at any point during this process no changes will be made.",
+        ]
     )
-    console.print("[red bold] Please ensure no one else is using ims-api to avoid any miscalculations.[/]")
-    console.print("[red bold] Should an error occur at any point during this process no changes will be made.[/]")
-    console.print()
-    console.print(f"[red bold]{":warning: " * 48}[/]")
-    console.print()
 
     # Output the new selected spares definition and request confirmation before setting it
-    display_indices_selection(
+    display_user_selection(
         "You have selected", selected_type_indices, [system_type.value for system_type in selected_types]
     )
 
     cont = typer.confirm("Are you sure you want to select this as your new spares definition?")
     console.print()
 
-    if cont:
-        # Now set the spares definition with a progress bar
-        console.print("Updating catalogue items...")
-        with create_progress_bar() as progress:
-            setting_service.set_spares_definition(
-                SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
-                tracker=progress.track,
-            )
+    if not cont:
+        exit_with_error("Cancelled")
 
-        console.print("Success! :party_popper:")
-    else:
-        console.print("Cancelled")
+    # Now set the spares definition with a progress bar
+    console.print("Updating catalogue items...")
+    with create_progress_bar() as progress:
+        setting_service.set_spares_definition(
+            SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
+            tracker=progress.track,
+        )
+
+    console.print("Success! :party_popper:")
