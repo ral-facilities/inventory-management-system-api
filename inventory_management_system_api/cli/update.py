@@ -1,5 +1,7 @@
 """Module for providing a subcommand for updating entities in IMS."""
 
+import re
+
 import typer
 from rich.prompt import IntPrompt, Prompt
 
@@ -43,6 +45,13 @@ def system_type():
     selected_type_id = CustomObjectId(selected_type.id)
 
     new_type_value = Prompt.ask("Please enter the new value of the selected system type")
+
+    # Ensure a system type with the same value doesn't already exist (but allow user to change the case of the current
+    # type being edited)
+    if system_types_collection.find_one(
+        {"value": re.compile(new_type_value, re.IGNORECASE), "_id": {"$ne": selected_type_id}}
+    ):
+        exit_with_error("[red]A system type with the same value already exists![/]")
 
     # Output the selected system type and new value and request confirmation before editing it
     display_user_selection("You are updating", selected_type_index, f"{selected_type.value} -> {new_type_value}")
