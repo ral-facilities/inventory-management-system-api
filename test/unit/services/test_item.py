@@ -653,7 +653,8 @@ class UpdateDSL(ItemServiceDSL):
     _updated_item_id: str
     _updated_item: MagicMock
     _update_exception: pytest.ExceptionInfo
-
+    
+    _user_authorised: bool
     _moving_system: bool
     _updating_usage_status: bool
     _updating_properties: bool
@@ -676,6 +677,7 @@ class UpdateDSL(ItemServiceDSL):
         new_usage_status_in_data: Optional[dict] = None,
         new_system_in_data: Optional[dict] = None,
         raise_write_conflict_once: bool = False,
+        user_is_authorised = False
     ) -> None:
         """
         Mocks repository methods appropriately to test the `update` service method.
@@ -706,7 +708,10 @@ class UpdateDSL(ItemServiceDSL):
                                    would be required for a `SystemIn` database model.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
+        :param user_is_authorised: Whether the request is authorised to bypass functionality such as checking rules.
         """
+        
+        self._user_authorised = user_is_authorised
 
         # Add property ids to the stored catalogue item and item if needed
 
@@ -824,7 +829,7 @@ class UpdateDSL(ItemServiceDSL):
         """
 
         self._updated_item_id = item_id
-        self._updated_item = self.item_service.update(item_id, self._item_patch)
+        self._updated_item = self.item_service.update(item_id, self._item_patch, self._user_authorised)
 
     def call_update_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
         """
@@ -836,7 +841,7 @@ class UpdateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.update(item_id, self._item_patch)
+            self.item_service.update(item_id, self._item_patch, self._user_authorised)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
