@@ -83,8 +83,6 @@ jobs:
       - name: Setup MongoDB database
         run: |
           docker compose up --detach mongo-db
-          sleep 10
-          python ./scripts/dev_cli.py --ci db-import
 
       - name: Run e2e tests
         run: |
