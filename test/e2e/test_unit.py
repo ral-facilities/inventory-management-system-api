@@ -9,6 +9,7 @@ from test.mock_data import (
     UNIT_GET_DATA_MM,
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
+    VALID_ACCESS_TOKEN_NO_ROLE,
 )
 from typing import Optional
 
@@ -94,6 +95,13 @@ class TestCreate(CreateDSL):
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_unit(UNIT_POST_DATA_MM)
         self.check_post_unit_failed_with_detail(409, "A unit with the same value already exists")
+
+    def test_create_unit_with_unauthorised_role(self):
+        """Test creating a unit as an unauthorised user"""
+        self._post_response_unit = self.test_client.post(
+            "/v1/units", json=UNIT_POST_DATA_MM, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"}
+        )
+        self.check_post_unit_failed_with_detail(401, "Not authorised to perform this operation")
 
 
 class GetDSL(CreateDSL):
@@ -223,6 +231,14 @@ class TestDelete(DeleteDSL):
 
         self.get_unit(unit_id)
         self.check_get_unit_failed_with_detail(404, "Unit not found")
+
+    def test_delete_unit_with_unauthorised_role(self):
+        """Test deleting a unit as an unauthorised user"""
+        unit_id = self.post_unit(UNIT_POST_DATA_MM)
+        self._delete_response_unit = self.test_client.delete(
+            f"/v1/units/{unit_id}", headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"}
+        )
+        self.check_delete_unit_failed_with_detail(401, "Not authorised to perform this operation")
 
     def test_delete_when_part_of_catalogue_category(self):
         """Test deleting a unit when it is part of a catalogue item."""
