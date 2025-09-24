@@ -32,6 +32,13 @@ YesOption = Annotated[
 ]
 
 
+def exit_with_error(message: str):
+    """Displays an error message in red and then exits."""
+
+    console.print(f"[red bold]{message}[/]")
+    raise typer.Exit(1)
+
+
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
     """Runs a command using subprocess"""
 
@@ -46,13 +53,15 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
                 console.print(stdout_line, end="")
             popen.stdout.close()
         return_code = popen.wait()
-    return return_code
+
+    if return_code != 0:
+        exit_with_error("[red]An error occurred while running the last command![/]")
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
     """Runs a command within the mongodb container"""
 
-    return run_command(
+    run_command(
         [
             "docker",
             "exec",
@@ -75,13 +84,6 @@ def get_mongodb_auth_args(db_username: str, db_password: str):
         db_password,
         "--authenticationDatabase=admin",
     ]
-
-
-def exit_with_error(message: str):
-    """Displays an error message in red and then exits."""
-
-    console.print(f"[red bold]{message}[/]")
-    raise typer.Exit(1)
 
 
 @app.command()
