@@ -48,7 +48,9 @@ def create_usage_status(
     if config.authentication.enabled is True:
         jwt_bearer = JWTBearer()
         if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation"
+            )
 
     try:
         usage_status = usage_status_service.create(usage_status)
@@ -106,7 +108,9 @@ def delete_usage_status(
     if config.authentication.enabled is True:
         jwt_bearer = JWTBearer()
         if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation"
+            )
 
     try:
         usage_status_service.delete(usage_status_id)
