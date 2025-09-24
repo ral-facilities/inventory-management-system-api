@@ -73,7 +73,7 @@ class JWTBearer(HTTPBearer):
         privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
-        if config.authentication.enabled is True:  # only verify authorisation if authentication is enabled
+        if config.authentication.enabled:  # only verify authorisation if authentication is enabled
 
             payload = self._decode_jwt_access_token(access_token)
             return (
