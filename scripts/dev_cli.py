@@ -172,7 +172,7 @@ class CommandDBGenerate(SubCommand):
                 logging.error("Failed to find generate_mock_data.py")
 
             logging.info("Ensuring previous migration is set to latest...")
-            run_command(["ims-migrate", "set", "latest", "-y"])
+            run_command(["ims", "migrate", "set", "latest", "-y"])
 
             if args.dump:
                 logging.info("Dumping output...")
