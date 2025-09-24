@@ -73,16 +73,8 @@ class JWTBearer(HTTPBearer):
         privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
-        if config.authentication.enabled:  # only verify authorisation if authentication is enabled
-
-            payload = self._decode_jwt_access_token(access_token)
-            return (
-                payload is not None
-                and "roles" in payload
-                and any(role in config.authentication.privileged_roles for role in payload["roles"])
-            )
-
-        return True
+        payload = self._decode_jwt_access_token(access_token)
+        return any(role in config.authentication.privileged_roles for role in (payload or {}).get("roles", []))
 
     def _decode_jwt_access_token(self, access_token: str) -> Any | None:
         """
