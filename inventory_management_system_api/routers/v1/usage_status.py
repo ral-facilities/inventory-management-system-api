@@ -14,6 +14,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 
 from inventory_management_system_api.auth.jwt_bearer import JWTBearer
+from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -44,9 +45,10 @@ def create_usage_status(
     logger.debug("Usage status data: %s", usage_status)
 
     # check user is authorised to perform operation
-    jwt_bearer = JWTBearer()
-    if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+    if config.authentication.enabled is True:
+        jwt_bearer = JWTBearer()
+        if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
 
     try:
         usage_status = usage_status_service.create(usage_status)
@@ -101,9 +103,10 @@ def delete_usage_status(
 ) -> None:
     logger.info("Deleting usage status with ID: %s", usage_status_id)
     # check user is authorised to perform operation
-    jwt_bearer = JWTBearer()
-    if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+    if config.authentication.enabled is True:
+        jwt_bearer = JWTBearer()
+        if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
 
     try:
         usage_status_service.delete(usage_status_id)
