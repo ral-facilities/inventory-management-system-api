@@ -1,9 +1,9 @@
 """Module for providing a subcommand for deleting entities from IMS."""
 
 import typer
-from rich.prompt import IntPrompt
 
 from inventory_management_system_api.cli.core import (
+    ask_user_for_index_selection,
     console,
     display_indexed_system_types,
     display_user_selection,
@@ -43,12 +43,9 @@ def system_type():
     display_indexed_system_types(current_system_types)
 
     # Obtain the requested system type to delete
-    selected_type_index = IntPrompt.ask(
-        "Please enter the index of the system type to delete",
-        choices=[str(i) for i in range(1, len(current_system_types) + 1)],
-        show_choices=False,
+    selected_type_index, selected_type = ask_user_for_index_selection(
+        "Please enter the index of the system type to delete", current_system_types
     )
-    selected_type = current_system_types[selected_type_index - 1]
     selected_type_id = CustomObjectId(selected_type.id)
 
     # Obtain the current spares definition
