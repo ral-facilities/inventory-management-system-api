@@ -13,5 +13,5 @@ app.add_typer(delete.app, name="delete", help="Delete entities in IMS.")
 
 
 def main():
-    """Entrypoint for the ims CLI."""
+    """Entrypoint for the IMS CLI."""
     app()
