@@ -58,7 +58,12 @@ class JWTBearer(HTTPBearer):
         :return: `True` if the JWT access token is valid and its payload contains a username, `False` otherwise.
         """
         logger.info("Checking if JWT access token is valid")
-        payload = self._decode_jwt_access_token(access_token)
+        try:
+            payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Error decoding JWT access token")
+            payload = None
+
         return payload is not None and "username" in payload
 
     def is_jwt_access_token_authorised(self, access_token: str) -> bool:
@@ -73,20 +78,6 @@ class JWTBearer(HTTPBearer):
         privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
-        payload = self._decode_jwt_access_token(access_token)
+        payload = jwt.decode(access_token, options={"verify_signature": False})
         return any(role in config.authentication.privileged_roles for role in (payload or {}).get("roles", []))
 
-    def _decode_jwt_access_token(self, access_token: str) -> Any | None:
-        """
-        Decode the given access token, returning the payload
-
-        :param access_token: The JWT access token to decode.
-        :return The payload of the given token, `None` if there is an error decoding the token.
-        """
-        try:
-            payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Error decoding JWT access token")
-            payload = None
-
-        return payload
