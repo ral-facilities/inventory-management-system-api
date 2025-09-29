@@ -3,7 +3,6 @@ Module for providing an implementation of the `JWTBearer` class.
 """
 
 import logging
-from typing import Any
 
 import jwt
 from fastapi import HTTPException, Request, status
