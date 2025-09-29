@@ -9,6 +9,7 @@ from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, T
 from rich.prompt import IntPrompt, Prompt
 from rich.table import Table
 
+from inventory_management_system_api.models.rule import RuleOut
 from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 
@@ -45,6 +46,35 @@ def display_indexed_usage_statuses(usage_statuses: list[UsageStatusOut]):
     table = Table("Index", "ID", "Value")
     for i, usage_status in enumerate(usage_statuses, start=1):
         table.add_row(str(i), usage_status.id, usage_status.value)
+
+    console.print(table)
+    console.print()
+
+
+def display_indexed_rules(rules: list[RuleOut]):
+    """Displays a list of usage statuses in an indexed table."""
+
+    table = Table("Index", "ID", "src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
+    for i, rule in enumerate(rules):
+        table.add_row(
+            str(i),
+            rule.id,
+            (
+                f"{rule.src_system_type.id} [orange1]({rule.src_system_type.value})[/]"
+                if rule.src_system_type
+                else "None"
+            ),
+            (
+                f"{rule.dst_system_type.id} [orange1]({rule.dst_system_type.value})[/]"
+                if rule.dst_system_type
+                else "None"
+            ),
+            (
+                f"{rule.dst_usage_status.id} [orange1]({rule.dst_usage_status.value})[/]"
+                if rule.dst_usage_status
+                else "None"
+            ),
+        )
 
     console.print(table)
     console.print()

@@ -10,13 +10,17 @@ from rich.table import Table
 from inventory_management_system_api.cli.core import (
     ask_user_for_index_selection,
     console,
+    display_indexed_rules,
     display_indexed_system_types,
     display_indexed_usage_statuses,
     exit_with_error,
 )
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.repositories.rule import RuleRepo
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
+from inventory_management_system_api.services.rule import RuleService
 from inventory_management_system_api.services.system_type import SystemTypeService
 from inventory_management_system_api.services.usage_status import UsageStatusService
 
@@ -40,7 +44,7 @@ def system_type():
     # Obtain name of the new system type and ensure it doesn't already exist (case insensitive)
     new_system_type_value = Prompt.ask("Please enter the value of the new system type")
     if system_types_collection.find_one({"value": re.compile(new_system_type_value, re.IGNORECASE)}):
-        exit_with_error("[red]A system type with the same value already exists![/]")
+        exit_with_error("A system type with the same value already exists!")
 
     # Insert the new system type
     system_types_collection.insert_one({"value": new_system_type_value})
@@ -53,10 +57,13 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
 
     # Acquire the required services
     database = get_database()
+    rules_service = RuleService(RuleRepo(database))
     system_type_service = SystemTypeService(SystemTypeRepo(database))
     usage_status_service = UsageStatusService(UsageStatusRepo(database))
+    rules_collection = database.rules
 
-    # Obtain a list of existing system types and usage statuses
+    # Obtain a list of all existing rules, system types and usage statuses
+    rules = rules_service.list(None, None)
     system_types = system_type_service.list()
     usage_statuses = usage_status_service.list()
 
@@ -64,6 +71,10 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
     src_system_type = None
     dst_system_type = None
     dst_usage_status = None
+
+    # Display a table of existing rules for reference
+    console.print("Below is the current list of the current rules available:")
+    display_indexed_rules(rules)
 
     # Customise the steps based on what kind of rule is being created
     if rule_type == "creation":
@@ -107,11 +118,11 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
 
     # Output the selected rule and request confirmation before proceeding
     console.print(f"You are creating the following the following {rule_type} rule:")
-    table = Table("src_system_type", "dst_system_type", "dst_usage_status")
+    table = Table("src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
     table.add_row(
-        src_system_type.value if src_system_type else "None",
-        dst_system_type.value if dst_system_type else "None",
-        dst_usage_status.value if dst_usage_status else "None",
+        (f"{src_system_type.id} [orange1]({src_system_type.value})[/]" if src_system_type else "None"),
+        (f"{dst_system_type.id} [orange1]({dst_system_type.value})[/]" if dst_system_type else "None"),
+        (f"{dst_usage_status.id} [orange1]({dst_usage_status.value})[/]" if dst_usage_status else "None"),
     )
     console.print(table)
     console.print()
@@ -120,12 +131,12 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
     if rule_type == "creation":
         console.print(
             f"This rule will allow new items to be created in systems of type '{dst_system_type.value}' provided they "
-            f"have the usage status '{dst_usage_status.value}'"
+            f"have the usage status '{dst_usage_status.value}'."
         )
     elif rule_type == "moving":
         console.print(
             f"This rule will allow items to be moved between systems from type '{src_system_type.value}' to systems of "
-            f"type '{dst_system_type.value}' provided they have the usage status '{dst_usage_status.value}'"
+            f"type '{dst_system_type.value}' provided they have the usage status '{dst_usage_status.value}'."
         )
     elif rule_type == "deletion":
         console.print(
@@ -140,5 +151,15 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
     if not cont:
         exit_with_error("Cancelled")
 
-    # TODO: Actually save the rule
-    # TODO: Ensure the rule doesn't already exist before allowing it to be created (can use repo check_exists)
+    # Ensure the same rule doesn't already exist
+    rule_data = {
+        "src_system_type_id": CustomObjectId(src_system_type.id) if src_system_type else None,
+        "dst_system_type_id": CustomObjectId(dst_system_type.id) if dst_system_type else None,
+        "dst_usage_status_id": CustomObjectId(dst_usage_status.id) if dst_usage_status else None,
+    }
+    if rules_collection.find_one(rule_data):
+        exit_with_error("The selected rule already exists!")
+
+    # Insert the new rule
+    rules_collection.insert_one(rule_data)
+    console.print("Success! :party_popper:")
