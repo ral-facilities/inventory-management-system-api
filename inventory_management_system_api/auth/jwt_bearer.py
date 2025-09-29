@@ -80,4 +80,3 @@ class JWTBearer(HTTPBearer):
         logging.info("Checking if JWT access token is authorised for operation")
         payload = jwt.decode(access_token, options={"verify_signature": False})
         return any(role in config.authentication.privileged_roles for role in (payload or {}).get("roles", []))
-
