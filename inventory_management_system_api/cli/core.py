@@ -1,7 +1,7 @@
 """Module providing common functions used by the CLI."""
 
 import textwrap
-from typing import Tuple, TypeVar
+from typing import Literal, Tuple, TypeVar
 
 import typer
 from rich.console import Console
@@ -14,6 +14,8 @@ from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 
 console = Console()
+
+RuleType = Literal["creation", "moving", "deletion"]
 
 
 def create_progress_bar() -> Progress:
@@ -58,9 +60,9 @@ def display_indexed_rules(rules: list[RuleOut]):
     for i, rule in enumerate(rules):
         rule_type = "moving"
         if rule.src_system_type is None:
-            rule_type = "creating"
+            rule_type = "creation"
         elif rule.dst_system_type is None:
-            rule_type = "deleting"
+            rule_type = "deletion"
 
         table.add_row(
             str(i),

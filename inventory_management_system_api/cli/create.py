@@ -1,13 +1,14 @@
 """Module for providing a subcommand for creating entities in IMS."""
 
 import re
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Optional
 
 import typer
 from rich.prompt import Prompt
 from rich.table import Table
 
 from inventory_management_system_api.cli.core import (
+    RuleType,
     ask_user_for_index_selection,
     console,
     display_indexed_rules,
@@ -51,9 +52,6 @@ def system_type():
     # Insert the new system type
     system_types_collection.insert_one({"value": new_system_type_value})
     console.print("Success! :party_popper:")
-
-
-RuleType = Literal["creation", "moving", "deletion"]
 
 
 def get_user_constructed_rule(
@@ -123,8 +121,8 @@ def display_user_constructed_rule(
 ):
     """Displays a user constructed rule obtained from `get_user_constructed_rule`."""
 
-    # Output the selected rule and request confirmation before proceeding
-    console.print(f"You are creating the following the following {rule_type} rule:")
+    # Output the selected rule
+    console.print(f"You are creating the following {rule_type} rule:")
     table = Table("src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
     table.add_row(
         (f"{src_system_type.id} [orange1]({src_system_type.value})[/]" if src_system_type else "None"),
