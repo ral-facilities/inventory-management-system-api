@@ -86,8 +86,11 @@ class ItemService:
         :param item: The item to be created.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
-        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        :raises MissingRecordError: If the system does not exist.
         :raises MissingRecordError: If the usage status does not exist.
+        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        :raises InvalidActionError: If creating an item in a system with a usage status for which a creation rule does
+            not exist.
         """
         catalogue_item_id = item.catalogue_item_id
         catalogue_item = self._catalogue_item_repository.get(catalogue_item_id)
@@ -102,10 +105,24 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
+        system_id = item.system_id
+        system = self._system_repository.get(system_id)
+        if not system:
+            raise MissingRecordError(f"No system found with ID: {item.system_id}")
+
         usage_status_id = item.usage_status_id
         usage_status = self._usage_status_repository.get(usage_status_id)
         if not usage_status:
             raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+
+        if not self._rule_repository.check_exists(
+                src_system_type_id=None,
+                dst_system_type_id=system.type_id,
+                dst_usage_status_id=usage_status_id,
+        ):
+            raise InvalidActionError(
+                "No rule found for creating items in the specified system with the specified usage status"
+            )
 
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
