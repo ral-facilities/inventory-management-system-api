@@ -52,13 +52,20 @@ def display_indexed_usage_statuses(usage_statuses: list[UsageStatusOut]):
 
 
 def display_indexed_rules(rules: list[RuleOut]):
-    """Displays a list of usage statuses in an indexed table."""
+    """Displays a list of rules in an indexed table."""
 
-    table = Table("Index", "ID", "src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
+    table = Table("Index", "ID", "Type", "src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
     for i, rule in enumerate(rules):
+        rule_type = "moving"
+        if rule.src_system_type is None:
+            rule_type = "creating"
+        elif rule.dst_system_type is None:
+            rule_type = "deleting"
+
         table.add_row(
             str(i),
             rule.id,
+            rule_type,
             (
                 f"{rule.src_system_type.id} [orange1]({rule.src_system_type.value})[/]"
                 if rule.src_system_type

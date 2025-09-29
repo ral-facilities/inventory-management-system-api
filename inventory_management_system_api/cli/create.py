@@ -1,7 +1,7 @@
 """Module for providing a subcommand for creating entities in IMS."""
 
 import re
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 import typer
 from rich.prompt import Prompt
@@ -17,6 +17,8 @@ from inventory_management_system_api.cli.core import (
 )
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.models.system_type import SystemTypeOut
+from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.repositories.rule import RuleRepo
 from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
@@ -51,30 +53,27 @@ def system_type():
     console.print("Success! :party_popper:")
 
 
-@app.command()
-def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.Argument()]):
-    """Creates a rule."""
+RuleType = Literal["creation", "moving", "deletion"]
 
-    # Acquire the required services
-    database = get_database()
-    rules_service = RuleService(RuleRepo(database))
-    system_type_service = SystemTypeService(SystemTypeRepo(database))
-    usage_status_service = UsageStatusService(UsageStatusRepo(database))
-    rules_collection = database.rules
 
-    # Obtain a list of all existing rules, system types and usage statuses
-    rules = rules_service.list(None, None)
-    system_types = system_type_service.list()
-    usage_statuses = usage_status_service.list()
+def get_user_constructed_rule(
+    rule_type: RuleType, system_types: list[SystemTypeOut], usage_statuses: list[UsageStatusOut]
+) -> tuple[Optional[SystemTypeOut], Optional[SystemTypeOut], Optional[UsageStatusOut]]:
+    """Guides the user through selecting a rule and returns the selected rule component parts.
+
+    :param rule_type: Type of rule to construct.
+    :param system_types: List of system types available.
+    :param usage_statuses: List of usage statuses available:
+    :return: Tuple containing (in the following order)
+            - src_system_type: The source system type of the rule.
+            - dst_system_type: The destination system type of the rule.
+            - dst_usage_status: The destination usage status of the rule.
+    """
 
     # Selected values
     src_system_type = None
     dst_system_type = None
     dst_usage_status = None
-
-    # Display a table of existing rules for reference
-    console.print("Below is the current list of the current rules available:")
-    display_indexed_rules(rules)
 
     # Customise the steps based on what kind of rule is being created
     if rule_type == "creation":
@@ -116,6 +115,14 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
             "Please enter the index of the [green]src_system_type[/]", system_types
         )
 
+    return src_system_type, dst_system_type, dst_usage_status
+
+
+def display_user_constructed_rule(
+    rule_type: RuleType, src_system_type: SystemTypeOut, dst_system_type: SystemTypeOut, dst_usage_status: SystemTypeOut
+):
+    """Displays a user constructed rule obtained from `get_user_constructed_rule`."""
+
     # Output the selected rule and request confirmation before proceeding
     console.print(f"You are creating the following the following {rule_type} rule:")
     table = Table("src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
@@ -145,11 +152,31 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
         )
     console.print()
 
-    cont = typer.confirm("Are you sure you want to create this new rule?")
-    console.print()
 
-    if not cont:
-        exit_with_error("Cancelled")
+@app.command()
+def rule(rule_type: Annotated[RuleType, typer.Argument()]):
+    """Creates a rule."""
+
+    # Acquire the required services
+    database = get_database()
+    rules_service = RuleService(RuleRepo(database))
+    system_type_service = SystemTypeService(SystemTypeRepo(database))
+    usage_status_service = UsageStatusService(UsageStatusRepo(database))
+    rules_collection = database.rules
+
+    # Obtain a list of all existing rules, system types and usage statuses
+    rules = rules_service.list(None, None)
+    system_types = system_type_service.list()
+    usage_statuses = usage_status_service.list()
+
+    # Display a table of existing rules for reference
+    console.print("Below is the current list of the current rules available:")
+    display_indexed_rules(rules)
+
+    # Get the user constructed rule
+    src_system_type, dst_system_type, dst_usage_status = get_user_constructed_rule(
+        rule_type, system_types, usage_statuses
+    )
 
     # Ensure the same rule doesn't already exist
     rule_data = {
@@ -159,6 +186,14 @@ def rule(rule_type: Annotated[Literal["creation", "moving", "deletion"], typer.A
     }
     if rules_collection.find_one(rule_data):
         exit_with_error("The selected rule already exists!")
+
+    # Output the user selected rule and request confirmation before adding it
+    display_user_constructed_rule(rule_type, src_system_type, dst_system_type, dst_usage_status)
+    cont = typer.confirm("Are you sure you want to create this new rule?")
+    console.print()
+
+    if not cont:
+        exit_with_error("Cancelled")
 
     # Insert the new rule
     rules_collection.insert_one(rule_data)
