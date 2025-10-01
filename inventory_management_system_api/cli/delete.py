@@ -4,14 +4,15 @@ import typer
 from rich.table import Table
 
 from inventory_management_system_api.cli.core import (
-    RuleType,
     ask_user_for_index_selection,
     console,
     display_indexed_rules,
     display_indexed_system_types,
+    display_rule_explanation,
     display_user_selection,
     display_warning_message,
     exit_with_error,
+    get_rule_type,
 )
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import get_database
@@ -96,18 +97,11 @@ def system_type():
 def display_user_selected_rule(selected_rule: RuleOut):
     """Displays a user selected rule."""
 
-    # Obtain the type of the selected rule
-    rule_type: RuleType = "moving"
-    if selected_rule.src_system_type is None:
-        rule_type = "creation"
-    elif selected_rule.dst_system_type is None:
-        rule_type = "deletion"
-
     # Output the selected rule
     table = Table("ID", "Type", "src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
     table.add_row(
         selected_rule.id,
-        rule_type,
+        get_rule_type(selected_rule.src_system_type, selected_rule.dst_system_type),
         (
             f"{selected_rule.src_system_type.id} [orange1]({selected_rule.src_system_type.value})[/]"
             if selected_rule.src_system_type
@@ -127,24 +121,10 @@ def display_user_selected_rule(selected_rule: RuleOut):
     console.print(table)
     console.print()
 
-    # Customise proper explanation based on the kind of rule
-    if rule_type == "creation":
-        console.print(
-            f"This rule allows new items to be created in systems of type '{selected_rule.dst_system_type.value}' "
-            f"provided they have the usage status '{selected_rule.dst_usage_status.value}'."
-        )
-    elif rule_type == "moving":
-        console.print(
-            f"This rule allows items to be moved between systems from type '{selected_rule.src_system_type.value}' to "
-            f"systems of type '{selected_rule.dst_system_type.value}' provided they have the usage status "
-            f"'{selected_rule.dst_usage_status.value}'."
-        )
-    elif rule_type == "deletion":
-        console.print(
-            f"This rule allows items to be deleted in systems of type '{selected_rule.src_system_type.value}' "
-            "regardless of usage status."
-        )
-    console.print()
+    # Output an explanation of the rule
+    display_rule_explanation(
+        selected_rule.src_system_type, selected_rule.dst_system_type, selected_rule.dst_usage_status
+    )
 
 
 @app.command()

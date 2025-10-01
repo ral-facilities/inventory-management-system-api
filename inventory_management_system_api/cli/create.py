@@ -14,6 +14,7 @@ from inventory_management_system_api.cli.core import (
     display_indexed_rules,
     display_indexed_system_types,
     display_indexed_usage_statuses,
+    display_rule_explanation,
     exit_with_error,
 )
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
@@ -132,23 +133,8 @@ def display_user_constructed_rule(
     console.print(table)
     console.print()
 
-    # Customise proper explanation based on the kind of rule
-    if rule_type == "creation":
-        console.print(
-            f"This rule will allow new items to be created in systems of type '{dst_system_type.value}' provided they "
-            f"have the usage status '{dst_usage_status.value}'."
-        )
-    elif rule_type == "moving":
-        console.print(
-            f"This rule will allow items to be moved between systems from type '{src_system_type.value}' to systems of "
-            f"type '{dst_system_type.value}' provided they have the usage status '{dst_usage_status.value}'."
-        )
-    elif rule_type == "deletion":
-        console.print(
-            f"This rule will allow items to be deleted in systems of type '{src_system_type.value}' regardless of "
-            "usage status."
-        )
-    console.print()
+    # Output an explanation of the rule
+    display_rule_explanation(src_system_type, dst_system_type, dst_usage_status)
 
 
 @app.command()

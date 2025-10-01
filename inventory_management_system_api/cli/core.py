@@ -1,7 +1,7 @@
 """Module providing common functions used by the CLI."""
 
 import textwrap
-from typing import Literal, Tuple, TypeVar
+from typing import Literal, Optional, Tuple, TypeVar
 
 import typer
 from rich.console import Console
@@ -53,21 +53,27 @@ def display_indexed_usage_statuses(usage_statuses: list[UsageStatusOut]):
     console.print()
 
 
+def get_rule_type(
+    src_system_type: Optional[SystemTypeOut],
+    dst_system_type: Optional[SystemTypeOut],
+) -> RuleType:
+    """Obtains the type of a rule based on what the rule contains."""
+
+    if src_system_type is None:
+        return "creation"
+    if dst_system_type is None:
+        return "deletion"
+    return "moving"
+
+
 def display_indexed_rules(rules: list[RuleOut]):
     """Displays a list of rules in an indexed table."""
-
     table = Table("Index", "ID", "Type", "src_system_type_id", "dst_system_type_id", "dst_usage_status_id")
-    for i, rule in enumerate(rules):
-        rule_type = "moving"
-        if rule.src_system_type is None:
-            rule_type = "creation"
-        elif rule.dst_system_type is None:
-            rule_type = "deletion"
-
+    for i, rule in enumerate(rules, start=1):
         table.add_row(
             str(i),
             rule.id,
-            rule_type,
+            get_rule_type(rule.src_system_type, rule.dst_system_type),
             (
                 f"{rule.src_system_type.id} [orange1]({rule.src_system_type.value})[/]"
                 if rule.src_system_type
@@ -86,6 +92,35 @@ def display_indexed_rules(rules: list[RuleOut]):
         )
 
     console.print(table)
+    console.print()
+
+
+def display_rule_explanation(
+    src_system_type: Optional[SystemTypeOut],
+    dst_system_type: Optional[SystemTypeOut],
+    dst_usage_status: Optional[UsageStatusOut],
+):
+    """Displays an explanation of a rule given its type, system types and usage status."""
+
+    rule_type = get_rule_type(src_system_type, dst_system_type)
+
+    # Customise explanation based on the kind of rule
+    if rule_type == "creation":
+        console.print(
+            f"This rule allows new items to be created in systems of type '{dst_system_type.value}' "
+            f"provided they have the usage status '{dst_usage_status.value}'."
+        )
+    elif rule_type == "moving":
+        console.print(
+            f"This rule allows items to be moved between systems from type '{src_system_type.value}' to "
+            f"systems of type '{dst_system_type.value}' provided they have the usage status "
+            f"'{dst_usage_status.value}'."
+        )
+    elif rule_type == "deletion":
+        console.print(
+            f"This rule allows items to be deleted in systems of type '{src_system_type.value}' "
+            "regardless of usage status."
+        )
     console.print()
 
 
