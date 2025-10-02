@@ -114,13 +114,10 @@ def display_rule_explanation(
         console.print(
             f"This rule allows items to be moved between systems from type '{src_system_type.value}' to "
             f"systems of type '{dst_system_type.value}' provided they have the usage status "
-            f"'{dst_usage_status.value}'."
+            f"'{dst_usage_status.value}'. The frontend will automatically change the usage status to this on move."
         )
     elif rule_type == "deletion":
-        console.print(
-            f"This rule allows items to be deleted in systems of type '{src_system_type.value}' "
-            "regardless of usage status."
-        )
+        console.print(f"This rule allows items to be deleted in systems of type '{src_system_type.value}'.")
     console.print()
 
 
