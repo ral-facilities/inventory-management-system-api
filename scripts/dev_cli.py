@@ -186,7 +186,7 @@ def db_clear(db_username: DatabaseUsernameOption, db_password: DatabasePasswordO
     # Delete the existing data
     mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
     for database_name in ["ims", "test-ims"]:
-        console.print("Deleting database contents of %s...", database_name)
+        console.print(f"Deleting database contents of {database_name}...")
         run_mongodb_command(
             ["mongosh", database_name]
             + mongodb_auth_args
