@@ -23,6 +23,8 @@ from test.mock_data import (
 from typing import Optional
 
 import pytest
+from bson import ObjectId
+from fastapi.testclient import TestClient
 from httpx import Response
 
 from inventory_management_system_api.core.database import get_database
@@ -260,3 +262,56 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         # Set the spares definition and ensure the catalogue items are updated
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
         self.check_catalogue_item_spares([0, 1])
+
+
+class GetDSL(SparesDefinitionDSL):
+    """Base class for get tests."""
+
+    _get_response_spares_definition: Response
+
+    def get_spares_definition(self) -> None:
+        """Gets the spares definition."""
+        self._get_response_spares_definition = self.test_client.get(f"/v1/setting/spares-definition")
+
+    def check_get_spares_definition_success(self, expected_rules_get_spares_definition_data: dict) -> None:
+        """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data
+            returned.
+
+        :param expected_rules_get_spares_definition_data: Dictionary containing the expected spares definition data
+        returned as would be required for 'SparesDefinitionSchema'"""
+
+        assert self._get_response_spares_definition.status_code == 200
+        assert self._get_response_spares_definition.json() == expected_rules_get_spares_definition_data
+
+    def check_get_spares_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Check that a prior call to 'get_spares_definition' gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+
+        assert self._get_response_spares_definition.status_code == status_code
+        assert self._get_response_spares_definition.json()["detail"] == detail
+
+
+class TestGet(GetDSL):
+    """Tests for getting a spares definition."""
+
+    def test_get(self):
+        """Test getting a spares definition"""
+        spares_definition_id = self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
+
+        self.get_spares_definition(spares_definition_id)
+        self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
+
+    def test_get_with_non_existent_id(self):
+        """Test getting a spares definition"""
+        self.get_spares_definition(str(ObjectId()))
+        self.check_get_spares_definition_failed_with_detail(404, "Item not found")
+
+    def test_get_with_invalid_id(self):
+        """Test getting a spares definition with an invalid ID"""
+
+        self.get_spares_definition("invalid-id")
+        self.check_get_item_failed_with_detail(404, "Item not found")
