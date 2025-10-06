@@ -674,7 +674,7 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
 BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
 
 
-# New, Required values only
+# New, All required values except ids that are not predefined
 
 ITEM_DATA_NEW_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
