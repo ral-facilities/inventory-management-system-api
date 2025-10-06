@@ -49,7 +49,7 @@ def create_usage_status(
         jwt_bearer = JWTBearer()
         if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation"
             )
 
     try:
@@ -109,7 +109,7 @@ def delete_usage_status(
         jwt_bearer = JWTBearer()
         if not jwt_bearer.is_jwt_access_token_authorised(request.state.token):
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation"
+                status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation"
             )
 
     try:

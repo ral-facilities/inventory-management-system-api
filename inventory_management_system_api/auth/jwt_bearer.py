@@ -63,7 +63,7 @@ class JWTBearer(HTTPBearer):
             logger.exception("Error decoding JWT access token")
             payload = None
 
-        return payload is not None and "username" in payload
+        return payload is not None and ("username" in payload and "roles" in payload)
 
     def is_jwt_access_token_authorised(self, access_token: str) -> bool:
         """
@@ -77,5 +77,10 @@ class JWTBearer(HTTPBearer):
         privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
-        payload = jwt.decode(access_token, options={"verify_signature": False})
-        return any(role in config.authentication.privileged_roles for role in (payload or {}).get("roles", []))
+        try:
+            payload = jwt.decode(access_token, options={"verify_signature": False})
+            return any(role in config.authentication.privileged_roles for role in payload["roles"])
+
+        except Exception:  # pylint: disable=broad-exception-caught
+            logger.exception("Error decoding JWT access token")
+            return False

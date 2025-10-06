@@ -102,7 +102,7 @@ class TestCreate(CreateDSL):
             json=USAGE_STATUS_POST_DATA_CUSTOM,
             headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"},
         )
-        self.check_post_usage_status_failed_with_detail(401, "Not authorised to perform this operation")
+        self.check_post_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
 
 class GetDSL(CreateDSL):
@@ -244,7 +244,7 @@ class TestDelete(DeleteDSL):
         self._delete_response_usage_status = self.test_client.delete(
             f"/v1/usage-statuses/{usage_status_id}", headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"}
         )
-        self.check_delete_usage_status_failed_with_detail(401, "Not authorised to perform this operation")
+        self.check_delete_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
     def test_delete_when_part_of_item(self):
         """Test deleting a usage status when it is part of an item."""
