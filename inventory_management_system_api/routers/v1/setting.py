@@ -10,7 +10,8 @@ Module for providing an API router which defines routes for managing system type
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 
 from inventory_management_system_api.schemas.setting import SparesDefinitionSchema
 from inventory_management_system_api.services.setting import SettingService
@@ -31,12 +32,8 @@ def get_spares_definition(
     logger.info("Getting spares definition")
 
     setting = setting_service.get_spares_definition()
-    print(setting.model_dump())
-    print("hello")
-    print(
-        SparesDefinitionSchema(
-            **{"id": "spares_definition", "system_types": [{"id": "685e5dce6e347e39d459c5ea", "value": "Storage"}]}
-        )
-    )
 
-    return SparesDefinitionSchema(**setting.model_dump())
+    if setting is None:
+        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+    else:
+        return SparesDefinitionSchema(**setting.model_dump())

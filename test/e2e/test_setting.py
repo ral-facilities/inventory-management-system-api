@@ -13,8 +13,10 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    SETTING_SPARES_DEFINITION_GET_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+    SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     SYSTEM_TYPE_GET_DATA_STORAGE,
@@ -280,8 +282,11 @@ class GetDSL(SparesDefinitionDSL):
         :param expected_rules_get_spares_definition_data: Dictionary containing the expected spares definition data
         returned as would be required for 'SparesDefinitionSchema'"""
 
-        assert self._get_response_spares_definition.status_code == 200
-        assert self._get_response_spares_definition.json() == expected_rules_get_spares_definition_data
+        if expected_rules_get_spares_definition_data is None:
+            assert self._get_response_spares_definition.status_code == 204
+        else:
+            assert self._get_response_spares_definition.status_code == 200
+            assert self._get_response_spares_definition.json() == expected_rules_get_spares_definition_data
 
     def check_get_spares_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -300,18 +305,13 @@ class TestGet(GetDSL):
 
     def test_get(self):
         """Test getting a spares definition"""
-        spares_definition_id = self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
+        self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
 
-        self.get_spares_definition(spares_definition_id)
-        self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_STORAGE)
 
-    def test_get_with_non_existent_id(self):
-        """Test getting a spares definition"""
-        self.get_spares_definition(str(ObjectId()))
-        self.check_get_spares_definition_failed_with_detail(404, "Item not found")
-
-    def test_get_with_invalid_id(self):
+    def test_get_spares_definition_not_set(self):
         """Test getting a spares definition with an invalid ID"""
 
-        self.get_spares_definition("invalid-id")
-        self.check_get_item_failed_with_detail(404, "Item not found")
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(None)
