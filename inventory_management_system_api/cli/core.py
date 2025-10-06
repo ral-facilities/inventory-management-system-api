@@ -57,7 +57,7 @@ def display_user_selection(message: str, selection: str | int | list[str | int],
     selections = [str(selec) for selec in selections]
     values = value if isinstance(value, list) else [value]
 
-    console.print(f"{message}: [green]{" ".join(selections)}[/] [orange1]({",".join(values)})[/]")
+    console.print(f"{message}: [green]{",".join(selections)}[/] [orange1]({",".join(values)})[/]")
     console.print()
 
 
