@@ -86,6 +86,21 @@ async def test_jwt_bearer_authorization_request_missing_username_in_bearer_token
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
+async def test_jwt_bearer_authorization_request_missing_roles_in_bearer_token(jwt_decode_mock, request_mock):
+    """
+    Test `JWTBearer` with missing username in access token.
+    """
+    jwt_decode_mock.return_value = {"exp": 253402300799, "username": "username", "userIsAdmin": True}
+    request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
+
+    jwt_bearer = JWTBearer()
+
+    with pytest.raises(HTTPException) as exc:
+        await jwt_bearer(request_mock)
+    assert str(exc.value) == "403: Invalid token or expired token"
+
+
+@patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
 async def test_jwt_bearer_authorization_request_authorised_roles_in_bearer_token(jwt_decode_mock, request_mock):
     """
     Test `JWTBearer authorisation` with authorised roles in access token
@@ -97,6 +112,19 @@ async def test_jwt_bearer_authorization_request_authorised_roles_in_bearer_token
     jwt_bearer = JWTBearer()
 
     assert jwt_bearer.is_jwt_access_token_authorised(VALID_ACCESS_TOKEN_ADMIN_ROLE) is True
+
+
+@patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
+def test_jwt_bearer_authorization_request_authorised_invalid_bearer_token(jwt_decode_mock, request_mock):
+    """
+    Test `JWTBearer authorisation` with invalid access token.
+    """
+    jwt_decode_mock.side_effect = InvalidTokenError()
+    request_mock.headers = {"Authorization": f"Bearer {INVALID_ACCESS_TOKEN}"}
+    request_mock.state.token = INVALID_ACCESS_TOKEN
+
+    jwt_bearer = JWTBearer()
+    assert jwt_bearer.is_jwt_access_token_authorised(INVALID_ACCESS_TOKEN) is False
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
