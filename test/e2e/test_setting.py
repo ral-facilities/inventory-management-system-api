@@ -16,7 +16,6 @@ from test.mock_data import (
     SETTING_SPARES_DEFINITION_GET_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
-    SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
     SYSTEM_TYPE_GET_DATA_STORAGE,
@@ -25,8 +24,6 @@ from test.mock_data import (
 from typing import Optional
 
 import pytest
-from bson import ObjectId
-from fastapi.testclient import TestClient
 from httpx import Response
 
 from inventory_management_system_api.core.database import get_database
@@ -273,7 +270,7 @@ class GetDSL(SparesDefinitionDSL):
 
     def get_spares_definition(self) -> None:
         """Gets the spares definition."""
-        self._get_response_spares_definition = self.test_client.get(f"/v1/setting/spares-definition")
+        self._get_response_spares_definition = self.test_client.get("/v1/setting/spares-definition")
 
     def check_get_spares_definition_success(self, expected_rules_get_spares_definition_data: dict) -> None:
         """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data

@@ -35,5 +35,5 @@ def get_spares_definition(
 
     if setting is None:
         return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
-    else:
-        return SparesDefinitionSchema(**setting.model_dump())
+
+    return SparesDefinitionSchema(**setting.model_dump())
