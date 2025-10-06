@@ -116,9 +116,9 @@ class ItemService:
             raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
 
         if not self._rule_repository.check_exists(
-                src_system_type_id=None,
-                dst_system_type_id=system.type_id,
-                dst_usage_status_id=usage_status_id,
+            src_system_type_id=None,
+            dst_system_type_id=system.type_id,
+            dst_usage_status_id=usage_status_id,
         ):
             raise InvalidActionError(
                 "No rule found for creating items in the specified system with the specified usage status"
