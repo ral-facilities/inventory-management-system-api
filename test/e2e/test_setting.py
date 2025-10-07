@@ -263,8 +263,8 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         self.check_catalogue_item_spares([0, 1])
 
 
-class GetDSL(SparesDefinitionDSL):
-    """Base class for get tests."""
+class GetSparesDefinitionDSL(SparesDefinitionDSL):
+    """Base class for get_spares_definition tests."""
 
     _get_response_spares_definition: Response
 
@@ -297,18 +297,18 @@ class GetDSL(SparesDefinitionDSL):
         assert self._get_response_spares_definition.json()["detail"] == detail
 
 
-class TestGet(GetDSL):
-    """Tests for getting a spares definition."""
+class TestGetSparesDefinition(GetSparesDefinitionDSL):
+    """Tests for getting the spares definition."""
 
-    def test_get(self):
-        """Test getting a spares definition"""
+    def test_get_spares_definition(self):
+        """Test getting the spares definition"""
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
 
         self.get_spares_definition()
         self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_STORAGE)
 
     def test_get_spares_definition_not_set(self):
-        """Test getting a spares definition with an invalid ID"""
+        """Test getting the spares definition when it is not set."""
 
         self.get_spares_definition()
         self.check_get_spares_definition_success(None)

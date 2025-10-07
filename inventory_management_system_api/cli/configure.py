@@ -73,7 +73,6 @@ def spares_definition():
     display_indexed_system_types(system_types)
 
     # Obtain and output the current spares definition
-
     current_spares_definition = setting_service.get_spares_definition()
 
     system_type_ids = [system_type.id for system_type in system_types]

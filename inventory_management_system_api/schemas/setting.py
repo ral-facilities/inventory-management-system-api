@@ -9,7 +9,9 @@ from inventory_management_system_api.schemas.system_type import SystemTypeSchema
 
 class SparesDefinitionSchema(BaseModel):
     """
-    Schema model for a Setting get request response.
+    Schema model for a spares definition get request response.
     """
 
-    system_types: list[SystemTypeSchema] = Field(description="List of system types for spares definition")
+    system_types: list[SystemTypeSchema] = Field(
+        description="List of system types that define which systems contain spares."
+    )

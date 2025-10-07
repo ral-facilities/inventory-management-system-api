@@ -1,5 +1,5 @@
 """
-Module for providing an API router which defines routes for managing system types using the `SystemTypeService` service.
+Module for providing an API router which defines routes for managing settings using the `SettingService` service.
 """
 
 # We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from inventory_management_system_api.schemas.setting import SparesDefinitionSchema
 from inventory_management_system_api.services.setting import SettingService
 
-router = APIRouter(prefix="/v1/setting", tags=["setting"])
+router = APIRouter(prefix="/v1/settings", tags=["settings"])
 
 logger = logging.getLogger()
 
@@ -24,7 +24,12 @@ SettingServiceDep = Annotated[SettingService, Depends(SettingService)]
 
 
 @router.get(
-    path="/spares-definition", summary="Get spares definition", response_description="List of spares definition"
+    path="/spares-definition",
+    summary="Get spares definition",
+    responses={
+        status.HTTP_200_OK: {"model": SparesDefinitionSchema, "description": "The spares definition"},
+        status.HTTP_204_NO_CONTENT: {"model": None},
+    },
 )
 def get_spares_definition(
     setting_service: SettingServiceDep,
