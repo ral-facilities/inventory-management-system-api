@@ -102,7 +102,7 @@ def clear_existing_data(
     # Delete the existing data
     console.print("Deleting database contents...")
     run_mongodb_command(
-        ["mongosh", "object-storage"]
+        ["mongosh", "ims"]
         + get_mongodb_auth_args(db_username, db_password)
         + [
             "--eval",
