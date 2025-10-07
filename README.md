@@ -416,7 +416,7 @@ Running each of these will guide you through the process.
 
 #### Managing rules
 
-Rules define what is operations are possible for items in relation to systems. They are split into three categories:
+Rules define what operations are possible for items in relation to systems. They are split into three categories:
 
 - Creation: These define which types of system's items can be created in, and what usage status they should have.
 - Deletion: These define which types of system's items can be deleted from (They have no restriction on usage status)

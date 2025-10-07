@@ -118,7 +118,10 @@ def get_user_constructed_rule(
 
 
 def display_user_constructed_rule(
-    rule_type: RuleType, src_system_type: SystemTypeOut, dst_system_type: SystemTypeOut, dst_usage_status: SystemTypeOut
+    rule_type: RuleType,
+    src_system_type: SystemTypeOut,
+    dst_system_type: SystemTypeOut,
+    dst_usage_status: UsageStatusOut,
 ):
     """Displays a user constructed rule obtained from `get_user_constructed_rule`."""
 
