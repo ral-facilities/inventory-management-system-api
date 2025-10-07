@@ -40,7 +40,7 @@ def exit_with_error(message: str):
 
 
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """Runs a command using subprocess"""
+    """Runs a command using subprocess."""
 
     console.print(f"[cyan]Running command:[/] [green]{" ".join(args)}[/]")
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
@@ -59,7 +59,7 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """Runs a command within the mongodb container"""
+    """Runs a command within the mongodb container."""
 
     run_command(
         [
