@@ -73,14 +73,9 @@ class JWTBearer(HTTPBearer):
         these roles is one of the configured privileged_roles
 
         :param access_token: The JWT access token to check
-        :return `True` if the JWT access token's payload contains roles, and overlaps the configured
-        privileged_roles, `False` otherwise.
+        :return: `True` if the JWT access token's payload contains roles, and overlaps the configured
+            privileged_roles, `False` otherwise.
         """
         logging.info("Checking if JWT access token is authorised for operation")
-        try:
-            payload = jwt.decode(access_token, options={"verify_signature": False})
-            return any(role in config.authentication.privileged_roles for role in payload["roles"])
-
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.exception("Error decoding JWT access token")
-            return False
+        payload = jwt.decode(access_token, options={"verify_signature": False, "verify_exp": False})
+        return any(role in config.authentication.privileged_roles for role in payload["roles"])

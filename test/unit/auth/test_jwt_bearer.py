@@ -115,19 +115,6 @@ async def test_jwt_bearer_authorization_request_authorised_roles_in_bearer_token
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
-def test_jwt_bearer_authorization_request_authorised_invalid_bearer_token(jwt_decode_mock, request_mock):
-    """
-    Test `JWTBearer authorisation` with invalid access token.
-    """
-    jwt_decode_mock.side_effect = InvalidTokenError()
-    request_mock.headers = {"Authorization": f"Bearer {INVALID_ACCESS_TOKEN}"}
-    request_mock.state.token = INVALID_ACCESS_TOKEN
-
-    jwt_bearer = JWTBearer()
-    assert jwt_bearer.is_jwt_access_token_authorised(INVALID_ACCESS_TOKEN) is False
-
-
-@patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
 async def test_jwt_bearer_authorization_request_unauthorised_roles_in_bearer_token(jwt_decode_mock, request_mock):
     """
     Test `JWTBearer authorisation` with unauthorised roles in access token
