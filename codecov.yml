@@ -12,3 +12,4 @@ ignore:
   - "inventory_management_system_api/migrations/scripts/*" # ignore migration scripts
   - "inventory_management_system_api/routers/v1/*" # ignore routers as they are tested in the e2e tests
   - "inventory_management_system_api/cli" # ignore cli as its not easy to test and is instead manually checked
+  - "inventory_management_system_api/main.py" # ignore main.py as contains router and is tested in the e2e tests

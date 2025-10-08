@@ -1,11 +1,11 @@
 """Module for providing a subcommand for configuring IMS."""
 
-from typing import Optional, Tuple, TypeVar
+from typing import Optional
 
 import typer
-from rich.prompt import Prompt
 
 from inventory_management_system_api.cli.core import (
+    ask_user_for_indices_selection,
     console,
     create_progress_bar,
     display_indexed_system_types,
@@ -42,19 +42,6 @@ def display_current_spares_definition(
         display_user_selection("The current spares definition is", current_type_indices, current_type_values)
 
 
-T = TypeVar("T")
-
-
-def ask_user_for_indices_selection(message: str, options: list[T]) -> Tuple[list[int], list[T]]:
-    """Asks the user for a selection of indices and returns the resulting selected indices and the options they
-    represent."""
-
-    selected_indices = [int(index) for index in Prompt.ask(message).split(",")]
-    selected_options = [options[selected_index - 1] for selected_index in selected_indices]
-
-    return selected_indices, selected_options
-
-
 @app.command()
 def spares_definition():
     """Configures the spares definition used by IMS."""
@@ -82,7 +69,6 @@ def spares_definition():
     selected_type_indices, selected_types = ask_user_for_indices_selection(
         "Please enter a new list of system types separated by commas e.g. [green]1,2,3[/]", system_types
     )
-    console.print()
 
     # Display a warning message explaining the consequences of continuing and requesting that the user check no one else
     # is using the system to avoid issues
