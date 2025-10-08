@@ -201,9 +201,7 @@ class GetSparesDefinitionDSL(SettingServiceDSL):
         ServiceTestHelpers.mock_get(self.mock_setting_repository, self._expected_spares_definition)
 
     def call_get_spares_definition(self) -> None:
-        """Calls the 'SettingService' 'get_spares_definition' method.
-        :param setting_id: ID of the setting to be obtained
-        """
+        """Calls the 'SettingService' 'get_spares_definition' method."""
 
         self._obtained_spares_definition = self.setting_service.get_spares_definition()
 

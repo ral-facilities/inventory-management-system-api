@@ -277,7 +277,8 @@ class GetSparesDefinitionDSL(SparesDefinitionDSL):
             returned.
 
         :param expected_rules_get_spares_definition_data: Dictionary containing the expected spares definition data
-        returned as would be required for 'SparesDefinitionSchema'"""
+        returned as would be required for 'SparesDefinitionSchema'
+        """
 
         if expected_rules_get_spares_definition_data is None:
             assert self._get_response_spares_definition.status_code == 204

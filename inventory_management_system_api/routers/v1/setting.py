@@ -31,9 +31,7 @@ SettingServiceDep = Annotated[SettingService, Depends(SettingService)]
         status.HTTP_204_NO_CONTENT: {"model": None},
     },
 )
-def get_spares_definition(
-    setting_service: SettingServiceDep,
-) -> SparesDefinitionSchema:
+def get_spares_definition(setting_service: SettingServiceDep):
     logger.info("Getting spares definition")
 
     setting = setting_service.get_spares_definition()
