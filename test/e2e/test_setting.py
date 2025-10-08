@@ -270,7 +270,7 @@ class GetSparesDefinitionDSL(SparesDefinitionDSL):
 
     def get_spares_definition(self) -> None:
         """Gets the spares definition."""
-        self._get_response_spares_definition = self.test_client.get("/v1/setting/spares-definition")
+        self._get_response_spares_definition = self.test_client.get("/v1/settings/spares-definition")
 
     def check_get_spares_definition_success(self, expected_rules_get_spares_definition_data: dict) -> None:
         """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data
