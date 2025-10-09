@@ -60,10 +60,7 @@ def spares_definition():
     display_indexed_system_types(system_types)
 
     # Obtain and output the current spares definition
-    # pylint:disable=fixme
-    # TODO: Obtain from the setting service directly rather than via the repo once implemented in #549
-    # pylint:disable=protected-access
-    current_spares_definition = setting_service._setting_repository.get(SparesDefinitionOut)
+    current_spares_definition = setting_service.get_spares_definition()
 
     system_type_ids = [system_type.id for system_type in system_types]
     display_current_spares_definition(current_spares_definition, system_type_ids)
