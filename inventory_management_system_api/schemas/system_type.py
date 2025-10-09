@@ -12,3 +12,4 @@ class SystemTypeSchema(BaseModel):
 
     id: str = Field(description="ID of the system type")
     value: str = Field(description="Value of the system type")
+    description: str = Field(description="Description of the system type")

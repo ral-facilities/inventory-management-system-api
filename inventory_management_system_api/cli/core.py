@@ -28,9 +28,9 @@ def create_progress_bar() -> Progress:
 def display_indexed_system_types(system_types: list[SystemTypeOut]):
     """Displays a list of system types in an indexed table."""
 
-    table = Table("Index", "ID", "Value")
+    table = Table("Index", "ID", "Value", "Description")
     for i, system_type in enumerate(system_types, start=1):
-        table.add_row(str(i), system_type.id, system_type.value)
+        table.add_row(str(i), system_type.id, system_type.value, system_type.description)
 
     console.print(table)
     console.print()

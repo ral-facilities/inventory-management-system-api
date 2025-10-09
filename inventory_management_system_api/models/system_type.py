@@ -14,5 +14,6 @@ class SystemTypeOut(BaseModel):
 
     id: StringObjectIdField = Field(alias="_id")
     value: str
+    description: str
 
     model_config = ConfigDict(populate_by_name=True)

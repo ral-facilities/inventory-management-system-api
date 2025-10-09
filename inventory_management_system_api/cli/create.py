@@ -32,6 +32,9 @@ def system_type():
     if system_types_collection.find_one({"value": re.compile(new_system_type_value, re.IGNORECASE)}):
         exit_with_error("[red]A system type with the same value already exists![/]")
 
+    # Obtain description of the new system type
+    new_system_type_description = Prompt.ask("Please enter the description of the new system type")
+
     # Insert the new system type
-    system_types_collection.insert_one({"value": new_system_type_value})
+    system_types_collection.insert_one({"value": new_system_type_value, "description": new_system_type_description})
     console.print("Success! :party_popper:")

@@ -49,9 +49,9 @@ try {
     console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
-      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage" },
-      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational" },
-      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped" },
+      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage", description: "storage system type" },
+      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational", description: "operational system type" },
+      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped", description: "scrapped system type" },
     ]);
   }
 
