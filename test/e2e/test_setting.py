@@ -13,14 +13,13 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     SYSTEM_TYPE_GET_DATA_OPERATIONAL,
-    SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     SYSTEM_TYPE_GET_DATA_STORAGE,
     USAGE_STATUS_GET_DATA_USED,
-    USAGE_STATUS_OUT_DATA_NEW,
 )
 from typing import Optional
 
@@ -220,13 +219,7 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         """Test creating an item after the spares definition is set to one with multiple system type IDs in it.
         (This test is not repeated for update/delete as the logic used is the same)"""
         # Add a custom rule to allow items to be created in Operational systems
-        custom_creation_rule_id = self.add_rule(
-            {
-                "src_system_type_id": None,
-                "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
-                "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
-            }
-        )
+        custom_creation_rule_id = self.add_rule(RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM)
 
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
 
@@ -249,13 +242,7 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
     def test_update_item_system_id_after_spares_definition_set(self):
         """Test updating an item's system ID after the spares definition is set."""
         # Add a custom rule to allow items to be created in Operational systems
-        custom_creation_rule_id = self.add_rule(
-            {
-                "src_system_type_id": None,
-                "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
-                "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
-            }
-        )
+        custom_creation_rule_id = self.add_rule(RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM)
 
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
 
