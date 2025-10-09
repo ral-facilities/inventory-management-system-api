@@ -38,7 +38,7 @@ def get_system_type(
     system_type_id: Annotated[str, Path(description="ID of the system type to get")],
     system_type_service: SystemTypeServiceDep,
 ) -> SystemTypeSchema:
-    logger.info("Getting system type with ID: %s", system_type_service)
+    logger.info("Getting system type with ID: %s", system_type_id)
     message = "System type not found"
     try:
         system_type = system_type_service.get(system_type_id)

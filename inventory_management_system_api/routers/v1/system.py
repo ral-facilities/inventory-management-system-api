@@ -88,7 +88,7 @@ def get_systems(
 def get_system(
     system_id: Annotated[str, Path(description="ID of the system to get")], system_service: SystemServiceDep
 ) -> SystemSchema:
-    logger.info("Getting system with ID: %s", system_service)
+    logger.info("Getting system with ID: %s", system_id)
     message = "System not found"
     try:
         system = system_service.get(system_id)

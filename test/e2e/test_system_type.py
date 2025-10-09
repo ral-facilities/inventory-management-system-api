@@ -29,17 +29,17 @@ class GetDSL:
         """Gets a system type."""
         self._get_response_system_type = self.test_client.get(f"/v1/system-types/{system_type_id}")
 
-    def check_get_system_type_success(self, expected_rules_get_system_type_data: dict) -> None:
+    def check_get_system_type_success(self, expected_system_type_get_data: dict) -> None:
         """
         Checks that a prior call to 'get_system_type' gave a successful response with the expected data
             returned.
 
-        :param expected_rules_get_system_type_data: Dictionary containing the expected system type data
+        :param expected_system_type_get_data: Dictionary containing the expected system type data
         returned as would be required for 'SystemTypeSchema'
         """
 
         assert self._get_response_system_type.status_code == 200
-        assert self._get_response_system_type.json() == expected_rules_get_system_type_data
+        assert self._get_response_system_type.json() == expected_system_type_get_data
 
     def check_get_system_type_failed_with_detail(self, status_code: int, detail: str):
         """
