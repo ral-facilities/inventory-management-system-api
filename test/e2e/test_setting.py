@@ -14,6 +14,7 @@ from test.mock_data import (
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM,
+    SETTING_SPARES_DEFINITION_GET_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
@@ -292,3 +293,55 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         # Set the spares definition and ensure the catalogue items are updated
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
         self.check_catalogue_item_spares([0, 1])
+
+
+class GetSparesDefinitionDSL(SparesDefinitionDSL):
+    """Base class for get_spares_definition tests."""
+
+    _get_response_spares_definition: Response
+
+    def get_spares_definition(self) -> None:
+        """Gets the spares definition."""
+        self._get_response_spares_definition = self.test_client.get("/v1/settings/spares-definition")
+
+    def check_get_spares_definition_success(self, expected_rules_get_spares_definition_data: dict) -> None:
+        """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data
+            returned.
+
+        :param expected_rules_get_spares_definition_data: Dictionary containing the expected spares definition data
+        returned as would be required for 'SparesDefinitionSchema'
+        """
+
+        if expected_rules_get_spares_definition_data is None:
+            assert self._get_response_spares_definition.status_code == 204
+        else:
+            assert self._get_response_spares_definition.status_code == 200
+            assert self._get_response_spares_definition.json() == expected_rules_get_spares_definition_data
+
+    def check_get_spares_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Check that a prior call to 'get_spares_definition' gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+
+        assert self._get_response_spares_definition.status_code == status_code
+        assert self._get_response_spares_definition.json()["detail"] == detail
+
+
+class TestGetSparesDefinition(GetSparesDefinitionDSL):
+    """Tests for getting the spares definition."""
+
+    def test_get_spares_definition(self):
+        """Test getting the spares definition"""
+        self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
+
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_STORAGE)
+
+    def test_get_spares_definition_not_set(self):
+        """Test getting the spares definition when it is not set."""
+
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(None)

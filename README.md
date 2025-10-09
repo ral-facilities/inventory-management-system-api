@@ -414,6 +414,50 @@ ims delete system-type
 
 Running each of these will guide you through the process.
 
+#### Managing rules
+
+Rules define what operations are possible for items in relation to systems. They are split into three categories:
+
+- Creation: These define which types of system's items can be created in, and what usage status they should have.
+- Deletion: These define which types of system's items can be deleted from (They have no restriction on usage status)
+- Moving: These define which types of systems an item is allowed to move between and what usage status they should have
+  once moved.
+
+These rules are defined in terms of the source system's type, destination system's type, and usage status.
+
+You can use the following interactive commands to create and delete rules:
+
+```bash
+ims create rule {creation \| moving \| deletion}
+ims delete rule
+```
+
+These will also give a table of the current rules. For example see the below table:
+
+```bash
+┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Index ┃ ID                       ┃ Type     ┃ src_system_type_id                     ┃ dst_system_type_id                     ┃ dst_usage_status_id                 ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 0     │ 688885c3bab6e839d369e328 │ creation │ None                                   │ 685e5dce6e347e39d459c5ea (Storage)     │ 6874cf5dee233ec6441860a0 (New)      │
+│ 1     │ 688885c3bab6e839d369e329 │ deletion │ 685e5dce6e347e39d459c5ea (Storage)     │ None                                   │ None                                │
+│ 2     │ 688885c3bab6e839d369e32a │ moving   │ 685e5dce6e347e39d459c5ea (Storage)     │ 685e5dce6e347e39d459c5eb (Operational) │ 6874cf5dee233ec6441860a1 (In Use)   │
+│ 3     │ 688885c3bab6e839d369e32b │ moving   │ 685e5dce6e347e39d459c5eb (Operational) │ 685e5dce6e347e39d459c5ea (Storage)     │ 6874cf5dee233ec6441860a2 (Used)     │
+└───────┴──────────────────────────┴──────────┴────────────────────────────────────────┴────────────────────────────────────────┴─────────────────────────────────────┘
+```
+
+Here:
+
+- Creation rules only have a destination system type and usage status. This is the type of system that items can be
+  created in and the usage status such items must have.
+- Deletion rules only have a source system type. This is the type of system that items will be allowed to be deleted
+  from.
+- Moving rules have both a source and destination system type as well as a usage status. This defines which system types
+  an item can move from (the source) and to (the destination), and the required new usage status the item must have
+  once moved to the destination.
+
+NOTE: Modifying the rules does not effect existing usage statuses or positions of items within systems. It is up to
+users to ensure they are moved or modified if appropriate due to a new rule being introduced.
+
 #### Configuring the spares definition
 
 The spares definition is a list of system types that define which systems contain spares. E.g. If you have system type
