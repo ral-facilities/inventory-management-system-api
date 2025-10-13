@@ -101,7 +101,7 @@ async def test_jwt_bearer_authorization_request_missing_role_in_bearer_token(jwt
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
-async def test_jwt_bearer_authorization_request_authorised_role_in_bearer_token(jwt_decode_mock, request_mock):
+async def test_jwt_bearer_authorization_request_authorised_role_in_bearer_token(jwt_decode_mock):
     """
     Test `JWTBearer authorisation` with authorised role in access token
     """
@@ -118,7 +118,7 @@ async def test_jwt_bearer_authorization_request_authorised_role_in_bearer_token(
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
-async def test_jwt_bearer_authorization_request_unauthorised_role_in_bearer_token(jwt_decode_mock, request_mock):
+async def test_jwt_bearer_authorization_request_unauthorised_role_in_bearer_token(jwt_decode_mock):
     """
     Test `JWTBearer authorisation` with unauthorised role in access token
     """
