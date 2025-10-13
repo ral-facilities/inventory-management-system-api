@@ -70,7 +70,9 @@ class JWTBearer(HTTPBearer):
         Check if the JWT access token is authorised.
 
         It does this by checking that the token's payload contains a role, and that this role
-        is one of the configured privileged_roles
+        is one of the configured privileged_roles. This function should be called after the token
+        has been verified by the JWTBearer dependency. Therefore we do not need to check for the token's
+        signature or expiry time.
 
         :param access_token: The JWT access token to check
         :return: `True` if the JWT access token's payload contains a role, and overlaps the configured
