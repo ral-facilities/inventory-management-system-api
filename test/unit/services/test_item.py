@@ -231,6 +231,7 @@ class CreateDSL(ItemServiceDSL):
     # pylint:disable=too-many-instance-attributes
     _catalogue_item_out: Optional[CatalogueItemOut]
     _catalogue_category_out: Optional[CatalogueCategoryOut]
+    _system_out: Optional[SystemOut]
     _usage_status_out: Optional[UsageStatusOut]
     _item_post: ItemPostSchema
     _expected_item_in: ItemIn
@@ -248,8 +249,10 @@ class CreateDSL(ItemServiceDSL):
         item_data: dict,
         catalogue_item_data: Optional[dict] = None,
         catalogue_category_in_data: Optional[dict] = None,
+        system_in_data: Optional[dict] = None,
         usage_status_in_data: Optional[dict] = None,
         stored_spares_definition_out_data: Optional[dict] = None,
+        stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
     ) -> None:
         """
@@ -262,10 +265,13 @@ class CreateDSL(ItemServiceDSL):
                                     will be added automatically.
         :param catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data as would
                                            be required for a `CatalogueCategoryIn` database model.
-        :param usage_status_in_data: Dictionary containing the basic usage status data as would be required for a
-                                     `UsageStatusIn` database model.
+        :param system_in_data: Either `None` or a dictionary containing the system data as would be required for
+                               `SystemIn` database model.
+        :param usage_status_in_data: Either `None` or a dictionary containing the basic usage status data as would be
+                                     required for a `UsageStatusIn` database model.
         :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
                                                   would be required for a `SparesDefinitionOut` database model.
+        :param stored_rule_exists: Whether a stored rule exists for the create operation.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
         """
@@ -329,6 +335,14 @@ class CreateDSL(ItemServiceDSL):
         )
         ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._catalogue_item_out)
 
+        # System
+        system_in = None
+        if system_in_data:
+            system_in = SystemIn(**system_in_data)
+
+        self._system_out = SystemOut(**system_in.model_dump(), id=system_id) if system_in else None
+        ServiceTestHelpers.mock_get(self.mock_system_repository, self._system_out)
+
         # Usage status
         usage_status_in = None
         if usage_status_in_data:
@@ -340,6 +354,9 @@ class CreateDSL(ItemServiceDSL):
             else None
         )
         ServiceTestHelpers.mock_get(self.mock_usage_status_repository, self._usage_status_out)
+
+        # Rule
+        self.mock_rule_repository.check_exists.return_value = stored_rule_exists
 
         # Item
 
@@ -415,6 +432,9 @@ class CreateDSL(ItemServiceDSL):
             self._catalogue_item_out.catalogue_category_id
         )
 
+        # This is the get for the system
+        self.mock_system_repository.get.assert_called_once_with(self._item_post.system_id)
+
         # This is the get for the usage status
         self.mock_usage_status_repository.get.assert_called_once_with(self._item_post.usage_status_id)
 
@@ -454,6 +474,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create()
@@ -466,6 +487,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create()
@@ -478,6 +500,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create()
@@ -490,6 +513,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
         )
@@ -504,6 +528,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             raise_write_conflict_once=True,
@@ -530,12 +555,26 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=None,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create_expecting_error(DatabaseIntegrityError)
         self.check_create_failed_with_exception(
             f"No catalogue category found with ID: {self._catalogue_item_out.catalogue_category_id}"
         )
+
+    def test_create_with_non_existent_system_id(self):
+        """Test creating an item with a non-existent system ID."""
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=None,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+        )
+        self.call_create_expecting_error(MissingRecordError)
+        self.check_create_failed_with_exception(f"No system found with ID: {self._item_post.system_id}")
 
     def test_create_with_non_existent_usage_status_id(self):
         """Test creating an item with a non-existent usage status ID."""
@@ -544,10 +583,30 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(f"No usage status found with ID: {self._item_post.usage_status_id}")
+
+    def test_create_with_non_existent_rule(self):
+        """
+        Test creating an item when there isn't a creation rule defined that allows items to be created in the
+        specified system with the specified usage status.
+        """
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_rule_exists=False,
+        )
+        self.call_create_expecting_error(InvalidActionError)
+        self.check_create_failed_with_exception(
+            "No rule found for creating items in the specified system with the specified usage status"
+        )
 
 
 class GetDSL(ItemServiceDSL):
