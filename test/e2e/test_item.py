@@ -1251,3 +1251,16 @@ class TestDelete(DeleteDSL):
 
         self.delete_item("invalid_id")
         self.check_delete_item_failed_with_detail(404, "Item not found")
+
+    def test_delete_with_non_existent_rule(self):
+        """
+        Test deleting an item when there isn't a delete rule defined that allows items to be deleted from the current
+        system.
+        """
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
+
+        self.delete_item(item_id)
+        self.check_delete_item_failed_with_detail(422, "No rule found for deleting items from the current system")
