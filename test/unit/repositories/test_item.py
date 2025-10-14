@@ -690,7 +690,7 @@ class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
             ],
             session=self.mock_session,
         )
-        assert self._expected_count == self._obtained_count
+        assert self._obtained_count == self._expected_count
 
 
 class TestCountInCatalogueItemWithSystemTypeOneOf(CountInCatalogueItemWithSystemTypeOneOfDSL):
