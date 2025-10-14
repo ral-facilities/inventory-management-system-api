@@ -197,6 +197,6 @@ def delete_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to create item"
+        message = "Unable to delete item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
