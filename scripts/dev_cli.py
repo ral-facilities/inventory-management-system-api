@@ -40,7 +40,7 @@ def exit_with_error(message: str):
 
 
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """Runs a command using subprocess"""
+    """Runs a command using subprocess."""
 
     console.print(f"[cyan]Running command:[/] [green]{" ".join(args)}[/]")
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
@@ -59,7 +59,7 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """Runs a command within the mongodb container"""
+    """Runs a command within the mongodb container."""
 
     run_command(
         [
@@ -84,6 +84,31 @@ def get_mongodb_auth_args(db_username: str, db_password: str):
         db_password,
         "--authenticationDatabase=admin",
     ]
+
+
+def clear_existing_data(
+    db_username: DatabaseUsernameOption,
+    db_password: DatabasePasswordOption,
+    yes: YesOption,
+):
+    """Clears any existing data in the database. Requires confirmation if yes is false."""
+
+    # Firstly confirm if ok with deleting
+    if not yes:
+        confirm = typer.confirm("This operation will remove all existing data, are you sure?")
+        if not confirm:
+            raise typer.Abort()
+
+    # Delete the existing data
+    console.print("Deleting database contents...")
+    run_mongodb_command(
+        ["mongosh", "ims"]
+        + get_mongodb_auth_args(db_username, db_password)
+        + [
+            "--eval",
+            "db.dropDatabase()",
+        ]
+    )
 
 
 @app.command()
@@ -114,24 +139,11 @@ def db_generate(
 ):
     """Generates new test data for the database (runs generate_mock_data.py) and dumps the data if requested."""
 
-    # Firstly confirm ok with deleting
-    if not yes:
-        confirm = typer.confirm("This operation will replace all existing data, are you sure?")
-        if not confirm:
-            raise typer.Abort()
+    # First clear the existing data
+    clear_existing_data(db_username, db_password, yes)
 
-    # Delete the existing data
-    console.print("Deleting database contents...")
-    mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
-    run_mongodb_command(
-        ["mongosh", "ims"]
-        + mongodb_auth_args
-        + [
-            "--eval",
-            "db.dropDatabase()",
-        ]
-    )
     # Ensure setup script is called so any required initial data is populated
+    mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
     run_mongodb_command(
         ["mongosh", "ims"]
         + mongodb_auth_args
@@ -177,25 +189,11 @@ def db_generate(
 def db_clear(db_username: DatabaseUsernameOption, db_password: DatabasePasswordOption, yes: YesOption = False):
     """Clear all data in MongoDB and repopulate only with what is necessary."""
 
-    # Firstly confirm ok with deleting
-    if not yes:
-        confirm = typer.confirm("This operation will remove all existing data, are you sure?")
-        if not confirm:
-            raise typer.Abort()
+    # First clear the existing data
+    clear_existing_data(db_username, db_password, yes)
 
-    # Delete the existing data
-    mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
-    for database_name in ["ims", "test-ims"]:
-        console.print("Deleting database contents of %s...", database_name)
-        run_mongodb_command(
-            ["mongosh", database_name]
-            + mongodb_auth_args
-            + [
-                "--eval",
-                "db.dropDatabase()",
-            ]
-        )
     # Ensure setup script is called so any required initial data is populated again
+    mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
     run_mongodb_command(
         ["mongosh"]
         + mongodb_auth_args

@@ -187,3 +187,36 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
         self.check_set_spares_definition_failed_with_exception(
             f"No system type found with ID: {self._spares_definition_in.system_type_ids[1]}"
         )
+
+
+class GetSparesDefinitionDSL(SettingServiceDSL):
+    """Base class for 'get_spares_definition' tests."""
+
+    _expected_spares_definition: MagicMock
+    _obtained_spares_definition: MagicMock
+
+    def mock_get_spares_definition(self) -> None:
+        """Mocks repo methods appropriately to test 'get_spares_definition' service method."""
+        self._expected_spares_definition = MagicMock()
+        ServiceTestHelpers.mock_get(self.mock_setting_repository, self._expected_spares_definition)
+
+    def call_get_spares_definition(self) -> None:
+        """Calls the 'SettingService' 'get_spares_definition' method."""
+
+        self._obtained_spares_definition = self.setting_service.get_spares_definition()
+
+    def check_get_spares_definition_success(self):
+        """Checks that a prior call to 'call_get_spares_definition' worked as expected"""
+        self.mock_setting_repository.get.assert_called_once_with(SparesDefinitionOut)
+        assert self._obtained_spares_definition == self._expected_spares_definition
+
+
+class TestGetSparesDefinition(GetSparesDefinitionDSL):
+    """Tests for getting the spares definition"""
+
+    def test_get_spares_definition(self):
+        """Test getting the spares definition"""
+
+        self.mock_get_spares_definition()
+        self.call_get_spares_definition()
+        self.check_get_spares_definition_success()
