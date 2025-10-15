@@ -238,7 +238,7 @@ class TestDelete(DeleteDSL):
 
         self._delete_response_usage_status = self.test_client.delete(
             f"/v1/usage-statuses/{usage_status_id}",
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"}
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"},
         )
         self.check_delete_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
