@@ -3,7 +3,12 @@ Module providing test fixtures for the e2e tests.
 """
 
 from datetime import datetime
-from test.mock_data import RULES_DOCUMENT_DATA, SYSTEM_TYPES_OUT_DATA, USAGE_STATUSES_OUT_DATA, VALID_ACCESS_TOKEN_ADMIN_ROLE
+from test.mock_data import (
+    RULES_DOCUMENT_DATA,
+    SYSTEM_TYPES_OUT_DATA,
+    USAGE_STATUSES_OUT_DATA,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
+)
 from typing import Optional
 
 import pytest
