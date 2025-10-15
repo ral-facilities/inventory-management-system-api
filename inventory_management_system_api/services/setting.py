@@ -86,4 +86,12 @@ class SettingService:
                     catalogue_item_id, number_of_spares, session=session
                 )
 
-        return new_spares_definition
+            return new_spares_definition
+
+    def get_spares_definition(self) -> Optional[SparesDefinitionOut]:
+        """
+        Retrieve the spares definition setting.
+
+        :return: Retrieved spares definition or `None` if not found.
+        """
+        return self._setting_repository.get(SparesDefinitionOut)

@@ -42,9 +42,6 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: The created item.
         """
-        if item.system_id and not self._systems_collection.find_one({"_id": item.system_id}, session=session):
-            raise MissingRecordError(f"No system found with ID: {item.system_id}")
-
         logger.info("Inserting the new item into the database")
         result = self._items_collection.insert_one(item.model_dump(by_alias=True), session=session)
 

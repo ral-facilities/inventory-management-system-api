@@ -9,14 +9,18 @@ _POST_DATA - Is for a `PostSchema` schema.
 _IN_DATA - Is for an `In` model.
 _GET_DATA - Is for an entity schema - Used in assertions for e2e tests. May have IDs missing where they are possible
             to be known e.g. `manufacturer_id` in a catalogue item.
+_DOCUMENT_DATA - Is for insertion in a database collection directly.
 _DATA - Is none of the above - likely to be used in post requests as they are likely identical, only with some ids
         missing so that they can be added later e.g. for pairing up units that aren't known before hand.
+_REQUIRED_VALUES_ONLY - Is used to indicate the values given are only the required ones, except ids that are not
+                        predefined and will be added later when they are known in tests.
 """
 
 from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.models.rule import RuleOut
 from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
@@ -147,6 +151,13 @@ USAGE_STATUS_GET_DATA_SCRAPPED = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_SCRAPPED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
+
+USAGE_STATUSES_OUT_DATA = [
+    USAGE_STATUS_OUT_DATA_NEW,
+    USAGE_STATUS_OUT_DATA_IN_USE,
+    USAGE_STATUS_OUT_DATA_USED,
+    USAGE_STATUS_OUT_DATA_SCRAPPED,
+]
 
 # Custom
 USAGE_STATUS_POST_DATA_CUSTOM = {"value": "Custom"}
@@ -964,6 +975,11 @@ SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE = {
     "system_types": [SYSTEM_TYPE_OUT_DATA_STORAGE],
 }
 
+
+SETTING_SPARES_DEFINITION_GET_DATA_STORAGE = {
+    "system_types": [SYSTEM_TYPE_GET_DATA_STORAGE],
+}
+
 # Spares definition, Storage or Operational
 SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
     "_id": SparesDefinitionOut.SETTING_ID,
@@ -972,81 +988,120 @@ SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
 
 # ---------------------------------- RULES ----------------------------------
 
+PREDEFINED_RULE_IDS = [
+    ObjectId("68e65e07670c31567d4c9c82"),  # Storage creation
+    ObjectId("68e65e07670c31567d4c9c83"),  # Storage deletion
+    ObjectId("68e65e07670c31567d4c9c84"),  # Storage to Operational
+    ObjectId("68e65e07670c31567d4c9c85"),  # Operational to Storage
+    ObjectId("68e65e07670c31567d4c9c86"),  # Operational to Scrapped
+]
+
 # Creation in storage
 RULE_OUT_DATA_STORAGE_CREATION = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[0],
     "src_system_type": None,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
 }
 
 RULE_GET_DATA_STORAGE_CREATION = {
-    "id": ANY,
-    "src_system_type": None,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    **RuleOut(**RULE_OUT_DATA_STORAGE_CREATION).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_NEW,
+}
+
+RULE_DOCUMENT_DATA_STORAGE_CREATION = {
+    "_id": PREDEFINED_RULE_IDS[0],
+    "src_system_type_id": None,
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
 }
 
 # Deletion from storage
 RULE_OUT_DATA_STORAGE_DELETION = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[1],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_system_type": None,
     "dst_usage_status": None,
 }
 
 RULE_GET_DATA_STORAGE_DELETION = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
-    "dst_system_type": None,
-    "dst_usage_status": None,
+    **RuleOut(**RULE_OUT_DATA_STORAGE_DELETION).model_dump(),
+}
+
+RULE_DOCUMENT_DATA_STORAGE_DELETION = {
+    "_id": PREDEFINED_RULE_IDS[1],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_system_type_id": None,
+    "dst_usage_status_id": None,
 }
 
 # Storage to operational
 RULE_OUT_DATA_STORAGE_TO_OPERATIONAL = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[2],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_IN_USE,
 }
 
 RULE_GET_DATA_STORAGE_TO_OPERATIONAL = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    **RuleOut(**RULE_OUT_DATA_STORAGE_TO_OPERATIONAL).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_IN_USE,
+}
+
+RULE_DOCUMENT_DATA_STORAGE_TO_OPERATIONAL = {
+    "_id": PREDEFINED_RULE_IDS[2],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["_id"],
 }
 
 # Operational to storage
 RULE_OUT_DATA_OPERATIONAL_TO_STORAGE = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[3],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_USED,
 }
 
 RULE_GET_DATA_OPERATIONAL_TO_STORAGE = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    **RuleOut(**RULE_OUT_DATA_OPERATIONAL_TO_STORAGE).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_USED,
+}
+
+RULE_DOCUMENT_DATA_OPERATIONAL_TO_STORAGE = {
+    "_id": PREDEFINED_RULE_IDS[3],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_USED["_id"],
 }
 
 # Operational to scrapped
 RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[4],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_SCRAPPED,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_SCRAPPED,
 }
 
 RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_SCRAPPED,
+    **RuleOut(**RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_SCRAPPED,
 }
 
+RULE_DOCUMENT_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "_id": PREDEFINED_RULE_IDS[4],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_SCRAPPED["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_SCRAPPED["_id"],
+}
+
+# Custom rule for creation in operational
+RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM = {
+    "_id": ObjectId("68e65e07670c31567d4c9c87"),
+    "src_system_type_id": None,
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
+}
 
 RULES_OUT_DATA = [
     RULE_OUT_DATA_STORAGE_CREATION,
@@ -1062,4 +1117,12 @@ RULES_GET_DATA = [
     RULE_GET_DATA_STORAGE_TO_OPERATIONAL,
     RULE_GET_DATA_OPERATIONAL_TO_STORAGE,
     RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED,
+]
+
+RULES_DOCUMENT_DATA = [
+    RULE_DOCUMENT_DATA_STORAGE_CREATION,
+    RULE_DOCUMENT_DATA_STORAGE_DELETION,
+    RULE_DOCUMENT_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_DOCUMENT_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_DOCUMENT_DATA_OPERATIONAL_TO_SCRAPPED,
 ]

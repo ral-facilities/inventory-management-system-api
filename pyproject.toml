@@ -46,6 +46,8 @@ dev = [
 
 [tool.coverage.run]
 omit = [
+    # Exclude test code from coverage measurement
+    "test/*",
     # Exclude migration scripts from coverage measurement
     "inventory_management_system_api/migrations/scripts/*",
     # Exclude routers from coverage measurement as they are tested in the e2e tests
