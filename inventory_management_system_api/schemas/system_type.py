@@ -2,6 +2,8 @@
 Module for defining the API schema models for representing system types.
 """
 
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -12,4 +14,4 @@ class SystemTypeSchema(BaseModel):
 
     id: str = Field(description="ID of the system type")
     value: str = Field(description="Value of the system type")
-    description: str = Field(description="Description of the system type")
+    description: Optional[str] = Field(default=None, description="Description of the system type")
