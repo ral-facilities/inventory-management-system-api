@@ -11,11 +11,9 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
-from inventory_management_system_api.auth.jwt_bearer import JWTBearer
-from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -32,6 +30,7 @@ router = APIRouter(prefix="/v1/usage-statuses", tags=["usage statuses"])
 
 UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService)]
 
+
 @router.post(
     path="",
     summary="Create a new usage status",
@@ -46,9 +45,7 @@ def create_usage_status(
 
     # check user is authorised to perform operation
     if not authorised:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         usage_status = usage_status_service.create(usage_status)
@@ -99,15 +96,13 @@ def get_usage_status(
 def delete_usage_status(
     usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],
     usage_status_service: UsageStatusServiceDep,
-    authorised: AuthorisedDep
+    authorised: AuthorisedDep,
 ) -> None:
     logger.info("Deleting usage status with ID: %s", usage_status_id)
-    
+
     # check user is authorised to perform operation
     if not authorised:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         usage_status_service.delete(usage_status_id)

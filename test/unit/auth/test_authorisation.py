@@ -2,15 +2,15 @@
 Unit test for the `AuthorisedDep` dependency
 """
 
-from inventory_management_system_api.auth.authorisation import _authorised_dep
-from test.mock_data import EXPIRED_ACCESS_TOKEN, INVALID_ACCESS_TOKEN, VALID_ACCESS_TOKEN_ADMIN_ROLE
+
+from test.mock_data import VALID_ACCESS_TOKEN_ADMIN_ROLE, VALID_ACCESS_TOKEN_DEFAULT_ROLE
 from unittest.mock import Mock, patch
 
 import pytest
-from fastapi import HTTPException, Request
-from jwt import ExpiredSignatureError, InvalidTokenError
+from fastapi import Request
 
-from inventory_management_system_api.auth.jwt_bearer import JWTBearer
+from inventory_management_system_api.auth.authorisation import _authorised_dep
+# pylint: disable=duplicate-code
 
 @pytest.fixture(name="request_mock")
 def fixture_request_mock() -> Mock:
@@ -21,6 +21,7 @@ def fixture_request_mock() -> Mock:
     request_mock = Mock(Request)
     request_mock.headers = {}
     return request_mock
+
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
 def test_authorised_dep_returns_true_request_token_has_admin_role(jwt_decode_mock, request_mock):
@@ -33,10 +34,11 @@ def test_authorised_dep_returns_true_request_token_has_admin_role(jwt_decode_moc
         "role": "admin",
         "userIsAdmin": False,
     }
-    
+
     request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
     assert _authorised_dep(request_mock) is True
-    
+
+
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
 def test_authorised_dep_returns_true_request_token_has_default_role(jwt_decode_mock, request_mock):
     """
@@ -48,6 +50,6 @@ def test_authorised_dep_returns_true_request_token_has_default_role(jwt_decode_m
         "role": "default",
         "userIsAdmin": False,
     }
-    
-    request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
+
+    request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"}
     assert _authorised_dep(request_mock) is False
