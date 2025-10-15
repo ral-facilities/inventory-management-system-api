@@ -15,7 +15,7 @@ from test.mock_data import (
     USAGE_STATUS_GET_DATA_USED,
     USAGE_STATUS_POST_DATA_CUSTOM,
     USAGE_STATUS_POST_DATA_NEW,
-    VALID_ACCESS_TOKEN_NO_ROLE,
+    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
 )
 from typing import Optional
 
@@ -98,7 +98,7 @@ class TestCreate(CreateDSL):
         self._post_response_usage_status = self.test_client.post(
             "/v1/usage-statuses",
             json=USAGE_STATUS_POST_DATA_CUSTOM,
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"},
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"},
         )
         self.check_post_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
@@ -237,7 +237,8 @@ class TestDelete(DeleteDSL):
         usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
 
         self._delete_response_usage_status = self.test_client.delete(
-            f"/v1/usage-statuses/{usage_status_id}", headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"}
+            f"/v1/usage-statuses/{usage_status_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"}
         )
         self.check_delete_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
