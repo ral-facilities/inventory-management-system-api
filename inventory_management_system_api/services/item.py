@@ -86,8 +86,11 @@ class ItemService:
         :param item: The item to be created.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
-        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        :raises MissingRecordError: If the system does not exist.
         :raises MissingRecordError: If the usage status does not exist.
+        :raises DatabaseIntegrityError: If the catalogue category of the catalogue item doesn't exist.
+        :raises InvalidActionError: If creating an item in a system with a usage status for which a creation rule does
+            not exist.
         """
         catalogue_item_id = item.catalogue_item_id
         catalogue_item = self._catalogue_item_repository.get(catalogue_item_id)
@@ -102,10 +105,24 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
+        system_id = item.system_id
+        system = self._system_repository.get(system_id)
+        if not system:
+            raise MissingRecordError(f"No system found with ID: {system_id}")
+
         usage_status_id = item.usage_status_id
         usage_status = self._usage_status_repository.get(usage_status_id)
         if not usage_status:
             raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+
+        if not self._rule_repository.check_exists(
+            src_system_type_id=None,
+            dst_system_type_id=system.type_id,
+            dst_usage_status_id=usage_status_id,
+        ):
+            raise InvalidActionError(
+                "No rule found for creating items in the specified system with the specified usage status"
+            )
 
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
@@ -191,10 +208,27 @@ class ItemService:
         :param item_id: The ID of the item to delete.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         :raises MissingRecordError: If the item doesn't exist.
+        :raises DatabaseIntegrityError: If the system in which the item is currently located doesn't exist.
+        :raises InvalidActionError: If deleting an item from the current system but a deletion rule does not exist.
         """
         item = self.get(item_id)
         if item is None:
             raise MissingRecordError(f"No item found with ID: {item_id}")
+
+        try:
+            system_id = item.system_id
+            system = self._system_repository.get(system_id)
+            if not system:
+                raise DatabaseIntegrityError(f"No system found with ID: {system_id}")
+        except InvalidObjectIdError as exc:
+            raise DatabaseIntegrityError(str(exc)) from exc
+
+        if not self._rule_repository.check_exists(
+            src_system_type_id=system.type_id,
+            dst_system_type_id=None,
+            dst_usage_status_id=None,
+        ):
+            raise InvalidActionError("No rule found for deleting items from the current system")
 
         # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:

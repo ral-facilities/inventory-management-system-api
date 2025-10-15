@@ -13,6 +13,8 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+    RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM,
+    SETTING_SPARES_DEFINITION_GET_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
@@ -23,6 +25,7 @@ from test.mock_data import (
 from typing import Optional
 
 import pytest
+from bson import ObjectId
 from httpx import Response
 
 from inventory_management_system_api.core.database import get_database
@@ -50,6 +53,26 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
         self._setting_service = SettingService(
             SettingRepo(database), SystemTypeRepo(database), CatalogueItemRepo(database), ItemRepo(database)
         )
+
+    def add_rule(self, rule_document: dict | None) -> ObjectId:
+        """
+        Add a rule inside the database.
+
+        :param rule_document: Dictionary containing the rule to insert into the database.
+        :return: The ID of the created rule.
+        """
+        database = get_database()
+        rule = database.rules.insert_one(rule_document)
+        return rule.inserted_id
+
+    def delete_rule(self, rule_id: ObjectId) -> None:
+        """
+        Delete a rule by its ID from the database.
+
+        :param rule_id: The ID of the rule to delete.
+        """
+        database = get_database()
+        database.rules.delete_one({"_id": rule_id})
 
     def set_spares_definition(self, spares_definition_in_data: dict) -> None:
         """
@@ -196,6 +219,8 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
     def test_create_item_after_spares_definition_set_with_multiple_types(self):
         """Test creating an item after the spares definition is set to one with multiple system type IDs in it.
         (This test is not repeated for update/delete as the logic used is the same)"""
+        # Add a custom rule to allow items to be created in Operational systems
+        custom_creation_rule_id = self.add_rule(RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM)
 
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL)
 
@@ -212,8 +237,13 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         self.post_item_in_system_with_type_id(SYSTEM_TYPE_GET_DATA_STORAGE["id"])
         self.check_catalogue_item_spares([1, 3])
 
+        # Delete the rule that allows items to be created in Operational systems to avoid conflicts with other tests
+        self.delete_rule(custom_creation_rule_id)
+
     def test_update_item_system_id_after_spares_definition_set(self):
         """Test updating an item's system ID after the spares definition is set."""
+        # Add a custom rule to allow items to be created in Operational systems
+        custom_creation_rule_id = self.add_rule(RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM)
 
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
 
@@ -229,6 +259,9 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
             item_id, SYSTEM_TYPE_GET_DATA_STORAGE["id"], USAGE_STATUS_GET_DATA_USED["id"]
         )
         self.check_catalogue_item_spares([0, 2])
+
+        # Delete the rule that allows items to be created in Operational systems to avoid conflicts with other tests
+        self.delete_rule(custom_creation_rule_id)
 
     def test_delete_item_after_spares_definition_set(self):
         """Test deleting an item after the spares definition is set."""
@@ -260,3 +293,55 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         # Set the spares definition and ensure the catalogue items are updated
         self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
         self.check_catalogue_item_spares([0, 1])
+
+
+class GetSparesDefinitionDSL(SparesDefinitionDSL):
+    """Base class for get_spares_definition tests."""
+
+    _get_response_spares_definition: Response
+
+    def get_spares_definition(self) -> None:
+        """Gets the spares definition."""
+        self._get_response_spares_definition = self.test_client.get("/v1/settings/spares-definition")
+
+    def check_get_spares_definition_success(self, expected_rules_get_spares_definition_data: dict) -> None:
+        """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data
+            returned.
+
+        :param expected_rules_get_spares_definition_data: Dictionary containing the expected spares definition data
+        returned as would be required for 'SparesDefinitionSchema'
+        """
+
+        if expected_rules_get_spares_definition_data is None:
+            assert self._get_response_spares_definition.status_code == 204
+        else:
+            assert self._get_response_spares_definition.status_code == 200
+            assert self._get_response_spares_definition.json() == expected_rules_get_spares_definition_data
+
+    def check_get_spares_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Check that a prior call to 'get_spares_definition' gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+
+        assert self._get_response_spares_definition.status_code == status_code
+        assert self._get_response_spares_definition.json()["detail"] == detail
+
+
+class TestGetSparesDefinition(GetSparesDefinitionDSL):
+    """Tests for getting the spares definition."""
+
+    def test_get_spares_definition(self):
+        """Test getting the spares definition"""
+        self.set_spares_definition(SETTING_SPARES_DEFINITION_IN_DATA_STORAGE)
+
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(SETTING_SPARES_DEFINITION_GET_DATA_STORAGE)
+
+    def test_get_spares_definition_not_set(self):
+        """Test getting the spares definition when it is not set."""
+
+        self.get_spares_definition()
+        self.check_get_spares_definition_success(None)
