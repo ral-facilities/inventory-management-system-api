@@ -32,7 +32,7 @@ async def test_jwt_bearer_authorization_request(jwt_decode_mock, request_mock):
         "exp": 253402300799,
         "username": "username",
         "role": "admin",
-        "userIsAdmin": True,
+        "userIsAdmin": False,
     }
     request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
 
@@ -75,7 +75,7 @@ async def test_jwt_bearer_authorization_request_missing_username_in_bearer_token
     """
     Test `JWTBearer` with missing username in access token.
     """
-    jwt_decode_mock.return_value = {"exp": 253402300799, "role": "admin", "userIsAdmin": True}
+    jwt_decode_mock.return_value = {"exp": 253402300799, "role": "admin", "userIsAdmin": False}
     request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
 
     jwt_bearer = JWTBearer()
@@ -90,7 +90,7 @@ async def test_jwt_bearer_authorization_request_missing_role_in_bearer_token(jwt
     """
     Test `JWTBearer` with missing role in access token.
     """
-    jwt_decode_mock.return_value = {"exp": 253402300799, "username": "username", "userIsAdmin": True}
+    jwt_decode_mock.return_value = {"exp": 253402300799, "username": "username", "userIsAdmin": False}
     request_mock.headers = {"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"}
 
     jwt_bearer = JWTBearer()
@@ -110,7 +110,7 @@ async def test_jwt_bearer_authorization_request_authorised_role_in_bearer_token(
         "exp": 253402300799,
         "username": "username",
         "role": "admin",
-        "userIsAdmin": True,
+        "userIsAdmin": False,
     }
     jwt_bearer = JWTBearer()
 
