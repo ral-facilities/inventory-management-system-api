@@ -2,7 +2,6 @@
 Unit test for the `AuthorisedDep` dependency
 """
 
-
 from test.mock_data import VALID_ACCESS_TOKEN_ADMIN_ROLE, VALID_ACCESS_TOKEN_DEFAULT_ROLE
 from unittest.mock import Mock, patch
 
@@ -10,7 +9,9 @@ import pytest
 from fastapi import Request
 
 from inventory_management_system_api.auth.authorisation import _authorised_dep
+
 # pylint: disable=duplicate-code
+
 
 @pytest.fixture(name="request_mock")
 def fixture_request_mock() -> Mock:
