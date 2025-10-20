@@ -124,7 +124,7 @@ class ManufacturerRepo:
         logger.info("Deleting manufacturer with ID: %s from the database", manufacturer_id)
         result = self._manufacturers_collection.delete_one({"_id": manufacturer_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
+            raise MissingRecordError(f"No manufacturer found with ID '{str(manufacturer_id)}'")
 
     def _is_duplicate_manufacturer(
         self, code: str, manufacturer_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None

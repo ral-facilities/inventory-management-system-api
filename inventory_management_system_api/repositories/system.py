@@ -49,7 +49,7 @@ class SystemRepo:
         """
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent system found with ID '{parent_id}'")
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError("Duplicate system found within the parent system")
@@ -123,7 +123,7 @@ class SystemRepo:
 
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent system found with ID '{parent_id}'")
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
@@ -165,7 +165,7 @@ class SystemRepo:
         logger.info("Deleting system with ID: %s from the database", system_id)
         result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
+            raise MissingRecordError(f"No system found with ID '{system_id}'")
 
     def _is_duplicate_system(
         self,

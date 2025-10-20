@@ -328,7 +328,7 @@ class TestCreate(CreateDSL):
             catalogue_category_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No catalogue category found with ID: {self._catalogue_category_id}")
+        self.check_create_failed_with_exception(f"No catalogue category found with ID '{self._catalogue_category_id}'")
 
     def test_create_with_non_leaf_catalogue_category(self):
         """Test creating a property with a non-leaf catalogue category."""
@@ -702,7 +702,7 @@ class TestUpdate(UpdateDSL):
             catalogue_category_exists=False,
         )
         self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {self._catalogue_category_id}")
+        self.check_update_failed_with_exception(f"No catalogue category found with ID '{self._catalogue_category_id}'")
 
     def test_update_with_non_existent_catalogue_category_property_id(self):
         """Test updating the a catalogue category property when given a non-existent catalogue category property ID."""
@@ -715,4 +715,4 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_category_property_in_data=None,
         )
         self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No property found with ID: {catalogue_category_property_id}")
+        self.check_update_failed_with_exception(f"No property found with ID '{catalogue_category_property_id}'")

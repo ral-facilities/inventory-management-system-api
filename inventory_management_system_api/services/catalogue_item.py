@@ -72,7 +72,7 @@ class CatalogueItemService:
         catalogue_category_id = catalogue_item.catalogue_category_id
         catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
         if not catalogue_category:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
 
         if catalogue_category.is_leaf is False:
             raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
@@ -80,13 +80,13 @@ class CatalogueItemService:
         manufacturer_id = catalogue_item.manufacturer_id
         manufacturer = self._manufacturer_repository.get(manufacturer_id)
         if not manufacturer:
-            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
+            raise MissingRecordError(f"No manufacturer found with ID '{manufacturer_id}'")
 
         obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
         if obsolete_replacement_catalogue_item_id and not self._catalogue_item_repository.get(
             obsolete_replacement_catalogue_item_id
         ):
-            raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
+            raise MissingRecordError(f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'")
 
         defined_properties = catalogue_category.properties
         supplied_properties = catalogue_item.properties if catalogue_item.properties else []
@@ -149,13 +149,13 @@ class CatalogueItemService:
 
         stored_catalogue_item = self.get(catalogue_item_id)
         if not stored_catalogue_item:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+            raise MissingRecordError(f"No catalogue item found with ID '{catalogue_item_id}'")
 
         # If any of these, need to ensure the catalogue item has no child elements
         if any(key in update_data for key in CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS):
             if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
                 raise ChildElementsExistError(
-                    f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be updated"
+                    f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
                 )
 
         catalogue_category = None
@@ -165,7 +165,7 @@ class CatalogueItemService:
         ):
             catalogue_category = self._catalogue_category_repository.get(catalogue_item.catalogue_category_id)
             if not catalogue_category:
-                raise MissingRecordError(f"No catalogue category found with ID: {catalogue_item.catalogue_category_id}")
+                raise MissingRecordError(f"No catalogue category found with ID '{catalogue_item.catalogue_category_id}'")
 
             if catalogue_category.is_leaf is False:
                 raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
@@ -200,7 +200,7 @@ class CatalogueItemService:
         if "manufacturer_id" in update_data and catalogue_item.manufacturer_id != stored_catalogue_item.manufacturer_id:
             manufacturer = self._manufacturer_repository.get(catalogue_item.manufacturer_id)
             if not manufacturer:
-                raise MissingRecordError(f"No manufacturer found with ID: {catalogue_item.manufacturer_id}")
+                raise MissingRecordError(f"No manufacturer found with ID '{catalogue_item.manufacturer_id}'")
 
         if "obsolete_replacement_catalogue_item_id" in update_data:
             obsolete_replacement_catalogue_item_id = catalogue_item.obsolete_replacement_catalogue_item_id
@@ -210,7 +210,7 @@ class CatalogueItemService:
                 != stored_catalogue_item.obsolete_replacement_catalogue_item_id
                 and not self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id)
             ):
-                raise MissingRecordError(f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}")
+                raise MissingRecordError(f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'")
 
         if "properties" in update_data:
             if not catalogue_category:
@@ -239,12 +239,12 @@ class CatalogueItemService:
         """
         if self._catalogue_item_repository.has_child_elements(catalogue_item_id):
             raise ChildElementsExistError(
-                f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+                f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be deleted"
             )
 
         if self._catalogue_item_repository.is_replacement_for(catalogue_item_id):
             raise ReplacementForObsoleteCatalogueItemError(
-                f"Catalogue item with ID {catalogue_item_id} is the replacement for at least one obsolete catalogue "
+                f"Catalogue item with ID '{catalogue_item_id}' is the replacement for at least one obsolete catalogue "
                 "item and cannot be deleted"
             )
 

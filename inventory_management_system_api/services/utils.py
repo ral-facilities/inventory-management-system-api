@@ -215,7 +215,7 @@ def _check_missing_mandatory_properties(
     logger.info("Checking for missing mandatory property")
     for defined_property_id, defined_property in defined_properties.items():
         if defined_property["mandatory"] and defined_property_id not in supplied_properties:
-            raise MissingMandatoryProperty(f"Missing mandatory property with ID: '{defined_property_id}'")
+            raise MissingMandatoryProperty(f"Missing mandatory property with ID '{defined_property_id}'")
 
 
 def _merge_non_mandatory_properties(

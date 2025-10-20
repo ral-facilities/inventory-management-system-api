@@ -492,7 +492,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(item_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No item found with ID: {item_id}", expecting_delete_one_called=True)
+        self.check_delete_failed_with_exception(f"No item found with ID '{item_id}'", expecting_delete_one_called=True)
 
     def test_delete_invalid_id(self):
         """Test deleting an item with an invalid ID."""

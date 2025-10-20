@@ -683,7 +683,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be updated"
         )
 
     def test_update_leaf_all_fields_except_parent_id_with_no_children(self):
@@ -716,7 +716,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be updated"
         )
 
     def test_update_leaf_properties_with_non_existent_unit_id(self):
@@ -775,7 +775,7 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_category_post_data=None,
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
+        self.check_update_failed_with_exception(f"No catalogue category found with ID '{catalogue_category_id}'")
 
 
 class DeleteDSL(CatalogueCategoryServiceDSL):
