@@ -44,6 +44,7 @@ def system_type():
     selected_type = current_system_types[selected_type_index - 1]
     selected_type_id = CustomObjectId(selected_type.id)
 
+    # Obtain new name of selected system type
     new_type_value = Prompt.ask("Please enter the new value of the selected system type")
 
     # Ensure a system type with the same value doesn't already exist (but allow user to change the case of the current
@@ -53,8 +54,17 @@ def system_type():
     ):
         exit_with_error("[red]A system type with the same value already exists![/]")
 
-    # Output the selected system type and new value and request confirmation before editing it
-    display_user_selection("You are updating", selected_type_index, f"{selected_type.value} -> {new_type_value}")
+    # Obtain new description of selected system type. If falsy, description is set to None
+    new_type_description = Prompt.ask("Please enter the new description of the selected system type (optional)")
+    if not new_type_description:
+        new_type_description = None
+
+    # Output the selected system type and new value and new description and request confirmation before editing it
+    display_user_selection(
+        "You are updating",
+        selected_type_index,
+        f"{selected_type.value} -> {new_type_value}, {selected_type.description} -> {new_type_description}",
+    )
     cont = typer.confirm("Are you sure you want to apply this change?")
     console.print()
 
@@ -62,5 +72,7 @@ def system_type():
         exit_with_error("Cancelled")
 
     # Now update the system type
-    system_types_collection.update_one({"_id": selected_type_id}, {"$set": {"value": new_type_value}})
+    system_types_collection.update_one(
+        {"_id": selected_type_id}, {"$set": {"value": new_type_value, "description": new_type_description}}
+    )
     console.print("Success! :party_popper:")
