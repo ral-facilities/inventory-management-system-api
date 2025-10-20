@@ -553,7 +553,9 @@ class TestCreate(CreateDSL):
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No catalogue item found with ID '{self._item_post.catalogue_item_id}'")
+        self.check_create_failed_with_exception(
+            f"No catalogue item found with ID '{self._item_post.catalogue_item_id}'"
+        )
 
     def test_create_with_catalogue_item_with_non_existent_catalogue_category_id(self):
         """Test creating an item with a catalogue item that has a non-existent catalogue category ID."""

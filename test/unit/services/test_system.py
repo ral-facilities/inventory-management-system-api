@@ -999,4 +999,6 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(has_child_elements=True)
         self.call_delete_expecting_error(system_id, ChildElementsExistError)
-        self.check_delete_failed_with_exception(f"System with ID '{system_id}' has child elements and cannot be deleted")
+        self.check_delete_failed_with_exception(
+            f"System with ID '{system_id}' has child elements and cannot be deleted"
+        )

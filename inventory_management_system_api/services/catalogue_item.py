@@ -165,7 +165,9 @@ class CatalogueItemService:
         ):
             catalogue_category = self._catalogue_category_repository.get(catalogue_item.catalogue_category_id)
             if not catalogue_category:
-                raise MissingRecordError(f"No catalogue category found with ID '{catalogue_item.catalogue_category_id}'")
+                raise MissingRecordError(
+                    f"No catalogue category found with ID '{catalogue_item.catalogue_category_id}'"
+                )
 
             if catalogue_category.is_leaf is False:
                 raise NonLeafCatalogueCategoryError("Cannot add catalogue item to a non-leaf catalogue category")
