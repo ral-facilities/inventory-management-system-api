@@ -54,8 +54,10 @@ def system_type():
     ):
         exit_with_error("[red]A system type with the same value already exists![/]")
 
-    # Obtain new description of selected system type
-    new_type_description = Prompt.ask("Please enter the new description of the selected system type")
+    # Obtain new description of selected system type. If falsy, description is set to None
+    new_type_description = Prompt.ask("Please enter the new description of the selected system type (optional)")
+    if not new_type_description:
+        new_type_description = None
 
     # Output the selected system type and new value and new description and request confirmation before editing it
     display_user_selection(
