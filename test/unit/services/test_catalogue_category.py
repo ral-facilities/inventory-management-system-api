@@ -261,7 +261,7 @@ class TestCreate(CreateDSL):
 
         self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[None])
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+        self.check_create_failed_with_exception(f"No unit found with ID '{self.unit_value_id_dict['mm']}'")
 
     def test_create_with_non_leaf_parent(self):
         """Test creating a catalogue category with a non-leaf parent catalogue category."""
@@ -734,7 +734,7 @@ class TestUpdate(UpdateDSL):
             units_in_data=[None],
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+        self.check_update_failed_with_exception(f"No unit found with ID '{self.unit_value_id_dict['mm']}'")
 
     def test_update_parent_id(self):
         """Test updating a catalogue category's `parent_id` to move it."""

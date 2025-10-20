@@ -318,7 +318,7 @@ class TestCreate(CreateDSL):
             unit_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+        self.check_create_failed_with_exception(f"No unit found with ID '{self.unit_value_id_dict['mm']}'")
 
     def test_create_with_non_existent_catalogue_category_id(self):
         """Test creating a property with a non-existent catalogue category ID."""
