@@ -47,6 +47,7 @@ class ItemService:
 
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-positional-arguments
+    # pylint:disable=too-many-locals
     def __init__(
         self,
         item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
@@ -77,7 +78,7 @@ class ItemService:
         self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
-    def create(self, item: ItemPostSchema) -> ItemOut:
+    def create(self, item: ItemPostSchema, is_authorised: bool) -> ItemOut:
         """
         Create a new item.
 
@@ -115,14 +116,16 @@ class ItemService:
         if not usage_status:
             raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
 
-        if not self._rule_repository.check_exists(
-            src_system_type_id=None,
-            dst_system_type_id=system.type_id,
-            dst_usage_status_id=usage_status_id,
-        ):
-            raise InvalidActionError(
-                "No rule found for creating items in the specified system with the specified usage status"
-            )
+        # Bypass rule check if authorised
+        if not is_authorised:
+            if not self._rule_repository.check_exists(
+                src_system_type_id=None,
+                dst_system_type_id=system.type_id,
+                dst_usage_status_id=usage_status_id,
+            ):
+                raise InvalidActionError(
+                    "No rule found for creating items in the specified system with the specified usage status"
+                )
 
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
@@ -201,7 +204,7 @@ class ItemService:
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
-    def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
+    def delete(self, item_id: str, is_authorised: bool, access_token: Optional[str] = None) -> None:
         """
         Delete an item by its ID.
 
@@ -223,12 +226,14 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
-        if not self._rule_repository.check_exists(
-            src_system_type_id=system.type_id,
-            dst_system_type_id=None,
-            dst_usage_status_id=None,
-        ):
-            raise InvalidActionError("No rule found for deleting items from the current system")
+        # Bypass rule check if authorised
+        if not is_authorised:
+            if not self._rule_repository.check_exists(
+                src_system_type_id=system.type_id,
+                dst_system_type_id=None,
+                dst_usage_status_id=None,
+            ):
+                raise InvalidActionError("No rule found for deleting items from the current system")
 
         # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
@@ -282,7 +287,7 @@ class ItemService:
 
             current_system = self._system_repository.get(stored_item.system_id)
 
-            # bypass rule check if authorised
+            # Bypass rule check if authorised
             if current_system.type_id != system.type_id and not is_authorised:
                 # System type is changing - Ensure the moving operation is allowed by a rule
                 if not self._rule_repository.check_exists(

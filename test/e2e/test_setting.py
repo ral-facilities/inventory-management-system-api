@@ -116,7 +116,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
 
         # Create an item in the chosen system and current catalogue category
         self.system_id = system_id
-        return self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        return self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
 
     def post_items_and_prerequisites_with_system_types(self, system_type_ids_lists: list[list[str]]) -> None:
         """
@@ -276,7 +276,7 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
         self.check_catalogue_item_spares([0, 2])
 
         # Delete the second spare item and ensure only its catalogue item is updated
-        self.delete_item(item_id)
+        self.delete_item(item_id, None)
         self.check_catalogue_item_spares([0, 1])
 
     def test_set_spares_definition_with_existing_items(self):

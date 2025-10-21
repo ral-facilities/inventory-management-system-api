@@ -238,6 +238,7 @@ class CreateDSL(ItemServiceDSL):
     _expected_item_out: ItemOut
     _created_item: ItemOut
     _create_exception: pytest.ExceptionInfo
+    _user_authorised: bool
 
     _expected_merged_properties: List[PropertyPostSchema]
 
@@ -254,6 +255,7 @@ class CreateDSL(ItemServiceDSL):
         stored_spares_definition_out_data: Optional[dict] = None,
         stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
+        user_is_authorised=False,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
@@ -274,7 +276,10 @@ class CreateDSL(ItemServiceDSL):
         :param stored_rule_exists: Whether a stored rule exists for the create operation.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
+        :param user_is_authorised: Whether the request is authorised to bypass functionality such as checking rules.
         """
+
+        self._user_authorised = user_is_authorised
 
         # Generate mandatory IDs to be inserted where needed
         catalogue_item_id = str(ObjectId())
@@ -407,7 +412,7 @@ class CreateDSL(ItemServiceDSL):
     def call_create(self) -> None:
         """Calls the `ItemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
-        self._created_item = self.item_service.create(self._item_post)
+        self._created_item = self.item_service.create(self._item_post, self._user_authorised)
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -418,7 +423,7 @@ class CreateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.create(self._item_post)
+            self.item_service.create(self._item_post, self._user_authorised)
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -438,12 +443,14 @@ class CreateDSL(ItemServiceDSL):
         # This is the get for the usage status
         self.mock_usage_status_repository.get.assert_called_once_with(self._item_post.usage_status_id)
 
-        # This is the get for the rule
-        self.mock_rule_repository.check_exists.assert_called_once_with(
-            src_system_type_id=None,
-            dst_system_type_id=self._system_out.type_id,
-            dst_usage_status_id=self._item_post.usage_status_id,
-        )
+        # Would only be called if not bypassing rule
+        if not self._user_authorised:
+            # This is the get for the rule
+            self.mock_rule_repository.check_exists.assert_called_once_with(
+                src_system_type_id=None,
+                dst_system_type_id=self._system_out.type_id,
+                dst_usage_status_id=self._item_post.usage_status_id,
+            )
 
         self.wrapped_utils.process_properties.assert_called_once_with(
             self._catalogue_category_out.properties, self._expected_merged_properties
@@ -614,6 +621,22 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(
             "No rule found for creating items in the specified system with the specified usage status"
         )
+
+    def test_create_with_non_existent_rule_when_authorised(self):
+        """
+        Test creating an item when there isn't a creation rule defined, but the user is authorised
+        """
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_rule_exists=False,
+            user_is_authorised=True,
+        )
+        self.call_create()
+        self.check_create_success()
 
 
 class GetDSL(ItemServiceDSL):
@@ -1447,6 +1470,7 @@ class DeleteDSL(ItemServiceDSL):
     _system_out: Optional[SystemOut]
     _delete_item_id: str
     _delete_exception: pytest.ExceptionInfo
+    _user_authorised: bool
 
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-positional-arguments
@@ -1457,6 +1481,7 @@ class DeleteDSL(ItemServiceDSL):
         stored_spares_definition_out_data: Optional[dict] = None,
         stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
+        user_is_authorised: bool = False,
     ) -> None:
         """
         Mocks repository methods appropriately to test the `delete` service method.
@@ -1471,7 +1496,12 @@ class DeleteDSL(ItemServiceDSL):
         :param stored_rule_exists: Whether a stored rule exists for the delete operation.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
+
+        :param user_is_authorised: Whether the request is authorised to bypass functionality such as checking rules.
         """
+
+        self._user_authorised = user_is_authorised
+
         # Generate mandatory IDs to be inserted where needed
         system_id = str(ObjectId())
 
@@ -1515,7 +1545,7 @@ class DeleteDSL(ItemServiceDSL):
         """
 
         self._delete_item_id = item_id
-        self.item_service.delete(item_id)
+        self.item_service.delete(item_id, self._user_authorised)
 
     def call_delete_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
         """
@@ -1527,7 +1557,7 @@ class DeleteDSL(ItemServiceDSL):
 
         self._delete_item_id = item_id
         with pytest.raises(error_type) as exc:
-            self.item_service.delete(item_id)
+            self.item_service.delete(item_id, self._user_authorised)
         self._delete_exception = exc
 
     def check_delete_success(self) -> None:
@@ -1539,12 +1569,14 @@ class DeleteDSL(ItemServiceDSL):
         # This is the get for the system
         self.mock_system_repository.get.assert_called_once_with(self._stored_item.system_id)
 
-        # This is the get for the rule
-        self.mock_rule_repository.check_exists.assert_called_once_with(
-            src_system_type_id=self._system_out.type_id,
-            dst_system_type_id=None,
-            dst_usage_status_id=None,
-        )
+        # Would only be called if not bypassing rules
+        if not self._user_authorised:
+            # This is the get for the rule
+            self.mock_rule_repository.check_exists.assert_called_once_with(
+                src_system_type_id=self._system_out.type_id,
+                dst_system_type_id=None,
+                dst_usage_status_id=None,
+            )
 
         self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
             "deleting item", self._stored_item.catalogue_item_id
@@ -1628,3 +1660,16 @@ class TestDelete(DeleteDSL):
         )
         self.call_delete_expecting_error(str(ObjectId()), InvalidActionError)
         self.check_delete_failed_with_exception("No rule found for deleting items from the current system")
+
+    def test_delete_with_non_existent_rule_when_authorised(self):
+        """
+        Test deleting an item when there isn't a delete rule defined, but the user is authorised.
+        """
+        self.mock_delete(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            stored_rule_exists=False,
+            user_is_authorised=True,
+        )
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
