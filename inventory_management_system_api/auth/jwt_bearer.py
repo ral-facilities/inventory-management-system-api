@@ -3,7 +3,6 @@ Module for providing an implementation of the `JWTBearer` class.
 """
 
 import logging
-from typing import Any
 
 import jwt
 from fastapi import HTTPException, Request, status
@@ -58,43 +57,27 @@ class JWTBearer(HTTPBearer):
         :return: `True` if the JWT access token is valid and its payload contains a username, `False` otherwise.
         """
         logger.info("Checking if JWT access token is valid")
-        payload = self._decode_jwt_access_token(access_token)
-        return payload is not None and "username" in payload
-
-    def is_jwt_access_token_authorised(self, access_token: str) -> bool:
-        """
-        Check if the JWT access token is authorised.
-
-        It does this by checking that the token's payload contains roles, and that (at least) one of
-        these roles is one of the configured privileged_roles
-
-        :param access_token: The JWT access token to check
-        :return `True` if the JWT access token's payload contains roles, and overlaps the configured
-        privileged_roles, `False` otherwise.
-        """
-        logging.info("Checking if JWT access token is authorised for operation")
-        if config.authentication.enabled:  # only verify authorisation if authentication is enabled
-
-            payload = self._decode_jwt_access_token(access_token)
-            return (
-                payload is not None
-                and "roles" in payload
-                and any(role in config.authentication.privileged_roles for role in payload["roles"])
-            )
-
-        return True
-
-    def _decode_jwt_access_token(self, access_token: str) -> Any | None:
-        """
-        Decode the given access token, returning the payload
-
-        :param access_token: The JWT access token to decode.
-        :return The payload of the given token, `None` if there is an error decoding the token.
-        """
         try:
             payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Error decoding JWT access token")
             payload = None
 
-        return payload
+        return payload is not None and ("username" in payload and "role" in payload)
+
+    def is_jwt_access_token_authorised(self, access_token: str) -> bool:
+        """
+        Check if the JWT access token is authorised.
+
+        It does this by checking that the token's payload contains a role, and that this role
+        is one of the configured privileged_roles. This function should be called after the token
+        has been verified by the JWTBearer dependency. Therefore we do not need to check for the token's
+        signature or expiry time.
+
+        :param access_token: The JWT access token to check
+        :return: `True` if the JWT access token's payload contains a role, and overlaps the configured
+            privileged_roles, `False` otherwise.
+        """
+        logging.info("Checking if JWT access token is authorised for operation")
+        payload = jwt.decode(access_token, options={"verify_signature": False, "verify_exp": False})
+        return payload["role"] in config.authentication.privileged_roles

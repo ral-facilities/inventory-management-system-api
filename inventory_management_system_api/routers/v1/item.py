@@ -67,6 +67,10 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchem
         message = "Unable to create item"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -195,3 +199,11 @@ def delete_item(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        message = "Unable to delete item"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc

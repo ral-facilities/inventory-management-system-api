@@ -205,7 +205,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item(item_data)
 
@@ -236,7 +235,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             catalogue_category_properties_data, catalogue_item_properties_data
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
         return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data})
 
@@ -263,7 +261,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             property_type, allowed_values_post_data, catalogue_item_property_value
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         return self.post_item(
             {
                 **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -517,7 +514,6 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = str(ObjectId())
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
@@ -527,7 +523,6 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = "invalid-id"
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
@@ -539,7 +534,6 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = str(ObjectId())
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
@@ -551,7 +545,6 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = "invalid-id"
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
@@ -574,10 +567,23 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
+
+    def test_create_with_non_existent_rule(self):
+        """
+        Test creating an item when there isn't a creation rule defined that allows items to be created in the
+        specified system with the specified usage status.
+        """
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.check_post_item_failed_with_detail(
+            422, "No rule found for creating items in the specified system with the specified usage status"
+        )
 
 
 class GetDSL(CreateDSL):
@@ -1299,3 +1305,16 @@ class TestDelete(DeleteDSL):
 
         self.delete_item("invalid_id")
         self.check_delete_item_failed_with_detail(404, "Item not found")
+
+    def test_delete_with_non_existent_rule(self):
+        """
+        Test deleting an item when there isn't a delete rule defined that allows items to be deleted from the current
+        system.
+        """
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
+
+        self.delete_item(item_id)
+        self.check_delete_item_failed_with_detail(422, "No rule found for deleting items from the current system")

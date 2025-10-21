@@ -6,6 +6,7 @@ from test.unit.services.conftest import ServiceTestHelpers
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from bson import ObjectId
 
 from inventory_management_system_api.services.system_type import SystemTypeService
 
@@ -58,3 +59,44 @@ class TestList(ListDSL):
         self.mock_list()
         self.call_list()
         self.check_list_success()
+
+
+class GetDSL(SystemTypeServiceDSL):
+    """Base class for 'get' tests."""
+
+    _obtained_system_type_id: str
+    _expected_system_type: MagicMock
+    _obtained_system_type: MagicMock
+
+    def mock_get(self) -> None:
+        """Mocks repo methods appropriately to test the 'get' service method."""
+
+        self._expected_system_type = MagicMock()
+        ServiceTestHelpers.mock_get(self.mock_system_type_repository, self._expected_system_type)
+
+    def call_get(self, system_type_id: str) -> None:
+        """
+        Calls the 'SystemTypeService' 'get' method.
+
+        :param system_type_id: ID of the system type to be obtained.
+        """
+
+        self._obtained_system_type_id = system_type_id
+        self._obtained_system_type = self.system_type_service.get(system_type_id)
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to 'call_get' worked as expected."""
+
+        self.mock_system_type_repository.get.assert_called_once_with(self._obtained_system_type_id)
+        assert self._obtained_system_type == self._expected_system_type
+
+
+class TestGet(GetDSL):
+    """Tests for getting a system type."""
+
+    def test_get(self):
+        """Test getting a system type."""
+
+        self.mock_get()
+        self.call_get(str(ObjectId()))
+        self.check_get_success()

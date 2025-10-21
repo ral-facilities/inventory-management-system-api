@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 
 from inventory_management_system_api.migrations.core import (
+    MigrationError,
     execute_migrations_backward,
     execute_migrations_forward,
     find_available_migrations,
@@ -161,7 +162,7 @@ class TestLoadMigrationsForwardToDSL(LoadMigrationsForwardToDSL):
         """Tests loading migrations forward to an invalid migration."""
 
         self.mock_load_migrations_forward_to(available_migrations=AVAILABLE_MIGRATIONS, previous_migration=None)
-        self.call_load_migrations_forward_to_expecting_error("invalid", SystemExit)
+        self.call_load_migrations_forward_to_expecting_error("invalid", MigrationError)
         self.check_load_migrations_forward_to_failed_with_exception(
             "Migration 'invalid' was not found in the available list of migrations."
         )
@@ -172,7 +173,7 @@ class TestLoadMigrationsForwardToDSL(LoadMigrationsForwardToDSL):
         self.mock_load_migrations_forward_to(
             available_migrations=AVAILABLE_MIGRATIONS, previous_migration=AVAILABLE_MIGRATIONS[-1]
         )
-        self.call_load_migrations_forward_to_expecting_error(AVAILABLE_MIGRATIONS[1], SystemExit)
+        self.call_load_migrations_forward_to_expecting_error(AVAILABLE_MIGRATIONS[1], MigrationError)
         self.check_load_migrations_forward_to_failed_with_exception(
             f"Migration '{AVAILABLE_MIGRATIONS[1]}' is before the previous migration applied "
             f"'{AVAILABLE_MIGRATIONS[-1]}'. So there is nothing to migrate."
@@ -296,14 +297,14 @@ class TestLoadMigrationsBackwardToDSL(LoadMigrationsBackwardToDSL):
         """Tests loading migrations backward to a specific migration from no previous migrations."""
 
         self.mock_load_migrations_backward_to(available_migrations=AVAILABLE_MIGRATIONS, previous_migration=None)
-        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[1], SystemExit)
+        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[1], MigrationError)
         self.check_load_migrations_backward_to_failed_with_exception("No migrations to revert.")
 
     def test_load_migrations_backward_to_from_unknown(self):
         """Tests loading migrations backward to a migration from a previous unknown one."""
 
         self.mock_load_migrations_backward_to(available_migrations=AVAILABLE_MIGRATIONS, previous_migration="unknown")
-        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[0], SystemExit)
+        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[0], MigrationError)
         self.check_load_migrations_backward_to_failed_with_exception(
             "Previous migration applied 'unknown' not found in current migrations. Have you skipped a version?"
         )
@@ -314,7 +315,7 @@ class TestLoadMigrationsBackwardToDSL(LoadMigrationsBackwardToDSL):
         self.mock_load_migrations_backward_to(
             available_migrations=AVAILABLE_MIGRATIONS, previous_migration=AVAILABLE_MIGRATIONS[-1]
         )
-        self.call_load_migrations_backward_to_expecting_error("invalid", SystemExit)
+        self.call_load_migrations_backward_to_expecting_error("invalid", MigrationError)
         self.check_load_migrations_backward_to_failed_with_exception(
             "Migration 'invalid' was not found in the available list of migrations."
         )
@@ -325,7 +326,7 @@ class TestLoadMigrationsBackwardToDSL(LoadMigrationsBackwardToDSL):
         self.mock_load_migrations_backward_to(
             available_migrations=AVAILABLE_MIGRATIONS, previous_migration=AVAILABLE_MIGRATIONS[0]
         )
-        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[-1], SystemExit)
+        self.call_load_migrations_backward_to_expecting_error(AVAILABLE_MIGRATIONS[-1], MigrationError)
         self.check_load_migrations_backward_to_failed_with_exception(
             f"Migration '{AVAILABLE_MIGRATIONS[-1]}' is already reverted or after the previous migration applied "
             f"'{AVAILABLE_MIGRATIONS[0]}'. So there is nothing to migrate."

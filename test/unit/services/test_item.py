@@ -231,6 +231,7 @@ class CreateDSL(ItemServiceDSL):
     # pylint:disable=too-many-instance-attributes
     _catalogue_item_out: Optional[CatalogueItemOut]
     _catalogue_category_out: Optional[CatalogueCategoryOut]
+    _system_out: Optional[SystemOut]
     _usage_status_out: Optional[UsageStatusOut]
     _item_post: ItemPostSchema
     _expected_item_in: ItemIn
@@ -248,8 +249,10 @@ class CreateDSL(ItemServiceDSL):
         item_data: dict,
         catalogue_item_data: Optional[dict] = None,
         catalogue_category_in_data: Optional[dict] = None,
+        system_in_data: Optional[dict] = None,
         usage_status_in_data: Optional[dict] = None,
         stored_spares_definition_out_data: Optional[dict] = None,
+        stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
     ) -> None:
         """
@@ -262,10 +265,13 @@ class CreateDSL(ItemServiceDSL):
                                     will be added automatically.
         :param catalogue_category_in_data: Either `None` or a dictionary containing the catalogue category data as would
                                            be required for a `CatalogueCategoryIn` database model.
-        :param usage_status_in_data: Dictionary containing the basic usage status data as would be required for a
-                                     `UsageStatusIn` database model.
+        :param system_in_data: Either `None` or a dictionary containing the system data as would be required for
+                               `SystemIn` database model.
+        :param usage_status_in_data: Either `None` or a dictionary containing the basic usage status data as would be
+                                     required for a `UsageStatusIn` database model.
         :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
                                                   would be required for a `SparesDefinitionOut` database model.
+        :param stored_rule_exists: Whether a stored rule exists for the create operation.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
         """
@@ -329,6 +335,14 @@ class CreateDSL(ItemServiceDSL):
         )
         ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._catalogue_item_out)
 
+        # System
+        system_in = None
+        if system_in_data:
+            system_in = SystemIn(**system_in_data)
+
+        self._system_out = SystemOut(**system_in.model_dump(), id=system_id) if system_in else None
+        ServiceTestHelpers.mock_get(self.mock_system_repository, self._system_out)
+
         # Usage status
         usage_status_in = None
         if usage_status_in_data:
@@ -340,6 +354,9 @@ class CreateDSL(ItemServiceDSL):
             else None
         )
         ServiceTestHelpers.mock_get(self.mock_usage_status_repository, self._usage_status_out)
+
+        # Rule
+        self.mock_rule_repository.check_exists.return_value = stored_rule_exists
 
         # Item
 
@@ -415,8 +432,18 @@ class CreateDSL(ItemServiceDSL):
             self._catalogue_item_out.catalogue_category_id
         )
 
+        # This is the get for the system
+        self.mock_system_repository.get.assert_called_once_with(self._item_post.system_id)
+
         # This is the get for the usage status
         self.mock_usage_status_repository.get.assert_called_once_with(self._item_post.usage_status_id)
+
+        # This is the get for the rule
+        self.mock_rule_repository.check_exists.assert_called_once_with(
+            src_system_type_id=None,
+            dst_system_type_id=self._system_out.type_id,
+            dst_usage_status_id=self._item_post.usage_status_id,
+        )
 
         self.wrapped_utils.process_properties.assert_called_once_with(
             self._catalogue_category_out.properties, self._expected_merged_properties
@@ -454,6 +481,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create()
@@ -466,6 +494,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create()
@@ -478,6 +507,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
             catalogue_item_data=BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
             catalogue_category_in_data=BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create()
@@ -490,6 +520,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
         )
@@ -504,6 +535,7 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             raise_write_conflict_once=True,
@@ -530,12 +562,26 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=None,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create_expecting_error(DatabaseIntegrityError)
         self.check_create_failed_with_exception(
             f"No catalogue category found with ID: {self._catalogue_item_out.catalogue_category_id}"
         )
+
+    def test_create_with_non_existent_system_id(self):
+        """Test creating an item with a non-existent system ID."""
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=None,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+        )
+        self.call_create_expecting_error(MissingRecordError)
+        self.check_create_failed_with_exception(f"No system found with ID: {self._item_post.system_id}")
 
     def test_create_with_non_existent_usage_status_id(self):
         """Test creating an item with a non-existent usage status ID."""
@@ -544,10 +590,30 @@ class TestCreate(CreateDSL):
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(f"No usage status found with ID: {self._item_post.usage_status_id}")
+
+    def test_create_with_non_existent_rule(self):
+        """
+        Test creating an item when there isn't a creation rule defined that allows items to be created in the
+        specified system with the specified usage status.
+        """
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_rule_exists=False,
+        )
+        self.call_create_expecting_error(InvalidActionError)
+        self.check_create_failed_with_exception(
+            "No rule found for creating items in the specified system with the specified usage status"
+        )
 
 
 class GetDSL(ItemServiceDSL):
@@ -1378,13 +1444,18 @@ class DeleteDSL(ItemServiceDSL):
     """Base class for `delete` tests."""
 
     _stored_item: Optional[ItemOut]
+    _system_out: Optional[SystemOut]
     _delete_item_id: str
     _delete_exception: pytest.ExceptionInfo
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def mock_delete(
         self,
         stored_item_data: Optional[dict],
+        system_in_data: Optional[dict] = None,
         stored_spares_definition_out_data: Optional[dict] = None,
+        stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
     ) -> None:
         """
@@ -1393,18 +1464,24 @@ class DeleteDSL(ItemServiceDSL):
         :param stored_item_data: Either `None` or a dictionary containing the basic item data for the existing stored
                                  item as would be required for an `ItemPostSchema` but without any mandatory IDs or
                                  property IDs.
+        :param system_in_data: Either `None` or a dictionary containing the system data as would be required for a
+                               `SystemIn` database model.
         :param stored_spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as
                                                   would be required for a `SparesDefinitionOut` database model.
+        :param stored_rule_exists: Whether a stored rule exists for the delete operation.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
         """
+        # Generate mandatory IDs to be inserted where needed
+        system_id = str(ObjectId())
 
+        # Item
         self._stored_item = (
             ItemOut(
                 **ItemIn(
                     **stored_item_data,
                     catalogue_item_id=str(ObjectId()),
-                    system_id=str(ObjectId()),
+                    system_id=system_id,
                     # Need a value here but doesn't matter if it matches the usage status or not
                     usage_status="test",
                 ).model_dump(),
@@ -1414,6 +1491,17 @@ class DeleteDSL(ItemServiceDSL):
             else None
         )
         ServiceTestHelpers.mock_get(self.mock_item_repository, self._stored_item)
+
+        # System
+        system_in = None
+        if system_in_data:
+            system_in = SystemIn(**system_in_data)
+
+        self._system_out = SystemOut(**system_in.model_dump(), id=system_id) if system_in else None
+        ServiceTestHelpers.mock_get(self.mock_system_repository, self._system_out)
+
+        # Rule
+        self.mock_rule_repository.check_exists.return_value = stored_rule_exists
 
         self._mock_start_transaction_impacting_number_of_spares(
             stored_spares_definition_out_data, raise_write_conflict_once
@@ -1445,7 +1533,19 @@ class DeleteDSL(ItemServiceDSL):
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
+        # This is the get for the item
         self.mock_item_repository.get.assert_called_once_with(self._delete_item_id)
+
+        # This is the get for the system
+        self.mock_system_repository.get.assert_called_once_with(self._stored_item.system_id)
+
+        # This is the get for the rule
+        self.mock_rule_repository.check_exists.assert_called_once_with(
+            src_system_type_id=self._system_out.type_id,
+            dst_system_type_id=None,
+            dst_usage_status_id=None,
+        )
+
         self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
             "deleting item", self._stored_item.catalogue_item_id
         )
@@ -1473,7 +1573,7 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting an item."""
 
-        self.mock_delete(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.mock_delete(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A)
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
@@ -1482,6 +1582,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
         )
         self.call_delete(str(ObjectId()))
@@ -1493,6 +1594,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(
             ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
             raise_write_conflict_once=True,
         )
@@ -1507,3 +1609,22 @@ class TestDelete(DeleteDSL):
         self.mock_delete(None)
         self.call_delete_expecting_error(item_id, MissingRecordError)
         self.check_delete_failed_with_exception(f"No item found with ID: {item_id}")
+
+    def test_delete_with_non_existent_system_id(self):
+        """Test deleting an item that has a non-existent system ID."""
+        self.mock_delete(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, system_in_data=None)
+        self.call_delete_expecting_error(str(ObjectId()), DatabaseIntegrityError)
+        self.check_delete_failed_with_exception(f"No system found with ID: {self._stored_item.system_id}")
+
+    def test_delete_with_non_existent_rule(self):
+        """
+        Test deleting an item when there isn't a delete rule defined that allows items to be deleted from the current
+        system.
+        """
+        self.mock_delete(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            stored_rule_exists=False,
+        )
+        self.call_delete_expecting_error(str(ObjectId()), InvalidActionError)
+        self.check_delete_failed_with_exception("No rule found for deleting items from the current system")
