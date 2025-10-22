@@ -9,14 +9,18 @@ _POST_DATA - Is for a `PostSchema` schema.
 _IN_DATA - Is for an `In` model.
 _GET_DATA - Is for an entity schema - Used in assertions for e2e tests. May have IDs missing where they are possible
             to be known e.g. `manufacturer_id` in a catalogue item.
+_DOCUMENT_DATA - Is for insertion in a database collection directly.
 _DATA - Is none of the above - likely to be used in post requests as they are likely identical, only with some ids
         missing so that they can be added later e.g. for pairing up units that aren't known before hand.
+_REQUIRED_VALUES_ONLY - Is used to indicate the values given are only the required ones, except ids that are not
+                        predefined and will be added later when they are known in tests.
 """
 
 from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.models.rule import RuleOut
 from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
@@ -30,41 +34,34 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 # ---------------------------- AUTHENTICATION -----------------------------
 
 VALID_ACCESS_TOKEN_ADMIN_ROLE = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZXMiOlsiYWRtaW4iXSwidXNlcklzQWRtaW4iOnRyd"
-    "WUsImV4cCI6MjUzNDAyMzAwNzk5fQ.gWXkZNeLCgNA04KhkGcAUB8WwrrVr8HMKp8yd9BUEBfDuiN1yekPxwKJ7LZDndHqYL4z9WWfVsDE5vYyWfjD"
-    "JjhoymuP-VYTAI2GxbmazRmknsl9L-vRo31oPX3v2Cs5V2tcBv7dM49gzY7w-dS0b9QsOrn4Y1z9zLj4kLpVtNm0EhtbwThxMk8qVNNtEu76TAnYrd"
-    "WAoz7_IedBh9NRf48EKJFfoh4CSbfXhHsGRZjvAKnjU-khaibWP3aWuMzN1nwQJ8WasgvhPaxMxd1qzKTbfpMMjg2eo3hDcQogU545P8zO4PcfzIid"
-    "1g9hF1vMgRsAtQNK385oqBjYfOOWZw"
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZSI6ImFkbWluIiwidXNlcklzQWRtaW4iOmZhbHNlL"
+    "CJleHAiOjI1MzQwMjMwMDc5OX0.FrsDUqnKskhIvmIjtYVgC9im-cSu1dFlwVQ4cFJf2BgCaSh82XuEngOLkbtQuuXWC1wiipsGP4Y-usq7Q_R68vw"
+    "XqGYusHo4fXw6AcBcwplgXZ3n60wsTegpBxKZY5foOre0Ng1GpK-7rrx9H-YQUCHSBOtzWOw_eLzu-eNTwMnMnnpGM9L91_hj0dAKiP90Z3Hp0Ueln"
+    "Yydc0sf6msOs7RKI2Sij-13vFSL8LToIbfUTZYwKZHbBPD5glce_gsW6_W5W-iGemt7yyhfyf7IxKWq3Q02HCiSkI0uCcBal44sabPrsQ4EaPRwyUn"
+    "H0X25MC00IAPRHh-1KqabV7IA9w"
 )
 
-VALID_ACCESS_TOKEN_MODERATOR_ROLE = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZXMiOlsibW9kZXJhdG9yIl0sInVzZXJJc0FkbWluI"
-    "jpmYWxzZSwiZXhwIjoyNTM0MDIzMDA3OTl9.P_jbKS-6YDME4TXhQOh1MiVQSu7wsovyif2XUxaxZp1h0gWCyaR1LusPpgcYgEvu88faa6r77uA7nC"
-    "fmH5R6x-i3OcaaOv685HgR70bZzF2Fnz8yUHMNM1gR6_pW71TpuAxVwU67qMIHKEVSyUUybSZCZXqO7GTRIKqqVOVy3-309EiCzcYLJsIPKAD7iZCT"
-    "IsC6src4fG9hZ10mKCzJNL5zAHlTysXuMJPlvPppLd72x8r3cqnRqu9r3yccyyQ2M4U95gQlR5YEinvTUFDXVukFg85MNl1dzrMfsEkwukaIbJ4rDL"
-    "RC5IQ8qI0M8cjh_wmntm9rLGfqI78PE7Rj1g"
-)
-
-VALID_ACCESS_TOKEN_NO_ROLE = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZXMiOltdLCJ1c2VySXNBZG1pbiI6ZmFsc2UsImV4c"
-    "CI6MjUzNDAyMzAwNzk5fQ.JTdyZHZTU2Vd1cZPzsBGBB_hs72KS4LODyhAyKdNTPWMnp_lEs2fmVSqJjSx3mOTW4J40c7LnJcw6ALlCGuEG3DShQKd"
-    "oYTtH8JLNyzXi9yNYtPlBTEfWqFKK_IYY9sA_WzlQwYDGLD7jsvCvm92CdWjoNtcfDZ0eIfRjHuIRsW5XllerFFE7ouv9awulGCEHv-zl2m0SpMF-m"
-    "HUYJV9JbB5bgrqs635vYL-IJg_qdr10Cn11BUhO1ulrFrk1QLhty-_L8LC2d2j11xqEuIMlEcVkQ6w79U1uzg-NEYcHzcuuaitQjZzKsDD8eMDT-dB"
-    "kIPZxDWzlUuySkGUKDJPzw"
+VALID_ACCESS_TOKEN_DEFAULT_ROLE = (
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZSI6ImRlZmF1bHQiLCJ1c2VySXNBZG1pbiI6ZmFsc"
+    "2UsImV4cCI6MjUzNDAyMzAwNzk5fQ.KRtAMZnaB-CQTDV4PGLgQ3yI-9dzMIy0g3SBaThszSjH-ZaoRTuGuJPXlskhuVMpJ8WEbsim3pNU9gSUD3Vu"
+    "EbFekKSubxeZSqLUQSGmJjLppsPayGgX_SVXyZZYJnnLyTCR2nlC-MGX33PUfjIGWkn3f9kjPUNxN0A6aoVBAhTyxTEw-jBTNRYzrzLTzI_nZ0bN1b"
+    "x3XcTO6Y19__IwGLFUlBn4wDPj-tL-pJro0qedcCWVRhLoHsyVVGTJJk7AZGda2BKJap2y4Jc7SwcOZ5Uyg0fgbl_SvC9BcLIKEE-c41UiG-cjm0_1"
+    "Jjb6mZU0FOmHXSuNpSo05E8_Vc6Bzw"
 )
 
 VALID_ACCESS_TOKEN_MISSING_USERNAME = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlcyI6W10sInVzZXJJc0FkbWluIjpmYWxzZSwiZXhwIjoyNTM0MDIzMDA3OTl9.cvdBk2qK"
-    "DkBH3Po7wBkkAtWarTuqxmSLKoU0QI2i5e_lbZqPG4CZf9KP-djQiyH_o9CsNfEgGgJ3W0Qv75djGbH95rP7x4Z-wIsDzsIv62g5bhHJKYvTiXMnu4"
-    "cGN6rWsVwv9HwgwAc3jmYF91gzpumXm-nWSa11S4W8GMmr0xNf2Yd5ORIhFrdOZk52QmS_HmaCPPSNmRfC__I2nTJVGqMRKOIvGsO2H-hn_hv7S_bp"
-    "tS5iRrczh3rDByJo5-Q10SoaDKbJ1TaAt5cJosnjdSsm4LGk1235_-y0HZpd5SBw8uXhsMj91b7PfbxRZDcT3Pr3-QFp1I49P1sNXe-jLg"
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VySXNBZG1pbiI6ZmFsc2UsImV4cCI6MjUzNDAyMzAwNzk5fQ.pu"
+    "-p95bQBeR3fivomE88LE3uF79oulixlgXpHFEQf8FZ7AWQzyJK-Kz4D-tih1rx45FEFO_xuEoyrQuO9ig3rihrj_1cuUPs5jyIYZJCo2X2MnKtsjBi"
+    "AsCOREQi-wcZx2fe3ysEOYQjpdx-1je3aBgPDqK2TiA1vfGz8GlTSgTjS9E3iN7DOHr2PVPvwa5lqmdUGgQxXRIPK3kfP6xLYPnznRJVY14TezFIpx"
+    "d6zRZmjHS7OWAS02Gv5rKUE8CorPfAhdyrCORbCUUFCPlkuNkAwh0g8Iam36sb-ctBteH5_AV6epZv4_tASglbujagcXVFO3z8MmxBu5x3ImnRjQ"
 )
 
 EXPIRED_ACCESS_TOKEN = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjotNjIxMzU1OTY4MDB9.G_cfC8PNYE5yERyyQNRk"
-    "9mTmDusU_rEPgm7feo2lWQF6QMNnf8PUN-61FfMNRVE0QDSvAmIMMNEOa8ma0JHZARafgnYJfn1_FSJSoRxC740GpG8EFSWrpM-dQXnoD263V9FlK-"
-    "On6IbhF-4Rh9MdoxNyZk2Lj7NvCzJ7gbgbgYM5-sJXLxB-I5LfMfuYM3fx2cRixZFA153l46tFzcMVBrAiBxl_LdyxTIOPfHF0UGlaW2UtFi02gyBU"
-    "4E4wTOqPc4t_CSi1oBSbY7h9O63i8IU99YsOCdvZ7AD3ePxyM1xJR7CFHycg9Z_IDouYnJmXpTpbFMMl7SjME3cVMfMrAQ"
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZSI6ImFkbWluIiwidXNlcklzQWRtaW4iOmZhbHNlL"
+    "CJleHAiOjk0NjY4NDc5OX0.EQnEYrwwwjuudk_mBdAe_V4dts-nTSU2WEoxyahVfsmCWOAAsyNbRvctGPLBaXIzMU73dgtKMpIiE9etlWKhP68GWRG"
+    "21x155-Qm8i_sJu4r6AOcjwPQRV1fPxf5s37L9V-nj1cWgc_HpBJWSG_DnJtZ_T4AQULYDmZRgoGmRl6UsvavKFYFMHwjSRAcSWlT2yn2YjGZ2vDhS"
+    "FSEsdj77XM7JC3OiNb6nLJz4pCYlHsNDxp0XRrKrgx7sYlyDgMIJpfK9OrCsf8r02qdVct2SOYaGP7VXYs17xo5JRSGACq9UUPdbz1Vv-q-7ra2GJX"
+    "Yex1UzoTFh5LzOf-UMtLSKA"
 )
 
 INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN_ADMIN_ROLE + "1"
@@ -146,6 +143,13 @@ USAGE_STATUS_GET_DATA_SCRAPPED = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_SCRAPPED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
 }
+
+USAGE_STATUSES_OUT_DATA = [
+    USAGE_STATUS_OUT_DATA_NEW,
+    USAGE_STATUS_OUT_DATA_IN_USE,
+    USAGE_STATUS_OUT_DATA_USED,
+    USAGE_STATUS_OUT_DATA_SCRAPPED,
+]
 
 # Custom
 USAGE_STATUS_POST_DATA_CUSTOM = {"value": "Custom"}
@@ -963,6 +967,11 @@ SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE = {
     "system_types": [SYSTEM_TYPE_OUT_DATA_STORAGE],
 }
 
+
+SETTING_SPARES_DEFINITION_GET_DATA_STORAGE = {
+    "system_types": [SYSTEM_TYPE_GET_DATA_STORAGE],
+}
+
 # Spares definition, Storage or Operational
 SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
     "_id": SparesDefinitionOut.SETTING_ID,
@@ -971,81 +980,120 @@ SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
 
 # ---------------------------------- RULES ----------------------------------
 
+PREDEFINED_RULE_IDS = [
+    ObjectId("68e65e07670c31567d4c9c82"),  # Storage creation
+    ObjectId("68e65e07670c31567d4c9c83"),  # Storage deletion
+    ObjectId("68e65e07670c31567d4c9c84"),  # Storage to Operational
+    ObjectId("68e65e07670c31567d4c9c85"),  # Operational to Storage
+    ObjectId("68e65e07670c31567d4c9c86"),  # Operational to Scrapped
+]
+
 # Creation in storage
 RULE_OUT_DATA_STORAGE_CREATION = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[0],
     "src_system_type": None,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
 }
 
 RULE_GET_DATA_STORAGE_CREATION = {
-    "id": ANY,
-    "src_system_type": None,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    **RuleOut(**RULE_OUT_DATA_STORAGE_CREATION).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_NEW,
+}
+
+RULE_DOCUMENT_DATA_STORAGE_CREATION = {
+    "_id": PREDEFINED_RULE_IDS[0],
+    "src_system_type_id": None,
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
 }
 
 # Deletion from storage
 RULE_OUT_DATA_STORAGE_DELETION = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[1],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_system_type": None,
     "dst_usage_status": None,
 }
 
 RULE_GET_DATA_STORAGE_DELETION = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
-    "dst_system_type": None,
-    "dst_usage_status": None,
+    **RuleOut(**RULE_OUT_DATA_STORAGE_DELETION).model_dump(),
+}
+
+RULE_DOCUMENT_DATA_STORAGE_DELETION = {
+    "_id": PREDEFINED_RULE_IDS[1],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_system_type_id": None,
+    "dst_usage_status_id": None,
 }
 
 # Storage to operational
 RULE_OUT_DATA_STORAGE_TO_OPERATIONAL = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[2],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_IN_USE,
 }
 
 RULE_GET_DATA_STORAGE_TO_OPERATIONAL = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
+    **RuleOut(**RULE_OUT_DATA_STORAGE_TO_OPERATIONAL).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_IN_USE,
+}
+
+RULE_DOCUMENT_DATA_STORAGE_TO_OPERATIONAL = {
+    "_id": PREDEFINED_RULE_IDS[2],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["_id"],
 }
 
 # Operational to storage
 RULE_OUT_DATA_OPERATIONAL_TO_STORAGE = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[3],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_USED,
 }
 
 RULE_GET_DATA_OPERATIONAL_TO_STORAGE = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_STORAGE,
+    **RuleOut(**RULE_OUT_DATA_OPERATIONAL_TO_STORAGE).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_USED,
+}
+
+RULE_DOCUMENT_DATA_OPERATIONAL_TO_STORAGE = {
+    "_id": PREDEFINED_RULE_IDS[3],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_USED["_id"],
 }
 
 # Operational to scrapped
 RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED = {
-    "_id": ObjectId(),
+    "_id": PREDEFINED_RULE_IDS[4],
     "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     "dst_system_type": SYSTEM_TYPE_OUT_DATA_SCRAPPED,
     "dst_usage_status": USAGE_STATUS_OUT_DATA_SCRAPPED,
 }
 
 RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED = {
-    "id": ANY,
-    "src_system_type": SYSTEM_TYPE_GET_DATA_OPERATIONAL,
-    "dst_system_type": SYSTEM_TYPE_GET_DATA_SCRAPPED,
+    **RuleOut(**RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED).model_dump(),
     "dst_usage_status": USAGE_STATUS_GET_DATA_SCRAPPED,
 }
 
+RULE_DOCUMENT_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "_id": PREDEFINED_RULE_IDS[4],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_SCRAPPED["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_SCRAPPED["_id"],
+}
+
+# Custom rule for creation in operational
+RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM = {
+    "_id": ObjectId("68e65e07670c31567d4c9c87"),
+    "src_system_type_id": None,
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
+}
 
 RULES_OUT_DATA = [
     RULE_OUT_DATA_STORAGE_CREATION,
@@ -1061,4 +1109,12 @@ RULES_GET_DATA = [
     RULE_GET_DATA_STORAGE_TO_OPERATIONAL,
     RULE_GET_DATA_OPERATIONAL_TO_STORAGE,
     RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED,
+]
+
+RULES_DOCUMENT_DATA = [
+    RULE_DOCUMENT_DATA_STORAGE_CREATION,
+    RULE_DOCUMENT_DATA_STORAGE_DELETION,
+    RULE_DOCUMENT_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_DOCUMENT_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_DOCUMENT_DATA_OPERATIONAL_TO_SCRAPPED,
 ]

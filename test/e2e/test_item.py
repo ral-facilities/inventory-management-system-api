@@ -41,9 +41,8 @@ from test.mock_data import (
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_SCRAPPED,
-    USAGE_STATUS_POST_DATA_IN_USE,
     VALID_ACCESS_TOKEN_ADMIN_ROLE,
-    VALID_ACCESS_TOKEN_NO_ROLE,
+    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
 )
 from typing import Any, Optional
 
@@ -142,7 +141,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.system_id = SystemCreateDSL.post_system(self, system_post_data)
         return self.system_id
 
-    def post_item(self, item_data: dict) -> Optional[str]:
+    def post_item(self, item_data: dict, token: str | None) -> Optional[str]:
         """
         Posts an item with the given data and returns the ID of the created item if successful.
 
@@ -167,7 +166,11 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         if self.system_id:
             full_item_data["system_id"] = self.system_id
 
-        self._post_response_item = self.test_client.post("/v1/items", json=full_item_data)
+        self._post_response_item = self.test_client.post(
+            "/v1/items",
+            json=full_item_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE if token is None else token}"},
+        )
 
         return self._post_response_item.json()["id"] if self._post_response_item.status_code == 201 else None
 
@@ -187,7 +190,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
-        return self.post_item(item_data)
+        return self.post_item(item_data, None)
 
     def post_item_and_prerequisites_with_properties(self, item_data: dict) -> Optional[str]:
         """
@@ -205,9 +208,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
-        return self.post_item(item_data)
+        return self.post_item(item_data, None)
 
     def post_item_and_prerequisites_with_given_properties(
         self,
@@ -236,9 +238,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             catalogue_category_properties_data, catalogue_item_properties_data
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
 
-        return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data})
+        return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data}, None)
 
     def post_item_and_prerequisites_with_allowed_values(
         self,
@@ -263,12 +264,12 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             property_type, allowed_values_post_data, catalogue_item_property_value
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
         return self.post_item(
             {
                 **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "properties": [{"name": "property", "value": item_property_value}],
-            }
+            },
+            None,
         )
 
     def check_post_item_success(self, expected_item_get_data: dict) -> None:
@@ -517,8 +518,7 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = str(ObjectId())
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
 
@@ -527,8 +527,7 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = "invalid-id"
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
 
@@ -539,8 +538,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = str(ObjectId())
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
 
@@ -551,8 +549,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = "invalid-id"
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
 
@@ -563,7 +560,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())})
+        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())}, None)
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -574,10 +571,35 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_IN_USE)
-        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"})
+        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"}, None)
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
+
+    def test_create_with_non_existent_rule(self):
+        """
+        Test creating an item when there isn't a creation rule defined that allows items to be created in the
+        specified system with the specified usage status.
+        """
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.check_post_item_failed_with_detail(
+            422, "No rule found for creating items in the specified system with the specified usage status"
+        )
+
+    def test_create_with_non_existent_rule_when_authorised(self):
+        """
+        Test creating an item when there isn't a creation rule defined when the user is authorised.
+        """
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, VALID_ACCESS_TOKEN_ADMIN_ROLE)
+
+        self.check_post_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
 
 class GetDSL(CreateDSL):
@@ -673,12 +695,12 @@ class ListDSL(GetDSL):
 
         # Second item
         system_b_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "name": "Another system"})
-        self.post_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+        self.post_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, None)
 
         # Third item
         self.post_catalogue_item({**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "Another catalogue item"})
         catalogue_item_b_id = self.catalogue_item_id
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
 
         return [
             {
@@ -807,7 +829,7 @@ class UpdateDSL(ListDSL):
         self._patch_response_item = self.test_client.patch(
             f"/v1/items/{item_id}",
             json=item_update_data,
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE if token is None else token}"},
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE if token is None else token}"},
         )
 
     def check_patch_item_success(self, expected_item_get_data: dict) -> None:
@@ -1246,14 +1268,17 @@ class DeleteDSL(UpdateDSL):
 
     _delete_response_item: Response
 
-    def delete_item(self, item_id: str) -> None:
+    def delete_item(self, item_id: str, token: str | None) -> None:
         """
         Deletes an item with the given ID.
 
         :param item_id: ID of the item to be deleted.
         """
 
-        self._delete_response_item = self.test_client.delete(f"/v1/items/{item_id}")
+        self._delete_response_item = self.test_client.delete(
+            f"/v1/items/{item_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE if token is None else token}"},
+        )
 
     def check_delete_item_success(self) -> None:
         """Checks that a prior call to `delete_item` gave a successful response with the expected data
@@ -1282,7 +1307,7 @@ class TestDelete(DeleteDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.delete_item(item_id)
+        self.delete_item(item_id, None)
         self.check_delete_item_success()
 
         self.get_item(item_id)
@@ -1291,11 +1316,43 @@ class TestDelete(DeleteDSL):
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent item."""
 
-        self.delete_item(str(ObjectId()))
+        self.delete_item(str(ObjectId()), None)
         self.check_delete_item_failed_with_detail(404, "Item not found")
 
     def test_delete_with_invalid_id(self):
         """Test deleting an item with an invalid ID."""
 
-        self.delete_item("invalid_id")
+        self.delete_item("invalid_id", None)
         self.check_delete_item_failed_with_detail(404, "Item not found")
+
+    def test_delete_with_non_existent_rule(self):
+        """
+        Test deleting an item when there isn't a delete rule defined that allows items to be deleted from the current
+        system.
+        """
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(
+            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
+        )
+
+        self.delete_item(item_id, None)
+        self.check_delete_item_failed_with_detail(422, "No rule found for deleting items from the current system")
+
+    def test_delete_with_non_existent_rule_when_authorised(self):
+        """
+        Test deleting an item when there isn't a delete rule defined, but the user is authorised
+        """
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(
+            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
+        )
+
+        self.delete_item(item_id, VALID_ACCESS_TOKEN_ADMIN_ROLE)
+        self.check_delete_item_success()
+
+        self.get_item(item_id)
+        self.check_get_item_failed_with_detail(404, "Item not found")

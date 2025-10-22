@@ -26,7 +26,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: "pip"
 
       - name: Install dependencies
@@ -83,8 +83,6 @@ jobs:
       - name: Setup MongoDB database
         run: |
           docker compose up --detach mongo-db
-          sleep 10
-          python ./scripts/dev_cli.py --ci db-import
 
       - name: Run e2e tests
         run: |
