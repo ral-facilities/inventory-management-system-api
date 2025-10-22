@@ -9,7 +9,7 @@ from test.mock_data import (
     UNIT_GET_DATA_MM,
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
-    VALID_ACCESS_TOKEN_NO_ROLE,
+    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
 )
 from typing import Optional
 
@@ -99,7 +99,7 @@ class TestCreate(CreateDSL):
     def test_create_unit_with_unauthorised_role(self):
         """Test creating a unit as an unauthorised user"""
         self._post_response_unit = self.test_client.post(
-            "/v1/units", json=UNIT_POST_DATA_MM, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"}
+            "/v1/units", json=UNIT_POST_DATA_MM, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"}
         )
         self.check_post_unit_failed_with_detail(401, "Not authorised to perform this operation")
 
@@ -236,7 +236,7 @@ class TestDelete(DeleteDSL):
         """Test deleting a unit as an unauthorised user"""
         unit_id = self.post_unit(UNIT_POST_DATA_MM)
         self._delete_response_unit = self.test_client.delete(
-            f"/v1/units/{unit_id}", headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_NO_ROLE}"}
+            f"/v1/units/{unit_id}", headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"}
         )
         self.check_delete_unit_failed_with_detail(401, "Not authorised to perform this operation")
 
