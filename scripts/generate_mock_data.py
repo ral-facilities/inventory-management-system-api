@@ -30,9 +30,9 @@ logger = logging.getLogger()
 
 
 system_types = [
-    {"id": "685e5dce6e347e39d459c5ea", "value": "Storage", "description": "storage system type"},
-    {"id": "685e5dce6e347e39d459c5eb", "value": "Operational", "description": "operational system type"},
-    {"id": "685e5dce6e347e39d459c5ec", "value": "Scrapped", "description": "scrapped system type"},
+    {"id": "685e5dce6e347e39d459c5ea", "value": "Storage", "description": "Storage system type"},
+    {"id": "685e5dce6e347e39d459c5eb", "value": "Operational", "description": "Operational system type"},
+    {"id": "685e5dce6e347e39d459c5ec", "value": "Scrapped", "description": "Scrapped system type"},
 ]
 
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
