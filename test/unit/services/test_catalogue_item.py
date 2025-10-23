@@ -1048,7 +1048,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue item with ID '{str(catalogue_item_id)}' has child elements and cannot be updated"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
         )
 
     def test_update_properties_with_no_children(self):
@@ -1079,7 +1079,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue item with ID '{str(catalogue_item_id)}' has child elements and cannot be updated"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
         )
 
     def test_update_with_non_existent_manufacturer_id(self):
