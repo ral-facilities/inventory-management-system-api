@@ -57,20 +57,20 @@ def create_catalogue_item(
         return CatalogueItemSchema(**catalogue_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if catalogue_item.catalogue_category_id in str(exc) or "catalogue category" in str(exc).lower():
             message = "The specified catalogue category does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if catalogue_item.manufacturer_id in str(exc) or "manufacturer" in str(exc).lower():
             message = "The specified manufacturer does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "The specified replacement catalogue item does not exist"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except NonLeafCatalogueCategoryError as exc:
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
@@ -132,7 +132,7 @@ def partial_update_catalogue_item(
         return CatalogueItemSchema(**updated_catalogue_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
             catalogue_item.catalogue_category_id
@@ -141,7 +141,7 @@ def partial_update_catalogue_item(
         ):
             message = "The specified catalogue category does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if (
             catalogue_item.manufacturer_id
             and catalogue_item.manufacturer_id in str(exc)
@@ -149,7 +149,7 @@ def partial_update_catalogue_item(
         ):
             message = "The specified manufacturer does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         if (
             catalogue_item.obsolete_replacement_catalogue_item_id
@@ -157,7 +157,7 @@ def partial_update_catalogue_item(
         ):
             message = "The specified replacement catalogue item does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "Catalogue item not found"
         logger.exception(message)
@@ -175,7 +175,7 @@ def partial_update_catalogue_item(
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
 
 @router.delete(
@@ -203,7 +203,7 @@ def delete_catalogue_item(
     except ReplacementForObsoleteCatalogueItemError as exc:
         message = "Catalogue item is the replacement for an obsolete catalogue item and cannot be deleted"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
         message = "Unable to delete attachments and/or images"
         logger.exception(message)
