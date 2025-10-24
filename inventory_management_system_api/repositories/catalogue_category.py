@@ -62,7 +62,7 @@ class CatalogueCategoryRepo:
         """
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent catalogue category found with ID '{parent_id}'")
 
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
@@ -158,7 +158,7 @@ class CatalogueCategoryRepo:
 
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent catalogue category found with ID '{parent_id}'")
 
         stored_catalogue_category = self.get(str(catalogue_category_id), session=session)
         moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
@@ -206,7 +206,7 @@ class CatalogueCategoryRepo:
         """
         if self.has_child_elements(catalogue_category_id, session=session):
             raise ChildElementsExistError(
-                f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+                f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be deleted"
             )
 
         logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
@@ -214,7 +214,7 @@ class CatalogueCategoryRepo:
             {"_id": CustomObjectId(catalogue_category_id)}, session=session
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
 
     def _is_duplicate_catalogue_category(
         self,

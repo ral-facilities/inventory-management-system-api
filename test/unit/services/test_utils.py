@@ -125,7 +125,7 @@ class TestProcessProperties:
         """
         with pytest.raises(MissingMandatoryProperty) as exc:
             utils.process_properties(DEFINED_PROPERTIES, [SUPPLIED_PROPERTIES[0]])
-        assert str(exc.value) == f"Missing mandatory property with ID: '{SUPPLIED_PROPERTIES[1].id}'"
+        assert str(exc.value) == f"Missing mandatory property with ID '{SUPPLIED_PROPERTIES[1].id}'"
 
     def test_process_properties_with_missing_non_mandatory_properties(self):
         """

@@ -119,7 +119,7 @@ class CatalogueItemRepo:
             {"_id": CustomObjectId(catalogue_item_id)}, session=session
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+            raise MissingRecordError(f"No catalogue item found with ID '{catalogue_item_id}'")
 
     def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """

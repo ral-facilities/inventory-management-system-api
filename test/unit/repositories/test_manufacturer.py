@@ -587,7 +587,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(manufacturer_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No manufacturer found with ID: {manufacturer_id}", expecting_delete_one_called=True
+            f"No manufacturer found with ID '{manufacturer_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_with_invalid_id(self):

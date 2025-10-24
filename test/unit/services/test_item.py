@@ -553,7 +553,9 @@ class TestCreate(CreateDSL):
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No catalogue item found with ID: {self._item_post.catalogue_item_id}")
+        self.check_create_failed_with_exception(
+            f"No catalogue item found with ID '{self._item_post.catalogue_item_id}'"
+        )
 
     def test_create_with_catalogue_item_with_non_existent_catalogue_category_id(self):
         """Test creating an item with a catalogue item that has a non-existent catalogue category ID."""
@@ -567,7 +569,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(DatabaseIntegrityError)
         self.check_create_failed_with_exception(
-            f"No catalogue category found with ID: {self._catalogue_item_out.catalogue_category_id}"
+            f"No catalogue category found with ID '{self._catalogue_item_out.catalogue_category_id}'"
         )
 
     def test_create_with_non_existent_system_id(self):
@@ -581,7 +583,7 @@ class TestCreate(CreateDSL):
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No system found with ID: {self._item_post.system_id}")
+        self.check_create_failed_with_exception(f"No system found with ID '{self._item_post.system_id}'")
 
     def test_create_with_non_existent_usage_status_id(self):
         """Test creating an item with a non-existent usage status ID."""
@@ -594,7 +596,7 @@ class TestCreate(CreateDSL):
             usage_status_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No usage status found with ID: {self._item_post.usage_status_id}")
+        self.check_create_failed_with_exception(f"No usage status found with ID '{self._item_post.usage_status_id}'")
 
     def test_create_with_non_existent_rule(self):
         """
@@ -1262,7 +1264,7 @@ class TestUpdate(UpdateDSL):
             new_system_in_data=None,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
+        self.check_update_failed_with_exception(f"No system found with ID '{system_id}'")
 
     def test_update_system_and_usage_status_ids(self):
         """Test updating an item's `system_id` and `usage_status_id`."""
@@ -1344,7 +1346,7 @@ class TestUpdate(UpdateDSL):
             new_usage_status_in_data=None,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No usage status found with ID: {usage_status_id}")
+        self.check_update_failed_with_exception(f"No usage status found with ID '{usage_status_id}'")
 
     def test_update_usage_status_id(self):
         """Test updating an item's `usage_status_id`."""
@@ -1375,7 +1377,7 @@ class TestUpdate(UpdateDSL):
             stored_usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
         )
         self.call_update_expecting_error(item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No item found with ID: {item_id}")
+        self.check_update_failed_with_exception(f"No item found with ID '{item_id}'")
 
 
 class DeleteDSL(ItemServiceDSL):
@@ -1546,13 +1548,13 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(None)
         self.call_delete_expecting_error(item_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No item found with ID: {item_id}")
+        self.check_delete_failed_with_exception(f"No item found with ID '{item_id}'")
 
     def test_delete_with_non_existent_system_id(self):
         """Test deleting an item that has a non-existent system ID."""
         self.mock_delete(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, system_in_data=None)
         self.call_delete_expecting_error(str(ObjectId()), DatabaseIntegrityError)
-        self.check_delete_failed_with_exception(f"No system found with ID: {self._stored_item.system_id}")
+        self.check_delete_failed_with_exception(f"No system found with ID '{self._stored_item.system_id}'")
 
     def test_delete_with_non_existent_rule(self):
         """

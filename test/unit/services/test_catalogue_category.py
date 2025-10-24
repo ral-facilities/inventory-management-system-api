@@ -261,7 +261,7 @@ class TestCreate(CreateDSL):
 
         self.mock_create(CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM, units_in_data=[None])
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+        self.check_create_failed_with_exception(f"No unit found with ID '{self.unit_value_id_dict['mm']}'")
 
     def test_create_with_non_leaf_parent(self):
         """Test creating a catalogue category with a non-leaf parent catalogue category."""
@@ -683,7 +683,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be updated"
         )
 
     def test_update_leaf_all_fields_except_parent_id_with_no_children(self):
@@ -716,7 +716,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be updated"
         )
 
     def test_update_leaf_properties_with_non_existent_unit_id(self):
@@ -734,7 +734,7 @@ class TestUpdate(UpdateDSL):
             units_in_data=[None],
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No unit found with ID: {self.unit_value_id_dict['mm']}")
+        self.check_update_failed_with_exception(f"No unit found with ID '{self.unit_value_id_dict['mm']}'")
 
     def test_update_parent_id(self):
         """Test updating a catalogue category's `parent_id` to move it."""
@@ -775,7 +775,7 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_category_post_data=None,
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
+        self.check_update_failed_with_exception(f"No catalogue category found with ID '{catalogue_category_id}'")
 
 
 class DeleteDSL(CatalogueCategoryServiceDSL):

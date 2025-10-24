@@ -72,7 +72,7 @@ class ManufacturerService:
         """
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:
-            raise MissingRecordError(f"No manufacturer found with ID: {manufacturer_id}")
+            raise MissingRecordError(f"No manufacturer found with ID '{manufacturer_id}'")
 
         update_data = manufacturer.model_dump(exclude_unset=True)
 
