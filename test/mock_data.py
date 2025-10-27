@@ -64,7 +64,7 @@ EXPIRED_ACCESS_TOKEN = (
     "Yex1UzoTFh5LzOf-UMtLSKA"
 )
 
-INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN_ADMIN_ROLE + "1"
+INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN_DEFAULT_ROLE + "1"
 
 # ---------------------------- USAGE STATUSES -----------------------------
 

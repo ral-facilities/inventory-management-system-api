@@ -45,8 +45,6 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: 
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
     try:
-        logging.debug("Test client below")
-        logging.debug(authorised)
         item = item_service.create(item, authorised)
         return ItemSchema(**item.model_dump())
     except InvalidPropertyTypeError as exc:

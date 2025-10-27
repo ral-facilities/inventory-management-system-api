@@ -42,7 +42,6 @@ from test.mock_data import (
     USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_SCRAPPED,
     VALID_ACCESS_TOKEN_ADMIN_ROLE,
-    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
 )
 from typing import Any, Optional
 
@@ -141,7 +140,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.system_id = SystemCreateDSL.post_system(self, system_post_data)
         return self.system_id
 
-    def post_item(self, item_data: dict, token: str | None) -> Optional[str]:
+    def post_item(self, item_data: dict, use_admin_token: bool = False) -> Optional[str]:
         """
         Posts an item with the given data and returns the ID of the created item if successful.
 
@@ -169,7 +168,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self._post_response_item = self.test_client.post(
             "/v1/items",
             json=full_item_data,
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE if token is None else token}"},
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
         )
 
         return self._post_response_item.json()["id"] if self._post_response_item.status_code == 201 else None
@@ -190,7 +189,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
-        return self.post_item(item_data, None)
+        return self.post_item(item_data)
 
     def post_item_and_prerequisites_with_properties(self, item_data: dict) -> Optional[str]:
         """
@@ -209,7 +208,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
-        return self.post_item(item_data, None)
+        return self.post_item(item_data)
 
     def post_item_and_prerequisites_with_given_properties(
         self,
@@ -239,7 +238,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
-        return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data}, None)
+        return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data})
 
     def post_item_and_prerequisites_with_allowed_values(
         self,
@@ -269,7 +268,6 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
                 **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "properties": [{"name": "property", "value": item_property_value}],
             },
-            None,
         )
 
     def check_post_item_success(self, expected_item_get_data: dict) -> None:
@@ -518,7 +516,7 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = str(ObjectId())
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
 
@@ -527,7 +525,7 @@ class TestCreate(CreateDSL):
 
         self.catalogue_item_id = "invalid-id"
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified catalogue item does not exist")
 
@@ -538,7 +536,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = str(ObjectId())
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
 
@@ -549,7 +547,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.system_id = "invalid-id"
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         self.check_post_item_failed_with_detail(422, "The specified system does not exist")
 
@@ -560,7 +558,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())}, None)
+        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -571,7 +569,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
-        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"}, None)
+        self.post_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"})
 
         self.check_post_item_failed_with_detail(422, "The specified usage status does not exist")
 
@@ -584,7 +582,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.check_post_item_failed_with_detail(
             422, "No rule found for creating items in the specified system with the specified usage status"
         )
@@ -597,7 +595,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
         self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, VALID_ACCESS_TOKEN_ADMIN_ROLE)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, use_admin_token=True)
 
         self.check_post_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
@@ -695,12 +693,12 @@ class ListDSL(GetDSL):
 
         # Second item
         system_b_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "name": "Another system"})
-        self.post_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, None)
+        self.post_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
 
         # Third item
         self.post_catalogue_item({**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "Another catalogue item"})
         catalogue_item_b_id = self.catalogue_item_id
-        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, None)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
         return [
             {
@@ -810,7 +808,7 @@ class UpdateDSL(ListDSL):
 
     _patch_response_item: Response
 
-    def patch_item(self, item_id: str, item_update_data: dict, token: str | None) -> None:
+    def patch_item(self, item_id: str, item_update_data: dict, use_admin_token: bool = False) -> None:
         """
         Patches an item with the given ID.
 
@@ -829,7 +827,7 @@ class UpdateDSL(ListDSL):
         self._patch_response_item = self.test_client.patch(
             f"/v1/items/{item_id}",
             json=item_update_data,
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE if token is None else token}"},
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
         )
 
     def check_patch_item_success(self, expected_item_get_data: dict) -> None:
@@ -885,7 +883,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, None)
+        self.patch_item(item_id, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
         self.check_patch_item_success(ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
 
     def test_partial_update_catalogue_item_id(self):
@@ -893,7 +891,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"catalogue_item_id": str(ObjectId())}, None)
+        self.patch_item(item_id, {"catalogue_item_id": str(ObjectId())})
         self.check_patch_item_failed_with_detail(422, "Cannot change the catalogue item the item belongs to")
 
     def test_partial_update_system_id(self):
@@ -902,7 +900,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-        self.patch_item(item_id, {"system_id": new_system_id}, None)
+        self.patch_item(item_id, {"system_id": new_system_id})
         self.check_patch_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
 
     def test_partial_update_system_id_with_non_existent_id(self):
@@ -910,7 +908,10 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"system_id": str(ObjectId())}, None)
+        self.patch_item(
+            item_id,
+            {"system_id": str(ObjectId())},
+        )
         self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
 
     def test_partial_update_system_id_with_invalid_id(self):
@@ -918,7 +919,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"system_id": "invalid-id"}, None)
+        self.patch_item(item_id, {"system_id": "invalid-id"})
         self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
 
     def test_partial_update_system_and_usage_status_ids(self):
@@ -927,9 +928,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(
-            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
-        )
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -945,9 +944,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(
-            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, None
-        )
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
         self.check_patch_item_failed_with_detail(
             422, "No rule found for moving between the given system's types with the same final usage status"
         )
@@ -961,7 +958,7 @@ class TestUpdate(UpdateDSL):
         self.patch_item(
             item_id,
             {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]},
-            VALID_ACCESS_TOKEN_ADMIN_ROLE,
+            use_admin_token=True,
         )
         self.check_patch_item_success(
             {
@@ -978,9 +975,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(
-            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]}, None
-        )
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]})
         self.check_patch_item_failed_with_detail(
             422, "No rule found for moving between the given system's types with the same final usage status"
         )
@@ -992,9 +987,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-        self.patch_item(
-            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
-        )
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
         self.check_patch_item_failed_with_detail(
             422, "Cannot change usage status of an item when moving between two systems of the same type"
         )
@@ -1005,7 +998,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": str(ObjectId())}, None)
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": str(ObjectId())})
         self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
 
     def test_partial_update_system_and_usage_status_ids_with_invalid_usage_status_id(self):
@@ -1014,7 +1007,7 @@ class TestUpdate(UpdateDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": "invalid-id"}, None)
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": "invalid-id"})
         self.check_patch_item_failed_with_detail(422, "The specified usage status does not exist")
 
     def test_partial_update_usage_status_id(self):
@@ -1022,7 +1015,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None)
+        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
         self.check_patch_item_failed_with_detail(
             422, "Cannot change usage status without moving between systems according to a defined rule"
         )
@@ -1032,7 +1025,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, VALID_ACCESS_TOKEN_ADMIN_ROLE)
+        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, use_admin_token=True)
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -1047,7 +1040,7 @@ class TestUpdate(UpdateDSL):
         # All properties overridden to start with, then set to empty list to reset
         item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
-        self.patch_item(item_id, {"properties": []}, None)
+        self.patch_item(item_id, {"properties": []})
         self.check_patch_item_success({**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": []})
 
     def test_partial_update_properties_with_some_properties_provided(self):
@@ -1058,7 +1051,7 @@ class TestUpdate(UpdateDSL):
             {**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": []}
         )
 
-        self.patch_item(item_id, {"properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"][1::]}, None)
+        self.patch_item(item_id, {"properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"][1::]})
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
@@ -1074,7 +1067,7 @@ class TestUpdate(UpdateDSL):
             {**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": []}
         )
 
-        self.patch_item(item_id, {"properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"]}, None)
+        self.patch_item(item_id, {"properties": ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES["properties"]})
         self.check_patch_item_success(ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES)
 
     def test_partial_update_properties_with_mandatory_property_given_none(self):
@@ -1082,7 +1075,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
-        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}]}, None)
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}]})
         self.check_patch_item_failed_with_detail(
             422,
             f"Mandatory property with ID '{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE['name']]}' "
@@ -1094,9 +1087,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_with_properties(ITEM_DATA_NEW_WITH_ALL_PROPERTIES)
 
-        self.patch_item(
-            item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]}, None
-        )
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": None}]})
         self.check_patch_item_success(
             {
                 **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
@@ -1113,7 +1104,7 @@ class TestUpdate(UpdateDSL):
             item_properties_data=[],
         )
 
-        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_STRING_MANDATORY_TEXT, "value": 42}]}, None)
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_STRING_MANDATORY_TEXT, "value": 42}]})
 
         self.check_patch_item_failed_with_detail(
             422,
@@ -1131,9 +1122,7 @@ class TestUpdate(UpdateDSL):
             item_properties_data=[],
         )
 
-        self.patch_item(
-            item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": "42"}]}, None
-        )
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1, "value": "42"}]})
 
         self.check_patch_item_failed_with_detail(
             422,
@@ -1151,7 +1140,7 @@ class TestUpdate(UpdateDSL):
             item_properties_data=[],
         )
 
-        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": 0}]}, None)
+        self.patch_item(item_id, {"properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": 0}]})
 
         self.check_patch_item_failed_with_detail(
             422,
@@ -1182,7 +1171,6 @@ class TestUpdate(UpdateDSL):
                     PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE2,
                 ]
             },
-            None,
         )
         self.check_patch_item_success(
             {
@@ -1201,7 +1189,7 @@ class TestUpdate(UpdateDSL):
             "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1", "value2"
         )
 
-        self.patch_item(item_id, {"properties": [{"name": "property", "value": "value42"}]}, None)
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": "value42"}]})
         self.check_patch_item_failed_with_detail(
             422,
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
@@ -1215,7 +1203,7 @@ class TestUpdate(UpdateDSL):
             "string", {"type": "list", "values": ["value1", "value2", "value3"]}, "value1", "value2"
         )
 
-        self.patch_item(item_id, {"properties": [{"name": "property", "value": 42}]}, None)
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": 42}]})
         self.check_patch_item_failed_with_detail(
             422,
             f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
@@ -1229,7 +1217,7 @@ class TestUpdate(UpdateDSL):
             "number", {"type": "list", "values": [1, 2, 3]}, 1, 2
         )
 
-        self.patch_item(item_id, {"properties": [{"name": "property", "value": 42}]}, None)
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": 42}]})
         self.check_patch_item_failed_with_detail(
             422,
             f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
@@ -1243,7 +1231,7 @@ class TestUpdate(UpdateDSL):
             "number", {"type": "list", "values": [1, 2, 3]}, 1, 2
         )
 
-        self.patch_item(item_id, {"properties": [{"name": "property", "value": "2"}]}, None)
+        self.patch_item(item_id, {"properties": [{"name": "property", "value": "2"}]})
         self.check_patch_item_failed_with_detail(
             422,
             f"Invalid value type for property with ID '{self.property_name_id_dict['property']}'. "
@@ -1253,13 +1241,13 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_with_non_existent_id(self):
         """Test updating a non-existent item."""
 
-        self.patch_item(str(ObjectId()), {}, None)
+        self.patch_item(str(ObjectId()), {})
         self.check_patch_item_failed_with_detail(404, "Item not found")
 
     def test_partial_update_invalid_id(self):
         """Test updating an item with an invalid ID."""
 
-        self.patch_item("invalid-id", {}, None)
+        self.patch_item("invalid-id", {})
         self.check_patch_item_failed_with_detail(404, "Item not found")
 
 
@@ -1268,7 +1256,7 @@ class DeleteDSL(UpdateDSL):
 
     _delete_response_item: Response
 
-    def delete_item(self, item_id: str, token: str | None) -> None:
+    def delete_item(self, item_id: str, use_admin_token: bool = False) -> None:
         """
         Deletes an item with the given ID.
 
@@ -1277,7 +1265,7 @@ class DeleteDSL(UpdateDSL):
 
         self._delete_response_item = self.test_client.delete(
             f"/v1/items/{item_id}",
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE if token is None else token}"},
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
         )
 
     def check_delete_item_success(self) -> None:
@@ -1307,7 +1295,7 @@ class TestDelete(DeleteDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.delete_item(item_id, None)
+        self.delete_item(item_id)
         self.check_delete_item_success()
 
         self.get_item(item_id)
@@ -1316,13 +1304,13 @@ class TestDelete(DeleteDSL):
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent item."""
 
-        self.delete_item(str(ObjectId()), None)
+        self.delete_item(str(ObjectId()))
         self.check_delete_item_failed_with_detail(404, "Item not found")
 
     def test_delete_with_invalid_id(self):
         """Test deleting an item with an invalid ID."""
 
-        self.delete_item("invalid_id", None)
+        self.delete_item("invalid_id")
         self.check_delete_item_failed_with_detail(404, "Item not found")
 
     def test_delete_with_non_existent_rule(self):
@@ -1337,7 +1325,7 @@ class TestDelete(DeleteDSL):
             item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
         )
 
-        self.delete_item(item_id, None)
+        self.delete_item(item_id)
         self.check_delete_item_failed_with_detail(422, "No rule found for deleting items from the current system")
 
     def test_delete_with_non_existent_rule_when_authorised(self):
@@ -1351,7 +1339,7 @@ class TestDelete(DeleteDSL):
             item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
         )
 
-        self.delete_item(item_id, VALID_ACCESS_TOKEN_ADMIN_ROLE)
+        self.delete_item(item_id, use_admin_token=True)
         self.check_delete_item_success()
 
         self.get_item(item_id)
