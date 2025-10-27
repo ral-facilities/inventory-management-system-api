@@ -9,7 +9,7 @@ from test.mock_data import (
     UNIT_GET_DATA_MM,
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
-    VALID_ACCESS_TOKEN_ADMIN_ROLE
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Optional
 
