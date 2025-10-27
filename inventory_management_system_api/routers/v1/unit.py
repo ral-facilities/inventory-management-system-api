@@ -40,7 +40,7 @@ def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: 
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)
 
-    # is user authorised to perform operation
+    # check user is authorised to perform operation
     if not authorised:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
 
@@ -95,7 +95,7 @@ def delete_unit(
 ) -> None:
     logger.info("Deleting unit with ID: %s", unit_id)
 
-    # is user authorised to perform operation
+    # check user is authorised to perform operation
     if not authorised:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
 
