@@ -9,8 +9,7 @@ from test.mock_data import (
     UNIT_GET_DATA_MM,
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
-    VALID_ACCESS_TOKEN_ADMIN_ROLE,
-    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE
 )
 from typing import Optional
 
@@ -55,11 +54,10 @@ class CreateDSL:
         :return: ID of the created unit (or `None` if not successful).
         """
         self._post_response_unit = self.test_client.post(
-            "/v1/units", 
+            "/v1/units",
             json=unit_post_data,
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None
-
-            )
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
         created_id = self._post_response_unit.json()["id"] if self._post_response_unit.status_code == 201 else None
         if created_id:
             self.set_unit_value_and_id(unit_post_data["value"], created_id)
@@ -209,9 +207,8 @@ class DeleteDSL(ListDSL):
         """
         self._delete_response_unit = self.test_client.delete(
             f"/v1/units/{unit_id}",
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None
-
-            )
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
     def check_delete_unit_success(self) -> None:
         """Checks that a prior call to `delete_unit` gave a successful response."""
