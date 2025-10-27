@@ -16,7 +16,7 @@ logger = logging.getLogger()
 
 class JWTBearer(HTTPBearer):
     """
-    Extends the FastAPI `HTTPBearer` class to provide JSON Web Token (JWT) based authentication/authorization.
+    Extends the FastAPI `HTTPBearer` class to provide JSON Web Token (JWT) based authentication/authorisation.
     """
 
     def __init__(self, auto_error: bool = True) -> None:
@@ -30,10 +30,10 @@ class JWTBearer(HTTPBearer):
 
     async def __call__(self, request: Request) -> str:
         """
-        Callable method for JWT access token authentication/authorization.
+        Callable method for JWT access token authentication/authorisation.
 
         This method is called when `JWTBearer` is used as a dependency in a FastAPI route. It performs authentication/
-        authorization by calling the parent class method and then verifying the JWT access token.
+        authorisation by calling the parent class method and then verifying the JWT access token.
         :param request: The FastAPI `Request` object.
         :return: The JWT access token if authentication is successful.
         :raises HTTPException: If the supplied JWT access token is invalid or has expired.
