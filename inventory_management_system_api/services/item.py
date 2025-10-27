@@ -95,25 +95,25 @@ class ItemService:
         catalogue_item_id = item.catalogue_item_id
         catalogue_item = self._catalogue_item_repository.get(catalogue_item_id)
         if not catalogue_item:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+            raise MissingRecordError(f"No catalogue item found with ID '{catalogue_item_id}'")
 
         try:
             catalogue_category_id = catalogue_item.catalogue_category_id
             catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             if not catalogue_category:
-                raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+                raise DatabaseIntegrityError(f"No catalogue category found with ID '{catalogue_category_id}'")
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
         system_id = item.system_id
         system = self._system_repository.get(system_id)
         if not system:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
+            raise MissingRecordError(f"No system found with ID '{system_id}'")
 
         usage_status_id = item.usage_status_id
         usage_status = self._usage_status_repository.get(usage_status_id)
         if not usage_status:
-            raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+            raise MissingRecordError(f"No usage status found with ID '{usage_status_id}'")
 
         if not self._rule_repository.check_exists(
             src_system_type_id=None,
@@ -176,7 +176,7 @@ class ItemService:
 
         stored_item = self.get(item_id)
         if not stored_item:
-            raise MissingRecordError(f"No item found with ID: {item_id}")
+            raise MissingRecordError(f"No item found with ID '{item_id}'")
 
         if "catalogue_item_id" in update_data and item.catalogue_item_id != stored_item.catalogue_item_id:
             raise InvalidActionError("Cannot change the catalogue item the item belongs to")
@@ -213,13 +213,13 @@ class ItemService:
         """
         item = self.get(item_id)
         if item is None:
-            raise MissingRecordError(f"No item found with ID: {item_id}")
+            raise MissingRecordError(f"No item found with ID '{item_id}'")
 
         try:
             system_id = item.system_id
             system = self._system_repository.get(system_id)
             if not system:
-                raise DatabaseIntegrityError(f"No system found with ID: {system_id}")
+                raise DatabaseIntegrityError(f"No system found with ID '{system_id}'")
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
@@ -272,13 +272,13 @@ class ItemService:
             usage_status_id = item.usage_status_id
             usage_status = self._usage_status_repository.get(usage_status_id)
             if not usage_status:
-                raise MissingRecordError(f"No usage status found with ID: {usage_status_id}")
+                raise MissingRecordError(f"No usage status found with ID '{usage_status_id}'")
             update_data["usage_status"] = usage_status.value
 
         if moving_system:
             system = self._system_repository.get(item.system_id)
             if not system:
-                raise MissingRecordError(f"No system found with ID: {item.system_id}")
+                raise MissingRecordError(f"No system found with ID '{item.system_id}'")
 
             current_system = self._system_repository.get(stored_item.system_id)
             if current_system.type_id != system.type_id:
@@ -315,7 +315,7 @@ class ItemService:
             catalogue_category_id = catalogue_item.catalogue_category_id
             catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             if not catalogue_category:
-                raise DatabaseIntegrityError(f"No catalogue category found with ID: {catalogue_category_id}")
+                raise DatabaseIntegrityError(f"No catalogue category found with ID '{catalogue_category_id}'")
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 

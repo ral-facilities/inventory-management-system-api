@@ -122,7 +122,7 @@ class ItemRepo:
         logger.info("Deleting item with ID: %s from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {item_id}")
+            raise MissingRecordError(f"No item found with ID '{item_id}'")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None

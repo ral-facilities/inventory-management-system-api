@@ -279,7 +279,7 @@ class TestCreate(CreateDSL):
             parent_system_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No parent system found with ID: {parent_id}")
+        self.check_create_failed_with_exception(f"No parent system found with ID '{parent_id}'")
 
     def test_create_with_different_type_id_to_parent(self):
         """Test creating a system with a different `type_id` to its parent."""
@@ -306,7 +306,7 @@ class TestCreate(CreateDSL):
             system_type_out_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No system type found with ID: {type_id}")
+        self.check_create_failed_with_exception(f"No system type found with ID '{type_id}'")
 
 
 class GetDSL(SystemServiceDSL):
@@ -733,7 +733,7 @@ class TestUpdate(UpdateDSL):
             new_system_type_out_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No system type found with ID: {new_type_id}")
+        self.check_update_failed_with_exception(f"No system type found with ID '{new_type_id}'")
 
     def test_update_parent_id_from_none(self):
         """Test updating the parent ID of a system from a value of None."""
@@ -901,7 +901,7 @@ class TestUpdate(UpdateDSL):
             new_parent_system_in_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No parent system found with ID: {new_parent_id}")
+        self.check_update_failed_with_exception(f"No parent system found with ID '{new_parent_id}'")
 
     def test_update_description_only(self):
         """Test updating system's description field only (code should not need regenerating as name doesn't change)."""
@@ -925,7 +925,7 @@ class TestUpdate(UpdateDSL):
             system_id, system_patch_data=SYSTEM_POST_DATA_STORAGE_NO_PARENT_B, stored_system_post_data=None
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No system found with ID: {system_id}")
+        self.check_update_failed_with_exception(f"No system found with ID '{system_id}'")
 
 
 class DeleteDSL(SystemServiceDSL):
@@ -999,4 +999,6 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(has_child_elements=True)
         self.call_delete_expecting_error(system_id, ChildElementsExistError)
-        self.check_delete_failed_with_exception(f"System with ID {system_id} has child elements and cannot be deleted")
+        self.check_delete_failed_with_exception(
+            f"System with ID '{system_id}' has child elements and cannot be deleted"
+        )
