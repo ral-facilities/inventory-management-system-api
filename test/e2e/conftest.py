@@ -7,7 +7,7 @@ from test.mock_data import (
     RULES_DOCUMENT_DATA,
     SYSTEM_TYPES_OUT_DATA,
     USAGE_STATUSES_OUT_DATA,
-    VALID_ACCESS_TOKEN_ADMIN_ROLE,
+    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
 )
 from typing import Optional
 
@@ -26,7 +26,7 @@ def fixture_test_client() -> TestClient:
 
     :return: The test client.
     """
-    return TestClient(app, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"})
+    return TestClient(app, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"})
 
 
 @pytest.fixture(name="cleanup_database_collections", autouse=True)
