@@ -73,7 +73,7 @@ def get_systems(
 ) -> list[SystemSchema]:
     logger.info("Getting systems")
     if parent_id:
-        logger.debug("Parent ID filter: '%s'", parent_id)
+        logger.debug("Parent ID filter '%s'", parent_id)
 
     try:
         systems = system_service.list(parent_id)
@@ -88,7 +88,7 @@ def get_systems(
 def get_system(
     system_id: Annotated[str, Path(description="ID of the system to get")], system_service: SystemServiceDep
 ) -> SystemSchema:
-    logger.info("Getting system with ID: %s", system_id)
+    logger.info("Getting system with ID '%s'", system_id)
     message = "System not found"
     try:
         system = system_service.get(system_id)
@@ -105,7 +105,7 @@ def get_system_breadcrumbs(
     system_id: Annotated[str, Path(description="The ID of the system to get the breadcrumbs for")],
     system_service: SystemServiceDep,
 ) -> BreadcrumbsGetSchema:
-    logger.info("Getting breadcrumbs for system with ID: %s", system_id)
+    logger.info("Getting breadcrumbs for system with ID '%s'", system_id)
     try:
         return system_service.get_breadcrumbs(system_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -123,7 +123,7 @@ def get_system_breadcrumbs(
 
 @router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")
 def partial_update_system(system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
-    logger.info("Partially updating system with ID: %s", system_id)
+    logger.info("Partially updating system with ID '%s'", system_id)
     logger.debug("System data: %s", system)
 
     try:
@@ -167,7 +167,7 @@ def delete_system(
     system_service: SystemServiceDep,
     request: Request,
 ) -> None:
-    logger.info("Deleting system with ID: %s", system_id)
+    logger.info("Deleting system with ID '%s'", system_id)
     try:
         system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:

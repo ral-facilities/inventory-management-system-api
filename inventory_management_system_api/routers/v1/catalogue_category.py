@@ -94,7 +94,7 @@ def get_catalogue_categories(
 ) -> List[CatalogueCategorySchema]:
     logger.info("Getting catalogue categories")
     if parent_id:
-        logger.debug("Parent ID filter: '%s'", parent_id)
+        logger.debug("Parent ID filter '%s'", parent_id)
 
     try:
         catalogue_categories = catalogue_category_service.list(parent_id)
@@ -116,7 +116,7 @@ def get_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to get")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
-    logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Getting catalogue category with ID '%s'", catalogue_category_id)
     message = "Catalogue category not found"
     try:
         catalogue_category = catalogue_category_service.get(catalogue_category_id)
@@ -135,7 +135,7 @@ def get_catalogue_category_breadcrumbs(
     ],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> BreadcrumbsGetSchema:
-    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Getting breadcrumbs for catalogue category with ID '%s'", catalogue_category_id)
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -161,7 +161,7 @@ def partial_update_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to update")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
-    logger.info("Partially updating catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Partially updating catalogue category with ID '%s'", catalogue_category_id)
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
         updated_catalogue_category = catalogue_category_service.update(catalogue_category_id, catalogue_category)
@@ -219,7 +219,7 @@ def delete_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to delete")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> None:
-    logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Deleting catalogue category with ID '%s'", catalogue_category_id)
     try:
         catalogue_category_service.delete(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -291,7 +291,7 @@ def partial_update_property(
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
     logger.info(
-        "Partially updating catalogue category with ID %s's property with ID: %s",
+        "Partially updating catalogue category with ID '%s's property with ID '%s'",
         catalogue_category_id,
         property_id,
     )

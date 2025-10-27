@@ -64,7 +64,7 @@ def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
 def get_unit(
     unit_id: Annotated[str, Path(description="The ID of the unit to be retrieved")], unit_service: UnitServiceDep
 ) -> UnitSchema:
-    logger.info("Getting unit with ID %s", unit_id)
+    logger.info("Getting unit with ID '%s'", unit_id)
     message = "Unit not found"
     try:
         unit = unit_service.get(unit_id)
@@ -86,7 +86,7 @@ def get_unit(
 def delete_unit(
     unit_id: Annotated[str, Path(description="ID of the unit to delete")], unit_service: UnitServiceDep
 ) -> None:
-    logger.info("Deleting unit with ID: %s", unit_id)
+    logger.info("Deleting unit with ID '%s'", unit_id)
     try:
         unit_service.delete(unit_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
