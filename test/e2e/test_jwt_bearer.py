@@ -5,7 +5,7 @@ End-to-end tests for the `JWTBearer` routers' dependency.
 from test.mock_data import (
     EXPIRED_ACCESS_TOKEN,
     INVALID_ACCESS_TOKEN,
-    VALID_ACCESS_TOKEN,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
     VALID_ACCESS_TOKEN_MISSING_USERNAME,
 )
 
@@ -42,7 +42,7 @@ from fastapi.routing import APIRoute
             id="missing_bearer_token",
         ),
         pytest.param(
-            {"Authorization": f"Invalid-Bearer {VALID_ACCESS_TOKEN}"},
+            {"Authorization": f"Invalid-Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"},
             "Invalid authentication credentials",
             id="invalid_authorization_scheme",
         ),
