@@ -291,9 +291,9 @@ def partial_update_property(
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
     logger.info(
-        "Partially updating catalogue category with ID '%s's property with ID '%s'",
-        catalogue_category_id,
+        "Partially updating property with ID '%s' within the catalogue category with ID '%s'",
         property_id,
+        catalogue_category_id,
     )
     logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
