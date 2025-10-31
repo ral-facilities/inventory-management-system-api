@@ -13,6 +13,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
@@ -143,11 +144,9 @@ def get_catalogue_category_breadcrumbs(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to obtain breadcrumbs"
-        logger.exception(message)
+        logger.exception("Unable to obtain breadcrumbs")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
         ) from exc
 
 

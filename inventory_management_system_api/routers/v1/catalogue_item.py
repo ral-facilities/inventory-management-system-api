@@ -14,6 +14,7 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -205,10 +206,11 @@ def delete_catalogue_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
+        logger.exception("Unable to delete attachments and/or images")
 
         if exc.args[0] == "Invalid token or expired token":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc

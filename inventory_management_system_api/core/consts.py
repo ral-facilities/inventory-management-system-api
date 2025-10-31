@@ -11,6 +11,9 @@ from inventory_management_system_api.core.config import config
 # parents
 BREADCRUMBS_TRAIL_MAX_LENGTH: int = 5
 
+# Detail to return in the 500 (Internal Server Error) responses
+HTTP_500_INTERNAL_SERVER_ERROR_DETAIL = "Something went wrong"
+
 if config.authentication.enabled:
     # Read the content of the public key file into a constant. This is used for decoding of JWT access tokens.
     try:
