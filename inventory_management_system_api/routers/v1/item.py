@@ -85,9 +85,9 @@ def get_items(
     # pylint: disable=missing-function-docstring
     logger.info("Getting items")
     if system_id:
-        logger.debug("System ID filter: '%s'", system_id)
+        logger.debug("System ID filter '%s'", system_id)
     if catalogue_item_id:
-        logger.debug("Catalogue item ID filter: '%s'", catalogue_item_id)
+        logger.debug("Catalogue item ID filter '%s'", catalogue_item_id)
     try:
         items = item_service.list(system_id, catalogue_item_id)
         return [ItemSchema(**item.model_dump()) for item in items]
@@ -106,7 +106,7 @@ def get_items(
 def get_item(
     item_id: Annotated[str, Path(description="The ID of the item to get")], item_service: ItemServiceDep
 ) -> ItemSchema:
-    logger.info("Getting item with ID %s", item_id)
+    logger.info("Getting item with ID '%s'", item_id)
     message = "Item not found"
     try:
         item = item_service.get(item_id)
@@ -128,7 +128,7 @@ def partial_update_item(
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
 ) -> ItemSchema:
-    logger.info("Partially updating item with ID: %s", item_id)
+    logger.info("Partially updating item with ID '%s'", item_id)
     logger.debug("Item data: %s", item)
     try:
         updated_item = item_service.update(item_id, item)
@@ -173,7 +173,7 @@ def delete_item(
     item_service: ItemServiceDep,
     request: Request,
 ) -> None:
-    logger.info("Deleting item with ID: %s", item_id)
+    logger.info("Deleting item with ID '%s'", item_id)
     try:
         item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:

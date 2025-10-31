@@ -74,7 +74,7 @@ class UnitRepo:
         :return: The retrieved unit, or `None` if not found.
         """
         unit_id = CustomObjectId(unit_id)
-        logger.info("Retrieving unit with ID: %s from the database", unit_id)
+        logger.info("Retrieving unit with ID '%s' from the database", unit_id)
         unit = self._units_collection.find_one({"_id": unit_id}, session=session)
         if unit:
             return UnitOut(**unit)
@@ -95,7 +95,7 @@ class UnitRepo:
         if self._is_unit_in_catalogue_category(str(unit_id), session=session):
             raise PartOfCatalogueCategoryError(f"The unit with ID '{unit_id}' is a part of a Catalogue category")
 
-        logger.info("Deleting unit with ID %s from the database", unit_id)
+        logger.info("Deleting unit with ID '%s' from the database", unit_id)
         result = self._units_collection.delete_one({"_id": unit_id}, session=session)
         if result.deleted_count == 0:
             raise MissingRecordError(f"No unit found with ID '{unit_id}'")

@@ -58,7 +58,7 @@ class SettingRepo:
         :return: The updated setting.
         """
 
-        logger.info("Assigning setting with ID: %s in the database", setting.SETTING_ID)
+        logger.info("Assigning setting with ID '%s' in the database", setting.SETTING_ID)
         self._settings_collection.update_one(
             {"_id": setting.SETTING_ID}, {"$set": setting.model_dump()}, upsert=True, session=session
         )
@@ -76,7 +76,7 @@ class SettingRepo:
         """
 
         setting = None
-        logger.info("Retrieving setting with ID: %s from the database", out_model_type.SETTING_ID)
+        logger.info("Retrieving setting with ID '%s' from the database", out_model_type.SETTING_ID)
 
         # Check for any special cases that are not typical find_one queries
         if out_model_type is SparesDefinitionOut:

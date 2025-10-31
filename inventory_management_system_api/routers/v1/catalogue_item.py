@@ -86,7 +86,7 @@ def get_catalogue_items(
 ) -> List[CatalogueItemSchema]:
     logger.info("Getting catalogue items")
     if catalogue_category_id:
-        logger.debug("Catalogue category ID filter: '%s'", catalogue_category_id)
+        logger.debug("Catalogue category ID filter '%s'", catalogue_category_id)
 
     try:
         catalogue_items = catalogue_item_service.list(catalogue_category_id)
@@ -103,7 +103,7 @@ def get_catalogue_item(
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to get")],
     catalogue_item_service: CatalogueItemServiceDep,
 ) -> CatalogueItemSchema:
-    logger.info("Getting catalogue item with ID: %s", catalogue_item_id)
+    logger.info("Getting catalogue item with ID '%s'", catalogue_item_id)
     message = "Catalogue item not found"
     try:
         catalogue_item = catalogue_item_service.get(catalogue_item_id)
@@ -125,7 +125,7 @@ def partial_update_catalogue_item(
     catalogue_item_id: Annotated[str, Path(description="The ID of the catalogue item to update")],
     catalogue_item_service: CatalogueItemServiceDep,
 ) -> CatalogueItemSchema:
-    logger.info("Partially updating catalogue item with ID: %s", catalogue_item_id)
+    logger.info("Partially updating catalogue item with ID '%s'", catalogue_item_id)
     logger.debug("Catalogue item data: %s", catalogue_item)
     try:
         updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item)
@@ -189,7 +189,7 @@ def delete_catalogue_item(
     catalogue_item_service: CatalogueItemServiceDep,
     request: Request,
 ) -> None:
-    logger.info("Deleting catalogue item with ID: %s", catalogue_item_id)
+    logger.info("Deleting catalogue item with ID '%s'", catalogue_item_id)
     try:
         catalogue_item_service.delete(catalogue_item_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
