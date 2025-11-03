@@ -51,6 +51,8 @@ class CreateDSL:
         Also stores any successfully created units for lookup via `unit_value_id_dict` later.
 
         :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created unit (or `None` if not successful).
         """
         self._post_response_unit = self.test_client.post(
@@ -204,6 +206,8 @@ class DeleteDSL(ListDSL):
         Delete a unit with the given ID.
 
         :param unit_id: ID of the unit to be deleted.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
         self._delete_response_unit = self.test_client.delete(
             f"/v1/units/{unit_id}",
