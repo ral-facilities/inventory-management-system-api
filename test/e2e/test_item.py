@@ -147,6 +147,8 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
                           mandatory IDs missing and any `id`'s replaced by the `name` value in its properties as the IDs
                           will be added automatically.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created item (or `None` if not successful).
         """
 
@@ -816,7 +818,8 @@ class UpdateDSL(ListDSL):
         :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
                                  but with any `id`'s replaced by the `name` value in its properties as the IDs will be
                                  added automatically.
-        :param token: Optional token to override the default authorisation header token used.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
 
         # Replace any property names with ids
@@ -908,10 +911,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(
-            item_id,
-            {"system_id": str(ObjectId())},
-        )
+        self.patch_item(item_id, {"system_id": str(ObjectId())})
         self.check_patch_item_failed_with_detail(422, "The specified system does not exist")
 
     def test_partial_update_system_id_with_invalid_id(self):
@@ -1261,6 +1261,8 @@ class DeleteDSL(UpdateDSL):
         Deletes an item with the given ID.
 
         :param item_id: ID of the item to be deleted.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
 
         self._delete_response_item = self.test_client.delete(
@@ -1321,9 +1323,7 @@ class TestDelete(DeleteDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(
-            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
-        )
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
 
         self.delete_item(item_id)
         self.check_delete_item_failed_with_detail(422, "No rule found for deleting items from the current system")
@@ -1335,9 +1335,7 @@ class TestDelete(DeleteDSL):
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(
-            item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, None
-        )
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
 
         self.delete_item(item_id, use_admin_token=True)
         self.check_delete_item_success()
