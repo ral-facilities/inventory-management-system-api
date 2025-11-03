@@ -85,7 +85,7 @@ class ItemService:
         All properties found in the catalogue item will be inherited if not explicitly provided.
 
         :param item: The item to be created.
-        :is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         :raises MissingRecordError: If the system does not exist.
@@ -172,7 +172,7 @@ class ItemService:
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
-        :is_authorised: Whether or not the user is authorised to bypass any patch rule checks.
+        :param is_authorised: Whether or not the user is authorised to bypass any patch rule checks.
         :raises MissingRecordError: If the item doesn't exist.
         :raises InvalidActionError: If attempting to change the catalogue item of the item.
         :return: The updated item.
@@ -211,7 +211,7 @@ class ItemService:
         Delete an item by its ID.
 
         :param item_id: The ID of the item to delete.
-        :is_authorised: Whether or not the user is authorised to bypass any deletion rule checks.
+        :param is_authorised: Whether or not the user is authorised to bypass any deletion rule checks.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         :raises MissingRecordError: If the item doesn't exist.
         :raises DatabaseIntegrityError: If the system in which the item is currently located doesn't exist.
@@ -258,7 +258,8 @@ class ItemService:
         :param item: Item containing the fields to be updated.
         :param stored_item: Current stored item from the database.
         :param update_data: Dictionary containing the update data.
-        :is_authorised: Whether or not the user is authorised to bypass rule checks, and/or override the usage status.
+        :param is_authorised: Whether or not the user is authorised to bypass rule checks, and/or override the
+                              usage status.
         :raises InvalidActionError: If attempting to change the usage status without also moving the item between
                                     systems.
         :raises MissingRecordError: If the usage status doesn't exist.

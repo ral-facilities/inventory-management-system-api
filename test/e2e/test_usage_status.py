@@ -44,6 +44,8 @@ class CreateDSL:
 
         :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusPostSchema`.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created usage status (or `None` if not successful).
         """
         self._post_response_usage_status = self.test_client.post(
