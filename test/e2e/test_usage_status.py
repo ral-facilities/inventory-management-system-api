@@ -15,7 +15,7 @@ from test.mock_data import (
     USAGE_STATUS_GET_DATA_USED,
     USAGE_STATUS_POST_DATA_CUSTOM,
     USAGE_STATUS_POST_DATA_NEW,
-    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Optional
 
@@ -38,17 +38,20 @@ class CreateDSL:
 
         self.test_client = test_client
 
-    def post_usage_status(self, usage_status_post_data: dict) -> Optional[str]:
+    def post_usage_status(self, usage_status_post_data: dict, use_admin_token: bool = True) -> Optional[str]:
         """
         Posts a usage status with the given data and returns the ID of the created usage status if successful.
 
         :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusPostSchema`.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created usage status (or `None` if not successful).
         """
         self._post_response_usage_status = self.test_client.post(
             "/v1/usage-statuses",
             json=usage_status_post_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
         )
         return (
             self._post_response_usage_status.json()["id"]
@@ -95,11 +98,7 @@ class TestCreate(CreateDSL):
         Test creating a usage status with as an unauthorised user
         """
 
-        self._post_response_usage_status = self.test_client.post(
-            "/v1/usage-statuses",
-            json=USAGE_STATUS_POST_DATA_CUSTOM,
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"},
-        )
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM, use_admin_token=False)
         self.check_post_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
 
@@ -195,13 +194,16 @@ class DeleteDSL(ListDSL):
 
     _delete_response_usage_status: Response
 
-    def delete_usage_status(self, usage_status_id: str) -> None:
+    def delete_usage_status(self, usage_status_id: str, use_admin_token: bool = True) -> None:
         """
         Delete a usage status with the given ID.
 
         :param usage_status_id: ID of the usage status to be deleted.
         """
-        self._delete_response_usage_status = self.test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
+        self._delete_response_usage_status = self.test_client.delete(
+            f"/v1/usage-statuses/{usage_status_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
     def check_delete_usage_status_success(self) -> None:
         """Checks that a prior call to `delete_usage_status` gave a successful response."""
@@ -236,10 +238,7 @@ class TestDelete(DeleteDSL):
         """
         usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
 
-        self._delete_response_usage_status = self.test_client.delete(
-            f"/v1/usage-statuses/{usage_status_id}",
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"},
-        )
+        self.delete_usage_status(usage_status_id, use_admin_token=False)
         self.check_delete_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
     def test_delete_when_part_of_item(self):
