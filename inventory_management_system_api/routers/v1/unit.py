@@ -42,7 +42,7 @@ def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: 
 
     # check user is authorised to perform operation
     if not authorised:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         unit = unit_service.create(unit)
@@ -97,7 +97,7 @@ def delete_unit(
 
     # check user is authorised to perform operation
     if not authorised:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised to perform this operation")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         unit_service.delete(unit_id)

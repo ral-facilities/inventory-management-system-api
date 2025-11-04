@@ -105,7 +105,7 @@ class TestCreate(CreateDSL):
     def test_create_unit_with_unauthorised_role(self):
         """Test creating a unit as an unauthorised user"""
         self.post_unit(UNIT_POST_DATA_MM, use_admin_token=False)
-        self.check_post_unit_failed_with_detail(401, "Not authorised to perform this operation")
+        self.check_post_unit_failed_with_detail(403, "Not authorised to perform this operation")
 
 
 class GetDSL(CreateDSL):
@@ -245,7 +245,7 @@ class TestDelete(DeleteDSL):
         """Test deleting a unit as an unauthorised user"""
         unit_id = self.post_unit(UNIT_POST_DATA_MM)
         self.delete_unit(unit_id, use_admin_token=False)
-        self.check_delete_unit_failed_with_detail(401, "Not authorised to perform this operation")
+        self.check_delete_unit_failed_with_detail(403, "Not authorised to perform this operation")
 
     def test_delete_when_part_of_catalogue_category(self):
         """Test deleting a unit when it is part of a catalogue item."""
