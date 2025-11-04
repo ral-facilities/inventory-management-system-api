@@ -9,6 +9,7 @@ from test.mock_data import (
     UNIT_GET_DATA_MM,
     UNIT_POST_DATA_CM,
     UNIT_POST_DATA_MM,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Optional
 
@@ -43,16 +44,22 @@ class CreateDSL:
 
         self.unit_value_id_dict[unit_value] = unit_id
 
-    def post_unit(self, unit_post_data: dict) -> Optional[str]:
+    def post_unit(self, unit_post_data: dict, use_admin_token: bool = True) -> Optional[str]:
         """
         Posts a unit with the given data, returns the ID of the created unit if successful.
 
         Also stores any successfully created units for lookup via `unit_value_id_dict` later.
 
         :param unit_post_data: Dictionary containing the unit data as would be required for a `UnitPostSchema`.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created unit (or `None` if not successful).
         """
-        self._post_response_unit = self.test_client.post("/v1/units", json=unit_post_data)
+        self._post_response_unit = self.test_client.post(
+            "/v1/units",
+            json=unit_post_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
         created_id = self._post_response_unit.json()["id"] if self._post_response_unit.status_code == 201 else None
         if created_id:
             self.set_unit_value_and_id(unit_post_data["value"], created_id)
@@ -94,6 +101,11 @@ class TestCreate(CreateDSL):
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_unit(UNIT_POST_DATA_MM)
         self.check_post_unit_failed_with_detail(409, "A unit with the same value already exists")
+
+    def test_create_unit_with_unauthorised_role(self):
+        """Test creating a unit as an unauthorised user"""
+        self.post_unit(UNIT_POST_DATA_MM, use_admin_token=False)
+        self.check_post_unit_failed_with_detail(403, "Not authorised to perform this operation")
 
 
 class GetDSL(CreateDSL):
@@ -189,13 +201,18 @@ class DeleteDSL(ListDSL):
 
     _delete_response_unit: Response
 
-    def delete_unit(self, unit_id: str) -> None:
+    def delete_unit(self, unit_id: str, use_admin_token: bool = True) -> None:
         """
         Delete a unit with the given ID.
 
         :param unit_id: ID of the unit to be deleted.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
-        self._delete_response_unit = self.test_client.delete(f"/v1/units/{unit_id}")
+        self._delete_response_unit = self.test_client.delete(
+            f"/v1/units/{unit_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
     def check_delete_unit_success(self) -> None:
         """Checks that a prior call to `delete_unit` gave a successful response."""
@@ -223,6 +240,12 @@ class TestDelete(DeleteDSL):
 
         self.get_unit(unit_id)
         self.check_get_unit_failed_with_detail(404, "Unit not found")
+
+    def test_delete_unit_with_unauthorised_role(self):
+        """Test deleting a unit as an unauthorised user"""
+        unit_id = self.post_unit(UNIT_POST_DATA_MM)
+        self.delete_unit(unit_id, use_admin_token=False)
+        self.check_delete_unit_failed_with_detail(403, "Not authorised to perform this operation")
 
     def test_delete_when_part_of_catalogue_category(self):
         """Test deleting a unit when it is part of a catalogue item."""
