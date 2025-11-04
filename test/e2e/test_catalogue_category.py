@@ -318,11 +318,11 @@ class TestCreate(CreateDSL):
 
         # Capitalisation is different as it shouldn't matter for this test
         self.post_leaf_catalogue_category_with_allowed_values(
-            "string", {"type": "list", "values": ["value1", "value2", "Value1", "value3"]}
+            "string", {"type": "list", "values": ["value1", "value2", " Value1 ", "value3"]}
         )
         self.check_post_catalogue_category_failed_with_validation_message(
             422,
-            "Value error, allowed_values of type 'list' contains a duplicate value: Value1",
+            "Value error, allowed_values of type 'list' contains a duplicate value:  Value1 ",
         )
 
     def test_create_leaf_with_number_property_with_allowed_values_list_invalid_value(self):
