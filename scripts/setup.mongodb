@@ -38,6 +38,31 @@ try {
 ["ims", "test-ims"].forEach((databaseName) => {
   db = db.getSiblingDB(databaseName);
 
+  // Initialise indexes if not already setup
+  if (
+    !db.getCollectionNames().includes("catalogue_categories") ||
+    !db.catalogue_categories.getIndexes().some(i => i.name === "catalogue_categories_name_uniqueness_index")
+  ) {
+    console.log(
+      `Initialising unique name index for catalogue_categories, manufacturers, systems, units, and usage_statuses collections (${databaseName})...`
+    );
+
+    db.catalogue_categories.createIndex(
+      {
+        parent_id: 1,
+        code: 1
+      },
+      {
+        name: "catalogue_categories_name_uniqueness_index",
+        unique: true
+      }
+    );
+    db.manufacturers.createIndex({ code: 1 }, { name: "manufacturers_name_uniqueness_index", unique: true });
+    db.systems.createIndex({ parent_id: 1, code: 1 }, { name: "systems_name_uniqueness_index", unique: true });
+    db.units.createIndex({ code: 1 }, { name: "units_name_uniqueness_index", unique: true });
+    db.usage_statuses.createIndex({ code: 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true });
+  }
+
   // Add some usage statuses if the collection doesn't already exist
   if (!db.getCollectionNames().includes("usage_statuses")) {
     console.log(`Populating usage statuses in ${databaseName}...`);
