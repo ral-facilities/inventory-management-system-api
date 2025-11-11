@@ -8,7 +8,7 @@ Unit tests for the `UsageStatusRepo` repository.
 from test.mock_data import ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, USAGE_STATUS_IN_DATA_NEW, USAGE_STATUS_IN_DATA_USED
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
@@ -47,34 +47,6 @@ class UsageStatusRepoDSL:
 
         yield
 
-    def mock_is_duplicate_usage_status(self, duplicate_usage_status_in_data: Optional[dict] = None) -> None:
-        """
-        Mocks database methods appropriately for when the `_is_duplicate_usage_status` repo method will be called.
-
-        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a
-            duplicate usage status.
-        """
-        RepositoryTestHelpers.mock_find_one(
-            self.usage_statuses_collection,
-            (
-                {**UsageStatusIn(**duplicate_usage_status_in_data).model_dump(), "_id": ObjectId()}
-                if duplicate_usage_status_in_data
-                else None
-            ),
-        )
-
-    def get_is_duplicate_usage_status_expected_find_one_call(
-        self, usage_status_in: UsageStatusIn, expected_usage_status_id: Optional[CustomObjectId]
-    ):
-        """
-        Returns the expected `find_one` calls that should occur when `_is_duplicate_usage_status` is called.
-
-        :param usage_status_in: `UsageStatusIn` model containing the data about the usage status.
-        :param expected_usage_status_id: Expected `usage_status_id` provided to `_is_duplicate_usage_status`.
-        :return: Expected `find_one` calls.
-        """
-        return call({"code": usage_status_in.code, "_id": {"$ne": expected_usage_status_id}}, session=self.mock_session)
-
 
 class CreateDSL(UsageStatusRepoDSL):
     """Base class for `create` tests."""
@@ -84,14 +56,18 @@ class CreateDSL(UsageStatusRepoDSL):
     _created_usage_status: UsageStatusOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, usage_status_in_data: dict, duplicate_usage_status_in_data: Optional[dict] = None) -> None:
+    def mock_create(
+        self,
+        usage_status_in_data: dict,
+        raise_duplicate_key_error: bool = False,
+    ) -> None:
         """
         Mocks database methods appropriately to test the `create` repo method.
 
         :param usage_status_in_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusIn` database model (i.e. no ID or created and modified times required).
-        :param duplicate_usage_status_in_data: Either `None` or a dictionary containing usage status data for a
-            duplicate usage status.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `insert_one`
+            method.
         """
         inserted_usage_status_id = CustomObjectId(str(ObjectId()))
 
@@ -101,10 +77,13 @@ class CreateDSL(UsageStatusRepoDSL):
         self._expected_usage_status_out = UsageStatusOut(
             **self._usage_status_in.model_dump(), id=inserted_usage_status_id
         )
-        #
-        self.mock_is_duplicate_usage_status(duplicate_usage_status_in_data)
+
         # Mock `insert one` to return object for inserted usage status
-        RepositoryTestHelpers.mock_insert_one(self.usage_statuses_collection, inserted_usage_status_id)
+        RepositoryTestHelpers.mock_insert_one(
+            self.usage_statuses_collection,
+            inserted_usage_status_id,
+            raise_duplicate_key_error=raise_duplicate_key_error,
+        )
         # Mock `find_one` to return the inserted usage status document
         RepositoryTestHelpers.mock_find_one(
             self.usage_statuses_collection, {**self._usage_status_in.model_dump(), "_id": inserted_usage_status_id}
@@ -131,18 +110,14 @@ class CreateDSL(UsageStatusRepoDSL):
         """Checks that a prior call to `call_create` worked as expected."""
         usage_status_in_data = self._usage_status_in.model_dump()
 
-        # Obtain a list of expected find_one calls
-        expected_find_one_calls = [
-            # This is the check for the duplicate
-            self.get_is_duplicate_usage_status_expected_find_one_call(self._usage_status_in, None),
-            # This is the check for the newly inserted usage status get
-            call({"_id": CustomObjectId(self._expected_usage_status_out.id)}, session=self.mock_session),
-        ]
-        self.usage_statuses_collection.find_one.assert_has_calls(expected_find_one_calls)
-
         self.usage_statuses_collection.insert_one.assert_called_once_with(
             usage_status_in_data, session=self.mock_session
         )
+        # This is the check for the newly inserted usage status get
+        self.usage_statuses_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._expected_usage_status_out.id)}, session=self.mock_session
+        )
+
         assert self._created_usage_status == self._expected_usage_status_out
 
     def check_create_failed_with_exception(self, message: str) -> None:
@@ -152,7 +127,9 @@ class CreateDSL(UsageStatusRepoDSL):
 
         :param message: Expected message of the raised exception.
         """
-        self.usage_statuses_collection.insert_one.assert_not_called()
+        self.usage_statuses_collection.insert_one.assert_called_once_with(
+            self._usage_status_in.model_dump(), session=self.mock_session
+        )
         assert str(self._create_exception.value) == message
 
 
@@ -167,7 +144,7 @@ class TestCreate(CreateDSL):
 
     def test_create_with_duplicate_name(self):
         """Test creating a usage status with a duplicate usage status being found."""
-        self.mock_create(USAGE_STATUS_IN_DATA_NEW, duplicate_usage_status_in_data=USAGE_STATUS_IN_DATA_NEW)
+        self.mock_create(USAGE_STATUS_IN_DATA_NEW, raise_duplicate_key_error=True)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate usage status found")
 
