@@ -13,6 +13,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
@@ -289,6 +290,7 @@ def partial_update_property(
     ],
     property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
+    authorised: AuthorisedDep
 ) -> CatalogueCategoryPropertySchema:
     logger.info(
         "Partially updating catalogue category with ID %s's property with ID: %s",
@@ -300,7 +302,7 @@ def partial_update_property(
     try:
         return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.update(
-                catalogue_category_id, property_id, catalogue_category_property
+                catalogue_category_id, property_id, catalogue_category_property, authorised
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
