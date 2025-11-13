@@ -74,18 +74,6 @@ class CreateDSL(ItemRepoDSL):
 
         self._created_item = self.item_repository.create(self._item_in, session=self.mock_session)
 
-    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
-        """
-        Calls the `ItemRepo` `create` method with the appropriate data from a prior call to `mock_create` while
-        expecting an error to be raised.
-
-        :param error_type: Expected exception to be raised.
-        """
-
-        with pytest.raises(error_type) as exc:
-            self.item_repository.create(self._item_in)
-        self._create_exception = exc
-
     def check_create_success(self):
         """Checks that a prior call to `call_create` worked as expected."""
 

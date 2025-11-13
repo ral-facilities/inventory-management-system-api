@@ -8,7 +8,7 @@ Unit tests for the `ManufacturerRepo` repository.
 from test.mock_data import CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY, MANUFACTURER_IN_DATA_A, MANUFACTURER_IN_DATA_B
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
@@ -44,34 +44,6 @@ class ManufacturerRepoDSL:
 
         yield
 
-    def mock_is_duplicate_manufacturer(self, duplicate_manufacturer_in_data: Optional[dict] = None) -> None:
-        """
-        Mocks database methods appropriately for when the `_is_duplicate_manufacturer` repo method will be called.
-
-        :param duplicate_manufacturer_in_data: Either `None` or a dictionary containing manufacturer data for a
-            duplicate manufacturer.
-        """
-        RepositoryTestHelpers.mock_find_one(
-            self.manufacturers_collection,
-            (
-                {**ManufacturerIn(**duplicate_manufacturer_in_data).model_dump(), "_id": ObjectId()}
-                if duplicate_manufacturer_in_data
-                else None
-            ),
-        )
-
-    def get_is_duplicate_manufacturer_expected_find_one_call(
-        self, manufacturer_in: ManufacturerIn, expected_manufacturer_id: Optional[CustomObjectId]
-    ):
-        """
-        Returns the expected `find_one` calls that should occur when `_is_duplicate_manufacturer` is called.
-
-        :param manufacturer_in: `ManufacturerIn` model containing the data about the manufacturer.
-        :param expected_manufacturer_id: Expected `manufacturer_id` provided to `_is_duplicate_manufacturer`.
-        :return: Expected `find_one` calls.
-        """
-        return call({"code": manufacturer_in.code, "_id": {"$ne": expected_manufacturer_id}}, session=self.mock_session)
-
 
 class CreateDSL(ManufacturerRepoDSL):
     """Base class for `create` tests."""
@@ -81,14 +53,18 @@ class CreateDSL(ManufacturerRepoDSL):
     _created_manufacturer: ManufacturerOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, manufacturer_in_data: dict, duplicate_manufacturer_in_data: Optional[dict] = None) -> None:
+    def mock_create(
+        self,
+        manufacturer_in_data: dict,
+        raise_duplicate_key_error: bool = False,
+    ) -> None:
         """
         Mocks database methods appropriately to test the `create` repo method.
 
         :param manufacturer_in_data: Dictionary containing the manufacturer data as would be required for a
             `ManufacturerIn` database model (i.e. no ID or created and modified times required).
-        :param duplicate_manufacturer_in_data: Either `None` or a dictionary containing manufacturer data for a
-            duplicate manufacturer.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `insert_one`
+            method.
         """
         inserted_manufacturer_id = CustomObjectId(str(ObjectId()))
 
@@ -99,9 +75,10 @@ class CreateDSL(ManufacturerRepoDSL):
             **self._manufacturer_in.model_dump(), id=inserted_manufacturer_id
         )
         #
-        self.mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
         # Mock `insert one` to return object for inserted manufacturer
-        RepositoryTestHelpers.mock_insert_one(self.manufacturers_collection, inserted_manufacturer_id)
+        RepositoryTestHelpers.mock_insert_one(
+            self.manufacturers_collection, inserted_manufacturer_id, raise_duplicate_key_error=raise_duplicate_key_error
+        )
         # Mock `find_one` to return the inserted manufacturer document
         RepositoryTestHelpers.mock_find_one(
             self.manufacturers_collection, {**self._manufacturer_in.model_dump(), "_id": inserted_manufacturer_id}
@@ -128,18 +105,13 @@ class CreateDSL(ManufacturerRepoDSL):
         """Checks that a prior call to `call_create` worked as expected."""
         manufacturer_in_data = self._manufacturer_in.model_dump()
 
-        # Obtain a list of expected find_one calls
-        expected_find_one_calls = [
-            # This is the check for the duplicate
-            self.get_is_duplicate_manufacturer_expected_find_one_call(self._manufacturer_in, None),
-            # This is the check for the newly inserted manufacturer get
-            call({"_id": CustomObjectId(self._expected_manufacturer_out.id)}, session=self.mock_session),
-        ]
-
         self.manufacturers_collection.insert_one.assert_called_once_with(
             manufacturer_in_data, session=self.mock_session
         )
-        self.manufacturers_collection.find_one.assert_has_calls(expected_find_one_calls)
+        # This is the check for the newly inserted manufacturer get
+        self.manufacturers_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._expected_manufacturer_out.id)}, session=self.mock_session
+        )
 
         assert self._created_manufacturer == self._expected_manufacturer_out
 
@@ -150,7 +122,9 @@ class CreateDSL(ManufacturerRepoDSL):
 
         :param message: Expected message of the raised exception.
         """
-        self.manufacturers_collection.insert_one.assert_not_called()
+        self.manufacturers_collection.insert_one.assert_called_once_with(
+            self._manufacturer_in.model_dump(), session=self.mock_session
+        )
         assert str(self._create_exception.value) == message
 
 
@@ -165,7 +139,7 @@ class TestCreate(CreateDSL):
 
     def test_create_with_duplicate_name(self):
         """Test creating a manufacturer with a duplicate manufacturer being found."""
-        self.mock_create(MANUFACTURER_IN_DATA_A, duplicate_manufacturer_in_data=MANUFACTURER_IN_DATA_A)
+        self.mock_create(MANUFACTURER_IN_DATA_A, raise_duplicate_key_error=True)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate manufacturer found")
 
@@ -336,7 +310,7 @@ class UpdateDSL(ManufacturerRepoDSL):
         manufacturer_id: str,
         new_manufacturer_in_data: dict,
         stored_manufacturer_in_data: Optional[dict],
-        duplicate_manufacturer_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
     ) -> None:
         """
         Mocks database methods appropriately to test the `update` repo method.
@@ -346,8 +320,8 @@ class UpdateDSL(ManufacturerRepoDSL):
             `ManufacturerIn` database model (i.e. no ID or created and modified times required).
         :param stored_manufacturer_in_data: Dictionary containing the data of the existing stored manufacturer as would
             be required for a `ManufacturerIn` database model.
-        :param duplicate_manufacturer_in_data: Either `None` or a dictionary containing the data for a duplicate
-            manufacturer as would be required for a `ManufacturerIn` database model.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `update_one`
+            method.
         """
         self.set_update_data(new_manufacturer_in_data)
 
@@ -359,14 +333,10 @@ class UpdateDSL(ManufacturerRepoDSL):
             if stored_manufacturer_in_data
             else None
         )
-        RepositoryTestHelpers.mock_find_one(
-            self.manufacturers_collection,
-            self._stored_manufacturer_out.model_dump() if self._stored_manufacturer_out else None,
-        )
 
-        # Duplicate check
-        if self._stored_manufacturer_out and (self._manufacturer_in.name != self._stored_manufacturer_out.name):
-            self.mock_is_duplicate_manufacturer(duplicate_manufacturer_in_data)
+        RepositoryTestHelpers.mock_update_one(
+            self.manufacturers_collection, raise_duplicate_key_error=raise_duplicate_key_error
+        )
 
         # Final manufacturer after update
         self._expected_manufacturer_out = ManufacturerOut(
@@ -394,43 +364,49 @@ class UpdateDSL(ManufacturerRepoDSL):
         :param manufacturer_id: ID of the manufacturer to be updated.
         :param error_type: Expected exception to be raised.
         """
+        self._updated_manufacturer_id = manufacturer_id
         with pytest.raises(error_type) as exc:
             self.manufacturer_repository.update(manufacturer_id, self._manufacturer_in)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
-        # Obtain a list of expected `find_one` calls
-        expected_find_one_calls = [
-            # Stored manufacturer
-            call({"_id": CustomObjectId(self._expected_manufacturer_out.id)}, session=self.mock_session)
-        ]
-
-        # Duplicate check (which only runs if changing the name)
-        if self._stored_manufacturer_out and (self._manufacturer_in.name != self._stored_manufacturer_out.name):
-            expected_find_one_calls.append(
-                self.get_is_duplicate_manufacturer_expected_find_one_call(
-                    self._manufacturer_in, CustomObjectId(self._updated_manufacturer_id)
-                )
-            )
-        self.manufacturers_collection.find_one.assert_has_calls(expected_find_one_calls)
-
         self.manufacturers_collection.update_one.assert_called_once_with(
-            {"_id": CustomObjectId(self._updated_manufacturer_id)},
-            {"$set": self._manufacturer_in.model_dump()},
+            {
+                "_id": CustomObjectId(self._updated_manufacturer_id),
+            },
+            {
+                "$set": self._manufacturer_in.model_dump(),
+            },
             session=self.mock_session,
+        )
+        self.manufacturers_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._expected_manufacturer_out.id)}, session=self.mock_session
         )
 
         assert self._updated_manufacturer == self._expected_manufacturer_out
 
-    def check_update_failed_with_exception(self, message: str) -> None:
+    def check_update_failed_with_exception(self, message: str, expecting_update_one_called: bool = False) -> None:
         """
         Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception with the
         correct message.
 
         :param message: Expected message of the raised exception.
+        :param expecting_update_one_called: Whether the `update_one` method is expected to be called or not.
         """
-        self.manufacturers_collection.update_one.assert_not_called()
+        if expecting_update_one_called:
+            self.manufacturers_collection.update_one.assert_called_once_with(
+                {
+                    "_id": CustomObjectId(self._updated_manufacturer_id),
+                },
+                {
+                    "$set": self._manufacturer_in.model_dump(),
+                },
+                session=None,
+            )
+        else:
+            self.manufacturers_collection.update_one.assert_not_called()
+
         assert str(self._update_exception.value) == message
 
 
@@ -463,10 +439,10 @@ class TestUpdate(UpdateDSL):
             manufacturer_id,
             {**MANUFACTURER_IN_DATA_A, "name": duplicate_name},
             MANUFACTURER_IN_DATA_A,
-            duplicate_manufacturer_in_data={**MANUFACTURER_IN_DATA_A, "name": duplicate_name},
+            raise_duplicate_key_error=True,
         )
         self.call_update_expecting_error(manufacturer_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate manufacturer found")
+        self.check_update_failed_with_exception("Duplicate manufacturer found", expecting_update_one_called=True)
 
     def test_update_with_invalid_id(self):
         """Test updating a manufacturer with an invalid ID."""
