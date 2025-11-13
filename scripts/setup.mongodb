@@ -34,8 +34,16 @@ try {
   rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 }
 
-// Wait for 5 seconds to allow for replica set to finish initialising
-sleep(5000);
+let isReplicaSetInitialised = false;
+
+// Wait for replica set to initialise before proceeding
+for (let count = 0; !isReplicaSetInitialised && count < 20; count++) {
+  isReplicaSetInitialised = db.hello().isWritablePrimary;
+  if (!isReplicaSetInitialised) {
+    sleep(1000);
+  }
+}
+print("Replica set initialised successfully");
 
 // Setup the dev and test databases
 ["ims", "test-ims"].forEach((databaseName) => {
