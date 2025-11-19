@@ -195,8 +195,6 @@ and one can be started using the `docker-compose.yml` file.
 
 ##### MongoDB
 
-- You must have access to a MongoDB instance with at least one replica set.
-
 You must have access to a MongoDB instance with at least one replica set and be able to create the following indexes
 using either MongoDB Compass or a CLI e.g.
 
