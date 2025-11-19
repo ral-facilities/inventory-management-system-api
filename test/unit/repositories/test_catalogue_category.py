@@ -198,7 +198,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
             expected_find_one_calls.append(
                 call({"_id": self._catalogue_category_in.parent_id}, session=self.mock_session)
             )
-        # Also need checks for duplicate and the final newly inserted catalogue category get
+        # This is the check for the newly catalogue category get
         expected_find_one_calls.append(
             call(
                 {"_id": CustomObjectId(self._expected_catalogue_category_out.id)},

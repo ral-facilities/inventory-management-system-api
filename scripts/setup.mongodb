@@ -30,7 +30,7 @@ const SYSTEM_TYPE_ID_SCRAPPED = ObjectId("685e5dce6e347e39d459c5ec");
 try {
   rs.status();
 } catch (e) {
-  print("Initialising replica set...");
+  console.log("Initialising replica set...");
   rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 }
 
@@ -43,7 +43,7 @@ for (let count = 0; !isReplicaSetInitialised && count < 20; count++) {
     sleep(1000);
   }
 }
-print("Replica set initialised successfully");
+console.log("Replica set initialised successfully");
 
 // Setup the dev and test databases
 ["ims", "test-ims"].forEach((databaseName) => {
@@ -51,7 +51,7 @@ print("Replica set initialised successfully");
 
   // Add some usage statuses if the collection doesn't already exist
   if (!db.getCollectionNames().includes("usage_statuses")) {
-    print(`Populating usage statuses in ${databaseName}...`);
+    console.log(`Populating usage statuses in ${databaseName}...`);
 
     db.usage_statuses.insertMany([
       createUsageStatusIn(USAGE_STATUS_ID_NEW, "New"),
@@ -63,7 +63,7 @@ print("Replica set initialised successfully");
 
   // Add some system types if the collection doesn't already exist
   if (!db.getCollectionNames().includes("system_types")) {
-    print(`Populating system types in ${databaseName}...`);
+    console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
       { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage" },
@@ -77,7 +77,7 @@ print("Replica set initialised successfully");
     // Right now only have one setting, which we only want to set for development purposes, it is left unset by default
     // for e2e tests to allow the tests to assign it when desired instead
     if (databaseName === "ims") {
-      print(`Populating settings in ${databaseName}...`);
+      console.log(`Populating settings in ${databaseName}...`);
 
       db.settings.insertMany([
         {
@@ -90,7 +90,7 @@ print("Replica set initialised successfully");
 
   // Add some rules if the collection doesn't already exist
   if (!db.getCollectionNames().includes("rules")) {
-    print(`Populating rules in ${databaseName}...`);
+    console.log(`Populating rules in ${databaseName}...`);
 
     db.rules.insertMany([
       {
@@ -132,7 +132,7 @@ print("Replica set initialised successfully");
   }
 
   // Create the indexes
-  print(
+  console.log(
     `Create unique name index for catalogue_categories, manufacturers, systems, units, and usage_statuses collections (${databaseName})...`
   );
 
