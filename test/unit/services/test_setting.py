@@ -185,7 +185,7 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
         )
         self.call_set_spares_definition_expecting_error(MissingRecordError)
         self.check_set_spares_definition_failed_with_exception(
-            f"No system type found with ID: {self._spares_definition_in.system_type_ids[1]}"
+            f"No system type found with ID '{self._spares_definition_in.system_type_ids[1]}'"
         )
 
 

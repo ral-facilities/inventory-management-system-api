@@ -845,13 +845,18 @@ MANUFACTURER_IN_DATA_B = {
 # ---------------------------- SYSTEM TYPES -----------------------------
 
 SYSTEM_TYPES_OUT_DATA = [
-    {"_id": ObjectId("685e5dce6e347e39d459c5ea"), "value": "Storage"},
-    {"_id": ObjectId("685e5dce6e347e39d459c5eb"), "value": "Operational"},
-    {"_id": ObjectId("685e5dce6e347e39d459c5ec"), "value": "Scrapped"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5ea"), "value": "Storage", "description": "Storage system type"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5eb"), "value": "Operational", "description": "Operational system type"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5ec"), "value": "Scrapped", "description": "Scrapped system type"},
 ]
 
 SYSTEM_TYPES_GET_DATA = [
-    {"id": str(system_type_out["_id"]), "value": system_type_out["value"]} for system_type_out in SYSTEM_TYPES_OUT_DATA
+    {
+        "id": str(system_type_out["_id"]),
+        "value": system_type_out["value"],
+        "description": system_type_out["description"],
+    }
+    for system_type_out in SYSTEM_TYPES_OUT_DATA
 ]
 
 # Storage

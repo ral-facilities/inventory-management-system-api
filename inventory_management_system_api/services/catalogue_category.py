@@ -131,13 +131,13 @@ class CatalogueCategoryService:
 
         stored_catalogue_category = self.get(catalogue_category_id)
         if not stored_catalogue_category:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
 
         # If any of these, need to ensure the category has no child elements
         if any(key in update_data for key in CATALOGUE_CATEGORY_WITH_CHILD_NON_EDITABLE_FIELDS):
             if self._catalogue_category_repository.has_child_elements(catalogue_category_id):
                 raise ChildElementsExistError(
-                    f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be updated"
+                    f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be updated"
                 )
 
         if "name" in update_data and catalogue_category.name != stored_catalogue_category.name:
@@ -184,7 +184,7 @@ class CatalogueCategoryService:
             if prop.unit_id is not None:
                 unit = self._unit_repository.get(prop.unit_id)
                 if not unit:
-                    raise MissingRecordError(f"No unit found with ID: {prop.unit_id}")
+                    raise MissingRecordError(f"No unit found with ID '{prop.unit_id}'")
 
                 # Copy unit value to property
                 properties_with_units.append({**prop.model_dump(), "unit": unit.value})

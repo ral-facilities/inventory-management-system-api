@@ -49,7 +49,7 @@ class SystemRepo:
         """
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent system found with ID '{parent_id}'")
 
         if self._is_duplicate_system(parent_id, system.code, session=session):
             raise DuplicateRecordError("Duplicate system found within the parent system")
@@ -68,7 +68,7 @@ class SystemRepo:
         :return: Retrieved system or `None` if not found.
         """
         system_id = CustomObjectId(system_id)
-        logger.info("Retrieving system with ID: %s from the database", system_id)
+        logger.info("Retrieving system with ID '%s' from the database", system_id)
         system = self._systems_collection.find_one({"_id": system_id}, session=session)
         if system:
             return SystemOut(**system)
@@ -123,7 +123,7 @@ class SystemRepo:
 
         parent_id = str(system.parent_id) if system.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent system found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent system found with ID '{parent_id}'")
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
@@ -146,7 +146,7 @@ class SystemRepo:
             ):
                 raise InvalidActionError("Cannot move a system to one of its own children")
 
-        logger.info("Updating system with ID: %s in the database", system_id)
+        logger.info("Updating system with ID '%s' in the database", system_id)
         self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
 
         return self.get(str(system_id), session=session)
@@ -162,10 +162,10 @@ class SystemRepo:
         :raises ChildElementsExistError: If the system has child elements.
         :raises MissingRecordError: If the system doesn't exist.
         """
-        logger.info("Deleting system with ID: %s from the database", system_id)
+        logger.info("Deleting system with ID '%s' from the database", system_id)
         result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
+            raise MissingRecordError(f"No system found with ID '{system_id}'")
 
     def _is_duplicate_system(
         self,
@@ -213,7 +213,7 @@ class SystemRepo:
         :param system_id: ID of the system document to write lock.
         :param session: PyMongo ClientSession to use for database operations.
         """
-        logger.info("Write locking system with ID: %s", system_id)
+        logger.info("Write locking system with ID '%s'", system_id)
         system = self.get(system_id, session=session)
         self._systems_collection.update_one(
             {"_id": CustomObjectId(system_id)}, {"$set": {"importance": system.importance}}, session=session

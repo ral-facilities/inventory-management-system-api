@@ -303,7 +303,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No catalogue category found with ID: {self._catalogue_item_post.catalogue_category_id}"
+            f"No catalogue category found with ID '{self._catalogue_item_post.catalogue_category_id}'"
         )
 
     def test_create_with_non_leaf_catalogue_category(self):
@@ -327,7 +327,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No manufacturer found with ID: {self._catalogue_item_post.manufacturer_id}"
+            f"No manufacturer found with ID '{self._catalogue_item_post.manufacturer_id}'"
         )
 
     def test_create_with_obsolete_replacement_catalogue_item(self):
@@ -361,7 +361,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
+            f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'"
         )
 
 
@@ -1018,7 +1018,7 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
+        self.check_update_failed_with_exception(f"No catalogue category found with ID '{catalogue_category_id}'")
 
     def test_update_manufacturer_id_with_no_children(self):
         """Test updating the catalogue item's `manufacturer_id` when it has no children."""
@@ -1048,7 +1048,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
         )
 
     def test_update_properties_with_no_children(self):
@@ -1079,7 +1079,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
         )
 
     def test_update_with_non_existent_manufacturer_id(self):
@@ -1095,7 +1095,7 @@ class TestUpdate(UpdateDSL):
             new_manufacturer_in_data=None,
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No manufacturer found with ID: {manufacturer_id}")
+        self.check_update_failed_with_exception(f"No manufacturer found with ID '{manufacturer_id}'")
 
     def test_update_obsolete_replacement_catalogue_item_id(self):
         """Test updating the catalogue item's `obsolete_replacement_catalogue_item_id`."""
@@ -1128,7 +1128,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
         self.check_update_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
+            f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'"
         )
 
     def test_update_with_non_existent_id(self):
@@ -1142,7 +1142,7 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_item_data=None,
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue item found with ID: {catalogue_item_id}")
+        self.check_update_failed_with_exception(f"No catalogue item found with ID '{catalogue_item_id}'")
 
 
 class DeleteDSL(CatalogueItemServiceDSL):
@@ -1222,7 +1222,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(has_child_elements=True)
         self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
-            f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be deleted"
         )
 
     def test_delete_when_is_replacement_for(self):
@@ -1233,6 +1233,6 @@ class TestDelete(DeleteDSL):
         self.mock_delete(is_replacement_for=True)
         self.call_delete_expecting_error(catalogue_item_id, ReplacementForObsoleteCatalogueItemError)
         self.check_delete_failed_with_exception(
-            f"Catalogue item with ID {catalogue_item_id} is the replacement for at least one obsolete catalogue item "
+            f"Catalogue item with ID '{catalogue_item_id}' is the replacement for at least one obsolete catalogue item "
             "and cannot be deleted"
         )
