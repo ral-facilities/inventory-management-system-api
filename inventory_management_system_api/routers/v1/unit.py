@@ -15,10 +15,12 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError, InvalidObjectIdError, MissingRecordError,
-    PartOfCatalogueCategoryError)
-from inventory_management_system_api.schemas.unit import (UnitPostSchema,
-                                                          UnitSchema)
+    DuplicateRecordError,
+    InvalidObjectIdError,
+    MissingRecordError,
+    PartOfCatalogueCategoryError,
+)
+from inventory_management_system_api.schemas.unit import UnitPostSchema, UnitSchema
 from inventory_management_system_api.services.unit import UnitService
 
 logger = logging.getLogger()
