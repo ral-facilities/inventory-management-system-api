@@ -24,7 +24,7 @@ class APIConfig(BaseModel):
 
 class AuthenticationConfig(BaseModel):
     """
-    Configuration model for the JWT access token authentication/authorization.
+    Configuration model for the JWT access token authentication/authorisation.
     """
 
     enabled: bool

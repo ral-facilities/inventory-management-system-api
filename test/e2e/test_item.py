@@ -41,6 +41,7 @@ from test.mock_data import (
     SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_SCRAPPED,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Any, Optional
 
@@ -139,13 +140,15 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         self.system_id = SystemCreateDSL.post_system(self, system_post_data)
         return self.system_id
 
-    def post_item(self, item_data: dict) -> Optional[str]:
+    def post_item(self, item_data: dict, use_admin_token: bool = False) -> Optional[str]:
         """
         Posts an item with the given data and returns the ID of the created item if successful.
 
         :param item_data: Dictionary containing the basic item data as would be required for a `ItemPostSchema` but with
                           mandatory IDs missing and any `id`'s replaced by the `name` value in its properties as the IDs
                           will be added automatically.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created item (or `None` if not successful).
         """
 
@@ -164,7 +167,11 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         if self.system_id:
             full_item_data["system_id"] = self.system_id
 
-        self._post_response_item = self.test_client.post("/v1/items", json=full_item_data)
+        self._post_response_item = self.test_client.post(
+            "/v1/items",
+            json=full_item_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
         return self._post_response_item.json()["id"] if self._post_response_item.status_code == 201 else None
 
@@ -262,7 +269,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             {
                 **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
                 "properties": [{"name": "property", "value": item_property_value}],
-            }
+            },
         )
 
     def check_post_item_success(self, expected_item_get_data: dict) -> None:
@@ -582,6 +589,18 @@ class TestCreate(CreateDSL):
             422, "No rule found for creating items in the specified system with the specified usage status"
         )
 
+    def test_create_with_non_existent_rule_when_authorised(self):
+        """
+        Test creating an item when there isn't a creation rule defined when the user is authorised.
+        """
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+        self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, use_admin_token=True)
+
+        self.check_post_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
@@ -791,7 +810,7 @@ class UpdateDSL(ListDSL):
 
     _patch_response_item: Response
 
-    def patch_item(self, item_id: str, item_update_data: dict) -> None:
+    def patch_item(self, item_id: str, item_update_data: dict, use_admin_token: bool = False) -> None:
         """
         Patches an item with the given ID.
 
@@ -799,6 +818,8 @@ class UpdateDSL(ListDSL):
         :param item_update_data: Dictionary containing the basic patch data as would be required for a `ItemPatchSchema`
                                  but with any `id`'s replaced by the `name` value in its properties as the IDs will be
                                  added automatically.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
 
         # Replace any property names with ids
@@ -806,7 +827,11 @@ class UpdateDSL(ListDSL):
             item_update_data, self.property_name_id_dict
         )
 
-        self._patch_response_item = self.test_client.patch(f"/v1/items/{item_id}", json=item_update_data)
+        self._patch_response_item = self.test_client.patch(
+            f"/v1/items/{item_id}",
+            json=item_update_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
     def check_patch_item_success(self, expected_item_get_data: dict) -> None:
         """
@@ -924,6 +949,25 @@ class TestUpdate(UpdateDSL):
             422, "No rule found for moving between the given system's types with the same final usage status"
         )
 
+    def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_when_authorised(self):
+        """Test updating the `system_id` and `usage_status_id` of an item when the user is authorised."""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(
+            item_id,
+            {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"]},
+            use_admin_token=True,
+        )
+        self.check_patch_item_success(
+            {
+                **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "usage_status_id": USAGE_STATUS_GET_DATA_SCRAPPED["id"],
+                "usage_status": USAGE_STATUS_GET_DATA_SCRAPPED["value"],
+            }
+        )
+
     def test_partial_update_system_and_usage_status_ids_with_non_existent_rule_usage_status(self):
         """Test updating the `system_id` and `usage_status_id` of an item when there isn't a rule defined for the change
         of system types (due to the final usage status being wrong, not the transition itself)."""
@@ -974,6 +1018,20 @@ class TestUpdate(UpdateDSL):
         self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
         self.check_patch_item_failed_with_detail(
             422, "Cannot change usage status without moving between systems according to a defined rule"
+        )
+
+    def test_partial_update_usage_status_id_when_authorised(self):
+        """Test updating the `usage_status_id` of an item when user is authorised"""
+
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]}, use_admin_token=True)
+        self.check_patch_item_success(
+            {
+                **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"],
+                "usage_status": USAGE_STATUS_GET_DATA_IN_USE["value"],
+            }
         )
 
     def test_partial_update_properties_with_no_properties_provided(self):
@@ -1198,14 +1256,19 @@ class DeleteDSL(UpdateDSL):
 
     _delete_response_item: Response
 
-    def delete_item(self, item_id: str) -> None:
+    def delete_item(self, item_id: str, use_admin_token: bool = False) -> None:
         """
         Deletes an item with the given ID.
 
         :param item_id: ID of the item to be deleted.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
 
-        self._delete_response_item = self.test_client.delete(f"/v1/items/{item_id}")
+        self._delete_response_item = self.test_client.delete(
+            f"/v1/items/{item_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
     def check_delete_item_success(self) -> None:
         """Checks that a prior call to `delete_item` gave a successful response with the expected data
@@ -1264,3 +1327,18 @@ class TestDelete(DeleteDSL):
 
         self.delete_item(item_id)
         self.check_delete_item_failed_with_detail(422, "No rule found for deleting items from the current system")
+
+    def test_delete_with_non_existent_rule_when_authorised(self):
+        """
+        Test deleting an item when there isn't a delete rule defined, but the user is authorised
+        """
+        item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+        new_system_id = self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.patch_item(item_id, {"system_id": new_system_id, "usage_status_id": USAGE_STATUS_GET_DATA_IN_USE["id"]})
+
+        self.delete_item(item_id, use_admin_token=True)
+        self.check_delete_item_success()
+
+        self.get_item(item_id)
+        self.check_get_item_failed_with_detail(404, "Item not found")

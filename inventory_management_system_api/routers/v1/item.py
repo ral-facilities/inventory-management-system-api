@@ -12,6 +12,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
+from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
@@ -41,11 +42,11 @@ ItemServiceDep = Annotated[ItemService, Depends(ItemService)]
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item: ItemPostSchema, item_service: ItemServiceDep) -> ItemSchema:
+def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: AuthorisedDep) -> ItemSchema:
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
     try:
-        item = item_service.create(item)
+        item = item_service.create(item, authorised)
         return ItemSchema(**item.model_dump())
     except InvalidPropertyTypeError as exc:
         logger.exception(str(exc))
@@ -129,11 +130,13 @@ def partial_update_item(
     item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
+    authorised: AuthorisedDep,
 ) -> ItemSchema:
     logger.info("Partially updating item with ID '%s'", item_id)
     logger.debug("Item data: %s", item)
+
     try:
-        updated_item = item_service.update(item_id, item)
+        updated_item = item_service.update(item_id, item, authorised)
         return ItemSchema(**updated_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
@@ -175,10 +178,11 @@ def delete_item(
     item_id: Annotated[str, Path(description="The ID of the item to delete")],
     item_service: ItemServiceDep,
     request: Request,
+    authorised: AuthorisedDep,
 ) -> None:
     logger.info("Deleting item with ID '%s'", item_id)
     try:
-        item_service.delete(item_id, request.state.token if config.authentication.enabled else None)
+        item_service.delete(item_id, authorised, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "Item not found"
         logger.exception(message)

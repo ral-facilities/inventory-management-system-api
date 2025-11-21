@@ -47,6 +47,7 @@ class ItemService:
 
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-positional-arguments
+    # pylint:disable=too-many-locals
     def __init__(
         self,
         item_repository: Annotated[ItemRepo, Depends(ItemRepo)],
@@ -77,13 +78,14 @@ class ItemService:
         self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
-    def create(self, item: ItemPostSchema) -> ItemOut:
+    def create(self, item: ItemPostSchema, is_authorised: bool) -> ItemOut:
         """
         Create a new item.
 
         All properties found in the catalogue item will be inherited if not explicitly provided.
 
         :param item: The item to be created.
+        :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         :raises MissingRecordError: If the system does not exist.
@@ -115,14 +117,16 @@ class ItemService:
         if not usage_status:
             raise MissingRecordError(f"No usage status found with ID '{usage_status_id}'")
 
-        if not self._rule_repository.check_exists(
-            src_system_type_id=None,
-            dst_system_type_id=system.type_id,
-            dst_usage_status_id=usage_status_id,
-        ):
-            raise InvalidActionError(
-                "No rule found for creating items in the specified system with the specified usage status"
-            )
+        # Bypass rule check if authorised
+        if not is_authorised:
+            if not self._rule_repository.check_exists(
+                src_system_type_id=None,
+                dst_system_type_id=system.type_id,
+                dst_usage_status_id=usage_status_id,
+            ):
+                raise InvalidActionError(
+                    "No rule found for creating items in the specified system with the specified usage status"
+                )
 
         supplied_properties = item.properties if item.properties else []
         # Inherit the missing properties from the corresponding catalogue item
@@ -159,7 +163,7 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
-    def update(self, item_id: str, item: ItemPatchSchema) -> ItemOut:
+    def update(self, item_id: str, item: ItemPatchSchema, is_authorised: bool) -> ItemOut:
         """
         Update an item by its ID.
 
@@ -168,6 +172,7 @@ class ItemService:
 
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
+        :param is_authorised: Whether or not the user is authorised to bypass any patch rule checks.
         :raises MissingRecordError: If the item doesn't exist.
         :raises InvalidActionError: If attempting to change the catalogue item of the item.
         :return: The updated item.
@@ -183,7 +188,7 @@ class ItemService:
 
         moving_system = "system_id" in update_data and item.system_id != stored_item.system_id
 
-        self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system)
+        self._handle_system_and_usage_status_id_update(item, stored_item, update_data, moving_system, is_authorised)
         if "properties" in update_data:
             self._handle_properties_update(item, stored_item, update_data)
 
@@ -201,11 +206,12 @@ class ItemService:
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))
 
-    def delete(self, item_id: str, access_token: Optional[str] = None) -> None:
+    def delete(self, item_id: str, is_authorised: bool, access_token: Optional[str] = None) -> None:
         """
         Delete an item by its ID.
 
         :param item_id: The ID of the item to delete.
+        :param is_authorised: Whether or not the user is authorised to bypass any deletion rule checks.
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         :raises MissingRecordError: If the item doesn't exist.
         :raises DatabaseIntegrityError: If the system in which the item is currently located doesn't exist.
@@ -223,12 +229,14 @@ class ItemService:
         except InvalidObjectIdError as exc:
             raise DatabaseIntegrityError(str(exc)) from exc
 
-        if not self._rule_repository.check_exists(
-            src_system_type_id=system.type_id,
-            dst_system_type_id=None,
-            dst_usage_status_id=None,
-        ):
-            raise InvalidActionError("No rule found for deleting items from the current system")
+        # Bypass rule check if authorised
+        if not is_authorised:
+            if not self._rule_repository.check_exists(
+                src_system_type_id=system.type_id,
+                dst_system_type_id=None,
+                dst_usage_status_id=None,
+            ):
+                raise InvalidActionError("No rule found for deleting items from the current system")
 
         # First, attempt to delete any attachments and/or images that might be associated with this item.
         if config.object_storage.enabled:
@@ -240,7 +248,7 @@ class ItemService:
             return self._item_repository.delete(item_id, session=session)
 
     def _handle_system_and_usage_status_id_update(
-        self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict, moving_system: bool
+        self, item: ItemPatchSchema, stored_item: ItemOut, update_data: dict, moving_system: bool, is_authorised: bool
     ) -> None:
         """
         Handle an update request that could modify the `system_id` or `usage_status_id` of the item.
@@ -250,6 +258,8 @@ class ItemService:
         :param item: Item containing the fields to be updated.
         :param stored_item: Current stored item from the database.
         :param update_data: Dictionary containing the update data.
+        :param is_authorised: Whether or not the user is authorised to bypass rule checks, and/or override the
+                              usage status.
         :raises InvalidActionError: If attempting to change the usage status without also moving the item between
                                     systems.
         :raises MissingRecordError: If the usage status doesn't exist.
@@ -264,7 +274,7 @@ class ItemService:
 
         usage_status_id = stored_item.usage_status_id
         if updating_usage_status:
-            if not moving_system:
+            if not moving_system and not is_authorised:
                 raise InvalidActionError(
                     "Cannot change usage status without moving between systems according to a defined rule"
                 )
@@ -281,7 +291,9 @@ class ItemService:
                 raise MissingRecordError(f"No system found with ID '{item.system_id}'")
 
             current_system = self._system_repository.get(stored_item.system_id)
-            if current_system.type_id != system.type_id:
+
+            # Bypass rule check if authorised
+            if current_system.type_id != system.type_id and not is_authorised:
                 # System type is changing - Ensure the moving operation is allowed by a rule
                 if not self._rule_repository.check_exists(
                     src_system_type_id=current_system.type_id,
@@ -291,7 +303,7 @@ class ItemService:
                     raise InvalidActionError(
                         "No rule found for moving between the given system's types with the same final usage status"
                     )
-            elif updating_usage_status:
+            elif updating_usage_status and not is_authorised:
                 # When system type is not changing - Ensure the usage status is unchanged
                 raise InvalidActionError(
                     "Cannot change usage status of an item when moving between two systems of the same type"
