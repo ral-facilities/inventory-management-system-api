@@ -11,7 +11,7 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 
 from inventory_management_system_api.schemas.setting import SparesDefinitionSchema
 from inventory_management_system_api.services.setting import SettingService
@@ -37,6 +37,6 @@ def get_spares_definition(setting_service: SettingServiceDep):
     setting = setting_service.get_spares_definition()
 
     if setting is None:
-        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+        return Response(status_code=status.HTTP_204_NO_CONTENT, content=None)
 
     return SparesDefinitionSchema(**setting.model_dump())

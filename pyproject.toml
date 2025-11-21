@@ -22,20 +22,20 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
-    "black==25.1.0",
-    "pylint==3.3.7",
+    "black==25.9.0",
+    "pylint==3.3.9",
     "inventory-management-system-api[test]"
 ]
 
 test = [
-    "pytest==8.4.1",
-    "pytest-asyncio==1.1.0",
-    "pytest-cov==6.2.1",
-    "pytest-env==1.1.5"
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
+    "pytest-cov==7.0.0",
+    "pytest-env==1.2.0"
 ]
 
 scripts = [
-    "faker==37.5.3"
+    "faker==37.11.0"
 ]
 
 dev = [

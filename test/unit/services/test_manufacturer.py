@@ -300,7 +300,7 @@ class TestUpdate(UpdateDSL):
             manufacturer_id, manufacturer_patch_data=MANUFACTURER_POST_DATA_A, stored_manufacturer_post_data=None
         )
         self.call_update_expecting_error(manufacturer_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No manufacturer found with ID: {manufacturer_id}")
+        self.check_update_failed_with_exception(f"No manufacturer found with ID '{manufacturer_id}'")
 
 
 class DeleteDSL(ManufacturerServiceDSL):

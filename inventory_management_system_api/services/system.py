@@ -59,13 +59,13 @@ class SystemService:
         """
 
         if not self._system_type_repository.get(system.type_id):
-            raise MissingRecordError(f"No system type found with ID: {system.type_id}")
+            raise MissingRecordError(f"No system type found with ID '{system.type_id}'")
 
         # If there is a parent, must use the same type as it
         if system.parent_id is not None:
             parent_system = self._system_repository.get(system.parent_id)
             if not parent_system:
-                raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
+                raise MissingRecordError(f"No parent system found with ID '{system.parent_id}'")
             if system.type_id != parent_system.type_id:
                 raise InvalidActionError("Cannot use a different type_id to the parent system")
 
@@ -122,7 +122,7 @@ class SystemService:
         """
         stored_system = self.get(system_id)
         if not stored_system:
-            raise MissingRecordError(f"No system found with ID: {system_id}")
+            raise MissingRecordError(f"No system found with ID '{system_id}'")
 
         update_data = system.model_dump(exclude_unset=True)
 
@@ -148,7 +148,7 @@ class SystemService:
         :param access_token: The JWT access token to use for auth with the Object Storage API if object storage enabled.
         """
         if self._system_repository.has_child_elements(system_id):
-            raise ChildElementsExistError(f"System with ID {system_id} has child elements and cannot be deleted")
+            raise ChildElementsExistError(f"System with ID '{system_id}' has child elements and cannot be deleted")
 
         # First, attempt to delete any attachments and/or images that might be associated with this system.
         if config.object_storage.enabled:
@@ -188,7 +188,7 @@ class SystemService:
                     raise InvalidActionError("Cannot change the type of a system when it has children")
 
                 if not self._system_type_repository.get(type_id):
-                    raise MissingRecordError(f"No system type found with ID: {type_id}")
+                    raise MissingRecordError(f"No system type found with ID '{type_id}'")
 
             # Find the current/new parent (For verifying it with the type at the end)
             parent_system = None
@@ -197,7 +197,7 @@ class SystemService:
                 if system.parent_id is not None:
                     parent_system = self._system_repository.get(system.parent_id)
                     if not parent_system:
-                        raise MissingRecordError(f"No parent system found with ID: {system.parent_id}")
+                        raise MissingRecordError(f"No parent system found with ID '{system.parent_id}'")
             elif stored_system.parent_id is not None:
                 # Parent is not being updated but are updating the type so obtain the current parent
                 parent_system = self._system_repository.get(stored_system.parent_id)
