@@ -13,6 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -35,9 +36,13 @@ UnitServiceDep = Annotated[UnitService, Depends(UnitService)]
     response_description="The created unit",
     status_code=status.HTTP_201_CREATED,
 )
-def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep) -> UnitSchema:
+def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: AuthorisedDep) -> UnitSchema:
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         unit = unit_service.create(unit)
@@ -84,9 +89,16 @@ def get_unit(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_unit(
-    unit_id: Annotated[str, Path(description="ID of the unit to delete")], unit_service: UnitServiceDep
+    unit_id: Annotated[str, Path(description="ID of the unit to delete")],
+    unit_service: UnitServiceDep,
+    authorised: AuthorisedDep,
 ) -> None:
     logger.info("Deleting unit with ID '%s'", unit_id)
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
+
     try:
         unit_service.delete(unit_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
