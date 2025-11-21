@@ -37,11 +37,9 @@ try {
 let isReplicaSetInitialised = false;
 
 // Wait for replica set to initialise before proceeding
-for (let count = 0; !isReplicaSetInitialised && count < 20; count++) {
-  isReplicaSetInitialised = db.hello().isWritablePrimary;
-  if (!isReplicaSetInitialised) {
-    sleep(1000);
-  }
+for (let count = 0; count < 20; count++) {
+  if (db.hello().isWritablePrimary) break;
+  sleep(1000);
 }
 console.log("Replica set initialised successfully");
 
