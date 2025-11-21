@@ -8,6 +8,7 @@ from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
+from pymongo.errors import DuplicateKeyError
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
@@ -50,9 +51,8 @@ class CatalogueCategoryRepo:
         """
         Create a new catalogue category in a MongoDB database.
 
-        If a parent catalogue category is specified by `parent_id`, the method checks if that exists
-        in the database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue
-        category is found within the parent catalogue category and raises a `DuplicateRecordError` if it is.
+        If a parent catalogue category is specified by `parent_id`, it checks if that exists in the database and raises
+        a `MissingRecordError` if it doesn't exist.
 
         :param catalogue_category: The catalogue category to be created.
         :param session: PyMongo ClientSession to use for database operations
@@ -64,15 +64,17 @@ class CatalogueCategoryRepo:
         if parent_id and not self.get(parent_id, session=session):
             raise MissingRecordError(f"No parent catalogue category found with ID '{parent_id}'")
 
-        if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
-            raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
-
         logger.info("Inserting the new catalogue category into the database")
-        result = self._catalogue_categories_collection.insert_one(
-            catalogue_category.model_dump(by_alias=True), session=session
-        )
-        catalogue_category = self.get(str(result.inserted_id), session=session)
-        return catalogue_category
+        try:
+            result = self._catalogue_categories_collection.insert_one(
+                catalogue_category.model_dump(by_alias=True), session=session
+            )
+        except DuplicateKeyError as exc:
+            raise DuplicateRecordError(
+                "Duplicate catalogue category found within the parent catalogue category"
+            ) from exc
+
+        return self.get(str(result.inserted_id), session=session)
 
     def get(
         self, catalogue_category_id: str, session: Optional[ClientSession] = None
@@ -141,9 +143,8 @@ class CatalogueCategoryRepo:
         Update a catalogue category by its ID in a MongoDB database.
 
         The method checks if the catalogue category has child elements and raises a `ChildElementsExistError` if it
-        does. If a parent catalogue category is specified by `parent_id`, the method checks if that exists in the
-        database and raises a `MissingRecordError` if it doesn't exist. It also checks if a duplicate catalogue category
-        is found within the parent catalogue category and raises a `DuplicateRecordError` if it is.
+        does. If a parent catalogue category is specified by `parent_id`, it checks if that exists in the database and
+        raises a `MissingRecordError` if it doesn't exist.
 
         :param catalogue_category_id: The ID of the catalogue category to update.
         :param catalogue_category: The catalogue category containing the update data.
@@ -162,12 +163,6 @@ class CatalogueCategoryRepo:
 
         stored_catalogue_category = self.get(str(catalogue_category_id), session=session)
         moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
-        if (
-            catalogue_category.name != stored_catalogue_category.name or moving_catalogue_category
-        ) and self._is_duplicate_catalogue_category(
-            parent_id, catalogue_category.code, catalogue_category_id, session=session
-        ):
-            raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
 
         # Prevent a catalogue category from being moved to one of its own children
         if moving_catalogue_category:
@@ -186,11 +181,16 @@ class CatalogueCategoryRepo:
                 raise InvalidActionError("Cannot move a catalogue category to one of its own children")
 
         logger.info("Updating catalogue category with ID '%s' in the database", catalogue_category_id)
-        self._catalogue_categories_collection.update_one(
-            {"_id": catalogue_category_id}, {"$set": catalogue_category.model_dump(by_alias=True)}, session=session
-        )
-        catalogue_category = self.get(str(catalogue_category_id), session=session)
-        return catalogue_category
+        try:
+            self._catalogue_categories_collection.update_one(
+                {"_id": catalogue_category_id}, {"$set": catalogue_category.model_dump(by_alias=True)}, session=session
+            )
+        except DuplicateKeyError as exc:
+            raise DuplicateRecordError(
+                "Duplicate catalogue category found within the parent catalogue category"
+            ) from exc
+
+        return self.get(str(catalogue_category_id), session=session)
 
     def delete(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -215,33 +215,6 @@ class CatalogueCategoryRepo:
         )
         if result.deleted_count == 0:
             raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
-
-    def _is_duplicate_catalogue_category(
-        self,
-        parent_id: Optional[str],
-        code: str,
-        catalogue_category_id: Optional[CustomObjectId] = None,
-        session: Optional[ClientSession] = None,
-    ) -> bool:
-        """
-        Check if a catalogue category with the same code already exists within the parent category.
-
-        :param parent_id: The ID of the parent catalogue category which can also be `None`.
-        :param code: The code of the catalogue category to check for duplicates.
-        :param catalogue_category_id: The ID of the catalogue category to check if the duplicate
-                                      catalogue category found is itself.
-        :param session: PyMongo ClientSession to use for database operations
-        :return: `True` if a duplicate catalogue category code is found, `False` otherwise.
-        """
-        logger.info("Checking if catalogue category with code '%s' already exists within the parent category", code)
-        if parent_id:
-            parent_id = CustomObjectId(parent_id)
-
-        catalogue_category = self._catalogue_categories_collection.find_one(
-            {"parent_id": parent_id, "code": code, "_id": {"$ne": catalogue_category_id}}, session=session
-        )
-
-        return catalogue_category is not None
 
     def has_child_elements(self, catalogue_category_id: str, session: Optional[ClientSession] = None) -> bool:
         """

@@ -63,42 +63,6 @@ class SystemRepoDSL:
             self.mock_utils = mock_utils
             yield
 
-    def mock_is_duplicate_system(self, duplicate_system_in_data: Optional[dict] = None) -> None:
-        """
-        Mocks database methods appropriately for when the `_is_duplicate_system` repo method will be called.
-
-        :param duplicate_system_in_data: Either `None` or a dictionary containing system data for a duplicate system.
-        """
-
-        RepositoryTestHelpers.mock_find_one(
-            self.systems_collection,
-            (
-                {**SystemIn(**duplicate_system_in_data).model_dump(), "_id": ObjectId()}
-                if duplicate_system_in_data
-                else None
-            ),
-        )
-
-    def get_is_duplicate_system_expected_find_one_call(
-        self, system_in: SystemIn, expected_system_id: Optional[CustomObjectId]
-    ):
-        """
-        Returns the expected `find_one` calls from that should occur when `_is_duplicate_system` is called.
-
-        :param system_in: `SystemIn` model containing the data about the system.
-        :param expected_system_id: Expected `system_id` provided to `is_duplicate_system`.
-        :return: Expected `find_one` calls.
-        """
-
-        return call(
-            {
-                "parent_id": system_in.parent_id,
-                "code": system_in.code,
-                "_id": {"$ne": expected_system_id},
-            },
-            session=self.mock_session,
-        )
-
 
 class CreateDSL(SystemRepoDSL):
     """Base class for `create` tests."""
@@ -112,7 +76,7 @@ class CreateDSL(SystemRepoDSL):
         self,
         system_in_data: dict,
         parent_system_in_data: Optional[dict] = None,
-        duplicate_system_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
     ) -> None:
         """
         Mocks database methods appropriately to test the `create` repo method.
@@ -121,7 +85,8 @@ class CreateDSL(SystemRepoDSL):
                                model (i.e. no ID or created and modified times required).
         :param parent_system_in_data: Either `None` or a dictionary containing the parent system data as would be
                                       required for a `SystemIn` database model.
-        :param duplicate_system_in_data: Either `None` or a dictionary containing system data for a duplicate system.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `insert_one`
+            method.
         """
         inserted_system_id = CustomObjectId(str(ObjectId()))
 
@@ -142,8 +107,11 @@ class CreateDSL(SystemRepoDSL):
                     else None
                 ),
             )
-        self.mock_is_duplicate_system(duplicate_system_in_data)
-        RepositoryTestHelpers.mock_insert_one(self.systems_collection, inserted_system_id)
+        # Mock `insert one` to return object for inserted system
+        RepositoryTestHelpers.mock_insert_one(
+            self.systems_collection, inserted_system_id, raise_duplicate_key_error=raise_duplicate_key_error
+        )
+        # Mock `find_one` to return the inserted system document
         RepositoryTestHelpers.mock_find_one(
             self.systems_collection, {**self._system_in.model_dump(), "_id": inserted_system_id}
         )
@@ -173,8 +141,7 @@ class CreateDSL(SystemRepoDSL):
         # This is the check for parent existence
         if self._system_in.parent_id:
             expected_find_one_calls.append(call({"_id": self._system_in.parent_id}, session=self.mock_session))
-        # Also need checks for duplicate and the final newly inserted system get
-        expected_find_one_calls.append(self.get_is_duplicate_system_expected_find_one_call(self._system_in, None))
+        # This is the check for the newly inserted system get
         expected_find_one_calls.append(
             call(
                 {"_id": CustomObjectId(self._expected_system_out.id)},
@@ -189,15 +156,18 @@ class CreateDSL(SystemRepoDSL):
 
         assert self._created_system == self._expected_system_out
 
-    def check_create_failed_with_exception(self, message: str) -> None:
+    def check_create_failed_with_exception(self, message: str, expecting_insert_one_called: bool = False) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
+        :param expecting_insert_one_called: Whether the `insert_one` method is expected to be called or not.
         """
-
-        self.systems_collection.insert_one.assert_not_called()
+        if expecting_insert_one_called:
+            self.systems_collection.insert_one.assert_called_once_with(self._system_in.model_dump(), session=None)
+        else:
+            self.systems_collection.insert_one.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -237,10 +207,12 @@ class TestCreate(CreateDSL):
         self.mock_create(
             {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
             parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
-            duplicate_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            raise_duplicate_key_error=True,
         )
         self.call_create_expecting_error(DuplicateRecordError)
-        self.check_create_failed_with_exception("Duplicate system found within the parent system")
+        self.check_create_failed_with_exception(
+            "Duplicate system found within the parent system", expecting_insert_one_called=True
+        )
 
 
 class GetDSL(SystemRepoDSL):
@@ -510,7 +482,7 @@ class UpdateDSL(SystemRepoDSL):
         new_system_in_data: dict,
         stored_system_in_data: Optional[dict],
         new_parent_system_in_data: Optional[dict] = None,
-        duplicate_system_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
         valid_move_result: bool = True,
     ) -> None:
         """
@@ -523,8 +495,8 @@ class UpdateDSL(SystemRepoDSL):
                                       as would be required for a `SystemIn` database model.
         :param new_parent_system_in_data: Either `None` or a dictionary containing the new parent system data as would
                                           be required for a `SystemIn` database model.
-        :param duplicate_system_in_data: Either `None` or a dictionary containing the data for a duplicate system as
-                                         would be required for a `SystemIn` database model.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `update_one`
+            method.
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when `True` will simulate
                                   moving the system to one of its own children.
         """
@@ -553,17 +525,17 @@ class UpdateDSL(SystemRepoDSL):
             self.systems_collection, self._stored_system_out.model_dump() if self._stored_system_out else None
         )
 
-        # Duplicate check
-        self._moving_system = stored_system_in_data is not None and (
-            new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
+        RepositoryTestHelpers.mock_update_one(
+            self.systems_collection, raise_duplicate_key_error=raise_duplicate_key_error
         )
-        if (self._stored_system_out and (self._system_in.name != self._stored_system_out.name)) or self._moving_system:
-            self.mock_is_duplicate_system(duplicate_system_in_data)
 
         # Final system after update
         self._expected_system_out = SystemOut(**self._system_in.model_dump(), id=CustomObjectId(system_id))
         RepositoryTestHelpers.mock_find_one(self.systems_collection, self._expected_system_out.model_dump())
 
+        self._moving_system = stored_system_in_data is not None and (
+            new_system_in_data["parent_id"] != stored_system_in_data["parent_id"]
+        )
         if self._moving_system:
             mock_aggregation_pipeline = MagicMock()
             self.mock_utils.create_move_check_aggregation_pipeline.return_value = mock_aggregation_pipeline
@@ -593,7 +565,7 @@ class UpdateDSL(SystemRepoDSL):
         :param system_id: ID of the system to be updated.
         :param error_type: Expected exception to be raised.
         """
-
+        self._updated_system_id = system_id
         with pytest.raises(error_type) as exc:
             self.system_repository.update(system_id, self._system_in)
         self._update_exception = exc
@@ -615,14 +587,6 @@ class UpdateDSL(SystemRepoDSL):
                 session=self.mock_session,
             )
         )
-
-        # Duplicate check (which only runs if moving or changing the name)
-        if (self._stored_system_out and (self._system_in.name != self._stored_system_out.name)) or self._moving_system:
-            expected_find_one_calls.append(
-                self.get_is_duplicate_system_expected_find_one_call(
-                    self._system_in, CustomObjectId(self._updated_system_id)
-                )
-            )
         self.systems_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         if self._moving_system:
@@ -647,15 +611,26 @@ class UpdateDSL(SystemRepoDSL):
 
         assert self._updated_system == self._expected_system_out
 
-    def check_update_failed_with_exception(self, message: str) -> None:
+    def check_update_failed_with_exception(self, message: str, expecting_update_one_called: bool = False) -> None:
         """
         Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param expecting_update_one_called: Whether the `update_one` method is expected to be called or not.
         """
-
-        self.systems_collection.update_one.assert_not_called()
+        if expecting_update_one_called:
+            self.systems_collection.update_one.assert_called_once_with(
+                {
+                    "_id": CustomObjectId(self._updated_system_id),
+                },
+                {
+                    "$set": self._system_in.model_dump(),
+                },
+                session=None,
+            )
+        else:
+            self.systems_collection.update_one.assert_not_called()
 
         assert str(self._update_exception.value) == message
 
@@ -691,14 +666,13 @@ class TestUpdate(UpdateDSL):
             new_system_in_data={**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
-            duplicate_system_in_data=None,
             valid_move_result=True,
         )
         self.call_update(system_id)
         self.check_update_success()
 
     def test_update_parent_id_to_child_of_self(self):
-        """Test updating a system's `parent_id` to a child of it self (should prevent this)."""
+        """Test updating a system's `parent_id` to a child of itself (should prevent this)."""
 
         system_id = str(ObjectId())
 
@@ -707,7 +681,6 @@ class TestUpdate(UpdateDSL):
             new_system_in_data={**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": str(ObjectId())},
             stored_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
             new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
-            duplicate_system_in_data=None,
             valid_move_result=False,
         )
         self.call_update_expecting_error(system_id, InvalidActionError)
@@ -738,10 +711,12 @@ class TestUpdate(UpdateDSL):
             system_id,
             {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "name": duplicate_name},
             SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
-            duplicate_system_in_data={**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "name": duplicate_name},
+            raise_duplicate_key_error=True,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate system found within the parent system")
+        self.check_update_failed_with_exception(
+            "Duplicate system found within the parent system", expecting_update_one_called=True
+        )
 
     def test_update_parent_id_with_duplicate_within_parent(self):
         """Test updating a system's `parent_id` to one that contains a system with a duplicate name within the same
@@ -755,10 +730,12 @@ class TestUpdate(UpdateDSL):
             {**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": new_parent_id},
             SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             new_parent_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_B,
-            duplicate_system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            raise_duplicate_key_error=True,
         )
         self.call_update_expecting_error(system_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate system found within the parent system")
+        self.check_update_failed_with_exception(
+            "Duplicate system found within the parent system", expecting_update_one_called=True
+        )
 
     def test_update_with_invalid_id(self):
         """Test updating a system with an invalid ID."""

@@ -7,6 +7,7 @@ from typing import Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
+from pymongo.errors import DuplicateKeyError
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
@@ -37,9 +38,8 @@ class SystemRepo:
         """
         Create a new system in a MongoDB database.
 
-        If a parent system is specified by `parent_id`, then checks if that exists in the database and raises a
-        `MissingRecordError` if it doesn't exist. It also checks if a duplicate system is found within the parent
-        system and raises a `DuplicateRecordError` if it is.
+        If a parent system is specified by `parent_id`, it checks if that exists in the database and raises a
+        `MissingRecordError` if it doesn't exist.
 
         :param system: System to be created.
         :param session: PyMongo ClientSession to use for database operations.
@@ -51,13 +51,13 @@ class SystemRepo:
         if parent_id and not self.get(parent_id, session=session):
             raise MissingRecordError(f"No parent system found with ID '{parent_id}'")
 
-        if self._is_duplicate_system(parent_id, system.code, session=session):
-            raise DuplicateRecordError("Duplicate system found within the parent system")
-
         logger.info("Inserting the new system into the database")
-        result = self._systems_collection.insert_one(system.model_dump(), session=session)
-        system = self.get(str(result.inserted_id), session=session)
-        return system
+        try:
+            result = self._systems_collection.insert_one(system.model_dump(), session=session)
+        except DuplicateKeyError as exc:
+            raise DuplicateRecordError("Duplicate system found within the parent system") from exc
+
+        return self.get(str(result.inserted_id), session=session)
 
     def get(self, system_id: str, session: Optional[ClientSession] = None) -> Optional[SystemOut]:
         """
@@ -127,10 +127,6 @@ class SystemRepo:
 
         stored_system = self.get(str(system_id), session=session)
         moving_system = parent_id != stored_system.parent_id
-        if (system.name != stored_system.name or moving_system) and self._is_duplicate_system(
-            parent_id, system.code, system_id, session=session
-        ):
-            raise DuplicateRecordError("Duplicate system found within the parent system")
 
         # Prevent a system from being moved to one of its own children
         if moving_system:
@@ -147,7 +143,10 @@ class SystemRepo:
                 raise InvalidActionError("Cannot move a system to one of its own children")
 
         logger.info("Updating system with ID '%s' in the database", system_id)
-        self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
+        try:
+            self._systems_collection.update_one({"_id": system_id}, {"$set": system.model_dump()}, session=session)
+        except DuplicateKeyError as exc:
+            raise DuplicateRecordError("Duplicate system found within the parent system") from exc
 
         return self.get(str(system_id), session=session)
 
@@ -166,31 +165,6 @@ class SystemRepo:
         result = self._systems_collection.delete_one({"_id": CustomObjectId(system_id)}, session=session)
         if result.deleted_count == 0:
             raise MissingRecordError(f"No system found with ID '{system_id}'")
-
-    def _is_duplicate_system(
-        self,
-        parent_id: Optional[str],
-        code: str,
-        system_id: Optional[CustomObjectId] = None,
-        session: Optional[ClientSession] = None,
-    ) -> bool:
-        """
-        Check if a system with the same code already exists within the parent system.
-
-        :param parent_id: ID of the parent system which can also be `None`.
-        :param code: Code of the system to check for duplicates.
-        :param system_id: The ID of the system to check if the duplicate system found is itself.
-        :param session: PyMongo ClientSession to use for database operations.
-        :return: `True` if a duplicate system code is found under the given parent, `False` otherwise.
-        """
-        logger.info("Checking if system with code '%s' already exists within the parent System", code)
-        if parent_id:
-            parent_id = CustomObjectId(parent_id)
-
-        system = self._systems_collection.find_one(
-            {"parent_id": parent_id, "code": code, "_id": {"$ne": system_id}}, session=session
-        )
-        return system is not None
 
     def has_child_elements(self, system_id: str, session: Optional[ClientSession] = None) -> bool:
         """
