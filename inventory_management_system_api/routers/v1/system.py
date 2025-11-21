@@ -13,6 +13,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
@@ -51,11 +52,11 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
         if system.type_id in str(exc) or "system type" in str(exc).lower():
             message = "The specified system type does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "The specified parent system does not exist"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A system with the same name already exists within the parent system"
         logger.exception(message)
@@ -63,7 +64,7 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
 
 @router.get(path="", summary="Get systems", response_description="List of systems")
@@ -73,7 +74,7 @@ def get_systems(
 ) -> list[SystemSchema]:
     logger.info("Getting systems")
     if parent_id:
-        logger.debug("Parent ID filter: '%s'", parent_id)
+        logger.debug("Parent ID filter '%s'", parent_id)
 
     try:
         systems = system_service.list(parent_id)
@@ -88,7 +89,7 @@ def get_systems(
 def get_system(
     system_id: Annotated[str, Path(description="ID of the system to get")], system_service: SystemServiceDep
 ) -> SystemSchema:
-    logger.info("Getting system with ID: %s", system_id)
+    logger.info("Getting system with ID '%s'", system_id)
     message = "System not found"
     try:
         system = system_service.get(system_id)
@@ -105,7 +106,7 @@ def get_system_breadcrumbs(
     system_id: Annotated[str, Path(description="The ID of the system to get the breadcrumbs for")],
     system_service: SystemServiceDep,
 ) -> BreadcrumbsGetSchema:
-    logger.info("Getting breadcrumbs for system with ID: %s", system_id)
+    logger.info("Getting breadcrumbs for system with ID '%s'", system_id)
     try:
         return system_service.get_breadcrumbs(system_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -113,17 +114,15 @@ def get_system_breadcrumbs(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to obtain breadcrumbs"
-        logger.exception(message)
+        logger.exception("Unable to obtain breadcrumbs")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
         ) from exc
 
 
 @router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")
 def partial_update_system(system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
-    logger.info("Partially updating system with ID: %s", system_id)
+    logger.info("Partially updating system with ID '%s'", system_id)
     logger.debug("System data: %s", system)
 
     try:
@@ -133,11 +132,11 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
         if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
             message = "The specified parent system does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if system.type_id and system.type_id in str(exc) or "system type" in str(exc).lower():
             message = "The specified system type does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "System not found"
         logger.exception(message)
@@ -149,7 +148,7 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -167,7 +166,7 @@ def delete_system(
     system_service: SystemServiceDep,
     request: Request,
 ) -> None:
-    logger.info("Deleting system with ID: %s", system_id)
+    logger.info("Deleting system with ID '%s'", system_id)
     try:
         system_service.delete(system_id, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -179,10 +178,11 @@ def delete_system(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
+        logger.exception("Unable to delete attachments and/or images")
 
         if exc.args[0] == "Invalid token or expired token":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc

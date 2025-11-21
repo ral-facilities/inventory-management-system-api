@@ -33,9 +33,9 @@ def get_rules(
 ) -> list[RuleSchema]:
     logger.info("Getting rules")
     if src_system_type_id:
-        logger.debug("Source system type ID filter: '%s'", src_system_type_id)
+        logger.debug("Source system type ID filter '%s'", src_system_type_id)
     if dst_system_type_id:
-        logger.debug("Destination system type ID filter: '%s'", dst_system_type_id)
+        logger.debug("Destination system type ID filter '%s'", dst_system_type_id)
 
     try:
         rules = rule_service.list(src_system_type_id, dst_system_type_id)

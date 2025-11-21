@@ -62,7 +62,7 @@ class CatalogueCategoryRepo:
         """
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent catalogue category found with ID '{parent_id}'")
 
         if self._is_duplicate_catalogue_category(parent_id, catalogue_category.code, session=session):
             raise DuplicateRecordError("Duplicate catalogue category found within the parent catalogue category")
@@ -85,7 +85,7 @@ class CatalogueCategoryRepo:
         :return: The retrieved catalogue category, or `None` if not found.
         """
         catalogue_category_id = CustomObjectId(catalogue_category_id)
-        logger.info("Retrieving catalogue category with ID: %s from the database", catalogue_category_id)
+        logger.info("Retrieving catalogue category with ID '%s' from the database", catalogue_category_id)
         catalogue_category = self._catalogue_categories_collection.find_one(
             {"_id": catalogue_category_id}, session=session
         )
@@ -158,7 +158,7 @@ class CatalogueCategoryRepo:
 
         parent_id = str(catalogue_category.parent_id) if catalogue_category.parent_id else None
         if parent_id and not self.get(parent_id, session=session):
-            raise MissingRecordError(f"No parent catalogue category found with ID: {parent_id}")
+            raise MissingRecordError(f"No parent catalogue category found with ID '{parent_id}'")
 
         stored_catalogue_category = self.get(str(catalogue_category_id), session=session)
         moving_catalogue_category = parent_id != stored_catalogue_category.parent_id
@@ -185,7 +185,7 @@ class CatalogueCategoryRepo:
             ):
                 raise InvalidActionError("Cannot move a catalogue category to one of its own children")
 
-        logger.info("Updating catalogue category with ID: %s in the database", catalogue_category_id)
+        logger.info("Updating catalogue category with ID '%s' in the database", catalogue_category_id)
         self._catalogue_categories_collection.update_one(
             {"_id": catalogue_category_id}, {"$set": catalogue_category.model_dump(by_alias=True)}, session=session
         )
@@ -206,15 +206,15 @@ class CatalogueCategoryRepo:
         """
         if self.has_child_elements(catalogue_category_id, session=session):
             raise ChildElementsExistError(
-                f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+                f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be deleted"
             )
 
-        logger.info("Deleting catalogue category with ID: %s from the database", catalogue_category_id)
+        logger.info("Deleting catalogue category with ID '%s' from the database", catalogue_category_id)
         result = self._catalogue_categories_collection.delete_one(
             {"_id": CustomObjectId(catalogue_category_id)}, session=session
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
 
     def _is_duplicate_catalogue_category(
         self,
@@ -284,7 +284,7 @@ class CatalogueCategoryRepo:
         """
 
         logger.info(
-            "Inserting new property into catalogue category with ID: %s in the database",
+            "Inserting new property into catalogue category with ID '%s' in the database",
             catalogue_category_id,
         )
         property_data = property_in.model_dump(by_alias=True)
@@ -316,7 +316,7 @@ class CatalogueCategoryRepo:
         """
 
         logger.info(
-            "Updating property with ID: %s inside catalogue category with ID: %s in the database",
+            "Updating property with ID '%s' inside catalogue category with ID '%s' in the database",
             property_id,
             catalogue_category_id,
         )

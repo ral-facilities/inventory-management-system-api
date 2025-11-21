@@ -74,7 +74,7 @@ def get_usage_status(
     usage_status_id: Annotated[str, Path(description="The ID of the usage status to be retrieved")],
     usage_status_service: UsageStatusServiceDep,
 ) -> UsageStatusSchema:
-    logger.info("Getting usage status with ID %s", usage_status_id)
+    logger.info("Getting usage status with ID '%s'", usage_status_id)
     message = "Usage status not found"
     try:
         usage_status = usage_status_service.get(usage_status_id)
@@ -98,7 +98,7 @@ def delete_usage_status(
     usage_status_service: UsageStatusServiceDep,
     authorised: AuthorisedDep,
 ) -> None:
-    logger.info("Deleting usage status with ID: %s", usage_status_id)
+    logger.info("Deleting usage status with ID '%s'", usage_status_id)
 
     # check user is authorised to perform operation
     if not authorised:

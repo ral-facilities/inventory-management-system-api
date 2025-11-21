@@ -405,7 +405,7 @@ class TestDelete(DeleteDSL):
             },
         )
         self.call_delete_expecting_error(unit_id, PartOfCatalogueCategoryError)
-        self.check_delete_failed_with_exception(f"The unit with ID {unit_id} is a part of a Catalogue category")
+        self.check_delete_failed_with_exception(f"The unit with ID '{unit_id}' is a part of a Catalogue category")
 
     def test_delete_non_existent_id(self):
         """Test deleting a unit with a non-existent ID."""
@@ -413,7 +413,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(unit_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No unit found with ID: {unit_id}", expecting_delete_one_called=True)
+        self.check_delete_failed_with_exception(f"No unit found with ID '{unit_id}'", expecting_delete_one_called=True)
 
     def test_delete_with_invalid_id(self):
         """Test deleting a unit with an invalid ID."""

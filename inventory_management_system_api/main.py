@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.logger_setup import setup_logger
 from inventory_management_system_api.routers.v1 import (
     catalogue_category,
@@ -43,7 +44,9 @@ async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONRe
     :return: A JSON response indicating that something went wrong.
     """
     logger.exception(exc)
-    return JSONResponse(content={"detail": "Something went wrong"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return JSONResponse(
+        content={"detail": HTTP_500_INTERNAL_SERVER_ERROR_DETAIL}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+    )
 
 
 @app.exception_handler(RequestValidationError)

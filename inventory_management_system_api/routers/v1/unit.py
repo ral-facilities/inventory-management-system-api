@@ -15,12 +15,10 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidObjectIdError,
-    MissingRecordError,
-    PartOfCatalogueCategoryError,
-)
-from inventory_management_system_api.schemas.unit import UnitPostSchema, UnitSchema
+    DuplicateRecordError, InvalidObjectIdError, MissingRecordError,
+    PartOfCatalogueCategoryError)
+from inventory_management_system_api.schemas.unit import (UnitPostSchema,
+                                                          UnitSchema)
 from inventory_management_system_api.services.unit import UnitService
 
 logger = logging.getLogger()
@@ -69,7 +67,7 @@ def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
 def get_unit(
     unit_id: Annotated[str, Path(description="The ID of the unit to be retrieved")], unit_service: UnitServiceDep
 ) -> UnitSchema:
-    logger.info("Getting unit with ID %s", unit_id)
+    logger.info("Getting unit with ID '%s'", unit_id)
     message = "Unit not found"
     try:
         unit = unit_service.get(unit_id)
@@ -93,7 +91,7 @@ def delete_unit(
     unit_service: UnitServiceDep,
     authorised: AuthorisedDep,
 ) -> None:
-    logger.info("Deleting unit with ID: %s", unit_id)
+    logger.info("Deleting unit with ID '%s'", unit_id)
 
     # check user is authorised to perform operation
     if not authorised:
