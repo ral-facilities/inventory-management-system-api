@@ -75,7 +75,7 @@ class UsageStatusRepo:
         :return: The retrieved usage status, or `None` if not found.
         """
         usage_status_id = CustomObjectId(usage_status_id)
-        logger.info("Retrieving usage status with ID: %s from the database", usage_status_id)
+        logger.info("Retrieving usage status with ID '%s' from the database", usage_status_id)
         usage_status = self._usage_statuses_collection.find_one({"_id": usage_status_id}, session=session)
         if usage_status:
             return UsageStatusOut(**usage_status)
@@ -95,14 +95,14 @@ class UsageStatusRepo:
         """
         usage_status_id = CustomObjectId(usage_status_id)
         if self._is_usage_status_in_item(usage_status_id, session=session):
-            raise PartOfItemError(f"The usage status with ID {str(usage_status_id)} is part of an item")
+            raise PartOfItemError(f"The usage status with ID '{usage_status_id}' is part of an item")
         if self._is_usage_status_in_rule(usage_status_id, session=session):
-            raise PartOfRuleError(f"The usage status with ID {str(usage_status_id)} is part of a rule")
+            raise PartOfRuleError(f"The usage status with ID '{usage_status_id}' is part of a rule")
 
-        logger.info("Deleting usage status with ID %s from the database", usage_status_id)
+        logger.info("Deleting usage status with ID '%s' from the database", usage_status_id)
         result = self._usage_statuses_collection.delete_one({"_id": usage_status_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No usage status found with ID: {str(usage_status_id)}")
+            raise MissingRecordError(f"No usage status found with ID '{usage_status_id}'")
 
     def _is_usage_status_in_item(
         self, usage_status_id: CustomObjectId, session: Optional[ClientSession] = None

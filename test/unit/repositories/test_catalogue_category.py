@@ -274,7 +274,7 @@ class TestCreate(CreateDSL):
             parent_catalogue_category_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No parent catalogue category found with ID: {parent_id}")
+        self.check_create_failed_with_exception(f"No parent catalogue category found with ID '{parent_id}'")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a catalogue category with a duplicate catalogue category being found in the parent
@@ -843,7 +843,7 @@ class TestUpdate(UpdateDSL):
             new_parent_catalogue_category_in_data=None,
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No parent catalogue category found with ID: {new_parent_id}")
+        self.check_update_failed_with_exception(f"No parent catalogue category found with ID '{new_parent_id}'")
 
     def test_update_name_to_duplicate_within_parent(self):
         """Test updating a catalogue category's name to one that is a duplicate within the parent catalogue category."""
@@ -984,7 +984,7 @@ class TestDelete(DeleteDSL):
         )
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be deleted"
         )
 
     def test_delete_with_child_catalogue_item(self):
@@ -995,7 +995,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=1, child_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be deleted"
         )
 
     def test_delete_non_existent_id(self):
@@ -1006,7 +1006,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(catalogue_category_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No catalogue category found with ID: {catalogue_category_id}", expecting_delete_one_called=True
+            f"No catalogue category found with ID '{catalogue_category_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_invalid_id(self):

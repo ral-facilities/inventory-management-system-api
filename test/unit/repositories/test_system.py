@@ -199,7 +199,7 @@ class TestCreate(CreateDSL):
 
         self.mock_create({**SYSTEM_IN_DATA_STORAGE_NO_PARENT_A, "parent_id": parent_id}, parent_system_in_data=None)
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No parent system found with ID: {parent_id}")
+        self.check_create_failed_with_exception(f"No parent system found with ID '{parent_id}'")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a system with a duplicate system being found in the parent system."""
@@ -699,7 +699,7 @@ class TestUpdate(UpdateDSL):
             new_parent_system_in_data=None,
         )
         self.call_update_expecting_error(system_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No parent system found with ID: {new_parent_id}")
+        self.check_update_failed_with_exception(f"No parent system found with ID '{new_parent_id}'")
 
     def test_update_name_to_duplicate_within_parent(self):
         """Test updating a system's name to one that is a duplicate within the parent system."""
@@ -829,7 +829,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(system_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No system found with ID: {system_id}", expecting_delete_one_called=True
+            f"No system found with ID '{system_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_invalid_id(self):

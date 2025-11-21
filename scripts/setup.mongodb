@@ -64,9 +64,9 @@ console.log("Replica set initialised successfully");
     console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
-      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage" },
-      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational" },
-      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped" },
+      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage", description: "Storage system type" },
+      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational", description: "Operational system type" },
+      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped", description: "Scrapped system type" },
     ]);
   }
 

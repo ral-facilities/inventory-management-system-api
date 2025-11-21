@@ -422,7 +422,7 @@ class TestDelete(DeleteDSL):
             },
         )
         self.call_delete_expecting_error(usage_status_id, PartOfItemError)
-        self.check_delete_failed_with_exception(f"The usage status with ID {usage_status_id} is part of an item")
+        self.check_delete_failed_with_exception(f"The usage status with ID '{usage_status_id}' is part of an item")
 
     def test_delete_when_part_of_rule(self):
         """Test deleting a usage status when it is part of a rule."""
@@ -430,7 +430,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=1, rule_data={"some": "rule"})
         self.call_delete_expecting_error(usage_status_id, PartOfRuleError)
-        self.check_delete_failed_with_exception(f"The usage status with ID {usage_status_id} is part of a rule")
+        self.check_delete_failed_with_exception(f"The usage status with ID '{usage_status_id}' is part of a rule")
 
     def test_delete_non_existent_id(self):
         """Test deleting a usage status with a non-existent ID."""
@@ -439,7 +439,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(usage_status_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No usage status found with ID: {usage_status_id}", expecting_delete_one_called=True
+            f"No usage status found with ID '{usage_status_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_with_invalid_id(self):

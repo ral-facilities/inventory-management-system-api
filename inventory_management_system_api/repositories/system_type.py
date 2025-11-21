@@ -40,7 +40,7 @@ class SystemTypeRepo:
         """
         system_type_id = CustomObjectId(system_type_id)
 
-        logger.info("Retrieving system type with ID: %s from the database", system_type_id)
+        logger.info("Retrieving system type with ID '%s' from the database", system_type_id)
         system_type = self._system_types_collection.find_one({"_id": system_type_id}, session=session)
 
         if system_type:

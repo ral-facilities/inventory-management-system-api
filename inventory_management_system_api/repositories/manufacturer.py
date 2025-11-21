@@ -60,7 +60,7 @@ class ManufacturerRepo:
         :return: The retrieved manufacturer, or `None` if not found.
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        logger.info("Retrieving manufacturer with ID: %s from database", manufacturer_id)
+        logger.info("Retrieving manufacturer with ID '%s' from database", manufacturer_id)
         manufacturer = self._manufacturers_collection.find_one({"_id": manufacturer_id}, session=session)
         if manufacturer:
             return ManufacturerOut(**manufacturer)
@@ -91,7 +91,7 @@ class ManufacturerRepo:
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
 
-        logger.info("Updating manufacturer with ID: %s", manufacturer_id)
+        logger.info("Updating manufacturer with ID '%s'", manufacturer_id)
         try:
             self._manufacturers_collection.update_one(
                 {"_id": manufacturer_id}, {"$set": manufacturer.model_dump()}, session=session
@@ -115,12 +115,12 @@ class ManufacturerRepo:
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         if self._is_manufacturer_in_catalogue_item(str(manufacturer_id), session=session):
-            raise PartOfCatalogueItemError(f"Manufacturer with ID '{str(manufacturer_id)}' is part of a catalogue item")
+            raise PartOfCatalogueItemError(f"Manufacturer with ID '{manufacturer_id}' is part of a catalogue item")
 
-        logger.info("Deleting manufacturer with ID: %s from the database", manufacturer_id)
+        logger.info("Deleting manufacturer with ID '%s' from the database", manufacturer_id)
         result = self._manufacturers_collection.delete_one({"_id": manufacturer_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
+            raise MissingRecordError(f"No manufacturer found with ID '{manufacturer_id}'")
 
     def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> bool:
         """
