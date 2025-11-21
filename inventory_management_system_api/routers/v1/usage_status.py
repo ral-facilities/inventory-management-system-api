@@ -13,6 +13,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -37,10 +38,14 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
     status_code=status.HTTP_201_CREATED,
 )
 def create_usage_status(
-    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep
+    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep, authorised: AuthorisedDep
 ) -> UsageStatusSchema:
     logger.info("Creating a new usage status")
     logger.debug("Usage status data: %s", usage_status)
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         usage_status = usage_status_service.create(usage_status)
@@ -91,8 +96,14 @@ def get_usage_status(
 def delete_usage_status(
     usage_status_id: Annotated[str, Path(description="ID of the usage status to delete")],
     usage_status_service: UsageStatusServiceDep,
+    authorised: AuthorisedDep,
 ) -> None:
     logger.info("Deleting usage status with ID '%s'", usage_status_id)
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
+
     try:
         usage_status_service.delete(usage_status_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:

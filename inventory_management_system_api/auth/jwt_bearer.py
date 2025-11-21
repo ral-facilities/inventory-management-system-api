@@ -63,4 +63,21 @@ class JWTBearer(HTTPBearer):
             logger.exception("Error decoding JWT access token")
             payload = None
 
-        return payload is not None and "username" in payload
+        return payload is not None and ("username" in payload and "role" in payload)
+
+    def is_jwt_access_token_authorised(self, access_token: str) -> bool:
+        """
+        Check if the JWT access token is authorised.
+
+        It does this by checking that the token's payload contains a role, and that this role
+        is one of the configured privileged_roles. This function should be called after the token
+        has been verified by the JWTBearer dependency. Therefore we do not need to check for the token's
+        signature or expiry time.
+
+        :param access_token: The JWT access token to check
+        :return: `True` if the JWT access token's payload contains a role, and overlaps the configured
+            privileged_roles, `False` otherwise.
+        """
+        logging.info("Checking if JWT access token is authorised for operation")
+        payload = jwt.decode(access_token, options={"verify_signature": False, "verify_exp": False})
+        return payload["role"] in config.authentication.privileged_roles

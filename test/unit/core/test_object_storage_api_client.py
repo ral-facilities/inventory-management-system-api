@@ -3,7 +3,7 @@ Unit tests for the `ObjectStorageAPIClient` class.
 """
 
 from unittest.mock import patch, MagicMock
-from test.mock_data import VALID_ACCESS_TOKEN, EXPIRED_ACCESS_TOKEN
+from test.mock_data import VALID_ACCESS_TOKEN_ADMIN_ROLE, EXPIRED_ACCESS_TOKEN
 
 from bson import ObjectId
 
@@ -33,10 +33,10 @@ class TestObjectStorageAPIClient:
 
         entity_id = str(ObjectId())
 
-        method(entity_id, VALID_ACCESS_TOKEN)
+        method(entity_id, VALID_ACCESS_TOKEN_ADMIN_ROLE)
         mock_delete.assert_called_once_with(
             f"{config.object_storage.api_url}{endpoint}",
-            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN}"},
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"},
             params={"entity_id": entity_id},
             timeout=config.object_storage.api_request_timeout_seconds,
         )
@@ -76,5 +76,5 @@ class TestObjectStorageAPIClient:
         mock_delete.return_value = mock_response
 
         with pytest.raises(ObjectStorageAPIServerError) as exc:
-            method(str(ObjectId()), VALID_ACCESS_TOKEN)
+            method(str(ObjectId()), VALID_ACCESS_TOKEN_ADMIN_ROLE)
         assert str(exc.value) == "Object Storage API server error: [500] {'detail': 'Something went wrong'}"
