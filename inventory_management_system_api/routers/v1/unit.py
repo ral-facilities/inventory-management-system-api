@@ -106,6 +106,6 @@ def delete_unit(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfCatalogueCategoryError as exc:
-        message = "The specified unit is part of a Catalogue category"
+        message = "The specified unit is part of a catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
