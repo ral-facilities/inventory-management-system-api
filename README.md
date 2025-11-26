@@ -10,7 +10,7 @@ This microservice requires a MongoDB instance to run against.
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
 - Python 3.13 and MongoDB 7.0 installed on your machine (if you are not using Docker)
-- Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorization is enabled)
+- Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorisation is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
   a GUI)
 - This repository cloned
@@ -392,11 +392,11 @@ Listed below are the environment variables supported by the application.
 | `OBJECT_STORAGE__API_REQUEST_TIMEOUT_SECONDS` | The maximum number of seconds that the request should wait for a response from the Object Storage API before timing out.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | If Object Storage enabled |                                                       |
 | `OBJECT_STORAGE__API_URL`                     | The URL of the Object Storage API.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | If Object Storage enabled |                                                       |
 
-### JWT Authentication/Authorization
+### JWT Authentication/Authorisation
 
-This microservice supports JWT authentication/authorization and this can be enabled or disabled by setting
+This microservice supports JWT authentication/authorisation and this can be enabled or disabled by setting
 the `AUTHENTICATION__ENABLED` environment variable to `True` or `False`. When enabled, all the endpoints require a JWT
-access token to be supplied. This ensures that only authenticated and authorized users can access the resources. To
+access token to be supplied. This ensures that only authenticated and authorised users can access the resources. To
 decode the JWT access token, the application needs the public key that corresponding to the private key used for
 encoding the token. Once the JWT access token is decoded successfully, it checks that it has a `username` in the
 payload, and it has not expired. This means that any microservice can be used to generate JWT access tokens so long as
