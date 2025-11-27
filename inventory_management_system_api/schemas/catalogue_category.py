@@ -262,4 +262,6 @@ class CatalogueCategoryPropertyPatchSchema(BaseModel):
         description="Definition of the allowed values this property can take. 'null' indicates any value matching the "
         "type is allowed.",
     )
-    unit_id: Optional[str] = Field(default=None, description="The unit of the property, only changeable by authorised users")
+    unit_id: Optional[str] = Field(
+        default=None, description="The unit of the property, only changeable by authorised users"
+    )

@@ -358,6 +358,8 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
     _update_exception: pytest.ExceptionInfo
     _user_authorised: bool
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def mock_update(
         self,
         catalogue_category_property_id: str,
@@ -365,13 +367,16 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         stored_catalogue_category_property_in_data: Optional[dict],
         catalogue_category_exists: bool = True,
         user_is_authorised=False,
+        unit_in_data: Optional[dict] = None,
     ) -> None:
         """
         Mocks repository methods appropriately to test the `update` service method.
 
         :param catalogue_category_property_id: ID of the catalogue category property that will be obtained.
         :param catalogue_category_property_update_data: Dictionary containing the basic patch data as would be required
-                                                        for a `CatalogueCategoryPropertyPatchSchema`.
+                                           for a `CatalogueCategoryPropertyPatchSchema` but with any unit_id's replaced
+                                           by the unit value in its properties as the IDs will be added automatically.
+
         :param stored_catalogue_category_property_in_data: Either `None` or a dictionary containing the catalogue
                                                 category property data for the existing stored catalogue category
                                                 property as would be required for a `CatalogueCategoryPropertyIn`
@@ -384,7 +389,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         """
 
         self._catalogue_category_id = str(ObjectId())
-        
+
         self._user_authorised = user_is_authorised
 
         # Use a predefined catalogue category when it should exist with a single property to be overridden
@@ -421,30 +426,6 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             if catalogue_category_exists
             else None
         )
-        
-        
-        
-        # Unit
-        
-        unit_id = None
-        if "unit_id" in catalogue_category_property_update_data:
-            
-            unit = None
-            unit_id = catalogue_category_property_update_data.get('unit_id')
-            
-            if unit_id:
-                # For the tests always assume we are trying to change it to MM or None.
-                # This lets us use any id for unit_id, without needing to prepoulate `unit_value_id_dict` like in
-                # mock create.
-                unit_in = UnitIn(**UNIT_IN_DATA_MM)
-                ServiceTestHelpers.mock_get(
-                    self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id) if unit_id else None
-                )
-                unit = UNIT_IN_DATA_MM["value"]
-            
-            # For assertions the unit needs to be added to the update data. Not ideal, but it is needed for a correct expected
-            catalogue_category_property_update_data = {**catalogue_category_property_update_data, 'unit': unit}
-            
 
         ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
 
@@ -454,11 +435,23 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self._expected_catalogue_category_property_out
         )
 
+        # Unit
+        unit_id = None
+        if "unit" in catalogue_category_property_update_data:
+            if catalogue_category_property_update_data["unit"] is not None:
+                unit_in = UnitIn(**unit_in_data) if unit_in_data else None
+                unit_id = str(ObjectId())
+
+                ServiceTestHelpers.mock_get(
+                    self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id) if unit_in else None
+                )
+
+            catalogue_category_property_update_data = {**catalogue_category_property_update_data, "unit_id": unit_id}
+
         # Patch schema
         self._catalogue_category_property_patch = CatalogueCategoryPropertyPatchSchema(
             **catalogue_category_property_update_data,
         )
-        
 
         # Expected input for the repository
         if self._stored_catalogue_category_property_out:
@@ -479,7 +472,10 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
 
         self._updated_catalogue_category_property_id = catalogue_category_property_id
         self._updated_catalogue_category_property = self.catalogue_category_property_service.update(
-            self._catalogue_category_id, catalogue_category_property_id, self._catalogue_category_property_patch, self._user_authorised
+            self._catalogue_category_id,
+            catalogue_category_property_id,
+            self._catalogue_category_property_patch,
+            self._user_authorised,
         )
 
     def call_update_expecting_error(self, catalogue_category_property_id: str, error_type: type[BaseException]) -> None:
@@ -493,7 +489,10 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_property_service.update(
-                self._catalogue_category_id, catalogue_category_property_id, self._catalogue_category_property_patch, self._user_authorised
+                self._catalogue_category_id,
+                catalogue_category_property_id,
+                self._catalogue_category_property_patch,
+                self._user_authorised,
             )
         self._update_exception = exc
 
@@ -513,14 +512,14 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             )
             modified_catalogue_category_out.name = self._catalogue_category_property_patch.name
             self.wrapped_utils.check_duplicate_property_names.assert_called_once_with([modified_catalogue_category_out])
-            
-        updating_unit = self._stored_catalogue_category_property_out.unit_id != self._catalogue_category_property_patch.unit_id
+
+        updating_unit = (
+            self._stored_catalogue_category_property_out.unit_id != self._catalogue_category_property_patch.unit_id
+        )
 
         if updating_unit and self._stored_catalogue_category_property_out.unit_id is not None:
             self.mock_unit_repository.get.assert_called_once_with(self._stored_catalogue_category_property_out.unit_id)
-            
-            
-            
+
         # Session/Transaction
         self.mock_start_session_transaction.assert_called_once_with("updating property")
         expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
@@ -534,23 +533,29 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         )
 
         if updating_name or updating_unit:
+            unit_data = (
+                {
+                    "unit_id": self._catalogue_category_property_patch.unit_id,
+                    "unit": self._expected_catalogue_category_property_in.unit,
+                }
+                if updating_unit
+                else None
+            )
+
             # Catalogue items
+            # pylint:disable=line-too-long
             self.mock_catalogue_item_repository.update_names_and_units_of_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
-                updating_unit,
                 self._catalogue_category_property_patch.name,
-                self._catalogue_category_property_patch.unit_id,
-                'mm' if self._catalogue_category_property_patch.unit_id else None, # see comment above, always expecting mm
+                unit_data,
                 session=expected_session,
             )
 
             # Items
             self.mock_item_repository.update_names_and_units_of_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
-                updating_unit,
                 self._catalogue_category_property_patch.name,
-                self._catalogue_category_property_patch.unit_id,
-                'mm' if self._catalogue_category_property_patch.unit_id else None, # see comment above, always expecting mm
+                unit_data,
                 session=expected_session,
             )
         else:
@@ -586,7 +591,7 @@ class TestUpdate(UpdateDSL):
             catalogue_category_property_id,
             catalogue_category_property_update_data={
                 "name": "New name",
-                "unit_id": str(ObjectId()),
+                "unit": UNIT_IN_DATA_MM["value"],
                 "allowed_values": {
                     "type": "list",
                     "values": [
@@ -600,7 +605,8 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_category_property_in_data=(
                 CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
             ),
-            user_is_authorised=True
+            user_is_authorised=True,
+            unit_in_data=UNIT_IN_DATA_MM,
         )
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
@@ -617,51 +623,53 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
-        
+
     def test_update_unit_only(self):
         """Test updating only the `unit_id` of a catalogue category property."""
-        
+
         catalogue_category_property_id = str(ObjectId())
-        unit_id = str(ObjectId())
-        
+
         self.mock_update(
             catalogue_category_property_id,
-            catalogue_category_property_update_data={'unit_id': unit_id},
-            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-            user_is_authorised=True
+            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"]},
+            stored_catalogue_category_property_in_data=
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            user_is_authorised=True,
+            unit_in_data=UNIT_IN_DATA_MM,
         )
-        
+
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
-        
+
     def test_update_unit_to_none(self):
         """Test updating only the `unit_id` of a property to `None`"""
-        
+
         catalogue_category_property_id = str(ObjectId())
-        
+
         self.mock_update(
             catalogue_category_property_id,
-            catalogue_category_property_update_data={'unit_id': None},
+            catalogue_category_property_update_data={"unit": None},
             stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
-            user_is_authorised=True
+            user_is_authorised=True,
+            unit_in_data=None,
         )
-        
+
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
-        
+
     def test_update_unit_when_not_authorised(self):
         """Test updating the `unit_id` of a property when the user is not authorised"""
-        
+
         catalogue_category_property_id = str(ObjectId())
-        unit_id = str(ObjectId())
-        
+
         self.mock_update(
             catalogue_category_property_id,
-            catalogue_category_property_update_data={'unit_id': unit_id},
-            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
-            user_is_authorised=False
+            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"]},
+            stored_catalogue_category_property_in_data=
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            user_is_authorised=False,
         )
-        
+
         self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
         self.check_update_failed_with_exception("You are not able to change the unit of a property")
 
