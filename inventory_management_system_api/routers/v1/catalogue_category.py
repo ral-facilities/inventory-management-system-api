@@ -290,7 +290,7 @@ def partial_update_property(
     ],
     property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
-    authorised: AuthorisedDep
+    authorised: AuthorisedDep,
 ) -> CatalogueCategoryPropertySchema:
     logger.info(
         "Partially updating catalogue category with ID %s's property with ID: %s",
@@ -308,6 +308,12 @@ def partial_update_property(
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if property_id in str(exc):
             message = "Catalogue category property not found"
+        elif (
+            catalogue_category_property.unit_id is not None
+            and catalogue_category_property.unit_id in str(exc)
+            or "unit" in str(exc).lower()
+        ):
+            message = "The specified unit does not exist"
         else:
             message = "Catalogue category not found"
         logger.exception(message)
