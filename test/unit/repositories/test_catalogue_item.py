@@ -813,7 +813,7 @@ class UpdateNamesAndUnitsOfAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL
 
     _update_names_and_units_of_all_properties_with_id_property_id: str
     _update_names_and_units_of_all_properties_with_id_new_property_name: str
-    _update_names_and_units_of_all_properties_with_id_new_property_unit_data: dict
+    _update_names_and_units_of_all_properties_new_property_unit_data: dict
 
     def call_update_names_and_units_of_all_properties_with_id(
         self,
@@ -831,7 +831,7 @@ class UpdateNamesAndUnitsOfAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL
 
         self._update_names_and_units_of_all_properties_with_id_property_id = property_id
         self._update_names_and_units_of_all_properties_with_id_new_property_name = new_property_name
-        self._update_names_and_units_of_all_properties_with_id_new_property_unit_data = new_property_unit_data
+        self._update_names_and_units_of_all_properties_new_property_unit_data = new_property_unit_data
 
         self.catalogue_item_repository.update_names_and_units_of_all_properties_with_id(
             property_id,
@@ -848,10 +848,12 @@ class UpdateNamesAndUnitsOfAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL
             {
                 "$set": {
                     "properties.$[elem].name": self._update_names_and_units_of_all_properties_with_id_new_property_name,
-                    "properties.$[elem].unit_id": 
-                        self._update_names_and_units_of_all_properties_with_id_new_property_unit_data["unit_id"],
-                    "properties.$[elem].unit": 
-                        self._update_names_and_units_of_all_properties_with_id_new_property_unit_data["unit"],
+                    "properties.$[elem].unit_id": self._update_names_and_units_of_all_properties_new_property_unit_data[
+                        "unit_id"
+                    ],
+                    "properties.$[elem].unit": self._update_names_and_units_of_all_properties_new_property_unit_data[
+                        "unit"
+                    ],
                     "modified_time": self._mock_datetime.now.return_value,
                 }
             },

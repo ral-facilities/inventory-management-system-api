@@ -632,8 +632,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             catalogue_category_property_id,
             catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"]},
-            stored_catalogue_category_property_in_data=
-                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            # pylint:disable=line-too-long
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
             user_is_authorised=True,
             unit_in_data=UNIT_IN_DATA_MM,
         )
@@ -665,8 +665,8 @@ class TestUpdate(UpdateDSL):
         self.mock_update(
             catalogue_category_property_id,
             catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"]},
-            stored_catalogue_category_property_in_data=
-                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            # pylint:disable=line-too-long
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
             user_is_authorised=False,
         )
 

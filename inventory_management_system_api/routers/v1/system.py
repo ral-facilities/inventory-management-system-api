@@ -52,11 +52,11 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
         if system.type_id in str(exc) or "system type" in str(exc).lower():
             message = "The specified system type does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
         message = "The specified parent system does not exist"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A system with the same name already exists within the parent system"
         logger.exception(message)
@@ -64,7 +64,7 @@ def create_system(system: SystemPostSchema, system_service: SystemServiceDep) ->
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
 
 @router.get(path="", summary="Get systems", response_description="List of systems")
@@ -132,11 +132,11 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
         if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():
             message = "The specified parent system does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
         if system.type_id and system.type_id in str(exc) or "system type" in str(exc).lower():
             message = "The specified system type does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
 
         message = "System not found"
         logger.exception(message)
@@ -148,7 +148,7 @@ def partial_update_system(system_id: str, system: SystemPatchSchema, system_serv
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
