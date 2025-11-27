@@ -71,11 +71,11 @@ def create_catalogue_category(
         ) or "unit" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "The specified parent catalogue category does not exist"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except DuplicateRecordError as exc:
         message = "A catalogue category with the same name already exists within the parent catalogue category"
         logger.exception(message)
@@ -86,7 +86,7 @@ def create_catalogue_category(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
 
 
 @router.get(path="", summary="Get catalogue categories", response_description="List of catalogue categories")
@@ -174,14 +174,14 @@ def partial_update_catalogue_category(
         ):
             message = "The specified parent catalogue category does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if (
             catalogue_category.properties is not None
             and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.properties)
         ) or "unit" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "Catalogue category not found"
         logger.exception(message)
@@ -202,11 +202,11 @@ def partial_update_catalogue_category(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
 
 @router.delete(
@@ -260,17 +260,17 @@ def create_property(
         ):
             message = "The specified unit does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -319,15 +319,15 @@ def partial_update_property(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except ValueError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
