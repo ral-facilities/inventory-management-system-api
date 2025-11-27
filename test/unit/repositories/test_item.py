@@ -558,10 +558,8 @@ class UpdateNamesAndUnitsOfAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
         """Calls the `ItemRepo` `update_names_and_units_of_all_properties_with_id` method.
 
         :param property_id: ID of the property.
-        :param updating_unit: If the unit of the property is being updated
         :param new_property_name: New property name.
-        :param new_property_unit_data: New property unit data
-        :param new_property_unit_value: New property unit value
+        :param new_property_unit_data: New property unit data.
         """
 
         self._update_names_and_units_of_all_properties_with_id_property_id = property_id

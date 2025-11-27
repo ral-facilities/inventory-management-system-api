@@ -625,8 +625,6 @@ class TestUpdate(UpdateDSL):
         """Test updating the unit of a property."""
 
         property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
-        # self.
-        # unit_id = self.post_unit(UNIT_POST_DATA_MM)
 
         property_update_data = {"unit_id": self.unit_value_id_dict[UNIT_POST_DATA_MM["value"]]}
 
