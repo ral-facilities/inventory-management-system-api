@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, sta
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     DatabaseIntegrityError,
     InvalidActionError,
@@ -49,28 +50,29 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: 
         return ItemSchema(**item.model_dump())
     except InvalidPropertyTypeError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
             message = "The specified system does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
             message = "The specified usage status does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "The specified catalogue item does not exist"
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to create item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+        logger.exception("Unable to create item")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -86,9 +88,9 @@ def get_items(
     # pylint: disable=missing-function-docstring
     logger.info("Getting items")
     if system_id:
-        logger.debug("System ID filter: '%s'", system_id)
+        logger.debug("System ID filter '%s'", system_id)
     if catalogue_item_id:
-        logger.debug("Catalogue item ID filter: '%s'", catalogue_item_id)
+        logger.debug("Catalogue item ID filter '%s'", catalogue_item_id)
     try:
         items = item_service.list(system_id, catalogue_item_id)
         return [ItemSchema(**item.model_dump()) for item in items]
@@ -107,7 +109,7 @@ def get_items(
 def get_item(
     item_id: Annotated[str, Path(description="The ID of the item to get")], item_service: ItemServiceDep
 ) -> ItemSchema:
-    logger.info("Getting item with ID %s", item_id)
+    logger.info("Getting item with ID '%s'", item_id)
     message = "Item not found"
     try:
         item = item_service.get(item_id)
@@ -130,7 +132,7 @@ def partial_update_item(
     item_service: ItemServiceDep,
     authorised: AuthorisedDep,
 ) -> ItemSchema:
-    logger.info("Partially updating item with ID: %s", item_id)
+    logger.info("Partially updating item with ID '%s'", item_id)
     logger.debug("Item data: %s", item)
 
     try:
@@ -138,27 +140,28 @@ def partial_update_item(
         return ItemSchema(**updated_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if item.system_id and item.system_id in str(exc) or "system" in str(exc).lower():
             message = "The specified system does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if item.usage_status_id and item.usage_status_id in str(exc) or "usage status" in str(exc).lower():
             message = "The specified usage status does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         message = "Item not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to update item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+        logger.exception("Unable to update item")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -177,7 +180,7 @@ def delete_item(
     request: Request,
     authorised: AuthorisedDep,
 ) -> None:
-    logger.info("Deleting item with ID: %s", item_id)
+    logger.info("Deleting item with ID '%s'", item_id)
     try:
         item_service.delete(item_id, authorised, request.state.token if config.authentication.enabled else None)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -185,13 +188,14 @@ def delete_item(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except (ObjectStorageAPIAuthError, ObjectStorageAPIServerError) as exc:
-        message = "Unable to delete attachments and/or images"
-        logger.exception(message)
+        logger.exception("Unable to delete attachments and/or images")
 
         if exc.args[0] == "Invalid token or expired token":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
 
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -199,8 +203,9 @@ def delete_item(
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to delete item"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message) from exc
+        logger.exception("Unable to delete item")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc

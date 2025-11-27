@@ -69,7 +69,7 @@ def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
 def get_unit(
     unit_id: Annotated[str, Path(description="The ID of the unit to be retrieved")], unit_service: UnitServiceDep
 ) -> UnitSchema:
-    logger.info("Getting unit with ID %s", unit_id)
+    logger.info("Getting unit with ID '%s'", unit_id)
     message = "Unit not found"
     try:
         unit = unit_service.get(unit_id)
@@ -93,7 +93,7 @@ def delete_unit(
     unit_service: UnitServiceDep,
     authorised: AuthorisedDep,
 ) -> None:
-    logger.info("Deleting unit with ID: %s", unit_id)
+    logger.info("Deleting unit with ID '%s'", unit_id)
 
     # check user is authorised to perform operation
     if not authorised:
@@ -106,6 +106,6 @@ def delete_unit(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfCatalogueCategoryError as exc:
-        message = "The specified unit is part of a Catalogue category"
+        message = "The specified unit is part of a catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

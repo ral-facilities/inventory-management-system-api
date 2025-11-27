@@ -10,7 +10,7 @@ from test.mock_data import (
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
@@ -46,27 +46,6 @@ class UnitRepoDSL:
 
         yield
 
-    def mock_is_duplicate_unit(self, duplicate_unit_in_data: Optional[dict] = None) -> None:
-        """
-        Mocks database methods appropriately for when the `_is_duplicate_unit` repo method will be called.
-
-        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a duplicate unit.
-        """
-        RepositoryTestHelpers.mock_find_one(
-            self.units_collection,
-            ({**UnitIn(**duplicate_unit_in_data).model_dump(), "_id": ObjectId()} if duplicate_unit_in_data else None),
-        )
-
-    def get_is_duplicate_unit_expected_find_one_call(self, unit_in: UnitIn, expected_unit_id: Optional[CustomObjectId]):
-        """
-        Returns the expected `find_one` calls that should occur when `_is_duplicate_unit` is called.
-
-        :param unit_in: `UnitIn` model containing the data about the unit.
-        :param expected_unit_id: Expected `unit_id` provided to `_is_duplicate_unit`.
-        :return: Expected `find_one` calls.
-        """
-        return call({"code": unit_in.code, "_id": {"$ne": expected_unit_id}}, session=self.mock_session)
-
 
 class CreateDSL(UnitRepoDSL):
     """Base class for `create` tests."""
@@ -76,13 +55,14 @@ class CreateDSL(UnitRepoDSL):
     _created_unit: UnitOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, unit_in_data: dict, duplicate_unit_in_data: Optional[dict] = None) -> None:
+    def mock_create(self, unit_in_data: dict, raise_duplicate_key_error: bool = False) -> None:
         """
         Mocks database methods appropriately to test the `create` repo method.
 
         :param unit_in_data: Dictionary containing the unit data as would be required for a `UnitIn` database model
             (i.e. no ID or created and modified times required).
-        :param duplicate_unit_in_data: Either `None` or a dictionary containing unit data for a duplicate unit.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `insert_one`
+            method.
         """
         inserted_unit_id = CustomObjectId(str(ObjectId()))
 
@@ -91,9 +71,10 @@ class CreateDSL(UnitRepoDSL):
 
         self._expected_unit_out = UnitOut(**self._unit_in.model_dump(), id=inserted_unit_id)
 
-        self.mock_is_duplicate_unit(duplicate_unit_in_data)
         # Mock `insert one` to return object for inserted unit
-        RepositoryTestHelpers.mock_insert_one(self.units_collection, inserted_unit_id)
+        RepositoryTestHelpers.mock_insert_one(
+            self.units_collection, inserted_unit_id, raise_duplicate_key_error=raise_duplicate_key_error
+        )
         # Mock `find_one` to return the inserted unit document
         RepositoryTestHelpers.mock_find_one(
             self.units_collection, {**self._unit_in.model_dump(), "_id": inserted_unit_id}
@@ -116,17 +97,11 @@ class CreateDSL(UnitRepoDSL):
 
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
-        unit_in_data = self._unit_in.model_dump()
-
-        # Obtain a list of expected find_one calls
-        expected_find_one_calls = [
-            # This is the check for the duplicate
-            self.get_is_duplicate_unit_expected_find_one_call(self._unit_in, None),
-            # This is the check for the newly inserted unit get
-            call({"_id": CustomObjectId(self._expected_unit_out.id)}, session=self.mock_session),
-        ]
-        self.units_collection.insert_one.assert_called_once_with(unit_in_data, session=self.mock_session)
-        self.units_collection.find_one.assert_has_calls(expected_find_one_calls)
+        self.units_collection.insert_one.assert_called_once_with(self._unit_in.model_dump(), session=self.mock_session)
+        # This is the check for the newly inserted unit get
+        self.units_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._expected_unit_out.id)}, session=self.mock_session
+        )
 
         assert self._created_unit == self._expected_unit_out
 
@@ -137,7 +112,7 @@ class CreateDSL(UnitRepoDSL):
 
         :param message: Expected message of the raised exception.
         """
-        self.units_collection.insert_one.assert_not_called()
+        self.units_collection.insert_one.assert_called_once_with(self._unit_in.model_dump(), session=self.mock_session)
         assert str(self._create_exception.value) == message
 
 
@@ -152,7 +127,7 @@ class TestCreate(CreateDSL):
 
     def test_create_with_duplicate_name(self):
         """Test creating a unit with a duplicate unit being found."""
-        self.mock_create(UNIT_IN_DATA_MM, duplicate_unit_in_data=UNIT_IN_DATA_MM)
+        self.mock_create(UNIT_IN_DATA_MM, raise_duplicate_key_error=True)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate unit found")
 
@@ -405,7 +380,7 @@ class TestDelete(DeleteDSL):
             },
         )
         self.call_delete_expecting_error(unit_id, PartOfCatalogueCategoryError)
-        self.check_delete_failed_with_exception(f"The unit with ID {unit_id} is a part of a Catalogue category")
+        self.check_delete_failed_with_exception(f"The unit with ID '{unit_id}' is a part of a Catalogue category")
 
     def test_delete_non_existent_id(self):
         """Test deleting a unit with a non-existent ID."""
@@ -413,7 +388,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(unit_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No unit found with ID: {unit_id}", expecting_delete_one_called=True)
+        self.check_delete_failed_with_exception(f"No unit found with ID '{unit_id}'", expecting_delete_one_called=True)
 
     def test_delete_with_invalid_id(self):
         """Test deleting a unit with an invalid ID."""

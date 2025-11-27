@@ -96,9 +96,9 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
         cls, allowed_values: Optional[AllowedValuesSchema], property_data: dict[str, Any]
     ) -> None:
         """
-        Checks `allowed_values` against its parent property raising an error if its invalid
+        Checks `allowed_values` against its parent property raising an error if its invalid.
 
-        :param `allowed_values`: The value of the `allowed_values` field.
+        :param allowed_values: The value of the `allowed_values` field.
         :param property_data: Property data to validate the allowed values against.
         :raises ValueError:
             - If the `allowed_values` has been given a value and the property type is a `boolean`.
@@ -129,7 +129,7 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
                     seen_value = (
                         allowed_value
                         if property_data["type"] != CatalogueCategoryPropertyType.STRING
-                        else allowed_value.lower()
+                        else allowed_value.lower().strip()
                     )
                     if seen_value in seen_values:
                         raise ValueError(f"allowed_values of type 'list' contains a duplicate value: {allowed_value}")

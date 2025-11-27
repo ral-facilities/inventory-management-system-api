@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
+from pymongo.errors import DuplicateKeyError
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
@@ -42,15 +43,13 @@ class ManufacturerRepo:
         :raises DuplicateRecordError: If a duplicate manufacturer is found.
         :return: The created manufacturer.
         """
-        if self._is_duplicate_manufacturer(manufacturer.code, session=session):
-            raise DuplicateRecordError("Duplicate manufacturer found")
-
         logger.info("Inserting the new manufacturer into database")
+        try:
+            result = self._manufacturers_collection.insert_one(manufacturer.model_dump(), session=session)
+        except DuplicateKeyError as exc:
+            raise DuplicateRecordError("Duplicate manufacturer found") from exc
 
-        result = self._manufacturers_collection.insert_one(manufacturer.model_dump(), session=session)
-        manufacturer = self.get(str(result.inserted_id), session=session)
-
-        return manufacturer
+        return self.get(str(result.inserted_id), session=session)
 
     def get(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> Optional[ManufacturerOut]:
         """
@@ -61,7 +60,7 @@ class ManufacturerRepo:
         :return: The retrieved manufacturer, or `None` if not found.
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
-        logger.info("Retrieving manufacturer with ID: %s from database", manufacturer_id)
+        logger.info("Retrieving manufacturer with ID '%s' from database", manufacturer_id)
         manufacturer = self._manufacturers_collection.find_one({"_id": manufacturer_id}, session=session)
         if manufacturer:
             return ManufacturerOut(**manufacturer)
@@ -92,18 +91,15 @@ class ManufacturerRepo:
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
 
-        stored_manufacturer = self.get(str(manufacturer_id), session=session)
-        if stored_manufacturer.name != manufacturer.name:
-            if self._is_duplicate_manufacturer(manufacturer.code, manufacturer_id, session=session):
-                raise DuplicateRecordError("Duplicate manufacturer found")
+        logger.info("Updating manufacturer with ID '%s'", manufacturer_id)
+        try:
+            self._manufacturers_collection.update_one(
+                {"_id": manufacturer_id}, {"$set": manufacturer.model_dump()}, session=session
+            )
+        except DuplicateKeyError as exc:
+            raise DuplicateRecordError("Duplicate manufacturer found") from exc
 
-        logger.info("Updating manufacturer with ID: %s", manufacturer_id)
-        self._manufacturers_collection.update_one(
-            {"_id": manufacturer_id}, {"$set": manufacturer.model_dump()}, session=session
-        )
-
-        manufacturer = self.get(str(manufacturer_id), session=session)
-        return manufacturer
+        return self.get(str(manufacturer_id), session=session)
 
     def delete(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -119,29 +115,12 @@ class ManufacturerRepo:
         """
         manufacturer_id = CustomObjectId(manufacturer_id)
         if self._is_manufacturer_in_catalogue_item(str(manufacturer_id), session=session):
-            raise PartOfCatalogueItemError(f"Manufacturer with ID '{str(manufacturer_id)}' is part of a catalogue item")
+            raise PartOfCatalogueItemError(f"Manufacturer with ID '{manufacturer_id}' is part of a catalogue item")
 
-        logger.info("Deleting manufacturer with ID: %s from the database", manufacturer_id)
+        logger.info("Deleting manufacturer with ID '%s' from the database", manufacturer_id)
         result = self._manufacturers_collection.delete_one({"_id": manufacturer_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No manufacturer found with ID: {str(manufacturer_id)}")
-
-    def _is_duplicate_manufacturer(
-        self, code: str, manufacturer_id: Optional[CustomObjectId] = None, session: Optional[ClientSession] = None
-    ) -> bool:
-        """
-        Check if a manufacturer with the same code already exists.
-
-        :param code: The code of the manufacturer to check for duplicates.
-        :param manufacturer_id: The ID of the manufacturer to check if the duplicate manufacturer found is itself.
-        :param session: PyMongo ClientSession to use for database operations.
-        :return: `True` if a duplicate manufacturer is found, `False` otherwise.
-        """
-        logger.info("Checking if manufacturer with code '%s' already exists", code)
-        manufacturer = self._manufacturers_collection.find_one(
-            {"code": code, "_id": {"$ne": manufacturer_id}}, session=session
-        )
-        return manufacturer is not None
+            raise MissingRecordError(f"No manufacturer found with ID '{manufacturer_id}'")
 
     def _is_manufacturer_in_catalogue_item(self, manufacturer_id: str, session: Optional[ClientSession] = None) -> bool:
         """

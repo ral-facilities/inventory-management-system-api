@@ -504,7 +504,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(catalogue_item_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No catalogue item found with ID: {catalogue_item_id}", expecting_delete_one_called=True
+            f"No catalogue item found with ID '{catalogue_item_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_invalid_id(self):

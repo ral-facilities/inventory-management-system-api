@@ -80,7 +80,7 @@ class CatalogueCategoryPropertyService:
         # Obtain the existing catalogue category to validate against
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
         if not stored_catalogue_category:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
 
         # Must be a leaf catalogue category in order to have properties
         if not stored_catalogue_category.is_leaf:
@@ -94,7 +94,7 @@ class CatalogueCategoryPropertyService:
             # Obtain the specified unit value if a unit ID is given
             unit = self._unit_repository.get(catalogue_category_property.unit_id)
             if not unit:
-                raise MissingRecordError(f"No unit found with ID: {catalogue_category_property.unit_id}")
+                raise MissingRecordError(f"No unit found with ID '{catalogue_category_property.unit_id}'")
             unit_value = unit.value
 
         catalogue_category_property_in = CatalogueCategoryPropertyIn(
@@ -197,7 +197,7 @@ class CatalogueCategoryPropertyService:
         # Obtain the existing catalogue category to validate against
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
         if not stored_catalogue_category:
-            raise MissingRecordError(f"No catalogue category found with ID: {catalogue_category_id}")
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
 
         # Attempt to locate the property
         existing_property_out: Optional[CatalogueCategoryPropertyOut] = None
@@ -207,7 +207,7 @@ class CatalogueCategoryPropertyService:
                 break
 
         if not existing_property_out:
-            raise MissingRecordError(f"No property found with ID: {catalogue_category_property_id}")
+            raise MissingRecordError(f"No property found with ID '{catalogue_category_property_id}'")
 
         # Modify the name if necessary and check it doesn't cause a conflict
         updating_name = "name" in update_data and update_data["name"] != existing_property_out.name

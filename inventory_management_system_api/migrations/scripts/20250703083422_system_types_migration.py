@@ -85,7 +85,7 @@ class Migration(BaseMigration):
 
         # Create and obtain the system types
         system_type_ids = self._system_types_collection.insert_many(
-            [{"value": value} for value in SYSTEM_TYPE_VALUES], session=session
+            [{"value": value, "description": None} for value in SYSTEM_TYPE_VALUES], session=session
         ).inserted_ids
         assert len(system_type_ids) == len(SYSTEM_TYPE_VALUES)
         system_types = self._system_types_collection.find(session=session)

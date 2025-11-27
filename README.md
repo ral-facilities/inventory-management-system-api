@@ -193,7 +193,25 @@ and one can be started using the `docker-compose.yml` file.
 
 #### Prerequisites
 
-- You must have access to a MongoDB instance with at least one replica set.
+##### MongoDB
+
+You must have access to a MongoDB instance with at least one replica set and be able to create the following indexes
+using either MongoDB Compass or a CLI e.g.
+
+```bash
+mongosh DATABASE_NAME --username USERNAME --password PASSWORD --authenticationDatabase=admin \
+   --eval 'db.catalogue_categories.createIndex({ "parent_id": 1, "code": 1 }, { name: "catalogue_categories_name_uniqueness_index", unique: true })' \
+   --eval 'db.manufacturers.createIndex({ "code": 1 }, { name: "manufacturers_name_uniqueness_index", unique: true })' \
+   --eval 'db.systems.createIndex({ "parent_id": 1, "code": 1 }, { name: "systems_name_uniqueness_index", unique: true })' \
+   --eval 'db.units.createIndex({ "code": 1 }, { name: "units_name_uniqueness_index", unique: true })' \
+   --eval 'db.usage_statuses.createIndex({ "code": 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true })'
+```
+
+These compound indexes ensure names cannot be repeated within the same entity.
+
+This needs to be done for both the development and testing databases.
+By default, the `.env.example` and `pytest.ini` use `ims` and `test-ims` as their names, ensure they are
+modified as required.
 
 #### Running the API
 

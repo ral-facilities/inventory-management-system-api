@@ -57,7 +57,7 @@ class ItemRepo:
         :return: The retrieved item, or `None` if not found.
         """
         item_id = CustomObjectId(item_id)
-        logger.info("Retrieving item with ID %s from the database", item_id)
+        logger.info("Retrieving item with ID '%s' from the database", item_id)
         item = self._items_collection.find_one({"_id": item_id}, session=session)
         if item:
             return ItemOut(**item)
@@ -88,9 +88,9 @@ class ItemRepo:
         else:
             logger.info("%s matching the provided system ID and/or catalogue item ID filter", message)
             if system_id:
-                logger.debug("Provided system ID filter: %s", system_id)
+                logger.debug("Provided system ID filter '%s'", system_id)
             if catalogue_item_id:
-                logger.debug("Provided catalogue item ID filter: %s", catalogue_item_id)
+                logger.debug("Provided catalogue item ID filter '%s'", catalogue_item_id)
 
         items = self._items_collection.find(query, session=session)
         return [ItemOut(**item) for item in items]
@@ -105,7 +105,7 @@ class ItemRepo:
         :return: The updated item.
         """
         item_id = CustomObjectId(item_id)
-        logger.info("Updating item with ID: %s in the database", item_id)
+        logger.info("Updating item with ID '%s' in the database", item_id)
         self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
         item = self.get(str(item_id), session=session)
         return item
@@ -119,10 +119,10 @@ class ItemRepo:
         :raises MissingRecordError: If the item doesn't exist
         """
         item_id = CustomObjectId(item_id)
-        logger.info("Deleting item with ID: %s from the database", item_id)
+        logger.info("Deleting item with ID '%s' from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {item_id}")
+            raise MissingRecordError(f"No item found with ID '{item_id}'")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
@@ -169,7 +169,7 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         """
 
-        logger.info("Updating all properties with ID: %s inside catalogue items in the database", property_id)
+        logger.info("Updating all properties with ID '%s' inside items in the database", property_id)
 
         set_body = {}
         if new_property_name:

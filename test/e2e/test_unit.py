@@ -264,7 +264,7 @@ class TestDelete(DeleteDSL):
         self.test_client.post("/v1/catalogue-categories", json=catalogue_category_data)
 
         self.delete_unit(unit_id)
-        self.check_delete_unit_failed_with_detail(409, "The specified unit is part of a Catalogue category")
+        self.check_delete_unit_failed_with_detail(409, "The specified unit is part of a catalogue category")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent unit."""

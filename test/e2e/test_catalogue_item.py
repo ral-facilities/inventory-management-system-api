@@ -415,7 +415,7 @@ class TestCreate(CreateDSL):
 
         self.check_post_catalogue_item_failed_with_detail(
             422,
-            "Missing mandatory property with ID: "
+            "Missing mandatory property with ID "
             f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
         )
 
@@ -1123,7 +1123,7 @@ class TestUpdate(UpdateDSL):
         )
         self.check_patch_catalogue_item_failed_with_detail(
             422,
-            "Missing mandatory property with ID: "
+            "Missing mandatory property with ID "
             f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}'",
         )
 
@@ -1309,7 +1309,7 @@ class TestUpdate(UpdateDSL):
         )
         self.check_patch_catalogue_item_failed_with_detail(
             422,
-            "Missing mandatory property with ID: "
+            "Missing mandatory property with ID "
             f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
         )
 

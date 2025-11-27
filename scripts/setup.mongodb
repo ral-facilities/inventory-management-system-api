@@ -34,6 +34,15 @@ try {
   rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
 }
 
+let isReplicaSetInitialised = false;
+
+// Wait for replica set to initialise before proceeding
+for (let count = 0; count < 20; count++) {
+  if (db.hello().isWritablePrimary) break;
+  sleep(1000);
+}
+console.log("Replica set initialised successfully");
+
 // Setup the dev and test databases
 ["ims", "test-ims"].forEach((databaseName) => {
   db = db.getSiblingDB(databaseName);
@@ -55,9 +64,9 @@ try {
     console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
-      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage" },
-      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational" },
-      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped" },
+      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage", description: "Storage system type" },
+      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational", description: "Operational system type" },
+      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped", description: "Scrapped system type" },
     ]);
   }
 
@@ -119,4 +128,24 @@ try {
       },
     ]);
   }
+
+  // Create the indexes
+  console.log(
+    `Create unique name index for catalogue_categories, manufacturers, systems, units, and usage_statuses collections (${databaseName})...`
+  );
+
+  db.catalogue_categories.createIndex(
+    {
+      parent_id: 1,
+      code: 1
+    },
+    {
+      name: "catalogue_categories_name_uniqueness_index",
+      unique: true
+    }
+  );
+  db.manufacturers.createIndex({ code: 1 }, { name: "manufacturers_name_uniqueness_index", unique: true });
+  db.systems.createIndex({ parent_id: 1, code: 1 }, { name: "systems_name_uniqueness_index", unique: true });
+  db.units.createIndex({ code: 1 }, { name: "units_name_uniqueness_index", unique: true });
+  db.usage_statuses.createIndex({ code: 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true });
 });

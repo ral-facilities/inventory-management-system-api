@@ -55,7 +55,7 @@ class CatalogueItemRepo:
         :return: The retrieved catalogue item, or `None` if not found.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        logger.info("Retrieving catalogue item with ID: %s from the database", catalogue_item_id)
+        logger.info("Retrieving catalogue item with ID '%s' from the database", catalogue_item_id)
         catalogue_item = self._catalogue_items_collection.find_one({"_id": catalogue_item_id}, session=session)
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
@@ -81,7 +81,7 @@ class CatalogueItemRepo:
             logger.info(message)
         else:
             logger.info("%s matching the provided catalogue category ID filter", message)
-            logger.debug("Provided catalogue category ID filter: %s", catalogue_category_id)
+            logger.debug("Provided catalogue category ID filter '%s'", catalogue_category_id)
 
         catalogue_items = self._catalogue_items_collection.find(query, session=session)
         return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
@@ -99,7 +99,7 @@ class CatalogueItemRepo:
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
 
-        logger.info("Updating catalogue item with ID: %s in the database", catalogue_item_id)
+        logger.info("Updating catalogue item with ID '%s' in the database", catalogue_item_id)
         self._catalogue_items_collection.update_one(
             {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
         )
@@ -114,12 +114,12 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
-        logger.info("Deleting catalogue item with ID: %s from the database", catalogue_item_id)
+        logger.info("Deleting catalogue item with ID '%s' from the database", catalogue_item_id)
         result = self._catalogue_items_collection.delete_one(
             {"_id": CustomObjectId(catalogue_item_id)}, session=session
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID: {catalogue_item_id}")
+            raise MissingRecordError(f"No catalogue item found with ID '{catalogue_item_id}'")
 
     def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
         """
@@ -197,7 +197,7 @@ class CatalogueItemRepo:
         """
 
         logger.info(
-            "Inserting property into catalogue item's with a catalogue category ID: %s in the database",
+            "Inserting property into catalogue item's with a catalogue category ID '%s' in the database",
             catalogue_category_id,
         )
 
@@ -228,7 +228,7 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         """
 
-        logger.info("Updating all properties with ID: %s inside catalogue items in the database", property_id)
+        logger.info("Updating all properties with ID '%s' inside catalogue items in the database", property_id)
 
         set_body = {}
         if new_property_name:
