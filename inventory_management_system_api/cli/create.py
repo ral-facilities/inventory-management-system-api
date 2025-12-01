@@ -105,6 +105,9 @@ def get_user_constructed_rule(
             "Please enter the index of the [green]dst_system_type[/]", system_types
         )
 
+        if CustomObjectId(src_system_type.id) == CustomObjectId(dst_system_type.id):
+            exit_with_error("A rule cannot have the same source and destination system types!")
+
         # Output the existing usage statuses and obtain a user selected dst_usage_status
         console.print("Below is a list of the current usage statuses available:")
         display_indexed_usage_statuses(usage_statuses)
@@ -178,9 +181,6 @@ def rule(rule_type: Annotated[RuleType, typer.Argument()]):
     }
     if rules_collection.find_one(rule_data):
         exit_with_error("The selected rule already exists!")
-
-    if rule_data["src_system_type_id"] == rule_data["dst_system_type_id"]:
-        exit_with_error("A rule cannot have the same source and destination system types!")
 
     # Output the user selected rule and request confirmation before adding it
     display_user_constructed_rule(rule_type, src_system_type, dst_system_type, dst_usage_status)
