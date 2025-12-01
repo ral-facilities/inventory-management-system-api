@@ -179,6 +179,9 @@ def rule(rule_type: Annotated[RuleType, typer.Argument()]):
     if rules_collection.find_one(rule_data):
         exit_with_error("The selected rule already exists!")
 
+    if rule_data["src_system_type_id"] == rule_data["dst_system_type_id"]:
+        exit_with_error("A rule cannot have the same source and destination system types!")
+
     # Output the user selected rule and request confirmation before adding it
     display_user_constructed_rule(rule_type, src_system_type, dst_system_type, dst_usage_status)
     cont = typer.confirm("Are you sure you want to create this new rule?")
