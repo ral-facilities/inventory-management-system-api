@@ -175,7 +175,7 @@ def rule(rule_type: Annotated[RuleType, typer.Argument()]):
         "src_system_type_id": CustomObjectId(src_system_type.id) if src_system_type else None,
         "dst_system_type_id": CustomObjectId(dst_system_type.id) if dst_system_type else None,
     }
-    if rules_collection.find(rule_data):
+    if rules_collection.find_one(rule_data):
         exit_with_error("The selected rule already exists!")
 
     # Output the user selected rule and request confirmation before adding it
