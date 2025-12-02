@@ -176,7 +176,7 @@ def rule(rule_type: Annotated[RuleType, typer.Argument()]):
         "dst_system_type_id": CustomObjectId(dst_system_type.id) if dst_system_type else None,
     }
     if rules_collection.find_one(rule_data):
-        exit_with_error("The selected rule already exists!")
+        exit_with_error("A rule with the same source and destination system type already exists!")
 
     # Output the user selected rule and request confirmation before adding it
     display_user_constructed_rule(rule_type, src_system_type, dst_system_type, dst_usage_status)
