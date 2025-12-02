@@ -105,7 +105,7 @@ def get_user_constructed_rule(
             "Please enter the index of the [green]dst_system_type[/]", system_types
         )
 
-        if CustomObjectId(src_system_type.id) == CustomObjectId(dst_system_type.id):
+        if src_system_type.id == dst_system_type.id:
             exit_with_error("A rule cannot have the same source and destination system types!")
 
         # Output the existing usage statuses and obtain a user selected dst_usage_status
