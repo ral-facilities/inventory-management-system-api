@@ -438,8 +438,8 @@ class ItemService:
                 except WriteConflictError as exc:
                     # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
                     # request take too long and leave potential for it to block other requests if the threadpool is full
-                    if time.time() - start_time > 5:
+                    if time.time() - start_time > 30:
                         raise exc
                     # Wait some random time as there is no point in retrying immediately if we are already write
-                    # locked. Between 10ms and 50ms.
-                    time.sleep(random.uniform(0.01, 0.05))
+                    # locked. Between 100ms and 500ms.
+                    time.sleep(random.uniform(0.1, 0.5))
