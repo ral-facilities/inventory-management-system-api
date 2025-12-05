@@ -401,7 +401,7 @@ class ItemService:
             # Particularly when creating multiple items within the same catalogue item in quick succession, multiple
             # conflicting requests can occur. To reduce the chances we retry such requests so that the default 5ms
             # transaction timeout is less of an issue.
-            start_time = time.time()
+            start_time = time.perf_counter()
             retry = True
             num_attempts = 0
             while retry:
@@ -441,12 +441,12 @@ class ItemService:
                     # Successful completion, log time take and number of attempts for debugging if we get reports of
                     # conflicts
                     retry = False
-                    logger.info("Total transaction time taken: %s", time.time() - start_time)
+                    logger.info("Total transaction time taken: %s", time.perf_counter() - start_time)
                     logger.info("Total transaction number attempts: %s", num_attempts)
                 except WriteConflictError as exc:
                     # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
                     # request take too long and leave potential for it to block other requests if the threadpool is full
-                    if time.time() - start_time > 30:
+                    if time.perf_counter() - start_time > 30:
                         raise exc
                     # Wait some random time as there is no point in retrying immediately if we are already write
                     # locked. Between 100ms and 500ms.
