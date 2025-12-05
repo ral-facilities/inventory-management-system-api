@@ -441,8 +441,8 @@ class ItemService:
                     # Successful completion, log time take and number of attempts for debugging if we get reports of
                     # conflicts
                     retry = False
-                    logger.info("Total transaction time taken: %s", time.perf_counter() - start_time)
-                    logger.info("Total transaction number attempts: %s", num_attempts)
+                    logger.info("Transaction time taken: %s", time.perf_counter() - start_time)
+                    logger.info("Transaction number of attempts: %s", num_attempts)
                 except WriteConflictError as exc:
                     # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
                     # request take too long and leave potential for it to block other requests if the threadpool is full
