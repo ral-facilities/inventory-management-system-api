@@ -403,9 +403,12 @@ class ItemService:
             # transaction timeout is less of an issue.
             start_time = time.time()
             retry = True
+            num_attempts = 0
             while retry:
                 try:
                     with start_session_transaction(action_description) as session:
+                        num_attempts += 1
+
                         # Write lock the catalogue item to prevent any other updates from occurring during the rest of
                         # the transaction
                         self._catalogue_item_repository.update_number_of_spares(
@@ -434,7 +437,12 @@ class ItemService:
                         self._catalogue_item_repository.update_number_of_spares(
                             catalogue_item_id, number_of_spares, session=session
                         )
-                        retry = False
+
+                    # Successful completion, log time take and number of attempts for debugging if we get reports of
+                    # conflicts
+                    retry = False
+                    logger.info("Total transaction time taken: %s", time.time() - start_time)
+                    logger.info("Total transaction number attempts: %s", num_attempts)
                 except WriteConflictError as exc:
                     # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
                     # request take too long and leave potential for it to block other requests if the threadpool is full
