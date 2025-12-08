@@ -170,11 +170,13 @@ class CatalogueCategoryPropertyService:
                         "values"
                     )
 
+    # pylint:disable=too-many-locals
     def update(
         self,
         catalogue_category_id: str,
         catalogue_category_property_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
+        is_authorised: bool,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -185,6 +187,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_id: The ID of the catalogue category to update
         :param catalogue_category_property_id: The ID of the property within the category to update
         :param catalogue_category_property: The property values to update
+        :param is_authorised: Whether or not the user is authorised to update a property's unit
         :raises MissingRecordError: If the catalogue category doesn't exist, or the property doesn't
                                     exist within the specified catalogue category
         """
@@ -217,6 +220,21 @@ class CatalogueCategoryPropertyService:
                 existing_property_out.allowed_values, catalogue_category_property.allowed_values
             )
 
+        # units of properties may only be updated by authorised users
+        updating_unit = "unit_id" in update_data and update_data["unit_id"] != existing_property_out.unit_id
+        if updating_unit:
+            if not is_authorised:
+                raise InvalidActionError("You are not able to change the unit of a property")
+            unit_id = update_data["unit_id"]
+
+            if not unit_id:
+                update_data["unit"] = None
+            else:
+                unit = self._unit_repository.get(unit_id)
+                if not unit:
+                    raise MissingRecordError(f"No unit found with ID: {unit_id}")
+                update_data["unit"] = unit.value
+
         CatalogueCategoryPostPropertySchema.check_valid_allowed_values(
             catalogue_category_property.allowed_values, existing_property_out.model_dump()
         )
@@ -231,12 +249,24 @@ class CatalogueCategoryPropertyService:
             )
 
             # Avoid propagating changes unless absolutely necessary
-            if updating_name:
-                self._catalogue_item_repository.update_names_of_all_properties_with_id(
-                    catalogue_category_property_id, catalogue_category_property.name, session=session
+            if updating_name or (updating_unit and is_authorised):
+                unit_data = (
+                    {"unit_id": catalogue_category_property.unit_id, "unit": update_data.get("unit")}
+                    if updating_unit
+                    else None
                 )
-                self._item_repository.update_names_of_all_properties_with_id(
-                    catalogue_category_property_id, catalogue_category_property.name, session=session
+
+                self._catalogue_item_repository.update_names_and_units_of_all_properties_with_id(
+                    catalogue_category_property_id,
+                    catalogue_category_property.name,
+                    unit_data,
+                    session=session,
+                )
+                self._item_repository.update_names_and_units_of_all_properties_with_id(
+                    catalogue_category_property_id,
+                    catalogue_category_property.name,
+                    unit_data,
+                    session=session,
                 )
 
         return property_out

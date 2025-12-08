@@ -808,49 +808,71 @@ class TestInsertPropertyToAllMatching(InsertPropertyToAllMatchingDSL):
         self.check_insert_property_to_all_matching_success()
 
 
-class UpdateNamesOfAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL):
-    """Base class for `update_names_of_all_properties_with_id` tests"""
+class UpdateNamesAndUnitsOfAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL):
+    """Base class for `update_names_and_units_of_all_properties_with_id` tests"""
 
-    _update_names_of_all_properties_with_id_property_id: str
-    _update_names_of_all_properties_with_id_new_property_name: str
+    _update_names_and_units_of_all_properties_with_id_property_id: str
+    _update_names_and_units_of_all_properties_with_id_new_property_name: str
+    _update_names_and_units_of_all_properties_new_property_unit_data: dict
 
-    def call_update_names_of_all_properties_with_id(self, property_id: str, new_property_name: str) -> None:
-        """Calls the `CatalogueItemRepo` `update_names_of_all_properties_with_id` method.
+    def call_update_names_and_units_of_all_properties_with_id(
+        self,
+        property_id: str,
+        new_property_name: str,
+        new_property_unit_data: dict,
+    ) -> None:
+        """Calls the `CatalogueItemRepo` `update_names_and_units_of_all_properties_with_id` method.
 
         :param property_id: ID of the property.
         :param new_property_name: New property name.
+        :param new_property_unit_data: New property unit data.
         """
 
-        self._update_names_of_all_properties_with_id_property_id = property_id
-        self._update_names_of_all_properties_with_id_new_property_name = new_property_name
-        self.catalogue_item_repository.update_names_of_all_properties_with_id(
-            property_id, new_property_name, session=self.mock_session
+        self._update_names_and_units_of_all_properties_with_id_property_id = property_id
+        self._update_names_and_units_of_all_properties_with_id_new_property_name = new_property_name
+        self._update_names_and_units_of_all_properties_new_property_unit_data = new_property_unit_data
+
+        self.catalogue_item_repository.update_names_and_units_of_all_properties_with_id(
+            property_id,
+            new_property_name,
+            new_property_unit_data,
+            session=self.mock_session,
         )
 
-    def check_update_names_of_all_properties_with_id(self) -> None:
-        """Checks that a prior call to `update_names_of_all_properties_with_id` worked as expected"""
+    def check_update_names_and_units_of_all_properties_with_id(self) -> None:
+        """Checks that a prior call to `update_names_and_units_of_all_properties_with_id` worked as expected"""
 
         self.catalogue_items_collection.update_many.assert_called_once_with(
-            {"properties._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)},
+            {"properties._id": CustomObjectId(self._update_names_and_units_of_all_properties_with_id_property_id)},
             {
                 "$set": {
-                    "properties.$[elem].name": self._update_names_of_all_properties_with_id_new_property_name,
+                    "properties.$[elem].name": self._update_names_and_units_of_all_properties_with_id_new_property_name,
+                    "properties.$[elem].unit_id": self._update_names_and_units_of_all_properties_new_property_unit_data[
+                        "unit_id"
+                    ],
+                    "properties.$[elem].unit": self._update_names_and_units_of_all_properties_new_property_unit_data[
+                        "unit"
+                    ],
                     "modified_time": self._mock_datetime.now.return_value,
                 }
             },
-            array_filters=[{"elem._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)}],
+            array_filters=[
+                {"elem._id": CustomObjectId(self._update_names_and_units_of_all_properties_with_id_property_id)}
+            ],
             session=self.mock_session,
         )
 
 
-class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
-    """Tests for `update_names_of_all_properties_with_id`."""
+class TestUpdateNamesAndUnitsOfAllPropertiesWithID(UpdateNamesAndUnitsOfAllPropertiesWithIDDSL):
+    """Tests for `update_names_and_units_of_all_properties_with_id`."""
 
-    def test_update_names_of_all_properties_with_id(self):
-        """Test `update_names_of_all_properties_with_id`."""
+    def test_update_names_and_units_of_all_properties_with_id(self):
+        """Test `update_names_and_units_of_all_properties_with_id`."""
 
-        self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
-        self.check_update_names_of_all_properties_with_id()
+        self.call_update_names_and_units_of_all_properties_with_id(
+            str(ObjectId()), "New name", {"unit_id": str(ObjectId()), "unit": "New unit"}
+        )
+        self.check_update_names_and_units_of_all_properties_with_id()
 
 
 class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
