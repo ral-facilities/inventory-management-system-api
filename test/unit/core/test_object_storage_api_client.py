@@ -50,9 +50,9 @@ class TestObjectStorageAPIClient:
     )
     @patch("inventory_management_system_api.core.object_storage_api_client.requests.delete")
     def test_delete_auth_error(self, mock_delete, method):
-        """Test `ObjectStorageAPIAuthError` is raised when Object Storage API responds with 403."""
+        """Test `ObjectStorageAPIAuthError` is raised when Object Storage API responds with 401."""
         mock_response = MagicMock()
-        mock_response.status_code = 403
+        mock_response.status_code = 401
         mock_response.json.return_value = {"detail": "Invalid token or expired token"}
         mock_delete.return_value = mock_response
 
