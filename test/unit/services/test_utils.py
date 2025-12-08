@@ -29,6 +29,7 @@ DEFINED_PROPERTIES = [
         unit_id=str(ObjectId()),
         unit="mm",
         mandatory=True,
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         allowed_values=AllowedValues(type="list", values=[2, 4, 6]),
     ),
     CatalogueCategoryPropertyOut(
@@ -36,6 +37,7 @@ DEFINED_PROPERTIES = [
         name="Property E",
         type="string",
         mandatory=False,
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         allowed_values=AllowedValues(type="list", values=["red", "green"]),
     ),
 ]
@@ -123,7 +125,7 @@ class TestProcessProperties:
         """
         with pytest.raises(MissingMandatoryProperty) as exc:
             utils.process_properties(DEFINED_PROPERTIES, [SUPPLIED_PROPERTIES[0]])
-        assert str(exc.value) == f"Missing mandatory property with ID: '{SUPPLIED_PROPERTIES[1].id}'"
+        assert str(exc.value) == f"Missing mandatory property with ID '{SUPPLIED_PROPERTIES[1].id}'"
 
     def test_process_properties_with_missing_non_mandatory_properties(self):
         """

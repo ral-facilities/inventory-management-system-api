@@ -9,7 +9,7 @@ from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
@@ -44,8 +44,6 @@ class CatalogueItemRepoDSL:
         self.catalogue_item_repository = CatalogueItemRepo(database_mock)
         self.catalogue_items_collection = database_mock.catalogue_items
         self.items_collection = database_mock.items
-
-        self.mock_session = MagicMock()
 
 
 class CreateDSL(CatalogueItemRepoDSL):
@@ -506,7 +504,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(catalogue_item_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No catalogue item found with ID: {catalogue_item_id}", expecting_delete_one_called=True
+            f"No catalogue item found with ID '{catalogue_item_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_invalid_id(self):
@@ -600,7 +598,7 @@ class TestHasChildElements(HasChildElementsDSL):
     def test_has_child_elements_with_child_item(self):
         """Test `has_child_elements` when there is a child item."""
 
-        self.mock_has_child_elements(child_item_data=ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_has_child_elements(child_item_data=ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_has_child_elements(str(ObjectId()))
         self.check_has_child_elements_success(expected_result=True)
 
@@ -712,16 +710,16 @@ class TestIsAReplacementFor(IsReplacementForDSL):
 class ListIDsDSL(CatalogueItemRepoDSL):
     """Base class for `list_ids` tests"""
 
-    _list_ids_catalogue_category_id: str
+    _catalogue_category_id_filter: str
     _list_ids_result: list[ObjectId]
 
-    def call_list_ids(self, catalogue_category_id: str) -> None:
+    def call_list_ids(self, catalogue_category_id: Optional[str]) -> None:
         """Calls the `CatalogueItemRepo` `list_ids` method.
 
-        :param catalogue_category_id: ID of the catalogue category.
+        :param catalogue_category_id: ID of the catalogue category to query by, or `None`.
         """
 
-        self._list_ids_catalogue_category_id = catalogue_category_id
+        self._catalogue_category_id_filter = catalogue_category_id
         self._list_ids_result = self.catalogue_item_repository.list_ids(
             catalogue_category_id, session=self.mock_session
         )
@@ -729,10 +727,12 @@ class ListIDsDSL(CatalogueItemRepoDSL):
     def check_list_ids_success(self) -> None:
         """Checks that a prior call to `call_list_ids` worked as expected."""
 
+        expected_query = {}
+        if self._catalogue_category_id_filter:
+            expected_query["catalogue_category_id"] = CustomObjectId(self._catalogue_category_id_filter)
+
         self.catalogue_items_collection.find.assert_called_once_with(
-            {"catalogue_category_id": CustomObjectId(self._list_ids_catalogue_category_id)},
-            {"_id": 1},
-            session=self.mock_session,
+            expected_query, {"_id": 1}, session=self.mock_session
         )
         self.catalogue_items_collection.find.return_value.distinct.assert_called_once_with("_id")
 
@@ -745,7 +745,13 @@ class TestListIDs(ListIDsDSL):
     def test_list_ids(self):
         """Test `list_ids`."""
 
-        self.call_list_ids(str(ObjectId()))
+        self.call_list_ids(catalogue_category_id=None)
+        self.check_list_ids_success()
+
+    def test_list_ids_with_catalogue_category_id_filter(self):
+        """Test `list_ids` with a `catalogue_category_id` filter."""
+
+        self.call_list_ids(catalogue_category_id=str(ObjectId()))
         self.check_list_ids_success()
 
 
@@ -845,3 +851,42 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 
         self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
         self.check_update_names_of_all_properties_with_id()
+
+
+class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
+    """Base class for `update_number_of_spares` tests."""
+
+    _update_number_of_spares_catalogue_item_id: ObjectId
+    _update_number_of_spares_number_of_spares: Optional[int]
+
+    def call_update_number_of_spares(self, catalogue_item_id: ObjectId, number_of_spares: Optional[int]) -> None:
+        """Calls the `CatalogueItemRepo` `update_number_of_spares` method.
+
+        :param catalogue_item_id: The ID of the catalogue item to update.
+        :param number_of_spares: New number of spares to update to.
+        """
+
+        self._update_number_of_spares_catalogue_item_id = catalogue_item_id
+        self._update_number_of_spares_number_of_spares = number_of_spares
+        self.catalogue_item_repository.update_number_of_spares(
+            catalogue_item_id, number_of_spares, session=self.mock_session
+        )
+
+    def check_update_number_of_spares(self) -> None:
+        """Checks that a prior call to `update_number_of_spares` worked as expected."""
+
+        self.catalogue_items_collection.update_one.assert_called_once_with(
+            {"_id": self._update_number_of_spares_catalogue_item_id},
+            {"$set": {"number_of_spares": self._update_number_of_spares_number_of_spares}},
+            session=self.mock_session,
+        )
+
+
+class TestUpdateNumberOfSpares(UpdateNumberOfSparesDSL):
+    """Tests for `update_number_of_spares`."""
+
+    def test_update_number_of_spares(self):
+        """Test `update_number_of_spares`."""
+
+        self.call_update_number_of_spares(ObjectId(), 42)
+        self.check_update_number_of_spares()

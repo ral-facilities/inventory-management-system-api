@@ -9,8 +9,8 @@ This microservice requires a MongoDB instance to run against.
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.12 and MongoDB 7.0 installed on your machine (if you are not using Docker)
-- Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorization is enabled)
+- Python 3.13 and MongoDB 7.0 installed on your machine (if you are not using Docker)
+- Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorisation is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
   a GUI)
 - This repository cloned
@@ -193,7 +193,25 @@ and one can be started using the `docker-compose.yml` file.
 
 #### Prerequisites
 
-- You must have access to a MongoDB instance with at least one replica set.
+##### MongoDB
+
+You must have access to a MongoDB instance with at least one replica set and be able to create the following indexes
+using either MongoDB Compass or a CLI e.g.
+
+```bash
+mongosh DATABASE_NAME --username USERNAME --password PASSWORD --authenticationDatabase=admin \
+   --eval 'db.catalogue_categories.createIndex({ "parent_id": 1, "code": 1 }, { name: "catalogue_categories_name_uniqueness_index", unique: true })' \
+   --eval 'db.manufacturers.createIndex({ "code": 1 }, { name: "manufacturers_name_uniqueness_index", unique: true })' \
+   --eval 'db.systems.createIndex({ "parent_id": 1, "code": 1 }, { name: "systems_name_uniqueness_index", unique: true })' \
+   --eval 'db.units.createIndex({ "code": 1 }, { name: "units_name_uniqueness_index", unique: true })' \
+   --eval 'db.usage_statuses.createIndex({ "code": 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true })'
+```
+
+These compound indexes ensure names cannot be repeated within the same entity.
+
+This needs to be done for both the development and testing databases.
+By default, the `.env.example` and `pytest.ini` use `ims` and `test-ims` as their names, ensure they are
+modified as required.
 
 #### Running the API
 
@@ -364,6 +382,7 @@ Listed below are the environment variables supported by the application.
 | `AUTHENTICATION__ENABLED`                     | Whether JWT auth is enabled.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Yes                       |                                                       |
 | `AUTHENTICATION__PUBLIC_KEY_PATH`             | The path to the public key to be used for decoding JWT access token signed by the corresponding private key.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | If JWT auth enabled       |                                                       |
 | `AUTHENTICATION__JWT_ALGORITHM`               | The algorithm to use to decode the JWT access token.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | If JWT auth enabled       |                                                       |
+| `AUTHENTICATION__PRIVILEGED_ROLES`            | The list of roles which are deemed to be privileged, allowed roles can be found in the `users_config.yaml` file in [ldap-jwt-auth](https://github.com/ral-facilities/ldap-jwt-auth)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Yes                       |                                                       |
 | `DATABASE__PROTOCOL`                          | The protocol component (i.e. `mongodb`) to use for the connection string for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Yes                       |                                                       |
 | `DATABASE__USERNAME`                          | The database username to use for the connection string for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Yes                       |                                                       |
 | `DATABASE__PASSWORD`                          | The database password to use for the connection string for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Yes                       |                                                       |
@@ -373,77 +392,173 @@ Listed below are the environment variables supported by the application.
 | `OBJECT_STORAGE__API_REQUEST_TIMEOUT_SECONDS` | The maximum number of seconds that the request should wait for a response from the Object Storage API before timing out.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | If Object Storage enabled |                                                       |
 | `OBJECT_STORAGE__API_URL`                     | The URL of the Object Storage API.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | If Object Storage enabled |                                                       |
 
-### JWT Authentication/Authorization
+### JWT Authentication/Authorisation
 
-This microservice supports JWT authentication/authorization and this can be enabled or disabled by setting
+This microservice supports JWT authentication/authorisation and this can be enabled or disabled by setting
 the `AUTHENTICATION__ENABLED` environment variable to `True` or `False`. When enabled, all the endpoints require a JWT
-access token to be supplied. This ensures that only authenticated and authorized users can access the resources. To
+access token to be supplied. This ensures that only authenticated and authorised users can access the resources. To
 decode the JWT access token, the application needs the public key that corresponding to the private key used for
 encoding the token. Once the JWT access token is decoded successfully, it checks that it has a `username` in the
 payload, and it has not expired. This means that any microservice can be used to generate JWT access tokens so long as
 it meets the above criteria. The [LDAP-JWT Authentication Service](https://github.com/ral-facilities/ldap-jwt-auth) is
 a microservice that provides user authentication against an LDAP server and returns a JWT access token.
 
-### Migrations
+### IMS System Administrator CLI
 
-#### Adding a migration
-
-To add a migration first use
-
-```bash
-ims-migrate create <migration_name> <migration_description>
-```
-
-to create a new one inside the `inventory_management_system/migrations/scripts` directory. Then add the code necessary
-to perform the migration. See `_example_migration.py` for an example on how to implement one.
-
-#### Performing forward migrations
-
-Before performing a migration you can first check the current status of the database and any outstanding migrations
-using
+IMS includes a command line interface intended to help a system administrator manage the system. This can be accessed
+using the command `ims` e.g.
 
 ```bash
-ims-migrate status
+ims --help
 ```
 
 or in Docker
 
 ```bash
-docker exec -it inventory-management-system-api ims-migrate status
+docker exec -it inventory-management-system-api ims --help
+```
+
+#### Managing system types
+
+System types are used to distinguish different types of systems from each other and are required to exist before any
+systems can be created. They are also used in the spares definition and rules.
+
+System types can be created, updated and deleted using the following interactive commands:
+
+```bash
+ims create system-type
+ims update system-type
+ims delete system-type
+```
+
+Running each of these will guide you through the process.
+
+#### Managing rules
+
+Rules define what operations are possible for items in relation to systems. They are split into three categories:
+
+- Creation: These define which types of system's items can be created in, and what usage status they should have.
+- Deletion: These define which types of system's items can be deleted from (They have no restriction on usage status)
+- Moving: These define which types of systems an item is allowed to move between and what usage status they should have
+  once moved.
+
+These rules are defined in terms of the source system's type, destination system's type, and usage status.
+
+You can use the following interactive commands to create and delete rules:
+
+```bash
+ims create rule {creation \| moving \| deletion}
+ims delete rule
+```
+
+These will also give a table of the current rules. For example see the below table:
+
+```bash
+┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Index ┃ ID                       ┃ Type     ┃ src_system_type_id                     ┃ dst_system_type_id                     ┃ dst_usage_status_id                 ┃
+┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 0     │ 688885c3bab6e839d369e328 │ creation │ None                                   │ 685e5dce6e347e39d459c5ea (Storage)     │ 6874cf5dee233ec6441860a0 (New)      │
+│ 1     │ 688885c3bab6e839d369e329 │ deletion │ 685e5dce6e347e39d459c5ea (Storage)     │ None                                   │ None                                │
+│ 2     │ 688885c3bab6e839d369e32a │ moving   │ 685e5dce6e347e39d459c5ea (Storage)     │ 685e5dce6e347e39d459c5eb (Operational) │ 6874cf5dee233ec6441860a1 (In Use)   │
+│ 3     │ 688885c3bab6e839d369e32b │ moving   │ 685e5dce6e347e39d459c5eb (Operational) │ 685e5dce6e347e39d459c5ea (Storage)     │ 6874cf5dee233ec6441860a2 (Used)     │
+└───────┴──────────────────────────┴──────────┴────────────────────────────────────────┴────────────────────────────────────────┴─────────────────────────────────────┘
+```
+
+Here:
+
+- Creation rules only have a destination system type and usage status. This is the type of system that items can be
+  created in and the usage status such items must have.
+- Deletion rules only have a source system type. This is the type of system that items will be allowed to be deleted
+  from.
+- Moving rules have both a source and destination system type as well as a usage status. This defines which system types
+  an item can move from (the source) and to (the destination), and the required new usage status the item must have
+  once moved to the destination.
+
+NOTE: Modifying the rules does not effect existing usage statuses or positions of items within systems. It is up to
+users to ensure they are moved or modified if appropriate due to a new rule being introduced.
+
+#### Configuring the spares definition
+
+The spares definition is a list of system types that define which systems contain spares. E.g. If you have system type
+of `Storage`, and define the spares definition as `Storage`. Then a spare of a given catalogue item will be defined as
+any item that is within a system of with a type of `Storage`.
+
+When first setup, IMS does not have a spares definition assigned and so will not attempt to calculate the number of
+spares you have for each catalogue item. To configure the spares definition and enable this functionality use
+
+```bash
+ims configure spares-definition
+```
+
+and follow its instructions. This will calculate and update the `number_of_spares` field on all catalogue items and may
+also be used to change the spares definition once already setup.
+
+NOTE: Please ensure that no one is using ims-api when executing this. Otherwise it is possible to miscount the number of
+spares. If using a reverse proxy to provide access, we recommend first shutting it down before doing this.
+
+Subsequently, whenever a new item is added, moved or deleted, the number of spares inside the effected catalogue item
+will be recalculated accordingly
+
+#### Migrations
+
+##### Adding a migration
+
+To add a migration first use
+
+```bash
+ims migrate create <migration_name> <migration_description>
+```
+
+to create a new one inside the `inventory_management_system/migrations/scripts` directory. Then add the code necessary
+to perform the migration. See `_example_migration.py` for an example on how to implement one.
+
+##### Performing forward migrations
+
+Before performing a migration you can first check the current status of the database and any outstanding migrations
+using
+
+```bash
+ims migrate status
+```
+
+or in Docker
+
+```bash
+docker exec -it inventory-management-system-api ims migrate status
 ```
 
 Then to perform all outstanding migrations up to the latest one use
 
 ```bash
-ims-migrate forward latest
+ims migrate forward latest
 ```
 
 You may also specify a specific migration name to apply instead which will apply all migrations between the current
 applied one and the specified one. A prompt will be shown to ensure the migrations being applied are sensible.
 
-#### Performing backward migrations
+##### Performing backward migrations
 
 To revert the database by performing backwards migrations you can first use
 
 ```bash
-ims-migrate status
+ims migrate status
 ```
 
 to check the current status of the database and available migrations and then use
 
 ```bash
-ims-migrate backward <migration_name>
+ims migrate backward <migration_name>
 ```
 
 to perform all backward migrations to get from the current database state back to the state prior to the chosen
 migration name (i.e. it also performs the backward migration for the given migration name).
 
-#### Forcing migration state
+##### Forcing migration state
 
 If for some reason the migration state is different to what you expect it may be forced via
 
 ```bash
-ims-migrate set <migration_name>
+ims migrate set <migration_name>
 ```
 
 This is already set to `latest` automatically when using the `dev_cli` to regenerate mock data so that the dump retains

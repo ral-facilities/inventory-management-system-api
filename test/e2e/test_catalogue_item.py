@@ -44,9 +44,9 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
     PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
-    SYSTEM_POST_DATA_NO_PARENT_A,
+    SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
     UNIT_POST_DATA_MM,
-    USAGE_STATUS_POST_DATA_NEW,
+    USAGE_STATUS_GET_DATA_NEW,
 )
 from typing import Any, Optional
 
@@ -415,7 +415,7 @@ class TestCreate(CreateDSL):
 
         self.check_post_catalogue_item_failed_with_detail(
             422,
-            "Missing mandatory property with ID: "
+            "Missing mandatory property with ID "
             f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
         )
 
@@ -800,11 +800,8 @@ class UpdateDSL(ListDSL):
         # pylint:disable=fixme
         # TODO: This should be cleaned up in future
 
-        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_NO_PARENT_A)
+        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_STORAGE_NO_PARENT_A)
         system_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
 
         item_post = {
             "is_defective": False,
@@ -814,7 +811,7 @@ class UpdateDSL(ListDSL):
             "notes": "Test notes",
             "catalogue_item_id": self._post_response_catalogue_item.json()["id"],
             "system_id": system_id,
-            "usage_status_id": usage_status_id,
+            "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
             "properties": [],
         }
         self.test_client.post("/v1/items", json=item_post)
@@ -1126,7 +1123,7 @@ class TestUpdate(UpdateDSL):
         )
         self.check_patch_catalogue_item_failed_with_detail(
             422,
-            "Missing mandatory property with ID: "
+            "Missing mandatory property with ID "
             f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}'",
         )
 
@@ -1312,7 +1309,7 @@ class TestUpdate(UpdateDSL):
         )
         self.check_patch_catalogue_item_failed_with_detail(
             422,
-            "Missing mandatory property with ID: "
+            "Missing mandatory property with ID "
             f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
         )
 

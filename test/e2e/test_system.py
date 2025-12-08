@@ -4,18 +4,19 @@ End-to-End tests for the system router.
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-public-methods
 
 from test.e2e.conftest import E2ETestHelpers
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
-    SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT,
-    SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY,
-    SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
-    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    USAGE_STATUS_POST_DATA_NEW,
+    SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT,
+    SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT,
+    SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
+    SYSTEM_TYPE_GET_DATA_OPERATIONAL,
 )
 from typing import Optional
 
@@ -36,7 +37,7 @@ class CreateDSL:
 
     @pytest.fixture(autouse=True)
     def setup_system_create_dsl(self, test_client):
-        """Setup fixtures"""
+        """Setup fixtures."""
 
         self.test_client = test_client
 
@@ -92,49 +93,74 @@ class TestCreate(CreateDSL):
     def test_create_with_only_required_values_provided(self):
         """Test creating a system with only required values provided."""
 
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.check_post_system_success(SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.check_post_system_success(SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
     def test_create_with_all_values_provided(self):
         """Test creating a system with all values provided."""
 
-        self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-        self.check_post_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
+        self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.check_post_system_success(SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
     def test_create_with_valid_parent_id(self):
         """Test creating a system with a valid `parent_id`."""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
-        self.check_post_system_success({**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        self.check_post_system_success({**SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
 
     def test_create_with_non_existent_parent_id(self):
         """Test creating a system with a non-existent `parent_id`."""
 
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": str(ObjectId())})
         self.check_post_system_failed_with_detail(422, "The specified parent system does not exist")
 
     def test_create_with_invalid_parent_id(self):
         """Test creating a system with an invalid `parent_id`."""
 
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": "invalid-id"})
         self.check_post_system_failed_with_detail(422, "The specified parent system does not exist")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a system with the same name as another within the parent system."""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         # 2nd post should be the duplicate
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
         self.check_post_system_failed_with_detail(
             409, "A system with the same name already exists within the parent system"
         )
 
+    def test_create_with_different_type_id_to_parent(self):
+        """Test creating a system with a different `type_id` to its parent."""
+
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_system(
+            {
+                **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
+                "parent_id": parent_id,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            }
+        )
+        self.check_post_system_failed_with_detail(422, "Cannot use a different type_id to the parent system")
+
+    def test_create_with_non_existent_type_id(self):
+        """Test creating a system with a non-existent `type_id`."""
+
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "type_id": str(ObjectId())})
+        self.check_post_system_failed_with_detail(422, "The specified system type does not exist")
+
+    def test_create_with_invalid_type_id(self):
+        """Test creating a system with an invalid `type_id`."""
+
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "type_id": "invalid-id"})
+        self.check_post_system_failed_with_detail(422, "The specified system type does not exist")
+
     def test_create_with_invalid_importance(self):
         """Test creating a system with an invalid importance."""
 
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "importance": "invalid-importance"})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "importance": "invalid-importance"})
         self.check_post_system_failed_with_validation_message(422, "Input should be 'low', 'medium' or 'high'")
 
 
@@ -181,9 +207,9 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting a system."""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
         self.get_system(system_id)
-        self.check_get_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
+        self.check_get_system_success(SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
     def test_get_with_non_existent_id(self):
         """Test getting a system with a non-existent ID."""
@@ -200,8 +226,6 @@ class TestGet(GetDSL):
 
 class GetBreadcrumbsDSL(GetDSL):
     """Base class for breadcrumbs tests."""
-
-    _get_response_system: Response
 
     _posted_systems_get_data: list[dict]
 
@@ -222,7 +246,7 @@ class GetBreadcrumbsDSL(GetDSL):
         parent_id = None
         for i in range(0, number):
             system_id = self.post_system(
-                {**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": f"System {i}", "parent_id": parent_id}
+                {**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "name": f"System {i}", "parent_id": parent_id}
             )
             self._posted_systems_get_data.append(self._post_response_system.json())
             parent_id = system_id
@@ -349,10 +373,13 @@ class ListDSL(GetBreadcrumbsDSL):
                  `SystemSchema`.
         """
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": parent_id})
 
-        return [SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "parent_id": parent_id}]
+        return [
+            SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT,
+            {**SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY, "parent_id": parent_id},
+        ]
 
     def check_get_systems_success(self, expected_systems_get_data: list[dict]) -> None:
         """
@@ -432,6 +459,34 @@ class UpdateDSL(ListDSL):
 
         self._patch_response_system = self.test_client.patch(f"/v1/systems/{system_id}", json=system_patch_data)
 
+    def post_child_item_to_system(self) -> None:
+        """Posts an item and its pre-requisites to the last posted system."""
+
+        # pylint:disable=fixme
+        # TODO: This should be cleaned up in future
+        response = self.test_client.post(
+            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
+        )
+        catalogue_category = response.json()
+
+        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        manufacturer_id = response.json()["id"]
+
+        catalogue_item_post = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": catalogue_category["id"],
+            "manufacturer_id": manufacturer_id,
+        }
+        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
+        catalogue_item_id = response.json()["id"]
+
+        item_post = {
+            **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            "catalogue_item_id": catalogue_item_id,
+            "system_id": self._post_response_system.json()["id"],
+        }
+        self.test_client.post("/v1/items", json=item_post)
+
     def check_patch_system_success(self, expected_system_get_data: dict) -> None:
         """
         Checks that a prior call to `patch_system` gave a successful response with the expected data returned.
@@ -465,33 +520,128 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_all_fields(self):
         """Test updating every field of a system."""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.patch_system(system_id, SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-        self.check_patch_system_success(SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.patch_system(system_id, SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.check_patch_system_success(SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
-    def test_partial_update_parent_id(self):
-        """Test updating the `parent_id` of a system."""
+    def test_partial_update_parent_id_from_none(self):
+        """Test updating the `parent_id` of a system froma  value of None."""
 
-        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
         self.patch_system(system_id, {"parent_id": parent_id})
-        self.check_patch_system_success({**SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_partial_update_parent_id_to_one_with_a_duplicate_name(self):
         """Test updating the `parent_id` of a system so that its name conflicts with one already in that other
         system."""
 
         # System with child
-        parent_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Conflicting Name", "parent_id": parent_id})
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_system(
+            {**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "name": "Conflicting Name", "parent_id": parent_id}
+        )
 
-        system_id = self.post_system({**SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT, "name": "Conflicting Name"})
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "name": "Conflicting Name"})
 
         self.patch_system(system_id, {"parent_id": parent_id})
         self.check_patch_system_failed_with_detail(
             409, "A system with the same name already exists within the parent system"
         )
+
+    def test_partial_update_parent_id_to_one_with_a_different_type(self):
+        """Test updating the `parent_id` of a system to one that has a different type."""
+
+        parent_id = self.post_system(
+            {**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]}
+        )
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+
+        self.patch_system(system_id, {"parent_id": parent_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot move a system into one with a different type")
+
+    def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type(self):
+        """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
+        match."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "type_id": type_id})
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+
+        self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
+        self.check_patch_system_success(
+            {**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id, "type_id": type_id}
+        )
+
+    def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type_with_subsystem(self):
+        """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
+        match while the system has a subsystem."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "type_id": type_id})
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type_with_item(self):
+        """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
+        match while the system has an item."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "type_id": type_id})
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.post_child_item_to_system()
+
+        self.patch_system(system_id, {"parent_id": parent_id, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_parent_id_to_none(self):
+        """Test updating the `parent_id` of a system to None."""
+
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        self.patch_system(system_id, {"parent_id": None})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": None})
+
+    def test_partial_update_parent_id_to_none_while_changing_type(self):
+        """Test updating the `parent_id` of a system to None while also changing the `type_id`."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
+        self.check_patch_system_success(
+            {**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": None, "type_id": type_id}
+        )
+
+    def test_partial_update_parent_id_to_none_while_changing_type_with_subsystem(self):
+        """Test updating the `parent_id` of a system to None while also changing the `type_id` while the system has
+        a subsystem."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_parent_id_to_none_while_changing_type_with_item(self):
+        """Test updating the `parent_id` of a system to None while also changing the `type_id` while the system has
+        an item."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_child_item_to_system()
+
+        self.patch_system(system_id, {"parent_id": None, "type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
 
     def test_partial_update_parent_id_to_child_of_self(self):
         """Test updating the `parent_id` of a system to one of its own children."""
@@ -503,35 +653,110 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_parent_id_to_non_existent(self):
         """Test updating the `parent_id` of a system to a non-existent system."""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": str(ObjectId())})
         self.check_patch_system_failed_with_detail(422, "The specified parent system does not exist")
 
     def test_partial_update_parent_id_to_invalid_id(self):
         """Test updating the `parent_id` of a system to an invalid ID."""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
         self.patch_system(system_id, {"parent_id": "invalid-id"})
         self.check_patch_system_failed_with_detail(422, "The specified parent system does not exist")
 
     def test_partial_update_name_to_duplicate(self):
         """Test updating the name of a system to conflict with a pre-existing one."""
 
-        self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-        system_id = self.post_system(SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT)
-        self.patch_system(system_id, {"name": SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY["name"]})
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"name": SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY["name"]})
         self.check_patch_system_failed_with_detail(
             409, "A system with the same name already exists within the parent system"
         )
+
+    def test_partial_update_type_id_without_parent(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_success({**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "type_id": type_id})
+
+    def test_partial_update_type_id_without_parent_with_subsystem(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system but has a subsystem."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_without_parent_with_item(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system but has an item."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.post_child_item_to_system()
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_with_parent(self):
+        """Test updating the `type_id` of a system when it doesn't have a parent system."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot update the system's type to be different to its parent")
+
+    def test_partial_update_type_id_with_parent_and_subsystem(self):
+        """Test updating the `type_id` of a system when it has a parent system and a subsystem."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": system_id})
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_with_parent_and_item(self):
+        """Test updating the `type_id` of a system when it has a parent system and an item."""
+
+        type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
+        parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
+        self.post_child_item_to_system()
+
+        self.patch_system(system_id, {"type_id": type_id})
+        self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
+
+    def test_partial_update_type_id_to_non_existent(self):
+        """Test updating the `type_id` of a system to a non-existent system type."""
+
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"type_id": str(ObjectId())})
+        self.check_patch_system_failed_with_detail(422, "The specified system type does not exist")
+
+    def test_partial_update_type_id_to_invalid_id(self):
+        """Test updating the `type_id` of a system to an invalid ID."""
+
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
+        self.patch_system(system_id, {"type_id": "invalid-id"})
+        self.check_patch_system_failed_with_detail(422, "The specified system type does not exist")
 
     def test_partial_update_name_capitalisation(self):
         """Test updating the capitalisation of the name of a system (to ensure it the check doesn't confuse with
         duplicates)."""
 
-        system_id = self.post_system({**SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY, "name": "Test system"})
+        system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY, "name": "Test system"})
         self.patch_system(system_id, {"name": "Test System"})
         self.check_patch_system_success(
-            {**SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY, "name": "Test System", "code": "test-system"}
+            {**SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY, "name": "Test System", "code": "test-system"}
         )
 
     def test_partial_update_with_non_existent_id(self):
@@ -585,7 +810,7 @@ class TestDelete(DeleteDSL):
     def test_delete(self):
         """Test deleting a system."""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.delete_system(system_id)
         self.check_delete_system_success()
 
@@ -603,39 +828,8 @@ class TestDelete(DeleteDSL):
     def test_delete_with_child_item(self):
         """Test deleting a system with a child system."""
 
-        system_id = self.post_system(SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
-
-        # pylint:disable=fixme
-        # TODO: This should be cleaned up in future
-        # Create a child item
-        # pylint: disable=duplicate-code
-        response = self.test_client.post(
-            "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
-        )
-        catalogue_category = response.json()
-
-        response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        manufacturer_id = response.json()["id"]
-
-        catalogue_item_post = {
-            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_category_id": catalogue_category["id"],
-            "manufacturer_id": manufacturer_id,
-        }
-        response = self.test_client.post("/v1/catalogue-items", json=catalogue_item_post)
-        catalogue_item_id = response.json()["id"]
-
-        response = self.test_client.post("/v1/usage-statuses", json=USAGE_STATUS_POST_DATA_NEW)
-        usage_status_id = response.json()["id"]
-
-        item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
-            "catalogue_item_id": catalogue_item_id,
-            "system_id": system_id,
-            "usage_status_id": usage_status_id,
-        }
-        self.test_client.post("/v1/items", json=item_post)
-        # pylint: enable=duplicate-code
+        system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_child_item_to_system()
 
         self.delete_system(system_id)
         self.check_delete_system_failed_with_detail(409, "System has child elements and cannot be deleted")

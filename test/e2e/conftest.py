@@ -3,7 +3,12 @@ Module providing test fixtures for the e2e tests.
 """
 
 from datetime import datetime
-from test.mock_data import VALID_ACCESS_TOKEN
+from test.mock_data import (
+    RULES_DOCUMENT_DATA,
+    SYSTEM_TYPES_OUT_DATA,
+    USAGE_STATUSES_OUT_DATA,
+    VALID_ACCESS_TOKEN_DEFAULT_ROLE,
+)
 from typing import Optional
 
 import pytest
@@ -21,7 +26,7 @@ def fixture_test_client() -> TestClient:
 
     :return: The test client.
     """
-    return TestClient(app, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN}"})
+    return TestClient(app, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_DEFAULT_ROLE}"})
 
 
 @pytest.fixture(name="cleanup_database_collections", autouse=True)
@@ -37,8 +42,16 @@ def fixture_cleanup_database_collections():
     database.manufacturers.delete_many({})
     database.systems.delete_many({})
     database.units.delete_many({})
-    database.usage_statuses.delete_many({})
     database.settings.delete_many({})
+    database.system_types.delete_many({})
+    # Insert predefined system types
+    database.system_types.insert_many(SYSTEM_TYPES_OUT_DATA)
+    database.usage_statuses.delete_many({})
+    # Insert predefined usage statuses
+    database.usage_statuses.insert_many(USAGE_STATUSES_OUT_DATA)
+    database.rules.delete_many({})
+    # Insert predefined rules
+    database.rules.insert_many(RULES_DOCUMENT_DATA)
 
 
 def replace_unit_values_with_ids_in_properties(properties_without_ids: list[dict], units: Optional[list]) -> list[dict]:

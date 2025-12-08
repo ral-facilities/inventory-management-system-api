@@ -5,6 +5,8 @@ Unit tests for the `CatalogueCategoryService` service.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=too-many-lines
 # pylint: disable=duplicate-code
+# pylint:disable=too-many-arguments
+# pylint:disable=too-many-positional-arguments
 
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
@@ -37,6 +39,7 @@ from inventory_management_system_api.core.exceptions import (
 from inventory_management_system_api.models.catalogue_category import CatalogueCategoryIn, CatalogueCategoryOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
@@ -54,10 +57,9 @@ class CatalogueItemServiceDSL(BaseCatalogueServiceDSL):
     mock_catalogue_category_repository: Mock
     mock_manufacturer_repository: Mock
     mock_unit_repository: Mock
+    mock_setting_repository: Mock
     catalogue_item_service: CatalogueItemService
 
-    # pylint:disable=too-many-arguments
-    # pylint:disable=too-many-positional-arguments
     @pytest.fixture(autouse=True)
     def setup(
         self,
@@ -65,6 +67,7 @@ class CatalogueItemServiceDSL(BaseCatalogueServiceDSL):
         catalogue_category_repository_mock,
         manufacturer_repository_mock,
         unit_repository_mock,
+        setting_repository_mock,
         catalogue_item_service,
         # Ensures all created and modified times are mocked throughout
         # pylint: disable=unused-argument
@@ -76,6 +79,7 @@ class CatalogueItemServiceDSL(BaseCatalogueServiceDSL):
         self.mock_catalogue_category_repository = catalogue_category_repository_mock
         self.mock_manufacturer_repository = manufacturer_repository_mock
         self.mock_unit_repository = unit_repository_mock
+        self.mock_setting_repository = setting_repository_mock
         self.catalogue_item_service = catalogue_item_service
 
         with patch("inventory_management_system_api.services.catalogue_item.utils", wraps=utils) as wrapped_utils:
@@ -99,6 +103,7 @@ class CreateDSL(CatalogueItemServiceDSL):
         catalogue_category_in_data: Optional[dict] = None,
         manufacturer_in_data: Optional[dict] = None,
         obsolete_replacement_catalogue_item_data: Optional[dict] = None,
+        spares_definition_out_data: Optional[dict] = None,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
@@ -114,6 +119,8 @@ class CreateDSL(CatalogueItemServiceDSL):
                                      obsolete replacement as would be required for a `CatalogueItemPostSchema` but with
                                      any `unit_id`'s replaced by the `unit` value in its properties as the IDs will be
                                      added automatically.
+        :param spares_definition_out_data: Either `None` or a dictionary containing the spares definition data as would
+                                           be required for a `SparesDefinitionOut` database model.
         """
 
         # Generate mandatory IDs to be inserted where needed
@@ -182,6 +189,11 @@ class CreateDSL(CatalogueItemServiceDSL):
                 self._catalogue_category_out.properties, property_post_schemas
             )
 
+        spares_definition_out = (
+            SparesDefinitionOut(**spares_definition_out_data) if spares_definition_out_data else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_setting_repository, spares_definition_out)
+
         self._catalogue_item_post = CatalogueItemPostSchema(
             **{**catalogue_item_data, **ids_to_insert, "properties": property_post_schemas}
         )
@@ -192,7 +204,7 @@ class CreateDSL(CatalogueItemServiceDSL):
                 **ids_to_insert,
                 "properties": expected_properties_in,
             },
-            number_of_spares=None,
+            number_of_spares=0 if spares_definition_out else None,
         )
         self._expected_catalogue_item_out = CatalogueItemOut(
             **self._expected_catalogue_item_in.model_dump(), id=ObjectId()
@@ -291,7 +303,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No catalogue category found with ID: {self._catalogue_item_post.catalogue_category_id}"
+            f"No catalogue category found with ID '{self._catalogue_item_post.catalogue_category_id}'"
         )
 
     def test_create_with_non_leaf_catalogue_category(self):
@@ -315,7 +327,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No manufacturer found with ID: {self._catalogue_item_post.manufacturer_id}"
+            f"No manufacturer found with ID '{self._catalogue_item_post.manufacturer_id}'"
         )
 
     def test_create_with_obsolete_replacement_catalogue_item(self):
@@ -349,7 +361,7 @@ class TestCreate(CreateDSL):
         )
         self.call_create_expecting_error(MissingRecordError)
         self.check_create_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
+            f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'"
         )
 
 
@@ -1006,7 +1018,7 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue category found with ID: {catalogue_category_id}")
+        self.check_update_failed_with_exception(f"No catalogue category found with ID '{catalogue_category_id}'")
 
     def test_update_manufacturer_id_with_no_children(self):
         """Test updating the catalogue item's `manufacturer_id` when it has no children."""
@@ -1036,7 +1048,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
         )
 
     def test_update_properties_with_no_children(self):
@@ -1067,7 +1079,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_update_failed_with_exception(
-            f"Catalogue item with ID {str(catalogue_item_id)} has child elements and cannot be updated"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be updated"
         )
 
     def test_update_with_non_existent_manufacturer_id(self):
@@ -1083,7 +1095,7 @@ class TestUpdate(UpdateDSL):
             new_manufacturer_in_data=None,
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No manufacturer found with ID: {manufacturer_id}")
+        self.check_update_failed_with_exception(f"No manufacturer found with ID '{manufacturer_id}'")
 
     def test_update_obsolete_replacement_catalogue_item_id(self):
         """Test updating the catalogue item's `obsolete_replacement_catalogue_item_id`."""
@@ -1116,7 +1128,7 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
         self.check_update_failed_with_exception(
-            f"No catalogue item found with ID: {obsolete_replacement_catalogue_item_id}"
+            f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'"
         )
 
     def test_update_with_non_existent_id(self):
@@ -1130,7 +1142,7 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_item_data=None,
         )
         self.call_update_expecting_error(catalogue_item_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No catalogue item found with ID: {catalogue_item_id}")
+        self.check_update_failed_with_exception(f"No catalogue item found with ID '{catalogue_item_id}'")
 
 
 class DeleteDSL(CatalogueItemServiceDSL):
@@ -1210,7 +1222,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(has_child_elements=True)
         self.call_delete_expecting_error(catalogue_item_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
-            f"Catalogue item with ID {catalogue_item_id} has child elements and cannot be deleted"
+            f"Catalogue item with ID '{catalogue_item_id}' has child elements and cannot be deleted"
         )
 
     def test_delete_when_is_replacement_for(self):
@@ -1221,6 +1233,6 @@ class TestDelete(DeleteDSL):
         self.mock_delete(is_replacement_for=True)
         self.call_delete_expecting_error(catalogue_item_id, ReplacementForObsoleteCatalogueItemError)
         self.check_delete_failed_with_exception(
-            f"Catalogue item with ID {catalogue_item_id} is the replacement for at least one obsolete catalogue item "
+            f"Catalogue item with ID '{catalogue_item_id}' is the replacement for at least one obsolete catalogue item "
             "and cannot be deleted"
         )

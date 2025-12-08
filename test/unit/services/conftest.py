@@ -14,13 +14,17 @@ from inventory_management_system_api.models.catalogue_item import CatalogueItemO
 from inventory_management_system_api.models.item import ItemOut
 from inventory_management_system_api.models.manufacturer import ManufacturerOut
 from inventory_management_system_api.models.system import SystemOut
+from inventory_management_system_api.models.system_type import SystemTypeOut
 from inventory_management_system_api.models.unit import UnitOut
 from inventory_management_system_api.models.usage_status import UsageStatusOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
+from inventory_management_system_api.repositories.rule import RuleRepo
+from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.repositories.system import SystemRepo
+from inventory_management_system_api.repositories.system_type import SystemTypeRepo
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
@@ -31,7 +35,10 @@ from inventory_management_system_api.services.catalogue_category_property import
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 from inventory_management_system_api.services.item import ItemService
 from inventory_management_system_api.services.manufacturer import ManufacturerService
+from inventory_management_system_api.services.rule import RuleService
+from inventory_management_system_api.services.setting import SettingService
 from inventory_management_system_api.services.system import SystemService
+from inventory_management_system_api.services.system_type import SystemTypeService
 from inventory_management_system_api.services.unit import UnitService
 from inventory_management_system_api.services.usage_status import UsageStatusService
 
@@ -76,6 +83,16 @@ def fixture_manufacturer_repository_mock() -> Mock:
     return Mock(ManufacturerRepo)
 
 
+@pytest.fixture(name="system_type_repository_mock")
+def fixture_system_type_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `SystemTypeRepo` dependency.
+
+    :return: Mocked `SystemTypeRepo` instance.
+    """
+    return Mock(SystemTypeRepo)
+
+
 @pytest.fixture(name="system_repository_mock")
 def fixture_system_repository_mock() -> Mock:
     """
@@ -104,6 +121,26 @@ def fixture_usage_status_repository_mock() -> Mock:
     :return: Mocked `UsageStatusRepo` instance.
     """
     return Mock(UsageStatusRepo)
+
+
+@pytest.fixture(name="setting_repository_mock")
+def fixture_setting_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `SettingRepo` dependency.
+
+    :return: Mocked `SettingRepo` instance.
+    """
+    return Mock(SettingRepo)
+
+
+@pytest.fixture(name="rule_repository_mock")
+def fixture_rule_repository_mock() -> Mock:
+    """
+    Fixture to create a mock of the `RuleRepo` dependency.
+
+    :return: Mocked `RuleRepo` instance.
+    """
+    return Mock(RuleRepo)
 
 
 @pytest.fixture(name="catalogue_category_service")
@@ -148,21 +185,31 @@ def fixture_catalogue_category_property_service(
 
 @pytest.fixture(name="catalogue_item_service")
 def fixture_catalogue_item_service(
-    catalogue_item_repository_mock: Mock, catalogue_category_repository_mock: Mock, manufacturer_repository_mock: Mock
+    catalogue_item_repository_mock: Mock,
+    catalogue_category_repository_mock: Mock,
+    manufacturer_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> CatalogueItemService:
     """
-    Fixture to create a `CatalogueItemService` instance with a mocked `CatalogueItemRepo` and `CatalogueCategoryRepo`
-    dependencies.
+    Fixture to create a `CatalogueItemService` instance with mocked `CatalogueItemRepo`, `CatalogueCategoryRepo`,
+    `ManufacturerRepo` and `SettingRepo` dependencies.
 
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
+    :param manufacturer_repository_mock: Mocked `ManufacturerRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `CatalogueItemService` instance with the mocked dependencies.
     """
     return CatalogueItemService(
-        catalogue_item_repository_mock, catalogue_category_repository_mock, manufacturer_repository_mock
+        catalogue_item_repository_mock,
+        catalogue_category_repository_mock,
+        manufacturer_repository_mock,
+        setting_repository_mock,
     )
 
 
+# pylint:disable=too-many-arguments
+# pylint:disable=too-many-positional-arguments
 @pytest.fixture(name="item_service")
 def fixture_item_service(
     item_repository_mock: Mock,
@@ -170,6 +217,8 @@ def fixture_item_service(
     catalogue_item_repository_mock: Mock,
     system_repository_mock: Mock,
     usage_status_repository_mock: Mock,
+    rule_repository_mock: Mock,
+    setting_repository_mock: Mock,
 ) -> ItemService:
     """
     Fixture to create an `ItemService` instance with mocked `ItemRepo`, `CatalogueItemRepo`, `CatalogueCategoryRepo`,
@@ -178,6 +227,10 @@ def fixture_item_service(
     :param item_repository_mock: Mocked `ItemRepo` instance.
     :param catalogue_category_repository_mock: Mocked `CatalogueCategoryRepo` instance.
     :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param system_repository_mock: Mocked `SystemRepo` instance.
+    :param usage_status_repository_mock: Mocked `UsageStatusRepo` instance.
+    :param rule_repository_mock: Mocked `RuleRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
     :return: `ItemService` instance with the mocked dependencies.
     """
     return ItemService(
@@ -186,7 +239,13 @@ def fixture_item_service(
         catalogue_item_repository_mock,
         system_repository_mock,
         usage_status_repository_mock,
+        rule_repository_mock,
+        setting_repository_mock,
     )
+
+
+# pylint:enable=too-many-arguments
+# pylint:enable=too-many-positional-arguments
 
 
 @pytest.fixture(name="manufacturer_service")
@@ -200,15 +259,31 @@ def fixture_manufacturer_service(manufacturer_repository_mock: Mock) -> Manufact
     return ManufacturerService(manufacturer_repository_mock)
 
 
-@pytest.fixture(name="system_service")
-def fixture_system_service(system_repository_mock: Mock) -> SystemService:
+@pytest.fixture(name="system_type_service")
+def fixture_system_type_service(system_type_repository_mock: Mock) -> SystemTypeService:
     """
-    Fixture to create a `SystemService` instance with a mocked `SystemRepo` dependency.
+    Fixture to create a `SystemTypeService` instance with a mocked `SystemTypeRepo` dependency.
+
+    :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
+    :return: `SystemTypeService` instance with the mocked dependency.
+    """
+    return SystemTypeService(system_type_repository_mock)
+
+
+@pytest.fixture(name="system_service")
+def fixture_system_service(
+    system_repository_mock: Mock, system_type_repository_mock: Mock, setting_repository_mock: Mock
+) -> SystemService:
+    """
+    Fixture to create a `SystemService` instance with mocked `SystemRepo`, `SystemTypeRepo` and `SettingRepo`
+    dependencies.
 
     :param system_repository_mock: Mocked `SystemRepo` instance.
-    :return: `SystemService` instance with the mocked dependency.
+    :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
+    :return: `SystemService` instance with the mocked dependencies.
     """
-    return SystemService(system_repository_mock)
+    return SystemService(system_repository_mock, system_type_repository_mock, setting_repository_mock)
 
 
 @pytest.fixture(name="unit_service")
@@ -231,6 +306,39 @@ def fixture_usage_status_service(usage_status_repository_mock: Mock) -> UsageSta
     :return: `UsageStatusService` instance with the mocked dependency.
     """
     return UsageStatusService(usage_status_repository_mock)
+
+
+@pytest.fixture(name="setting_service")
+def fixture_setting_service(
+    setting_repository_mock: Mock,
+    system_type_repository_mock: Mock,
+    catalogue_item_repository_mock: Mock,
+    item_repository_mock: Mock,
+) -> SettingService:
+    """
+    Fixture to create a `SettingService` instance with mocked `SettingRepo`, `SystemTypeRepo`, `CatalogueItemRepo` and
+    `ItemRepo` dependencies.
+
+    :param setting_repository_mock: Mocked `SettingRepo` instance.
+    :param system_type_repository_mock: Mocked `SystemTypeRepo` instance.
+    :param catalogue_item_repository_mock: Mocked `CatalogueItemRepo` instance.
+    :param item_repository_mock: Mocked `ItemRepo` instance.
+    :return: `SettingService` instance with the mocked dependencies.
+    """
+    return SettingService(
+        setting_repository_mock, system_type_repository_mock, catalogue_item_repository_mock, item_repository_mock
+    )
+
+
+@pytest.fixture(name="rule_service")
+def fixture_rule_service(rule_repository_mock: Mock) -> RuleService:
+    """
+    Fixture to create a `RuleService` instance with a mocked `RuleRepo` dependency.
+
+    :param rule_repository_mock: Mocked `RuleRepo` instance.
+    :return: `RuleService` instance with the mocked dependencies.
+    """
+    return RuleService(rule_repository_mock)
 
 
 class ServiceTestHelpers:
@@ -260,7 +368,15 @@ class ServiceTestHelpers:
     def mock_get(
         repository_mock: Mock,
         repo_obj: Union[
-            CatalogueCategoryOut, CatalogueItemOut, ItemOut, ManufacturerOut, SystemOut, UnitOut, UsageStatusOut, None
+            CatalogueCategoryOut,
+            CatalogueItemOut,
+            ItemOut,
+            ManufacturerOut,
+            SystemTypeOut,
+            SystemOut,
+            UnitOut,
+            UsageStatusOut,
+            None,
         ],
     ) -> None:
         """

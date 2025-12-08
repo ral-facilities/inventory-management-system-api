@@ -68,8 +68,6 @@ class CatalogueCategoryRepoDSL:
         self.catalogue_categories_collection = database_mock.catalogue_categories
         self.catalogue_items_collection = database_mock.catalogue_items
 
-        self.mock_session = MagicMock()
-
         with patch("inventory_management_system_api.repositories.catalogue_category.utils") as mock_utils:
             self.mock_utils = mock_utils
             yield
@@ -119,7 +117,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         self,
         catalogue_category_in_data: dict,
         parent_catalogue_category_in_data: Optional[dict] = None,
-        duplicate_catalogue_category_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
     ) -> None:
         """Mocks database methods appropriately to test the `create` repo method.
 
@@ -128,8 +126,8 @@ class CreateDSL(CatalogueCategoryRepoDSL):
                                            times required).
         :param parent_catalogue_category_in_data: Either `None` or a dictionary containing the parent catalogue category
                                                   data as would be required for a `CatalogueCategoryIn` database model.
-        :param duplicate_catalogue_category_in_data: Either `None` or a dictionary containing catalogue category data
-                                                     for a duplicate catalogue category.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `insert_one`
+            method.
         """
 
         inserted_catalogue_category_id = CustomObjectId(str(ObjectId()))
@@ -156,18 +154,13 @@ class CreateDSL(CatalogueCategoryRepoDSL):
                     else None
                 ),
             )
-        RepositoryTestHelpers.mock_find_one(
+        # Mock `insert one` to return object for inserted catalogue category
+        RepositoryTestHelpers.mock_insert_one(
             self.catalogue_categories_collection,
-            (
-                {
-                    **CatalogueCategoryIn(**duplicate_catalogue_category_in_data).model_dump(by_alias=True),
-                    "_id": ObjectId(),
-                }
-                if duplicate_catalogue_category_in_data
-                else None
-            ),
+            inserted_catalogue_category_id,
+            raise_duplicate_key_error=raise_duplicate_key_error,
         )
-        RepositoryTestHelpers.mock_insert_one(self.catalogue_categories_collection, inserted_catalogue_category_id)
+        # Mock `find_one` to return the inserted catalogue category document
         RepositoryTestHelpers.mock_find_one(
             self.catalogue_categories_collection,
             {**self._catalogue_category_in.model_dump(by_alias=True), "_id": inserted_catalogue_category_id},
@@ -205,17 +198,7 @@ class CreateDSL(CatalogueCategoryRepoDSL):
             expected_find_one_calls.append(
                 call({"_id": self._catalogue_category_in.parent_id}, session=self.mock_session)
             )
-        # Also need checks for duplicate and the final newly inserted catalogue category get
-        expected_find_one_calls.append(
-            call(
-                {
-                    "parent_id": self._catalogue_category_in.parent_id,
-                    "code": self._catalogue_category_in.code,
-                    "_id": {"$ne": None},
-                },
-                session=self.mock_session,
-            )
-        )
+        # This is the check for the newly catalogue category get
         expected_find_one_calls.append(
             call(
                 {"_id": CustomObjectId(self._expected_catalogue_category_out.id)},
@@ -229,15 +212,20 @@ class CreateDSL(CatalogueCategoryRepoDSL):
         )
         assert self._created_catalogue_category == self._expected_catalogue_category_out
 
-    def check_create_failed_with_exception(self, message: str) -> None:
+    def check_create_failed_with_exception(self, message: str, expecting_insert_one_called: bool = False) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param expecting_insert_one_called: Whether the `insert_one` method is expected to be called or not.
         """
-
-        self.catalogue_categories_collection.insert_one.assert_not_called()
+        if expecting_insert_one_called:
+            self.catalogue_categories_collection.insert_one.assert_called_once_with(
+                self._catalogue_category_in.model_dump(by_alias=True), session=None
+            )
+        else:
+            self.catalogue_categories_collection.insert_one.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -286,7 +274,7 @@ class TestCreate(CreateDSL):
             parent_catalogue_category_in_data=None,
         )
         self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(f"No parent catalogue category found with ID: {parent_id}")
+        self.check_create_failed_with_exception(f"No parent catalogue category found with ID '{parent_id}'")
 
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating a catalogue category with a duplicate catalogue category being found in the parent
@@ -295,11 +283,11 @@ class TestCreate(CreateDSL):
         self.mock_create(
             {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": str(ObjectId())},
             parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            raise_duplicate_key_error=True,
         )
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception(
-            "Duplicate catalogue category found within the parent catalogue category"
+            "Duplicate catalogue category found within the parent catalogue category", expecting_insert_one_called=True
         )
 
 
@@ -519,7 +507,9 @@ class ListDSL(CatalogueCategoryRepoDSL):
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
 
-        self.mock_utils.list_query.assert_called_once_with(self._parent_id_filter, "catalogue categories")
+        self.mock_utils.list_query.assert_called_once_with(
+            {"parent_id": self._parent_id_filter}, "catalogue categories"
+        )
         self.catalogue_categories_collection.find.assert_called_once_with(
             self.mock_utils.list_query.return_value, session=self.mock_session
         )
@@ -604,7 +594,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         new_catalogue_category_in_data: dict,
         stored_catalogue_category_in_data: Optional[dict],
         new_parent_catalogue_category_in_data: Optional[dict] = None,
-        duplicate_catalogue_category_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
         valid_move_result: bool = True,
     ) -> None:
         """
@@ -620,9 +610,8 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         :param new_parent_catalogue_category_in_data: Either `None` or a dictionary containing the new parent catalogue
                                                       category data as would be required for a `CatalogueCategoryIn`
                                                       database model.
-        :param duplicate_catalogue_category_in_data: Either `None` or a dictionary containing the data for a duplicate
-                                                     catalogue category as would be required for a `CatalogueCategoryIn`
-                                                     database model.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `update_one`
+            method.
         :param valid_move_result: Whether to mock in a valid or invalid move result i.e. when `True` will simulate
                                   moving the catalogue category to one of its own children.
         """
@@ -658,25 +647,9 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
             self._stored_catalogue_category_out.model_dump() if self._stored_catalogue_category_out else None,
         )
 
-        # Duplicate check
-        self._moving_catalogue_category = stored_catalogue_category_in_data is not None and (
-            new_catalogue_category_in_data["parent_id"] != stored_catalogue_category_in_data["parent_id"]
+        RepositoryTestHelpers.mock_update_one(
+            self.catalogue_categories_collection, raise_duplicate_key_error=raise_duplicate_key_error
         )
-        if (
-            self._stored_catalogue_category_out
-            and (self._catalogue_category_in.name != self._stored_catalogue_category_out.name)
-        ) or self._moving_catalogue_category:
-            RepositoryTestHelpers.mock_find_one(
-                self.catalogue_categories_collection,
-                (
-                    {
-                        **CatalogueCategoryIn(**duplicate_catalogue_category_in_data).model_dump(by_alias=True),
-                        "_id": ObjectId(),
-                    }
-                    if duplicate_catalogue_category_in_data
-                    else None
-                ),
-            )
 
         # Final catalogue category after update
         self._expected_catalogue_category_out = CatalogueCategoryOut(
@@ -686,6 +659,9 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
             self.catalogue_categories_collection, self._expected_catalogue_category_out.model_dump()
         )
 
+        self._moving_catalogue_category = stored_catalogue_category_in_data is not None and (
+            new_catalogue_category_in_data["parent_id"] != stored_catalogue_category_in_data["parent_id"]
+        )
         if self._moving_catalogue_category:
             mock_aggregation_pipeline = MagicMock()
             self.mock_utils.create_move_check_aggregation_pipeline.return_value = mock_aggregation_pipeline
@@ -717,7 +693,7 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
         :param catalogue_category_id: ID of the catalogue category to be updated.
         :param error_type: Expected exception to be raised.
         """
-
+        self._updated_catalogue_category_id = catalogue_category_id
         with pytest.raises(error_type) as exc:
             self.catalogue_category_repository.update(catalogue_category_id, self._catalogue_category_in)
         self._update_exception = exc
@@ -741,22 +717,6 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
                 session=self.mock_session,
             )
         )
-
-        # Duplicate check (which only runs if moving or changing the name)
-        if (
-            self._stored_catalogue_category_out
-            and (self._catalogue_category_in.name != self._stored_catalogue_category_out.name)
-        ) or self._moving_catalogue_category:
-            expected_find_one_calls.append(
-                call(
-                    {
-                        "parent_id": self._catalogue_category_in.parent_id,
-                        "code": self._catalogue_category_in.code,
-                        "_id": {"$ne": CustomObjectId(self._updated_catalogue_category_id)},
-                    },
-                    session=self.mock_session,
-                )
-            )
         self.catalogue_categories_collection.find_one.assert_has_calls(expected_find_one_calls)
 
         if self._moving_catalogue_category:
@@ -781,15 +741,26 @@ class UpdateDSL(CatalogueCategoryRepoDSL):
 
         assert self._updated_catalogue_category == self._expected_catalogue_category_out
 
-    def check_update_failed_with_exception(self, message: str) -> None:
+    def check_update_failed_with_exception(self, message: str, expecting_update_one_called: bool = False) -> None:
         """
         Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param expecting_update_one_called: Whether the `update_one` method is expected to be called or not.
         """
-
-        self.catalogue_categories_collection.update_one.assert_not_called()
+        if expecting_update_one_called:
+            self.catalogue_categories_collection.update_one.assert_called_once_with(
+                {
+                    "_id": CustomObjectId(self._updated_catalogue_category_id),
+                },
+                {
+                    "$set": self._catalogue_category_in.model_dump(by_alias=True),
+                },
+                session=None,
+            )
+        else:
+            self.catalogue_categories_collection.update_one.assert_not_called()
 
         assert str(self._update_exception.value) == message
 
@@ -836,7 +807,6 @@ class TestUpdate(UpdateDSL):
             },
             stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-            duplicate_catalogue_category_in_data=None,
             valid_move_result=True,
         )
         self.call_update(catalogue_category_id)
@@ -855,7 +825,6 @@ class TestUpdate(UpdateDSL):
             },
             stored_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
             new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-            duplicate_catalogue_category_in_data=None,
             valid_move_result=False,
         )
         self.call_update_expecting_error(catalogue_category_id, InvalidActionError)
@@ -874,7 +843,7 @@ class TestUpdate(UpdateDSL):
             new_parent_catalogue_category_in_data=None,
         )
         self.call_update_expecting_error(catalogue_category_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No parent catalogue category found with ID: {new_parent_id}")
+        self.check_update_failed_with_exception(f"No parent catalogue category found with ID '{new_parent_id}'")
 
     def test_update_name_to_duplicate_within_parent(self):
         """Test updating a catalogue category's name to one that is a duplicate within the parent catalogue category."""
@@ -886,14 +855,11 @@ class TestUpdate(UpdateDSL):
             catalogue_category_id,
             {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "name": duplicate_name},
             CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-            duplicate_catalogue_category_in_data={
-                **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-                "name": duplicate_name,
-            },
+            raise_duplicate_key_error=True,
         )
         self.call_update_expecting_error(catalogue_category_id, DuplicateRecordError)
         self.check_update_failed_with_exception(
-            "Duplicate catalogue category found within the parent catalogue category"
+            "Duplicate catalogue category found within the parent catalogue category", expecting_update_one_called=True
         )
 
     def test_update_parent_id_with_duplicate_within_parent(self):
@@ -908,11 +874,11 @@ class TestUpdate(UpdateDSL):
             {**CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A, "parent_id": new_parent_id},
             CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             new_parent_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-            duplicate_catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            raise_duplicate_key_error=True,
         )
         self.call_update_expecting_error(catalogue_category_id, DuplicateRecordError)
         self.check_update_failed_with_exception(
-            "Duplicate catalogue category found within the parent catalogue category"
+            "Duplicate catalogue category found within the parent catalogue category", expecting_update_one_called=True
         )
 
     def test_update_with_invalid_id(self):
@@ -1018,7 +984,7 @@ class TestDelete(DeleteDSL):
         )
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be deleted"
         )
 
     def test_delete_with_child_catalogue_item(self):
@@ -1029,7 +995,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=1, child_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_delete_expecting_error(catalogue_category_id, ChildElementsExistError)
         self.check_delete_failed_with_exception(
-            f"Catalogue category with ID {catalogue_category_id} has child elements and cannot be deleted"
+            f"Catalogue category with ID '{catalogue_category_id}' has child elements and cannot be deleted"
         )
 
     def test_delete_non_existent_id(self):
@@ -1040,7 +1006,7 @@ class TestDelete(DeleteDSL):
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(catalogue_category_id, MissingRecordError)
         self.check_delete_failed_with_exception(
-            f"No catalogue category found with ID: {catalogue_category_id}", expecting_delete_one_called=True
+            f"No catalogue category found with ID '{catalogue_category_id}'", expecting_delete_one_called=True
         )
 
     def test_delete_invalid_id(self):

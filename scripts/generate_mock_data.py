@@ -29,9 +29,20 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 
+system_types = [
+    {"id": "685e5dce6e347e39d459c5ea", "value": "Storage", "description": "Storage system type"},
+    {"id": "685e5dce6e347e39d459c5eb", "value": "Operational", "description": "Operational system type"},
+    {"id": "685e5dce6e347e39d459c5ec", "value": "Scrapped", "description": "Scrapped system type"},
+]
+
 units = ["mm", "degrees", "nm", "ns", "Hz", "ppm", "J/cm²", "J", "W"]
 
-usage_statuses = ["New", "Used", "In Use", "Scrapped"]
+usage_status_ids = [
+    "6874cf5dee233ec6441860a0",
+    "6874cf5dee233ec6441860a1",
+    "6874cf5dee233ec6441860a2",
+    "6874cf5dee233ec6441860a3",
+]
 
 manufacturer_names = [
     "Tech Innovators Inc.",
@@ -408,7 +419,7 @@ def generate_random_item(catalogue_item_id: str):
         "system_id": fake.random.choice(generated_system_ids),
         "purchase_order_number": fake.isbn10(),
         "is_defective": fake.random.randint(0, 100) > 90,
-        "usage_status_id": fake.random.choice(list(generated_usage_statuses.keys())),
+        "usage_status_id": fake.random.choice(usage_status_ids),
         "warranty_end_date": optional_item_field(lambda: fake.date_time(tzinfo=timezone.utc).isoformat()),
         "asset_number": optional_item_field(fake.isbn10),
         "serial_number": optional_item_field(fake.isbn10),
@@ -418,16 +429,17 @@ def generate_random_item(catalogue_item_id: str):
     }
 
 
-def generate_random_system(parent_id: str):
-    """Generates randomised data for a system given the parent ID."""
+def generate_random_system(parent_id: str, type_id: str):
+    """Generates randomised data for a system given the parent and type IDs."""
 
     return {
+        "parent_id": parent_id,
         "name": fake.random.choice(system_names),
+        "type_id": type_id,
+        "description": fake.paragraph(nb_sentences=2),
         "location": fake.address(),
         "owner": fake.name(),
         "importance": fake.random.choice(["low", "medium", "high"]),
-        "description": fake.paragraph(nb_sentences=2),
-        "parent_id": parent_id,
     }
 
 
@@ -511,15 +523,6 @@ def populate_units():
         generated_units[unit["value"]] = unit
 
 
-def populate_usage_statuses():
-    """Randomly populates usage statuses."""
-
-    for _, usage_status in enumerate(usage_statuses):
-        usage_status = generate_usage_status(usage_status)
-        usage_status = create_usage_status(usage_status)
-        generated_usage_statuses[usage_status["id"]] = usage_status
-
-
 def populate_random_catalogue_categories(
     available_manufacturers: list[str],
     levels_deep: int = 0,
@@ -574,7 +577,7 @@ def populate_random_items():
                 create_item(item)
 
 
-def populate_random_systems(levels_deep: int = 0, parent_id=None):
+def populate_random_systems(levels_deep: int = 0, parent_id=None, parent_type_id=None):
     """Recursive function that randomly populates systems."""
 
     if levels_deep >= MAX_LEVELS_DEEP:
@@ -583,9 +586,12 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None):
     logger.debug("Populating system with depth %s", levels_deep)
     num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
     for _ in range(0, num_to_generate):
-        system = generate_random_system(parent_id)
+        chosen_parent_type_id = parent_type_id
+        if parent_id is None and chosen_parent_type_id is None:
+            chosen_parent_type_id = fake.random.choice(system_types)["id"]
+        system = generate_random_system(parent_id, chosen_parent_type_id)
         system_id = create_system(system)["id"]
-        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
+        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id, parent_type_id=chosen_parent_type_id)
         generated_system_ids.append(system_id)
 
 
@@ -594,8 +600,6 @@ def generate_mock_data():
 
     logger.info("Populating units...")
     populate_units()
-    logger.info("Populating usage statuses...")
-    populate_usage_statuses()
     logger.info("Populating manufacturers...")
     manufacturer_ids = populate_random_manufacturers()
     logger.info("Populating catalogue categories...")

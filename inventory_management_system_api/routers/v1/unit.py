@@ -3,11 +3,17 @@ Module for providing an API router which defines routes for managing Units using
 service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, status
 
+from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
     InvalidObjectIdError,
@@ -30,10 +36,13 @@ UnitServiceDep = Annotated[UnitService, Depends(UnitService)]
     response_description="The created unit",
     status_code=status.HTTP_201_CREATED,
 )
-def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep) -> UnitSchema:
-    # pylint: disable=missing-function-docstring
+def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: AuthorisedDep) -> UnitSchema:
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
         unit = unit_service.create(unit)
@@ -44,6 +53,14 @@ def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep) -> UnitSchem
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
+@router.get(path="", summary="Get Units", response_description="List of Units")
+def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
+    logger.info("Getting Units")
+
+    units = unit_service.list()
+    return [UnitSchema(**unit.model_dump()) for unit in units]
+
+
 @router.get(
     path="/{unit_id}",
     summary="Get a unit by ID",
@@ -52,8 +69,7 @@ def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep) -> UnitSchem
 def get_unit(
     unit_id: Annotated[str, Path(description="The ID of the unit to be retrieved")], unit_service: UnitServiceDep
 ) -> UnitSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting unit with ID %s", unit_id)
+    logger.info("Getting unit with ID '%s'", unit_id)
     message = "Unit not found"
     try:
         unit = unit_service.get(unit_id)
@@ -66,15 +82,6 @@ def get_unit(
     return UnitSchema(**unit.model_dump())
 
 
-@router.get(path="", summary="Get Units", response_description="List of Units")
-def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting Units")
-
-    units = unit_service.list()
-    return [UnitSchema(**unit.model_dump()) for unit in units]
-
-
 @router.delete(
     path="/{unit_id}",
     summary="Delete a unit by its ID",
@@ -82,10 +89,16 @@ def get_units(unit_service: UnitServiceDep) -> list[UnitSchema]:
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_unit(
-    unit_id: Annotated[str, Path(description="ID of the unit to delete")], unit_service: UnitServiceDep
+    unit_id: Annotated[str, Path(description="ID of the unit to delete")],
+    unit_service: UnitServiceDep,
+    authorised: AuthorisedDep,
 ) -> None:
-    # pylint: disable=missing-function-docstring
-    logger.info("Deleting unit with ID: %s", unit_id)
+    logger.info("Deleting unit with ID '%s'", unit_id)
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
+
     try:
         unit_service.delete(unit_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -93,6 +106,6 @@ def delete_unit(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except PartOfCatalogueCategoryError as exc:
-        message = "The specified unit is part of a Catalogue category"
+        message = "The specified unit is part of a catalogue category"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc

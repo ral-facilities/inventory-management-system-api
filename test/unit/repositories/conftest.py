@@ -10,6 +10,7 @@ from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.cursor import Cursor
 from pymongo.database import Database
+from pymongo.errors import DuplicateKeyError
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 
 
@@ -26,9 +27,11 @@ def fixture_database_mock() -> Mock:
     database_mock.items = Mock(Collection)
     database_mock.manufacturers = Mock(Collection)
     database_mock.systems = Mock(Collection)
+    database_mock.system_types = Mock(Collection)
     database_mock.units = Mock(Collection)
     database_mock.usage_statuses = Mock(Collection)
     database_mock.settings = Mock(Collection)
+    database_mock.rules = Mock(Collection)
     return database_mock
 
 
@@ -55,7 +58,7 @@ class RepositoryTestHelpers:
         collection_mock.delete_one.return_value = delete_result_mock
 
     @staticmethod
-    def mock_insert_one(collection_mock: Mock, inserted_id: ObjectId) -> None:
+    def mock_insert_one(collection_mock: Mock, inserted_id: ObjectId, raise_duplicate_key_error: bool = False) -> None:
         """
         Mock the `insert_one` method of the MongoDB database collection mock to return an `InsertOneResult` object. The
         passed `inserted_id` value is returned as the `inserted_id` attribute of the `InsertOneResult` object, enabling
@@ -63,12 +66,17 @@ class RepositoryTestHelpers:
 
         :param collection_mock: Mocked MongoDB database collection instance.
         :param inserted_id: The `ObjectId` value to be assigned to the `inserted_id` attribute of the `InsertOneResult`
-            object
+            object.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `insert_one`
+            method.
         """
-        insert_one_result_mock = Mock(InsertOneResult)
-        insert_one_result_mock.inserted_id = inserted_id
-        insert_one_result_mock.acknowledged = True
-        collection_mock.insert_one.return_value = insert_one_result_mock
+        if raise_duplicate_key_error:
+            collection_mock.insert_one.side_effect = DuplicateKeyError("Mock duplicate key error")
+        else:
+            insert_one_result_mock = Mock(InsertOneResult)
+            insert_one_result_mock.inserted_id = inserted_id
+            insert_one_result_mock.acknowledged = True
+            collection_mock.insert_one.return_value = insert_one_result_mock
 
     @staticmethod
     def mock_find(collection_mock: Mock, documents: List[dict]) -> None:
@@ -98,15 +106,20 @@ class RepositoryTestHelpers:
             collection_mock.find_one.side_effect = documents
 
     @staticmethod
-    def mock_update_one(collection_mock: Mock) -> None:
+    def mock_update_one(collection_mock: Mock, raise_duplicate_key_error: bool = False) -> None:
         """
         Mock the `update_one` method of the MongoDB database collection mock to return an `UpdateResult` object.
 
         :param collection_mock: Mocked MongoDB database collection instance.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo `update_one`
+            method.
         """
-        update_one_result_mock = Mock(UpdateResult)
-        update_one_result_mock.acknowledged = True
-        collection_mock.update_many.return_value = update_one_result_mock
+        if raise_duplicate_key_error:
+            collection_mock.update_one.side_effect = DuplicateKeyError("Mock duplicate key error")
+        else:
+            update_one_result_mock = Mock(UpdateResult)
+            update_one_result_mock.acknowledged = True
+            collection_mock.update_many.return_value = update_one_result_mock
 
     @staticmethod
     def mock_update_many(collection_mock: Mock) -> None:

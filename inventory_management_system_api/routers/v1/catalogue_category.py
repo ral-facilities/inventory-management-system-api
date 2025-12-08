@@ -3,11 +3,17 @@ Module for providing an API router which defines routes for managing catalogue c
 `CatalogueCategoryService` service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     DatabaseIntegrityError,
@@ -43,15 +49,53 @@ CatalogueCategoryPropertyServiceDep = Annotated[
 ]
 
 
+@router.post(
+    path="",
+    summary="Create a new catalogue category",
+    response_description="The created catalogue category",
+    status_code=status.HTTP_201_CREATED,
+)
+def create_catalogue_category(
+    catalogue_category: CatalogueCategoryPostSchema, catalogue_category_service: CatalogueCategoryServiceDep
+) -> CatalogueCategorySchema:
+    logger.info("Creating a new catalogue category")
+    logger.debug("Catalogue category data: %s", catalogue_category)
+    try:
+        catalogue_category = catalogue_category_service.create(catalogue_category)
+        return CatalogueCategorySchema(**catalogue_category.model_dump())
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if (
+            catalogue_category.properties is not None
+            and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.properties)
+        ) or "unit" in str(exc).lower():
+            message = "The specified unit does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+
+        message = "The specified parent catalogue category does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+    except DuplicateRecordError as exc:
+        message = "A catalogue category with the same name already exists within the parent catalogue category"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except LeafCatalogueCategoryError as exc:
+        message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except DuplicateCatalogueCategoryPropertyNameError as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+
+
 @router.get(path="", summary="Get catalogue categories", response_description="List of catalogue categories")
 def get_catalogue_categories(
     catalogue_category_service: CatalogueCategoryServiceDep,
     parent_id: Annotated[Optional[str], Query(description="Filter catalogue categories by parent ID")] = None,
 ) -> List[CatalogueCategorySchema]:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting catalogue categories")
     if parent_id:
-        logger.debug("Parent ID filter: '%s'", parent_id)
+        logger.debug("Parent ID filter '%s'", parent_id)
 
     try:
         catalogue_categories = catalogue_category_service.list(parent_id)
@@ -59,8 +103,8 @@ def get_catalogue_categories(
             CatalogueCategorySchema(**catalogue_category.model_dump()) for catalogue_category in catalogue_categories
         ]
     except InvalidObjectIdError:
-        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
-        # the same as a valid one that doesn't exist i.e. return an empty list
+        # As this endpoint filters, and to hide the database behaviour, we treat any invalid id the same as a valid one
+        # that doesn't exist i.e. return an empty list
         return []
 
 
@@ -73,8 +117,7 @@ def get_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to get")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Getting catalogue category with ID '%s'", catalogue_category_id)
     message = "Catalogue category not found"
     try:
         catalogue_category = catalogue_category_service.get(catalogue_category_id)
@@ -93,8 +136,7 @@ def get_catalogue_category_breadcrumbs(
     ],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> BreadcrumbsGetSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting breadcrumbs for catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Getting breadcrumbs for catalogue category with ID '%s'", catalogue_category_id)
     try:
         return catalogue_category_service.get_breadcrumbs(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -102,52 +144,10 @@ def get_catalogue_category_breadcrumbs(
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DatabaseIntegrityError as exc:
-        message = "Unable to obtain breadcrumbs"
-        logger.exception(message)
+        logger.exception("Unable to obtain breadcrumbs")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
         ) from exc
-
-
-@router.post(
-    path="",
-    summary="Create a new catalogue category",
-    response_description="The created catalogue category",
-    status_code=status.HTTP_201_CREATED,
-)
-def create_catalogue_category(
-    catalogue_category: CatalogueCategoryPostSchema, catalogue_category_service: CatalogueCategoryServiceDep
-) -> CatalogueCategorySchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Creating a new catalogue category")
-    logger.debug("Catalogue category data: %s", catalogue_category)
-    try:
-        catalogue_category = catalogue_category_service.create(catalogue_category)
-        return CatalogueCategorySchema(**catalogue_category.model_dump())
-    except (MissingRecordError, InvalidObjectIdError) as exc:
-        if (
-            catalogue_category.properties is not None
-            and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.properties)
-        ) or "unit" in str(exc).lower():
-            message = "The specified unit does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-
-        message = "The specified parent catalogue category does not exist"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
-    except DuplicateRecordError as exc:
-        message = "A catalogue category with the same name already exists within the parent catalogue category"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except LeafCatalogueCategoryError as exc:
-        message = "Adding a catalogue category to a leaf parent catalogue category is not allowed"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
-    except DuplicateCatalogueCategoryPropertyNameError as exc:
-        logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
 
 @router.patch(
@@ -160,8 +160,7 @@ def partial_update_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to update")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Partially updating catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Partially updating catalogue category with ID '%s'", catalogue_category_id)
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
         updated_catalogue_category = catalogue_category_service.update(catalogue_category_id, catalogue_category)
@@ -174,14 +173,14 @@ def partial_update_catalogue_category(
         ):
             message = "The specified parent catalogue category does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         if (
             catalogue_category.properties is not None
             and any(str(prop.unit_id) in str(exc) for prop in catalogue_category.properties)
         ) or "unit" in str(exc).lower():
             message = "The specified unit does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "Catalogue category not found"
         logger.exception(message)
@@ -202,11 +201,11 @@ def partial_update_catalogue_category(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
 
 @router.delete(
@@ -219,8 +218,7 @@ def delete_catalogue_category(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to delete")],
     catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> None:
-    # pylint: disable=missing-function-docstring
-    logger.info("Deleting catalogue category with ID: %s", catalogue_category_id)
+    logger.info("Deleting catalogue category with ID '%s'", catalogue_category_id)
     try:
         catalogue_category_service.delete(catalogue_category_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -244,7 +242,6 @@ def create_property(
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to add a property to")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new property at the catalogue category level")
     logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
@@ -262,17 +259,17 @@ def create_property(
         ):
             message = "The specified unit does not exist"
             logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
         message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)
@@ -292,11 +289,10 @@ def partial_update_property(
     property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
 ) -> CatalogueCategoryPropertySchema:
-    # pylint: disable=missing-function-docstring
     logger.info(
-        "Partially updating catalogue category with ID %s's property with ID: %s",
-        catalogue_category_id,
+        "Partially updating property with ID '%s' within the catalogue category with ID '%s'",
         property_id,
+        catalogue_category_id,
     )
     logger.debug("Catalogue category property data: %s", catalogue_category_property)
 
@@ -313,18 +309,17 @@ def partial_update_property(
             message = "Catalogue category not found"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
-    # pylint:disable=duplicate-code
     except DuplicateCatalogueCategoryPropertyNameError as exc:
         logger.exception(str(exc))
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except ValueError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except WriteConflictError as exc:
         message = str(exc)
         logger.exception(message)

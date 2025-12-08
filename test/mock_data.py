@@ -9,15 +9,22 @@ _POST_DATA - Is for a `PostSchema` schema.
 _IN_DATA - Is for an `In` model.
 _GET_DATA - Is for an entity schema - Used in assertions for e2e tests. May have IDs missing where they are possible
             to be known e.g. `manufacturer_id` in a catalogue item.
+_DOCUMENT_DATA - Is for insertion in a database collection directly.
 _DATA - Is none of the above - likely to be used in post requests as they are likely identical, only with some ids
         missing so that they can be added later e.g. for pairing up units that aren't known before hand.
+_REQUIRED_VALUES_ONLY - Is used to indicate the values given are only the required ones, except ids that are not
+                        predefined and will be added later when they are known in tests.
 """
 
 from unittest.mock import ANY
 
 from bson import ObjectId
 
+from inventory_management_system_api.models.rule import RuleOut
+from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
+
+# pylint: disable=too-many-lines
 
 # ---------------------------- GENERAL -----------------------------
 
@@ -26,30 +33,47 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 # ---------------------------- AUTHENTICATION -----------------------------
 
-VALID_ACCESS_TOKEN = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjoyNTM0MDIzMDA3OTl9.bagU2Wix8wKzydVU_L3Z"
-    "ZuuMAxGxV4OTuZq_kS2Fuwm839_8UZOkICnPTkkpvsm1je0AWJaIXLGgwEa5zUjpG6lTrMMmzR9Zi63F0NXpJqQqoOZpTBMYBaggsXqFkdsv-yAKUZ"
-    "8MfjCEyk3UZ4PXZmEcUZcLhKcXZr4kYJPjio2e5WOGpdjK6q7s-iHGs9DQFT_IoCnw9CkyOKwYdgpB35hIGHkNjiwVSHpyKbFQvzJmIv5XCTSRYqq0"
-    "1fldh-QYuZqZeuaFidKbLRH610o2-1IfPMUr-yPtj5PZ-AaX-XTLkuMqdVMCk0_jeW9Os2BPtyUDkpcu1fvW3_S6_dK3nQ"
+VALID_ACCESS_TOKEN_ADMIN_ROLE = (
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZSI6ImFkbWluIiwidXNlcklzQWRtaW4iOmZhbHNlL"
+    "CJleHAiOjI1MzQwMjMwMDc5OX0.FrsDUqnKskhIvmIjtYVgC9im-cSu1dFlwVQ4cFJf2BgCaSh82XuEngOLkbtQuuXWC1wiipsGP4Y-usq7Q_R68vw"
+    "XqGYusHo4fXw6AcBcwplgXZ3n60wsTegpBxKZY5foOre0Ng1GpK-7rrx9H-YQUCHSBOtzWOw_eLzu-eNTwMnMnnpGM9L91_hj0dAKiP90Z3Hp0Ueln"
+    "Yydc0sf6msOs7RKI2Sij-13vFSL8LToIbfUTZYwKZHbBPD5glce_gsW6_W5W-iGemt7yyhfyf7IxKWq3Q02HCiSkI0uCcBal44sabPrsQ4EaPRwyUn"
+    "H0X25MC00IAPRHh-1KqabV7IA9w"
+)
+
+VALID_ACCESS_TOKEN_DEFAULT_ROLE = (
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZSI6ImRlZmF1bHQiLCJ1c2VySXNBZG1pbiI6ZmFsc"
+    "2UsImV4cCI6MjUzNDAyMzAwNzk5fQ.KRtAMZnaB-CQTDV4PGLgQ3yI-9dzMIy0g3SBaThszSjH-ZaoRTuGuJPXlskhuVMpJ8WEbsim3pNU9gSUD3Vu"
+    "EbFekKSubxeZSqLUQSGmJjLppsPayGgX_SVXyZZYJnnLyTCR2nlC-MGX33PUfjIGWkn3f9kjPUNxN0A6aoVBAhTyxTEw-jBTNRYzrzLTzI_nZ0bN1b"
+    "x3XcTO6Y19__IwGLFUlBn4wDPj-tL-pJro0qedcCWVRhLoHsyVVGTJJk7AZGda2BKJap2y4Jc7SwcOZ5Uyg0fgbl_SvC9BcLIKEE-c41UiG-cjm0_1"
+    "Jjb6mZU0FOmHXSuNpSo05E8_Vc6Bzw"
 )
 
 VALID_ACCESS_TOKEN_MISSING_USERNAME = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjI1MzQwMjMwMDc5OX0.h4Hv_sq4-ika1rpuRx7k3pp0cF_BZ65WVSbIHS7oh9SjPpGHt"
-    "GhVHU1IJXzFtyA9TH-68JpAZ24Dm6bXbH6VJKoc7RCbmJXm44ufN32ga7jDqXH340oKvi_wdhEHaCf2HXjzsHHD7_D6XIcxU71v2W5_j8Vuwpr3SdX"
-    "6ea_yLIaCDWynN6FomPtUepQAOg3c7DdKohbJD8WhKIDV8UKuLtFdRBfN4HEK5nNs0JroROPhcYM9L_JIQZpdI0c83fDFuXQC-cAygzrSnGJ6O4DyS"
-    "cNL3VBNSmNTBtqYOs1szvkpvF9rICPgbEEJnbS6g5kmGld3eioeuDJIxeQglSbxog"
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJ1c2VySXNBZG1pbiI6ZmFsc2UsImV4cCI6MjUzNDAyMzAwNzk5fQ.pu"
+    "-p95bQBeR3fivomE88LE3uF79oulixlgXpHFEQf8FZ7AWQzyJK-Kz4D-tih1rx45FEFO_xuEoyrQuO9ig3rihrj_1cuUPs5jyIYZJCo2X2MnKtsjBi"
+    "AsCOREQi-wcZx2fe3ysEOYQjpdx-1je3aBgPDqK2TiA1vfGz8GlTSgTjS9E3iN7DOHr2PVPvwa5lqmdUGgQxXRIPK3kfP6xLYPnznRJVY14TezFIpx"
+    "d6zRZmjHS7OWAS02Gv5rKUE8CorPfAhdyrCORbCUUFCPlkuNkAwh0g8Iam36sb-ctBteH5_AV6epZv4_tASglbujagcXVFO3z8MmxBu5x3ImnRjQ"
 )
 
 EXPIRED_ACCESS_TOKEN = (
-    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwiZXhwIjotNjIxMzU1OTY4MDB9.G_cfC8PNYE5yERyyQNRk"
-    "9mTmDusU_rEPgm7feo2lWQF6QMNnf8PUN-61FfMNRVE0QDSvAmIMMNEOa8ma0JHZARafgnYJfn1_FSJSoRxC740GpG8EFSWrpM-dQXnoD263V9FlK-"
-    "On6IbhF-4Rh9MdoxNyZk2Lj7NvCzJ7gbgbgYM5-sJXLxB-I5LfMfuYM3fx2cRixZFA153l46tFzcMVBrAiBxl_LdyxTIOPfHF0UGlaW2UtFi02gyBU"
-    "4E4wTOqPc4t_CSi1oBSbY7h9O63i8IU99YsOCdvZ7AD3ePxyM1xJR7CFHycg9Z_IDouYnJmXpTpbFMMl7SjME3cVMfMrAQ"
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InVzZXJuYW1lIiwicm9sZSI6ImFkbWluIiwidXNlcklzQWRtaW4iOmZhbHNlL"
+    "CJleHAiOjk0NjY4NDc5OX0.EQnEYrwwwjuudk_mBdAe_V4dts-nTSU2WEoxyahVfsmCWOAAsyNbRvctGPLBaXIzMU73dgtKMpIiE9etlWKhP68GWRG"
+    "21x155-Qm8i_sJu4r6AOcjwPQRV1fPxf5s37L9V-nj1cWgc_HpBJWSG_DnJtZ_T4AQULYDmZRgoGmRl6UsvavKFYFMHwjSRAcSWlT2yn2YjGZ2vDhS"
+    "FSEsdj77XM7JC3OiNb6nLJz4pCYlHsNDxp0XRrKrgx7sYlyDgMIJpfK9OrCsf8r02qdVct2SOYaGP7VXYs17xo5JRSGACq9UUPdbz1Vv-q-7ra2GJX"
+    "Yex1UzoTFh5LzOf-UMtLSKA"
 )
 
-INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN + "1"
+INVALID_ACCESS_TOKEN = VALID_ACCESS_TOKEN_DEFAULT_ROLE + "1"
 
 # ---------------------------- USAGE STATUSES -----------------------------
+
+PREDEFINED_USAGE_STATUS_IDS = [
+    ObjectId("6874cf5dee233ec6441860a0"),  # New
+    ObjectId("6874cf5dee233ec6441860a1"),  # In Use
+    ObjectId("6874cf5dee233ec6441860a2"),  # Used
+    ObjectId("6874cf5dee233ec6441860a3"),  # Scrapped
+]
 
 # New
 USAGE_STATUS_POST_DATA_NEW = {"value": "New"}
@@ -59,21 +83,30 @@ USAGE_STATUS_IN_DATA_NEW = {
     "code": "new",
 }
 
-USAGE_STATUS_OUT_DATA_NEW = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(), _id=str(ObjectId())
-).model_dump()
+USAGE_STATUS_OUT_DATA_NEW = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[0],
+}
 
 USAGE_STATUS_GET_DATA_NEW = {
-    **USAGE_STATUS_POST_DATA_NEW,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_NEW).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "new",
-    "id": ANY,
 }
 
 # In Use
 USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
 
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
+
+USAGE_STATUS_OUT_DATA_IN_USE = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[1],
+}
+
+USAGE_STATUS_GET_DATA_IN_USE = {
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_IN_USE).model_dump(),
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+}
 
 # Used
 USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
@@ -83,14 +116,54 @@ USAGE_STATUS_IN_DATA_USED = {
     "code": "used",
 }
 
-USAGE_STATUS_OUT_DATA_USED = UsageStatusOut(
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(), _id=str(ObjectId())
-).model_dump()
+USAGE_STATUS_OUT_DATA_USED = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[2],
+}
 
 USAGE_STATUS_GET_DATA_USED = {
-    **USAGE_STATUS_POST_DATA_USED,
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_USED).model_dump(),
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    "code": "used",
+}
+
+# Scrapped
+USAGE_STATUS_POST_DATA_SCRAPPED = {"value": "Scrapped"}
+
+USAGE_STATUS_IN_DATA_SCRAPPED = {
+    **USAGE_STATUS_POST_DATA_SCRAPPED,
+    "code": "scrapped",
+}
+
+USAGE_STATUS_OUT_DATA_SCRAPPED = {
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(),
+    "_id": PREDEFINED_USAGE_STATUS_IDS[3],
+}
+
+USAGE_STATUS_GET_DATA_SCRAPPED = {
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_SCRAPPED).model_dump(),
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+}
+
+USAGE_STATUSES_OUT_DATA = [
+    USAGE_STATUS_OUT_DATA_NEW,
+    USAGE_STATUS_OUT_DATA_IN_USE,
+    USAGE_STATUS_OUT_DATA_USED,
+    USAGE_STATUS_OUT_DATA_SCRAPPED,
+]
+
+# Custom
+USAGE_STATUS_POST_DATA_CUSTOM = {"value": "Custom"}
+
+USAGE_STATUS_IN_DATA_CUSTOM = {
+    **USAGE_STATUS_POST_DATA_CUSTOM,
+    "code": "custom",
+}
+
+USAGE_STATUS_OUT_DATA_CUSTOM = {**UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), "_id": ObjectId()}
+
+USAGE_STATUS_GET_DATA_CUSTOM = {
+    **UsageStatusOut(**USAGE_STATUS_OUT_DATA_CUSTOM).model_dump(),
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
 }
 
@@ -622,24 +695,25 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
 BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
 
 
-# Required values only
+# New, Required values only
 
-ITEM_DATA_REQUIRED_VALUES_ONLY = {
+ITEM_DATA_NEW_REQUIRED_VALUES_ONLY = {
     "is_defective": False,
-    "usage_status": "In Use",
+    "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
 }
 
-ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status_id": str(ObjectId()),
+    "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
 }
 
-ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
+    "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
     "purchase_order_number": None,
     "warranty_end_date": None,
     "asset_number": None,
@@ -649,10 +723,10 @@ ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "properties": [],
 }
 
-# All values, no properties
+# New, All values, no properties
 
-ITEM_DATA_ALL_VALUES_NO_PROPERTIES = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "purchase_order_number": "1234-123",
     "warranty_end_date": "2015-11-15T23:59:59Z",
     "asset_number": "1234-123456",
@@ -661,33 +735,33 @@ ITEM_DATA_ALL_VALUES_NO_PROPERTIES = {
     "notes": "Test notes",
 }
 
-ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES = {
-    **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
     "catalogue_item_id": str(ObjectId()),
     "system_id": str(ObjectId()),
-    "usage_status_id": str(ObjectId()),
-    "usage_status": "In Use",
+    "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
 }
 
-ITEM_GET_DATA_ALL_VALUES_NO_PROPERTIES = {
-    **ITEM_DATA_ALL_VALUES_NO_PROPERTIES,
+ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
+    **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
+    "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
     "properties": [],
 }
 
 
-# Only mandatory properties
+# New, Only mandatory properties
 
-ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE],
 }
 
-# All properties
+# New, All properties
 
-ITEM_DATA_WITH_ALL_PROPERTIES = {
-    **ITEM_DATA_REQUIRED_VALUES_ONLY,
+ITEM_DATA_NEW_WITH_ALL_PROPERTIES = {
+    **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     "properties": [
         PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
         PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
@@ -695,8 +769,9 @@ ITEM_DATA_WITH_ALL_PROPERTIES = {
     ],
 }
 
-ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
-    **ITEM_GET_DATA_REQUIRED_VALUES_ONLY,
+ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES = {
+    **ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY,
+    "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
     "properties": [
         PROPERTY_GET_DATA_BOOLEAN_MANDATORY_FALSE,
         PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_1,
@@ -767,71 +842,284 @@ MANUFACTURER_IN_DATA_B = {
     "code": "manufacturer-b",
 }
 
+# ---------------------------- SYSTEM TYPES -----------------------------
+
+SYSTEM_TYPES_OUT_DATA = [
+    {"_id": ObjectId("685e5dce6e347e39d459c5ea"), "value": "Storage", "description": "Storage system type"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5eb"), "value": "Operational", "description": "Operational system type"},
+    {"_id": ObjectId("685e5dce6e347e39d459c5ec"), "value": "Scrapped", "description": "Scrapped system type"},
+]
+
+SYSTEM_TYPES_GET_DATA = [
+    {
+        "id": str(system_type_out["_id"]),
+        "value": system_type_out["value"],
+        "description": system_type_out["description"],
+    }
+    for system_type_out in SYSTEM_TYPES_OUT_DATA
+]
+
+# Storage
+SYSTEM_TYPE_OUT_DATA_STORAGE = SYSTEM_TYPES_OUT_DATA[0]
+SYSTEM_TYPE_GET_DATA_STORAGE = SYSTEM_TYPES_GET_DATA[0]
+
+# Operational
+SYSTEM_TYPE_OUT_DATA_OPERATIONAL = SYSTEM_TYPES_OUT_DATA[1]
+SYSTEM_TYPE_GET_DATA_OPERATIONAL = SYSTEM_TYPES_GET_DATA[1]
+
+# Scrapped
+SYSTEM_TYPE_OUT_DATA_SCRAPPED = SYSTEM_TYPES_OUT_DATA[2]
+SYSTEM_TYPE_GET_DATA_SCRAPPED = SYSTEM_TYPES_GET_DATA[2]
+
 # --------------------------------- SYSTEMS ---------------------------------
 
-# No parent, Required values only
+# Storage, No parent, Required values only
 
-SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY = {
-    "name": "System Test Required Values Only",
+SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
+    "name": "Storage System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "importance": "low",
 }
 
-SYSTEM_GET_DATA_REQUIRED_VALUES_ONLY = {
-    **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
+    **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "description": None,
     "location": None,
     "owner": None,
-    "code": "system-test-required-values-only",
+    "code": "storage-system-required-values-only",
 }
 
-# No parent, All values
+# Storage, No parent, All values
 
-SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT = {
-    **SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
-    "name": "System Test All Values",
+SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
+    **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
     "parent_id": None,
+    "name": "Storage System All Values",
     "description": "Test description",
     "location": "Test location",
     "owner": "Test owner",
 }
 
-SYSTEM_GET_DATA_ALL_VALUES_NO_PARENT = {
-    **SYSTEM_POST_DATA_ALL_VALUES_NO_PARENT,
+SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
+    **SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
-    "code": "system-test-all-values",
+    "code": "storage-system-all-values",
 }
 
-# No parent
+# Storage, No parent
 
-SYSTEM_POST_DATA_NO_PARENT_A = {
+SYSTEM_POST_DATA_STORAGE_NO_PARENT_A = {
     "parent_id": None,
     "name": "Test name A",
+    "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "description": "Test description A",
     "location": "Test location A",
     "owner": "Test owner A",
     "importance": "low",
 }
 
-SYSTEM_IN_DATA_NO_PARENT_A = {
-    **SYSTEM_POST_DATA_NO_PARENT_A,
+SYSTEM_IN_DATA_STORAGE_NO_PARENT_A = {
+    **SYSTEM_POST_DATA_STORAGE_NO_PARENT_A,
     "code": "test-name-a",
 }
 
-SYSTEM_POST_DATA_NO_PARENT_B = {
+SYSTEM_POST_DATA_STORAGE_NO_PARENT_B = {
     "parent_id": None,
     "name": "Test name B",
+    "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "description": "Test description B",
     "location": "Test location B",
     "owner": "Test owner B",
     "importance": "low",
 }
 
-SYSTEM_IN_DATA_NO_PARENT_B = {
-    **SYSTEM_POST_DATA_NO_PARENT_B,
+SYSTEM_IN_DATA_STORAGE_NO_PARENT_B = {
+    **SYSTEM_POST_DATA_STORAGE_NO_PARENT_B,
     "code": "test-name-b",
 }
+
+# Operational, No parent, Required values only
+
+SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY = {
+    "name": "Operational System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+    "importance": "low",
+}
+
+# Scrapped, No parent, Required values only
+
+SYSTEM_POST_DATA_SCRAPPED_REQUIRED_VALUES_ONLY = {
+    "name": "Scrapped System Required Values Only",
+    "type_id": SYSTEM_TYPE_GET_DATA_SCRAPPED["id"],
+    "importance": "low",
+}
+
+# --------------------------------- SETTINGS ---------------------------------
+
+# Spares definition, Storage
+SETTING_SPARES_DEFINITION_IN_DATA_STORAGE = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_GET_DATA_STORAGE["id"]],
+}
+
+SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "system_types": [SYSTEM_TYPE_OUT_DATA_STORAGE],
+}
+
+
+SETTING_SPARES_DEFINITION_GET_DATA_STORAGE = {
+    "system_types": [SYSTEM_TYPE_GET_DATA_STORAGE],
+}
+
+# Spares definition, Storage or Operational
+SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
+    "_id": SparesDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_GET_DATA_STORAGE["id"], SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
+}
+
+# ---------------------------------- RULES ----------------------------------
+
+PREDEFINED_RULE_IDS = [
+    ObjectId("68e65e07670c31567d4c9c82"),  # Storage creation
+    ObjectId("68e65e07670c31567d4c9c83"),  # Storage deletion
+    ObjectId("68e65e07670c31567d4c9c84"),  # Storage to Operational
+    ObjectId("68e65e07670c31567d4c9c85"),  # Operational to Storage
+    ObjectId("68e65e07670c31567d4c9c86"),  # Operational to Scrapped
+]
+
+# Creation in storage
+RULE_OUT_DATA_STORAGE_CREATION = {
+    "_id": PREDEFINED_RULE_IDS[0],
+    "src_system_type": None,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_NEW,
+}
+
+RULE_GET_DATA_STORAGE_CREATION = {
+    **RuleOut(**RULE_OUT_DATA_STORAGE_CREATION).model_dump(),
+    "dst_usage_status": USAGE_STATUS_GET_DATA_NEW,
+}
+
+RULE_DOCUMENT_DATA_STORAGE_CREATION = {
+    "_id": PREDEFINED_RULE_IDS[0],
+    "src_system_type_id": None,
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
+}
+
+# Deletion from storage
+RULE_OUT_DATA_STORAGE_DELETION = {
+    "_id": PREDEFINED_RULE_IDS[1],
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_system_type": None,
+    "dst_usage_status": None,
+}
+
+RULE_GET_DATA_STORAGE_DELETION = {
+    **RuleOut(**RULE_OUT_DATA_STORAGE_DELETION).model_dump(),
+}
+
+RULE_DOCUMENT_DATA_STORAGE_DELETION = {
+    "_id": PREDEFINED_RULE_IDS[1],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_system_type_id": None,
+    "dst_usage_status_id": None,
+}
+
+# Storage to operational
+RULE_OUT_DATA_STORAGE_TO_OPERATIONAL = {
+    "_id": PREDEFINED_RULE_IDS[2],
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_IN_USE,
+}
+
+RULE_GET_DATA_STORAGE_TO_OPERATIONAL = {
+    **RuleOut(**RULE_OUT_DATA_STORAGE_TO_OPERATIONAL).model_dump(),
+    "dst_usage_status": USAGE_STATUS_GET_DATA_IN_USE,
+}
+
+RULE_DOCUMENT_DATA_STORAGE_TO_OPERATIONAL = {
+    "_id": PREDEFINED_RULE_IDS[2],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_IN_USE["_id"],
+}
+
+# Operational to storage
+RULE_OUT_DATA_OPERATIONAL_TO_STORAGE = {
+    "_id": PREDEFINED_RULE_IDS[3],
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_STORAGE,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_USED,
+}
+
+RULE_GET_DATA_OPERATIONAL_TO_STORAGE = {
+    **RuleOut(**RULE_OUT_DATA_OPERATIONAL_TO_STORAGE).model_dump(),
+    "dst_usage_status": USAGE_STATUS_GET_DATA_USED,
+}
+
+RULE_DOCUMENT_DATA_OPERATIONAL_TO_STORAGE = {
+    "_id": PREDEFINED_RULE_IDS[3],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_STORAGE["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_USED["_id"],
+}
+
+# Operational to scrapped
+RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "_id": PREDEFINED_RULE_IDS[4],
+    "src_system_type": SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
+    "dst_system_type": SYSTEM_TYPE_OUT_DATA_SCRAPPED,
+    "dst_usage_status": USAGE_STATUS_OUT_DATA_SCRAPPED,
+}
+
+RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED = {
+    **RuleOut(**RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED).model_dump(),
+    "dst_usage_status": USAGE_STATUS_GET_DATA_SCRAPPED,
+}
+
+RULE_DOCUMENT_DATA_OPERATIONAL_TO_SCRAPPED = {
+    "_id": PREDEFINED_RULE_IDS[4],
+    "src_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_SCRAPPED["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_SCRAPPED["_id"],
+}
+
+# Custom rule for creation in operational
+RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM = {
+    "_id": ObjectId("68e65e07670c31567d4c9c87"),
+    "src_system_type_id": None,
+    "dst_system_type_id": SYSTEM_TYPE_OUT_DATA_OPERATIONAL["_id"],
+    "dst_usage_status_id": USAGE_STATUS_OUT_DATA_NEW["_id"],
+}
+
+RULES_OUT_DATA = [
+    RULE_OUT_DATA_STORAGE_CREATION,
+    RULE_OUT_DATA_STORAGE_DELETION,
+    RULE_OUT_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_OUT_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_OUT_DATA_OPERATIONAL_TO_SCRAPPED,
+]
+
+RULES_GET_DATA = [
+    RULE_GET_DATA_STORAGE_CREATION,
+    RULE_GET_DATA_STORAGE_DELETION,
+    RULE_GET_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_GET_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_GET_DATA_OPERATIONAL_TO_SCRAPPED,
+]
+
+RULES_DOCUMENT_DATA = [
+    RULE_DOCUMENT_DATA_STORAGE_CREATION,
+    RULE_DOCUMENT_DATA_STORAGE_DELETION,
+    RULE_DOCUMENT_DATA_STORAGE_TO_OPERATIONAL,
+    RULE_DOCUMENT_DATA_OPERATIONAL_TO_STORAGE,
+    RULE_DOCUMENT_DATA_OPERATIONAL_TO_SCRAPPED,
+]

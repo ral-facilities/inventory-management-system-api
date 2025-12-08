@@ -5,13 +5,17 @@ End-to-End tests for the usage status router.
 from test.mock_data import (
     CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    ITEM_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
-    SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY,
+    SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
+    USAGE_STATUS_GET_DATA_CUSTOM,
+    USAGE_STATUS_GET_DATA_IN_USE,
     USAGE_STATUS_GET_DATA_NEW,
+    USAGE_STATUS_GET_DATA_SCRAPPED,
     USAGE_STATUS_GET_DATA_USED,
+    USAGE_STATUS_POST_DATA_CUSTOM,
     USAGE_STATUS_POST_DATA_NEW,
-    USAGE_STATUS_POST_DATA_USED,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Optional
 
@@ -25,7 +29,6 @@ class CreateDSL:
     """Base class for create tests."""
 
     test_client: TestClient
-    usage_status_value_id_dict: dict[str, str]
 
     _post_response_usage_status: Response
 
@@ -34,38 +37,27 @@ class CreateDSL:
         """Setup fixtures"""
 
         self.test_client = test_client
-        self.usage_status_value_id_dict = {}
 
-    def add_usage_status_value_and_id(self, usage_status_value: str, usage_status_id: str) -> None:
-        """
-        Stores a usage status value and ID inside the `usage_status_value_id_dict` for tests that need to have a
-        non-existent or invalid usage status ID.
-
-        :param usage_status_value: Value of the usage status.
-        :param usage_status_id: ID of the usage status.
-        """
-
-        self.usage_status_value_id_dict[usage_status_value] = usage_status_id
-
-    def post_usage_status(self, usage_status_post_data: dict) -> Optional[str]:
+    def post_usage_status(self, usage_status_post_data: dict, use_admin_token: bool = True) -> Optional[str]:
         """
         Posts a usage status with the given data and returns the ID of the created usage status if successful.
 
-        Also stores any successfully created usage statuses for lookup via `usage_status_value_id_dict` later.
-
         :param usage_status_post_data: Dictionary containing the usage status data as would be required for a
             `UsageStatusPostSchema`.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         :return: ID of the created usage status (or `None` if not successful).
         """
-        self._post_response_usage_status = self.test_client.post("/v1/usage-statuses", json=usage_status_post_data)
-        created_id = (
+        self._post_response_usage_status = self.test_client.post(
+            "/v1/usage-statuses",
+            json=usage_status_post_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
+        return (
             self._post_response_usage_status.json()["id"]
             if self._post_response_usage_status.status_code == 201
             else None
         )
-        if created_id:
-            self.add_usage_status_value_and_id(usage_status_post_data["value"], created_id)
-        return created_id
 
     def check_post_usage_status_success(self, expected_usage_status_get_data: dict) -> None:
         """
@@ -93,16 +85,21 @@ class TestCreate(CreateDSL):
 
     def test_create_usage_status(self):
         """Test creating a usage status."""
-
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
+        self.check_post_usage_status_success(USAGE_STATUS_GET_DATA_CUSTOM)
 
     def test_create_usage_status_with_duplicate_value(self):
         """Test creating a usage status with a duplicate value."""
-
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
         self.check_post_usage_status_failed_with_detail(409, "A usage status with the same value already exists")
+
+    def test_create_usage_status_with_unauthorised_role_returns_forbidden(self):
+        """
+        Test creating a usage status with as an unauthorised user
+        """
+
+        self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM, use_admin_token=False)
+        self.check_post_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
 
 
 class GetDSL(CreateDSL):
@@ -144,8 +141,7 @@ class TestGet(GetDSL):
 
     def test_get(self):
         """Test getting a usage status."""
-        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.get_usage_status(usage_status_id)
+        self.get_usage_status(USAGE_STATUS_GET_DATA_NEW["id"])
         self.check_get_usage_status_success(USAGE_STATUS_GET_DATA_NEW)
 
     def test_get_with_non_existent_id(self):
@@ -182,15 +178,15 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test getting a list of all usage statuses."""
-        self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-        self.post_usage_status(USAGE_STATUS_POST_DATA_USED)
         self.get_usage_statuses()
-        self.check_get_usage_statuses_success([USAGE_STATUS_GET_DATA_NEW, USAGE_STATUS_GET_DATA_USED])
-
-    def test_list_no_usage_statuses(self):
-        """Test getting a list of all usage statuses when there are no usage statuses."""
-        self.get_usage_statuses()
-        self.check_get_usage_statuses_success([])
+        self.check_get_usage_statuses_success(
+            [
+                USAGE_STATUS_GET_DATA_NEW,
+                USAGE_STATUS_GET_DATA_IN_USE,
+                USAGE_STATUS_GET_DATA_USED,
+                USAGE_STATUS_GET_DATA_SCRAPPED,
+            ]
+        )
 
 
 class DeleteDSL(ListDSL):
@@ -198,13 +194,16 @@ class DeleteDSL(ListDSL):
 
     _delete_response_usage_status: Response
 
-    def delete_usage_status(self, usage_status_id: str) -> None:
+    def delete_usage_status(self, usage_status_id: str, use_admin_token: bool = True) -> None:
         """
         Delete a usage status with the given ID.
 
         :param usage_status_id: ID of the usage status to be deleted.
         """
-        self._delete_response_usage_status = self.test_client.delete(f"/v1/usage-statuses/{usage_status_id}")
+        self._delete_response_usage_status = self.test_client.delete(
+            f"/v1/usage-statuses/{usage_status_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
 
     def check_delete_usage_status_success(self) -> None:
         """Checks that a prior call to `delete_usage_status` gave a successful response."""
@@ -226,23 +225,30 @@ class TestDelete(DeleteDSL):
 
     def test_delete(self):
         """Test deleting a usage status."""
-        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
+        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
         self.delete_usage_status(usage_status_id)
         self.check_delete_usage_status_success()
 
         self.get_usage_status(usage_status_id)
         self.check_get_usage_status_failed_with_detail(404, "Usage status not found")
 
+    def test_delete_usage_status_with_unauthorised_role_returns_forbidden(self):
+        """
+        Test deleting a usage status with as an unauthorised user
+        """
+        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_CUSTOM)
+
+        self.delete_usage_status(usage_status_id, use_admin_token=False)
+        self.check_delete_usage_status_failed_with_detail(403, "Not authorised to perform this operation")
+
     def test_delete_when_part_of_item(self):
         """Test deleting a usage status when it is part of an item."""
-        usage_status_id = self.post_usage_status(USAGE_STATUS_POST_DATA_NEW)
-
         response = self.test_client.post(
             "/v1/catalogue-categories", json=CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES
         )
         catalogue_category = response.json()
 
-        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_REQUIRED_VALUES_ONLY)
+        response = self.test_client.post("/v1/systems", json=SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         system_id = response.json()["id"]
 
         response = self.test_client.post("/v1/manufacturers", json=MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -257,15 +263,20 @@ class TestDelete(DeleteDSL):
         catalogue_item = response.json()
 
         item_post = {
-            **ITEM_DATA_REQUIRED_VALUES_ONLY,
+            **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
             "catalogue_item_id": catalogue_item["id"],
             "system_id": system_id,
-            "usage_status_id": usage_status_id,
+            "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
         }
         self.test_client.post("/v1/items", json=item_post)
 
-        self.delete_usage_status(usage_status_id)
-        self.check_delete_usage_status_failed_with_detail(409, "The specified usage status is part of an Item")
+        self.delete_usage_status(USAGE_STATUS_GET_DATA_NEW["id"])
+        self.check_delete_usage_status_failed_with_detail(409, "The specified usage status is part of an item")
+
+    def test_delete_when_part_of_rule(self):
+        """Test deleting a usage status when it is part of a rule."""
+        self.delete_usage_status(str(USAGE_STATUS_GET_DATA_NEW["id"]))
+        self.check_delete_usage_status_failed_with_detail(409, "The specified usage status is part of a rule")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent usage status."""

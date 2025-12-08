@@ -42,9 +42,6 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :return: The created item.
         """
-        if item.system_id and not self._systems_collection.find_one({"_id": item.system_id}, session=session):
-            raise MissingRecordError(f"No system found with ID: {item.system_id}")
-
         logger.info("Inserting the new item into the database")
         result = self._items_collection.insert_one(item.model_dump(by_alias=True), session=session)
 
@@ -60,7 +57,7 @@ class ItemRepo:
         :return: The retrieved item, or `None` if not found.
         """
         item_id = CustomObjectId(item_id)
-        logger.info("Retrieving item with ID %s from the database", item_id)
+        logger.info("Retrieving item with ID '%s' from the database", item_id)
         item = self._items_collection.find_one({"_id": item_id}, session=session)
         if item:
             return ItemOut(**item)
@@ -91,9 +88,9 @@ class ItemRepo:
         else:
             logger.info("%s matching the provided system ID and/or catalogue item ID filter", message)
             if system_id:
-                logger.debug("Provided system ID filter: %s", system_id)
+                logger.debug("Provided system ID filter '%s'", system_id)
             if catalogue_item_id:
-                logger.debug("Provided catalogue item ID filter: %s", catalogue_item_id)
+                logger.debug("Provided catalogue item ID filter '%s'", catalogue_item_id)
 
         items = self._items_collection.find(query, session=session)
         return [ItemOut(**item) for item in items]
@@ -108,7 +105,7 @@ class ItemRepo:
         :return: The updated item.
         """
         item_id = CustomObjectId(item_id)
-        logger.info("Updating item with ID: %s in the database", item_id)
+        logger.info("Updating item with ID '%s' in the database", item_id)
         self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
         item = self.get(str(item_id), session=session)
         return item
@@ -122,10 +119,10 @@ class ItemRepo:
         :raises MissingRecordError: If the item doesn't exist
         """
         item_id = CustomObjectId(item_id)
-        logger.info("Deleting item with ID: %s from the database", item_id)
+        logger.info("Deleting item with ID '%s' from the database", item_id)
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No item found with ID: {str(item_id)}")
+            raise MissingRecordError(f"No item found with ID '{item_id}'")
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
@@ -167,7 +164,7 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         """
 
-        logger.info("Updating all properties with ID: %s inside items in the database", property_id)
+        logger.info("Updating all properties with ID '%s' inside items in the database", property_id)
 
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
@@ -182,3 +179,39 @@ class ItemRepo:
         )
 
     # pylint:enable=duplicate-code
+
+    def count_in_catalogue_item_with_system_type_one_of(
+        self,
+        catalogue_item_id: ObjectId,
+        system_type_ids: List[ObjectId],
+        session: Optional[ClientSession] = None,
+    ) -> int:
+        """
+        Counts the number of items within a catalogue item that are also in systems with one of the given system type
+        IDs.
+
+        :param catalogue_item_id: ID of the catalogue item for which items should be counted.
+        :param system_type_ids: List of system type IDs which should be included in the count.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: Number of items counted.
+        """
+        result = self._items_collection.aggregate(
+            [
+                # Obtain a list of items with the same catalogue item ID
+                {"$match": {"catalogue_item_id": catalogue_item_id}},
+                # Obtain the system the item is in (will be stored as a list but will only be one)
+                {"$lookup": {"from": "systems", "localField": "system_id", "foreignField": "_id", "as": "system"}},
+                # Can unwind so the `system` list becomes just a single field instead of a list, but as we can only
+                # have one system there is no need here (The following line will just match on any of the (one) systems)
+                # {"$unwind": "$system"},
+                # Obtain a list of only those matching the given system types
+                {"$match": {"system.type_id": {"$in": system_type_ids}}},
+                # Obtain the number of matching documents
+                {"$count": "matching_items"},
+            ],
+            session=session,
+        )
+        result = list(result)
+        if len(result) > 0:
+            return result[0]["matching_items"]
+        return 0

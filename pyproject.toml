@@ -2,8 +2,8 @@
 name = "inventory-management-system-api"
 description = "Python microservice providing an API for the Inventory Management System."
 readme = "README.md"
-requires-python = ">=3.12"
-version = "2.0.0"
+requires-python = ">=3.13"
+version = "3.0.0"
 
 dependencies = [
     "cryptography",
@@ -18,30 +18,40 @@ dependencies = [
 "Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
 
 [project.scripts]
-"ims-migrate" = "inventory_management_system_api.migrations.script:main"
+"ims" = "inventory_management_system_api.cli.main:main"
 
 [project.optional-dependencies]
 code-analysis = [
-    "black==25.1.0",
-    "pylint==3.3.7",
+    "black==25.9.0",
+    "pylint==3.3.9",
     "inventory-management-system-api[test]"
 ]
 
 test = [
-    "pytest==8.3.5",
-    "pytest-asyncio==0.26.0",
-    "pytest-cov==6.1.1",
-    "pytest-env==1.1.5"
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
+    "pytest-cov==7.0.0",
+    "pytest-env==1.2.0"
 ]
 
 scripts = [
-    "faker==37.1.0"
+    "faker==37.11.0"
 ]
 
 dev = [
     "inventory-management-system-api[code-analysis]",
     "inventory-management-system-api[test]",
     "inventory-management-system-api[scripts]"
+]
+
+[tool.coverage.run]
+omit = [
+    # Exclude test code from coverage measurement
+    "test/*",
+    # Exclude migration scripts from coverage measurement
+    "inventory_management_system_api/migrations/scripts/*",
+    # Exclude routers from coverage measurement as they are tested in the e2e tests
+    "inventory_management_system_api/routers/v1/*"
 ]
 
 [tool.setuptools.packages.find]

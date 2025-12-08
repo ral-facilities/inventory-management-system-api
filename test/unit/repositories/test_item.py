@@ -3,10 +3,9 @@ Unit tests for the `ItemRepo` repository.
 """
 
 from test.mock_data import (
-    ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES,
-    ITEM_IN_DATA_REQUIRED_VALUES_ONLY,
+    ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+    ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY,
     PROPERTY_DATA_STRING_MANDATORY_TEXT,
-    SYSTEM_IN_DATA_NO_PARENT_A,
 )
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
@@ -19,7 +18,6 @@ from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from inventory_management_system_api.models.catalogue_item import PropertyIn
 from inventory_management_system_api.models.item import ItemIn, ItemOut
-from inventory_management_system_api.models.system import SystemIn
 from inventory_management_system_api.repositories.item import ItemRepo
 
 
@@ -42,8 +40,6 @@ class ItemRepoDSL:
         self.items_collection = database_mock.items
         self.systems_collection = database_mock.systems
 
-        self.mock_session = MagicMock()
-
 
 class CreateDSL(ItemRepoDSL):
     """Base class for `create` tests."""
@@ -53,17 +49,11 @@ class CreateDSL(ItemRepoDSL):
     _created_item: ItemOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(
-        self,
-        item_in_data: dict,
-        system_in_data: Optional[dict] = None,
-    ) -> None:
+    def mock_create(self, item_in_data: dict) -> None:
         """Mocks database methods appropriately to test the `create` repo method.
 
         :param item_in_data: Dictionary containing the item data as would be required for a `ItemIn` database model
                              (i.e. no ID or created and modified times required).
-        :param system_in_data: Either `None` or a dictionary system data as would be required for a `SystemIn` database
-                               model.
         """
 
         inserted_item_id = CustomObjectId(str(ObjectId()))
@@ -72,18 +62,6 @@ class CreateDSL(ItemRepoDSL):
         self._item_in = ItemIn(**item_in_data)
 
         self._expected_item_out = ItemOut(**self._item_in.model_dump(by_alias=True), id=inserted_item_id)
-
-        RepositoryTestHelpers.mock_find_one(
-            self.systems_collection,
-            (
-                {
-                    **SystemIn(**system_in_data).model_dump(),
-                    "_id": ObjectId(),
-                }
-                if system_in_data
-                else None
-            ),
-        )
 
         RepositoryTestHelpers.mock_insert_one(self.items_collection, inserted_item_id)
         RepositoryTestHelpers.mock_find_one(
@@ -96,24 +74,10 @@ class CreateDSL(ItemRepoDSL):
 
         self._created_item = self.item_repository.create(self._item_in, session=self.mock_session)
 
-    def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
-        """
-        Calls the `ItemRepo` `create` method with the appropriate data from a prior call to `mock_create` while
-        expecting an error to be raised.
-
-        :param error_type: Expected exception to be raised.
-        """
-
-        with pytest.raises(error_type) as exc:
-            self.item_repository.create(self._item_in)
-        self._create_exception = exc
-
     def check_create_success(self):
         """Checks that a prior call to `call_create` worked as expected."""
 
         item_in_data = self._item_in.model_dump(by_alias=True)
-
-        self.systems_collection.find_one.assert_called_with({"_id": self._item_in.system_id}, session=self.mock_session)
 
         self.items_collection.insert_one.assert_called_once_with(item_in_data, session=self.mock_session)
         self.items_collection.find_one.assert_called_once_with(
@@ -122,18 +86,6 @@ class CreateDSL(ItemRepoDSL):
 
         assert self._created_item == self._expected_item_out
 
-    def check_create_failed_with_exception(self, message: str) -> None:
-        """
-        Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
-        with the correct message.
-
-        :param message: Expected message of the raised exception.
-        """
-
-        self.items_collection.insert_one.assert_not_called()
-
-        assert str(self._create_exception.value) == message
-
 
 class TestCreate(CreateDSL):
     """Tests for creating an item."""
@@ -141,18 +93,9 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an item."""
 
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY, system_in_data=SYSTEM_IN_DATA_NO_PARENT_A)
+        self.mock_create(ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_create()
         self.check_create_success()
-
-    def test_create_with_non_existent_system_id(self):
-        """Test creating an item with a non-existent system ID."""
-
-        self.mock_create(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
-        self.call_create_expecting_error(MissingRecordError)
-        self.check_create_failed_with_exception(
-            f"No system found with ID: {ITEM_IN_DATA_REQUIRED_VALUES_ONLY["system_id"]}"
-        )
 
 
 class GetDSL(ItemRepoDSL):
@@ -237,7 +180,7 @@ class TestGet(GetDSL):
 
         item_id = str(ObjectId())
 
-        self.mock_get(item_id, ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_get(item_id, ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_get(item_id)
         self.check_get_success()
 
@@ -317,21 +260,21 @@ class TestList(ListDSL):
     def test_list(self):
         """Test listing all items."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
+        self.mock_list([ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=None)
         self.check_list_success()
 
     def test_list_with_system_id_filter(self):
         """Test listing all items with a given `system_id`."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
+        self.mock_list([ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=str(ObjectId()), catalogue_item_id=None)
         self.check_list_success()
 
     def test_list_with_catalogue_category_id_filter(self):
         """Test listing all items with a given `catalogue_category_id`."""
 
-        self.mock_list([ITEM_IN_DATA_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_ALL_VALUES_NO_PROPERTIES])
+        self.mock_list([ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
         self.call_list(system_id=None, catalogue_item_id=str(ObjectId()))
         self.check_list_success()
 
@@ -439,7 +382,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = str(ObjectId())
 
-        self.mock_update(item_id, ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_update(item_id, ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_update(item_id)
         self.check_update_success()
 
@@ -448,7 +391,7 @@ class TestUpdate(UpdateDSL):
 
         item_id = "invalid-id"
 
-        self.set_update_data(ITEM_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.set_update_data(ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
         self.call_update_expecting_error(item_id, InvalidObjectIdError)
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -537,7 +480,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(deleted_count=0)
         self.call_delete_expecting_error(item_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No item found with ID: {item_id}", expecting_delete_one_called=True)
+        self.check_delete_failed_with_exception(f"No item found with ID '{item_id}'", expecting_delete_one_called=True)
 
     def test_delete_invalid_id(self):
         """Test deleting an item with an invalid ID."""
@@ -642,3 +585,72 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
 
         self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
         self.check_update_names_of_all_properties_with_id()
+
+
+class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
+    """Base class for `count_in_catalogue_item_with_system_type_one_of` tests."""
+
+    _catalogue_item_id: ObjectId
+    _system_type_ids: list[ObjectId]
+    _expected_count: Optional[int]
+    _obtained_count: int
+
+    def mock_count_in_catalogue_item_with_system_type_one_of(self, count: Optional[int]):
+        """
+        Mocks database methods appropriately to test the `count_in_catalogue_item_with_system_type_one_of` repo
+        method.
+
+        :param count: Either `None` (if there are no results from the aggregate query) or the count as should be
+                      returned from the function.
+        """
+
+        self._expected_count = 0 if count is None else count
+        self.items_collection.aggregate.return_value = [] if count is None else [{"matching_items": count}]
+
+    def call_count_in_catalogue_item_with_system_type_one_of(
+        self, catalogue_item_id: ObjectId, system_type_ids: list[ObjectId]
+    ) -> None:
+        """Calls the `ItemRepo` `count_in_catalogue_item_with_system_type_one_of` method.
+
+        :param catalogue_item_id: ID of the catalogue item for which items should be counted.
+        :param system_type_ids: List of system type IDs which should be included in the count.
+        """
+
+        self._catalogue_item_id = catalogue_item_id
+        self._system_type_ids = system_type_ids
+        self._obtained_count = self.item_repository.count_in_catalogue_item_with_system_type_one_of(
+            catalogue_item_id, system_type_ids, session=self.mock_session
+        )
+
+    def check_count_in_catalogue_item_with_system_type_one_of(self) -> None:
+        """Checks that a prior call to `count_in_catalogue_item_with_system_type_one_of` worked as expected."""
+
+        self.items_collection.aggregate.assert_called_once_with(
+            [
+                # Obtain a list of items with the same catalogue item ID
+                {"$match": {"catalogue_item_id": self._catalogue_item_id}},
+                {"$lookup": {"from": "systems", "localField": "system_id", "foreignField": "_id", "as": "system"}},
+                {"$match": {"system.type_id": {"$in": self._system_type_ids}}},
+                {"$count": "matching_items"},
+            ],
+            session=self.mock_session,
+        )
+        assert self._obtained_count == self._expected_count
+
+
+class TestCountInCatalogueItemWithSystemTypeOneOf(CountInCatalogueItemWithSystemTypeOneOfDSL):
+    """Tests for `count_in_catalogue_item_with_system_type_one_of`."""
+
+    def test_count_in_catalogue_item_with_system_type_one_of(self):
+        """Test `count_in_catalogue_item_with_system_type_one_of`."""
+
+        self.mock_count_in_catalogue_item_with_system_type_one_of(42)
+        self.call_count_in_catalogue_item_with_system_type_one_of(ObjectId(), [ObjectId(), ObjectId()])
+        self.check_count_in_catalogue_item_with_system_type_one_of()
+
+    def test_count_in_catalogue_item_with_system_type_one_of_when_no_result(self):
+        """Test `count_in_catalogue_item_with_system_type_one_of` when there is no result."""
+
+        self.mock_count_in_catalogue_item_with_system_type_one_of(None)
+        self.call_count_in_catalogue_item_with_system_type_one_of(ObjectId(), [ObjectId(), ObjectId()])
+        self.check_count_in_catalogue_item_with_system_type_one_of()

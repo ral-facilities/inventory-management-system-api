@@ -3,6 +3,11 @@ Module for providing an API router which defines routes for managing manufacture
 service.
 """
 
+# We don't define docstrings in router methods as they would end up in the openapi/swagger docs. We also expect
+# some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
+# pylint: disable=missing-function-docstring
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Annotated, List
 
@@ -37,7 +42,6 @@ ManufacturerServiceDep = Annotated[ManufacturerService, Depends(ManufacturerServ
 def create_manufacturer(
     manufacturer: ManufacturerPostSchema, manufacturer_service: ManufacturerServiceDep
 ) -> ManufacturerSchema:
-    # pylint: disable=missing-function-docstring
     logger.info("Creating a new manufacturer")
     logger.debug("Manufacturer data is %s", manufacturer)
     try:
@@ -55,7 +59,6 @@ def create_manufacturer(
     response_description="List of manufacturers",
 )
 def get_manufacturers(manufacturer_service: ManufacturerServiceDep) -> List[ManufacturerSchema]:
-    # pylint: disable=missing-function-docstring
     logger.info("Getting manufacturers")
     manufacturers = manufacturer_service.list()
     return [ManufacturerSchema(**manufacturer.model_dump()) for manufacturer in manufacturers]
@@ -70,8 +73,7 @@ def get_manufacturer(
     manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer to be retrieved")],
     manufacturer_service: ManufacturerServiceDep,
 ) -> ManufacturerSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting manufacturer with ID: %s", manufacturer_id)
+    logger.info("Getting manufacturer with ID '%s'", manufacturer_id)
     message = "Manufacturer not found"
     try:
         manufacturer = manufacturer_service.get(manufacturer_id)
@@ -93,8 +95,7 @@ def partial_update_manufacturer(
     manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer that is to be updated")],
     manufacturer_service: ManufacturerServiceDep,
 ) -> ManufacturerSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Partially updating manufacturer with ID: %s", manufacturer_id)
+    logger.info("Partially updating manufacturer with ID '%s'", manufacturer_id)
     try:
         updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
         return ManufacturerSchema(**updated_manufacturer.model_dump())
@@ -118,8 +119,7 @@ def delete_manufacturer(
     manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer that is to be deleted")],
     manufacturer_service: ManufacturerServiceDep,
 ) -> None:
-    # pylint: disable=missing-function-docstring
-    logger.info("Deleting manufacturer with ID: %s", manufacturer_id)
+    logger.info("Deleting manufacturer with ID '%s'", manufacturer_id)
     try:
         manufacturer_service.delete(manufacturer_id)
     except (MissingRecordError, InvalidObjectIdError) as exc:
