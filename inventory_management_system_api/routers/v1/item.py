@@ -191,7 +191,7 @@ def delete_item(
         logger.exception("Unable to delete attachments and/or images")
 
         if exc.args[0] == "Invalid token or expired token":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=exc.args[0]) from exc
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=exc.args[0]) from exc
 
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL

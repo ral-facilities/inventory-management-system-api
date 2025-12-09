@@ -43,7 +43,7 @@ from fastapi.routing import APIRoute
         ),
         pytest.param(
             {"Authorization": f"Invalid-Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"},
-            "Invalid authentication credentials",
+            "Not authenticated",
             id="invalid_authorization_scheme",
         ),
     ],
@@ -60,5 +60,5 @@ def test_jwt_bearer_authorization_request(test_client, headers, expected_respons
         for method in ["GET", "DELETE", "PATCH", "POST", "PUT"]:
             if method in api_route.methods:
                 response = test_client.request(method, api_route.path, headers=headers)
-                assert response.status_code == 403
+                assert response.status_code == 401
                 assert response.json()["detail"] == expected_response_message
