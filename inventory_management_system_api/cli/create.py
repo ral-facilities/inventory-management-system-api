@@ -189,6 +189,7 @@ def rule(rule_type: Annotated[RuleType, typer.Argument()]):
     if not cont:
         exit_with_error("Cancelled")
 
-    # Insert the new rule
+    # Insert the new rule with dst_usasge_status_id
+    rule_data["dst_usage_status_id"] = CustomObjectId(dst_usage_status.id) if dst_usage_status else None
     rules_collection.insert_one(rule_data)
     console.print("Success! :party_popper:")
