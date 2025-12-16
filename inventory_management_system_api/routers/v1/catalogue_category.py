@@ -13,6 +13,7 @@ from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
+from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
@@ -288,6 +289,7 @@ def partial_update_property(
     ],
     property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
+    authorised: AuthorisedDep,
 ) -> CatalogueCategoryPropertySchema:
     logger.info(
         "Partially updating property with ID '%s' within the catalogue category with ID '%s'",
@@ -299,12 +301,18 @@ def partial_update_property(
     try:
         return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.update(
-                catalogue_category_id, property_id, catalogue_category_property
+                catalogue_category_id, property_id, catalogue_category_property, authorised
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if property_id in str(exc):
             message = "Catalogue category property not found"
+        elif (
+            catalogue_category_property.unit_id is not None
+            and catalogue_category_property.unit_id in str(exc)
+            or "unit" in str(exc).lower()
+        ):
+            message = "The specified unit does not exist"
         else:
             message = "Catalogue category not found"
         logger.exception(message)

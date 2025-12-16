@@ -151,32 +151,43 @@ class ItemRepo:
         )
 
     # pylint:disable=duplicate-code
-    def update_names_of_all_properties_with_id(
-        self, property_id: str, new_property_name: str, session: Optional[ClientSession] = None
+    def update_names_and_units_of_all_properties_with_id(
+        self,
+        property_id: str,
+        new_property_name: Optional[str],
+        new_property_unit_data: Optional[dict],
+        session: Optional[ClientSession] = None,
     ) -> None:
         """
-        Updates the name of a property in every item it is present in
+        Updates the name and/or the unit of a property in every item it is present in
 
         Also updates the modified_time to reflect the update
 
         :param property_id: The ID of the property to update
         :param new_property_name: The new property name
+        :param new_property_unit_data: The new property unit data
         :param session: PyMongo ClientSession to use for database operations
         """
 
         logger.info("Updating all properties with ID '%s' inside items in the database", property_id)
 
-        self._items_collection.update_many(
-            {"properties._id": CustomObjectId(property_id)},
-            {
-                "$set": {
-                    "properties.$[elem].name": new_property_name,
-                    "modified_time": datetime.now(timezone.utc),
-                }
-            },
-            array_filters=[{"elem._id": CustomObjectId(property_id)}],
-            session=session,
-        )
+        set_body = {}
+        if new_property_name:
+            set_body["properties.$[elem].name"] = new_property_name
+
+        if new_property_unit_data:
+            set_body["properties.$[elem].unit_id"] = new_property_unit_data["unit_id"]
+            set_body["properties.$[elem].unit"] = new_property_unit_data["unit"]
+
+        if set_body:
+            set_body["modified_time"] = datetime.now(timezone.utc)
+
+            self._items_collection.update_many(
+                {"properties._id": CustomObjectId(property_id)},
+                {"$set": set_body},
+                array_filters=[{"elem._id": CustomObjectId(property_id)}],
+                session=session,
+            )
 
     # pylint:enable=duplicate-code
 

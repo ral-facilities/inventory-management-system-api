@@ -36,6 +36,8 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
     PROPERTY_GET_DATA_STRING_MANDATORY_TEXT,
+    UNIT_POST_DATA_MM,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Optional
 
@@ -493,13 +495,15 @@ class UpdateDSL(CreateDSL):
             CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST["allowed_values"],
         )
 
-    def patch_property(self, property_id: str, property_update_data: dict) -> None:
+    def patch_property(self, property_id: str, property_update_data: dict, use_admin_token: bool = False) -> None:
         """
         Updates an property with the given ID.
 
         :param property_id: ID of the property to patch.
         :param property_update_data: Dictionary containing the basic catalogue category property data data as would be
                                      required for a `CatalogueCategoryPropertyPatchSchema`.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
         """
 
         # Ensure the property ID is updated and the old one removed
@@ -510,7 +514,9 @@ class UpdateDSL(CreateDSL):
             self.property_name_id_dict[property_update_data["name"]] = property_id
 
         self._patch_response_property = self.test_client.patch(
-            f"/v1/catalogue-categories/{self.catalogue_category_id}/properties/{property_id}", json=property_update_data
+            f"/v1/catalogue-categories/{self.catalogue_category_id}/properties/{property_id}",
+            json=property_update_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
         )
 
     def check_patch_property_success(self, expected_property_get_data: dict) -> None:
@@ -614,6 +620,64 @@ class TestUpdate(UpdateDSL):
         self.check_patch_property_failed_with_detail(
             422, f"Duplicate property name: {CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']}"
         )
+
+    def test_partial_update_unit(self):
+        """Test updating the unit of a property."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        property_update_data = {"unit_id": self.unit_value_id_dict[UNIT_POST_DATA_MM["value"]]}
+
+        self.patch_property(property_id, property_update_data, use_admin_token=True)
+
+        # The assertions map unit values to IDs, so we need to pretend as if the value was the update body
+        property_update_data_assertion = {"unit": UNIT_POST_DATA_MM["value"]}
+
+        # Must also ensure unit id and unit value are in the the _unit_data_lookup_dict when
+        # catalogue items and items auto add unit data
+        self._unit_data_lookup_dict[property_id] = {
+            "unit_id": property_update_data["unit_id"],
+            "unit": property_update_data_assertion["unit"],
+        }
+
+        self.check_patch_property_success(
+            {**CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY, **property_update_data_assertion}
+        )
+        self.check_catalogue_category_updated(
+            {**CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY, **property_update_data_assertion}
+        )
+        self.check_catalogue_item_updated(
+            {**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE, **property_update_data_assertion}
+        )
+        self.check_item_updated({**PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE, **property_update_data_assertion})
+
+    def test_partial_update_non_existent_unit_id(self):
+        """Test updating the unit of a property to a non existent unit ID"""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+        unit_id = str(ObjectId())
+
+        self.patch_property(property_id, {"unit_id": unit_id}, use_admin_token=True)
+
+        self.check_patch_property_failed_with_detail(404, "The specified unit does not exist")
+
+    def test_partial_update_invalid_unit_id(self):
+        """Test updating the unit of a property to an invalid unit ID"""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.patch_property(property_id, {"unit_id": "invalid"}, use_admin_token=True)
+
+        self.check_patch_property_failed_with_detail(404, "The specified unit does not exist")
+
+    def test_partial_update_unit_not_authorised(self):
+        """Test updating the unit of a property when the user is not authorised"""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.patch_property(property_id, {"unit_id": str(ObjectId())}, use_admin_token=False)
+
+        self.check_patch_property_failed_with_detail(422, "You are not able to change the unit of a property")
 
     def test_update_allowed_values_list_adding_value(self):
         """Test updating the allowed values list of a property by adding an additional value to it."""
