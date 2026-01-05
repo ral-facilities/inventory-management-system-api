@@ -542,71 +542,58 @@ class TestInsertPropertyToAllIn(InsertPropertyToAllInDSL):
         self.check_insert_property_to_all_in_success()
 
 
-class UpdateNamesAndUnitsOfAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
-    """Base class for `update_names_and_units_of_all_properties_with_id` tests"""
+class UpdateManyPropertyFieldsWithIDDSL(InsertPropertyToAllInDSL):
+    """Base class for `update_many_property_fields_with_id` tests"""
 
-    _update_names_and_units_of_all_properties_with_id_property_id: str
-    _update_names_and_units_of_all_properties_with_id_new_property_name: str
-    _update_names_and_units_of_all_properties_new_property_unit_data: dict
+    _update_many_property_fields_with_id_property_id: str
+    _update_many_property_fields_with_id_set_body: dict
 
-    def call_update_names_and_units_of_all_properties_with_id(
+    def call_update_many_property_fields_with_id(
         self,
         property_id: str,
-        new_property_name: str,
-        new_property_unit_data: dict,
+        set_body: dict,
     ) -> None:
-        """Calls the `ItemRepo` `update_names_and_units_of_all_properties_with_id` method.
+        """Calls the `ItemRepo` `update_many_property_fields_with_id` method.
 
         :param property_id: ID of the property.
-        :param new_property_name: New property name.
-        :param new_property_unit_data: New property unit data.
+        :param set_body: New property data to be used in update.
         """
 
-        self._update_names_and_units_of_all_properties_with_id_property_id = property_id
-        self._update_names_and_units_of_all_properties_with_id_new_property_name = new_property_name
-        self._update_names_and_units_of_all_properties_new_property_unit_data = new_property_unit_data
+        self._update_many_property_fields_with_id_property_id = property_id
+        self._update_many_property_fields_with_id_set_body = set_body
 
-        self.item_repository.update_names_and_units_of_all_properties_with_id(
+        self.item_repository.update_many_property_fields_with_id(
             property_id,
-            new_property_name,
-            new_property_unit_data,
+            set_body,
             session=self.mock_session,
         )
 
-    def check_update_names_and_units_of_all_properties_with_id(self) -> None:
-        """Checks that a prior call to `update_names_and_units_of_all_properties_with_id` worked as expected"""
+    def check_update_many_property_fields_with_id(self) -> None:
+        """Checks that a prior call to `update_many_property_fields_with_id` worked as expected"""
 
         self.items_collection.update_many.assert_called_once_with(
-            {"properties._id": CustomObjectId(self._update_names_and_units_of_all_properties_with_id_property_id)},
+            {"properties._id": CustomObjectId(self._update_many_property_fields_with_id_property_id)},
             {
                 "$set": {
-                    "properties.$[elem].name": self._update_names_and_units_of_all_properties_with_id_new_property_name,
-                    "properties.$[elem].unit_id": self._update_names_and_units_of_all_properties_new_property_unit_data[
-                        "unit_id"
-                    ],
-                    "properties.$[elem].unit": self._update_names_and_units_of_all_properties_new_property_unit_data[
-                        "unit"
-                    ],
+                    **self._update_many_property_fields_with_id_set_body,
                     "modified_time": self._mock_datetime.now.return_value,
                 }
             },
-            array_filters=[
-                {"elem._id": CustomObjectId(self._update_names_and_units_of_all_properties_with_id_property_id)}
-            ],
+            array_filters=[{"elem._id": CustomObjectId(self._update_many_property_fields_with_id_property_id)}],
             session=self.mock_session,
         )
 
 
-class TestUpdateNamesAndUnitsOfAllPropertiesWithID(UpdateNamesAndUnitsOfAllPropertiesWithIDDSL):
-    """Tests for `update_names_and_units_of_all_properties_with_id`."""
+class TestUpdateManyPropertyFieldsWithID(UpdateManyPropertyFieldsWithIDDSL):
+    """Tests for `update_many_property_fields_with_id`."""
 
-    def test_update_names_and_units_of_all_properties_with_id(self):
-        """Test `update_names_and_units_of_all_properties_with_id`."""
+    def test_update_many_property_fields_with_id(self):
+        """Test `update_many_property_fields_with_id`."""
 
-        self.call_update_names_and_units_of_all_properties_with_id(
-            str(ObjectId()), "New name", {"unit_id": str(ObjectId()), "unit": "New unit"}
+        self.call_update_many_property_fields_with_id(
+            str(ObjectId()), {"name": "New name", "unit_id": str(ObjectId()), "unit": "New unit"}
         )
-        self.check_update_names_and_units_of_all_properties_with_id()
+        self.check_update_many_property_fields_with_id()
 
 
 class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):

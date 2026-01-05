@@ -171,6 +171,7 @@ class CatalogueCategoryPropertyService:
                     )
 
     # pylint:disable=too-many-locals
+    # pylint:disable=too-many-branches
     def update(
         self,
         catalogue_category_id: str,
@@ -249,23 +250,24 @@ class CatalogueCategoryPropertyService:
             )
 
             # Avoid propagating changes unless absolutely necessary
-            if updating_name or (updating_unit and is_authorised):
-                unit_data = (
-                    {"unit_id": catalogue_category_property.unit_id, "unit": update_data.get("unit")}
-                    if updating_unit
-                    else None
-                )
+            set_body = {}
+            if updating_name:
+                set_body["properties.$[elem].name"] = catalogue_category_property.name
 
-                self._catalogue_item_repository.update_names_and_units_of_all_properties_with_id(
+            if updating_unit:
+                set_body["properties.$[elem].unit_id"] = catalogue_category_property.unit_id
+                set_body["properties.$[elem].unit"] = update_data.get("unit")
+
+            if set_body:
+
+                self._catalogue_item_repository.update_many_property_fields_with_id(
                     catalogue_category_property_id,
-                    catalogue_category_property.name,
-                    unit_data,
+                    set_body,
                     session=session,
                 )
-                self._item_repository.update_names_and_units_of_all_properties_with_id(
+                self._item_repository.update_many_property_fields_with_id(
                     catalogue_category_property_id,
-                    catalogue_category_property.name,
-                    unit_data,
+                    set_body,
                     session=session,
                 )
 

@@ -533,34 +533,32 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         )
 
         if updating_name or updating_unit:
-            unit_data = (
-                {
-                    "unit_id": self._catalogue_category_property_patch.unit_id,
-                    "unit": self._expected_catalogue_category_property_in.unit,
-                }
-                if updating_unit
-                else None
-            )
+
+            set_body = {}
+            if updating_name:
+                set_body["properties.$[elem].name"] = self._catalogue_category_property_patch.name
+
+            if updating_unit:
+                set_body["properties.$[elem].unit_id"] = self._catalogue_category_property_patch.unit_id
+                set_body["properties.$[elem].unit"] = self._expected_catalogue_category_property_in.unit
 
             # Catalogue items
             # pylint:disable=line-too-long
-            self.mock_catalogue_item_repository.update_names_and_units_of_all_properties_with_id.assert_called_once_with(
+            self.mock_catalogue_item_repository.update_many_property_fields_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
-                self._catalogue_category_property_patch.name,
-                unit_data,
+                set_body,
                 session=expected_session,
             )
 
             # Items
-            self.mock_item_repository.update_names_and_units_of_all_properties_with_id.assert_called_once_with(
+            self.mock_item_repository.update_many_property_fields_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
-                self._catalogue_category_property_patch.name,
-                unit_data,
+                set_body,
                 session=expected_session,
             )
         else:
-            self.mock_catalogue_item_repository.update_names_and_units_of_all_properties_with_id.assert_not_called()
-            self.mock_item_repository.update_names_and_units_of_all_properties_with_id.assert_not_called()
+            self.mock_catalogue_item_repository.update_many_property_fields_with_id.assert_not_called()
+            self.mock_item_repository.update_many_property_fields_with_id.assert_not_called()
 
         assert self._updated_catalogue_category_property == self._expected_catalogue_category_property_out
 
@@ -573,8 +571,8 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         """
 
         self.mock_catalogue_category_repository.update_property.assert_not_called()
-        self.mock_catalogue_item_repository.update_names_and_units_of_all_properties_with_id.assert_not_called()
-        self.mock_item_repository.update_names_and_units_of_all_properties_with_id.assert_not_called()
+        self.mock_catalogue_item_repository.update_many_property_fields_with_id.assert_not_called()
+        self.mock_item_repository.update_many_property_fields_with_id.assert_not_called()
 
         assert str(self._update_exception.value) == message
 
