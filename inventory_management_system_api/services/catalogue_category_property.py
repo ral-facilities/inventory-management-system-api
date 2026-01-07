@@ -210,6 +210,10 @@ class CatalogueCategoryPropertyService:
         if not existing_property_out:
             raise MissingRecordError(f"No property found with ID '{catalogue_category_property_id}'")
 
+        # check if unauthorised and attempting to update unit before other checks
+        if "unit_id" in update_data and not is_authorised:
+            raise InvalidActionError("You are not able to change the unit of a property")
+
         # Modify the name if necessary and check it doesn't cause a conflict
         updating_name = "name" in update_data and update_data["name"] != existing_property_out.name
         if updating_name:
@@ -222,10 +226,9 @@ class CatalogueCategoryPropertyService:
             )
 
         # units of properties may only be updated by authorised users
+
         updating_unit = "unit_id" in update_data and update_data["unit_id"] != existing_property_out.unit_id
         if updating_unit:
-            if not is_authorised:
-                raise InvalidActionError("You are not able to change the unit of a property")
             unit_id = update_data["unit_id"]
 
             if not unit_id:
@@ -250,24 +253,24 @@ class CatalogueCategoryPropertyService:
             )
 
             # Avoid propagating changes unless absolutely necessary
-            set_body = {}
+            update_body = {}
             if updating_name:
-                set_body["properties.$[elem].name"] = catalogue_category_property.name
+                update_body["name"] = catalogue_category_property.name
 
             if updating_unit:
-                set_body["properties.$[elem].unit_id"] = catalogue_category_property.unit_id
-                set_body["properties.$[elem].unit"] = update_data.get("unit")
+                update_body["unit_id"] = catalogue_category_property.unit_id
+                update_body["unit"] = update_data.get("unit")
 
-            if set_body:
+            if update_body:
 
-                self._catalogue_item_repository.update_many_property_fields_with_id(
+                self._catalogue_item_repository.update_all_properties_with_id(
                     catalogue_category_property_id,
-                    set_body,
+                    update_body,
                     session=session,
                 )
-                self._item_repository.update_many_property_fields_with_id(
+                self._item_repository.update_all_properties_with_id(
                     catalogue_category_property_id,
-                    set_body,
+                    update_body,
                     session=session,
                 )
 

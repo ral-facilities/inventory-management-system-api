@@ -210,10 +210,10 @@ class CatalogueItemRepo:
             session=session,
         )
 
-    def update_many_property_fields_with_id(
+    def update_all_properties_with_id(
         self,
         property_id: str,
-        set_body: dict,
+        update_body: dict,
         session: Optional[ClientSession] = None,
     ) -> None:
         """
@@ -222,12 +222,13 @@ class CatalogueItemRepo:
         Also updates the modified_time to reflect the update
 
         :param property_id: The ID of the property to update
-        :param set_body: The body of data to be used in the update
+        :param update_body: The body of data to be used in the update
         :param session: PyMongo ClientSession to use for database operations
         """
 
         logger.info("Updating all properties with ID '%s' inside catalogue items in the database", id)
 
+        set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
 
         self._catalogue_items_collection.update_many(
