@@ -225,8 +225,7 @@ class CatalogueCategoryPropertyService:
                 existing_property_out.allowed_values, catalogue_category_property.allowed_values
             )
 
-        # units of properties may only be updated by authorised users
-
+        # Units of properties may only be updated by authorised users
         updating_unit = "unit_id" in update_data and update_data["unit_id"] != existing_property_out.unit_id
         if updating_unit:
             unit_id = update_data["unit_id"]

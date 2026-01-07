@@ -852,7 +852,7 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL):
         )
 
 
-class TestUpdateManyPropertyFieldsWithID(UpdateAllPropertiesWithIDDSL):
+class TestUpdateAllPropertiesWithID(UpdateAllPropertiesWithIDDSL):
     """Tests for `update_all_properties_with_id`."""
 
     def test_update_all_properties_with_id(self):
