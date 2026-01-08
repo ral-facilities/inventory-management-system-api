@@ -678,7 +678,7 @@ class TestUpdate(UpdateDSL):
         self.patch_property(property_id, {"unit_id": str(ObjectId())}, use_admin_token=False)
 
         self.check_patch_property_failed_with_detail(422, "You are not able to change the unit of a property")
-        
+
     def test_partial_update_unit_to_same_not_authorised(self):
         """Test updating the unit of a property to the same unit when the user is not authorised"""
 
