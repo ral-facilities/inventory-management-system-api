@@ -678,6 +678,16 @@ class TestUpdate(UpdateDSL):
         self.patch_property(property_id, {"unit_id": str(ObjectId())}, use_admin_token=False)
 
         self.check_patch_property_failed_with_detail(422, "You are not able to change the unit of a property")
+        
+    def test_partial_update_unit_to_same_not_authorised(self):
+        """Test updating the unit of a property to the same unit when the user is not authorised"""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        # The unit_id of the property inserted above is None already
+        self.patch_property(property_id, {"unit_id": None}, use_admin_token=False)
+
+        self.check_patch_property_failed_with_detail(422, "You are not able to change the unit of a property")
 
     def test_update_allowed_values_list_adding_value(self):
         """Test updating the allowed values list of a property by adding an additional value to it."""
