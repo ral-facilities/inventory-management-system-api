@@ -226,7 +226,7 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         """
 
-        logger.info("Updating all properties with ID '%s' inside catalogue items in the database", id)
+        logger.info("Updating all properties with ID '%s' inside catalogue items in the database", property_id)
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
