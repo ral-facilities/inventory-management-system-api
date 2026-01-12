@@ -5,7 +5,9 @@ Unit tests for the `SettingService` service.
 from test.mock_data import (
     SETTING_IN_USE_DEFINITION_IN_DATA_OPERATIONAL,
     SETTING_IN_USE_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+    SETTING_IN_USE_DEFINITION_OUT_DATA_OPERATIONAL,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+    SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
     SYSTEM_TYPE_OUT_DATA_OPERATIONAL,
     SYSTEM_TYPE_OUT_DATA_STORAGE,
 )
@@ -16,7 +18,7 @@ from unittest.mock import MagicMock, Mock, call, patch
 import pytest
 from bson import ObjectId
 
-from inventory_management_system_api.core.exceptions import MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.setting import (
     InUseDefinitionIn,
     InUseDefinitionOut,
@@ -67,7 +69,7 @@ class SettingServiceDSL:
 
 
 class SetSparesDefinitionDSL(SettingServiceDSL):
-    """Base class for `set_spares_definition` tests."""
+    """Base class for `set` spares definition tests."""
 
     _spares_definition_in: SparesDefinitionIn
     _expected_spares_definition_out: MagicMock
@@ -76,16 +78,26 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
     _set_spares_definition_exception: pytest.ExceptionInfo
 
     def mock_set_spares_definition(
-        self, spares_definition_in_data: dict, system_types_out_data: list[Optional[dict]]
+        self,
+        spares_definition_in_data: dict,
+        in_use_definition_out_data: Optional[dict],
+        system_types_out_data: list[Optional[dict]],
     ) -> None:
         """
         Mocks repository methods appropriately to test the `set_spares_definition` service method.
 
         :param spares_definition_in_data: Dictionary containing the new spares definition data as would be required for
                                           a `SparesDefinitionIn` database model.
+        :param in_use_definition_out_data: Dictionary containing the current in use definition data as would be required
+                                           for a `InUseDefinitionOut` database model.
         :param system_types_out_data: List where each element is either `None` or a dictionary containing the system
                                       type data as would be required for a `SystemTypeOut` database model.
         """
+
+        # Current in use definition
+        self.mock_setting_repository.get.return_value = (
+            InUseDefinitionOut(**in_use_definition_out_data) if in_use_definition_out_data else None
+        )
 
         # Stored usage statuses
         for i in range(0, len(spares_definition_in_data["system_type_ids"])):
@@ -124,6 +136,9 @@ class SetSparesDefinitionDSL(SettingServiceDSL):
 
     def check_set_spares_definition_success(self) -> None:
         """Checks that a prior call to `call_set_spares_definition` worked as expected."""
+
+        # Ensure checked the current in use definition
+        self.mock_setting_repository.get.assert_called_once_with(InUseDefinitionOut)
 
         # Ensure checked all of the system types
         self.mock_system_type_repository.get.assert_has_calls(
@@ -179,6 +194,7 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
 
         self.mock_set_spares_definition(
             SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+            None,
             [SYSTEM_TYPE_OUT_DATA_STORAGE, SYSTEM_TYPE_OUT_DATA_OPERATIONAL],
         )
         self.call_set_spares_definition()
@@ -188,16 +204,33 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
         """Test updating the spares definition with a non-existent system type ID."""
 
         self.mock_set_spares_definition(
-            SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL, [SYSTEM_TYPE_OUT_DATA_STORAGE, None]
+            SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+            None,
+            [SYSTEM_TYPE_OUT_DATA_STORAGE, None],
         )
         self.call_set_spares_definition_expecting_error(MissingRecordError)
         self.check_set_spares_definition_failed_with_exception(
             f"No system type found with ID '{self._spares_definition_in.system_type_ids[1]}'"
         )
 
+    def test_set_spares_definition_conflicting_with_in_use_definition(self):
+        """Test updating the spares definition with a system type ID that conflicts with one in the in use
+        definition."""
+
+        self.mock_set_spares_definition(
+            SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+            SETTING_IN_USE_DEFINITION_OUT_DATA_OPERATIONAL,
+            [SYSTEM_TYPE_OUT_DATA_STORAGE, SYSTEM_TYPE_OUT_DATA_OPERATIONAL],
+        )
+        self.call_set_spares_definition_expecting_error(InvalidActionError)
+        self.check_set_spares_definition_failed_with_exception(
+            f"System type with ID '{self._spares_definition_in.system_type_ids[1]}' is already present in the in use "
+            "definition. It cannot be used for both."
+        )
+
 
 class GetSparesDefinitionDSL(SettingServiceDSL):
-    """Base class for 'get_spares_definition' tests."""
+    """Base class for 'get' spares definition tests."""
 
     _expected_spares_definition: MagicMock
     _obtained_spares_definition: MagicMock
@@ -230,7 +263,7 @@ class TestGetSparesDefinition(GetSparesDefinitionDSL):
 
 
 class SetInUseDefinitionDSL(SettingServiceDSL):
-    """Base class for `set_spares_definition` tests."""
+    """Base class for `set` in use definition tests."""
 
     _in_use_definition_in: SparesDefinitionIn
     _expected_in_use_definition_out: MagicMock
@@ -238,16 +271,26 @@ class SetInUseDefinitionDSL(SettingServiceDSL):
     _set_in_use_definition_exception: pytest.ExceptionInfo
 
     def mock_set_in_use_definition(
-        self, in_use_definition_in_data: dict, system_types_out_data: list[Optional[dict]]
+        self,
+        in_use_definition_in_data: dict,
+        spares_definition_out_data: Optional[dict],
+        system_types_out_data: list[Optional[dict]],
     ) -> None:
         """
         Mocks repository methods appropriately to test the `set_in_use_definition` service method.
 
         :param in_use_definition_in_data: Dictionary containing the new spares definition data as would be required for
                                           a `InUseDefinitionIn` database model.
+        :param spares_definition_out_data: Dictionary containing the current in use definition data as would be required
+                                           for a `SparesDefinitionOut` database model.
         :param system_types_out_data: List where each element is either `None` or a dictionary containing the system
                                       type data as would be required for a `SystemTypeOut` database model.
         """
+
+        # Current in spares definition
+        self.mock_setting_repository.get.return_value = (
+            SparesDefinitionOut(**spares_definition_out_data) if spares_definition_out_data else None
+        )
 
         # Stored usage statuses
         for i in range(0, len(in_use_definition_in_data["system_type_ids"])):
@@ -283,6 +326,9 @@ class SetInUseDefinitionDSL(SettingServiceDSL):
     def check_set_in_use_definition_success(self) -> None:
         """Checks that a prior call to `call_set_in_use_definition` worked as expected."""
 
+        # Ensure checked the current spares definition
+        self.mock_setting_repository.get.assert_called_once_with(SparesDefinitionOut)
+
         # Ensure checked all of the system types
         self.mock_system_type_repository.get.assert_has_calls(
             [call(str(system_type_id)) for system_type_id in self._in_use_definition_in.system_type_ids]
@@ -314,6 +360,7 @@ class TestSetInUseDefinition(SetInUseDefinitionDSL):
 
         self.mock_set_in_use_definition(
             SETTING_IN_USE_DEFINITION_IN_DATA_OPERATIONAL,
+            None,
             [SYSTEM_TYPE_OUT_DATA_STORAGE, SYSTEM_TYPE_OUT_DATA_OPERATIONAL],
         )
         self.call_set_in_use_definition()
@@ -323,16 +370,31 @@ class TestSetInUseDefinition(SetInUseDefinitionDSL):
         """Test updating the in use definition with a non-existent system type ID."""
 
         self.mock_set_in_use_definition(
-            SETTING_IN_USE_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL, [SYSTEM_TYPE_OUT_DATA_STORAGE, None]
+            SETTING_IN_USE_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL, None, [SYSTEM_TYPE_OUT_DATA_STORAGE, None]
         )
         self.call_set_in_use_definition_expecting_error(MissingRecordError)
         self.check_set_in_use_definition_failed_with_exception(
             f"No system type found with ID '{self._in_use_definition_in.system_type_ids[1]}'"
         )
 
+    def test_set_in_use_definition_conflicting_with_spares_definition(self):
+        """Test updating the in use definition with a system type ID that conflicts with one in the spares
+        definition."""
+
+        self.mock_set_in_use_definition(
+            SETTING_IN_USE_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
+            SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            [SYSTEM_TYPE_OUT_DATA_STORAGE, SYSTEM_TYPE_OUT_DATA_OPERATIONAL],
+        )
+        self.call_set_in_use_definition_expecting_error(InvalidActionError)
+        self.check_set_in_use_definition_failed_with_exception(
+            f"System type with ID '{self._in_use_definition_in.system_type_ids[0]}' is already present in the spares "
+            "definition. It cannot be used for both."
+        )
+
 
 class GetInUseDefinitionDSL(SettingServiceDSL):
-    """Base class for 'get_in_use_definition' tests."""
+    """Base class for 'get' in use definition tests."""
 
     _expected_in_use_definition: MagicMock
     _obtained_in_use_definition: MagicMock

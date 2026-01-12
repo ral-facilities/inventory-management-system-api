@@ -385,7 +385,7 @@ class GetInUseDefinitionDSL(InUseDefinitionDSL):
             assert self._get_response_in_use_definition.status_code == 200
             assert self._get_response_in_use_definition.json() == expected_in_use_definition_get_data
 
-    def check_get_in_usee_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
+    def check_get_in_use_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
         Check that a prior call to 'get_in_use_definition' gave a failed response with the expected code and detail.
 

@@ -14,6 +14,7 @@ from inventory_management_system_api.cli.core import (
     exit_with_error,
 )
 from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.exceptions import InvalidActionError
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
 from inventory_management_system_api.models.setting import InUseDefinitionIn, SparesDefinitionIn, SparesDefinitionOut
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
@@ -110,10 +111,13 @@ def spares_definition():
     # Now set the spares definition with a progress bar
     console.print("Updating catalogue items...")
     with create_progress_bar() as progress:
-        setting_service.set_spares_definition(
-            SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
-            tracker=progress.track,
-        )
+        try:
+            setting_service.set_spares_definition(
+                SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
+                tracker=progress.track,
+            )
+        except InvalidActionError as exc:
+            exit_with_error(str(exc))
 
     console.print("Success! :party_popper:")
 
@@ -157,8 +161,11 @@ def in_use_definition():
     if not cont:
         exit_with_error("Cancelled")
 
-    setting_service.set_in_use_definition(
-        InUseDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types])
-    )
+    try:
+        setting_service.set_in_use_definition(
+            InUseDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types])
+        )
+    except InvalidActionError as exc:
+        exit_with_error(str(exc))
 
     console.print("Success! :party_popper:")
