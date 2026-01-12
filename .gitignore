@@ -154,7 +154,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# Database dumps (ignore all but the mock_data one used for db-import)
-data/*
-!data/mock_data.dump
