@@ -213,7 +213,7 @@ class TestSetSparesDefinition(SetSparesDefinitionDSL):
             f"No system type found with ID '{self._spares_definition_in.system_type_ids[1]}'"
         )
 
-    def test_set_spares_definition_conflicting_with_in_use_definition(self):
+    def test_set_spares_definition_with_conflicting_in_use_definition(self):
         """Test updating the spares definition with a system type ID that conflicts with one in the in use
         definition."""
 
@@ -279,7 +279,7 @@ class SetInUseDefinitionDSL(SettingServiceDSL):
         """
         Mocks repository methods appropriately to test the `set_in_use_definition` service method.
 
-        :param in_use_definition_in_data: Dictionary containing the new spares definition data as would be required for
+        :param in_use_definition_in_data: Dictionary containing the new in use definition data as would be required for
                                           a `InUseDefinitionIn` database model.
         :param spares_definition_out_data: Dictionary containing the current in use definition data as would be required
                                            for a `SparesDefinitionOut` database model.
@@ -287,7 +287,7 @@ class SetInUseDefinitionDSL(SettingServiceDSL):
                                       type data as would be required for a `SystemTypeOut` database model.
         """
 
-        # Current in spares definition
+        # Current spares definition
         self.mock_setting_repository.get.return_value = (
             SparesDefinitionOut(**spares_definition_out_data) if spares_definition_out_data else None
         )
@@ -377,7 +377,7 @@ class TestSetInUseDefinition(SetInUseDefinitionDSL):
             f"No system type found with ID '{self._in_use_definition_in.system_type_ids[1]}'"
         )
 
-    def test_set_in_use_definition_conflicting_with_spares_definition(self):
+    def test_set_in_use_definition_with_conflicting_spares_definition(self):
         """Test updating the in use definition with a system type ID that conflicts with one in the spares
         definition."""
 

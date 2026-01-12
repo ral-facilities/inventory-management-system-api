@@ -311,7 +311,7 @@ class GetSparesDefinitionDSL(SparesDefinitionDSL):
             returned.
 
         :param expected_spares_definition_get_data: Dictionary containing the expected spares definition data returned
-                                                    as would be required for 'SparesDefinitionSchema'
+                                                    as would be required for 'SparesDefinitionSchema'.
         """
 
         if expected_spares_definition_get_data is None:
@@ -356,7 +356,7 @@ class InUseDefinitionDSL(SparesDefinitionDSL):
         """
         Sets the in use definition inside the database.
 
-        :param spares_definition_in_data: Dictionary containing the in use definition data to insert into the database.
+        :param in_use_definition_in_data: Dictionary containing the in use definition data to insert into the database.
         """
 
         self._setting_service.set_in_use_definition(InUseDefinitionIn(**in_use_definition_in_data))

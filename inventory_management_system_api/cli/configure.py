@@ -16,7 +16,12 @@ from inventory_management_system_api.cli.core import (
 from inventory_management_system_api.core.database import get_database
 from inventory_management_system_api.core.exceptions import InvalidActionError
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
-from inventory_management_system_api.models.setting import InUseDefinitionIn, SparesDefinitionIn, SparesDefinitionOut
+from inventory_management_system_api.models.setting import (
+    InUseDefinitionIn,
+    InUseDefinitionOut,
+    SparesDefinitionIn,
+    SparesDefinitionOut,
+)
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -44,7 +49,7 @@ def display_current_spares_definition(
 
 
 def display_current_in_use_definition(
-    definition: Optional[SparesDefinitionOut], system_type_ids: list[StringObjectIdField]
+    definition: Optional[InUseDefinitionOut], system_type_ids: list[StringObjectIdField]
 ):
     """Displays the current in use definition."""
 
