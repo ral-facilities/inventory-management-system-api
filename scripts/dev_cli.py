@@ -120,7 +120,7 @@ def dump_database(
     console.print("Dumping database contents...")
 
     mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
-    with open(Path(f"./data/{file_name}.dump"), "w", encoding="utf-8") as file:
+    with open(Path(f"./data/{file_name}"), "w", encoding="utf-8") as file:
         run_mongodb_command(
             [
                 "mongodump",
@@ -144,7 +144,7 @@ def restore_database(
     console.print("Restoring database contents...")
 
     mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
-    with open(Path(f"./data/{file_name}.dump"), "r", encoding="utf-8") as file:
+    with open(Path(f"./data/{file_name}"), "r", encoding="utf-8") as file:
         run_mongodb_command(
             [
                 "mongorestore",
@@ -170,14 +170,6 @@ def db_restore(db_username: DatabaseUsernameOption, db_password: DatabasePasswor
     """Restores data in the database from a database dump file."""
 
     restore_database(db_username, db_password, file_name)
-    console.print("Success! :party_popper:")
-
-@app.command()
-def db_import(db_username: DatabaseUsernameOption, db_password: DatabasePasswordOption):
-    """Imports mock data into the database."""
-
-    # Populate database with generated test data
-    restore_database(db_username, db_password, "mock_data")
     console.print("Success! :party_popper:")
 
 
