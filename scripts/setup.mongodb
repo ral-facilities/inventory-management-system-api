@@ -64,9 +64,21 @@ console.log("Replica set initialised successfully");
     console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
-      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage", description: "Storage system type" },
-      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational", description: "Operational system type" },
-      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped", description: "Scrapped system type" },
+      {
+        _id: SYSTEM_TYPE_ID_STORAGE,
+        value: "Storage",
+        description: "Storage system type",
+      },
+      {
+        _id: SYSTEM_TYPE_ID_OPERATIONAL,
+        value: "Operational",
+        description: "Operational system type",
+      },
+      {
+        _id: SYSTEM_TYPE_ID_SCRAPPED,
+        value: "Scrapped",
+        description: "Scrapped system type",
+      },
     ]);
   }
 
@@ -81,6 +93,13 @@ console.log("Replica set initialised successfully");
         {
           _id: "spares_definition",
           system_type_ids: [SYSTEM_TYPE_ID_STORAGE],
+        },
+      ]);
+
+      db.settings.insertMany([
+        {
+          _id: "in_use_definition",
+          system_type_ids: [SYSTEM_TYPE_ID_OPERATIONAL],
         },
       ]);
     }
@@ -137,15 +156,27 @@ console.log("Replica set initialised successfully");
   db.catalogue_categories.createIndex(
     {
       parent_id: 1,
-      code: 1
+      code: 1,
     },
     {
       name: "catalogue_categories_name_uniqueness_index",
-      unique: true
+      unique: true,
     }
   );
-  db.manufacturers.createIndex({ code: 1 }, { name: "manufacturers_name_uniqueness_index", unique: true });
-  db.systems.createIndex({ parent_id: 1, code: 1 }, { name: "systems_name_uniqueness_index", unique: true });
-  db.units.createIndex({ code: 1 }, { name: "units_name_uniqueness_index", unique: true });
-  db.usage_statuses.createIndex({ code: 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true });
+  db.manufacturers.createIndex(
+    { code: 1 },
+    { name: "manufacturers_name_uniqueness_index", unique: true }
+  );
+  db.systems.createIndex(
+    { parent_id: 1, code: 1 },
+    { name: "systems_name_uniqueness_index", unique: true }
+  );
+  db.units.createIndex(
+    { code: 1 },
+    { name: "units_name_uniqueness_index", unique: true }
+  );
+  db.usage_statuses.createIndex(
+    { code: 1 },
+    { name: "usage_statuses_name_uniqueness_index", unique: true }
+  );
 });
