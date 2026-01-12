@@ -48,3 +48,25 @@ class SparesDefinitionOut(SparesDefinitionBase, SettingOutBase):
     """
 
     system_types: list[SystemTypeOut]
+
+
+class InUseDefinitionBase(SettingInBase):
+    """Base database model for the in use definition."""
+
+    SETTING_ID: ClassVar[str] = "in_use_definition"
+
+
+class InUseDefinitionIn(InUseDefinitionBase):
+    """
+    Input database model for the in use definition.
+    """
+
+    system_type_ids: list[CustomObjectIdField]
+
+
+class InUseDefinitionOut(InUseDefinitionBase, SettingOutBase):
+    """
+    Output database model for the in use definition.
+    """
+
+    system_types: list[SystemTypeOut]

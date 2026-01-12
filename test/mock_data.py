@@ -21,7 +21,7 @@ from unittest.mock import ANY
 from bson import ObjectId
 
 from inventory_management_system_api.models.rule import RuleOut
-from inventory_management_system_api.models.setting import SparesDefinitionOut
+from inventory_management_system_api.models.setting import InUseDefinitionOut, SparesDefinitionOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 
 # pylint: disable=too-many-lines
@@ -980,6 +980,27 @@ SETTING_SPARES_DEFINITION_GET_DATA_STORAGE = {
 # Spares definition, Storage or Operational
 SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
     "_id": SparesDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_GET_DATA_STORAGE["id"], SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
+}
+
+# In use definition, Operational
+SETTING_IN_USE_DEFINITION_IN_DATA_OPERATIONAL = {
+    "_id": InUseDefinitionOut.SETTING_ID,
+    "system_type_ids": [SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
+}
+
+SETTING_IN_USE_DEFINITION_OUT_DATA_OPERATIONAL = {
+    "_id": InUseDefinitionOut.SETTING_ID,
+    "system_types": [SYSTEM_TYPE_OUT_DATA_OPERATIONAL],
+}
+
+SETTING_IN_USE_DEFINITION_GET_DATA_OPERATIONAL = {
+    "system_types": [SYSTEM_TYPE_GET_DATA_OPERATIONAL],
+}
+
+# In use definition, Storage or Operational
+SETTING_IN_USE_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL = {
+    "_id": InUseDefinitionOut.SETTING_ID,
     "system_type_ids": [SYSTEM_TYPE_GET_DATA_STORAGE["id"], SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]],
 }
 

@@ -9,7 +9,12 @@ from fastapi import Depends
 
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import MissingRecordError
-from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
+from inventory_management_system_api.models.setting import (
+    InUseDefinitionIn,
+    InUseDefinitionOut,
+    SparesDefinitionIn,
+    SparesDefinitionOut,
+)
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -95,3 +100,28 @@ class SettingService:
         :return: Retrieved spares definition or `None` if not found.
         """
         return self._setting_repository.get(SparesDefinitionOut)
+
+    def set_in_use_definition(self, in_use_definition: InUseDefinitionIn) -> InUseDefinitionOut:
+        """
+        Sets the in use definition to a new value.
+
+        :param in_use_definition: New in use definition.
+        :return: Updated in use definition.
+        :raises MissingRecordError: If any of the system types specified by the given IDs don't exist.
+        """
+
+        # Ensure all the given system types exist
+        for system_type_id in in_use_definition.system_type_ids:
+            if not self._system_type_repository.get(str(system_type_id)):
+                raise MissingRecordError(f"No system type found with ID '{system_type_id}'")
+
+        # Update the in use definition
+        return self._setting_repository.upsert(in_use_definition, InUseDefinitionOut)
+
+    def get_in_use_definition(self) -> Optional[InUseDefinitionOut]:
+        """
+        Retrieve the in use definition setting.
+
+        :return: Retrieved in use definition or `None` if not found.
+        """
+        return self._setting_repository.get(InUseDefinitionOut)
