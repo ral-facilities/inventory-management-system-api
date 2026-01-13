@@ -669,7 +669,7 @@ class TestUpdate(UpdateDSL):
         )
 
         self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
-        self.check_update_failed_with_exception("You are not able to change the unit of a property")
+        self.check_update_failed_with_exception("Not authorised to change the unit of a property")
 
     def test_update_allowed_values_to_none_no_changes(self):
         """Test updating the `allowed_values` of a property to `None` when it already is."""

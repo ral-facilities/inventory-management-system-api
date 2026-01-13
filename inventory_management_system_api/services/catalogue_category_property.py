@@ -212,7 +212,7 @@ class CatalogueCategoryPropertyService:
 
         # check if unauthorised and attempting to update unit before other checks
         if "unit_id" in update_data and not is_authorised:
-            raise InvalidActionError("You are not able to change the unit of a property")
+            raise InvalidActionError("Not authorised to change the unit of a property")
 
         # Modify the name if necessary and check it doesn't cause a conflict
         updating_name = "name" in update_data and update_data["name"] != existing_property_out.name

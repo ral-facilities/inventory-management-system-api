@@ -323,7 +323,7 @@ def partial_update_property(
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=message) from exc
     except ValueError as exc:
         message = str(exc)
         logger.exception(message)
