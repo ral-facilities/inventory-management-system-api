@@ -110,21 +110,66 @@ def clear_existing_data(
         ]
     )
 
+def dump_database(
+    db_username: DatabaseUsernameOption,
+    db_password: DatabasePasswordOption,
+    file_name: str
+):
+    """Dumps the data within the database to a database dump file."""
 
-@app.command()
-def db_import(db_username: DatabaseUsernameOption, db_password: DatabasePasswordOption):
-    """Imports mock data into the database."""
+    console.print("Dumping database contents...")
 
-    # Populate database with generated test data
-    with open(Path("./data/mock_data.dump"), "r", encoding="utf-8") as file:
+    mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
+    with open(Path(f"./data/{file_name}"), "w", encoding="utf-8") as file:
+        run_mongodb_command(
+            [
+                "mongodump",
+            ]
+            + mongodb_auth_args
+            + [
+                "--db",
+                "ims",
+                "--archive",
+            ],
+            stdout=file,
+        )
+
+def restore_database(
+    db_username: DatabaseUsernameOption,
+    db_password: DatabasePasswordOption,
+    file_name: str
+):
+    """Restores the data within the database from database dump file."""
+
+    console.print("Restoring database contents...")
+
+    mongodb_auth_args = get_mongodb_auth_args(db_username, db_password)
+    with open(Path(f"./data/{file_name}"), "r", encoding="utf-8") as file:
         run_mongodb_command(
             [
                 "mongorestore",
             ]
-            + get_mongodb_auth_args(db_username, db_password)
+            + mongodb_auth_args
             + ["--db", "ims", "--archive", "--drop"],
             stdin=file,
         )
+
+@app.command()
+def db_dump(db_username: DatabaseUsernameOption, db_password: DatabasePasswordOption, file_name: Annotated[
+        str, typer.Argument(help="File name of the file to dump the database contents to.")
+    ] = False,):
+    """Dumps data in the database to a database dump file."""
+
+    dump_database(db_username, db_password, file_name)
+    console.print("Success! :party_popper:")
+
+@app.command()
+def db_restore(db_username: DatabaseUsernameOption, db_password: DatabasePasswordOption, file_name: Annotated[
+        str, typer.Argument(help="File name of the restore the database contents from.")
+    ] = False,):
+    """Restores data in the database from a database dump file."""
+
+    restore_database(db_username, db_password, file_name)
     console.print("Success! :party_popper:")
 
 
@@ -167,21 +212,8 @@ def db_generate(
     run_command(["ims", "migrate", "set", "latest", "-y"])
 
     if dump:
-        console.print("Dumping output...")
         # Dump output again
-        with open(Path("./data/mock_data.dump"), "w", encoding="utf-8") as file:
-            run_mongodb_command(
-                [
-                    "mongodump",
-                ]
-                + mongodb_auth_args
-                + [
-                    "--db",
-                    "ims",
-                    "--archive",
-                ],
-                stdout=file,
-            )
+        dump_database(db_username, db_password, "mock_data")
     console.print("Success! :party_popper:")
 
 
