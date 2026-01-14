@@ -302,7 +302,7 @@ The simplest way to populate the database with mock data is to use the already c
 for development you may use
 
 ```bash
-python ./scripts/dev_cli.py db-import
+python ./scripts/dev_cli.py db-restore mock_data.dump
 ```
 
 to populate the database with mock data.
