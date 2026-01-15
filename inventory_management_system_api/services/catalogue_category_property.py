@@ -235,7 +235,7 @@ class CatalogueCategoryPropertyService:
             else:
                 unit = self._unit_repository.get(unit_id)
                 if not unit:
-                    raise MissingRecordError(f"No unit found with ID: {unit_id}")
+                    raise MissingRecordError(f"No unit found with ID '{unit_id}'")
                 update_data["unit"] = unit.value
 
         CatalogueCategoryPostPropertySchema.check_valid_allowed_values(

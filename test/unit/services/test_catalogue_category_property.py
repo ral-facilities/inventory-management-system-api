@@ -15,6 +15,7 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
@@ -440,7 +441,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         if "unit" in catalogue_category_property_update_data:
             if catalogue_category_property_update_data["unit"] is not None:
                 unit_in = UnitIn(**unit_in_data) if unit_in_data else None
-                unit_id = str(ObjectId())
+                unit_id = catalogue_category_property_update_data["unit_id"]
 
                 ServiceTestHelpers.mock_get(
                     self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id) if unit_in else None
@@ -517,7 +518,11 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self._stored_catalogue_category_property_out.unit_id != self._catalogue_category_property_patch.unit_id
         )
 
-        if updating_unit and self._stored_catalogue_category_property_out.unit_id is not None:
+        if (
+            updating_unit
+            and self._stored_catalogue_category_property_out.unit_id is not None
+            and self._catalogue_category_property_patch.unit_id is not None
+        ):
             self.mock_unit_repository.get.assert_called_once_with(self._stored_catalogue_category_property_out.unit_id)
 
         # Session/Transaction
@@ -590,6 +595,7 @@ class TestUpdate(UpdateDSL):
             catalogue_category_property_update_data={
                 "name": "New name",
                 "unit": UNIT_IN_DATA_MM["value"],
+                "unit_id": str(ObjectId()),
                 "allowed_values": {
                     "type": "list",
                     "values": [
@@ -629,9 +635,9 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_property_id,
-            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"]},
+            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"], "unit_id": str(ObjectId())},
             # pylint:disable=line-too-long
-            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
             user_is_authorised=True,
             unit_in_data=UNIT_IN_DATA_MM,
         )
@@ -646,14 +652,32 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_property_id,
-            catalogue_category_property_update_data={"unit": None},
-            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
+            catalogue_category_property_update_data={"unit": None, "unit_id": None},
+            # pylint:disable=line-too-long
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
             user_is_authorised=True,
             unit_in_data=None,
         )
 
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
+
+    def test_update_unit_to_nonexsistent(self):
+        """Test updating only the `unit_id` of a property to nonexistent"""
+
+        catalogue_category_property_id = str(ObjectId())
+        unit_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"], "unit_id": unit_id},
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
+            user_is_authorised=True,
+            unit_in_data=None,
+        )
+
+        self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No unit found with ID '{unit_id}'")
 
     def test_update_unit_when_not_authorised(self):
         """Test updating the `unit_id` of a property when the user is not authorised"""
@@ -662,7 +686,10 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             catalogue_category_property_id,
-            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"]},
+            catalogue_category_property_update_data={
+                "unit": UNIT_IN_DATA_MM["value"],
+                "unit_id": str(ObjectId()),
+            },
             # pylint:disable=line-too-long
             stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
             user_is_authorised=False,
