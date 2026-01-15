@@ -240,3 +240,31 @@ class CatalogueCategoryPropertyService:
                 )
 
         return property_out
+    
+    def delete(self, catalogue_category_id: str, catalogue_category_property_id: str) -> None:
+        """
+        Delete a catalogue category property by its ID.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete from.
+        :param catalogue_category_property_id: The ID of the property to delete.
+        """
+        
+        stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+        if not stored_catalogue_category:
+            raise MissingRecordError(f"No catalogue category found with ID '{catalogue_category_id}'")
+        
+        with start_session_transaction("deleting property") as session:
+            self._catalogue_category_repository.delete_property(
+                catalogue_category_id=catalogue_category_id,
+                property_id=catalogue_category_property_id,
+                session=session
+            )
+            
+            self._catalogue_item_repository.delete_properties(
+                property_id=catalogue_category_property_id,
+                session=session
+            )
+            
+            self._item_repository.delete_properties(
+                property_id=catalogue_category_property_id
+            )

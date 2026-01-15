@@ -236,6 +236,26 @@ class CatalogueItemRepo:
             array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
+        
+    def delete_properties(
+        self,
+        property_id: str,
+        session: Optional[ClientSession] = None
+    ) -> None:
+        """
+        Deletes the property in every cataloge item it is present in
+        
+        :param property_id: The ID of the property to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        """
+        
+        logger.info("Deleting all properties with ID '%s' inside catalogue items in the database", property_id)
+        
+        self._catalogue_items_collection.update_many(
+            {"properties._id": CustomObjectId(property_id)},
+            {"$pull": {"properties": {"_id": CustomObjectId(property_id)}}},
+            session=session
+        )
 
     def update_number_of_spares(
         self,
