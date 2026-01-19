@@ -1332,3 +1332,111 @@ class TestUpdateProperty(UpdatePropertyDSL):
             catalogue_category_id=str(ObjectId()), property_id="invalid-id", error_type=InvalidObjectIdError
         )
         self.check_update_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class DeletePropertyDSL(UpdatePropertyDSL):
+    """Base class for `delete_property` tests."""
+
+    _catalogue_category_id: str
+    _delete_property_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete_property(self) -> None:
+        """
+        Mocks database methods appropriately to test the `delete_property` repo method.
+
+        """
+
+        RepositoryTestHelpers.mock_update_one(self.catalogue_categories_collection)
+
+    def call_delete_property(self, catalogue_category_id: str, property_id: str):
+        """
+        Calls the `CatalogueCategoryRepo` `delete_property` method.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete from.
+        :param property_id: The ID of the property to be deleted.
+        """
+
+        self._catalogue_category_id = catalogue_category_id
+        self._delete_property_id = property_id
+
+        self.catalogue_category_repository.delete_property(
+            catalogue_category_id=catalogue_category_id, property_id=property_id, session=self.mock_session
+        )
+
+    def call_delete_property_expecting_error(
+        self, catalogue_category_id: str, property_id: str, error_type: type[BaseException]
+    ):
+        """
+        Calls the `CatalogueCategoryRepo` `delete_property` method while expecting an error to be raised.
+
+        :param catalogue_category_id: The ID of the catalogue category to delete from.
+        :param property_id: The ID of the property to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+        self._catalogue_category_id = catalogue_category_id
+        self._delete_property_id = property_id
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_repository.delete_property(
+                catalogue_category_id=catalogue_category_id, property_id=property_id, session=self.mock_session
+            )
+        self._delete_exception = exc
+
+    def check_delete_property_success(self) -> None:
+        """Checks that a prior call to the `call_delete_property` worked as expected."""
+
+        self.catalogue_categories_collection.update_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._catalogue_category_id)},
+            {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+            session=self.mock_session,
+        )
+
+    def check_delete_property_failed_with_exception(
+        self, message: str, expecting_update_one_called: bool = False
+    ) -> None:
+        """
+        Checks that a prior call to `call_delete_property_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        :param expecting_update_one_called: Whether the `update_one` method is expected to be called or not.
+        """
+
+        if not expecting_update_one_called:
+            self.catalogue_categories_collection.update_one.assert_not_called()
+        else:
+            self.catalogue_categories_collection.update_one.assert_called_once_with(
+                {"_id": CustomObjectId(self._catalogue_category_id)},
+                {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+                session=self.mock_session,
+            )
+        assert str(self._delete_exception.value) == message
+
+
+class TestDeleteProeprty(DeletePropertyDSL):
+    """Tests for deleting a catalogue category property."""
+
+    def test_delete(self):
+        """Test deleting a catalogue category property."""
+
+        self.mock_delete_property()
+        self.call_delete_property(str(ObjectId()), str(ObjectId()))
+        self.check_delete_property_success()
+
+    def test_delete_invalid_catalogue_category_id(self):
+        """Test deleting a property in a catalogue category with an invalid ID."""
+
+        self.mock_delete_property()
+        self.call_delete_property_expecting_error(
+            catalogue_category_id="invalid-id", property_id=str(ObjectId()), error_type=InvalidObjectIdError
+        )
+        self.check_delete_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+    def test_delete_invalid_property_id(self):
+        """Test deleting a property with an invalid id in a catalogue category."""
+
+        self.mock_delete_property()
+        self.call_delete_property_expecting_error(
+            catalogue_category_id=str(ObjectId()), property_id="invalid-id", error_type=InvalidObjectIdError
+        )
+        self.check_delete_property_failed_with_exception("Invalid ObjectId value 'invalid-id'")

@@ -453,7 +453,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         Calls the `CatalogueCategoryPropertyService` `update` method with the appropriate data from a prior call to
         `mock_update` while expecting an error to be raised.
 
-        :param catalogue_category_property_id: D of the catalogue category property to be updated.
+        :param catalogue_category_property_id: The ID of the catalogue category property to be updated.
         :param error_type: Expected exception to be raised.
         """
 
@@ -716,3 +716,178 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No property found with ID '{catalogue_category_property_id}'")
+
+
+class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
+    """Base clas for `delete` tests."""
+
+    _catalogue_category_id: str
+    _delete_property_id: str
+    _stored_catalogue_category_in: Optional[CatalogueCategoryIn]
+    _stored_catalogue_category_out: Optional[CatalogueCategoryOut]
+    _stored_catalogue_category_property_out: Optional[CatalogueCategoryPropertyOut]
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(
+        self,
+        property_id: str,
+        stored_catalogue_category_property_in_data: Optional[dict],
+        catalogue_category_exists: bool = True,
+    ) -> None:
+        """
+        Mocks repository methods appropriately to test the `delete` service method.
+
+        :param property_id: The ID of the property to be deleted.
+        :param stored_catalogue_category_property_in_data: Either `None` or a dictionary containing the catalogue
+                                                category property data for the existing stored catalogue category
+                                                property as would be required for a `CatalogueCategoryPropertyIn`
+                                                database model.
+        :param catalogue_category_exists: Boolean of whether the catalogue category being deleted from
+                                        should exist or not.
+        """
+
+        self._catalogue_category_id = str(ObjectId())
+
+        # Use a predefined catalogue category
+        self._stored_catalogue_category_in = (
+            CatalogueCategoryIn(
+                **CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            )
+            if catalogue_category_exists
+            else None
+        )
+
+        self._stored_catalogue_category_property_out = (
+            CatalogueCategoryPropertyOut(
+                **{
+                    **CatalogueCategoryPropertyIn(**stored_catalogue_category_property_in_data).model_dump(),
+                    "id": property_id,
+                }
+            )
+            if stored_catalogue_category_property_in_data
+            else None
+        )
+        self._stored_catalogue_category_out = (
+            CatalogueCategoryOut(
+                **{
+                    **self._stored_catalogue_category_in.model_dump(by_alias=True),
+                    "properties": (
+                        [self._stored_catalogue_category_property_out]
+                        if stored_catalogue_category_property_in_data
+                        else []
+                    ),
+                },
+                id=self._catalogue_category_id,
+            )
+            if catalogue_category_exists
+            else None
+        )
+
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
+
+    def call_delete(self, property_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryPropertyService` `delete` method.
+
+        :param catalogue_category_id: The ID of the catalogue category from which to delete.
+        :param property_id: The ID of the property to be deleted.
+        """
+
+        self._delete_property_id = property_id
+
+        self.catalogue_category_property_service.delete(self._catalogue_category_id, property_id)
+
+    def call_delete_expecting_error(self, property_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueCategoryPropertyService` `delete` method with the appropriate data from a prior call to
+        `mock_update` while expecting an error to be raised.
+
+        :param property_idL The ID of the catalogue category property to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._delete_property_id = property_id
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_property_service.delete(
+                self._catalogue_category_id,
+                property_id,
+            )
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.mock_catalogue_category_repository.get.assert_called_once_with(self._catalogue_category_id)
+
+        # Session/Transaction
+        self.mock_start_session_transaction.assert_called_once_with("deleting property")
+        expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
+
+        self.mock_catalogue_category_repository.delete_property.assert_called_once_with(
+            catalogue_category_id=self._catalogue_category_id,
+            property_id=self._delete_property_id,
+            session=expected_session,
+        )
+
+        self.mock_catalogue_item_repository.delete_properties.assert_called_once_with(
+            property_id=self._delete_property_id,
+            session=expected_session,
+        )
+
+        self.mock_item_repository.delete_properties.assert_called_once_with(
+            property_id=self._delete_property_id,
+            session=expected_session,
+        )
+
+    def check_delete_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_catalogue_category_repository.delete_property.assert_not_called()
+        self.mock_catalogue_item_repository.delete_properties.assert_not_called()
+        self.mock_item_repository.delete_properties.assert_not_called()
+
+        assert str(self._delete_exception.value) == message
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a property"""
+
+    def test_delete(self):
+        """Test deleting a property."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_delete(
+            catalogue_category_property_id,
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+        )
+        self.call_delete(catalogue_category_property_id)
+        self.check_delete_success()
+
+    def test_delete_with_non_existent_property_id(self):
+        """Test deleting a property when given a non-existent catalogue category property ID."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_delete(catalogue_category_property_id, stored_catalogue_category_property_in_data=None)
+        self.call_delete_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No property found with ID '{self._delete_property_id}'")
+
+    def test_delete_with_non_existent_catalogue_category_id(self):
+        """Test deleting a catalogue category property when given a non-existent catalogue category ID."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_delete(
+            catalogue_category_property_id,
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+            catalogue_category_exists=False,
+        )
+        self.call_delete_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No catalogue category found with ID '{self._catalogue_category_id}'")

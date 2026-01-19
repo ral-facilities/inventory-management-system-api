@@ -882,6 +882,42 @@ class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
         )
 
 
+class DeletePropertiesDSL(InsertPropertyToAllMatchingDSL):
+    """Base class for `delete_properties` tests."""
+
+    _delete_property_id: str
+
+    def call_delete_properties(self, property_id: str) -> None:
+        """
+        Calls the `CataogueItemRepo` `delete_properties` method.
+
+        :param property_id: The ID of the property to delete.
+        """
+
+        self._delete_property_id = property_id
+        self.catalogue_item_repository.delete_properties(property_id=property_id, session=self.mock_session)
+
+    def check_delete_properties(self) -> None:
+        """Checks that a prior call to `delete_properties` worked as expected"""
+
+        self.catalogue_items_collection.update_many.assert_called_once_with(
+            {"properties._id": CustomObjectId(self._delete_property_id)},
+            {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+            array_filters=[{"elem._id": CustomObjectId(self._delete_property_id)}],
+            session=self.mock_session,
+        )
+
+
+class TestDeleteProperties(DeletePropertiesDSL):
+    """Tests for `delete_properties`."""
+
+    def test_delete_properties(self):
+        """Test `delete_properties`."""
+
+        self.call_delete_properties(str(ObjectId()))
+        self.check_delete_properties()
+
+
 class TestUpdateNumberOfSpares(UpdateNumberOfSparesDSL):
     """Tests for `update_number_of_spares`."""
 

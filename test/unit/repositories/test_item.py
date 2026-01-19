@@ -587,6 +587,42 @@ class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
         self.check_update_names_of_all_properties_with_id()
 
 
+class DeletePropertiesDSL(InsertPropertyToAllInDSL):
+    """Base class for `delete_properties` tests."""
+
+    _delete_property_id: str
+
+    def call_delete_properties(self, property_id: str) -> None:
+        """
+        Calls the `ItemRepo` `delete_properties` method.
+
+        :param property_id: The ID of the property to delete.
+        """
+
+        self._delete_property_id = property_id
+        self.item_repository.delete_properties(property_id=property_id, session=self.mock_session)
+
+    def check_delete_properties(self) -> None:
+        """Checks that a prior call to `delete_properties` worked as expected"""
+
+        self.items_collection.update_many.assert_called_once_with(
+            {"properties._id": CustomObjectId(self._delete_property_id)},
+            {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+            array_filters=[{"elem._id": CustomObjectId(self._delete_property_id)}],
+            session=self.mock_session,
+        )
+
+
+class TestDeleteProperties(DeletePropertiesDSL):
+    """Tests for `delete_properties`."""
+
+    def test_delete_properties(self):
+        """Test `delete_properties`."""
+
+        self.call_delete_properties(str(ObjectId()))
+        self.check_delete_properties()
+
+
 class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):
     """Base class for `count_in_catalogue_item_with_system_type_one_of` tests."""
 

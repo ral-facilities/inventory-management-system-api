@@ -179,25 +179,22 @@ class ItemRepo:
         )
 
     # pylint:enable=duplicate-code
-    
-    def delete_properties(
-        self,
-        property_id: str,
-        session: Optional[ClientSession] = None
-    ) -> None:
+
+    def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Deletes the property in every item it is present in
-        
+
         :param property_id: The ID of the property to delete.
         :param session: PyMongo ClientSession to use for database operations
         """
-        
+
         logger.info("Deleting all properties with ID '%s' inside items in the database", property_id)
-        
+
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
             {"$pull": {"properties": {"_id": CustomObjectId(property_id)}}},
-            session=session
+            array_filters=[{"elem._id": CustomObjectId(property_id)}],
+            session=session,
         )
 
     def count_in_catalogue_item_with_system_type_one_of(
