@@ -250,7 +250,6 @@ class CatalogueItemRepo:
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
             {"$pull": {"properties": {"_id": CustomObjectId(property_id)}}},
-            array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
 

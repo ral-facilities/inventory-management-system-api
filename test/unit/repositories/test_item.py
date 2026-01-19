@@ -608,7 +608,6 @@ class DeletePropertiesDSL(InsertPropertyToAllInDSL):
         self.items_collection.update_many.assert_called_once_with(
             {"properties._id": CustomObjectId(self._delete_property_id)},
             {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
-            array_filters=[{"elem._id": CustomObjectId(self._delete_property_id)}],
             session=self.mock_session,
         )
 

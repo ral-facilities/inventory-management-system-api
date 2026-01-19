@@ -36,6 +36,7 @@ from test.mock_data import (
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
     PROPERTY_GET_DATA_STRING_MANDATORY_TEXT,
+    VALID_ACCESS_TOKEN_ADMIN_ROLE,
 )
 from typing import Optional
 
@@ -779,3 +780,101 @@ class TestUpdate(UpdateDSL):
         self.patch_property("invalid-id", {})
 
         self.check_patch_property_failed_with_detail(404, "Catalogue category property not found")
+
+
+class DeleteDSL(UpdateDSL):
+    """Base class for delete tests."""
+
+    _delete_response_property: Response
+
+    def delete_property(self, property_id: str, use_admin_token: bool = True) -> None:
+        """
+        Deletes a property with the given ID.
+
+        :param property_id: The ID of the property to delete.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
+        """
+
+        self._delete_response_property = self.test_client.delete(
+            f"/v1/catalogue-categories/{self.catalogue_category_id}/properties/{property_id}",
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
+
+    def check_delete_property_success(self) -> None:
+        """Checks that a prior call to `delete_property` gave a successful response with the expected data
+        returned."""
+
+        assert self._delete_response_property.status_code == 204
+
+    def check_delete_property_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `delete_property` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._delete_response_property.status_code == status_code
+        assert self._delete_response_property.json()["detail"] == detail
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a property."""
+
+    def test_delete(self):
+        """Test deleting a property."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.delete_property(property_id)
+
+        self.check_delete_property_success()
+
+    def test_delete_not_authorised(self):
+        """Test deleting a property when the user is not authorised."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.delete_property(property_id, use_admin_token=False)
+
+        self.check_delete_property_failed_with_detail(403, "Not authorised to perform this operation")
+
+    def test_delete_non_existent_property_id(self):
+        """Test deleting a non-existent property."""
+
+        self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.delete_property(str(ObjectId()))
+
+        self.check_delete_property_failed_with_detail(404, "Catalogue category property not found")
+
+    def test_delete_property_invalid_id(self):
+        """Test deleting a property with an invalid ID."""
+
+        self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+
+        self.delete_property("invalid-id")
+
+        self.check_delete_property_failed_with_detail(404, "Catalogue category property not found")
+
+    def test_delete_non_existent_catalogue_category_id(self):
+        """Test deleting a property in non-existent catalogue category."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+        self.catalogue_category_id = str(ObjectId())
+
+        self.delete_property(property_id)
+
+        self.check_delete_property_failed_with_detail(404, "Catalogue category not found")
+
+    def test_delete_with_catalogue_category_invalid_id(self):
+        """Test deleting a property within a catalogue category with an invalid ID."""
+
+        property_id = self.post_test_property_and_prerequisites(CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY)
+        self.catalogue_category_id = "invalid-id"
+
+        self.delete_property(property_id)
+
+        self.check_delete_property_failed_with_detail(404, "Catalogue category not found")
