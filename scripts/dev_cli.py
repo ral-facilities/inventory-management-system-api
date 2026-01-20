@@ -213,7 +213,7 @@ def db_generate(
 
     if dump:
         # Dump output again
-        dump_database(db_username, db_password, "mock_data")
+        dump_database(db_username, db_password, "mock_data.dump")
     console.print("Success! :party_popper:")
 
 
