@@ -289,6 +289,7 @@ def partial_update_property(
     ],
     property_id: Annotated[str, Path(description="The ID of the property to patch")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
+    authorised: AuthorisedDep,
 ) -> CatalogueCategoryPropertySchema:
     logger.info(
         "Partially updating property with ID '%s' within the catalogue category with ID '%s'",
@@ -300,12 +301,18 @@ def partial_update_property(
     try:
         return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.update(
-                catalogue_category_id, property_id, catalogue_category_property
+                catalogue_category_id, property_id, catalogue_category_property, authorised
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if property_id in str(exc):
             message = "Catalogue category property not found"
+        elif (
+            catalogue_category_property.unit_id is not None
+            and catalogue_category_property.unit_id in str(exc)
+            or "unit" in str(exc).lower()
+        ):
+            message = "The specified unit does not exist"
         else:
             message = "Catalogue category not found"
         logger.exception(message)
@@ -316,7 +323,11 @@ def partial_update_property(
     except InvalidActionError as exc:
         message = str(exc)
         logger.exception(message)
+        if "authorised" in message:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=message) from exc
+
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+
     except ValueError as exc:
         message = str(exc)
         logger.exception(message)

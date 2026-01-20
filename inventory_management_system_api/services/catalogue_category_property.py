@@ -170,11 +170,14 @@ class CatalogueCategoryPropertyService:
                         "values"
                     )
 
+    # pylint:disable=too-many-locals
+    # pylint:disable=too-many-branches
     def update(
         self,
         catalogue_category_id: str,
         catalogue_category_property_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
+        is_authorised: bool,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -185,6 +188,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_id: The ID of the catalogue category to update
         :param catalogue_category_property_id: The ID of the property within the category to update
         :param catalogue_category_property: The property values to update
+        :param is_authorised: Whether or not the user is authorised to update a property's unit
         :raises MissingRecordError: If the catalogue category doesn't exist, or the property doesn't
                                     exist within the specified catalogue category
         """
@@ -206,6 +210,10 @@ class CatalogueCategoryPropertyService:
         if not existing_property_out:
             raise MissingRecordError(f"No property found with ID '{catalogue_category_property_id}'")
 
+        # check if unauthorised and attempting to update unit before other checks
+        if "unit_id" in update_data and not is_authorised:
+            raise InvalidActionError("Not authorised to change the unit of a property")
+
         # Modify the name if necessary and check it doesn't cause a conflict
         updating_name = "name" in update_data and update_data["name"] != existing_property_out.name
         if updating_name:
@@ -216,6 +224,19 @@ class CatalogueCategoryPropertyService:
             self._check_valid_allowed_values_update(
                 existing_property_out.allowed_values, catalogue_category_property.allowed_values
             )
+
+        # Units of properties may only be updated by authorised users
+        updating_unit = "unit_id" in update_data and update_data["unit_id"] != existing_property_out.unit_id
+        if updating_unit:
+            unit_id = update_data["unit_id"]
+
+            if not unit_id:
+                update_data["unit"] = None
+            else:
+                unit = self._unit_repository.get(unit_id)
+                if not unit:
+                    raise MissingRecordError(f"No unit found with ID '{unit_id}'")
+                update_data["unit"] = unit.value
 
         CatalogueCategoryPostPropertySchema.check_valid_allowed_values(
             catalogue_category_property.allowed_values, existing_property_out.model_dump()
@@ -231,12 +252,25 @@ class CatalogueCategoryPropertyService:
             )
 
             # Avoid propagating changes unless absolutely necessary
+            update_body = {}
             if updating_name:
-                self._catalogue_item_repository.update_names_of_all_properties_with_id(
-                    catalogue_category_property_id, catalogue_category_property.name, session=session
+                update_body["name"] = catalogue_category_property.name
+
+            if updating_unit:
+                update_body["unit_id"] = catalogue_category_property.unit_id
+                update_body["unit"] = update_data.get("unit")
+
+            if update_body:
+
+                self._catalogue_item_repository.update_all_properties_with_id(
+                    catalogue_category_property_id,
+                    update_body,
+                    session=session,
                 )
-                self._item_repository.update_names_of_all_properties_with_id(
-                    catalogue_category_property_id, catalogue_category_property.name, session=session
+                self._item_repository.update_all_properties_with_id(
+                    catalogue_category_property_id,
+                    update_body,
+                    session=session,
                 )
 
         return property_out
