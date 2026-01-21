@@ -117,6 +117,7 @@ class SettingService:
         :param in_use_definition: New in use definition.
         :return: Updated in use definition.
         :raises MissingRecordError: If any of the system types specified by the given IDs don't exist.
+        :raises InvalidActionError: If the in use definition conflicts with the spares one.
         """
 
         # Ensure all the given system types exist and don't conflict with any existing spares definition

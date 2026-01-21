@@ -306,7 +306,7 @@ class GetSparesDefinitionDSL(SparesDefinitionDSL):
         """Gets the spares definition."""
         self._get_response_spares_definition = self.test_client.get("/v1/settings/spares-definition")
 
-    def check_get_spares_definition_success(self, expected_spares_definition_get_data: dict) -> None:
+    def check_get_spares_definition_success(self, expected_spares_definition_get_data: Optional[dict]) -> None:
         """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data
             returned.
 
@@ -371,7 +371,7 @@ class GetInUseDefinitionDSL(InUseDefinitionDSL):
         """Gets the in use definition."""
         self._get_response_in_use_definition = self.test_client.get("/v1/settings/in-use-definition")
 
-    def check_get_in_use_definition_success(self, expected_in_use_definition_get_data: dict) -> None:
+    def check_get_in_use_definition_success(self, expected_in_use_definition_get_data: Optional[dict]) -> None:
         """Checks that a prior call to 'get_in_use_definition' gave a successful response with the expected data
             returned.
 

@@ -265,7 +265,7 @@ class TestGetSparesDefinition(GetSparesDefinitionDSL):
 class SetInUseDefinitionDSL(SettingServiceDSL):
     """Base class for `set` in use definition tests."""
 
-    _in_use_definition_in: SparesDefinitionIn
+    _in_use_definition_in: InUseDefinitionIn
     _expected_in_use_definition_out: MagicMock
     _updated_in_use_definition: MagicMock
     _set_in_use_definition_exception: pytest.ExceptionInfo
@@ -281,7 +281,7 @@ class SetInUseDefinitionDSL(SettingServiceDSL):
 
         :param in_use_definition_in_data: Dictionary containing the new in use definition data as would be required for
                                           a `InUseDefinitionIn` database model.
-        :param spares_definition_out_data: Dictionary containing the current in use definition data as would be required
+        :param spares_definition_out_data: Dictionary containing the current spares definition data as would be required
                                            for a `SparesDefinitionOut` database model.
         :param system_types_out_data: List where each element is either `None` or a dictionary containing the system
                                       type data as would be required for a `SystemTypeOut` database model.
