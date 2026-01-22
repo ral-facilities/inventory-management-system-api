@@ -13,5 +13,15 @@ class SparesDefinitionSchema(BaseModel):
     """
 
     system_types: list[SystemTypeSchema] = Field(
-        description="List of system types that define which systems contain spares."
+        description="List of system types that define which systems contain items that are considered spares."
+    )
+
+
+class InUseDefinitionSchema(BaseModel):
+    """
+    Schema model for an in use definition get request response.
+    """
+
+    system_types: list[SystemTypeSchema] = Field(
+        description="List of system types that define which systems contain items that are in use."
     )

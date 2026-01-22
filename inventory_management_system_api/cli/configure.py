@@ -14,8 +14,14 @@ from inventory_management_system_api.cli.core import (
     exit_with_error,
 )
 from inventory_management_system_api.core.database import get_database
+from inventory_management_system_api.core.exceptions import InvalidActionError
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
-from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
+from inventory_management_system_api.models.setting import (
+    InUseDefinitionIn,
+    InUseDefinitionOut,
+    SparesDefinitionIn,
+    SparesDefinitionOut,
+)
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -40,6 +46,22 @@ def display_current_spares_definition(
             current_type_indices.append(system_type_ids.index(system_type.id) + 1)
 
         display_user_selection("The current spares definition is", current_type_indices, current_type_values)
+
+
+def display_current_in_use_definition(
+    definition: Optional[InUseDefinitionOut], system_type_ids: list[StringObjectIdField]
+):
+    """Displays the current in use definition."""
+
+    if definition is None:
+        console.print("There is no in use definition currently")
+    else:
+        current_type_values = [system_type.value for system_type in definition.system_types]
+        current_type_indices = []
+        for system_type in definition.system_types:
+            current_type_indices.append(system_type_ids.index(system_type.id) + 1)
+
+        display_user_selection("The current in use definition is", current_type_indices, current_type_values)
 
 
 @app.command()
@@ -94,9 +116,61 @@ def spares_definition():
     # Now set the spares definition with a progress bar
     console.print("Updating catalogue items...")
     with create_progress_bar() as progress:
-        setting_service.set_spares_definition(
-            SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
-            tracker=progress.track,
+        try:
+            setting_service.set_spares_definition(
+                SparesDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types]),
+                tracker=progress.track,
+            )
+        except InvalidActionError as exc:
+            exit_with_error(str(exc))
+
+    console.print("Success! :party_popper:")
+
+
+@app.command()
+def in_use_definition():
+    """Configures the in use definition used by IMS."""
+
+    # Acquire the required services
+    database = get_database()
+    system_type_service = SystemTypeService(SystemTypeRepo(database))
+    setting_service = SettingService(
+        SettingRepo(database), SystemTypeRepo(database), CatalogueItemRepo(database), ItemRepo(database)
+    )
+
+    # Output a table of existing system types
+    system_types = system_type_service.list()
+
+    console.print("Below is a list of the current system types available:")
+    display_indexed_system_types(system_types)
+
+    # Obtain and output the in use definition
+    current_in_use_definition = setting_service.get_in_use_definition()
+
+    system_type_ids = [system_type.id for system_type in system_types]
+    display_current_in_use_definition(current_in_use_definition, system_type_ids)
+
+    # Obtain new requested in use definition
+    selected_type_indices, selected_types = ask_user_for_indices_selection(
+        "Please enter a new list of system types separated by commas e.g. [green]1,2,3[/]", system_types
+    )
+
+    # Output the new selected in use definition and request confirmation before setting it
+    display_user_selection(
+        "You have selected", selected_type_indices, [system_type.value for system_type in selected_types]
+    )
+
+    cont = typer.confirm("Are you sure you want to select this as your new in use definition?")
+    console.print()
+
+    if not cont:
+        exit_with_error("Cancelled")
+
+    try:
+        setting_service.set_in_use_definition(
+            InUseDefinitionIn(system_type_ids=[selected_type.id for selected_type in selected_types])
         )
+    except InvalidActionError as exc:
+        exit_with_error(str(exc))
 
     console.print("Success! :party_popper:")

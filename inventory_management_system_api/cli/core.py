@@ -153,7 +153,19 @@ def ask_user_for_indices_selection(message: str, options: list[T]) -> Tuple[list
     """Asks the user for a selection of indices and returns the resulting selected indices and the options they
     represent."""
 
-    selected_indices = [int(index) for index in Prompt.ask(message).split(",")]
+    invalid = True
+    while invalid:
+        try:
+            selected_indices = [int(index) for index in Prompt.ask(message).split(",")]
+            invalid = any(i < 1 or i > len(options) for i in selected_indices)
+            if invalid:
+                raise ValueError()
+        except ValueError:
+            # This catches both the case an index is not a number or otherwise formatted wrong, and the case the number
+            # is not in range
+            console.print(
+                f"[red]Please only supply valid indices between 1 and {len(options)} separated by commas.[/red]"
+            )
     selected_options = [options[selected_index - 1] for selected_index in selected_indices]
     console.print()
 

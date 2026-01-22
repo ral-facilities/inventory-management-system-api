@@ -14,6 +14,8 @@ from test.mock_data import (
     CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
     ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     RULE_DOCUMENT_DATA_OPERATIONAL_CREATION_CUSTOM,
+    SETTING_IN_USE_DEFINITION_GET_DATA_OPERATIONAL,
+    SETTING_IN_USE_DEFINITION_IN_DATA_OPERATIONAL,
     SETTING_SPARES_DEFINITION_GET_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
     SETTING_SPARES_DEFINITION_IN_DATA_STORAGE_OR_OPERATIONAL,
@@ -29,7 +31,7 @@ from bson import ObjectId
 from httpx import Response
 
 from inventory_management_system_api.core.database import get_database
-from inventory_management_system_api.models.setting import SparesDefinitionIn
+from inventory_management_system_api.models.setting import InUseDefinitionIn, SparesDefinitionIn
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -296,7 +298,7 @@ class TestSparesDefinitionDSL(SparesDefinitionDSL):
 
 
 class GetSparesDefinitionDSL(SparesDefinitionDSL):
-    """Base class for get_spares_definition tests."""
+    """Base class for get spares definition tests."""
 
     _get_response_spares_definition: Response
 
@@ -304,19 +306,19 @@ class GetSparesDefinitionDSL(SparesDefinitionDSL):
         """Gets the spares definition."""
         self._get_response_spares_definition = self.test_client.get("/v1/settings/spares-definition")
 
-    def check_get_spares_definition_success(self, expected_rules_get_spares_definition_data: dict) -> None:
+    def check_get_spares_definition_success(self, expected_spares_definition_get_data: Optional[dict]) -> None:
         """Checks that a prior call to 'get_spares_definition' gave a successful response with the expected data
             returned.
 
-        :param expected_rules_get_spares_definition_data: Dictionary containing the expected spares definition data
-        returned as would be required for 'SparesDefinitionSchema'
+        :param expected_spares_definition_get_data: Dictionary containing the expected spares definition data returned
+                                                    as would be required for 'SparesDefinitionSchema'.
         """
 
-        if expected_rules_get_spares_definition_data is None:
+        if expected_spares_definition_get_data is None:
             assert self._get_response_spares_definition.status_code == 204
         else:
             assert self._get_response_spares_definition.status_code == 200
-            assert self._get_response_spares_definition.json() == expected_rules_get_spares_definition_data
+            assert self._get_response_spares_definition.json() == expected_spares_definition_get_data
 
     def check_get_spares_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -345,3 +347,68 @@ class TestGetSparesDefinition(GetSparesDefinitionDSL):
 
         self.get_spares_definition()
         self.check_get_spares_definition_success(None)
+
+
+class InUseDefinitionDSL(SparesDefinitionDSL):
+    """Base class for in use definition tests."""
+
+    def set_in_use_definition(self, in_use_definition_in_data: dict) -> None:
+        """
+        Sets the in use definition inside the database.
+
+        :param in_use_definition_in_data: Dictionary containing the in use definition data to insert into the database.
+        """
+
+        self._setting_service.set_in_use_definition(InUseDefinitionIn(**in_use_definition_in_data))
+
+
+class GetInUseDefinitionDSL(InUseDefinitionDSL):
+    """Base class for get in use definition tests."""
+
+    _get_response_in_use_definition: Response
+
+    def get_in_use_definition(self) -> None:
+        """Gets the in use definition."""
+        self._get_response_in_use_definition = self.test_client.get("/v1/settings/in-use-definition")
+
+    def check_get_in_use_definition_success(self, expected_in_use_definition_get_data: Optional[dict]) -> None:
+        """Checks that a prior call to 'get_in_use_definition' gave a successful response with the expected data
+            returned.
+
+        :param expected_in_use_definition_get_data: Dictionary containing the expected in use definition data returned
+                                                    as would be required for 'InUseDefinitionSchema'
+        """
+
+        if expected_in_use_definition_get_data is None:
+            assert self._get_response_in_use_definition.status_code == 204
+        else:
+            assert self._get_response_in_use_definition.status_code == 200
+            assert self._get_response_in_use_definition.json() == expected_in_use_definition_get_data
+
+    def check_get_in_use_definition_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Check that a prior call to 'get_in_use_definition' gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+
+        assert self._get_response_in_use_definition.status_code == status_code
+        assert self._get_response_in_use_definition.json()["detail"] == detail
+
+
+class TestGetInUseDefinition(GetInUseDefinitionDSL):
+    """Tests for getting the in use definition."""
+
+    def test_get_in_use_definition(self):
+        """Test getting the in use definition"""
+        self.set_in_use_definition(SETTING_IN_USE_DEFINITION_IN_DATA_OPERATIONAL)
+
+        self.get_in_use_definition()
+        self.check_get_in_use_definition_success(SETTING_IN_USE_DEFINITION_GET_DATA_OPERATIONAL)
+
+    def test_get_in_use_definition_not_set(self):
+        """Test getting the in use definition when it is not set."""
+
+        self.get_in_use_definition()
+        self.check_get_in_use_definition_success(None)

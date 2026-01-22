@@ -65,16 +65,28 @@ console.log("Replica set initialised successfully");
     console.log(`Populating system types in ${databaseName}...`);
 
     db.system_types.insertMany([
-      { _id: SYSTEM_TYPE_ID_STORAGE, value: "Storage", description: "Storage system type" },
-      { _id: SYSTEM_TYPE_ID_OPERATIONAL, value: "Operational", description: "Operational system type" },
-      { _id: SYSTEM_TYPE_ID_SCRAPPED, value: "Scrapped", description: "Scrapped system type" },
+      {
+        _id: SYSTEM_TYPE_ID_STORAGE,
+        value: "Storage",
+        description: "Storage system type",
+      },
+      {
+        _id: SYSTEM_TYPE_ID_OPERATIONAL,
+        value: "Operational",
+        description: "Operational system type",
+      },
+      {
+        _id: SYSTEM_TYPE_ID_SCRAPPED,
+        value: "Scrapped",
+        description: "Scrapped system type",
+      },
     ]);
   }
 
   // Add some default settings if the collection doesn't already exist
   if (!db.getCollectionNames().includes("settings")) {
-    // Right now only have one setting, which we only want to set for development purposes, it is left unset by default
-    // for e2e tests to allow the tests to assign it when desired instead
+    // We only want to set these settings for development purposes, it is left unset by default for e2e tests to allow
+    // them to be assigned during those tests instead
     if (databaseName === "ims") {
       console.log(`Populating settings in ${databaseName}...`);
 
@@ -82,6 +94,13 @@ console.log("Replica set initialised successfully");
         {
           _id: "spares_definition",
           system_type_ids: [SYSTEM_TYPE_ID_STORAGE],
+        },
+      ]);
+
+      db.settings.insertMany([
+        {
+          _id: "in_use_definition",
+          system_type_ids: [SYSTEM_TYPE_ID_OPERATIONAL],
         },
       ]);
     }
@@ -139,21 +158,33 @@ console.log("Replica set initialised successfully");
 
   // Create the indexes
   console.log(
-    `Create unique name index for catalogue_categories, manufacturers, systems, units, and usage_statuses collections (${databaseName})...`
+    `Create unique name index for catalogue_categories, manufacturers, systems, units, and usage_statuses collections (${databaseName})...`,
   );
 
   db.catalogue_categories.createIndex(
     {
       parent_id: 1,
-      code: 1
+      code: 1,
     },
     {
       name: "catalogue_categories_name_uniqueness_index",
-      unique: true
-    }
+      unique: true,
+    },
   );
-  db.manufacturers.createIndex({ code: 1 }, { name: "manufacturers_name_uniqueness_index", unique: true });
-  db.systems.createIndex({ parent_id: 1, code: 1 }, { name: "systems_name_uniqueness_index", unique: true });
-  db.units.createIndex({ code: 1 }, { name: "units_name_uniqueness_index", unique: true });
-  db.usage_statuses.createIndex({ code: 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true });
+  db.manufacturers.createIndex(
+    { code: 1 },
+    { name: "manufacturers_name_uniqueness_index", unique: true },
+  );
+  db.systems.createIndex(
+    { parent_id: 1, code: 1 },
+    { name: "systems_name_uniqueness_index", unique: true },
+  );
+  db.units.createIndex(
+    { code: 1 },
+    { name: "units_name_uniqueness_index", unique: true },
+  );
+  db.usage_statuses.createIndex(
+    { code: 1 },
+    { name: "usage_statuses_name_uniqueness_index", unique: true },
+  );
 });

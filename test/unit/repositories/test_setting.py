@@ -2,7 +2,11 @@
 Unit tests for the `SettingRepo` repository.
 """
 
-from test.mock_data import SETTING_SPARES_DEFINITION_IN_DATA_STORAGE, SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE
+from test.mock_data import (
+    SETTING_IN_USE_DEFINITION_OUT_DATA_OPERATIONAL,
+    SETTING_SPARES_DEFINITION_IN_DATA_STORAGE,
+    SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+)
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import ClassVar, Optional, Type
 from unittest.mock import MagicMock, Mock
@@ -10,16 +14,17 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from inventory_management_system_api.models.setting import (
+    InUseDefinitionOut,
     SettingInBase,
     SettingOutBase,
     SparesDefinitionIn,
     SparesDefinitionOut,
 )
 from inventory_management_system_api.repositories.setting import (
-    SPARES_DEFINITION_GET_AGGREGATION_PIPELINE,
     SettingInBaseT,
     SettingOutBaseT,
     SettingRepo,
+    construct_definition_with_system_types_aggregation_pipeline,
 )
 
 
@@ -155,7 +160,7 @@ class GetDSL(SettingRepoDSL):
         """
         self._expected_setting_out = out_model_type(**setting_out_data) if setting_out_data is not None else None
 
-        if out_model_type is SparesDefinitionOut:
+        if out_model_type is SparesDefinitionOut or out_model_type is InUseDefinitionOut:
             self.settings_collection.aggregate.return_value = [setting_out_data] if setting_out_data is not None else []
         else:
             RepositoryTestHelpers.mock_find_one(
@@ -175,9 +180,10 @@ class GetDSL(SettingRepoDSL):
     def check_get_success(self) -> None:
         """Checks that a prior call to `call_get` worked as expected."""
 
-        if self._obtained_out_model_type is SparesDefinitionOut:
+        if self._obtained_out_model_type is SparesDefinitionOut or self._obtained_out_model_type is InUseDefinitionOut:
             self.settings_collection.aggregate.assert_called_once_with(
-                SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=self.mock_session
+                construct_definition_with_system_types_aggregation_pipeline(self._obtained_out_model_type.SETTING_ID),
+                session=self.mock_session,
             )
         else:
             self.settings_collection.find_one.assert_called_once_with(
@@ -216,4 +222,18 @@ class TestGet(GetDSL):
 
         self.mock_get(SparesDefinitionOut, None)
         self.call_get(SparesDefinitionOut)
+        self.check_get_success()
+
+    def test_get_in_use_definition(self):
+        """Test getting the in use definition setting."""
+
+        self.mock_get(InUseDefinitionOut, SETTING_IN_USE_DEFINITION_OUT_DATA_OPERATIONAL)
+        self.call_get(InUseDefinitionOut)
+        self.check_get_success()
+
+    def test_get_in_use_definition_when_non_existent(self):
+        """Test getting the in use definition setting when it is non-existent."""
+
+        self.mock_get(InUseDefinitionOut, None)
+        self.call_get(InUseDefinitionOut)
         self.check_get_success()
