@@ -23,6 +23,9 @@ class SystemBase(BaseModel):
     owner: Optional[str] = None
     importance: str
 
+    # Computed
+    is_flagged: bool = False
+
     # Used for uniqueness checks (sanitised name)
     code: str
 
