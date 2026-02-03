@@ -61,6 +61,9 @@ class CatalogueItemBase(BaseModel):
 
     # Computed
     number_of_spares: Optional[int]
+    number_of_spares_required: Optional[float] = None
+    criticality: Optional[float] = None
+    is_flagged: bool = False
 
     # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")
