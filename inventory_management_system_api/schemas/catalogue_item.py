@@ -4,7 +4,7 @@ Module for defining the API schema models for representing catalogue items.
 
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
 
@@ -46,8 +46,6 @@ class CatalogueItemPostSchema(BaseModel):
     expected_lifetime_days: Optional[float] = Field(
         default=None, description="The expected lifetime of the catalogue item in days"
     )
-    drawing_number: Optional[str] = Field(default=None, description="The drawing number of the catalogue item")
-    drawing_link: Optional[HttpUrl] = Field(default=None, description="The link to the drawing of the catalogue item")
     item_model_number: Optional[str] = Field(default=None, description="The model number of the catalogue item")
     is_obsolete: bool = Field(description="Whether the catalogue item is obsolete or not")
     obsolete_reason: Optional[str] = Field(
