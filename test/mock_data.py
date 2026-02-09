@@ -604,7 +604,7 @@ CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "number_of_spares": None,
     "number_of_spares_required": None,
     "criticality": None,
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Not obsolete, No properties
@@ -640,7 +640,7 @@ CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "number_of_spares": None,
     "number_of_spares_required": None,
     "criticality": None,
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Obsolete, No properties
@@ -659,7 +659,7 @@ CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES = {
     "number_of_spares": None,
     "number_of_spares_required": None,
     "criticality": None,
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # All properties
@@ -685,7 +685,7 @@ CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
     "number_of_spares": None,
     "number_of_spares_required": None,
     "criticality": None,
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Only mandatory properties
@@ -707,7 +707,7 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
     "number_of_spares": None,
     "number_of_spares_required": None,
     "criticality": None,
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # ------------------------------------- ITEMS -------------------------------------
