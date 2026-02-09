@@ -185,7 +185,7 @@ class ItemRepo:
         """
         Deletes the property in every item it is present in
 
-        :param property_id: The ID of the property to delete.
+        :param property_id: The ID of the property to delete
         :param session: PyMongo ClientSession to use for database operations
         """
 

@@ -1342,10 +1342,7 @@ class DeletePropertyDSL(UpdatePropertyDSL):
     _delete_exception: pytest.ExceptionInfo
 
     def mock_delete_property(self) -> None:
-        """
-        Mocks database methods appropriately to test the `delete_property` repo method.
-
-        """
+        """Mocks database methods appropriately to test the `delete_property` repo method."""
 
         RepositoryTestHelpers.mock_update_one(self.catalogue_categories_collection)
 
