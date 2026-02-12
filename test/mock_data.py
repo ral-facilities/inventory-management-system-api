@@ -316,6 +316,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
     "parent_id": None,
     "code": "non-leaf-catalogue-category-required-values-only",
     "properties": [],
+    "is_flagged": False,
 }
 
 # Non leaf, No parent, No properties
@@ -336,6 +337,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
+    "is_flagged": False,
 }
 
 
@@ -355,6 +357,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
+    "is_flagged": False,
 }
 
 # Leaf, No parent, No properties
@@ -378,6 +381,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     "id": ANY,
     "code": "leaf-category-no-parent-no-properties",
     "properties": [],
+    "is_flagged": False,
 }
 
 # Leaf, Required values only
@@ -394,6 +398,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY = {
     "parent_id": None,
     "code": "leaf-catalogue-category-required-values-only",
     "properties": [],
+    "is_flagged": False,
 }
 
 # Leaf, No parent, Properties, mm unit
@@ -432,6 +437,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     ],
+    "is_flagged": False,
 }
 
 # --------------------------------- PROPERTIES ---------------------------------
@@ -594,6 +600,9 @@ CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "notes": None,
     "properties": [],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # Not obsolete, No properties
@@ -625,6 +634,9 @@ CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "obsolete_replacement_catalogue_item_id": None,
     "properties": [],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # Obsolete, No properties
@@ -641,6 +653,9 @@ CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES = {
     "id": ANY,
     "properties": [],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # All properties
@@ -664,6 +679,9 @@ CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
         PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     ],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # Only mandatory properties
@@ -683,6 +701,9 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
         PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     ],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # ------------------------------------- ITEMS -------------------------------------
@@ -886,6 +907,7 @@ SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
     "location": None,
     "owner": None,
     "code": "storage-system-required-values-only",
+    "is_flagged": False,
 }
 
 # Storage, No parent, All values
@@ -905,6 +927,7 @@ SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
     "id": ANY,
     "parent_id": None,
     "code": "storage-system-all-values",
+    "is_flagged": False,
 }
 
 # Storage, No parent

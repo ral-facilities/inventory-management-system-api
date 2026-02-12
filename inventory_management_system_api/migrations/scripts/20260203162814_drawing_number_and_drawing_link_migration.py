@@ -40,7 +40,7 @@ class NewCatalogueItemBase(BaseModel):
     properties: List[PropertyIn] = []
 
     # Computed
-    number_of_spares: Optional[int]
+    number_of_spares: Optional[int] = None
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -96,7 +96,7 @@ class OldCatalogueItemBase(BaseModel):
     properties: List[PropertyIn] = []
 
     # Computed
-    number_of_spares: Optional[int]
+    number_of_spares: Optional[int] = None
 
     @field_validator("properties", mode="before")
     @classmethod

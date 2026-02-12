@@ -58,7 +58,10 @@ class CatalogueItemBase(BaseModel):
     properties: List[PropertyIn] = []
 
     # Computed
-    number_of_spares: Optional[int]
+    number_of_spares: Optional[int] = None
+    number_of_spares_required: Optional[float] = None
+    criticality: Optional[float] = None
+    is_flagged: Optional[bool] = None
 
     # pylint: disable=duplicate-code
     @field_validator("properties", mode="before")

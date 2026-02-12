@@ -96,5 +96,10 @@ class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostSchema):
 
     # Computed
     number_of_spares: Optional[int] = Field(
-        default=None, description="The number of spares currently available within this catalogue item if known"
+        description="The number of spares currently available within this catalogue item if known"
     )
+    number_of_spares_required: Optional[float] = Field(
+        default=None, description="The number of spares required for this catalogue item if known"
+    )
+    criticality: Optional[float] = Field(default=None, description="The criticality of the catalogue item if known")
+    is_flagged: Optional[bool] = Field(description="Whether the catalogue item is flagged as critical")
