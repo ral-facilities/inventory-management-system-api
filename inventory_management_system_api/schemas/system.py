@@ -7,7 +7,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin
 
 
 class SystemImportanceType(str, Enum):
@@ -44,7 +44,7 @@ class SystemPatchSchema(SystemPostSchema):
     importance: Optional[SystemImportanceType] = Field(default=None, description="Importance of the system")
 
 
-class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
+class SystemSchema(BaseFieldsSchemaMixin, SystemPostSchema):
     """
     Schema model for system get request responses.
     """

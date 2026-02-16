@@ -7,7 +7,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, AwareDatetime
 
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema, PropertySchema
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin
 
 
 class ItemPostSchema(BaseModel):
@@ -53,7 +53,7 @@ class ItemPatchSchema(ItemPostSchema):
     )
 
 
-class ItemSchema(CreatedModifiedSchemaMixin, ItemPostSchema):
+class ItemSchema(BaseFieldsSchemaMixin, ItemPostSchema):
     """
     Schema model for an item response.
     """

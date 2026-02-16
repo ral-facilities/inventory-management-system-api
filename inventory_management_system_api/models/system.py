@@ -7,7 +7,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 
 class SystemBase(BaseModel):
@@ -27,13 +27,13 @@ class SystemBase(BaseModel):
     code: str
 
 
-class SystemIn(CreatedModifiedTimeInMixin, SystemBase):
+class SystemIn(BaseFieldsInMixin, SystemBase):
     """
     Input database model for a system.
     """
 
 
-class SystemOut(CreatedModifiedTimeOutMixin, SystemBase):
+class SystemOut(BaseFieldsOutMixin, SystemBase):
     """
     Output database model for a system.
     """

@@ -9,7 +9,7 @@ from typing import Annotated, Any, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin
 
 
 class CatalogueCategoryPropertyType(str, Enum):
@@ -197,7 +197,7 @@ class CatalogueCategoryPatchSchema(CatalogueCategoryPostSchema):
     )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostSchema):
+class CatalogueCategorySchema(BaseFieldsSchemaMixin, CatalogueCategoryPostSchema):
     """
     Schema model for a catalogue category response.
     """

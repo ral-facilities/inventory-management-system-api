@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin
 
 
 class PropertyPostSchema(BaseModel):
@@ -85,7 +85,7 @@ class CatalogueItemPatchSchema(CatalogueItemPostSchema):
     is_obsolete: Optional[bool] = Field(default=None, description="Whether the catalogue item is obsolete or not")
 
 
-class CatalogueItemSchema(CreatedModifiedSchemaMixin, CatalogueItemPostSchema):
+class CatalogueItemSchema(BaseFieldsSchemaMixin, CatalogueItemPostSchema):
     """
     Schema model for a catalogue item response.
     """
