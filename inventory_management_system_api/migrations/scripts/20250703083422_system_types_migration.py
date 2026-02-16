@@ -15,7 +15,7 @@ from pymongo.database import Collection, Database
 
 from inventory_management_system_api.migrations.base import BaseMigration
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 # Pre-defined system types to create and apply
 SYSTEM_TYPE_VALUES = ["Storage", "Operational", "Scrapped"]
@@ -38,7 +38,7 @@ class NewSystemBase(BaseModel):
     code: str
 
 
-class NewSystemIn(CreatedModifiedTimeInMixin, NewSystemBase):
+class NewSystemIn(BaseFieldsInMixin, NewSystemBase):
     """
     Input database model for a system.
     """
@@ -60,7 +60,7 @@ class OldSystemBase(BaseModel):
     code: str
 
 
-class OldSystemOut(CreatedModifiedTimeOutMixin, OldSystemBase):
+class OldSystemOut(BaseFieldsOutMixin, OldSystemBase):
     """
     Output database model for a system
     """

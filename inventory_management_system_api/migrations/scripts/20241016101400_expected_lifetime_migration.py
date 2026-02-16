@@ -15,7 +15,7 @@ from pymongo.database import Database
 from inventory_management_system_api.migrations.base import BaseMigration
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 
 class NewCatalogueItemBase(BaseModel):
@@ -66,7 +66,7 @@ class NewCatalogueItemBase(BaseModel):
         return url if url is None else str(url)
 
 
-class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
+class NewCatalogueItemIn(BaseFieldsInMixin, NewCatalogueItemBase):
     """
     Input database model for a catalogue item.
     """
@@ -119,7 +119,7 @@ class OldCatalogueItemBase(BaseModel):
         return url if url is None else str(url)
 
 
-class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
+class OldCatalogueItemOut(BaseFieldsOutMixin, OldCatalogueItemBase):
     """
     Output database model for a catalogue item.
     """
