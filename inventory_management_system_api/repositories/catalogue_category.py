@@ -323,17 +323,19 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to delete
         :param property_id: The ID of the property to delete
         :param session: PyMongo ClientSession to use for database operations
-        :raises MissingRecordError: If the property doesn't exist
         """
 
         logger.info(
-            "Deleting property with ID '%s' inside catalogue category with ID '%s from the database",
+            "Deleting property with ID '%s' inside catalogue category with ID '%s' from the database",
             property_id,
             catalogue_category_id,
         )
 
         self._catalogue_categories_collection.update_one(
             {"_id": CustomObjectId(catalogue_category_id)},
-            {"$pull": {"properties": {"_id": CustomObjectId(property_id)}}},
+            {
+                "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
+            },
             session=session,
         )

@@ -353,7 +353,7 @@ def delete_property(
     authorised: AuthorisedDep,
 ) -> None:
     logger.info(
-        "Deleting property with ID '%s' within the catalogue category with ID '%s", property_id, catalogue_category_id
+        "Deleting property with ID '%s' within the catalogue category with ID '%s'", property_id, catalogue_category_id
     )
 
     # check user is authorised to perform operation

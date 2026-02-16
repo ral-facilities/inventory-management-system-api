@@ -900,7 +900,7 @@ class DeletePropertiesDSL(InsertPropertyToAllMatchingDSL):
 
     def call_delete_properties(self, property_id: str) -> None:
         """
-        Calls the `CataogueItemRepo` `delete_properties` method.
+        Calls the `CatalogueItemRepo` `delete_properties` method.
 
         :param property_id: The ID of the property to delete.
         """
@@ -913,7 +913,12 @@ class DeletePropertiesDSL(InsertPropertyToAllMatchingDSL):
 
         self.catalogue_items_collection.update_many.assert_called_once_with(
             {"properties._id": CustomObjectId(self._delete_property_id)},
-            {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+            {
+                "$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}},
+                "$set": {
+                    "modified_time": self._mock_datetime.now.return_value,
+                },
+            },
             session=self.mock_session,
         )
 

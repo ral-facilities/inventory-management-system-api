@@ -193,7 +193,10 @@ class ItemRepo:
 
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
-            {"$pull": {"properties": {"_id": CustomObjectId(property_id)}}},
+            {
+                "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
+            },
             session=session,
         )
 

@@ -25,6 +25,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
@@ -906,7 +907,7 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
                         else []
                     ),
                 },
-                id=self._catalogue_category_id,
+                id=CustomObjectId(self._catalogue_category_id),
             )
             if catalogue_category_exists
             else None
@@ -918,7 +919,6 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
         """
         Calls the `CatalogueCategoryPropertyService` `delete` method.
 
-        :param catalogue_category_id: The ID of the catalogue category from which to delete.
         :param property_id: The ID of the property to be deleted.
         """
 
@@ -931,7 +931,7 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
         Calls the `CatalogueCategoryPropertyService` `delete` method with the appropriate data from a prior call to
         `mock_update` while expecting an error to be raised.
 
-        :param property_idL The ID of the catalogue category property to be deleted.
+        :param property_id: The ID of the catalogue category property to be deleted.
         :param error_type: Expected exception to be raised.
         """
 

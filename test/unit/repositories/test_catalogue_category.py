@@ -1384,7 +1384,12 @@ class DeletePropertyDSL(UpdatePropertyDSL):
 
         self.catalogue_categories_collection.update_one.assert_called_once_with(
             {"_id": CustomObjectId(self._catalogue_category_id)},
-            {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+            {
+                "$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}},
+                "$set": {
+                    "modified_time": self._mock_datetime.now.return_value,
+                },
+            },
             session=self.mock_session,
         )
 
@@ -1404,13 +1409,18 @@ class DeletePropertyDSL(UpdatePropertyDSL):
         else:
             self.catalogue_categories_collection.update_one.assert_called_once_with(
                 {"_id": CustomObjectId(self._catalogue_category_id)},
-                {"$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}}},
+                {
+                    "$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}},
+                    "$set": {
+                        "modified_time": self._mock_datetime.now.return_value,
+                    },
+                },
                 session=self.mock_session,
             )
         assert str(self._delete_exception.value) == message
 
 
-class TestDeleteProeprty(DeletePropertyDSL):
+class TestDeleteProperty(DeletePropertyDSL):
     """Tests for deleting a catalogue category property."""
 
     def test_delete(self):

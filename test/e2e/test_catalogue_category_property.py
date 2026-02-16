@@ -42,7 +42,7 @@ from test.mock_data import (
 from typing import Optional
 
 from bson import ObjectId
-from fastapi import Response
+from httpx import Response
 
 
 class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
@@ -157,7 +157,7 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
         assert self._post_response_property.status_code == status_code
         assert self._post_response_property.json()["detail"][0]["msg"] == message
 
-    def check_catalogue_category_updated(self, expected_property_get_data: dict) -> None:
+    def check_catalogue_category_updated(self, expected_property_get_data: dict | None = None) -> None:
         """Checks the catalogue category is updated correctly with the new property.
 
         :param expected_property_get_data: Dictionary containing the expected property data returned as would be
@@ -166,21 +166,19 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
                                            automatically.
         """
 
+        properties = [CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY]
+        if expected_property_get_data:
+            properties.append(expected_property_get_data)
+
         self.get_catalogue_category(self.catalogue_category_id)
         self.check_get_catalogue_category_success(
-            {
-                **BASE_CATALOGUE_CATEGORY_GET_DATA_WITH_PROPERTIES_MM,
-                "properties": [
-                    CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY,
-                    expected_property_get_data,
-                ],
-            }
+            {**BASE_CATALOGUE_CATEGORY_GET_DATA_WITH_PROPERTIES_MM, "properties": properties}
         )
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_catalogue_category, self._get_response_catalogue_category
         )
 
-    def check_catalogue_item_updated(self, expected_property_get_data: dict) -> None:
+    def check_catalogue_item_updated(self, expected_property_get_data: dict | None = None) -> None:
         """Checks the catalogue item is updated correctly with the new property.
 
         :param expected_property_get_data: Dictionary containing the expected property data returned as would be
@@ -189,18 +187,17 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
                                            are as expected.
         """
 
+        properties = [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE]
+        if expected_property_get_data:
+            properties.append(expected_property_get_data)
+
         self.get_catalogue_item(self.catalogue_item_id)
-        self.check_get_catalogue_item_success(
-            {
-                **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
-                "properties": [PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, expected_property_get_data],
-            }
-        )
+        self.check_get_catalogue_item_success({**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": properties})
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_catalogue_item, self._get_response_catalogue_item
         )
 
-    def check_item_updated(self, expected_property_get_data: dict) -> None:
+    def check_item_updated(self, expected_property_get_data: dict | None = None) -> None:
         """Checks the item is updated correctly with the new property.
 
         :param expected_property_get_data: Dictionary containing the expected property data returned as would be
@@ -209,16 +206,12 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
                                            are as expected.
         """
 
+        properties = [PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE]
+        if expected_property_get_data:
+            properties.append(expected_property_get_data)
+
         self.get_item(self.item_id)
-        self.check_get_item_success(
-            {
-                **ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES,
-                "properties": [
-                    PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE,
-                    expected_property_get_data,
-                ],
-            }
-        )
+        self.check_get_item_success({**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": properties})
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_item, self._get_response_item
         )
@@ -904,6 +897,9 @@ class TestDelete(DeleteDSL):
         self.delete_property(property_id)
 
         self.check_delete_property_success()
+        self.check_catalogue_category_updated()
+        self.check_catalogue_item_updated()
+        self.check_item_updated()
 
     def test_delete_not_authorised(self):
         """Test deleting a property when the user is not authorised."""
@@ -913,6 +909,8 @@ class TestDelete(DeleteDSL):
         self.delete_property(property_id, use_admin_token=False)
 
         self.check_delete_property_failed_with_detail(403, "Not authorised to perform this operation")
+        self.check_catalogue_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE)
+        self.check_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE)
 
     def test_delete_non_existent_property_id(self):
         """Test deleting a non-existent property."""
@@ -922,6 +920,8 @@ class TestDelete(DeleteDSL):
         self.delete_property(str(ObjectId()))
 
         self.check_delete_property_failed_with_detail(404, "Catalogue category property not found")
+        self.check_catalogue_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE)
+        self.check_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE)
 
     def test_delete_property_invalid_id(self):
         """Test deleting a property with an invalid ID."""
@@ -931,6 +931,8 @@ class TestDelete(DeleteDSL):
         self.delete_property("invalid-id")
 
         self.check_delete_property_failed_with_detail(404, "Catalogue category property not found")
+        self.check_catalogue_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE)
+        self.check_item_not_updated(PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_NONE)
 
     def test_delete_non_existent_catalogue_category_id(self):
         """Test deleting a property in non-existent catalogue category."""
