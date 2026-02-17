@@ -13,7 +13,11 @@ from pymongo.collection import Collection
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import DatabaseDep
 from inventory_management_system_api.core.exceptions import MissingRecordError
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut, PropertyIn
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn,
+    CatalogueItemOut,
+    PropertyIn,
+)
 
 logger = logging.getLogger()
 
@@ -33,7 +37,9 @@ class CatalogueItemRepo:
         self._catalogue_items_collection: Collection = self._database.catalogue_items
         self._items_collection: Collection = self._database.items
 
-    def create(self, catalogue_item: CatalogueItemIn, session: Optional[ClientSession] = None) -> CatalogueItemOut:
+    def create(
+        self, catalogue_item: CatalogueItemIn, session: Optional[ClientSession] = None
+    ) -> CatalogueItemOut:
         """
         Create a new catalogue item in a MongoDB database.
 
@@ -42,11 +48,15 @@ class CatalogueItemRepo:
         :return: The created catalogue item.
         """
         logger.info("Inserting the new catalogue item into the database")
-        result = self._catalogue_items_collection.insert_one(catalogue_item.model_dump(by_alias=True), session=session)
+        result = self._catalogue_items_collection.insert_one(
+            catalogue_item.model_dump(by_alias=True), session=session
+        )
         catalogue_item = self.get(str(result.inserted_id), session=session)
         return catalogue_item
 
-    def get(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> Optional[CatalogueItemOut]:
+    def get(
+        self, catalogue_item_id: str, session: Optional[ClientSession] = None
+    ) -> Optional[CatalogueItemOut]:
         """
         Retrieve a catalogue item by its ID from a MongoDB database.
 
@@ -55,14 +65,21 @@ class CatalogueItemRepo:
         :return: The retrieved catalogue item, or `None` if not found.
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
-        logger.info("Retrieving catalogue item with ID '%s' from the database", catalogue_item_id)
-        catalogue_item = self._catalogue_items_collection.find_one({"_id": catalogue_item_id}, session=session)
+        logger.info(
+            "Retrieving catalogue item with ID '%s' from the database",
+            catalogue_item_id,
+        )
+        catalogue_item = self._catalogue_items_collection.find_one(
+            {"_id": catalogue_item_id}, session=session
+        )
         if catalogue_item:
             return CatalogueItemOut(**catalogue_item)
         return None
 
     def list(
-        self, catalogue_category_id: Optional[str], session: Optional[ClientSession] = None
+        self,
+        catalogue_category_id: Optional[str],
+        session: Optional[ClientSession] = None,
     ) -> List[CatalogueItemOut]:
         """
         Retrieve all catalogue items from a MongoDB database.
@@ -80,14 +97,23 @@ class CatalogueItemRepo:
         if not query:
             logger.info(message)
         else:
-            logger.info("%s matching the provided catalogue category ID filter", message)
-            logger.debug("Provided catalogue category ID filter '%s'", catalogue_category_id)
+            logger.info(
+                "%s matching the provided catalogue category ID filter", message
+            )
+            logger.debug(
+                "Provided catalogue category ID filter '%s'", catalogue_category_id
+            )
 
         catalogue_items = self._catalogue_items_collection.find(query, session=session)
-        return [CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items]
+        return [
+            CatalogueItemOut(**catalogue_item) for catalogue_item in catalogue_items
+        ]
 
     def update(
-        self, catalogue_item_id: str, catalogue_item: CatalogueItemIn, session: Optional[ClientSession] = None
+        self,
+        catalogue_item_id: str,
+        catalogue_item: CatalogueItemIn,
+        session: Optional[ClientSession] = None,
     ) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID in a MongoDB database.
@@ -99,14 +125,20 @@ class CatalogueItemRepo:
         """
         catalogue_item_id = CustomObjectId(catalogue_item_id)
 
-        logger.info("Updating catalogue item with ID '%s' in the database", catalogue_item_id)
+        logger.info(
+            "Updating catalogue item with ID '%s' in the database", catalogue_item_id
+        )
         self._catalogue_items_collection.update_one(
-            {"_id": catalogue_item_id}, {"$set": catalogue_item.model_dump(by_alias=True)}, session=session
+            {"_id": catalogue_item_id},
+            {"$set": catalogue_item.model_dump(by_alias=True)},
+            session=session,
         )
         catalogue_item = self.get(str(catalogue_item_id), session=session)
         return catalogue_item
 
-    def delete(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> None:
+    def delete(
+        self, catalogue_item_id: str, session: Optional[ClientSession] = None
+    ) -> None:
         """
         Delete a catalogue item by its ID from a MongoDB database.
 
@@ -114,14 +146,20 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         :raises MissingRecordError: If the catalogue item doesn't exist.
         """
-        logger.info("Deleting catalogue item with ID '%s' from the database", catalogue_item_id)
+        logger.info(
+            "Deleting catalogue item with ID '%s' from the database", catalogue_item_id
+        )
         result = self._catalogue_items_collection.delete_one(
             {"_id": CustomObjectId(catalogue_item_id)}, session=session
         )
         if result.deleted_count == 0:
-            raise MissingRecordError(f"No catalogue item found with ID '{catalogue_item_id}'")
+            raise MissingRecordError(
+                f"No catalogue item found with ID '{catalogue_item_id}'"
+            )
 
-    def has_child_elements(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
+    def has_child_elements(
+        self, catalogue_item_id: str, session: Optional[ClientSession] = None
+    ) -> bool:
         """
         Check if a catalogue item has child elements based on its ID.
 
@@ -131,13 +169,18 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :return: True if the catalogue item has child elements, False otherwise.
         """
-        logger.info("Checking if catalogue item with ID '%s' has child elements", catalogue_item_id)
+        logger.info(
+            "Checking if catalogue item with ID '%s' has child elements",
+            catalogue_item_id,
+        )
         item = self._items_collection.find_one(
             {"catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
         )
         return item is not None
 
-    def is_replacement_for(self, catalogue_item_id: str, session: Optional[ClientSession] = None) -> bool:
+    def is_replacement_for(
+        self, catalogue_item_id: str, session: Optional[ClientSession] = None
+    ) -> bool:
         """
         Check if a catalogue item is the replacement for at least one obsolete catalogue item.
 
@@ -151,12 +194,19 @@ class CatalogueItemRepo:
             catalogue_item_id,
         )
         item = self._catalogue_items_collection.find_one(
-            {"obsolete_replacement_catalogue_item_id": CustomObjectId(catalogue_item_id)}, session=session
+            {
+                "obsolete_replacement_catalogue_item_id": CustomObjectId(
+                    catalogue_item_id
+                )
+            },
+            session=session,
         )
         return item is not None
 
     def list_ids(
-        self, catalogue_category_id: Optional[str] = None, session: Optional[ClientSession] = None
+        self,
+        catalogue_category_id: Optional[str] = None,
+        session: Optional[ClientSession] = None,
     ) -> List[ObjectId]:
         """
         Retrieve a list of all catalogue item ids (optionally with a specific catalogue_category_id) from a MongoDB
@@ -183,10 +233,15 @@ class CatalogueItemRepo:
         # Using distinct has a 16MB limit
         # https://stackoverflow.com/questions/29771192/how-do-i-get-a-list-of-just-the-objectids-using-pymongo
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
-        return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
+        return self._catalogue_items_collection.find(
+            query, {"_id": 1}, session=session
+        ).distinct("_id")
 
     def insert_property_to_all_matching(
-        self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
+        self,
+        catalogue_category_id: str,
+        property_in: PropertyIn,
+        session: Optional[ClientSession] = None,
     ):
         """
         Inserts a property into every catalogue item with a given catalogue_category_id via an update_many query
@@ -226,10 +281,14 @@ class CatalogueItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         """
 
-        logger.info("Updating all properties with ID '%s' inside catalogue items in the database", property_id)
+        logger.info(
+            "Updating all properties with ID '%s' inside catalogue items in the database",
+            property_id,
+        )
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
+        set_body["modified_comment"] = update_body.get("modified_comment")
 
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},

@@ -5,7 +5,10 @@ Module for defining the API schema models for representing manufacturers.
 from typing import Optional
 from pydantic import BaseModel, Field, HttpUrl
 
-from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin
+from inventory_management_system_api.schemas.mixins import (
+    BaseFieldsSchemaMixin,
+    CustomBaseSchema,
+)
 
 
 class AddressSchema(BaseModel):
@@ -21,18 +24,26 @@ class AddressSchema(BaseModel):
 class AddressPatchSchema(AddressSchema):
     """Schema used for editing address, so that it allows to edit individual fields"""
 
-    address_line: Optional[str] = Field(default=None, description="The address line of the manufacturer")
-    postcode: Optional[str] = Field(default=None, description="Post Code/Zip of manufacturer")
-    country: Optional[str] = Field(default=None, description="Country of the manufacturer")
+    address_line: Optional[str] = Field(
+        default=None, description="The address line of the manufacturer"
+    )
+    postcode: Optional[str] = Field(
+        default=None, description="Post Code/Zip of manufacturer"
+    )
+    country: Optional[str] = Field(
+        default=None, description="Country of the manufacturer"
+    )
 
 
-class ManufacturerPostSchema(BaseModel):
+class ManufacturerPostSchema(CustomBaseSchema):
     """Schema model for manufacturer creation request"""
 
     name: str = Field(description="Name of manufacturer")
     url: Optional[HttpUrl] = Field(default=None, description="URL of manufacturer")
     address: AddressSchema = Field(description="Address of manufacturer")
-    telephone: Optional[str] = Field(default=None, description="Phone number of manufacturer")
+    telephone: Optional[str] = Field(
+        default=None, description="Phone number of manufacturer"
+    )
 
 
 class ManufacturerPatchSchema(ManufacturerPostSchema):

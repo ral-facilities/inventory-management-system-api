@@ -7,9 +7,15 @@ from typing import Annotated, List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import MissingRecordError
-from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
+from inventory_management_system_api.models.manufacturer import (
+    ManufacturerIn,
+    ManufacturerOut,
+)
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
-from inventory_management_system_api.schemas.manufacturer import ManufacturerPatchSchema, ManufacturerPostSchema
+from inventory_management_system_api.schemas.manufacturer import (
+    ManufacturerPatchSchema,
+    ManufacturerPostSchema,
+)
 from inventory_management_system_api.services import utils
 
 
@@ -62,7 +68,9 @@ class ManufacturerService:
         """
         return self._manufacturer_repository.list()
 
-    def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema) -> ManufacturerOut:
+    def update(
+        self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema
+    ) -> ManufacturerOut:
         """
         Update a manufacturer by its ID.
 
@@ -72,7 +80,9 @@ class ManufacturerService:
         """
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:
-            raise MissingRecordError(f"No manufacturer found with ID '{manufacturer_id}'")
+            raise MissingRecordError(
+                f"No manufacturer found with ID '{manufacturer_id}'"
+            )
 
         update_data = manufacturer.model_dump(exclude_unset=True)
 
@@ -80,10 +90,20 @@ class ManufacturerService:
             update_data["code"] = utils.generate_code(manufacturer.name, "manufacturer")
 
         stored_manufacturer = stored_manufacturer.model_copy(
-            update={**update_data, "address": stored_manufacturer.address.model_copy(update=update_data.get("address"))}
+            update={
+                **update_data,
+                "modified_comment": update_data.get(
+                    "modified_comment"
+                ),  # TBD - does the data entry in ims require an accurate reflection of the comment.
+                "address": stored_manufacturer.address.model_copy(
+                    update=update_data.get("address")
+                ),
+            }
         )
 
-        return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump()))
+        return self._manufacturer_repository.update(
+            manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump())
+        )
 
     def delete(self, manufacturer_id: str) -> None:
         """
