@@ -288,7 +288,6 @@ class CatalogueItemRepo:
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
-        set_body["modified_comment"] = update_body.get("modified_comment")
 
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
