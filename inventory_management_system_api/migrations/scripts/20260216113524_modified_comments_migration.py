@@ -12,6 +12,7 @@ from pymongo.database import Database
 
 from inventory_management_system_api.migrations.base import BaseMigration
 
+
 # pylint:disable=too-many-instance-attributes
 class Migration(BaseMigration):
     """Migration that Adds modified_comment to all entries"""
