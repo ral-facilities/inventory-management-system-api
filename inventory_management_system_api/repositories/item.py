@@ -43,16 +43,12 @@ class ItemRepo:
         :return: The created item.
         """
         logger.info("Inserting the new item into the database")
-        result = self._items_collection.insert_one(
-            item.model_dump(by_alias=True), session=session
-        )
+        result = self._items_collection.insert_one(item.model_dump(by_alias=True), session=session)
 
         item = self.get(str(result.inserted_id), session=session)
         return item
 
-    def get(
-        self, item_id: str, session: Optional[ClientSession] = None
-    ) -> Optional[ItemOut]:
+    def get(self, item_id: str, session: Optional[ClientSession] = None) -> Optional[ItemOut]:
         """
         Retrieve an item by its ID from a MongoDB database.
 
@@ -100,16 +96,12 @@ class ItemRepo:
             if system_id:
                 logger.debug("Provided system ID filter '%s'", system_id)
             if catalogue_item_id:
-                logger.debug(
-                    "Provided catalogue item ID filter '%s'", catalogue_item_id
-                )
+                logger.debug("Provided catalogue item ID filter '%s'", catalogue_item_id)
 
         items = self._items_collection.find(query, session=session)
         return [ItemOut(**item) for item in items]
 
-    def update(
-        self, item_id: str, item: ItemIn, session: Optional[ClientSession] = None
-    ) -> ItemOut:
+    def update(self, item_id: str, item: ItemIn, session: Optional[ClientSession] = None) -> ItemOut:
         """
         Update an item by its ID in a MongoDB database.
 
@@ -120,9 +112,7 @@ class ItemRepo:
         """
         item_id = CustomObjectId(item_id)
         logger.info("Updating item with ID '%s' in the database", item_id)
-        self._items_collection.update_one(
-            {"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session
-        )
+        self._items_collection.update_one({"_id": item_id}, {"$set": item.model_dump(by_alias=True)}, session=session)
         item = self.get(str(item_id), session=session)
         return item
 

@@ -28,14 +28,10 @@ class SystemPostSchema(CustomBaseSchema):
     Schema model for a system creation request.
     """
 
-    parent_id: Optional[str] = Field(
-        default=None, description="ID of the parent system (if applicable)"
-    )
+    parent_id: Optional[str] = Field(default=None, description="ID of the parent system (if applicable)")
     name: str = Field(description="Name of the system")
     type_id: str = Field(description="ID of the type of the system")
-    description: Optional[str] = Field(
-        default=None, description="Description of the system"
-    )
+    description: Optional[str] = Field(default=None, description="Description of the system")
     location: Optional[str] = Field(default=None, description="Location of the system")
     owner: Optional[str] = Field(default=None, description="Owner of the systems")
     importance: SystemImportanceType = Field(description="Importance of the system")
@@ -47,12 +43,8 @@ class SystemPatchSchema(SystemPostSchema):
     """
 
     name: Optional[str] = Field(default=None, description="Name of the system")
-    type_id: Optional[str] = Field(
-        default=None, description="ID of the type of the system"
-    )
-    importance: Optional[SystemImportanceType] = Field(
-        default=None, description="Importance of the system"
-    )
+    type_id: Optional[str] = Field(default=None, description="ID of the type of the system")
+    importance: Optional[SystemImportanceType] = Field(default=None, description="Importance of the system")
 
 
 class SystemSchema(BaseFieldsSchemaMixin, SystemPostSchema):

@@ -68,9 +68,7 @@ class ManufacturerService:
         """
         return self._manufacturer_repository.list()
 
-    def update(
-        self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema
-    ) -> ManufacturerOut:
+    def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema) -> ManufacturerOut:
         """
         Update a manufacturer by its ID.
 
@@ -80,9 +78,7 @@ class ManufacturerService:
         """
         stored_manufacturer = self.get(manufacturer_id)
         if not stored_manufacturer:
-            raise MissingRecordError(
-                f"No manufacturer found with ID '{manufacturer_id}'"
-            )
+            raise MissingRecordError(f"No manufacturer found with ID '{manufacturer_id}'")
 
         update_data = manufacturer.model_dump(exclude_unset=True)
 
@@ -95,15 +91,11 @@ class ManufacturerService:
                 "modified_comment": update_data.get(
                     "modified_comment"
                 ),  # TBD - does the data entry in ims require an accurate reflection of the comment.
-                "address": stored_manufacturer.address.model_copy(
-                    update=update_data.get("address")
-                ),
+                "address": stored_manufacturer.address.model_copy(update=update_data.get("address")),
             }
         )
 
-        return self._manufacturer_repository.update(
-            manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump())
-        )
+        return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump()))
 
     def delete(self, manufacturer_id: str) -> None:
         """
