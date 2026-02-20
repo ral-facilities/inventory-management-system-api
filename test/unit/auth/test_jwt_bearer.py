@@ -52,7 +52,7 @@ async def test_jwt_bearer_authorization_request_invalid_bearer_token(jwt_decode_
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Invalid token or expired token"
+    assert str(exc.value) == "401: Invalid token or expired token"
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
@@ -67,7 +67,7 @@ async def test_jwt_bearer_authorization_request_expired_bearer_token(jwt_decode_
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Invalid token or expired token"
+    assert str(exc.value) == "401: Invalid token or expired token"
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
@@ -82,7 +82,7 @@ async def test_jwt_bearer_authorization_request_missing_username_in_bearer_token
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Invalid token or expired token"
+    assert str(exc.value) == "401: Invalid token or expired token"
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
@@ -97,7 +97,7 @@ async def test_jwt_bearer_authorization_request_missing_role_in_bearer_token(jwt
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Invalid token or expired token"
+    assert str(exc.value) == "401: Invalid token or expired token"
 
 
 @patch("inventory_management_system_api.auth.jwt_bearer.jwt.decode")
@@ -142,7 +142,7 @@ async def test_jwt_bearer_authorization_request_missing_authorization_header(req
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Not authenticated"
+    assert str(exc.value) == "401: Not authenticated"
 
 
 async def test_jwt_bearer_authorization_request_empty_authorization_header(request_mock):
@@ -155,7 +155,7 @@ async def test_jwt_bearer_authorization_request_empty_authorization_header(reque
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Not authenticated"
+    assert str(exc.value) == "401: Not authenticated"
 
 
 async def test_jwt_bearer_authorization_request_missing_bearer_token(request_mock):
@@ -168,7 +168,7 @@ async def test_jwt_bearer_authorization_request_missing_bearer_token(request_moc
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Not authenticated"
+    assert str(exc.value) == "401: Not authenticated"
 
 
 async def test_jwt_bearer_authorization_request_invalid_authorization_scheme(request_mock):
@@ -181,4 +181,4 @@ async def test_jwt_bearer_authorization_request_invalid_authorization_scheme(req
 
     with pytest.raises(HTTPException) as exc:
         await jwt_bearer(request_mock)
-    assert str(exc.value) == "403: Invalid authentication credentials"
+    assert str(exc.value) == "401: Not authenticated"
