@@ -52,8 +52,7 @@ def create(
     current_time = datetime.datetime.now(datetime.UTC)
     file_name = f"{f"{current_time:%Y%m%d%H%M%S}"}_{name}.py"
     with open(f"inventory_management_system_api/migrations/scripts/{file_name}", "w", encoding="utf-8") as file:
-        file.write(
-            f'''"""
+        file.write(f'''"""
 Module providing a migration that {description}.
 """
 
@@ -80,8 +79,7 @@ class Migration(BaseMigration):
 
     def backward(self, session: ClientSession):
         """Reverses database changes."""
-'''
-        )
+''')
 
 
 @app.command()

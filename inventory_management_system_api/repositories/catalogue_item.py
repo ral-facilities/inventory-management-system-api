@@ -210,30 +210,50 @@ class CatalogueItemRepo:
             session=session,
         )
 
-    def update_names_of_all_properties_with_id(
-        self, property_id: str, new_property_name: str, session: Optional[ClientSession] = None
+    def update_all_properties_with_id(
+        self,
+        property_id: str,
+        update_body: dict,
+        session: Optional[ClientSession] = None,
     ) -> None:
         """
-        Updates the name of a property in every catalogue item it is present in
+        Updates multiple fields of a property in every catalogue item it is present in
 
         Also updates the modified_time to reflect the update
 
         :param property_id: The ID of the property to update
-        :param new_property_name: The new property name
+        :param update_body: The body of data to be used in the update
         :param session: PyMongo ClientSession to use for database operations
         """
 
         logger.info("Updating all properties with ID '%s' inside catalogue items in the database", property_id)
 
+        set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
+        set_body["modified_time"] = datetime.now(timezone.utc)
+
+        self._catalogue_items_collection.update_many(
+            {"properties._id": CustomObjectId(property_id)},
+            {"$set": set_body},
+            array_filters=[{"elem._id": CustomObjectId(property_id)}],
+            session=session,
+        )
+
+    def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Deletes the property in every cataloge item it is present in
+
+        :param property_id: The ID of the property to delete
+        :param session: PyMongo ClientSession to use for database operations
+        """
+
+        logger.info("Deleting all properties with ID '%s' inside catalogue items in the database", property_id)
+
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
             {
-                "$set": {
-                    "properties.$[elem].name": new_property_name,
-                    "modified_time": datetime.now(timezone.utc),
-                }
+                "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
             },
-            array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
 

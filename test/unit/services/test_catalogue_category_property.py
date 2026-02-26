@@ -10,10 +10,12 @@ from test.mock_data import (
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY,
+    CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     UNIT_IN_DATA_MM,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
@@ -23,6 +25,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
+from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
@@ -355,28 +358,41 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
     _updated_catalogue_category_property_id: str
     _updated_catalogue_category_property: MagicMock
     _update_exception: pytest.ExceptionInfo
+    _user_authorised: bool
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def mock_update(
         self,
         catalogue_category_property_id: str,
         catalogue_category_property_update_data: dict,
         stored_catalogue_category_property_in_data: Optional[dict],
         catalogue_category_exists: bool = True,
+        user_is_authorised=False,
+        unit_in_data: Optional[dict] = None,
     ) -> None:
         """
         Mocks repository methods appropriately to test the `update` service method.
 
         :param catalogue_category_property_id: ID of the catalogue category property that will be obtained.
         :param catalogue_category_property_update_data: Dictionary containing the basic patch data as would be required
-                                                        for a `CatalogueCategoryPropertyPatchSchema`.
+                                           for a `CatalogueCategoryPropertyPatchSchema` but with any unit_id's replaced
+                                           by the unit value in its properties as the IDs will be added automatically.
+
         :param stored_catalogue_category_property_in_data: Either `None` or a dictionary containing the catalogue
                                                 category property data for the existing stored catalogue category
                                                 property as would be required for a `CatalogueCategoryPropertyIn`
                                                 database model.
         :param catalogue_category_exists: Boolean of whether the catalogue category being updated should exist or not.
+        :param user_is_authorised: Whether the request is authorised to edit a property's unit.
+        :param unit_in_data: Either `None` or a dictionary containing the unit data as would be required for a `UnitIn`
+                             database model. These values will be used for the unit look up if required by the given
+                             catalogue category property update data.
         """
 
         self._catalogue_category_id = str(ObjectId())
+
+        self._user_authorised = user_is_authorised
 
         # Use a predefined catalogue category when it should exist with a single property to be overridden
         self._stored_catalogue_category_in = (
@@ -421,9 +437,22 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self._expected_catalogue_category_property_out
         )
 
+        # Unit
+        unit_id = None
+        if "unit" in catalogue_category_property_update_data:
+            if catalogue_category_property_update_data["unit"] is not None:
+                unit_in = UnitIn(**unit_in_data) if unit_in_data else None
+                unit_id = catalogue_category_property_update_data["unit_id"]
+
+                ServiceTestHelpers.mock_get(
+                    self.mock_unit_repository, UnitOut(**unit_in.model_dump(), id=unit_id) if unit_in else None
+                )
+
+            catalogue_category_property_update_data = {**catalogue_category_property_update_data, "unit_id": unit_id}
+
         # Patch schema
         self._catalogue_category_property_patch = CatalogueCategoryPropertyPatchSchema(
-            **catalogue_category_property_update_data
+            **catalogue_category_property_update_data,
         )
 
         # Expected input for the repository
@@ -445,7 +474,10 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
 
         self._updated_catalogue_category_property_id = catalogue_category_property_id
         self._updated_catalogue_category_property = self.catalogue_category_property_service.update(
-            self._catalogue_category_id, catalogue_category_property_id, self._catalogue_category_property_patch
+            self._catalogue_category_id,
+            catalogue_category_property_id,
+            self._catalogue_category_property_patch,
+            self._user_authorised,
         )
 
     def call_update_expecting_error(self, catalogue_category_property_id: str, error_type: type[BaseException]) -> None:
@@ -453,13 +485,16 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         Calls the `CatalogueCategoryPropertyService` `update` method with the appropriate data from a prior call to
         `mock_update` while expecting an error to be raised.
 
-        :param catalogue_category_property_id: D of the catalogue category property to be updated.
+        :param catalogue_category_property_id: The ID of the catalogue category property to be updated.
         :param error_type: Expected exception to be raised.
         """
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_property_service.update(
-                self._catalogue_category_id, catalogue_category_property_id, self._catalogue_category_property_patch
+                self._catalogue_category_id,
+                catalogue_category_property_id,
+                self._catalogue_category_property_patch,
+                self._user_authorised,
             )
         self._update_exception = exc
 
@@ -480,6 +515,17 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             modified_catalogue_category_out.name = self._catalogue_category_property_patch.name
             self.wrapped_utils.check_duplicate_property_names.assert_called_once_with([modified_catalogue_category_out])
 
+        updating_unit = (
+            self._stored_catalogue_category_property_out.unit_id != self._catalogue_category_property_patch.unit_id
+        )
+
+        if (
+            updating_unit
+            and self._stored_catalogue_category_property_out.unit_id is not None
+            and self._catalogue_category_property_patch.unit_id is not None
+        ):
+            self.mock_unit_repository.get.assert_called_once_with(self._stored_catalogue_category_property_out.unit_id)
+
         # Session/Transaction
         self.mock_start_session_transaction.assert_called_once_with("updating property")
         expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
@@ -492,23 +538,33 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             session=expected_session,
         )
 
-        if updating_name:
+        if updating_name or updating_unit:
+
+            update_body = {}
+            if updating_name:
+                update_body["name"] = self._catalogue_category_property_patch.name
+
+            if updating_unit:
+                update_body["unit_id"] = self._catalogue_category_property_patch.unit_id
+                update_body["unit"] = self._expected_catalogue_category_property_in.unit
+
             # Catalogue items
-            self.mock_catalogue_item_repository.update_names_of_all_properties_with_id.assert_called_once_with(
+            # pylint:disable=line-too-long
+            self.mock_catalogue_item_repository.update_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
-                self._catalogue_category_property_patch.name,
+                update_body,
                 session=expected_session,
             )
 
             # Items
-            self.mock_item_repository.update_names_of_all_properties_with_id.assert_called_once_with(
+            self.mock_item_repository.update_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
-                self._catalogue_category_property_patch.name,
+                update_body,
                 session=expected_session,
             )
         else:
-            self.mock_catalogue_item_repository.update_names_of_all_properties_with_id.assert_not_called()
-            self.mock_item_repository.update_names_of_all_properties_with_id.assert_not_called()
+            self.mock_catalogue_item_repository.update_all_properties_with_id.assert_not_called()
+            self.mock_item_repository.update_all_properties_with_id.assert_not_called()
 
         assert self._updated_catalogue_category_property == self._expected_catalogue_category_property_out
 
@@ -521,8 +577,8 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
         """
 
         self.mock_catalogue_category_repository.update_property.assert_not_called()
-        self.mock_catalogue_item_repository.update_names_of_all_properties_with_id.assert_not_called()
-        self.mock_item_repository.update_names_of_all_properties_with_id.assert_not_called()
+        self.mock_catalogue_item_repository.update_all_properties_with_id.assert_not_called()
+        self.mock_item_repository.update_all_properties_with_id.assert_not_called()
 
         assert str(self._update_exception.value) == message
 
@@ -539,6 +595,8 @@ class TestUpdate(UpdateDSL):
             catalogue_category_property_id,
             catalogue_category_property_update_data={
                 "name": "New name",
+                "unit": UNIT_IN_DATA_MM["value"],
+                "unit_id": str(ObjectId()),
                 "allowed_values": {
                     "type": "list",
                     "values": [
@@ -552,6 +610,8 @@ class TestUpdate(UpdateDSL):
             stored_catalogue_category_property_in_data=(
                 CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST
             ),
+            user_is_authorised=True,
+            unit_in_data=UNIT_IN_DATA_MM,
         )
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
@@ -568,6 +628,76 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(catalogue_category_property_id)
         self.check_update_success()
+
+    def test_update_unit_only(self):
+        """Test updating only the `unit_id` of a catalogue category property."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"], "unit_id": str(ObjectId())},
+            # pylint:disable=line-too-long
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
+            user_is_authorised=True,
+            unit_in_data=UNIT_IN_DATA_MM,
+        )
+
+        self.call_update(catalogue_category_property_id)
+        self.check_update_success()
+
+    def test_update_unit_to_none(self):
+        """Test updating only the `unit_id` of a property to `None`"""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"unit": None, "unit_id": None},
+            # pylint:disable=line-too-long
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            user_is_authorised=True,
+            unit_in_data=None,
+        )
+
+        self.call_update(catalogue_category_property_id)
+        self.check_update_success()
+
+    def test_update_unit_to_nonexsistent(self):
+        """Test updating only the `unit_id` of a property to nonexistent"""
+
+        catalogue_category_property_id = str(ObjectId())
+        unit_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={"unit": UNIT_IN_DATA_MM["value"], "unit_id": unit_id},
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY,
+            user_is_authorised=True,
+            unit_in_data=None,
+        )
+
+        self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No unit found with ID '{unit_id}'")
+
+    def test_update_unit_when_not_authorised(self):
+        """Test updating the `unit_id` of a property when the user is not authorised"""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_update(
+            catalogue_category_property_id,
+            catalogue_category_property_update_data={
+                "unit": UNIT_IN_DATA_MM["value"],
+                "unit_id": str(ObjectId()),
+            },
+            # pylint:disable=line-too-long
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
+            user_is_authorised=False,
+        )
+
+        self.call_update_expecting_error(catalogue_category_property_id, InvalidActionError)
+        self.check_update_failed_with_exception("Not authorised to change the unit of a property")
 
     def test_update_allowed_values_to_none_no_changes(self):
         """Test updating the `allowed_values` of a property to `None` when it already is."""
@@ -716,3 +846,177 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(catalogue_category_property_id, MissingRecordError)
         self.check_update_failed_with_exception(f"No property found with ID '{catalogue_category_property_id}'")
+
+
+class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
+    """Base clas for `delete` tests."""
+
+    _catalogue_category_id: str
+    _delete_property_id: str
+    _stored_catalogue_category_in: Optional[CatalogueCategoryIn]
+    _stored_catalogue_category_out: Optional[CatalogueCategoryOut]
+    _stored_catalogue_category_property_out: Optional[CatalogueCategoryPropertyOut]
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(
+        self,
+        property_id: str,
+        stored_catalogue_category_property_in_data: Optional[dict],
+        catalogue_category_exists: bool = True,
+    ) -> None:
+        """
+        Mocks repository methods appropriately to test the `delete` service method.
+
+        :param property_id: The ID of the property to be deleted.
+        :param stored_catalogue_category_property_in_data: Either `None` or a dictionary containing the catalogue
+                                                category property data for the existing stored catalogue category
+                                                property as would be required for a `CatalogueCategoryPropertyIn`
+                                                database model.
+        :param catalogue_category_exists: Boolean of whether the catalogue category being deleted from
+                                        should exist or not.
+        """
+
+        self._catalogue_category_id = str(ObjectId())
+
+        # Use a predefined catalogue category
+        self._stored_catalogue_category_in = (
+            CatalogueCategoryIn(
+                **CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            )
+            if catalogue_category_exists
+            else None
+        )
+
+        self._stored_catalogue_category_property_out = (
+            CatalogueCategoryPropertyOut(
+                **{
+                    **CatalogueCategoryPropertyIn(**stored_catalogue_category_property_in_data).model_dump(),
+                    "id": property_id,
+                }
+            )
+            if stored_catalogue_category_property_in_data
+            else None
+        )
+        self._stored_catalogue_category_out = (
+            CatalogueCategoryOut(
+                **{
+                    **self._stored_catalogue_category_in.model_dump(by_alias=True),
+                    "properties": (
+                        [self._stored_catalogue_category_property_out]
+                        if stored_catalogue_category_property_in_data
+                        else []
+                    ),
+                },
+                id=CustomObjectId(self._catalogue_category_id),
+            )
+            if catalogue_category_exists
+            else None
+        )
+
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._stored_catalogue_category_out)
+
+    def call_delete(self, property_id: str) -> None:
+        """
+        Calls the `CatalogueCategoryPropertyService` `delete` method.
+
+        :param property_id: The ID of the property to be deleted.
+        """
+
+        self._delete_property_id = property_id
+
+        self.catalogue_category_property_service.delete(self._catalogue_category_id, property_id)
+
+    def call_delete_expecting_error(self, property_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `CatalogueCategoryPropertyService` `delete` method with the appropriate data from a prior call to
+        `mock_update` while expecting an error to be raised.
+
+        :param property_id: The ID of the catalogue category property to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._delete_property_id = property_id
+
+        with pytest.raises(error_type) as exc:
+            self.catalogue_category_property_service.delete(
+                self._catalogue_category_id,
+                property_id,
+            )
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.mock_catalogue_category_repository.get.assert_called_once_with(self._catalogue_category_id)
+
+        # Session/Transaction
+        self.mock_start_session_transaction.assert_called_once_with("deleting property")
+        expected_session = self.mock_start_session_transaction.return_value.__enter__.return_value
+
+        self.mock_catalogue_category_repository.delete_property.assert_called_once_with(
+            catalogue_category_id=self._catalogue_category_id,
+            property_id=self._delete_property_id,
+            session=expected_session,
+        )
+
+        self.mock_catalogue_item_repository.delete_properties.assert_called_once_with(
+            property_id=self._delete_property_id,
+            session=expected_session,
+        )
+
+        self.mock_item_repository.delete_properties.assert_called_once_with(
+            property_id=self._delete_property_id,
+            session=expected_session,
+        )
+
+    def check_delete_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.mock_catalogue_category_repository.delete_property.assert_not_called()
+        self.mock_catalogue_item_repository.delete_properties.assert_not_called()
+        self.mock_item_repository.delete_properties.assert_not_called()
+
+        assert str(self._delete_exception.value) == message
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting a property"""
+
+    def test_delete(self):
+        """Test deleting a property."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_delete(
+            catalogue_category_property_id,
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+        )
+        self.call_delete(catalogue_category_property_id)
+        self.check_delete_success()
+
+    def test_delete_with_non_existent_property_id(self):
+        """Test deleting a property when given a non-existent catalogue category property ID."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_delete(catalogue_category_property_id, stored_catalogue_category_property_in_data=None)
+        self.call_delete_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No property found with ID '{self._delete_property_id}'")
+
+    def test_delete_with_non_existent_catalogue_category_id(self):
+        """Test deleting a catalogue category property when given a non-existent catalogue category ID."""
+
+        catalogue_category_property_id = str(ObjectId())
+
+        self.mock_delete(
+            catalogue_category_property_id,
+            stored_catalogue_category_property_in_data=CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY,
+            catalogue_category_exists=False,
+        )
+        self.call_delete_expecting_error(catalogue_category_property_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No catalogue category found with ID '{self._catalogue_category_id}'")

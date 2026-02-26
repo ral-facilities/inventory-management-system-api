@@ -9,23 +9,37 @@ from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from inventory_management_system_api.core.database import DatabaseDep
-from inventory_management_system_api.models.setting import SettingInBase, SettingOutBase, SparesDefinitionOut
+from inventory_management_system_api.models.setting import (
+    InUseDefinitionOut,
+    SettingInBase,
+    SettingOutBase,
+    SparesDefinitionOut,
+)
 
 logger = logging.getLogger()
 
-# Aggregation pipeline for getting the spares definition complete with system type data
-SPARES_DEFINITION_GET_AGGREGATION_PIPELINE = [
-    {"$match": {"_id": SparesDefinitionOut.SETTING_ID}},
-    {
-        "$lookup": {
-            "from": "system_types",
-            "localField": "system_type_ids",
-            "foreignField": "_id",
-            "as": "system_types",
-        }
-    },
-    {"$project": {"system_types": 1}},
-]
+
+def construct_definition_with_system_types_aggregation_pipeline(setting_id: str) -> list:
+    """Returns an aggregation pipeline for getting a definition that contains a list of system type
+    ids but replacing them with the actual system types after a lookup.
+
+    :param setting_id: ID of the setting.
+    :return: List of pipeline stages forming the aggregation pipeline.
+    """
+
+    return [
+        {"$match": {"_id": setting_id}},
+        {
+            "$lookup": {
+                "from": "system_types",
+                "localField": "system_type_ids",
+                "foreignField": "_id",
+                "as": "system_types",
+            }
+        },
+        {"$project": {"system_types": 1}},
+    ]
+
 
 # Template type for models inheriting from SettingIn/OutBase so this repo can be used generically for multiple settings
 SettingInBaseT = TypeVar("SettingInBaseT", bound=SettingInBase)
@@ -79,10 +93,12 @@ class SettingRepo:
         logger.info("Retrieving setting with ID '%s' from the database", out_model_type.SETTING_ID)
 
         # Check for any special cases that are not typical find_one queries
-        if out_model_type is SparesDefinitionOut:
-            # The spares definition contains a list of system type ids - use an aggregate query here to obtain the
-            # actual system type entities instead of just their IDs
-            result = self._settings_collection.aggregate(SPARES_DEFINITION_GET_AGGREGATION_PIPELINE, session=session)
+        if out_model_type is SparesDefinitionOut or out_model_type is InUseDefinitionOut:
+            # The spares and in use definitions contain a list of system type ids - use an aggregate query here to
+            # obtain the actual system type entities instead of just their IDs
+            result = self._settings_collection.aggregate(
+                construct_definition_with_system_types_aggregation_pipeline(out_model_type.SETTING_ID), session=session
+            )
             result = list(result)
             if len(result) > 0:
                 setting = result[0]

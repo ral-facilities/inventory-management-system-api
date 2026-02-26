@@ -310,3 +310,32 @@ class CatalogueCategoryRepo:
             session=session,
         )
         return CatalogueCategoryPropertyOut(**property_data)
+
+    def delete_property(
+        self,
+        catalogue_category_id: str,
+        property_id: str,
+        session: Optional[ClientSession] = None,
+    ) -> None:
+        """
+        Deletes a property given its ID and the ID of the catalogue category it's in
+
+        :param catalogue_category_id: The ID of the catalogue category to delete
+        :param property_id: The ID of the property to delete
+        :param session: PyMongo ClientSession to use for database operations
+        """
+
+        logger.info(
+            "Deleting property with ID '%s' inside catalogue category with ID '%s' from the database",
+            property_id,
+            catalogue_category_id,
+        )
+
+        self._catalogue_categories_collection.update_one(
+            {"_id": CustomObjectId(catalogue_category_id)},
+            {
+                "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
+                "$set": {"modified_time": datetime.now(timezone.utc)},
+            },
+            session=session,
+        )

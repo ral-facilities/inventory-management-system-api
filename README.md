@@ -302,7 +302,7 @@ The simplest way to populate the database with mock data is to use the already c
 for development you may use
 
 ```bash
-python ./scripts/dev_cli.py db-import
+python ./scripts/dev_cli.py db-restore mock_data.dump
 ```
 
 to populate the database with mock data.
@@ -498,6 +498,20 @@ spares. If using a reverse proxy to provide access, we recommend first shutting 
 
 Subsequently, whenever a new item is added, moved or deleted, the number of spares inside the effected catalogue item
 will be recalculated accordingly
+
+#### Configuring the in use definition
+
+The in use definition is a list of system types that define which systems contain items that are classed as in use.
+E.g. If you have system type of `Operational`, and define the in use definition as `Operational`. Then any item within
+a system of this type will be considered as in use.
+
+When first setup, IMS does not have an in use definition assigned. To configure it use:
+
+```bash
+ims configure in-use-definition
+```
+
+and follow its instructions.
 
 #### Migrations
 

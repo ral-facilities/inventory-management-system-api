@@ -542,49 +542,100 @@ class TestInsertPropertyToAllIn(InsertPropertyToAllInDSL):
         self.check_insert_property_to_all_in_success()
 
 
-class UpdateNamesOfAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
-    """Base class for `update_names_of_all_properties_with_id` tests"""
+class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
+    """Base class for `update_all_properties_with_id` tests"""
 
-    _update_names_of_all_properties_with_id_property_id: str
-    _update_names_of_all_properties_with_id_new_property_name: str
+    _update_all_properties_with_id_property_id: str
+    _update_all_properties_with_id_update_body: dict
 
-    def call_update_names_of_all_properties_with_id(self, property_id: str, new_property_name: str) -> None:
-        """Calls the `ItemRepo` `update_names_of_all_properties_with_id` method.
+    def call_update_all_properties_with_id(
+        self,
+        property_id: str,
+        update_body: dict,
+    ) -> None:
+        """Calls the `CatalogueItemRepo` `update_all_properties_with_id` method.
 
         :param property_id: ID of the property.
-        :param new_property_name: New property name.
+        :param update_body: New property data to be used in update.
         """
 
-        self._update_names_of_all_properties_with_id_property_id = property_id
-        self._update_names_of_all_properties_with_id_new_property_name = new_property_name
-        self.item_repository.update_names_of_all_properties_with_id(
-            property_id, new_property_name, session=self.mock_session
+        self._update_all_properties_with_id_property_id = property_id
+        self._update_all_properties_with_id_update_body = update_body
+
+        self.item_repository.update_all_properties_with_id(
+            property_id,
+            update_body,
+            session=self.mock_session,
         )
 
-    def check_update_names_of_all_properties_with_id(self) -> None:
-        """Checks that a prior call to `update_names_of_all_properties_with_id` worked as expected"""
+    def check_update_all_properties_with_id(self) -> None:
+        """Checks that a prior call to `update_all_properties_with_id` worked as expected"""
 
         self.items_collection.update_many.assert_called_once_with(
-            {"properties._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)},
+            {"properties._id": CustomObjectId(self._update_all_properties_with_id_property_id)},
             {
                 "$set": {
-                    "properties.$[elem].name": self._update_names_of_all_properties_with_id_new_property_name,
+                    "properties.$[elem].name": self._update_all_properties_with_id_update_body["name"],
+                    "properties.$[elem].unit_id": self._update_all_properties_with_id_update_body["unit_id"],
+                    "properties.$[elem].unit": self._update_all_properties_with_id_update_body["unit"],
                     "modified_time": self._mock_datetime.now.return_value,
                 }
             },
-            array_filters=[{"elem._id": CustomObjectId(self._update_names_of_all_properties_with_id_property_id)}],
+            array_filters=[{"elem._id": CustomObjectId(self._update_all_properties_with_id_property_id)}],
             session=self.mock_session,
         )
 
 
-class TestUpdateNamesOfAllPropertiesWithID(UpdateNamesOfAllPropertiesWithIDDSL):
-    """Tests for `update_names_of_all_properties_with_id`."""
+class TestUpdateAllPropertiesWithID(UpdateAllPropertiesWithIDDSL):
+    """Tests for `update_all_properties_with_id`."""
 
-    def test_update_names_of_all_properties_with_id(self):
-        """Test `update_names_of_all_properties_with_id`."""
+    def test_update_all_properties_with_id(self):
+        """Test `update_all_properties_with_id`."""
 
-        self.call_update_names_of_all_properties_with_id(str(ObjectId()), "New name")
-        self.check_update_names_of_all_properties_with_id()
+        self.call_update_all_properties_with_id(
+            str(ObjectId()), {"name": "New name", "unit_id": str(ObjectId()), "unit": "New unit"}
+        )
+        self.check_update_all_properties_with_id()
+
+
+class DeletePropertiesDSL(InsertPropertyToAllInDSL):
+    """Base class for `delete_properties` tests."""
+
+    _delete_property_id: str
+
+    def call_delete_properties(self, property_id: str) -> None:
+        """
+        Calls the `ItemRepo` `delete_properties` method.
+
+        :param property_id: The ID of the property to delete.
+        """
+
+        self._delete_property_id = property_id
+        self.item_repository.delete_properties(property_id=property_id, session=self.mock_session)
+
+    def check_delete_properties(self) -> None:
+        """Checks that a prior call to `delete_properties` worked as expected"""
+
+        self.items_collection.update_many.assert_called_once_with(
+            {"properties._id": CustomObjectId(self._delete_property_id)},
+            {
+                "$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}},
+                "$set": {
+                    "modified_time": self._mock_datetime.now.return_value,
+                },
+            },
+            session=self.mock_session,
+        )
+
+
+class TestDeleteProperties(DeletePropertiesDSL):
+    """Tests for `delete_properties`."""
+
+    def test_delete_properties(self):
+        """Test `delete_properties`."""
+
+        self.call_delete_properties(str(ObjectId()))
+        self.check_delete_properties()
 
 
 class CountInCatalogueItemWithSystemTypeOneOfDSL(ItemRepoDSL):

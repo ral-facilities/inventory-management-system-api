@@ -8,8 +8,13 @@ from typing import Annotated, Callable, Iterable, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.database import start_session_transaction
-from inventory_management_system_api.core.exceptions import MissingRecordError
-from inventory_management_system_api.models.setting import SparesDefinitionIn, SparesDefinitionOut
+from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
+from inventory_management_system_api.models.setting import (
+    InUseDefinitionIn,
+    InUseDefinitionOut,
+    SparesDefinitionIn,
+    SparesDefinitionOut,
+)
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.item import ItemRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
@@ -56,12 +61,21 @@ class SettingService:
         :param tracker: Tracker function to use for tracking progress e.g. Rich's track function.
         :return: Updated spares definition.
         :raises MissingRecordError: If any of the system types specified by the given IDs don't exist.
+        :raises InvalidActionError: If the spares definition conflicts with the in use one.
         """
 
-        # Ensure all the given system types exist
+        # Ensure all the given system types exist and don't conflict with any existing in use definition
+        in_use_definition = self.get_in_use_definition()
         for system_type_id in spares_definition.system_type_ids:
             if not self._system_type_repository.get(str(system_type_id)):
                 raise MissingRecordError(f"No system type found with ID '{system_type_id}'")
+            if in_use_definition is not None and any(
+                in_use_system_type.id == str(system_type_id) for in_use_system_type in in_use_definition.system_types
+            ):
+                raise InvalidActionError(
+                    f"System type with ID '{system_type_id}' is already present in the in use definition. "
+                    "It cannot be used for both."
+                )
 
         # Need all updates to the number of spares to succeed or fail together with assigning the new definition
         with start_session_transaction("setting spares definition") as session:
@@ -95,3 +109,37 @@ class SettingService:
         :return: Retrieved spares definition or `None` if not found.
         """
         return self._setting_repository.get(SparesDefinitionOut)
+
+    def set_in_use_definition(self, in_use_definition: InUseDefinitionIn) -> InUseDefinitionOut:
+        """
+        Sets the in use definition to a new value.
+
+        :param in_use_definition: New in use definition.
+        :return: Updated in use definition.
+        :raises MissingRecordError: If any of the system types specified by the given IDs don't exist.
+        :raises InvalidActionError: If the in use definition conflicts with the spares one.
+        """
+
+        # Ensure all the given system types exist and don't conflict with any existing spares definition
+        spares_definition = self.get_spares_definition()
+        for system_type_id in in_use_definition.system_type_ids:
+            if not self._system_type_repository.get(str(system_type_id)):
+                raise MissingRecordError(f"No system type found with ID '{system_type_id}'")
+            if spares_definition is not None and any(
+                in_use_system_type.id == str(system_type_id) for in_use_system_type in spares_definition.system_types
+            ):
+                raise InvalidActionError(
+                    f"System type with ID '{system_type_id}' is already present in the spares definition. "
+                    "It cannot be used for both."
+                )
+
+        # Update the in use definition
+        return self._setting_repository.upsert(in_use_definition, InUseDefinitionOut)
+
+    def get_in_use_definition(self) -> Optional[InUseDefinitionOut]:
+        """
+        Retrieve the in use definition setting.
+
+        :return: Retrieved in use definition or `None` if not found.
+        """
+        return self._setting_repository.get(InUseDefinitionOut)
