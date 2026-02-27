@@ -4,7 +4,7 @@ Module for defining the database models for representing catalogue items.
 
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
@@ -50,8 +50,6 @@ class CatalogueItemBase(BaseModel):
     days_to_replace: float
     days_to_rework: Optional[float] = None
     expected_lifetime_days: Optional[float] = None
-    drawing_number: Optional[str] = None
-    drawing_link: Optional[HttpUrl] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
@@ -82,15 +80,6 @@ class CatalogueItemBase(BaseModel):
         return properties
 
     # pylint: enable=duplicate-code
-
-    @field_serializer("drawing_link")
-    def serialize_url(self, url: HttpUrl):
-        """
-        Convert `url` to string when the model is dumped.
-        :param url: The `HttpUrl` object.
-        :return: The URL as a string.
-        """
-        return url if url is None else str(url)
 
 
 class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBase):

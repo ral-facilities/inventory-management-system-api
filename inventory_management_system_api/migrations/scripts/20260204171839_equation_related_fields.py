@@ -9,7 +9,7 @@ catalogue categories, catalogue items, and systems.
 
 from typing import Any, Collection, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationInfo, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
@@ -120,8 +120,6 @@ class NewCatalogueItemBase(BaseModel):
     days_to_replace: float
     days_to_rework: Optional[float] = None
     expected_lifetime_days: Optional[float] = None
-    drawing_number: Optional[str] = None
-    drawing_link: Optional[HttpUrl] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
@@ -150,15 +148,6 @@ class NewCatalogueItemBase(BaseModel):
             properties = []
         return properties
 
-    @field_serializer("drawing_link")
-    def serialize_url(self, url: HttpUrl):
-        """
-        Convert `url` to string when the model is dumped.
-        :param url: The `HttpUrl` object.
-        :return: The URL as a string.
-        """
-        return url if url is None else str(url)
-
 
 class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
     """
@@ -180,8 +169,6 @@ class OldCatalogueItemBase(BaseModel):
     days_to_replace: float
     days_to_rework: Optional[float] = None
     expected_lifetime_days: Optional[float] = None
-    drawing_number: Optional[str] = None
-    drawing_link: Optional[HttpUrl] = None
     item_model_number: Optional[str] = None
     is_obsolete: bool
     obsolete_reason: Optional[str] = None
@@ -206,15 +193,6 @@ class OldCatalogueItemBase(BaseModel):
         if properties is None:
             properties = []
         return properties
-
-    @field_serializer("drawing_link")
-    def serialize_url(self, url: HttpUrl):
-        """
-        Convert `url` to string when the model is dumped.
-        :param url: The `HttpUrl` object.
-        :return: The URL as a string.
-        """
-        return url if url is None else str(url)
 
 
 class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
