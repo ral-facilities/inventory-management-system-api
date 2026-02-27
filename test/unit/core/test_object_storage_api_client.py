@@ -2,12 +2,11 @@
 Unit tests for the `ObjectStorageAPIClient` class.
 """
 
-from unittest.mock import patch, MagicMock
 from test.mock_data import EXPIRED_ACCESS_TOKEN, VALID_ACCESS_TOKEN_DEFAULT_ROLE
-
-from bson import ObjectId
+from unittest.mock import MagicMock, patch
 
 import pytest
+from bson import ObjectId
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import ObjectStorageAPIAuthError, ObjectStorageAPIServerError
@@ -50,9 +49,9 @@ class TestObjectStorageAPIClient:
     )
     @patch("inventory_management_system_api.core.object_storage_api_client.requests.delete")
     def test_delete_auth_error(self, mock_delete, method):
-        """Test `ObjectStorageAPIAuthError` is raised when Object Storage API responds with 403."""
+        """Test `ObjectStorageAPIAuthError` is raised when Object Storage API responds with 401."""
         mock_response = MagicMock()
-        mock_response.status_code = 403
+        mock_response.status_code = 401
         mock_response.json.return_value = {"detail": "Invalid token or expired token"}
         mock_delete.return_value = mock_response
 

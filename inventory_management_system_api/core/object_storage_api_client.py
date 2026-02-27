@@ -5,6 +5,7 @@ Module for providing an implementation of a client class for interacting with th
 from typing import Optional
 
 import requests
+
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import ObjectStorageAPIAuthError, ObjectStorageAPIServerError
 
@@ -55,7 +56,7 @@ class ObjectStorageAPIClient:
             url, headers=headers, params=params, timeout=config.object_storage.api_request_timeout_seconds
         )
 
-        if response.status_code == 403:
+        if response.status_code == 401:
             raise ObjectStorageAPIAuthError(response.json()["detail"])
 
         if response.status_code != 204:

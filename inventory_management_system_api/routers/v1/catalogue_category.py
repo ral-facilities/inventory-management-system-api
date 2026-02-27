@@ -336,3 +336,42 @@ def partial_update_property(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.delete(
+    path="/{catalogue_category_id}/properties/{property_id}",
+    summary="Delete property at the catalogue category level",
+    response_description="Property deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_property(
+    catalogue_category_id: Annotated[
+        str, Path(description="The ID of the catalogue category containing the property to delete")
+    ],
+    property_id: Annotated[str, Path(description="The ID of the property to delete")],
+    catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
+    authorised: AuthorisedDep,
+) -> None:
+    logger.info(
+        "Deleting property with ID '%s' within the catalogue category with ID '%s'", property_id, catalogue_category_id
+    )
+
+    # check user is authorised to perform operation
+    if not authorised:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
+
+    try:
+        catalogue_category_property_service.delete(
+            catalogue_category_id=catalogue_category_id, catalogue_category_property_id=property_id
+        )
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if property_id in str(exc):
+            message = "Catalogue category property not found"
+        else:
+            message = "Catalogue category not found"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
