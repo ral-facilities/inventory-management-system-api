@@ -208,6 +208,9 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostS
         default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
+    # Computed
+    is_flagged: bool = Field(description="Whether the catalogue item is flagged as critical")
+
 
 class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
     """
