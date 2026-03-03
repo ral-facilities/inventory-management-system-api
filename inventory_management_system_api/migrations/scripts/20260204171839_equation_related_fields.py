@@ -35,7 +35,7 @@ class NewCatalogueCategoryBase(BaseModel):
     properties: List[CatalogueCategoryPropertyIn] = []
 
     # Computed
-    is_flagged: bool = False
+    is_flagged: Optional[bool] = None
 
     @field_validator("properties", mode="before")
     @classmethod
@@ -226,7 +226,7 @@ class NewSystemBase(BaseModel):
     code: str
 
     # Computed
-    is_flagged: bool = False
+    is_flagged: Optional[bool] = None
 
 
 class NewSystemIn(CreatedModifiedTimeInMixin, NewSystemBase):

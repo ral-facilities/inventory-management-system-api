@@ -316,7 +316,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
     "parent_id": None,
     "code": "non-leaf-catalogue-category-required-values-only",
     "properties": [],
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Non leaf, No parent, No properties
@@ -337,7 +337,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 
@@ -357,7 +357,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Leaf, No parent, No properties
@@ -381,7 +381,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     "id": ANY,
     "code": "leaf-category-no-parent-no-properties",
     "properties": [],
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Leaf, Required values only
@@ -398,7 +398,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY = {
     "parent_id": None,
     "code": "leaf-catalogue-category-required-values-only",
     "properties": [],
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Leaf, No parent, Properties, mm unit
@@ -437,7 +437,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     ],
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # --------------------------------- PROPERTIES ---------------------------------
@@ -907,7 +907,7 @@ SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
     "location": None,
     "owner": None,
     "code": "storage-system-required-values-only",
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Storage, No parent, All values
@@ -927,7 +927,7 @@ SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
     "id": ANY,
     "parent_id": None,
     "code": "storage-system-all-values",
-    "is_flagged": False,
+    "is_flagged": None,
 }
 
 # Storage, No parent
