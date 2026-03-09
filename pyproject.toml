@@ -22,7 +22,7 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
-    "black==26.1.0",
+    "black==26.3.0",
     "pylint==4.0.5",
     "inventory-management-system-api[test]"
 ]
@@ -35,7 +35,7 @@ test = [
 ]
 
 scripts = [
-    "faker==40.4.0"
+    "faker==40.8.0"
 ]
 
 dev = [
