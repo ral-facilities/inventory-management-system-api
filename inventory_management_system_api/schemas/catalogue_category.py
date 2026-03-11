@@ -209,7 +209,7 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostS
     )
 
     # Computed
-    is_flagged: bool = Field(description="Whether the catalogue item is flagged as critical")
+    is_flagged: Optional[bool] = Field(description="Whether the catalogue category is flagged as critical")
 
 
 class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):

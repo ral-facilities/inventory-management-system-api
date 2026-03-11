@@ -53,4 +53,4 @@ class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
     code: str = Field(description="Code of the system")
 
     # Computed
-    is_flagged: bool = Field(description="Whether the catalogue item is flagged as critical")
+    is_flagged: Optional[bool] = Field(description="Whether the system is flagged as critical")

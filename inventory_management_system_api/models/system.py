@@ -27,7 +27,7 @@ class SystemBase(BaseModel):
     code: str
 
     # Computed
-    is_flagged: bool = False
+    is_flagged: Optional[bool] = None
 
 
 class SystemIn(CreatedModifiedTimeInMixin, SystemBase):
