@@ -121,7 +121,9 @@ class SystemService:
         if "name" in update_data and system.name != stored_system.name:
             update_data["code"] = utils.generate_code(system.name, "system")
 
-        with self._start_transaction_effected_by_spares_calculation("updating system", system_id) as session:
+        with self._start_transaction_effected_by_spares_calculation(
+            "updating system", system_id, system, stored_system, update_data
+        ) as session:
             # Perform this validation after any potential write lock to ensure no further updates occur after
             # the validation until the update is fully complete
             if "type_id" in update_data and system.type_id != stored_system.type_id:
@@ -159,13 +161,18 @@ class SystemService:
         self,
         action_description: str,
         system_id: str,
+        system: SystemPatchSchema,
+        stored_system: SystemOut,
+        update_data: dict,
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles write locking to prevent unintended impacts to spares calculations.
 
         When necessary starts a MongoDB session and transaction, then write locks the system before yielding to allow
         an update to take place using the returned session. This transaction and write lock is only performed in the
-        when there is a spares definition defined due to potential conflicts with the spares calculation.
+        specific case when:
+        1. The spares definition is defined.
+        2. The `type_id` is being changed.
 
         This in-turn prevents the following issue:
         1. You have a spares definition defined and move an item to a system with nothing currently in it.
@@ -178,13 +185,22 @@ class SystemService:
         :param action_description: Description of what the contents of the transaction is doing so it can be used in
                                    any logging or raise errors.
         :param system_id: ID of the effected system which may need write locking.
+        :param system: System containing the fields to be updated.
+        :param stored_system: Current stored system from the database.
+        :param update_data: Dictionary containing the update data.
         """
 
         # Firstly obtain the spares definition to figure out if it is defined or not
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
 
-        # No spares definition => Can't have any spares calculation
-        if spares_definition is None:
+        type_id_changing = "type_id" in update_data and system.type_id != stored_system.type_id
+
+        if (
+            # No spares definition => Can't have any spares calculation
+            spares_definition is None
+            # Only need to conflict with a spares update when the type is being changed
+            or not type_id_changing
+        ):
             yield None
         else:
             with start_session_transaction(action_description) as session:
