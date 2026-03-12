@@ -78,6 +78,6 @@ class JWTBearer(HTTPBearer):
         :return: `True` if the JWT access token's payload contains a role, and overlaps the configured
             privileged_roles, `False` otherwise.
         """
-        logging.info("Checking if JWT access token is authorised for operation")
+        logger.info("Checking if JWT access token is authorised for operation")
         payload = jwt.decode(access_token, options={"verify_signature": False, "verify_exp": False})
         return payload["role"] in config.authentication.privileged_roles
