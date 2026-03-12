@@ -872,8 +872,12 @@ class TestUpdate(UpdateDSL):
             CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
         )
 
-        self.patch_catalogue_item(catalogue_item_id, {**CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES, "modified_comment": "An update"})
-        self.check_patch_catalogue_item_success({**CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES, "modified_comment": "An update"})
+        self.patch_catalogue_item(
+            catalogue_item_id, {**CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES, "modified_comment": "An update"}
+        )
+        self.check_patch_catalogue_item_success(
+            {**CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES, "modified_comment": "An update"}
+        )
 
     def test_partial_update_all_fields_except_ids_or_properties_with_children(self):
         """Test updating all fields of a catalogue item except any of its `_id` fields or properties when it has

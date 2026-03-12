@@ -794,7 +794,12 @@ class TestUpdate(UpdateDSL):
         catalogue_category_id = self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.patch_catalogue_category(catalogue_category_id, {"name": "New Name", "modified_comment": "A new name"})
         self.check_patch_catalogue_category_success(
-            {**CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY, "name": "New Name", "code": "new-name", "modified_comment": "A new name"}
+            {
+                **CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
+                "name": "New Name",
+                "code": "new-name",
+                "modified_comment": "A new name",
+            }
         )
 
     def test_partial_update_parent_id(self):

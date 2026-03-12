@@ -205,8 +205,7 @@ class CatalogueCategorySchema(BaseFieldsSchemaMixin, CatalogueCategoryPostSchema
     id: str = Field(description="The ID of the catalogue category")
     code: str = Field(description="The code of the catalogue category")
     properties: Optional[List[CatalogueCategoryPropertySchema]] = Field(
-        default=None,
-        description="The properties that the catalogue items in this category could/should have",
+        default=None, description="The properties that the catalogue items in this category could/should have",
     )
 
     # Computed
@@ -219,7 +218,8 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
     """
 
     default_value: Any = Field(
-        default=None, description="The properties that the catalogue items in this category could/should have"
+        default=None, 
+        description="The properties that the catalogue items in this category could/should have"
     )
 
     @field_validator("default_value")

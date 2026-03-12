@@ -7,10 +7,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from inventory_management_system_api.schemas.mixins import (
-    BaseFieldsSchemaMixin,
-    BaseFieldsPostSchemaMixin,
-)
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
 class SystemImportanceType(str, Enum):

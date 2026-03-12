@@ -528,7 +528,9 @@ class TestUpdate(UpdateDSL):
 
         system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         self.patch_system(system_id, {**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "modified_comment": "An update"})
-        self.check_patch_system_success({**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "modified_comment": "An update"})
+        self.check_patch_system_success(
+            {**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "modified_comment": "An update"}
+        )
 
     def test_partial_update_parent_id_from_none(self):
         """Test updating the `parent_id` of a system froma  value of None."""
