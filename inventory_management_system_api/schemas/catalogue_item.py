@@ -6,10 +6,7 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
 
-from inventory_management_system_api.schemas.mixins import (
-    BaseFieldsSchemaMixin,
-    CustomBaseSchema,
-)
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
 class PropertyPostSchema(BaseModel):
@@ -28,13 +25,10 @@ class PropertySchema(PropertyPostSchema):
 
     name: str = Field(description="The name of the property")
     unit_id: Optional[str] = Field(default=None, description="The ID of the unit")
-    unit: Optional[str] = Field(
-        default=None,
-        description="The unit of the property such as 'nm', 'mm', 'cm' etc",
-    )
+    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
-class CatalogueItemPostSchema(CustomBaseSchema):
+class CatalogueItemPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a catalogue item creation request.
     """
@@ -44,28 +38,16 @@ class CatalogueItemPostSchema(CustomBaseSchema):
     )
     manufacturer_id: str = Field(description="The ID of the manufacturer")
     name: str = Field(description="The name of the catalogue item")
-    description: Optional[str] = Field(
-        default=None, description="The description of the catalogue item"
-    )
+    description: Optional[str] = Field(default=None, description="The description of the catalogue item")
     cost_gbp: float = Field(description="The cost of the catalogue item")
-    cost_to_rework_gbp: Optional[float] = Field(
-        default=None, description="The cost to rework the catalogue item"
-    )
-    days_to_replace: float = Field(
-        description="The number of days to replace the catalogue item"
-    )
-    days_to_rework: Optional[float] = Field(
-        default=None, description="The number of days to rework the catalogue item"
-    )
+    cost_to_rework_gbp: Optional[float] = Field(default=None, description="The cost to rework the catalogue item")
+    days_to_replace: float = Field(description="The number of days to replace the catalogue item")
+    days_to_rework: Optional[float] = Field(default=None, description="The number of days to rework the catalogue item")
     expected_lifetime_days: Optional[float] = Field(
         default=None, description="The expected lifetime of the catalogue item in days"
     )
-    item_model_number: Optional[str] = Field(
-        default=None, description="The model number of the catalogue item"
-    )
-    is_obsolete: bool = Field(
-        description="Whether the catalogue item is obsolete or not"
-    )
+    item_model_number: Optional[str] = Field(default=None, description="The model number of the catalogue item")
+    is_obsolete: bool = Field(description="Whether the catalogue item is obsolete or not")
     obsolete_reason: Optional[str] = Field(
         default=None, description="The reason why the catalogue item became obsolete"
     )
@@ -73,9 +55,7 @@ class CatalogueItemPostSchema(CustomBaseSchema):
         default=None,
         description="The ID of the catalogue item that replaces this catalogue item if obsolete",
     )
-    notes: Optional[str] = Field(
-        default=None, description="Any notes about the catalogue item"
-    )
+    notes: Optional[str] = Field(default=None, description="Any notes about the catalogue item")
     properties: Optional[List[PropertyPostSchema]] = Field(
         default=None,
         description="The properties specific to this catalogue item as defined in the corresponding "
@@ -96,21 +76,13 @@ class CatalogueItemPatchSchema(CatalogueItemPostSchema):
         default=None,
         description="The ID of the catalogue category that the catalogue item belongs to",
     )
-    manufacturer_id: Optional[str] = Field(
-        default=None, description="The ID of the manufacturer"
-    )
-    name: Optional[str] = Field(
-        default=None, description="The name of the catalogue item"
-    )
-    cost_gbp: Optional[float] = Field(
-        default=None, description="The cost of the catalogue item"
-    )
+    manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer")
+    name: Optional[str] = Field(default=None, description="The name of the catalogue item")
+    cost_gbp: Optional[float] = Field(default=None, description="The cost of the catalogue item")
     days_to_replace: Optional[float] = Field(
         default=None, description="The number of days to replace the catalogue item"
     )
-    is_obsolete: Optional[bool] = Field(
-        default=None, description="Whether the catalogue item is obsolete or not"
-    )
+    is_obsolete: Optional[bool] = Field(default=None, description="Whether the catalogue item is obsolete or not")
 
 
 class CatalogueItemSchema(BaseFieldsSchemaMixin, CatalogueItemPostSchema):
@@ -132,9 +104,5 @@ class CatalogueItemSchema(BaseFieldsSchemaMixin, CatalogueItemPostSchema):
         default=None,
         description="The number of spares required for this catalogue item if known",
     )
-    criticality: Optional[float] = Field(
-        default=None, description="The criticality of the catalogue item if known"
-    )
-    is_flagged: Optional[bool] = Field(
-        description="Whether the catalogue item is flagged as critical"
-    )
+    criticality: Optional[float] = Field(default=None, description="The criticality of the catalogue item if known")
+    is_flagged: Optional[bool] = Field(description="Whether the catalogue item is flagged as critical")

@@ -9,10 +9,7 @@ from typing import Annotated, Any, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
-from inventory_management_system_api.schemas.mixins import (
-    BaseFieldsSchemaMixin,
-    CustomBaseSchema,
-)
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
 class CatalogueCategoryPropertyType(str, Enum):
@@ -96,9 +93,7 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
 
     @classmethod
     def check_valid_allowed_values(
-        cls,
-        allowed_values: Optional[AllowedValuesSchema],
-        property_data: dict[str, Any],
+        cls, allowed_values: Optional[AllowedValuesSchema], property_data: dict[str, Any]
     ) -> None:
         """
         Checks `allowed_values` against its parent property raising an error if its invalid.
@@ -123,8 +118,7 @@ class CatalogueCategoryPostPropertySchema(BaseModel):
                 for allowed_value in allowed_values.values:
                     # Ensure the value is the correct type
                     if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
-                        expected_property_type=property_data["type"],
-                        property_value=allowed_value,
+                        expected_property_type=property_data["type"], property_value=allowed_value
                     ):
                         raise ValueError(
                             "allowed_values of type 'list' must only contain values of the same type as the property "
@@ -167,13 +161,10 @@ class CatalogueCategoryPropertySchema(CatalogueCategoryPostPropertySchema):
     """
 
     id: str = Field(description="The ID of the property")
-    unit: Optional[str] = Field(
-        default=None,
-        description="The unit of the property such as 'nm', 'mm', 'cm' etc",
-    )
+    unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
-class CatalogueCategoryPostSchema(CustomBaseSchema):
+class CatalogueCategoryPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a catalogue category creation request.
     """
@@ -185,8 +176,7 @@ class CatalogueCategoryPostSchema(CustomBaseSchema):
     )
     parent_id: Optional[str] = Field(default=None, description="The ID of the parent catalogue category")
     properties: Optional[List[CatalogueCategoryPostPropertySchema]] = Field(
-        default=None,
-        description="The properties that the catalogue items in this category could/should have",
+        default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
 
@@ -229,9 +219,7 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
     """
 
     default_value: Any = Field(
-        default=None,
-        description="Value to populate all child catalogue items and items with. Required if the added field is "
-        "mandatory.",
+        default=None, description="The properties that the catalogue items in this category could/should have"
     )
 
     @field_validator("default_value")
@@ -265,7 +253,7 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
         return default_value
 
 
-class CatalogueCategoryPropertyPatchSchema(CustomBaseSchema):
+class CatalogueCategoryPropertyPatchSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a property patch request on a catalogue category
     """
@@ -277,6 +265,5 @@ class CatalogueCategoryPropertyPatchSchema(CustomBaseSchema):
         "type is allowed.",
     )
     unit_id: Optional[str] = Field(
-        default=None,
-        description="The unit of the property, only changeable by authorised users",
+        default=None, description="The unit of the property, only changeable by authorised users"
     )

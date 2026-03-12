@@ -9,7 +9,7 @@ from pydantic import Field
 
 from inventory_management_system_api.schemas.mixins import (
     BaseFieldsSchemaMixin,
-    CustomBaseSchema,
+    BaseFieldsPostSchemaMixin,
 )
 
 
@@ -23,7 +23,7 @@ class SystemImportanceType(str, Enum):
     HIGH = "high"
 
 
-class SystemPostSchema(CustomBaseSchema):
+class SystemPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a system creation request.
     """

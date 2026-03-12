@@ -16,7 +16,7 @@ class BaseFieldsSchemaMixin(BaseModel):
     modified_comment: Optional[str] = Field(description="A user comment justifying the state of the entity")
 
 
-class CustomBaseSchema(BaseModel):
+class BaseFieldsPostSchemaMixin(BaseModel):
     """
     A custom input base class that provides the base fields
     """

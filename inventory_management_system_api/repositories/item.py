@@ -64,10 +64,7 @@ class ItemRepo:
         return None
 
     def list(
-        self,
-        system_id: Optional[str],
-        catalogue_item_id: Optional[str],
-        session: Optional[ClientSession] = None,
+        self, system_id: Optional[str], catalogue_item_id: Optional[str], session: Optional[ClientSession] = None
     ) -> List[ItemOut]:
         """
         Get all items from the MongoDB database
@@ -89,10 +86,7 @@ class ItemRepo:
         if not query:
             logger.info(message)
         else:
-            logger.info(
-                "%s matching the provided system ID and/or catalogue item ID filter",
-                message,
-            )
+            logger.info("%s matching the provided system ID and/or catalogue item ID filter", message)
             if system_id:
                 logger.debug("Provided system ID filter '%s'", system_id)
             if catalogue_item_id:
@@ -131,10 +125,7 @@ class ItemRepo:
             raise MissingRecordError(f"No item found with ID '{item_id}'")
 
     def insert_property_to_all_in(
-        self,
-        catalogue_item_ids: List[ObjectId],
-        property_in: PropertyIn,
-        session: Optional[ClientSession] = None,
+        self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
     ):
         """
         Inserts a property into every item with one of the given catalogue_item_id's using an update_many query
@@ -176,10 +167,7 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations
         """
 
-        logger.info(
-            "Updating all properties with ID '%s' inside items in the database",
-            property_id,
-        )
+        logger.info("Updating all properties with ID '%s' inside items in the database", property_id)
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
@@ -232,14 +220,7 @@ class ItemRepo:
                 # Obtain a list of items with the same catalogue item ID
                 {"$match": {"catalogue_item_id": catalogue_item_id}},
                 # Obtain the system the item is in (will be stored as a list but will only be one)
-                {
-                    "$lookup": {
-                        "from": "systems",
-                        "localField": "system_id",
-                        "foreignField": "_id",
-                        "as": "system",
-                    }
-                },
+                {"$lookup": {"from": "systems", "localField": "system_id", "foreignField": "_id", "as": "system"}},
                 # Can unwind so the `system` list becomes just a single field instead of a list, but as we can only
                 # have one system there is no need here (The following line will just match on any of the (one) systems)
                 # {"$unwind": "$system"},

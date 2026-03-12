@@ -6,17 +6,11 @@ from typing import Optional, List
 
 from pydantic import Field, AwareDatetime
 
-from inventory_management_system_api.schemas.catalogue_item import (
-    PropertyPostSchema,
-    PropertySchema,
-)
-from inventory_management_system_api.schemas.mixins import (
-    BaseFieldsSchemaMixin,
-    CustomBaseSchema,
-)
+from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema, PropertySchema
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
-class ItemPostSchema(CustomBaseSchema):
+class ItemPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for an item creation request.
     """

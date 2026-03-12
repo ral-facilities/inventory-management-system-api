@@ -7,15 +7,9 @@ from typing import Annotated, List, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.exceptions import MissingRecordError
-from inventory_management_system_api.models.manufacturer import (
-    ManufacturerIn,
-    ManufacturerOut,
-)
+from inventory_management_system_api.models.manufacturer import ManufacturerIn, ManufacturerOut
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
-from inventory_management_system_api.schemas.manufacturer import (
-    ManufacturerPatchSchema,
-    ManufacturerPostSchema,
-)
+from inventory_management_system_api.schemas.manufacturer import ManufacturerPatchSchema, ManufacturerPostSchema
 from inventory_management_system_api.services import utils
 
 
