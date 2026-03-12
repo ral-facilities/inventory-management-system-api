@@ -52,7 +52,8 @@ class CatalogueItemPostSchema(BaseFieldsPostSchemaMixin):
         default=None, description="The reason why the catalogue item became obsolete"
     )
     obsolete_replacement_catalogue_item_id: Optional[str] = Field(
-        default=None, description="The ID of the catalogue item that replaces this catalogue item if obsolete",
+        default=None,
+        description="The ID of the catalogue item that replaces this catalogue item if obsolete",
     )
     notes: Optional[str] = Field(default=None, description="Any notes about the catalogue item")
     properties: Optional[List[PropertyPostSchema]] = Field(
@@ -72,7 +73,8 @@ class CatalogueItemPatchSchema(CatalogueItemPostSchema):
     """
 
     catalogue_category_id: Optional[str] = Field(
-        default=None, description="The ID of the catalogue category that the catalogue item belongs to",
+        default=None,
+        description="The ID of the catalogue category that the catalogue item belongs to",
     )
     manufacturer_id: Optional[str] = Field(default=None, description="The ID of the manufacturer")
     name: Optional[str] = Field(default=None, description="The name of the catalogue item")
@@ -99,7 +101,8 @@ class CatalogueItemSchema(BaseFieldsSchemaMixin, CatalogueItemPostSchema):
         description="The number of spares currently available within this catalogue item if known"
     )
     number_of_spares_required: Optional[float] = Field(
-        default=None, description="The number of spares required for this catalogue item if known",
+        default=None,
+        description="The number of spares required for this catalogue item if known",
     )
     criticality: Optional[float] = Field(default=None, description="The criticality of the catalogue item if known")
     is_flagged: Optional[bool] = Field(description="Whether the catalogue item is flagged as critical")
