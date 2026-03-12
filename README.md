@@ -310,7 +310,7 @@ to populate the database with mock data.
 If you wish to do this manually the full command is
 
 ```bash
-docker exec -i ims-api-mongodb mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive < ./data/mock_data.dump
+docker exec -i ims-api-mongodb mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive --drop < ./data/mock_data.dump
 ```
 
 Otherwise, there is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To

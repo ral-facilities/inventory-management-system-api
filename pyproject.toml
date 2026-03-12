@@ -3,7 +3,7 @@ name = "inventory-management-system-api"
 description = "Python microservice providing an API for the Inventory Management System."
 readme = "README.md"
 requires-python = ">=3.13"
-version = "3.0.2"
+version = "3.1.0"
 
 dependencies = [
     "cryptography",
@@ -22,20 +22,20 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
-    "black==25.9.0",
-    "pylint==3.3.9",
+    "black==26.1.0",
+    "pylint==4.0.5",
     "inventory-management-system-api[test]"
 ]
 
 test = [
-    "pytest==8.4.2",
-    "pytest-asyncio==1.2.0",
+    "pytest==9.0.2",
+    "pytest-asyncio==1.3.0",
     "pytest-cov==7.0.0",
-    "pytest-env==1.2.0"
+    "pytest-env==1.5.0"
 ]
 
 scripts = [
-    "faker==37.11.0"
+    "faker==40.4.0"
 ]
 
 dev = [
