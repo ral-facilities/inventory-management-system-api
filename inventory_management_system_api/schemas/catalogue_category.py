@@ -218,8 +218,9 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
     """
 
     default_value: Any = Field(
-        default=None, 
-        description="The properties that the catalogue items in this category could/should have"
+        default=None,
+        description="Value to populate all child catalogue items and items with. Required if the added field is "
+        "mandatory.",
     )
 
     @field_validator("default_value")
