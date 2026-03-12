@@ -80,13 +80,7 @@ class ManufacturerService:
             update_data["code"] = utils.generate_code(manufacturer.name, "manufacturer")
 
         stored_manufacturer = stored_manufacturer.model_copy(
-            update={
-                **update_data,
-                "modified_comment": update_data.get(
-                    "modified_comment"
-                ),  # TBD - does the data entry in ims require an accurate reflection of the comment.
-                "address": stored_manufacturer.address.model_copy(update=update_data.get("address")),
-            }
+            update={**update_data, "address": stored_manufacturer.address.model_copy(update=update_data.get("address"))}
         )
 
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump()))
