@@ -20,7 +20,7 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 
 class NewCatalogueCategoryBase(BaseModel):
@@ -57,7 +57,7 @@ class NewCatalogueCategoryBase(BaseModel):
         return properties
 
 
-class NewCatalogueCategoryIn(CreatedModifiedTimeInMixin, NewCatalogueCategoryBase):
+class NewCatalogueCategoryIn(BaseFieldsInMixin, NewCatalogueCategoryBase):
     """
     Input database model for a catalogue category.
     """
@@ -94,7 +94,7 @@ class OldCatalogueCategoryBase(BaseModel):
         return properties
 
 
-class OldCatalogueCategoryOut(CreatedModifiedTimeOutMixin, OldCatalogueCategoryBase):
+class OldCatalogueCategoryOut(BaseFieldsOutMixin, OldCatalogueCategoryBase):
     """
     Output database model for a catalogue category.
     """
@@ -149,7 +149,7 @@ class NewCatalogueItemBase(BaseModel):
         return properties
 
 
-class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
+class NewCatalogueItemIn(BaseFieldsInMixin, NewCatalogueItemBase):
     """
     Input database model for a catalogue item.
     """
@@ -195,7 +195,7 @@ class OldCatalogueItemBase(BaseModel):
         return properties
 
 
-class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
+class OldCatalogueItemOut(BaseFieldsOutMixin, OldCatalogueItemBase):
     """
     Output database model for a catalogue item.
     """
@@ -229,7 +229,7 @@ class NewSystemBase(BaseModel):
     is_flagged: Optional[bool] = None
 
 
-class NewSystemIn(CreatedModifiedTimeInMixin, NewSystemBase):
+class NewSystemIn(BaseFieldsInMixin, NewSystemBase):
     """
     Input database model for a system.
     """
@@ -252,7 +252,7 @@ class OldSystemBase(BaseModel):
     code: str
 
 
-class OldSystemOut(CreatedModifiedTimeOutMixin, OldSystemBase):
+class OldSystemOut(BaseFieldsOutMixin, OldSystemBase):
     """
     Output database model for a system.
     """
