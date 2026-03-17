@@ -7,9 +7,10 @@ catalogue categories, catalogue items, and systems.
 # pylint: disable=invalid-name
 # pylint: disable=duplicate-code
 
+from datetime import datetime, timezone
 from typing import Any, Collection, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 from pymongo.client_session import ClientSession
 from pymongo.database import Database
 
@@ -20,7 +21,37 @@ from inventory_management_system_api.models.catalogue_category import (
 )
 from inventory_management_system_api.models.catalogue_item import PropertyIn, PropertyOut
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
+
+
+class CreatedModifiedTimeInMixin(BaseModel):
+    """Input model mixin that provides creation and modified time fields."""
+
+    created_time: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    modified_time: Optional[AwareDatetime] = None
+
+    @model_validator(mode="after")
+    def validator(self) -> "CreatedModifiedTimeInMixin":
+        """
+        Validator that assigns the created_time and modified_time times.
+
+        When `modified_time` is None, which occurs when not assigning data from an existing database model this
+        assigns the `modified_time` time to be the same as the `created_time` to ensure they are identical. When
+        `modified_time` is defined then it is reassigned as its assumed it already exists and is now being updated.
+        """
+        if self.modified_time is None:
+            self.modified_time = self.created_time
+        else:
+            self.modified_time = datetime.now(timezone.utc)
+        return self
+
+
+class CreatedModifiedTimeOutMixin(BaseModel):
+    """
+    Output model mixin that provides creation and modified time fields
+    """
+
+    created_time: AwareDatetime
+    modified_time: AwareDatetime
 
 
 class NewCatalogueCategoryBase(BaseModel):
@@ -57,7 +88,7 @@ class NewCatalogueCategoryBase(BaseModel):
         return properties
 
 
-class NewCatalogueCategoryIn(BaseFieldsInMixin, NewCatalogueCategoryBase):
+class NewCatalogueCategoryIn(CreatedModifiedTimeInMixin, NewCatalogueCategoryBase):
     """
     Input database model for a catalogue category.
     """
@@ -94,7 +125,7 @@ class OldCatalogueCategoryBase(BaseModel):
         return properties
 
 
-class OldCatalogueCategoryOut(BaseFieldsOutMixin, OldCatalogueCategoryBase):
+class OldCatalogueCategoryOut(CreatedModifiedTimeOutMixin, OldCatalogueCategoryBase):
     """
     Output database model for a catalogue category.
     """
@@ -149,7 +180,7 @@ class NewCatalogueItemBase(BaseModel):
         return properties
 
 
-class NewCatalogueItemIn(BaseFieldsInMixin, NewCatalogueItemBase):
+class NewCatalogueItemIn(CreatedModifiedTimeInMixin, NewCatalogueItemBase):
     """
     Input database model for a catalogue item.
     """
@@ -195,7 +226,7 @@ class OldCatalogueItemBase(BaseModel):
         return properties
 
 
-class OldCatalogueItemOut(BaseFieldsOutMixin, OldCatalogueItemBase):
+class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
     """
     Output database model for a catalogue item.
     """
@@ -229,7 +260,7 @@ class NewSystemBase(BaseModel):
     is_flagged: Optional[bool] = None
 
 
-class NewSystemIn(BaseFieldsInMixin, NewSystemBase):
+class NewSystemIn(CreatedModifiedTimeInMixin, NewSystemBase):
     """
     Input database model for a system.
     """
@@ -252,7 +283,7 @@ class OldSystemBase(BaseModel):
     code: str
 
 
-class OldSystemOut(BaseFieldsOutMixin, OldSystemBase):
+class OldSystemOut(CreatedModifiedTimeOutMixin, OldSystemBase):
     """
     Output database model for a system.
     """
