@@ -5,9 +5,9 @@ Module for defining the API schema models for representing systems.
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
 class SystemImportanceType(str, Enum):
@@ -20,7 +20,7 @@ class SystemImportanceType(str, Enum):
     HIGH = "high"
 
 
-class SystemPostSchema(BaseModel):
+class SystemPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a system creation request.
     """
@@ -44,7 +44,7 @@ class SystemPatchSchema(SystemPostSchema):
     importance: Optional[SystemImportanceType] = Field(default=None, description="Importance of the system")
 
 
-class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
+class SystemSchema(BaseFieldsSchemaMixin, SystemPostSchema):
     """
     Schema model for system get request responses.
     """

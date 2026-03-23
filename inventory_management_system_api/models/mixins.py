@@ -9,22 +9,25 @@ from typing import Optional
 from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 
-class CreatedModifiedTimeInMixin(BaseModel):
+class BaseFieldsInMixin(BaseModel):
     """
-    Input model mixin that provides creation and modified time fields
+    Input model mixin that provides base fields
 
     For a create request an instance of the model should be created without supplying the `created_time` field
     as this will cause it to be assigned as the current time.
     When updating, the `created_time` time should be given so that it is kept the same. The `modified_time` will be
     assigned regardless as it is assumed that a new instance will be created only when creating/updating a
     database entry.
+    The `modified_comment` field should only be supplied when updating a database entry, and it serves as a
+    justification for why the modification to that entry was made. When creating, it will default to `None`.
     """
 
     created_time: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     modified_time: Optional[AwareDatetime] = None
+    modified_comment: Optional[str] = None
 
     @model_validator(mode="after")
-    def validator(self) -> "CreatedModifiedTimeInMixin":
+    def validator(self) -> "BaseFieldsInMixin":
         """
         Validator that assigns the created_time and modified_time times.
 
@@ -39,10 +42,11 @@ class CreatedModifiedTimeInMixin(BaseModel):
         return self
 
 
-class CreatedModifiedTimeOutMixin(BaseModel):
+class BaseFieldsOutMixin(BaseModel):
     """
-    Output model mixin that provides creation and modified time fields
+    Output model mixin that provides the base fields
     """
 
     created_time: AwareDatetime
     modified_time: AwareDatetime
+    modified_comment: Optional[str]
