@@ -38,6 +38,7 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
     status_code=status.HTTP_201_CREATED,
 )
 def create_usage_status(
+    request: Request,
     usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep, authorised: AuthorisedDep
 ) -> UsageStatusSchema:
     logger.info("Creating a new usage status")
@@ -48,7 +49,7 @@ def create_usage_status(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
-        usage_status = usage_status_service.create(usage_status)
+        usage_status = usage_status_service.create(usage_status, request.state.username)
         return UsageStatusSchema(**usage_status.model_dump())
 
     except DuplicateRecordError as exc:

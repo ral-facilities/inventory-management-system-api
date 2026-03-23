@@ -42,11 +42,11 @@ SystemServiceDep = Annotated[SystemService, Depends(SystemService)]
     response_description="The created system",
     status_code=status.HTTP_201_CREATED,
 )
-def create_system(system: SystemPostSchema, system_service: SystemServiceDep) -> SystemSchema:
+def create_system(request: Request, system: SystemPostSchema, system_service: SystemServiceDep) -> SystemSchema:
     logger.info("Creating a new system")
     logger.debug("System data: %s", system)
     try:
-        system = system_service.create(system)
+        system = system_service.create(system, request.state.username)
         return SystemSchema(**system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if system.type_id in str(exc) or "system type" in str(exc).lower():
@@ -121,12 +121,12 @@ def get_system_breadcrumbs(
 
 
 @router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")
-def partial_update_system(system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
+def partial_update_system(request: Request, system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
     logger.info("Partially updating system with ID '%s'", system_id)
     logger.debug("System data: %s", system)
 
     try:
-        updated_system = system_service.update(system_id, system)
+        updated_system = system_service.update(system_id, system, request.state.username)
         return SystemSchema(**updated_system.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if system.parent_id and system.parent_id in str(exc) or "parent system" in str(exc).lower():

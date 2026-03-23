@@ -56,7 +56,7 @@ class CatalogueItemService:
         self._manufacturer_repository = manufacturer_repository
         self._setting_repository = setting_repository
 
-    def create(self, catalogue_item: CatalogueItemPostSchema) -> CatalogueItemOut:
+    def create(self, catalogue_item: CatalogueItemPostSchema, username: str) -> CatalogueItemOut:
         """
         Create a new catalogue item.
 
@@ -65,6 +65,7 @@ class CatalogueItemService:
         is. It then processes the properties.
 
         :param catalogue_item: The catalogue item to be created.
+        :param username: The user submitting this request.
         :return: The created catalogue item.
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
@@ -101,6 +102,7 @@ class CatalogueItemService:
                 **{
                     **catalogue_item.model_dump(),
                     "properties": supplied_properties,
+                    "modified_by": username
                 },
                 number_of_spares=0 if spares_definition else None,
             )
@@ -126,7 +128,7 @@ class CatalogueItemService:
 
     # pylint:disable=too-many-branches
     # pylint:disable=too-many-locals
-    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
+    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema, username: str) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.
 
@@ -226,7 +228,7 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.update(
             catalogue_item_id,
-            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
+            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data, "modified_by": username}),
         )
 
     def delete(self, catalogue_item_id: str, access_token: Optional[str] = None) -> None:

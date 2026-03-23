@@ -58,6 +58,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPostSchema,
+        username: str
     ) -> CatalogueCategoryPropertyOut:
         """Create a new property at the catalogue category level
 
@@ -66,6 +67,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_id: ID of the catalogue category to add the property to
         :param catalogue_category_property: Property to add (with additional info on how to perform the migration if
                                         necessary)
+        :param username: The user submitting this request.
         :raises InvalidActionError: If attempting to add a mandatory property without a default_value being specified
                                     or if the catalogue category is not a leaf
         :raises MissingRecordError: If the catalogue category doesn't exist
@@ -98,7 +100,7 @@ class CatalogueCategoryPropertyService:
             unit_value = unit.value
 
         catalogue_category_property_in = CatalogueCategoryPropertyIn(
-            **{**catalogue_category_property.model_dump(), "unit": unit_value}
+            **{**catalogue_category_property.model_dump(), "unit": unit_value, "modified_by": username}
         )
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
@@ -178,6 +180,7 @@ class CatalogueCategoryPropertyService:
         catalogue_category_property_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
         is_authorised: bool,
+        username: str
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -189,6 +192,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_property_id: The ID of the property within the category to update
         :param catalogue_category_property: The property values to update
         :param is_authorised: Whether or not the user is authorised to update a property's unit
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the catalogue category doesn't exist, or the property doesn't
                                     exist within the specified catalogue category
         """
@@ -241,6 +245,9 @@ class CatalogueCategoryPropertyService:
         CatalogueCategoryPostPropertySchema.check_valid_allowed_values(
             catalogue_category_property.allowed_values, existing_property_out.model_dump()
         )
+        
+        # set modified_by so it is used when updating catalogue_items and items
+        update_data["modified_by"] = username
 
         property_in = CatalogueCategoryPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 

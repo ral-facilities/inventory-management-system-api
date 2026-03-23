@@ -29,7 +29,7 @@ from inventory_management_system_api.models.usage_status import UsageStatusIn, U
 # ---------------------------- GENERAL -----------------------------
 
 # Used for _GET_DATA's as when comparing these will not be possible to know at runtime
-BASE_FIELDS_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY, "modified_comment": ANY}
+BASE_FIELDS_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY, "modified_comment": ANY, "modified_by": ANY}
 
 # ---------------------------- AUTHENTICATION -----------------------------
 
@@ -84,7 +84,7 @@ USAGE_STATUS_IN_DATA_NEW = {
 }
 
 USAGE_STATUS_OUT_DATA_NEW = {
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW).model_dump(),
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_NEW, modified_by="username").model_dump(),
     "_id": PREDEFINED_USAGE_STATUS_IDS[0],
 }
 
@@ -99,7 +99,7 @@ USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
 
 USAGE_STATUS_OUT_DATA_IN_USE = {
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE).model_dump(),
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_IN_USE, modified_by="username").model_dump(),
     "_id": PREDEFINED_USAGE_STATUS_IDS[1],
 }
 
@@ -117,7 +117,7 @@ USAGE_STATUS_IN_DATA_USED = {
 }
 
 USAGE_STATUS_OUT_DATA_USED = {
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED).model_dump(),
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_USED, modified_by="username").model_dump(),
     "_id": PREDEFINED_USAGE_STATUS_IDS[2],
 }
 
@@ -135,7 +135,7 @@ USAGE_STATUS_IN_DATA_SCRAPPED = {
 }
 
 USAGE_STATUS_OUT_DATA_SCRAPPED = {
-    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED).model_dump(),
+    **UsageStatusIn(**USAGE_STATUS_IN_DATA_SCRAPPED, modified_by="username").model_dump(),
     "_id": PREDEFINED_USAGE_STATUS_IDS[3],
 }
 
@@ -159,7 +159,7 @@ USAGE_STATUS_IN_DATA_CUSTOM = {
     "code": "custom",
 }
 
-USAGE_STATUS_OUT_DATA_CUSTOM = {**UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).model_dump(), "_id": ObjectId()}
+USAGE_STATUS_OUT_DATA_CUSTOM = {**UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM, modified_by="username").model_dump(), "_id": ObjectId()}
 
 USAGE_STATUS_GET_DATA_CUSTOM = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_CUSTOM).model_dump(),

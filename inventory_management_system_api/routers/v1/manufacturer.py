@@ -11,7 +11,7 @@ service.
 import logging
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 
 from inventory_management_system_api.core.exceptions import (
     DuplicateRecordError,
@@ -40,12 +40,13 @@ ManufacturerServiceDep = Annotated[ManufacturerService, Depends(ManufacturerServ
     status_code=status.HTTP_201_CREATED,
 )
 def create_manufacturer(
+    request: Request,
     manufacturer: ManufacturerPostSchema, manufacturer_service: ManufacturerServiceDep
 ) -> ManufacturerSchema:
     logger.info("Creating a new manufacturer")
     logger.debug("Manufacturer data is %s", manufacturer)
     try:
-        manufacturer = manufacturer_service.create(manufacturer)
+        manufacturer = manufacturer_service.create(manufacturer, request.state.username)
         return ManufacturerSchema(**manufacturer.model_dump())
     except DuplicateRecordError as exc:
         message = "A manufacturer with the same name already exists"
@@ -91,13 +92,14 @@ def get_manufacturer(
     response_description="Manufacturer updated successfully",
 )
 def partial_update_manufacturer(
+    request: Request,
     manufacturer: ManufacturerPatchSchema,
     manufacturer_id: Annotated[str, Path(description="The ID of the manufacturer that is to be updated")],
     manufacturer_service: ManufacturerServiceDep,
 ) -> ManufacturerSchema:
     logger.info("Partially updating manufacturer with ID '%s'", manufacturer_id)
     try:
-        updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer)
+        updated_manufacturer = manufacturer_service.update(manufacturer_id, manufacturer, request.state.username)
         return ManufacturerSchema(**updated_manufacturer.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         message = "Manufacturer not found"

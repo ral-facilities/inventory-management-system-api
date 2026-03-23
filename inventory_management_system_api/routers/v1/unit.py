@@ -36,7 +36,7 @@ UnitServiceDep = Annotated[UnitService, Depends(UnitService)]
     response_description="The created unit",
     status_code=status.HTTP_201_CREATED,
 )
-def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: AuthorisedDep) -> UnitSchema:
+def create_unit(request: Request, unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: AuthorisedDep) -> UnitSchema:
     logger.info("Creating a new unit")
     logger.debug("Unit data: %s", unit)
 
@@ -45,7 +45,7 @@ def create_unit(unit: UnitPostSchema, unit_service: UnitServiceDep, authorised: 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
-        unit = unit_service.create(unit)
+        unit = unit_service.create(unit, request.state.username)
         return UnitSchema(**unit.model_dump())
     except DuplicateRecordError as exc:
         message = "A unit with the same value already exists"

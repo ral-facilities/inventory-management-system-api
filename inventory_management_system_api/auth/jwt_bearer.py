@@ -44,6 +44,7 @@ class JWTBearer(HTTPBearer):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token or expired token")
 
         request.state.token = credentials.credentials
+        request.state.username = self.username
 
         return credentials.credentials
 
@@ -59,10 +60,12 @@ class JWTBearer(HTTPBearer):
         logger.info("Checking if JWT access token is valid")
         try:
             payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
+            self.username = payload.get("username")
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Error decoding JWT access token")
             payload = None
 
+        
         return payload is not None and ("username" in payload and "role" in payload)
 
     def is_jwt_access_token_authorised(self, access_token: str) -> bool:
