@@ -175,7 +175,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         """Calls the `CatalogueCategoryService` `create` method with the appropriate data from a prior call to
         `mock_create`."""
 
-        self._created_catalogue_category = self.catalogue_category_service.create(self._catalogue_category_post)
+        self._created_catalogue_category = self.catalogue_category_service.create(self._catalogue_category_post, username="Test user")
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -186,7 +186,7 @@ class CreateDSL(CatalogueCategoryServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_category_service.create(self._catalogue_category_post)
+            self.catalogue_category_service.create(self._catalogue_category_post, username="Test user")
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -540,7 +540,8 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
 
         self._updated_catalogue_category_id = catalogue_category_id
         self._updated_catalogue_category = self.catalogue_category_service.update(
-            catalogue_category_id, self._catalogue_category_patch
+            catalogue_category_id, self._catalogue_category_patch,
+            username="Test user"
         )
 
     def call_update_expecting_error(self, catalogue_category_id: str, error_type: type[BaseException]) -> None:
@@ -553,7 +554,7 @@ class UpdateDSL(CatalogueCategoryServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_category_service.update(catalogue_category_id, self._catalogue_category_patch)
+            self.catalogue_category_service.update(catalogue_category_id, self._catalogue_category_patch, username="Test user")
         self._update_exception = exc
 
     def check_update_success(self) -> None:
