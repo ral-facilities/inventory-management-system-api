@@ -7,6 +7,7 @@ Module for providing an API router which defines routes for managing catalogue c
 # some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
 # pylint: disable=missing-function-docstring
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-arguments
 
 import logging
 from typing import Annotated, List, Optional
@@ -58,7 +59,8 @@ CatalogueCategoryPropertyServiceDep = Annotated[
 )
 def create_catalogue_category(
     request: Request,
-    catalogue_category: CatalogueCategoryPostSchema, catalogue_category_service: CatalogueCategoryServiceDep
+    catalogue_category: CatalogueCategoryPostSchema,
+    catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
     logger.info("Creating a new catalogue category")
     logger.debug("Catalogue category data: %s", catalogue_category)
@@ -166,7 +168,9 @@ def partial_update_catalogue_category(
     logger.info("Partially updating catalogue category with ID '%s'", catalogue_category_id)
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
-        updated_catalogue_category = catalogue_category_service.update(catalogue_category_id, catalogue_category, request.state.username)
+        updated_catalogue_category = catalogue_category_service.update(
+            catalogue_category_id, catalogue_category, request.state.username
+        )
         return CatalogueCategorySchema(**updated_catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
@@ -252,8 +256,7 @@ def create_property(
     try:
         return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.create(
-                catalogue_category_id, catalogue_category_property,
-                request.state.username
+                catalogue_category_id, catalogue_category_property, request.state.username
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:

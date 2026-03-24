@@ -26,6 +26,7 @@ class JWTBearer(HTTPBearer):
         :param auto_error: If `True`, it automatically raises `HTTPException` if the HTTP Bearer token is not provided
             (in an `Authorization` header).
         """
+        self.username = None
         super().__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request) -> str:
@@ -60,12 +61,11 @@ class JWTBearer(HTTPBearer):
         logger.info("Checking if JWT access token is valid")
         try:
             payload = jwt.decode(access_token, PUBLIC_KEY, algorithms=[config.authentication.jwt_algorithm])
-            self.username = payload.get("username")
+            self.username = payload.get("username", None)
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Error decoding JWT access token")
             payload = None
 
-        
         return payload is not None and ("username" in payload and "role" in payload)
 
     def is_jwt_access_token_authorised(self, access_token: str) -> bool:

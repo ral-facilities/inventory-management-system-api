@@ -42,7 +42,9 @@ ItemServiceDep = Annotated[ItemService, Depends(ItemService)]
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(request: Request, item: ItemPostSchema, item_service: ItemServiceDep, authorised: AuthorisedDep) -> ItemSchema:
+def create_item(
+    request: Request, item: ItemPostSchema, item_service: ItemServiceDep, authorised: AuthorisedDep
+) -> ItemSchema:
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
     try:

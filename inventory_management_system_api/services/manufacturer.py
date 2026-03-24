@@ -43,7 +43,7 @@ class ManufacturerService:
                 url=manufacturer.url,
                 address=manufacturer.address,
                 telephone=manufacturer.telephone,
-                modified_by=username
+                modified_by=username,
             )
         )
 
@@ -83,7 +83,11 @@ class ManufacturerService:
             update_data["code"] = utils.generate_code(manufacturer.name, "manufacturer")
 
         stored_manufacturer = stored_manufacturer.model_copy(
-            update={**update_data, "address": stored_manufacturer.address.model_copy(update=update_data.get("address")), "modified_by": username}
+            update={
+                **update_data,
+                "address": stored_manufacturer.address.model_copy(update=update_data.get("address")),
+                "modified_by": username,
+            }
         )
 
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump()))

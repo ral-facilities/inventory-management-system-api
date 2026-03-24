@@ -99,11 +99,7 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.create(
             CatalogueItemIn(
-                **{
-                    **catalogue_item.model_dump(),
-                    "properties": supplied_properties,
-                    "modified_by": username
-                },
+                **{**catalogue_item.model_dump(), "properties": supplied_properties, "modified_by": username},
                 number_of_spares=0 if spares_definition else None,
             )
         )
@@ -128,7 +124,9 @@ class CatalogueItemService:
 
     # pylint:disable=too-many-branches
     # pylint:disable=too-many-locals
-    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema, username: str) -> CatalogueItemOut:
+    def update(
+        self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema, username: str
+    ) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.
 

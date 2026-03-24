@@ -58,7 +58,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPostSchema,
-        username: str
+        username: str,
     ) -> CatalogueCategoryPropertyOut:
         """Create a new property at the catalogue category level
 
@@ -180,7 +180,7 @@ class CatalogueCategoryPropertyService:
         catalogue_category_property_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
         is_authorised: bool,
-        username: str
+        username: str,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -245,9 +245,6 @@ class CatalogueCategoryPropertyService:
         CatalogueCategoryPostPropertySchema.check_valid_allowed_values(
             catalogue_category_property.allowed_values, existing_property_out.model_dump()
         )
-        
-        # set modified_by so it is used when updating catalogue_items and items
-        update_data["modified_by"] = username
 
         property_in = CatalogueCategoryPropertyIn(**{**existing_property_out.model_dump(), **update_data})
 

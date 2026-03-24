@@ -75,7 +75,7 @@ class CreateDSL(ManufacturerServiceDSL):
     def call_create(self) -> None:
         """Calls the `ManufacturerService` `create` method with the appropriate data from a prior call to
         `mock_create`."""
-        self._created_manufacturer = self.manufacturer_service.create(self._manufacturer_post, username="Test user")
+        self._created_manufacturer = self.manufacturer_service.create(self._manufacturer_post, username="username")
 
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
@@ -222,7 +222,9 @@ class UpdateDSL(ManufacturerServiceDSL):
         :param manufacturer_id: ID of the manufacturer to be updated.
         """
         self._updated_manufacturer_id = manufacturer_id
-        self._updated_manufacturer = self.manufacturer_service.update(manufacturer_id, self._manufacturer_patch, username="Test user")
+        self._updated_manufacturer = self.manufacturer_service.update(
+            manufacturer_id, self._manufacturer_patch, username="username"
+        )
 
     def call_update_expecting_error(self, manufacturer_id: str, error_type: type[BaseException]) -> None:
         """
@@ -233,7 +235,7 @@ class UpdateDSL(ManufacturerServiceDSL):
         :param error_type: Expected exception to be raised.
         """
         with pytest.raises(error_type) as exc:
-            self.manufacturer_service.update(manufacturer_id, self._manufacturer_patch, username="Test user")
+            self.manufacturer_service.update(manufacturer_id, self._manufacturer_patch, username="username")
         self._update_exception = exc
 
     def check_update_success(self) -> None:

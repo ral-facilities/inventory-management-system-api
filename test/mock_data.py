@@ -33,7 +33,7 @@ BASE_FIELDS_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY, "mod
 
 # Used for _IN_DATA's as field is calculated via request state not body
 
-BASE_FIELDS_IN_DATA = {"modified_by": "Test user"}
+BASE_FIELDS_IN_DATA = {"modified_by": "username"}
 
 # ---------------------------- AUTHENTICATION -----------------------------
 
@@ -80,10 +80,7 @@ PREDEFINED_USAGE_STATUS_IDS = [
 ]
 
 # New
-USAGE_STATUS_POST_DATA_NEW = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "New"
-}
+USAGE_STATUS_POST_DATA_NEW = {**BASE_FIELDS_IN_DATA, "value": "New"}
 
 USAGE_STATUS_IN_DATA_NEW = {
     **USAGE_STATUS_POST_DATA_NEW,
@@ -101,10 +98,7 @@ USAGE_STATUS_GET_DATA_NEW = {
 }
 
 # In Use
-USAGE_STATUS_POST_DATA_IN_USE = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "In Use"
-}
+USAGE_STATUS_POST_DATA_IN_USE = {**BASE_FIELDS_IN_DATA, "value": "In Use"}
 
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
 
@@ -119,10 +113,7 @@ USAGE_STATUS_GET_DATA_IN_USE = {
 }
 
 # Used
-USAGE_STATUS_POST_DATA_USED = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "Used"
-}
+USAGE_STATUS_POST_DATA_USED = {**BASE_FIELDS_IN_DATA, "value": "Used"}
 
 USAGE_STATUS_IN_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
@@ -140,10 +131,7 @@ USAGE_STATUS_GET_DATA_USED = {
 }
 
 # Scrapped
-USAGE_STATUS_POST_DATA_SCRAPPED = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "Scrapped"
-}
+USAGE_STATUS_POST_DATA_SCRAPPED = {**BASE_FIELDS_IN_DATA, "value": "Scrapped"}
 
 USAGE_STATUS_IN_DATA_SCRAPPED = {
     **USAGE_STATUS_POST_DATA_SCRAPPED,
@@ -168,10 +156,7 @@ USAGE_STATUSES_OUT_DATA = [
 ]
 
 # Custom
-USAGE_STATUS_POST_DATA_CUSTOM = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "Custom"
-}
+USAGE_STATUS_POST_DATA_CUSTOM = {**BASE_FIELDS_IN_DATA, "value": "Custom"}
 
 USAGE_STATUS_IN_DATA_CUSTOM = {
     **USAGE_STATUS_POST_DATA_CUSTOM,
@@ -189,20 +174,14 @@ USAGE_STATUS_GET_DATA_CUSTOM = {
 # --------------------------------- UNITS ---------------------------------
 
 # mm
-UNIT_POST_DATA_MM = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "mm"
-}
+UNIT_POST_DATA_MM = {**BASE_FIELDS_IN_DATA, "value": "mm"}
 
 UNIT_IN_DATA_MM = {**UNIT_POST_DATA_MM, "code": "mm"}
 
 UNIT_GET_DATA_MM = {**UNIT_IN_DATA_MM, **BASE_FIELDS_GET_DATA_EXPECTED, "id": ANY}
 
 # cm
-UNIT_POST_DATA_CM = {
-    **BASE_FIELDS_IN_DATA,
-    "value": "cm"
-}
+UNIT_POST_DATA_CM = {**BASE_FIELDS_IN_DATA, "value": "cm"}
 
 UNIT_IN_DATA_CM = {**UNIT_POST_DATA_CM, "code": "cm"}
 
@@ -214,7 +193,6 @@ UNIT_GET_DATA_CM = {**UNIT_POST_DATA_CM, **BASE_FIELDS_GET_DATA_EXPECTED, "id": 
 # Boolean, Mandatory, No unit
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Mandatory Boolean Property Without Unit",
     "type": "boolean",
     "mandatory": True,
@@ -232,7 +210,6 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_BOOLEAN_MANDATORY = {
 # Number, Non Mandatory, mm unit
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Non Mandatory Number Property With Unit",
     "type": "number",
     "unit": "mm",
@@ -253,7 +230,6 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT = {
 # Number, Non Mandatory, No unit
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Non Mandatory Number Property",
     "type": "number",
     "mandatory": False,
@@ -274,7 +250,6 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY = {
 # Number, Non Mandatory, Allowed values list
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Non Mandatory Number Property With Allowed Values",
     "type": "number",
     "mandatory": False,
@@ -289,7 +264,6 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LI
 
 # Number, Mandatory, No unit
 CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Mandatory Number Property",
     "type": "number",
     "mandatory": True,
@@ -298,7 +272,6 @@ CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_MANDATORY = {
 # String, Mandatory
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Mandatory String Property",
     "type": "string",
     "mandatory": True,
@@ -314,7 +287,6 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_MANDATORY = {
 # String, Non Mandatory, Allowed values list
 
 CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST = {
-    **BASE_FIELDS_IN_DATA,
     "name": "Non Mandatory String Property With Allowed Values",
     "type": "string",
     "mandatory": False,

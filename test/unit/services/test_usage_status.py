@@ -69,7 +69,7 @@ class CreateDSL(UsageStatusServiceDSL):
         """
         Calls the `UsageStatusService` `create` method with the appropriate data from a prior call to `mock_create`.
         """
-        self._created_usage_status = self.usage_status_service.create(self._usage_status_post, username="Test user")
+        self._created_usage_status = self.usage_status_service.create(self._usage_status_post, username="username")
 
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""

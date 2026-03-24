@@ -74,12 +74,7 @@ class CatalogueCategoryService:
 
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(
-                **{
-                    **catalogue_category.model_dump(),
-                    "properties": properties,
-                    "code": code,
-                    "modified_by": username
-                }
+                **{**catalogue_category.model_dump(), "properties": properties, "code": code, "modified_by": username}
             )
         )
 
@@ -159,7 +154,8 @@ class CatalogueCategoryService:
             update_data["properties"] = properties
 
         return self._catalogue_category_repository.update(
-            catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data, "modified_by": username})
+            catalogue_category_id,
+            CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data, "modified_by": username}),
         )
 
     def delete(self, catalogue_category_id: str) -> None:

@@ -141,7 +141,14 @@ class ItemService:
             "creating item", catalogue_item_id, item.system_id
         ) as session:
             return self._item_repository.create(
-                ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value, "modified_by": username}),
+                ItemIn(
+                    **{
+                        **item.model_dump(),
+                        "properties": properties,
+                        "usage_status": usage_status.value,
+                        "modified_by": username,
+                    }
+                ),
                 session=session,
             )
 
@@ -203,7 +210,9 @@ class ItemService:
                 "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
             ) as session:
                 return self._item_repository.update(
-                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data, "modified_by": username}), session=session
+                    item_id,
+                    ItemIn(**{**stored_item.model_dump(), **update_data, "modified_by": username}),
+                    session=session,
                 )
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))

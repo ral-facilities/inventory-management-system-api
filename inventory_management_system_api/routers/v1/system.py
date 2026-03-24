@@ -121,7 +121,9 @@ def get_system_breadcrumbs(
 
 
 @router.patch(path="/{system_id}", summary="Update a system by ID", response_description="System updated successfully")
-def partial_update_system(request: Request, system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep) -> SystemSchema:
+def partial_update_system(
+    request: Request, system_id: str, system: SystemPatchSchema, system_service: SystemServiceDep
+) -> SystemSchema:
     logger.info("Partially updating system with ID '%s'", system_id)
     logger.debug("System data: %s", system)
 

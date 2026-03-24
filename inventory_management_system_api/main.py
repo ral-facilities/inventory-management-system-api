@@ -79,8 +79,10 @@ def get_router_dependencies() -> list:
 
         dependencies.append(Depends(JWTBearer()))
     else:
+
         def add_dev_user(request: Request):
             request.state.username = "Development user"
+
         dependencies.append(Depends(add_dev_user))
     return dependencies
 

@@ -39,7 +39,9 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
 )
 def create_usage_status(
     request: Request,
-    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep, authorised: AuthorisedDep
+    usage_status: UsageStatusPostSchema,
+    usage_status_service: UsageStatusServiceDep,
+    authorised: AuthorisedDep,
 ) -> UsageStatusSchema:
     logger.info("Creating a new usage status")
     logger.debug("Usage status data: %s", usage_status)

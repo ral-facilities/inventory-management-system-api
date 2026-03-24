@@ -72,7 +72,7 @@ class SystemService:
                 owner=system.owner,
                 importance=system.importance,
                 code=code,
-                modified_by=username
+                modified_by=username,
             )
         )
 
@@ -137,7 +137,9 @@ class SystemService:
                     raise MissingRecordError(f"No system type found with ID '{system.type_id}'")
 
             return self._system_repository.update(
-                system_id, SystemIn(**{**stored_system.model_dump(), **update_data, "modified_by": username}), session=session
+                system_id,
+                SystemIn(**{**stored_system.model_dump(), **update_data, "modified_by": username}),
+                session=session,
             )
 
     def delete(self, system_id: str, access_token: Optional[str] = None) -> None:

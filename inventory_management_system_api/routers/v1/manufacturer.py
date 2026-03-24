@@ -40,8 +40,7 @@ ManufacturerServiceDep = Annotated[ManufacturerService, Depends(ManufacturerServ
     status_code=status.HTTP_201_CREATED,
 )
 def create_manufacturer(
-    request: Request,
-    manufacturer: ManufacturerPostSchema, manufacturer_service: ManufacturerServiceDep
+    request: Request, manufacturer: ManufacturerPostSchema, manufacturer_service: ManufacturerServiceDep
 ) -> ManufacturerSchema:
     logger.info("Creating a new manufacturer")
     logger.debug("Manufacturer data is %s", manufacturer)

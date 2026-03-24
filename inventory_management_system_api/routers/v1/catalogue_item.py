@@ -49,8 +49,7 @@ CatalogueItemServiceDep = Annotated[CatalogueItemService, Depends(CatalogueItemS
     status_code=status.HTTP_201_CREATED,
 )
 def create_catalogue_item(
-    request: Request,
-    catalogue_item: CatalogueItemPostSchema, catalogue_item_service: CatalogueItemServiceDep
+    request: Request, catalogue_item: CatalogueItemPostSchema, catalogue_item_service: CatalogueItemServiceDep
 ) -> CatalogueItemSchema:
     logger.info("Creating a new catalogue item")
     logger.debug("Catalogue item data: %s", catalogue_item)
@@ -131,7 +130,9 @@ def partial_update_catalogue_item(
     logger.info("Partially updating catalogue item with ID '%s'", catalogue_item_id)
     logger.debug("Catalogue item data: %s", catalogue_item)
     try:
-        updated_catalogue_item = catalogue_item_service.update(catalogue_item_id, catalogue_item, request.state.username)
+        updated_catalogue_item = catalogue_item_service.update(
+            catalogue_item_id, catalogue_item, request.state.username
+        )
         return CatalogueItemSchema(**updated_catalogue_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))

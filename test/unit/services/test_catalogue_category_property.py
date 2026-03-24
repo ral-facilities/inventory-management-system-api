@@ -177,8 +177,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         `mock_create`."""
 
         self._created_catalogue_category_property = self.catalogue_category_property_service.create(
-            self._catalogue_category_id, self._catalogue_category_property_post,
-            username="Test user"
+            self._catalogue_category_id, self._catalogue_category_property_post, username="username"
         )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
@@ -191,8 +190,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_property_service.create(
-                self._catalogue_category_id, self._catalogue_category_property_post,
-                username="Test user"
+                self._catalogue_category_id, self._catalogue_category_property_post, username="username"
             )
         self._create_exception = exc
 
@@ -480,7 +478,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             catalogue_category_property_id,
             self._catalogue_category_property_patch,
             self._user_authorised,
-            username="Test user"
+            username="username",
         )
 
     def call_update_expecting_error(self, catalogue_category_property_id: str, error_type: type[BaseException]) -> None:
@@ -498,7 +496,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
                 catalogue_category_property_id,
                 self._catalogue_category_property_patch,
                 self._user_authorised,
-                username="Test user"
+                username="username",
             )
         self._update_exception = exc
 
