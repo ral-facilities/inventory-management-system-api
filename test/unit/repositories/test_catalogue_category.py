@@ -1183,7 +1183,7 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
                 "$push": {"properties": self._property_in.model_dump(by_alias=True)},
                 "$set": {
                     "modified_time": self._mock_datetime.now.return_value,
-                    "modified_comment": f"Property '{self._property_in.name} created",
+                    "modified_comment": f"Property '{self._property_in.name}' created",
                     "modified_by": "username",
                 },
             },
