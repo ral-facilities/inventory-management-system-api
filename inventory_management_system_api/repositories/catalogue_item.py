@@ -185,14 +185,20 @@ class CatalogueItemRepo:
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
         return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
+    # pylint: disable=duplicate-code
     def insert_property_to_all_matching(
-        self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
+        self,
+        catalogue_category_id: str,
+        property_in: PropertyIn,
+        username: str,
+        session: Optional[ClientSession] = None,
     ):
         """
         Inserts a property into every catalogue item with a given catalogue_category_id via an update_many query
 
         :param catalogue_category_id: The ID of the catalogue category who's catalogue items to update
         :param property_in: The property to insert into the catalogue items' properties list
+        :param username: The user who created the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -205,7 +211,11 @@ class CatalogueItemRepo:
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
             {
                 "$push": {"properties": property_in.model_dump(by_alias=True)},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": f"Property '{property_in.name}' created",
+                },
             },
             session=session,
         )
@@ -214,6 +224,7 @@ class CatalogueItemRepo:
         self,
         property_id: str,
         update_body: dict,
+        username: str,
         session: Optional[ClientSession] = None,
     ) -> None:
         """
@@ -223,6 +234,7 @@ class CatalogueItemRepo:
 
         :param property_id: The ID of the property to update
         :param update_body: The body of data to be used in the update
+        :param username: The user updating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -230,6 +242,8 @@ class CatalogueItemRepo:
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
+        set_body["modified_by"] = username
+        set_body["modified_comment"] = "Property updated"
 
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
@@ -237,6 +251,8 @@ class CatalogueItemRepo:
             array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
+
+    # pylint: enable=duplicate-code
 
     def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
         """

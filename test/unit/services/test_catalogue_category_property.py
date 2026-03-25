@@ -177,7 +177,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         `mock_create`."""
 
         self._created_catalogue_category_property = self.catalogue_category_property_service.create(
-            self._catalogue_category_id, self._catalogue_category_property_post
+            self._catalogue_category_id, self._catalogue_category_property_post, username="username"
         )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
@@ -190,7 +190,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
 
         with pytest.raises(error_type) as exc:
             self.catalogue_category_property_service.create(
-                self._catalogue_category_id, self._catalogue_category_property_post
+                self._catalogue_category_id, self._catalogue_category_property_post, username="username"
             )
         self._create_exception = exc
 
@@ -214,7 +214,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         # To assert with property IDs we must compare as dicts and use ANY here as otherwise the object ids will always
         # be different
         self.mock_catalogue_category_repository.create_property.assert_called_with(
-            self._catalogue_category_id, ANY, session=expected_session
+            self._catalogue_category_id, ANY, "username", session=expected_session
         )
         actual_catalogue_category_property_in = self.mock_catalogue_category_repository.create_property.call_args_list[
             0
@@ -228,7 +228,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         # Catalogue items
         self._expected_property_in.id = actual_catalogue_category_property_in.id
         self.mock_catalogue_item_repository.insert_property_to_all_matching.assert_called_once_with(
-            self._catalogue_category_id, self._expected_property_in, session=expected_session
+            self._catalogue_category_id, self._expected_property_in, "username", session=expected_session
         )
 
         # Items
@@ -238,6 +238,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         self.mock_item_repository.insert_property_to_all_in.assert_called_once_with(
             self.mock_catalogue_item_repository.list_ids.return_value,
             self._expected_property_in,
+            "username",
             session=expected_session,
         )
 
@@ -478,6 +479,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             catalogue_category_property_id,
             self._catalogue_category_property_patch,
             self._user_authorised,
+            username="username",
         )
 
     def call_update_expecting_error(self, catalogue_category_property_id: str, error_type: type[BaseException]) -> None:
@@ -495,6 +497,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
                 catalogue_category_property_id,
                 self._catalogue_category_property_patch,
                 self._user_authorised,
+                username="username",
             )
         self._update_exception = exc
 
@@ -535,6 +538,8 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self._catalogue_category_id,
             self._updated_catalogue_category_property_id,
             self._expected_catalogue_category_property_in,
+            "username",
+            None,  # modified_comment
             session=expected_session,
         )
 
@@ -553,6 +558,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self.mock_catalogue_item_repository.update_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
                 update_body,
+                "username",
                 session=expected_session,
             )
 
@@ -560,6 +566,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self.mock_item_repository.update_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
                 update_body,
+                "username",
                 session=expected_session,
             )
         else:

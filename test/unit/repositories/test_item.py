@@ -517,7 +517,9 @@ class InsertPropertyToAllInDSL(ItemRepoDSL):
         self._property_in = PropertyIn(**property_data, id=str(ObjectId()))
 
         self._insert_property_to_all_in_catalogue_item_ids = catalogue_item_ids
-        self.item_repository.insert_property_to_all_in(catalogue_item_ids, self._property_in, session=self.mock_session)
+        self.item_repository.insert_property_to_all_in(
+            catalogue_item_ids, self._property_in, "username", session=self.mock_session
+        )
 
     def check_insert_property_to_all_in_success(self) -> None:
         """Checks that a prior call to `call_insert_property_to_all_in` worked as expected"""
@@ -526,7 +528,11 @@ class InsertPropertyToAllInDSL(ItemRepoDSL):
             {"catalogue_item_id": {"$in": self._insert_property_to_all_in_catalogue_item_ids}},
             {
                 "$push": {"properties": self._property_in.model_dump(by_alias=True)},
-                "$set": {"modified_time": self._mock_datetime.now.return_value},
+                "$set": {
+                    "modified_time": self._mock_datetime.now.return_value,
+                    "modified_by": "username",
+                    "modified_comment": f"Property '{self._property_in.name}' created",
+                },
             },
             session=self.mock_session,
         )
@@ -565,6 +571,7 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
         self.item_repository.update_all_properties_with_id(
             property_id,
             update_body,
+            "username",
             session=self.mock_session,
         )
 
@@ -579,6 +586,8 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
                     "properties.$[elem].unit_id": self._update_all_properties_with_id_update_body["unit_id"],
                     "properties.$[elem].unit": self._update_all_properties_with_id_update_body["unit"],
                     "modified_time": self._mock_datetime.now.return_value,
+                    "modified_by": "username",
+                    "modified_comment": "Property updated",
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(self._update_all_properties_with_id_property_id)}],

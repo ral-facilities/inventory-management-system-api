@@ -25,6 +25,7 @@ class BaseFieldsInMixin(BaseModel):
     created_time: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     modified_time: Optional[AwareDatetime] = None
     modified_comment: Optional[str] = None
+    modified_by: str
 
     @model_validator(mode="after")
     def validator(self) -> "BaseFieldsInMixin":
@@ -50,3 +51,4 @@ class BaseFieldsOutMixin(BaseModel):
     created_time: AwareDatetime
     modified_time: AwareDatetime
     modified_comment: Optional[str]
+    modified_by: str

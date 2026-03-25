@@ -782,7 +782,7 @@ class InsertPropertyToAllMatchingDSL(CatalogueItemRepoDSL):
 
         self._insert_property_to_all_matching_catalogue_category_id = catalogue_category_id
         self.catalogue_item_repository.insert_property_to_all_matching(
-            catalogue_category_id, self._property_in, session=self.mock_session
+            catalogue_category_id, self._property_in, "username", session=self.mock_session
         )
 
     def check_insert_property_to_all_matching_success(self) -> None:
@@ -792,7 +792,11 @@ class InsertPropertyToAllMatchingDSL(CatalogueItemRepoDSL):
             {"catalogue_category_id": CustomObjectId(self._insert_property_to_all_matching_catalogue_category_id)},
             {
                 "$push": {"properties": self._property_in.model_dump(by_alias=True)},
-                "$set": {"modified_time": self._mock_datetime.now.return_value},
+                "$set": {
+                    "modified_time": self._mock_datetime.now.return_value,
+                    "modified_by": "username",
+                    "modified_comment": f"Property '{self._property_in.name}' created",
+                },
             },
             session=self.mock_session,
         )
@@ -831,6 +835,7 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL):
         self.catalogue_item_repository.update_all_properties_with_id(
             property_id,
             update_body,
+            "username",
             session=self.mock_session,
         )
 
@@ -845,6 +850,8 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllMatchingDSL):
                     "properties.$[elem].unit_id": self._update_all_properties_with_id_update_body["unit_id"],
                     "properties.$[elem].unit": self._update_all_properties_with_id_update_body["unit"],
                     "modified_time": self._mock_datetime.now.return_value,
+                    "modified_by": "username",
+                    "modified_comment": "Property updated",
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(self._update_all_properties_with_id_property_id)}],

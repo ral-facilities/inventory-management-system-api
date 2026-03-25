@@ -7,11 +7,12 @@ Module for providing an API router which defines routes for managing catalogue c
 # some duplicate code inside routers as the code is similar between entities and error handling may be repeated.
 # pylint: disable=missing-function-docstring
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-arguments
 
 import logging
 from typing import Annotated, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
@@ -57,12 +58,14 @@ CatalogueCategoryPropertyServiceDep = Annotated[
     status_code=status.HTTP_201_CREATED,
 )
 def create_catalogue_category(
-    catalogue_category: CatalogueCategoryPostSchema, catalogue_category_service: CatalogueCategoryServiceDep
+    request: Request,
+    catalogue_category: CatalogueCategoryPostSchema,
+    catalogue_category_service: CatalogueCategoryServiceDep,
 ) -> CatalogueCategorySchema:
     logger.info("Creating a new catalogue category")
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
-        catalogue_category = catalogue_category_service.create(catalogue_category)
+        catalogue_category = catalogue_category_service.create(catalogue_category, request.state.username)
         return CatalogueCategorySchema(**catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
@@ -157,6 +160,7 @@ def get_catalogue_category_breadcrumbs(
     response_description="Catalogue category updated successfully",
 )
 def partial_update_catalogue_category(
+    request: Request,
     catalogue_category: CatalogueCategoryPatchSchema,
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to update")],
     catalogue_category_service: CatalogueCategoryServiceDep,
@@ -164,7 +168,9 @@ def partial_update_catalogue_category(
     logger.info("Partially updating catalogue category with ID '%s'", catalogue_category_id)
     logger.debug("Catalogue category data: %s", catalogue_category)
     try:
-        updated_catalogue_category = catalogue_category_service.update(catalogue_category_id, catalogue_category)
+        updated_catalogue_category = catalogue_category_service.update(
+            catalogue_category_id, catalogue_category, request.state.username
+        )
         return CatalogueCategorySchema(**updated_catalogue_category.model_dump())
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if (
@@ -239,6 +245,7 @@ def delete_catalogue_category(
     status_code=status.HTTP_201_CREATED,
 )
 def create_property(
+    request: Request,
     catalogue_category_property: CatalogueCategoryPropertyPostSchema,
     catalogue_category_id: Annotated[str, Path(description="The ID of the catalogue category to add a property to")],
     catalogue_category_property_service: CatalogueCategoryPropertyServiceDep,
@@ -249,7 +256,7 @@ def create_property(
     try:
         return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.create(
-                catalogue_category_id, catalogue_category_property
+                catalogue_category_id, catalogue_category_property, request.state.username
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
@@ -282,7 +289,9 @@ def create_property(
     summary="Update property at the catalogue category level",
     response_description="The updated property as defined at the catalogue category level",
 )
+# pylint:disable=too-many-positional-arguments
 def partial_update_property(
+    request: Request,
     catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
     catalogue_category_id: Annotated[
         str, Path(description="The ID of the catalogue category containing the property to patch")
@@ -301,7 +310,7 @@ def partial_update_property(
     try:
         return CatalogueCategoryPropertySchema(
             **catalogue_category_property_service.update(
-                catalogue_category_id, property_id, catalogue_category_property, authorised
+                catalogue_category_id, property_id, catalogue_category_property, authorised, request.state.username
             ).model_dump()
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:

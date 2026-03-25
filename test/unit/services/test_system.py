@@ -180,7 +180,7 @@ class CreateDSL(SystemServiceDSL):
     def call_create(self) -> None:
         """Calls the `SystemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
-        self._created_system = self.system_service.create(self._system_post)
+        self._created_system = self.system_service.create(self._system_post, username="username")
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -191,7 +191,7 @@ class CreateDSL(SystemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.system_service.create(self._system_post)
+            self.system_service.create(self._system_post, username="username")
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -456,7 +456,7 @@ class UpdateDSL(SystemServiceDSL):
         """
 
         self._updated_system_id = system_id
-        self._updated_system = self.system_service.update(system_id, self._system_patch)
+        self._updated_system = self.system_service.update(system_id, self._system_patch, username="username")
 
     def call_update_expecting_error(self, system_id: str, error_type: type[BaseException]) -> None:
         """
@@ -468,7 +468,7 @@ class UpdateDSL(SystemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.system_service.update(system_id, self._system_patch)
+            self.system_service.update(system_id, self._system_patch, username="username")
         self._update_exception = exc
 
     def check_update_success(self) -> None:
