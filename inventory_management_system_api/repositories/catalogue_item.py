@@ -185,6 +185,7 @@ class CatalogueItemRepo:
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
         return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
+    # pylint: disable=duplicate-code
     def insert_property_to_all_matching(
         self,
         catalogue_category_id: str,
@@ -205,7 +206,7 @@ class CatalogueItemRepo:
             "Inserting property into catalogue item's with a catalogue category ID '%s' in the database",
             catalogue_category_id,
         )
-
+        
         self._catalogue_items_collection.update_many(
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
             {
@@ -250,6 +251,8 @@ class CatalogueItemRepo:
             array_filters=[{"elem._id": CustomObjectId(property_id)}],
             session=session,
         )
+
+    # pylint: enable=duplicate-code
 
     def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
         """
