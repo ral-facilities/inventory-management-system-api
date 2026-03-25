@@ -100,14 +100,14 @@ class CatalogueCategoryPropertyService:
             unit_value = unit.value
 
         catalogue_category_property_in = CatalogueCategoryPropertyIn(
-            **{**catalogue_category_property.model_dump(), "unit": unit_value, "modified_by": username}
+            **{**catalogue_category_property.model_dump(), "unit": unit_value}
         )
 
         # Run all subsequent edits within a transaction to ensure they will all succeed or fail together
         with start_session_transaction("adding property") as session:
             # Firstly update the catalogue category
             catalogue_category_property_out = self._catalogue_category_repository.create_property(
-                catalogue_category_id, catalogue_category_property_in, session=session
+                catalogue_category_id, catalogue_category_property_in, username, session=session
             )
 
             property_in = PropertyIn(
@@ -120,7 +120,7 @@ class CatalogueCategoryPropertyService:
 
             # Add property to all catalogue items of the catalogue category
             self._catalogue_item_repository.insert_property_to_all_matching(
-                catalogue_category_id, property_in, session=session
+                catalogue_category_id, property_in, username, session=session
             )
 
             # Add property to all items of the catalogue items
@@ -128,7 +128,7 @@ class CatalogueCategoryPropertyService:
             # would be memory to store these ids and the network bandwidth it takes to send the request to the
             # database but for 10000 items being updated this only takes 4.92 KB
             catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
-            self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
+            self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, username, session=session)
 
         return catalogue_category_property_out
 
@@ -174,6 +174,8 @@ class CatalogueCategoryPropertyService:
 
     # pylint:disable=too-many-locals
     # pylint:disable=too-many-branches
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def update(
         self,
         catalogue_category_id: str,
@@ -252,7 +254,12 @@ class CatalogueCategoryPropertyService:
         with start_session_transaction("updating property") as session:
             # Firstly update the catalogue category
             property_out = self._catalogue_category_repository.update_property(
-                catalogue_category_id, catalogue_category_property_id, property_in, session=session
+                catalogue_category_id,
+                catalogue_category_property_id,
+                property_in,
+                username,
+                catalogue_category_property.modified_comment,
+                session=session,
             )
 
             # Avoid propagating changes unless absolutely necessary
@@ -269,11 +276,13 @@ class CatalogueCategoryPropertyService:
                 self._catalogue_item_repository.update_all_properties_with_id(
                     catalogue_category_property_id,
                     update_body,
+                    username,
                     session=session,
                 )
                 self._item_repository.update_all_properties_with_id(
                     catalogue_category_property_id,
                     update_body,
+                    username,
                     session=session,
                 )
 

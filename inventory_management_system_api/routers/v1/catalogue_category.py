@@ -289,6 +289,7 @@ def create_property(
     summary="Update property at the catalogue category level",
     response_description="The updated property as defined at the catalogue category level",
 )
+#pylint:disable=too-many-positional-arguments
 def partial_update_property(
     request: Request,
     catalogue_category_property: CatalogueCategoryPropertyPatchSchema,

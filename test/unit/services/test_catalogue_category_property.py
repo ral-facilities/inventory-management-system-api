@@ -214,7 +214,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         # To assert with property IDs we must compare as dicts and use ANY here as otherwise the object ids will always
         # be different
         self.mock_catalogue_category_repository.create_property.assert_called_with(
-            self._catalogue_category_id, ANY, session=expected_session
+            self._catalogue_category_id, ANY, "username", session=expected_session
         )
         actual_catalogue_category_property_in = self.mock_catalogue_category_repository.create_property.call_args_list[
             0
@@ -228,7 +228,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         # Catalogue items
         self._expected_property_in.id = actual_catalogue_category_property_in.id
         self.mock_catalogue_item_repository.insert_property_to_all_matching.assert_called_once_with(
-            self._catalogue_category_id, self._expected_property_in, session=expected_session
+            self._catalogue_category_id, self._expected_property_in, "username", session=expected_session
         )
 
         # Items
@@ -238,6 +238,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
         self.mock_item_repository.insert_property_to_all_in.assert_called_once_with(
             self.mock_catalogue_item_repository.list_ids.return_value,
             self._expected_property_in,
+            "username",
             session=expected_session,
         )
 
@@ -537,6 +538,8 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self._catalogue_category_id,
             self._updated_catalogue_category_property_id,
             self._expected_catalogue_category_property_in,
+            "username",
+            None,  # modified_comment
             session=expected_session,
         )
 
@@ -555,6 +558,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self.mock_catalogue_item_repository.update_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
                 update_body,
+                "username",
                 session=expected_session,
             )
 
@@ -562,6 +566,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
             self.mock_item_repository.update_all_properties_with_id.assert_called_once_with(
                 self._updated_catalogue_category_property_id,
                 update_body,
+                "username",
                 session=expected_session,
             )
         else:
