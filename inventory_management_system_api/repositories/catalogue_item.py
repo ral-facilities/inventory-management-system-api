@@ -206,7 +206,7 @@ class CatalogueItemRepo:
             "Inserting property into catalogue item's with a catalogue category ID '%s' in the database",
             catalogue_category_id,
         )
-        
+
         self._catalogue_items_collection.update_many(
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
             {
