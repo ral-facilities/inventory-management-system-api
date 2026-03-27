@@ -54,20 +54,10 @@ class SystemService:
         :param system: System to be created.
         :return: Created system.
         :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
-        :raises InvalidActionError: If the system being created has a different `type_id` to its parent.
         """
 
         if not self._system_type_repository.get(system.type_id):
             raise MissingRecordError(f"No system type found with ID '{system.type_id}'")
-
-        # If there is a parent, must use the same type as it
-        if system.parent_id is not None:
-            parent_system = self._system_repository.get(system.parent_id)
-            if not parent_system:
-                raise MissingRecordError(f"No parent system found with ID '{system.parent_id}'")
-            if system.type_id != parent_system.type_id:
-                raise InvalidActionError("Cannot use a different type_id to the parent system")
 
         # Create the system
         code = utils.generate_code(system.name, "system")
@@ -119,6 +109,8 @@ class SystemService:
         :param system: System containing the fields to be updated.
         :raises MissingRecordError: When the system with the given ID doesn't exist.
         :return: The updated system.
+        :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
+        :raises InvalidActionError: When attempting to change the system type while the system has child elements.
         """
         stored_system = self.get(system_id)
         if not stored_system:
@@ -134,7 +126,12 @@ class SystemService:
         ) as session:
             # Perform this validation after any potential write lock to ensure no further updates occur after
             # the validation until the update is fully complete
-            self._validate_type_and_parent_update(system_id, system, stored_system, update_data)
+            if "type_id" in update_data and system.type_id != stored_system.type_id:
+                if self._system_repository.has_child_elements(system_id):
+                    raise InvalidActionError("Cannot change the type of a system when it has children")
+
+                if not self._system_type_repository.get(system.type_id):
+                    raise MissingRecordError(f"No system type found with ID '{system.type_id}'")
 
             return self._system_repository.update(
                 system_id, SystemIn(**{**stored_system.model_dump(), **update_data}), session=session
@@ -157,59 +154,6 @@ class SystemService:
 
         self._system_repository.delete(system_id)
 
-    def _validate_type_and_parent_update(
-        self, system_id: str, system: SystemPatchSchema, stored_system: SystemOut, update_data: dict
-    ) -> None:
-        """
-        Validate an update request that could modify the `type_id` or `parent_id` of the system.
-
-        :param system_id: ID of the system to updated.
-        :param system: System containing the fields to be updated.
-        :param stored_system: Current stored system from the database.
-        :param update_data: Dictionary containing the update data.
-        :raises MissingRecordError: If the parent system specified by `parent_id` doesn't exist.
-        :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
-        :raises InvalidActionError: When attempting to change the system type while the system has child elements.
-        :raises InvalidActionError: When attempting to change the parent of the system to one with a different type
-                                    without also changing the type to match.
-        """
-
-        type_id_changing = "type_id" in update_data and system.type_id != stored_system.type_id
-        parent_id_changing = "parent_id" in update_data and system.parent_id != stored_system.parent_id
-
-        if type_id_changing or parent_id_changing:
-            # Find the current/new type_id (For verifying with the parent at the end)
-            type_id = stored_system.type_id
-            if type_id_changing:
-                # Type is being updated, so use the new value and ensure it is valid
-                type_id = system.type_id
-
-                if self._system_repository.has_child_elements(system_id):
-                    raise InvalidActionError("Cannot change the type of a system when it has children")
-
-                if not self._system_type_repository.get(type_id):
-                    raise MissingRecordError(f"No system type found with ID '{type_id}'")
-
-            # Find the current/new parent (For verifying it with the type at the end)
-            parent_system = None
-            if parent_id_changing:
-                # Parent is being updated, so use the new parent and ensure it is valid
-                if system.parent_id is not None:
-                    parent_system = self._system_repository.get(system.parent_id)
-                    if not parent_system:
-                        raise MissingRecordError(f"No parent system found with ID '{system.parent_id}'")
-            elif stored_system.parent_id is not None:
-                # Parent is not being updated but are updating the type so obtain the current parent
-                parent_system = self._system_repository.get(stored_system.parent_id)
-
-            # If there is a new/current parent, ensure the new/current type_id is the same as it
-            if parent_system is not None and type_id != parent_system.type_id:
-                raise InvalidActionError(
-                    "Cannot move a system into one with a different type"
-                    if parent_id_changing
-                    else "Cannot update the system's type to be different to its parent"
-                )
-
     # pylint:disable=too-many-arguments
     # pylint:disable=too-many-positional-arguments
     @contextmanager
@@ -229,7 +173,7 @@ class SystemService:
         specific case when:
         1. The spares definition is defined.
         2. The `type_id` is being changed.
-        3. The current/new `parent_id` will be `None`.
+
         This in-turn prevents the following issue:
         1. You have a spares definition defined and move an item to a system with nothing currently in it.
         2. Another request changes the system type of the system, after the spares have been recounted but before the
@@ -254,10 +198,8 @@ class SystemService:
         if (
             # No spares definition => Can't have any spares calculation
             spares_definition is None
-            # Only need to conflict with a spares update when the type is being changed in a root system (non-root
-            # systems are required to have the same type id as their parent anyway)
+            # Only need to conflict with a spares update when the type is being changed
             or not type_id_changing
-            or (system.parent_id is not None if "parent_id" in update_data else stored_system.parent_id is not None)
         ):
             yield None
         else:

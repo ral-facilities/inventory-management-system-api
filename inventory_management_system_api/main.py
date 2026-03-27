@@ -108,4 +108,4 @@ def read_root():
     """
     Root endpoint for the API.
     """
-    return {"Title": "Inventory Management System API"}
+    return {"title": config.api.title}

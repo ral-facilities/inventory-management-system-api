@@ -26,6 +26,9 @@ class SystemBase(BaseModel):
     # Used for uniqueness checks (sanitised name)
     code: str
 
+    # Computed
+    is_flagged: Optional[bool] = None
+
 
 class SystemIn(CreatedModifiedTimeInMixin, SystemBase):
     """

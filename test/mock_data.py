@@ -316,6 +316,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
     "parent_id": None,
     "code": "non-leaf-catalogue-category-required-values-only",
     "properties": [],
+    "is_flagged": None,
 }
 
 # Non leaf, No parent, No properties
@@ -336,6 +337,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
+    "is_flagged": None,
 }
 
 
@@ -355,6 +357,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
+    "is_flagged": None,
 }
 
 # Leaf, No parent, No properties
@@ -378,6 +381,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     "id": ANY,
     "code": "leaf-category-no-parent-no-properties",
     "properties": [],
+    "is_flagged": None,
 }
 
 # Leaf, Required values only
@@ -394,6 +398,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY = {
     "parent_id": None,
     "code": "leaf-catalogue-category-required-values-only",
     "properties": [],
+    "is_flagged": None,
 }
 
 # Leaf, No parent, Properties, mm unit
@@ -432,6 +437,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
         CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
     ],
+    "is_flagged": None,
 }
 
 # --------------------------------- PROPERTIES ---------------------------------
@@ -588,14 +594,15 @@ CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     "cost_to_rework_gbp": None,
     "days_to_rework": None,
     "expected_lifetime_days": None,
-    "drawing_number": None,
-    "drawing_link": None,
     "item_model_number": None,
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
     "notes": None,
     "properties": [],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # Not obsolete, No properties
@@ -607,8 +614,6 @@ CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "cost_to_rework_gbp": 9001,
     "days_to_rework": 3,
     "expected_lifetime_days": 3002,
-    "drawing_number": "12345-1",
-    "drawing_link": "http://example.com/",
     "item_model_number": "123456-1",
     "is_obsolete": False,
     "notes": "Some notes",
@@ -629,6 +634,9 @@ CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     "obsolete_replacement_catalogue_item_id": None,
     "properties": [],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # Obsolete, No properties
@@ -645,6 +653,9 @@ CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES = {
     "id": ANY,
     "properties": [],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # All properties
@@ -668,6 +679,9 @@ CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES = {
         PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
     ],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # Only mandatory properties
@@ -687,6 +701,9 @@ CATALOGUE_ITEM_GET_DATA_WITH_MANDATORY_PROPERTIES_ONLY = {
         PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
     ],
     "number_of_spares": None,
+    "number_of_spares_required": None,
+    "criticality": None,
+    "is_flagged": None,
 }
 
 # ------------------------------------- ITEMS -------------------------------------
@@ -890,6 +907,7 @@ SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
     "location": None,
     "owner": None,
     "code": "storage-system-required-values-only",
+    "is_flagged": None,
 }
 
 # Storage, No parent, All values
@@ -909,6 +927,7 @@ SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
     "id": ANY,
     "parent_id": None,
     "code": "storage-system-all-values",
+    "is_flagged": None,
 }
 
 # Storage, No parent

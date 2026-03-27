@@ -51,3 +51,6 @@ class SystemSchema(CreatedModifiedSchemaMixin, SystemPostSchema):
 
     id: str = Field(description="ID of the system")
     code: str = Field(description="Code of the system")
+
+    # Computed
+    is_flagged: Optional[bool] = Field(description="Whether the system is flagged as critical")

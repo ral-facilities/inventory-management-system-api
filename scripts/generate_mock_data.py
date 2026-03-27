@@ -388,8 +388,6 @@ def generate_random_catalogue_item(
         "days_to_replace": fake.random.randint(0, 100),
         "days_to_rework": optional_catalogue_item_field(lambda: fake.random.randint(0, 100)),
         "expected_lifetime_days": optional_catalogue_item_field(lambda: fake.random.randint(200, 3650)),
-        "drawing_number": optional_catalogue_item_field(lambda: str(fake.random.randint(1000, 10000))),
-        "drawing_link": optional_catalogue_item_field(fake.image_url),
         "item_model_number": optional_catalogue_item_field(fake.isbn13),
         "is_obsolete": bool(obsolete_replacement_catalogue_item_id),
         "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
@@ -577,7 +575,7 @@ def populate_random_items():
                 create_item(item)
 
 
-def populate_random_systems(levels_deep: int = 0, parent_id=None, parent_type_id=None):
+def populate_random_systems(levels_deep: int = 0, parent_id=None):
     """Recursive function that randomly populates systems."""
 
     if levels_deep >= MAX_LEVELS_DEEP:
@@ -586,12 +584,9 @@ def populate_random_systems(levels_deep: int = 0, parent_id=None, parent_type_id
     logger.debug("Populating system with depth %s", levels_deep)
     num_to_generate = MAX_NUMBER_PER_PARENT if levels_deep == 0 else fake.random.randint(0, MAX_NUMBER_PER_PARENT)
     for _ in range(0, num_to_generate):
-        chosen_parent_type_id = parent_type_id
-        if parent_id is None and chosen_parent_type_id is None:
-            chosen_parent_type_id = fake.random.choice(system_types)["id"]
-        system = generate_random_system(parent_id, chosen_parent_type_id)
+        system = generate_random_system(parent_id, fake.random.choice(system_types)["id"])
         system_id = create_system(system)["id"]
-        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id, parent_type_id=chosen_parent_type_id)
+        populate_random_systems(levels_deep=levels_deep + 1, parent_id=system_id)
         generated_system_ids.append(system_id)
 
 

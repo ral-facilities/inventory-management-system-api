@@ -88,6 +88,9 @@ class CatalogueCategoryBase(BaseModel):
     parent_id: Optional[CustomObjectIdField] = None
     properties: List[CatalogueCategoryPropertyIn] = []
 
+    # Computed
+    is_flagged: Optional[bool] = None
+
     @field_validator("properties", mode="before")
     @classmethod
     def validate_properties(cls, properties: Any, info: ValidationInfo) -> Any:

@@ -102,7 +102,7 @@ class Config(BaseSettings):
 
     api: APIConfig
     authentication: AuthenticationConfig
-    database: DatabaseConfig
+    ims_database: DatabaseConfig
     object_storage: ObjectStorageConfig
 
     model_config = SettingsConfigDict(

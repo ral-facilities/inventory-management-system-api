@@ -143,7 +143,13 @@ class TestCreate(CreateDSL):
                 "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
             }
         )
-        self.check_post_system_failed_with_detail(422, "Cannot use a different type_id to the parent system")
+        self.check_post_system_success(
+            {
+                **SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY,
+                "parent_id": parent_id,
+                "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
+            }
+        )
 
     def test_create_with_non_existent_type_id(self):
         """Test creating a system with a non-existent `type_id`."""
@@ -559,7 +565,7 @@ class TestUpdate(UpdateDSL):
         system_id = self.post_system(SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT)
 
         self.patch_system(system_id, {"parent_id": parent_id})
-        self.check_patch_system_failed_with_detail(422, "Cannot move a system into one with a different type")
+        self.check_patch_system_success({**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
     def test_partial_update_parent_id_to_one_with_a_different_type_while_changing_type(self):
         """Test updating the `parent_id` of a system to one that has a different type while also changing the type to
@@ -704,14 +710,16 @@ class TestUpdate(UpdateDSL):
         self.check_patch_system_failed_with_detail(422, "Cannot change the type of a system when it has children")
 
     def test_partial_update_type_id_with_parent(self):
-        """Test updating the `type_id` of a system when it doesn't have a parent system."""
+        """Test updating the `type_id` of a system when it has a parent system."""
 
         type_id = SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"]
         parent_id = self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
         system_id = self.post_system({**SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id})
 
         self.patch_system(system_id, {"type_id": type_id})
-        self.check_patch_system_failed_with_detail(422, "Cannot update the system's type to be different to its parent")
+        self.check_patch_system_success(
+            {**SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT, "parent_id": parent_id, "type_id": type_id}
+        )
 
     def test_partial_update_type_id_with_parent_and_subsystem(self):
         """Test updating the `type_id` of a system when it has a parent system and a subsystem."""
