@@ -18,7 +18,7 @@ services:
     network_mode: "host"
 
   mongo-db:
-    image: mongo:7.0-jammy
+    image: mongo:8.0-noble
     container_name: ims-api-mongodb
     entrypoint: mongodb_entrypoint.sh
     volumes:
