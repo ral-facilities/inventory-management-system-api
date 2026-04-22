@@ -9,7 +9,8 @@ This microservice requires a MongoDB instance to run against.
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.13 and MongoDB 7.0 installed on your machine (if you are not using Docker)
+- Python 3.13 and and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
+- MongoDB 8.0 installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorisation is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
   a GUI)
@@ -215,50 +216,62 @@ modified as required.
 
 #### Running the API
 
-Ensure that Python is installed on your machine before proceeding.
+Ensure that Python & uv is installed on your machine before proceeding.
 
-1. Create a Python virtual environment and activate it in the root of the project directory:
+1. Install the required dependencies and create a virtual environment with
 
    ```bash
-   python -m venv venv
-   source venv/bin/activate
+   uv sync --dev
    ```
 
-2. Install the required dependencies using pip:
+2. Start the application
 
    ```bash
-   pip install .[dev]
-   pip install -r requirements.txt
-   ```
-
-3. Start the application
-
-   ```bash
-   fastapi dev inventory_management_system_api/main.py
+   uv run fastapi dev inventory_management_system_api/main.py
    ```
 
    The microservice should now be running locally at http://localhost:8000. The Swagger UI can be accessed
    at http://localhost:8000/docs.
 
-4. Follow the [post setup instructions](#post-setup-instructions)
+3. Follow the [post setup instructions](#post-setup-instructions)
 
-5. To run the unit tests, run :
-
-   ```bash
-   pytest -c test/pytest.ini test/unit/
-   ```
-
-6. To run the e2e tests, run:
+4. To run the unit tests, run :
 
    ```bash
-   pytest -c test/pytest.ini test/e2e/
+   uv run pytest -c test/pytest.ini test/unit/
    ```
 
-7. To run all the tests, run:
+5. To run the e2e tests, run:
 
    ```bash
-   pytest -c test/pytest.ini test/
+   uv run pytest -c test/pytest.ini test/e2e/
    ```
+
+6. To run all the tests, run:
+
+   ```bash
+   uv run pytest -c test/pytest.ini test/
+   ```
+
+## Developer environment setup
+
+To setup a local virtual environment with all the dependencies run the following in a clone of this repo
+
+```bash
+uv sync --dev
+```
+
+This will create a virtual environment for the required python version and install all of the dev dependencies into it.
+
+### Common operations
+
+Where `uv run` is used below you can also activate the venv e.g. using `source .venv/bin/activate` and then omit it in
+all further commands, it is just a shortcut for when the virtual environment is not active in the current shell.
+
+- Use `uv sync --dev` whenever dependencies change as a result of a pull/merge to update your local environment to use.
+- Use `uv run pylint inventory_management_system_api test` to manually run the linter and find any issues.
+- Use `uv run black --line-length 120 inventory_management_system_api test` to manually run the formatter and
+  autoformat any changes.
 
 ## Post setup instructions
 
@@ -382,13 +395,13 @@ Listed below are the environment variables supported by the application.
 | `AUTHENTICATION__ENABLED`                     | Whether JWT auth is enabled.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Yes                       |                                                       |
 | `AUTHENTICATION__PUBLIC_KEY_PATH`             | The path to the public key to be used for decoding JWT access token signed by the corresponding private key.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | If JWT auth enabled       |                                                       |
 | `AUTHENTICATION__JWT_ALGORITHM`               | The algorithm to use to decode the JWT access token.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | If JWT auth enabled       |                                                       |
-| `AUTHENTICATION__PRIVILEGED_ROLES`            | The list of roles which are deemed to be privileged, allowed roles can be found in the `users_config.yaml` file in [ldap-jwt-auth](https://github.com/ral-facilities/ldap-jwt-auth)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Yes                       |                                                       |
+| `AUTHENTICATION__PRIVILEGED_ROLES`            | The list of roles which are deemed to be privileged, allowed roles can be found in the `users_config.yaml` file in [ldap-jwt-auth](https://github.com/ral-facilities/ldap-jwt-auth)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Yes                       |                                                       |
 | `IMS_DATABASE__PROTOCOL`                      | The protocol component (i.e. `mongodb`) to use for the connection string for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Yes                       |                                                       |
 | `IMS_DATABASE__USERNAME`                      | The database username to use for the connection string for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Yes                       |                                                       |
 | `IMS_DATABASE__PASSWORD`                      | The database password to use for the connection string for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Yes                       |                                                       |
 | `IMS_DATABASE__HOST_AND_OPTIONS`              | The host (and optional port number) component as well specific options (if any) to use for the connection string for the `MongoClient` to connect to the database. The host component is the name or IP address of the host where the `mongod` instance is running, whereas the options are `<name>=<value>` pairs (i.e. `?authMechanism=SCRAM-SHA-256&authSource=admin`) specific to the connection. If specified, only the value of `readPreference=primary` should be used.<br> <ul><li>For a replica set `mongod` instance(s), specify the hostname(s) and any options as listed in the replica set configuration - `prod-mongodb-1:27017,prod-mongodb-2:27017,prod-mongodb-3:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`</li><li>For a standalone `mongod` instance, specify the hostname and any options - `prod-mongodb:27017/?authMechanism=SCRAM-SHA-256&authSource=admin`</li></ul> | Yes                       |                                                       |
 | `IMS_DATABASE__NAME`                          | The name of the database to use for the `MongoClient` to connect to the database.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Yes                       |                                                       |
-| `OBJECT_STORAGE__ENABLED`                     | Whether the API is using [Object Storage API](https://github.com/ral-facilities/object-storage-api) to allow attachments and image uploads for the catalogue items, items, and systems.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Yes                       |                                                       |
+| `OBJECT_STORAGE__ENABLED`                     | Whether the API is using [Object Storage API](https://github.com/ral-facilities/object-storage-api) to allow attachments and image uploads for the catalogue items, items, and systems.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Yes                       |                                                       |
 | `OBJECT_STORAGE__API_REQUEST_TIMEOUT_SECONDS` | The maximum number of seconds that the request should wait for a response from the Object Storage API before timing out.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | If Object Storage enabled |                                                       |
 | `OBJECT_STORAGE__API_URL`                     | The URL of the Object Storage API.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | If Object Storage enabled |                                                       |
 
