@@ -347,7 +347,7 @@ def _validate_missing_mandatory_properties(
         if defined_property["mandatory"] and defined_property_id not in supplied_properties:
             errors.append(
                 create_custom_validation_error_details(
-                    type="missing-mandatory-property",
+                    type="missing_mandatory_property",
                     message=f"Missing mandatory property with ID '{defined_property_id}'",
                     location=("properties",),
                     input=supplied_properties,

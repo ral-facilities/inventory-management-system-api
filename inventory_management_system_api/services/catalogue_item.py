@@ -3,7 +3,6 @@ Module for providing a service for managing catalogue items using the `Catalogue
 repositories.
 """
 
-import logging
 from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
@@ -33,8 +32,6 @@ from inventory_management_system_api.schemas.catalogue_item import (
 )
 from inventory_management_system_api.schemas.validation import ValidationSchema
 from inventory_management_system_api.services import utils
-
-logger = logging.getLogger()
 
 
 class CatalogueItemService:
@@ -277,7 +274,7 @@ class CatalogueItemService:
         try:
             CatalogueItemPostSchema(**catalogue_item_data)
         except ValidationError as exc:
-            errors.append(exc.errors())
+            errors.extend(exc.errors())
 
         # Check the catalogue category exists (if defined)
         catalogue_category = None
@@ -291,7 +288,7 @@ class CatalogueItemService:
             if not catalogue_category:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="missing-record",
+                        type="missing_record",
                         message=f"No catalogue category found with ID '{catalogue_category_id}'",
                         location=("catalogue_category_id",),
                         input=catalogue_category_id,
@@ -302,7 +299,7 @@ class CatalogueItemService:
             if not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="non-leaf-catalogue-category",
+                        type="non_leaf_catalogue_category",
                         message="Cannot add catalogue item to a non-leaf catalogue category",
                         location=("catalogue_category_id",),
                         input=catalogue_category_id,
@@ -317,7 +314,7 @@ class CatalogueItemService:
                 and self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id) is None
             ):
                 utils.create_custom_validation_error_details(
-                    type="missing-record",
+                    type="missing_record",
                     message=f"No catalogue category found with ID '{catalogue_category_id}'",
                     location=("catalogue_category_id",),
                     input=catalogue_category_id,
@@ -335,7 +332,7 @@ class CatalogueItemService:
             if not manufacturer:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="missing-record-error",
+                        type="missing_record",
                         message=f"No manufacturer found with ID '{manufacturer_id}'",
                         location=("manufacturer_id",),
                         input=manufacturer_id,
@@ -359,9 +356,12 @@ class CatalogueItemService:
             # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
             if catalogue_category:
                 utils.validate_properties(catalogue_category.properties, property_schemas, errors)
-        return ValidationSchema(
-            errors=ValidationError.from_exception_data(
-                title="Catalogue item validation error",
-                line_errors=errors,
-            ).errors()
-        )
+        print(errors)
+        if errors:
+            return ValidationSchema(
+                errors=ValidationError.from_exception_data(
+                    title="Catalogue item validation error",
+                    line_errors=errors,
+                ).errors()
+            )
+        return ValidationSchema(errors=[])
