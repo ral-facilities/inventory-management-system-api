@@ -6,8 +6,7 @@ import logging
 import re
 from typing import Any, Dict, List, Union
 
-from pydantic import ValidationError
-from pydantic_core import ErrorDetails, InitErrorDetails, PydanticCustomError
+from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from inventory_management_system_api.core.exceptions import (
     DuplicateCatalogueCategoryPropertyNameError,
@@ -92,7 +91,7 @@ def process_properties(
 def validate_properties(
     defined_properties: list[CatalogueCategoryPropertyOut],
     supplied_properties: list[PropertyPostSchema],
-    errors: list[ErrorDetails],
+    errors: list[InitErrorDetails],
 ):
     """
     Validate supplied properties based on the defined properties.
@@ -216,7 +215,7 @@ def _check_property_value(defined_property: Dict, supplied_property: Dict) -> No
 
 
 def _validate_property_value(
-    defined_property: dict, supplied_property: dict, index: int, errors: list[ErrorDetails]
+    defined_property: dict, supplied_property: dict, index: int, errors: list[InitErrorDetails]
 ) -> None:
     """
     Validates a given property value has a valid type and is within the defined allowed_values (if specified).
@@ -296,7 +295,7 @@ def _check_property_values(
 
 
 def _validate_property_values(
-    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], errors: list[ErrorDetails]
+    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], errors: list[InitErrorDetails]
 ) -> None:
     """
     Validates the values of the supplied properties against the expected property types.
@@ -333,7 +332,7 @@ def _check_missing_mandatory_properties(
 
 
 def _validate_missing_mandatory_properties(
-    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], errors: list[ErrorDetails]
+    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], errors: list[InitErrorDetails]
 ) -> None:
     """
     Validate that all mandatory properties have been supplied.
@@ -386,7 +385,7 @@ def create_custom_validation_error_details(
     message: str,
     location: tuple,
     input: Any,  # pylint:disable=redefined-builtin
-) -> ErrorDetails:
+) -> InitErrorDetails:
     """
     Creates a Pydantic ValidationError with a custom message and returns its details.
 
@@ -396,7 +395,4 @@ def create_custom_validation_error_details(
     :param input: Input that led to the error.
     :return: Created ValidationError.
     """
-    return ValidationError.from_exception_data(
-        title=message,
-        line_errors=[InitErrorDetails(type=PydanticCustomError(type, message), loc=location, input=input)],
-    ).errors()
+    return InitErrorDetails(type=PydanticCustomError(type, message), loc=location, input=input)

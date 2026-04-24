@@ -8,7 +8,6 @@ from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 from pydantic import ValidationError
-from pydantic_core import ErrorDetails, InitErrorDetails
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
@@ -20,23 +19,19 @@ from inventory_management_system_api.core.exceptions import (
     ReplacementForObsoleteCatalogueItemError,
 )
 from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
 from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.setting import SparesDefinitionOut
 from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
 from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
-from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueCategoryPostPropertySchema,
-    CatalogueCategoryPropertyType,
-)
 from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
     PropertyPostSchema,
 )
+from inventory_management_system_api.schemas.validation import ValidationSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -269,7 +264,7 @@ class CatalogueItemService:
 
         self._catalogue_item_repository.delete(catalogue_item_id)
 
-    def validate(self, catalogue_item_data: dict[str, Any]) -> List[ErrorDetails]:
+    def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationSchema:
         """
         Performs validation of catalogue item creation data returning any errors.
 
@@ -364,4 +359,9 @@ class CatalogueItemService:
             # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
             if catalogue_category:
                 utils.validate_properties(catalogue_category.properties, property_schemas, errors)
-        return errors
+        return ValidationSchema(
+            errors=ValidationError.from_exception_data(
+                title="Catalogue item validation error",
+                line_errors=errors,
+            ).errors()
+        )
