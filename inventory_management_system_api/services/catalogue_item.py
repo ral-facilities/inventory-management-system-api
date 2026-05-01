@@ -3,14 +3,16 @@ Module for providing a service for managing catalogue items using the `Catalogue
 repositories.
 """
 
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
+from pydantic import ValidationError
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
+    InvalidObjectIdError,
     MissingRecordError,
     NonLeafCatalogueCategoryError,
     ReplacementForObsoleteCatalogueItemError,
@@ -26,7 +28,9 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
+    PropertyPostSchema,
 )
+from inventory_management_system_api.schemas.validation import ValidationSchema
 from inventory_management_system_api.services import utils
 
 
@@ -256,3 +260,107 @@ class CatalogueItemService:
             ObjectStorageAPIClient.delete_images(catalogue_item_id, access_token)
 
         self._catalogue_item_repository.delete(catalogue_item_id)
+
+    def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationSchema:
+        """
+        Performs validation of catalogue item creation data returning any errors.
+
+        :param catalogue_item_data: Catalogue item data to verify.
+        :return: List of errors that have occurred.
+        """
+
+        errors = []
+        # This records any errors from basic schema validation including the properties
+        try:
+            CatalogueItemPostSchema(**catalogue_item_data)
+        except ValidationError as exc:
+            errors.extend(exc.errors())
+
+        # Check the catalogue category exists (if defined)
+        catalogue_category = None
+        if "catalogue_category_id" in catalogue_item_data:
+            catalogue_category_id = catalogue_item_data["catalogue_category_id"]
+            try:
+                catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if not catalogue_category:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        type="missing_record",
+                        message=f"No catalogue category found with ID '{catalogue_category_id}'",
+                        location=("catalogue_category_id",),
+                        input=catalogue_category_id,
+                    )
+                )
+
+            # If defined, ensure the category can take new catalogue items (i.e. is a leaf category)
+            if not catalogue_category.is_leaf:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        type="non_leaf_catalogue_category",
+                        message="Cannot add catalogue item to a non-leaf catalogue category",
+                        location=("catalogue_category_id",),
+                        input=catalogue_category_id,
+                    )
+                )
+
+        # If defined, check obsolete replacement item exists
+        if "obsolete_replacement_catalogue_item_id" in catalogue_item_data:
+            obsolete_replacement_catalogue_item_id = catalogue_item_data["obsolete_replacement_catalogue_item_id"]
+            if (
+                obsolete_replacement_catalogue_item_id is not None
+                and self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id) is None
+            ):
+                utils.create_custom_validation_error_details(
+                    type="missing_record",
+                    message=f"No catalogue category found with ID '{catalogue_category_id}'",
+                    location=("catalogue_category_id",),
+                    input=catalogue_category_id,
+                )
+
+        # Check the manufacturer exists (if defined)
+        if "manufacturer_id" in catalogue_item_data:
+            manufacturer_id = catalogue_item_data["manufacturer_id"]
+            manufacturer = None
+            try:
+                manufacturer = self._manufacturer_repository.get(manufacturer_id)
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if not manufacturer:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        type="missing_record",
+                        message=f"No manufacturer found with ID '{manufacturer_id}'",
+                        location=("manufacturer_id",),
+                        input=manufacturer_id,
+                    )
+                )
+
+        # Now validate any properties
+        if "properties" in catalogue_item_data:
+            # NOTE: Basic schema validation of properties has already occurred at this point from using
+            #       CatalogueItemPostSchema above, we dont want to capture those errors again.
+            #       While we cant validate those properties that dont pass the basic checks, we can
+            #       at least attempt to perform additional validation on those that do.
+            property_schemas = []
+
+            for property_data in catalogue_item_data["properties"]:
+                try:
+                    property_schemas.append(PropertyPostSchema(**property_data))
+                except ValidationError:
+                    pass
+
+            # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
+            if catalogue_category:
+                utils.validate_properties(catalogue_category.properties, property_schemas, errors)
+        if errors:
+            return ValidationSchema(
+                errors=ValidationError.from_exception_data(
+                    title="Catalogue item validation error",
+                    line_errors=errors,
+                ).errors()
+            )
+        return ValidationSchema(errors=[])

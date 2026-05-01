@@ -9,7 +9,7 @@ service.
 # pylint: disable=duplicate-code
 
 import logging
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
@@ -33,6 +33,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     CatalogueItemSchema,
 )
+from inventory_management_system_api.schemas.validation import ValidationSchema
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 logger = logging.getLogger()
@@ -76,6 +77,19 @@ def create_catalogue_item(
         message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.post(
+    path="/validate",
+    summary="Validate a catalogue item",
+    response_description="Any errors found in the data",
+)
+def validate_catalogue_item(
+    catalogue_item: dict[str, Any], catalogue_item_service: CatalogueItemServiceDep
+) -> ValidationSchema:
+    logger.info("Validating a catalogue item")
+
+    return catalogue_item_service.validate(catalogue_item)
 
 
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
