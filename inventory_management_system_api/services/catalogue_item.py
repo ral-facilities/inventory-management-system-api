@@ -356,7 +356,6 @@ class CatalogueItemService:
             # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
             if catalogue_category:
                 utils.validate_properties(catalogue_category.properties, property_schemas, errors)
-        print(errors)
         if errors:
             return ValidationSchema(
                 errors=ValidationError.from_exception_data(
