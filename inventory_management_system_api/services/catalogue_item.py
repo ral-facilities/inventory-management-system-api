@@ -17,11 +17,20 @@ from inventory_management_system_api.core.exceptions import (
     NonLeafCatalogueCategoryError,
     ReplacementForObsoleteCatalogueItemError,
 )
-from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
+from inventory_management_system_api.core.object_storage_api_client import (
+    ObjectStorageAPIClient,
+)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn,
+    CatalogueItemOut,
+)
 from inventory_management_system_api.models.setting import SparesDefinitionOut
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.catalogue_category import (
+    CatalogueCategoryRepo,
+)
+from inventory_management_system_api.repositories.catalogue_item import (
+    CatalogueItemRepo,
+)
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.schemas.catalogue_item import (
@@ -266,9 +275,10 @@ class CatalogueItemService:
         Performs validation of catalogue item creation data returning any errors.
 
         :param catalogue_item_data: Catalogue item data to verify.
-        :return: List of errors that have occurred.
+        :return: Schema containing the validation warnings/errors that have occurred.
         """
 
+        warnings = []
         errors = []
         # This records any errors from basic schema validation including the properties
         try:
@@ -339,6 +349,18 @@ class CatalogueItemService:
                     )
                 )
 
+        # Check if the catalogue item is a duplicate
+        if "name" in catalogue_item_data and catalogue_item_data["name"]:
+            if self._catalogue_item_repository.is_duplicate_name(catalogue_item_data["name"]):
+                warnings.append(
+                    utils.create_custom_validation_error_details(
+                        type="duplicate_record",
+                        message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
+                        location=("name",),
+                        input=catalogue_item_data["name"],
+                    )
+                )
+
         # Now validate any properties
         if "properties" in catalogue_item_data:
             # NOTE: Basic schema validation of properties has already occurred at this point from using
@@ -356,11 +378,14 @@ class CatalogueItemService:
             # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
             if catalogue_category:
                 utils.validate_properties(catalogue_category.properties, property_schemas, errors)
+        if warnings:
+            warnings = ValidationError.from_exception_data(
+                title="Catalogue item validation error",
+                line_errors=warnings,
+            ).errors()
         if errors:
-            return ValidationSchema(
-                errors=ValidationError.from_exception_data(
-                    title="Catalogue item validation error",
-                    line_errors=errors,
-                ).errors()
-            )
-        return ValidationSchema(errors=[])
+            errors = ValidationError.from_exception_data(
+                title="Catalogue item validation error",
+                line_errors=errors,
+            ).errors()
+        return ValidationSchema(warnings=warnings, errors=errors)

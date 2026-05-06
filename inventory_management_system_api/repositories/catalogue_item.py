@@ -278,3 +278,19 @@ class CatalogueItemRepo:
             {"$set": {"number_of_spares": number_of_spares}},
             session=session,
         )
+
+    def is_duplicate_name(
+        self,
+        name: str,
+        session: Optional[ClientSession] = None,
+    ) -> bool:
+        """
+        Check if a catalogue item with the same name already exists.
+
+        :param name: Name of the catalogue item to check for duplicates.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: `True` if a duplicate name is found.
+        """
+        logger.info("Checking if catalogue item with name '%s' already exists", name)
+        catalogue_item = self._catalogue_items_collection.find_one({"name": name}, session=session)
+        return catalogue_item is not None

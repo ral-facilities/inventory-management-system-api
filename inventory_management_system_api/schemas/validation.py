@@ -23,4 +23,5 @@ class ValidationErrorSchema(BaseModel):
 class ValidationSchema(BaseModel):
     """Schema model for a validation response."""
 
+    warnings: list[ValidationErrorSchema]
     errors: list[ValidationErrorSchema]
