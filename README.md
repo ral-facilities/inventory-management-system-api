@@ -315,7 +315,7 @@ The simplest way to populate the database with mock data is to use the already c
 for development you may use
 
 ```bash
-python ./scripts/dev_cli.py db-restore mock_data.dump
+uv run ./scripts/dev_cli.py db-restore mock_data.dump
 ```
 
 to populate the database with mock data.
@@ -330,7 +330,7 @@ Otherwise, there is a script to generate mock data for testing purposes given in
 use it from your development environment first ensure the API is running and then execute it with
 
 ```bash
-python ./scripts/generate_mock_data.py
+uv run ./scripts/generate_mock_data.py
 ```
 
 ## Generating new mock data
@@ -338,14 +338,14 @@ python ./scripts/generate_mock_data.py
 The easiest way to generate new mock data assuming you are using Linux is via the dev_cli script. To do this use
 
 ```bash
-python ./scripts/dev_cli.py db-generate
+uv run ./scripts/dev_cli.py db-generate
 ```
 
 This will clear the database, import the default data e.g. units and then generate mock data. If
 the `generate_mock_data.py` script is changed, or if there are database model changes please use
 
 ```bash
-python ./scripts/dev_cli.py db-generate -d
+uv run ./scripts/dev_cli.py db-generate -d
 ```
 
 to update the `./data/mock_data.dump` file and commit the changes.
@@ -363,7 +363,7 @@ docker exec -i ims-api-mongodb mongosh ims --username "root" --password "example
 Then generate the mock data using
 
 ```bash
-python ./scripts/generate_mock_data.py
+uv run ./scripts/generate_mock_data.py
 ```
 
 and then update the `./data/mock_data.dump` file using `mongodump` via
