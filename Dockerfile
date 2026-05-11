@@ -1,7 +1,7 @@
 ########################################################################################################################
 # Base stage, includes uv
 ########################################################################################################################
-FROM python:3.13.13-alpine3.23@sha256:f22efe61d60550086ae899978e82929ee46458461b6251a6a16375380e9861ef AS base
+FROM python:3.13.13-alpine3.23@sha256:420cd0bf0f3998275875e02ecd5808168cf0843cbb4d3c536432f729247b2acc AS base
 COPY --from=ghcr.io/astral-sh/uv:0.10.8@sha256:88234bc9e09c2b2f6d176a3daf411419eb0370d450a08129257410de9cfafd2a /uv /uvx /bin/
 
 # Enable bytecode compilation
@@ -89,7 +89,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Minimal production-ready image
 ########################################################################################################################
 # The same image that matches the build stage must be used as the path to the Python executable must be the same.
-FROM python:3.13.13-alpine3.23@sha256:f22efe61d60550086ae899978e82929ee46458461b6251a6a16375380e9861ef AS prod
+FROM python:3.13.13-alpine3.23@sha256:420cd0bf0f3998275875e02ecd5808168cf0843cbb4d3c536432f729247b2acc AS prod
 
 WORKDIR /app
 
