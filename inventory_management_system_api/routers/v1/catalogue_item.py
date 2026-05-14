@@ -11,7 +11,7 @@ service.
 import logging
 from typing import Annotated, Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
@@ -85,7 +85,8 @@ def create_catalogue_item(
     response_description="Any errors found in the data",
 )
 def validate_catalogue_item(
-    catalogue_item: dict[str, Any], catalogue_item_service: CatalogueItemServiceDep
+    catalogue_item: Annotated[dict[str, Any], Body(description="Catalogue item data to validate")],
+    catalogue_item_service: CatalogueItemServiceDep,
 ) -> ValidationSchema:
     logger.info("Validating a catalogue item")
 
