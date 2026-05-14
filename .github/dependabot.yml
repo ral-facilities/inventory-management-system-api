@@ -50,14 +50,19 @@ updates:
         patterns:
           - "*"
 
-  # Maintain pip dependencies
-  - package-ecosystem: "pip"
+  # Maintain uv dependencies on the `develop` branch
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
-      # Check for updates every week
       interval: "weekly"
-    # Update multiple dependencies at the same time
+    target-branch: "develop"
     groups:
-      pip:
+      uv:
         patterns:
           - "*"
+        # Dependabot can check the lockfile, but cannot update these detected in pyproject.toml. As updates are grouped
+        # this causes all updates within the group to be skipped.
+        # E.g. `Skipping change to group uv in directory /: Previous version was not provided for: 'uv-build'`
+        exclude-patterns:
+          - "uv-build"
+          - "inventory-management-system-api"
