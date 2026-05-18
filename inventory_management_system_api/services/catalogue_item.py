@@ -17,11 +17,20 @@ from inventory_management_system_api.core.exceptions import (
     NonLeafCatalogueCategoryError,
     ReplacementForObsoleteCatalogueItemError,
 )
-from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
-from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
+from inventory_management_system_api.core.object_storage_api_client import (
+    ObjectStorageAPIClient,
+)
+from inventory_management_system_api.models.catalogue_item import (
+    CatalogueItemIn,
+    CatalogueItemOut,
+)
 from inventory_management_system_api.models.setting import SparesDefinitionOut
-from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
-from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
+from inventory_management_system_api.repositories.catalogue_category import (
+    CatalogueCategoryRepo,
+)
+from inventory_management_system_api.repositories.catalogue_item import (
+    CatalogueItemRepo,
+)
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.schemas.catalogue_item import (
@@ -295,9 +304,8 @@ class CatalogueItemService:
                         input=catalogue_category_id,
                     )
                 )
-
             # If defined, ensure the category can take new catalogue items (i.e. is a leaf category)
-            if not catalogue_category.is_leaf:
+            elif not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
                         type="non_leaf_catalogue_category",
@@ -314,11 +322,13 @@ class CatalogueItemService:
                 obsolete_replacement_catalogue_item_id is not None
                 and self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id) is None
             ):
-                utils.create_custom_validation_error_details(
-                    type="missing_record",
-                    message=f"No catalogue category found with ID '{catalogue_category_id}'",
-                    location=("catalogue_category_id",),
-                    input=catalogue_category_id,
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        type="missing_record",
+                        message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                        location=("obsolete_replacement_catalogue_item_id",),
+                        input=obsolete_replacement_catalogue_item_id,
+                    )
                 )
 
         # Check the manufacturer exists (if defined)

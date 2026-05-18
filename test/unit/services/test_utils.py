@@ -338,9 +338,9 @@ class TestValidateProperties:
     Tests for the `validate_properties` method.
     """
 
-    def assert_errors_equal(self, actual_errors: InitErrorDetails, expected_errors: list[dict[str, Any]]) -> None:
+    def assert_errors_equal(self, actual_errors: list[InitErrorDetails], expected_errors: list[dict[str, Any]]) -> None:
         """
-        Returns whether two lists of errors are equal.
+        Asserts whether two lists of errors are equal.
 
         :param actual_errors: Actual errors as would be returned from a validation function.
         :param expected_errors: List of expected errors written as dictionaries.
