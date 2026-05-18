@@ -20,7 +20,7 @@ class Migration(BaseMigration):
     description = "Add the modified_by field to all documents"
 
     def __init__(self, database: Database):
-        self._catalouge_categories_collection: Collection = database.catalogue_categories
+        self._catalogue_categories_collection: Collection = database.catalogue_categories
         self._catalogue_items_collection: Collection = database.catalogue_items
         self._items_collection: Collection = database.items
         self._manufacturers_collection: Collection = database.manufacturers
@@ -29,7 +29,7 @@ class Migration(BaseMigration):
         self._usage_statuses_collection: Collection = database.usage_statuses
 
         self._collections = [
-            self._catalouge_categories_collection,
+            self._catalogue_categories_collection,
             self._catalogue_items_collection,
             self._items_collection,
             self._manufacturers_collection,
