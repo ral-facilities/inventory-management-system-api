@@ -4,6 +4,7 @@ Unit tests for the `CatalogueItemRepo` repository.
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+# pylint: disable=too-many-lines
 
 from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -941,3 +942,63 @@ class TestUpdateNumberOfSpares(UpdateNumberOfSparesDSL):
 
         self.call_update_number_of_spares(ObjectId(), 42)
         self.check_update_number_of_spares()
+
+
+class IsDuplicateNameDSL(CatalogueItemRepoDSL):
+    """Base class for `is_duplicate_name` tests"""
+
+    _mock_duplicate_catalogue_item_data: Optional[dict]
+    _is_duplicate_name_catalogue_item_name: str
+    _is_duplicate_name_result: bool
+
+    def mock_is_duplicate_name(self, duplicate_catalogue_item_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately for when the `is_duplicate_name` repo method will be called.
+
+        :param duplicate_catalogue_item_data: Dictionary containing a duplicate catalogue item's data (or `None`).
+        """
+
+        self._mock_duplicate_catalogue_item_data = duplicate_catalogue_item_data
+
+        RepositoryTestHelpers.mock_find_one(self.catalogue_items_collection, duplicate_catalogue_item_data)
+
+    def call_is_duplicate_name(self, name: str) -> None:
+        """Calls the `CatalogueItemRepo` `is_duplicate_name` method.
+
+        :param name: Name of the catalogue item to check.
+        """
+
+        self._is_duplicate_name_catalogue_item_name = name
+        self._is_duplicate_name_result = self.catalogue_item_repository.is_duplicate_name(
+            name, session=self.mock_session
+        )
+
+    def check_is_duplicate_name_success(self, expected_result: bool) -> None:
+        """Checks that a prior call to `call_is_duplicate_name` worked as expected.
+
+        :param expected_result: The expected result returned by `is_duplicate_name`.
+        """
+
+        self.catalogue_items_collection.find_one.assert_called_once_with(
+            {"name": self._is_duplicate_name_catalogue_item_name}, session=self.mock_session
+        )
+
+        assert self._is_duplicate_name_result == expected_result
+
+
+class TestIsDuplicateName(IsDuplicateNameDSL):
+    """Tests for `is_duplicate_name`."""
+
+    def test_is_duplicate_name_with_no_duplicates(self):
+        """Test `is_duplicate_name` when there are no duplicate catalogue items."""
+
+        self.mock_is_duplicate_name(duplicate_catalogue_item_data=None)
+        self.call_is_duplicate_name("Test")
+        self.check_is_duplicate_name_success(expected_result=False)
+
+    def test_is_duplicate_name_with_duplicate(self):
+        """Test `is_duplicate_name` when there is a duplicate catalogue item."""
+
+        self.mock_is_duplicate_name(duplicate_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.call_is_duplicate_name("Test")
+        self.check_is_duplicate_name_success(expected_result=True)

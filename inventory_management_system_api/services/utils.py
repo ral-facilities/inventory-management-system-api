@@ -4,6 +4,7 @@ Collection of some utility functions used by services
 
 import logging
 import re
+from copy import deepcopy
 from typing import Any, Dict, List, Union
 
 from pydantic_core import InitErrorDetails, PydanticCustomError
@@ -13,8 +14,12 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
-from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
-from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
+from inventory_management_system_api.models.catalogue_category import (
+    CatalogueCategoryPropertyOut,
+)
+from inventory_management_system_api.schemas.catalogue_category import (
+    CatalogueCategoryPostPropertySchema,
+)
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
 logger = logging.getLogger()
@@ -92,7 +97,7 @@ def validate_properties(
     defined_properties: list[CatalogueCategoryPropertyOut],
     supplied_properties: list[PropertyPostSchema],
     errors: list[InitErrorDetails],
-):
+) -> None:
     """
     Validate supplied properties based on the defined properties.
 
@@ -109,8 +114,11 @@ def validate_properties(
 
     # Some mandatory properties may not have been supplied
     _validate_missing_mandatory_properties(defined_properties_dict, supplied_properties_dict, errors)
-    # Some non-mandatory properties may not have been supplied
-    supplied_properties_dict = _merge_non_mandatory_properties(defined_properties_dict, supplied_properties_dict)
+    # Some non-mandatory properties may not have been supplied. Deep copy to prevent past errors from containing
+    # anything not added yet.
+    supplied_properties_dict = deepcopy(
+        _merge_non_mandatory_properties(defined_properties_dict, supplied_properties_dict)
+    )
     # Supplied properties do not have names as we can't trust they would be correct
     _add_property_names(defined_properties_dict, supplied_properties_dict)
     # Supplied properties do not have units as we can't trust they would be correct
@@ -215,7 +223,10 @@ def _check_property_value(defined_property: Dict, supplied_property: Dict) -> No
 
 
 def _validate_property_value(
-    defined_property: dict, supplied_property: dict, index: int, errors: list[InitErrorDetails]
+    defined_property: dict,
+    supplied_property: dict,
+    index: int,
+    errors: list[InitErrorDetails],
 ) -> None:
     """
     Validates a given property value has a valid type and is within the defined allowed_values (if specified).
@@ -262,7 +273,12 @@ def _validate_property_value(
     # Verify the given property is one of the allowed based on the type of allowed_values defined
     if defined_property_allowed_values is not None and defined_property_allowed_values["type"] == "list":
         values = defined_property_allowed_values["values"]
-        if supplied_property_value not in values:
+        # For an allowed values list its invalid if the value is not in the list of allowed and the property
+        # itself is either mandatory or the supplied value is not None (i.e. when its not mandatory it can also be
+        # None)
+        if supplied_property_value not in values and (
+            defined_property["mandatory"] or supplied_property_value is not None
+        ):
             errors.append(
                 create_custom_validation_error_details(
                     type="invalid_property_type",
@@ -295,7 +311,9 @@ def _check_property_values(
 
 
 def _validate_property_values(
-    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], errors: list[InitErrorDetails]
+    defined_properties: dict[str, dict],
+    supplied_properties: dict[str, dict],
+    errors: list[InitErrorDetails],
 ) -> None:
     """
     Validates the values of the supplied properties against the expected property types.
@@ -332,7 +350,9 @@ def _check_missing_mandatory_properties(
 
 
 def _validate_missing_mandatory_properties(
-    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], errors: list[InitErrorDetails]
+    defined_properties: dict[str, dict],
+    supplied_properties: dict[str, dict],
+    errors: list[InitErrorDetails],
 ) -> None:
     """
     Validate that all mandatory properties have been supplied.
