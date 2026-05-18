@@ -20,7 +20,7 @@ class ValidationErrorSchema(BaseModel):
     input: Any = Field(description="Specific input the error was caused by")
 
 
-class ValidationSchema(BaseModel):
+class ValidationResponseSchema(BaseModel):
     """Schema model for a validation response."""
 
     warnings: list[ValidationErrorSchema] = Field(description="List of validation warnings.")

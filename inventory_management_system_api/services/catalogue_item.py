@@ -17,20 +17,11 @@ from inventory_management_system_api.core.exceptions import (
     NonLeafCatalogueCategoryError,
     ReplacementForObsoleteCatalogueItemError,
 )
-from inventory_management_system_api.core.object_storage_api_client import (
-    ObjectStorageAPIClient,
-)
-from inventory_management_system_api.models.catalogue_item import (
-    CatalogueItemIn,
-    CatalogueItemOut,
-)
+from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.setting import SparesDefinitionOut
-from inventory_management_system_api.repositories.catalogue_category import (
-    CatalogueCategoryRepo,
-)
-from inventory_management_system_api.repositories.catalogue_item import (
-    CatalogueItemRepo,
-)
+from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.schemas.catalogue_item import (
@@ -39,7 +30,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     PropertyPostSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationSchema
+from inventory_management_system_api.schemas.validation import ValidationResponseSchema
 from inventory_management_system_api.services import utils
 
 
@@ -270,7 +261,7 @@ class CatalogueItemService:
 
         self._catalogue_item_repository.delete(catalogue_item_id)
 
-    def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationSchema:
+    def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationResponseSchema:
         """
         Performs validation of catalogue item creation data returning any errors.
 
@@ -388,4 +379,4 @@ class CatalogueItemService:
                 title="Catalogue item validation error",
                 line_errors=errors,
             ).errors()
-        return ValidationSchema(warnings=warnings, errors=errors)
+        return ValidationResponseSchema(warnings=warnings, errors=errors)

@@ -33,7 +33,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     CatalogueItemSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationSchema
+from inventory_management_system_api.schemas.validation import ValidationResponseSchema
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 logger = logging.getLogger()
@@ -87,7 +87,7 @@ def create_catalogue_item(
 def validate_catalogue_item(
     catalogue_item: Annotated[dict[str, Any], Body(description="Catalogue item data to validate")],
     catalogue_item_service: CatalogueItemServiceDep,
-) -> ValidationSchema:
+) -> ValidationResponseSchema:
     logger.info("Validating a catalogue item")
 
     return catalogue_item_service.validate(catalogue_item)
