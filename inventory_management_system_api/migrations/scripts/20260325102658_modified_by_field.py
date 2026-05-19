@@ -42,7 +42,7 @@ class Migration(BaseMigration):
         """Applies database changes."""
 
         for collection in self._collections:
-            collection.update_many({}, {"$set": {"modified_by": "Development user"}}, session=session)
+            collection.update_many({}, {"$set": {"modified_by": "Unknown"}}, session=session)
 
     def backward(self, session: ClientSession):
         """Reverses database changes."""
