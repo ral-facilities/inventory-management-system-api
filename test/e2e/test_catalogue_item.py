@@ -1717,7 +1717,7 @@ class TestValidate(ValidateDSL):
     """Tests for updating a catalogue item."""
 
     def test_validate_with_only_required_values_provided(self):
-        """Test creating a catalogue item with only required values provided."""
+        """Test validating a catalogue item with only required values provided."""
 
         self.post_catalogue_item_prerequisites_no_properties()
 
@@ -1730,6 +1730,110 @@ class TestValidate(ValidateDSL):
         )
 
         self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_with_duplicate_name(self):
+        """Test validating a catalogue item with only required values provided but the name is a duplicate."""
+
+        self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.validate_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.check_validate_catalogue_item_success(
+            expected_warnings=[
+                {
+                    "input": "Catalogue Item Required Values Only",
+                    "location": [
+                        "name",
+                    ],
+                    "message": "Duplicate record found with the same name "
+                    f"'{CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"]}'",
+                    "type": "duplicate_record",
+                },
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_with_invalid_schema(self):
+        """Test validating a catalogue item when the schema itself is invalid."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        catalogue_item_data = {
+            # Actual properties, but wrong type
+            "name": 42,
+            "cost_gpb": False,
+            # Optional property, invalid type
+            "notes": 12,
+        }
+        self.validate_catalogue_item(catalogue_item_data)
+
+        self.check_validate_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": catalogue_item_data,
+                    "location": [
+                        "catalogue_category_id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": [
+                        "manufacturer_id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data["name"],
+                    "location": [
+                        "name",
+                    ],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": [
+                        "cost_gbp",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": [
+                        "days_to_replace",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": [
+                        "is_obsolete",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data["notes"],
+                    "location": [
+                        "notes",
+                    ],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+            ],
+        )
 
     def test_validate_non_obsolete_with_all_values_except_properties(self):
         """Test validating a non obsolete catalogue item with all values provided except `properties` and
@@ -1837,6 +1941,68 @@ class TestValidate(ValidateDSL):
         self.validate_catalogue_item(catalogue_item_data)
 
         self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_with_properties_invalid_schema(self):
+        """
+        Test validating a catalogue item with properties within the catalogue category being defined but with an
+        invalid schema.
+        """
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        # Don't replace names with IDs
+        catalogue_item_data = {
+            **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+            "catalogue_category_id": self.catalogue_category_id,
+            "manufacturer_id": self.manufacturer_id,
+        }
+
+        self.validate_catalogue_item(catalogue_item_data)
+
+        self.check_validate_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+                    "location": [
+                        "properties",
+                        0,
+                        "id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
+                    "location": [
+                        "properties",
+                        1,
+                        "id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                    "location": [
+                        "properties",
+                        2,
+                        "id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": {},
+                    "location": [
+                        "properties",
+                    ],
+                    "message": "Missing mandatory property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE["name"]]}'",
+                    "type": "missing_mandatory_property",
+                },
+            ],
+        )
 
     def test_validate_with_mandatory_properties_only(self):
         """Test validating a catalogue item with only mandatory properties defined."""
