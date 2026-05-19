@@ -17,20 +17,11 @@ from inventory_management_system_api.core.exceptions import (
     NonLeafCatalogueCategoryError,
     ReplacementForObsoleteCatalogueItemError,
 )
-from inventory_management_system_api.core.object_storage_api_client import (
-    ObjectStorageAPIClient,
-)
-from inventory_management_system_api.models.catalogue_item import (
-    CatalogueItemIn,
-    CatalogueItemOut,
-)
+from inventory_management_system_api.core.object_storage_api_client import ObjectStorageAPIClient
+from inventory_management_system_api.models.catalogue_item import CatalogueItemIn, CatalogueItemOut
 from inventory_management_system_api.models.setting import SparesDefinitionOut
-from inventory_management_system_api.repositories.catalogue_category import (
-    CatalogueCategoryRepo,
-)
-from inventory_management_system_api.repositories.catalogue_item import (
-    CatalogueItemRepo,
-)
+from inventory_management_system_api.repositories.catalogue_category import CatalogueCategoryRepo
+from inventory_management_system_api.repositories.catalogue_item import CatalogueItemRepo
 from inventory_management_system_api.repositories.manufacturer import ManufacturerRepo
 from inventory_management_system_api.repositories.setting import SettingRepo
 from inventory_management_system_api.schemas.catalogue_item import (
@@ -270,6 +261,7 @@ class CatalogueItemService:
 
         self._catalogue_item_repository.delete(catalogue_item_id)
 
+    # pylint:disable=too-many-statements
     def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationResponseSchema:
         """
         Performs validation of catalogue item creation data returning any errors.
@@ -318,18 +310,24 @@ class CatalogueItemService:
         # If defined, check obsolete replacement item exists
         if "obsolete_replacement_catalogue_item_id" in catalogue_item_data:
             obsolete_replacement_catalogue_item_id = catalogue_item_data["obsolete_replacement_catalogue_item_id"]
-            if (
-                obsolete_replacement_catalogue_item_id is not None
-                and self._catalogue_item_repository.get(obsolete_replacement_catalogue_item_id) is None
-            ):
-                errors.append(
-                    utils.create_custom_validation_error_details(
-                        type="missing_record",
-                        message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
-                        location=("obsolete_replacement_catalogue_item_id",),
-                        input=obsolete_replacement_catalogue_item_id,
+            if obsolete_replacement_catalogue_item_id is not None:
+                obsolete_replacement_catalogue_item = None
+                try:
+                    obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
+                        obsolete_replacement_catalogue_item_id
                     )
-                )
+                except InvalidObjectIdError:
+                    # Ignore invalid object ID, treat as missing
+                    pass
+                if obsolete_replacement_catalogue_item is None:
+                    errors.append(
+                        utils.create_custom_validation_error_details(
+                            type="missing_record",
+                            message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                            location=("obsolete_replacement_catalogue_item_id",),
+                            input=obsolete_replacement_catalogue_item_id,
+                        )
+                    )
 
         # Check the manufacturer exists (if defined)
         if "manufacturer_id" in catalogue_item_data:
@@ -390,3 +388,5 @@ class CatalogueItemService:
                 line_errors=errors,
             ).errors()
         return ValidationResponseSchema(warnings=warnings, errors=errors)
+
+    # pylint:enable=too-many-statements
