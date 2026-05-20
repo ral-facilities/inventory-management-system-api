@@ -11,10 +11,21 @@ service.
 import logging
 from typing import Annotated, Any, List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    status,
+)
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+from inventory_management_system_api.core.consts import (
+    HTTP_500_INTERNAL_SERVER_ERROR_DETAIL,
+)
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -71,6 +82,39 @@ def create_catalogue_item(
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
         message = "The specified replacement catalogue item does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+    except NonLeafCatalogueCategoryError as exc:
+        message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.post(
+    path="/bulk",
+    summary="Bulk create new catalogue items",
+    status_code=status.HTTP_201_CREATED,
+)
+def bulk_create_catalogue_item(
+    catalogue_items: list[CatalogueItemPostSchema], catalogue_item_service: CatalogueItemServiceDep
+):
+    logger.info("Bulk creating catalogue items")
+    try:
+        catalogue_item_service.bulk_create(catalogue_items)
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        if "catalogue category" in str(exc).lower():
+            message = "A specified catalogue category does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+        if "manufacturer" in str(exc).lower():
+            message = "A specified manufacturer does not exist"
+            logger.exception(message)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+
+        message = "A specified replacement catalogue item does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except NonLeafCatalogueCategoryError as exc:

@@ -7,8 +7,10 @@ from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 from pydantic import ValidationError
+from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -60,7 +62,9 @@ class CatalogueItemService:
         self._manufacturer_repository = manufacturer_repository
         self._setting_repository = setting_repository
 
-    def create(self, catalogue_item: CatalogueItemPostSchema) -> CatalogueItemOut:
+    def create(
+        self, catalogue_item: CatalogueItemPostSchema, session: Optional[ClientSession] = None
+    ) -> CatalogueItemOut:
         """
         Create a new catalogue item.
 
@@ -69,6 +73,7 @@ class CatalogueItemService:
         is. It then processes the properties.
 
         :param catalogue_item: The catalogue item to be created.
+        :param session: PyMongo ClientSession to use for database operations
         :return: The created catalogue item.
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
@@ -107,8 +112,23 @@ class CatalogueItemService:
                     "properties": supplied_properties,
                 },
                 number_of_spares=0 if spares_definition else None,
-            )
+            ),
+            session=session,
         )
+
+    def bulk_create(self, catalogue_items: list[CatalogueItemPostSchema]) -> None:
+        """
+        Create a catalogue items in bulk.
+
+        Uses the single create method, but wrapped within a transaction so either all succeed or none do. Will
+        fail fast the moment it encounters an error, so for detailed information on what went wrong and where
+        `verify` should be used instead.
+
+        :param catalogue_items: The catalogue items to be created.
+        """
+        with start_session_transaction("creating bulk catalogue items") as session:
+            for catalogue_item in catalogue_items:
+                self.create(catalogue_item, session)
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """
