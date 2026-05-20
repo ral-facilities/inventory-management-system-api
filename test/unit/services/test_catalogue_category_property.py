@@ -931,7 +931,7 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
 
         self._delete_property_id = property_id
 
-        self.catalogue_category_property_service.delete(self._catalogue_category_id, property_id)
+        self.catalogue_category_property_service.delete(self._catalogue_category_id, property_id, "username")
 
     def call_delete_expecting_error(self, property_id: str, error_type: type[BaseException]) -> None:
         """
@@ -948,6 +948,7 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
             self.catalogue_category_property_service.delete(
                 self._catalogue_category_id,
                 property_id,
+                "username"
             )
         self._delete_exception = exc
 
@@ -969,11 +970,13 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
         self.mock_catalogue_item_repository.delete_properties.assert_called_once_with(
             property_id=self._delete_property_id,
             session=expected_session,
+            username="username"
         )
 
         self.mock_item_repository.delete_properties.assert_called_once_with(
             property_id=self._delete_property_id,
             session=expected_session,
+            username="username"
         )
 
     def check_delete_failed_with_exception(self, message: str) -> None:

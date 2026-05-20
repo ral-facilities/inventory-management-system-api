@@ -288,12 +288,13 @@ class CatalogueCategoryPropertyService:
 
         return property_out
 
-    def delete(self, catalogue_category_id: str, catalogue_category_property_id: str) -> None:
+    def delete(self, catalogue_category_id: str, catalogue_category_property_id: str, username: str) -> None:
         """
         Delete a catalogue category property by its ID
 
         :param catalogue_category_id: The ID of the catalogue category to delete from
         :param catalogue_category_property_id: The ID of the property to delete
+        :param username: The user deleting the property
         """
 
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
@@ -316,7 +317,9 @@ class CatalogueCategoryPropertyService:
             )
 
             self._catalogue_item_repository.delete_properties(
-                property_id=catalogue_category_property_id, session=session
+                property_id=catalogue_category_property_id, username=username, session=session
             )
 
-            self._item_repository.delete_properties(property_id=catalogue_category_property_id, session=session)
+            self._item_repository.delete_properties(
+                property_id=catalogue_category_property_id, username=username, session=session
+            )

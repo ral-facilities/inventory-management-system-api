@@ -620,7 +620,7 @@ class DeletePropertiesDSL(InsertPropertyToAllInDSL):
         """
 
         self._delete_property_id = property_id
-        self.item_repository.delete_properties(property_id=property_id, session=self.mock_session)
+        self.item_repository.delete_properties(property_id=property_id, username="username", session=self.mock_session)
 
     def check_delete_properties(self) -> None:
         """Checks that a prior call to `delete_properties` worked as expected"""
@@ -631,6 +631,8 @@ class DeletePropertiesDSL(InsertPropertyToAllInDSL):
                 "$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}},
                 "$set": {
                     "modified_time": self._mock_datetime.now.return_value,
+                    "modified_by": "username",
+                    "modified_comment": "Property deleted",
                 },
             },
             session=self.mock_session,

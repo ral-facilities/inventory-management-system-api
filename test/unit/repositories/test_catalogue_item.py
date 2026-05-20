@@ -895,7 +895,11 @@ class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
 
         self.catalogue_items_collection.update_one.assert_called_once_with(
             {"_id": self._update_number_of_spares_catalogue_item_id},
-            {"$set": {"number_of_spares": self._update_number_of_spares_number_of_spares}},
+            {"$set": {
+                "number_of_spares": self._update_number_of_spares_number_of_spares,
+                "modified_by": 'IMS Automation',
+                "modified_comment": "Property deleted"
+            }},
             session=self.mock_session,
         )
 
@@ -913,7 +917,11 @@ class DeletePropertiesDSL(InsertPropertyToAllMatchingDSL):
         """
 
         self._delete_property_id = property_id
-        self.catalogue_item_repository.delete_properties(property_id=property_id, session=self.mock_session)
+        self.catalogue_item_repository.delete_properties(
+            property_id=property_id,
+            username="username",
+            session=self.mock_session
+        )
 
     def check_delete_properties(self) -> None:
         """Checks that a prior call to `delete_properties` worked as expected"""
@@ -924,6 +932,8 @@ class DeletePropertiesDSL(InsertPropertyToAllMatchingDSL):
                 "$pull": {"properties": {"_id": CustomObjectId(self._delete_property_id)}},
                 "$set": {
                     "modified_time": self._mock_datetime.now.return_value,
+                    "modified_by": "username",
+                    "modified_comment": "Property deleted",
                 },
             },
             session=self.mock_session,

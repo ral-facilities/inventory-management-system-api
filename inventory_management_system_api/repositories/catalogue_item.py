@@ -252,13 +252,13 @@ class CatalogueItemRepo:
             session=session,
         )
 
-    # pylint: enable=duplicate-code
 
-    def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
+    def delete_properties(self, property_id: str, username: str, session: Optional[ClientSession] = None) -> None:
         """
-        Deletes the property in every cataloge item it is present in
+        Deletes the property in every catalogue item it is present in
 
         :param property_id: The ID of the property to delete
+        :param username: The user deleting the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -268,10 +268,16 @@ class CatalogueItemRepo:
             {"properties._id": CustomObjectId(property_id)},
             {
                 "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": "Property deleted",
+                },
             },
             session=session,
         )
+
+    # pylint: enable=duplicate-code
 
     def update_number_of_spares(
         self,
@@ -291,6 +297,12 @@ class CatalogueItemRepo:
 
         self._catalogue_items_collection.update_one(
             {"_id": catalogue_item_id},
-            {"$set": {"number_of_spares": number_of_spares}},
+            {
+                "$set": {
+                    "number_of_spares": number_of_spares,
+                    "modified_by": "IMS Automation",
+                    "modified_comment": "Property deleted",
+                }
+            },
             session=session,
         )

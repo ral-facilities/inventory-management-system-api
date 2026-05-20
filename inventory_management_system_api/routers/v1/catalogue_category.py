@@ -354,6 +354,7 @@ def partial_update_property(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_property(
+    request: Request,
     catalogue_category_id: Annotated[
         str, Path(description="The ID of the catalogue category containing the property to delete")
     ],
@@ -371,7 +372,9 @@ def delete_property(
 
     try:
         catalogue_category_property_service.delete(
-            catalogue_category_id=catalogue_category_id, catalogue_category_property_id=property_id
+            catalogue_category_id=catalogue_category_id,
+            catalogue_category_property_id=property_id,
+            username=request.state.username,
         )
     except (MissingRecordError, InvalidObjectIdError) as exc:
         if property_id in str(exc):
