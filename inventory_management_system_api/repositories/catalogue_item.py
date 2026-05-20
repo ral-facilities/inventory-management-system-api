@@ -252,7 +252,6 @@ class CatalogueItemRepo:
             session=session,
         )
 
-
     def delete_properties(self, property_id: str, username: str, session: Optional[ClientSession] = None) -> None:
         """
         Deletes the property in every catalogue item it is present in

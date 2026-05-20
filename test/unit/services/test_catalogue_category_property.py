@@ -945,11 +945,7 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
         self._delete_property_id = property_id
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_category_property_service.delete(
-                self._catalogue_category_id,
-                property_id,
-                "username"
-            )
+            self.catalogue_category_property_service.delete(self._catalogue_category_id, property_id, "username")
         self._delete_exception = exc
 
     def check_delete_success(self) -> None:
@@ -968,15 +964,11 @@ class DeleteDSL(CatalogueCategoryPropertyServiceDSL):
         )
 
         self.mock_catalogue_item_repository.delete_properties.assert_called_once_with(
-            property_id=self._delete_property_id,
-            session=expected_session,
-            username="username"
+            property_id=self._delete_property_id, session=expected_session, username="username"
         )
 
         self.mock_item_repository.delete_properties.assert_called_once_with(
-            property_id=self._delete_property_id,
-            session=expected_session,
-            username="username"
+            property_id=self._delete_property_id, session=expected_session, username="username"
         )
 
     def check_delete_failed_with_exception(self, message: str) -> None:
