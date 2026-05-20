@@ -182,9 +182,9 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
             self.get_catalogue_item(catalogue_item_id)
             self.check_get_catalogue_item_success(
                 {
-                    **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, 
-                    "number_of_spares": expected_number_of_spares, 
-                    "modified_by": ANY
+                    **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                    "number_of_spares": expected_number_of_spares,
+                    "modified_by": ANY,
                 }
             )
 
