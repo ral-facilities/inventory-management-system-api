@@ -113,17 +113,31 @@ def bulk_create_catalogue_item(
 
 
 @router.post(
-    path="/bulk-validate",
-    summary="Bulk validate a catalogue items",
+    path="/bulk-validate-create",
+    summary="Bulk validate catalogue items for creation",
     response_description="Any errors found in the data",
 )
-def validate_catalogue_item(
-    catalogue_items: Annotated[list[dict[str, Any]], Body(description="List of catalogue items data to validate")],
+def bulk_validate_create_catalogue_item(
+    catalogue_items: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description="List of catalogue items data to validate",
+            example=[{"name": "Catalogue Item 1"}, {"name": "Catalogue Item 2"}],
+        ),
+    ],
     catalogue_item_service: CatalogueItemServiceDep,
 ) -> BulkValidationResultSchema:
-    logger.info("Bulk validating catalogue items")
+    """
+    Validate a list of catalogue item data to determine whether it is suitable for creating them as catalogue items
+    either via the single `POST /v1/catalogue-items` or the bulk `POST /v1/catalogue-items/bulk` endpoints.
 
-    return catalogue_item_service.bulk_validate(catalogue_items)
+    This includes the same validation of schema, field constraints and business rules, as these creation endpoints
+    without creating or modifying any resources. This also collects and returns any validation errors instead of failing
+    fast.
+    """
+    logger.info("Bulk validating catalogue items for creation")
+
+    return catalogue_item_service.bulk_validate_create(catalogue_items)
 
 
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")

@@ -1262,9 +1262,9 @@ class ValidateDSL(CatalogueItemServiceDSL):
 
     _catalogue_category_out: Optional[CatalogueCategoryOut]
     _catalogue_item_data: dict
-    _validation_result: ValidationResultSchema
+    _validate_create_result: ValidationResultSchema
 
-    def mock_validate(
+    def mock_validate_create(
         self,
         catalogue_item_data: dict,
         catalogue_category_out_data: Optional[dict] = None,
@@ -1273,7 +1273,7 @@ class ValidateDSL(CatalogueItemServiceDSL):
         has_duplicate_name: bool = False,
     ) -> None:
         """
-        Mocks repo methods appropriately to test the `create` service method.
+        Mocks repo methods appropriately to test the `validate_create` service method.
 
         :param catalogue_item_data: Dictionary containing the catalogue item data to validate.
         :param catalogue_category_out_data: Either `None` or a dictionary containing the catalogue category data as
@@ -1321,20 +1321,20 @@ class ValidateDSL(CatalogueItemServiceDSL):
 
         self.mock_catalogue_item_repository.is_duplicate_name.return_value = has_duplicate_name
 
-    def call_validate(self) -> None:
-        """Calls the `CatalogueItemService` `validate` method with the appropriate data from a prior call to
-        `mock_validate`."""
+    def call_validate_create(self) -> None:
+        """Calls the `CatalogueItemService` `validate_create` method with the appropriate data from a prior call to
+        `mock_validate_create`."""
 
         # Easier to mock a single validation than a whole list, so do proper testing with single, then have a test
         # for multiple
-        self._validation_result = self.catalogue_item_service._validate(  # pylint:disable=protected-access
+        self._validate_create_result = self.catalogue_item_service._validate_create(  # pylint:disable=protected-access
             index=0, catalogue_item_data=self._catalogue_item_data
         )
 
-    def check_validate_success(
+    def check_validate_create_success(
         self, expected_warnings: list[ValidationErrorSchema], expected_errors: list[ValidationErrorSchema]
     ) -> None:
-        """Checks that a prior call to `call_validate` worked as expected.
+        """Checks that a prior call to `call_validate_create` worked as expected.
 
         :param expected_warnings: Expected validation warnings.
         :param expected_errors: Expected validation errors.
@@ -1375,19 +1375,19 @@ class ValidateDSL(CatalogueItemServiceDSL):
                     ANY,
                 )
 
-        assert self._validation_result == ValidationResultSchema(
+        assert self._validate_create_result == ValidationResultSchema(
             index=0, warnings=expected_warnings, errors=expected_errors
         )
 
 
-class TestValidate(ValidateDSL):
-    """Tests for validating a catalogue item."""
+class TestValidateCreate(ValidateDSL):
+    """Tests for validating catalogue item data for creation."""
 
-    def test_validate_with_all_properties(self):
-        """Test validating a catalogue item when all properties present in the catalogue category are defined in the
-        catalogue item."""
+    def test_validate_create_with_all_properties(self):
+        """Test validating catalogue item data for creation when all properties present in the catalogue category are
+        defined in the catalogue item."""
 
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
                 "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
@@ -1396,13 +1396,14 @@ class TestValidate(ValidateDSL):
             catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
         )
-        self.call_validate()
-        self.check_validate_success(expected_warnings=[], expected_errors=[])
+        self.call_validate_create()
+        self.check_validate_create_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_with_duplicate_name(self):
-        """Test validating a catalogue item when it is using a duplicate name as an already existing catalogue item."""
+    def test_validate_create_with_duplicate_name(self):
+        """Test validating catalogue item data for creation when it is using a duplicate name as an already existing
+        catalogue item."""
 
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
                 "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
@@ -1412,8 +1413,8 @@ class TestValidate(ValidateDSL):
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
             has_duplicate_name=True,
         )
-        self.call_validate()
-        self.check_validate_success(
+        self.call_validate_create()
+        self.check_validate_create_success(
             expected_warnings=[
                 ValidationErrorSchema(
                     type="duplicate_record",
@@ -1426,21 +1427,21 @@ class TestValidate(ValidateDSL):
             expected_errors=[],
         )
 
-    def test_validate_with_invalid_schema(self):
-        """Test validating a catalogue item when the schema itself is invalid."""
+    def test_validate_create_with_invalid_schema(self):
+        """Test validating catalogue item data for creation when the schema itself is invalid."""
 
         catalogue_item_data = {
             **{"name": 42, "days_to_replace": False},
             "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
             "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
         }
-        self.mock_validate(
+        self.mock_validate_create(
             catalogue_item_data,
             catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
         )
-        self.call_validate()
-        self.check_validate_success(
+        self.call_validate_create()
+        self.check_validate_create_success(
             expected_warnings=[],
             expected_errors=[
                 ValidationErrorSchema(type="string_type", loc=["name"], msg="Input should be a valid string", input=42),
@@ -1459,11 +1460,11 @@ class TestValidate(ValidateDSL):
             ],
         )
 
-    def test_validate_with_non_existent_catalogue_category_id(self):
-        """Test validating a catalogue item with a non-existent catalogue category ID."""
+    def test_validate_create_with_non_existent_catalogue_category_id(self):
+        """Test validating catalogue item data for creation with a non-existent catalogue category ID."""
 
         catalogue_category_id = str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"])
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_category_id": catalogue_category_id,
@@ -1472,8 +1473,8 @@ class TestValidate(ValidateDSL):
             catalogue_category_out_data=None,
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
         )
-        self.call_validate()
-        self.check_validate_success(
+        self.call_validate_create()
+        self.check_validate_create_success(
             expected_warnings=[],
             expected_errors=[
                 ValidationErrorSchema(
@@ -1485,11 +1486,11 @@ class TestValidate(ValidateDSL):
             ],
         )
 
-    def test_validate_with_non_leaf_catalogue_category(self):
-        """Test validating a catalogue item with a non-leaf catalogue category."""
+    def test_validate_create_with_non_leaf_catalogue_category(self):
+        """Test validating catalogue item data for creation with a non-leaf catalogue category."""
 
         catalogue_category_id = str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"])
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_category_id": catalogue_category_id,
@@ -1498,8 +1499,8 @@ class TestValidate(ValidateDSL):
             catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
         )
-        self.call_validate()
-        self.check_validate_success(
+        self.call_validate_create()
+        self.check_validate_create_success(
             expected_warnings=[],
             expected_errors=[
                 ValidationErrorSchema(
@@ -1511,11 +1512,11 @@ class TestValidate(ValidateDSL):
             ],
         )
 
-    def test_validate_with_non_existent_manufacturer_id(self):
-        """Test validating a catalogue item with a non-existent manufacturer ID."""
+    def test_validate_create_with_non_existent_manufacturer_id(self):
+        """Test validating catalogue item data for creation with a non-existent manufacturer ID."""
 
         manufacturer_id = str(MANUFACTURER_OUT_DATA_A["_id"])
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
@@ -1524,8 +1525,8 @@ class TestValidate(ValidateDSL):
             catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
             manufacturer_out_data=None,
         )
-        self.call_validate()
-        self.check_validate_success(
+        self.call_validate_create()
+        self.check_validate_create_success(
             expected_warnings=[],
             expected_errors=[
                 ValidationErrorSchema(
@@ -1537,11 +1538,11 @@ class TestValidate(ValidateDSL):
             ],
         )
 
-    def test_validate_with_obsolete_replacement_catalogue_item(self):
-        """Test validating a catalogue item with an obsolete replacement catalogue item."""
+    def test_validate_create_with_obsolete_replacement_catalogue_item(self):
+        """Test validating catalogue item data for creation with an obsolete replacement catalogue item."""
 
         obsolete_replacement_catalogue_item_id = str(ObjectId())
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
@@ -1552,14 +1553,15 @@ class TestValidate(ValidateDSL):
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
             obsolete_replacement_catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
         )
-        self.call_validate()
-        self.check_validate_success(expected_warnings=[], expected_errors=[])
+        self.call_validate_create()
+        self.check_validate_create_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_with_non_existent_obsolete_replacement_catalogue_item_id(self):
-        """Test validating a catalogue item with a non-existent obsolete replacement catalogue item ID."""
+    def test_validate_create_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test validating catalogue item data for creation with a non-existent obsolete replacement catalogue item
+        ID."""
 
         obsolete_replacement_catalogue_item_id = str(ObjectId())
-        self.mock_validate(
+        self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
@@ -1570,8 +1572,8 @@ class TestValidate(ValidateDSL):
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
             obsolete_replacement_catalogue_item_out_data=None,
         )
-        self.call_validate()
-        self.check_validate_success(
+        self.call_validate_create()
+        self.check_validate_create_success(
             expected_warnings=[],
             expected_errors=[
                 ValidationErrorSchema(
@@ -1584,20 +1586,20 @@ class TestValidate(ValidateDSL):
         )
 
 
-class TestBulkValidate(CatalogueItemServiceDSL):
-    """Tests for bulk validating catalogue items."""
+class TestBulkValidateCreate(CatalogueItemServiceDSL):
+    """Tests for bulk validating catalogue items data for creation."""
 
-    def test_bulk_validate(self):
+    def test_bulk_validate_create(self):
         """Test bulk validate correctly returns a list of validation results for the individual catalogue items."""
         mock_catalogue_items = [{"name": "1"}, {"name": "2"}, {"name": "3"}]
         mock_results = [
             ValidationResultSchema(index=index, warnings=[], errors=[]) for index in range(0, len(mock_catalogue_items))
         ]
-        mock_validate = MagicMock(side_effect=mock_results)
+        mock_validate_create = MagicMock(side_effect=mock_results)
 
-        with patch.object(self.catalogue_item_service, "_validate", mock_validate):
-            result = self.catalogue_item_service.bulk_validate(mock_catalogue_items)
-        assert mock_validate.call_args_list == [
+        with patch.object(self.catalogue_item_service, "_validate_create", mock_validate_create):
+            result = self.catalogue_item_service.bulk_validate_create(mock_catalogue_items)
+        assert mock_validate_create.call_args_list == [
             call(index, mock_catalogue_item) for index, mock_catalogue_item in enumerate(mock_catalogue_items)
         ]
         assert result == BulkValidationResultSchema(results=mock_results)

@@ -1680,12 +1680,12 @@ class TestDelete(DeleteDSL):
         self.check_delete_catalogue_item_failed_with_detail(404, "Catalogue item not found")
 
 
-class BulkValidateDSL(CreateDSL):
-    """Base class for validate tests."""
+class BulkValidateCreateDSL(CreateDSL):
+    """Base class for validate creation tests."""
 
-    _bulk_validate_response_catalogue_items: Response
+    _bulk_validate_create_response_catalogue_items: Response
 
-    def validate_catalogue_item(self, catalogue_item_data: dict) -> None:
+    def validate_create_catalogue_item(self, catalogue_item_data: dict) -> None:
         """
         Validates a single catalogue item's data.
 
@@ -1693,11 +1693,11 @@ class BulkValidateDSL(CreateDSL):
                                     they can be omitted as required.
         """
 
-        self._bulk_validate_response_catalogue_items = self.test_client.post(
-            "/v1/catalogue-items/bulk-validate/", json=[catalogue_item_data]
+        self._bulk_validate_create_response_catalogue_items = self.test_client.post(
+            "/v1/catalogue-items/bulk-validate-create/", json=[catalogue_item_data]
         )
 
-    def bulk_validate_catalogue_items(self, catalogue_items_data: list[dict]) -> None:
+    def bulk_validate_create_catalogue_items(self, catalogue_items_data: list[dict]) -> None:
         """
         Validates bulk catalogue item data.
 
@@ -1705,21 +1705,23 @@ class BulkValidateDSL(CreateDSL):
                                      IDs so they can be omitted as required.
         """
 
-        self._bulk_validate_response_catalogue_items = self.test_client.post(
-            "/v1/catalogue-items/bulk-validate/", json=catalogue_items_data
+        self._bulk_validate_create_response_catalogue_items = self.test_client.post(
+            "/v1/catalogue-items/bulk-validate-create/", json=catalogue_items_data
         )
 
-    def check_validate_catalogue_item_success(self, expected_warnings: list[dict], expected_errors: list[dict]) -> None:
+    def check_validate_create_catalogue_item_success(
+        self, expected_warnings: list[dict], expected_errors: list[dict]
+    ) -> None:
         """
-        Checks that a prior call to `validate_catalogue_item` gave a successful response with the expected data
+        Checks that a prior call to `validate_create_catalogue_item` gave a successful response with the expected data
         returned.
 
         :param expected_warnings: List of dictionaries containing the expected validation warnings.
         :param expected_errors: List of dictionaries containing the expected validation errors.
         """
 
-        assert self._bulk_validate_response_catalogue_items.status_code == 200
-        assert self._bulk_validate_response_catalogue_items.json() == {
+        assert self._bulk_validate_create_response_catalogue_items.status_code == 200
+        assert self._bulk_validate_create_response_catalogue_items.json() == {
             "results": [
                 {
                     "index": 0,
@@ -1729,27 +1731,27 @@ class BulkValidateDSL(CreateDSL):
             ]
         }
 
-    def check_bulk_validate_catalogue_items_success(self, expected_result: dict) -> None:
+    def check_bulk_validate_create_catalogue_items_success(self, expected_result: dict) -> None:
         """
-        Checks that a prior call to `bulk_validate_catalogue_items` gave a successful response with the expected data
-        returned.
+        Checks that a prior call to `bulk_validate_create_catalogue_items` gave a successful response with the expected
+        data returned.
 
         :param expected_result: Dictionary of the expected result.
         """
 
-        assert self._bulk_validate_response_catalogue_items.status_code == 200
-        assert self._bulk_validate_response_catalogue_items.json() == expected_result
+        assert self._bulk_validate_create_response_catalogue_items.status_code == 200
+        assert self._bulk_validate_create_response_catalogue_items.json() == expected_result
 
 
-class TestBulkValidate(BulkValidateDSL):
+class TestBulkValidateCreate(BulkValidateCreateDSL):
     """Tests for bulk validating catalogue items."""
 
-    def test_validate_with_only_required_values_provided(self):
-        """Test validating a catalogue item with only required values provided."""
+    def test_validate_create_with_only_required_values_provided(self):
+        """Test validating catalogue item data for creation with only required values provided."""
 
         self.post_catalogue_item_prerequisites_no_properties()
 
-        self.validate_catalogue_item(
+        self.validate_create_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_category_id": self.catalogue_category_id,
@@ -1757,14 +1759,15 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_with_duplicate_name(self):
-        """Test validating a catalogue item with only required values provided but the name is a duplicate."""
+    def test_validate_create_with_duplicate_name(self):
+        """Test validating catalogue item data for creation with only required values provided but the name is a
+        duplicate."""
 
         self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.validate_catalogue_item(
+        self.validate_create_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
                 "catalogue_category_id": self.catalogue_category_id,
@@ -1772,7 +1775,7 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[
                 {
                     "input": "Catalogue Item Required Values Only",
@@ -1787,8 +1790,8 @@ class TestBulkValidate(BulkValidateDSL):
             expected_errors=[],
         )
 
-    def test_validate_with_invalid_schema(self):
-        """Test validating a catalogue item when the schema itself is invalid."""
+    def test_validate_create_with_invalid_schema(self):
+        """Test validating catalogue item data for creation when the schema itself is invalid."""
 
         self.post_catalogue_item_prerequisites_no_properties()
 
@@ -1799,9 +1802,9 @@ class TestBulkValidate(BulkValidateDSL):
             # Optional property, invalid type
             "notes": 12,
         }
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -1863,13 +1866,13 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_non_obsolete_with_all_values_except_properties(self):
-        """Test validating a non obsolete catalogue item with all values provided except `properties` and
-        those related to being obsolete."""
+    def test_validate_create_non_obsolete_with_all_values_except_properties(self):
+        """Test validating non obsolete catalogue item data for creation with all values provided except `properties`
+        and those related to being obsolete."""
 
         self.post_catalogue_item_prerequisites_no_properties()
 
-        self.validate_catalogue_item(
+        self.validate_create_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
                 "catalogue_category_id": self.catalogue_category_id,
@@ -1877,16 +1880,16 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_obsolete_with_all_values_except_properties(self):
-        """Test validating an obsolete catalogue item with all values provided except `properties`."""
+    def test_validate_create_obsolete_with_all_values_except_properties(self):
+        """Test validating obsolete catalogue item data for creation with all values provided except `properties`."""
 
         self.post_catalogue_item_prerequisites_no_properties()
         obsolete_replacement_catalogue_item_id = self.post_catalogue_item(
             CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES
         )
-        self.validate_catalogue_item(
+        self.validate_create_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "catalogue_category_id": self.catalogue_category_id,
@@ -1895,14 +1898,15 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
-        """Test validating an obsolete catalogue item with a non-existent `obsolete_replacement_catalogue_item_id`."""
+    def test_validate_create_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test validating obsolete catalogue item data for creation with a non-existent
+        `obsolete_replacement_catalogue_item_id`."""
 
         obsolete_replacement_catalogue_item_id = str(ObjectId())
         self.post_catalogue_item_prerequisites_no_properties()
-        self.validate_catalogue_item(
+        self.validate_create_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "catalogue_category_id": self.catalogue_category_id,
@@ -1911,7 +1915,7 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -1925,12 +1929,13 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
-        """Test validating an obsolete catalogue item an invalid `obsolete_replacement_catalogue_item_id`."""
+    def test_validate_create_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
+        """Test validating obsolete catalogue item data for creation with an invalid
+        `obsolete_replacement_catalogue_item_id`."""
 
         obsolete_replacement_catalogue_item_id = "invalid"
         self.post_catalogue_item_prerequisites_no_properties()
-        self.validate_catalogue_item(
+        self.validate_create_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
                 "catalogue_category_id": self.catalogue_category_id,
@@ -1939,7 +1944,7 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -1953,8 +1958,9 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_all_properties_provided(self):
-        """Test validating a catalogue item with all properties within the catalogue category being defined."""
+    def test_validate_create_with_all_properties_provided(self):
+        """Test validating catalogue item data for creation with all properties within the catalogue category being
+        defined."""
 
         self.post_catalogue_item_prerequisites_with_properties()
 
@@ -1966,14 +1972,14 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_with_properties_invalid_schema(self):
+    def test_validate_create_with_properties_invalid_schema(self):
         """
-        Test validating a catalogue item with properties within the catalogue category being defined but with an
-        invalid schema.
+        Test validating catalogue item data for creation with properties within the catalogue category being defined but
+        with an invalid schema.
         """
 
         self.post_catalogue_item_prerequisites_with_properties()
@@ -1985,9 +1991,9 @@ class TestBulkValidate(BulkValidateDSL):
             "manufacturer_id": self.manufacturer_id,
         }
 
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2032,8 +2038,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_mandatory_properties_only(self):
-        """Test validating a catalogue item with only mandatory properties defined."""
+    def test_validate_create_with_mandatory_properties_only(self):
+        """Test validating catalogue item data for creation with only mandatory properties defined."""
 
         self.post_catalogue_item_prerequisites_with_properties()
 
@@ -2049,12 +2055,12 @@ class TestBulkValidate(BulkValidateDSL):
             catalogue_item_data, self.property_name_id_dict
         )
 
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_with_mandatory_properties_given_none(self):
-        """Test validating a catalogue item when mandatory properties are given a value of `None`."""
+    def test_validate_create_with_mandatory_properties_given_none(self):
+        """Test validating catalogue item data for creation when mandatory properties are given a value of `None`."""
 
         self.post_catalogue_item_prerequisites_with_properties()
 
@@ -2067,9 +2073,9 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2086,8 +2092,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_missing_mandatory_properties(self):
-        """Test validating a catalogue item when missing mandatory properties."""
+    def test_validate_create_with_missing_mandatory_properties(self):
+        """Test validating catalogue item data for creation when missing mandatory properties."""
 
         self.post_catalogue_item_prerequisites_with_properties()
 
@@ -2100,9 +2106,9 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2117,8 +2123,9 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_non_mandatory_properties_given_none(self):
-        """Test validating a catalogue item when non-mandatory properties are given a value of `None`."""
+    def test_validate_create_with_non_mandatory_properties_given_none(self):
+        """Test validating catalogue item data for creation when non-mandatory properties are given a value of
+        `None`."""
 
         self.post_catalogue_item_prerequisites_with_properties()
 
@@ -2134,12 +2141,12 @@ class TestBulkValidate(BulkValidateDSL):
                 ],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validating_with_string_property_with_invalid_value_type(self):
-        """Test validating a catalogue item with an invalid value type for a string property."""
+    def test_validate_create_with_string_property_with_invalid_value_type(self):
+        """Test validating catalogue item data for creation with an invalid value type for a string property."""
 
         self.post_catalogue_item_prerequisites_with_given_properties(
             catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
@@ -2152,9 +2159,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "properties": [{"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42}],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2172,8 +2179,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_number_property_with_invalid_value_type(self):
-        """Test validate a catalogue item with an invalid value type for a number property."""
+    def test_validate_create_with_number_property_with_invalid_value_type(self):
+        """Test validate catalogue item data or creation with an invalid value type for a number property."""
 
         self.post_catalogue_item_prerequisites_with_given_properties(
             catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
@@ -2188,9 +2195,9 @@ class TestBulkValidate(BulkValidateDSL):
                 ],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2210,8 +2217,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_boolean_property_with_invalid_value_type(self):
-        """Test validate a catalogue item with an invalid value type for a boolean property."""
+    def test_validate_create_with_boolean_property_with_invalid_value_type(self):
+        """Test validate catalogue item data for creation with an invalid value type for a boolean property."""
 
         self.post_catalogue_item_prerequisites_with_given_properties(
             catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
@@ -2224,9 +2231,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "properties": [{"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": 0}],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2244,8 +2251,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_allowed_values_list(self):
-        """Test validating a catalogue item with properties that have allowed values lists."""
+    def test_validate_create_with_allowed_values_list(self):
+        """Test validating catalogue item data for creation with properties that have allowed values lists."""
 
         self.post_catalogue_item_prerequisites_with_given_properties(
             catalogue_category_properties_data=[
@@ -2264,13 +2271,13 @@ class TestBulkValidate(BulkValidateDSL):
                 ],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(expected_warnings=[], expected_errors=[])
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_with_string_property_with_allowed_values_list_with_invalid_value(self):
-        """Test validate a catalogue item with a string property with an allowed values list while giving it a value not
-        in the list."""
+    def test_validate_create_with_string_property_with_allowed_values_list_with_invalid_value(self):
+        """Test validate catalogue item data for creation with a string property with an allowed values list while
+        giving it a value not in the list."""
 
         self.post_catalogue_item_prerequisites_with_allowed_values("string", {"type": "list", "values": ["value1"]})
         catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
@@ -2281,9 +2288,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "properties": [{"name": "property", "value": "value2"}],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2300,9 +2307,9 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_string_property_with_allowed_values_list_with_invalid_type(self):
-        """Test validating a catalogue item with a string property with an allowed values list while giving it a value
-        with an incorrect type."""
+    def test_validate_create_with_string_property_with_allowed_values_list_with_invalid_type(self):
+        """Test validating catalogue item data for creation with a string property with an allowed values list while
+        giving it a value with an incorrect type."""
 
         self.post_catalogue_item_prerequisites_with_allowed_values("string", {"type": "list", "values": ["value1"]})
         catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
@@ -2313,9 +2320,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "properties": [{"name": "property", "value": 42}],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2343,9 +2350,9 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_number_property_with_allowed_values_list_with_invalid_value(self):
-        """Test validating a catalogue item with a number property with an allowed values list while giving it a value
-        not in the list."""
+    def test_validate_create_with_number_property_with_allowed_values_list_with_invalid_value(self):
+        """Test validating catalogue item data for creation with a number property with an allowed values list while
+        giving it a value not in the list."""
 
         self.post_catalogue_item_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]})
         catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
@@ -2356,9 +2363,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "properties": [{"name": "property", "value": 2}],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2375,9 +2382,9 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_number_property_with_allowed_values_list_with_invalid_type(self):
-        """Test validate a catalogue item with a number property with an allowed values list while giving it a value
-        with an incorrect type."""
+    def test_validate_create_with_number_property_with_allowed_values_list_with_invalid_type(self):
+        """Test validate catalogue item data for creation with a number property with an allowed values list while
+        giving it a value with an incorrect type."""
 
         self.post_catalogue_item_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]})
         catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
@@ -2388,9 +2395,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "properties": [{"name": "property", "value": "test"}],
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2418,8 +2425,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_in_non_leaf_catalogue_category(self):
-        """Test validating a catalogue item within a non-leaf catalogue category."""
+    def test_validate_create_in_non_leaf_catalogue_category(self):
+        """Test validating catalogue item data for creation within a non-leaf catalogue category."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -2432,9 +2439,9 @@ class TestBulkValidate(BulkValidateDSL):
             }
         )
 
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2448,8 +2455,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_non_existent_catalogue_category_id(self):
-        """Test validating a catalogue item with a non-existent catalogue category ID."""
+    def test_validate_create_with_non_existent_catalogue_category_id(self):
+        """Test validating catalogue item data for creation with a non-existent catalogue category ID."""
 
         self.catalogue_category_id = str(ObjectId())
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -2461,9 +2468,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "manufacturer_id": self.manufacturer_id,
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2477,8 +2484,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_invalid_catalogue_category_id(self):
-        """Test validating a catalogue item with an invalid catalogue category ID."""
+    def test_validate_create_with_invalid_catalogue_category_id(self):
+        """Test validating catalogue item data for creation with an invalid catalogue category ID."""
 
         self.catalogue_category_id = "invalid-id"
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
@@ -2490,10 +2497,10 @@ class TestBulkValidate(BulkValidateDSL):
                 "manufacturer_id": self.manufacturer_id,
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
         self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2507,8 +2514,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_non_existent_manufacturer_id(self):
-        """Test validating a catalogue item with a non-existent manufacturer ID."""
+    def test_validate_create_with_non_existent_manufacturer_id(self):
+        """Test validating catalogue item data for creation with a non-existent manufacturer ID."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.manufacturer_id = str(ObjectId())
@@ -2520,9 +2527,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "manufacturer_id": self.manufacturer_id,
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2536,8 +2543,8 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_validate_with_invalid_manufacturer_id(self):
-        """Test validating a catalogue item with an invalid manufacturer ID."""
+    def test_validate_create_with_invalid_manufacturer_id(self):
+        """Test validating catalogue item data for creation with an invalid manufacturer ID."""
 
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.manufacturer_id = "invalid-id"
@@ -2549,9 +2556,9 @@ class TestBulkValidate(BulkValidateDSL):
                 "manufacturer_id": self.manufacturer_id,
             }
         )
-        self.validate_catalogue_item(catalogue_item_data)
+        self.validate_create_catalogue_item(catalogue_item_data)
 
-        self.check_validate_catalogue_item_success(
+        self.check_validate_create_catalogue_item_success(
             expected_warnings=[],
             expected_errors=[
                 {
@@ -2565,15 +2572,15 @@ class TestBulkValidate(BulkValidateDSL):
             ],
         )
 
-    def test_bulk_validate(self):
+    def test_bulk_validate_create(self):
         """
-        Test bulk validating catalogue items.
+        Test bulk validating catalogue items for creation.
 
         Comprehensive testing is done above on single items, this tests it works more more than one.
         """
 
         self.post_catalogue_item_prerequisites_no_properties()
-        self.bulk_validate_catalogue_items(
+        self.bulk_validate_create_catalogue_items(
             [
                 {
                     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
@@ -2591,7 +2598,7 @@ class TestBulkValidate(BulkValidateDSL):
             ]
         )
 
-        self.check_bulk_validate_catalogue_items_success(
+        self.check_bulk_validate_create_catalogue_items_success(
             expected_result={
                 "results": [
                     {"index": 0, "warnings": [], "errors": []},

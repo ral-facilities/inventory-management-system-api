@@ -118,7 +118,7 @@ class CatalogueItemService:
 
     def bulk_create(self, catalogue_items: list[CatalogueItemPostSchema]) -> None:
         """
-        Create a catalogue items in bulk.
+        Creates catalogue items in bulk.
 
         Uses the single create method, but wrapped within a transaction so either all succeed or none do. Will
         fail fast the moment it encounters an error, so for detailed information on what went wrong and where
@@ -282,9 +282,12 @@ class CatalogueItemService:
         self._catalogue_item_repository.delete(catalogue_item_id)
 
     # pylint:disable=too-many-statements
-    def _validate(self, index: int, catalogue_item_data: dict[str, Any]) -> ValidationResultSchema:
+    def _validate_create(self, index: int, catalogue_item_data: dict[str, Any]) -> ValidationResultSchema:
         """
         Performs validation of a single set of catalogue item creation data returning any errors.
+
+        This includes the same validation, as the `create` function without creating or modifying any resources. This
+        also collects and returns any validation errors instead of failing fast.
 
         :param index: Index of the catalogue item being validated.
         :param catalogue_item_data: Catalogue item data to verify.
@@ -316,7 +319,7 @@ class CatalogueItemService:
                         input=catalogue_category_id,
                     )
                 )
-            # If defined, ensure the category can take new catalogue items (i.e. is a leaf category)
+            # If exists, ensure the category can take new catalogue items (i.e. is a leaf category)
             elif not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
@@ -411,7 +414,7 @@ class CatalogueItemService:
 
     # pylint:enable=too-many-statements
 
-    def bulk_validate(self, catalogue_items_data: dict[str, Any]) -> BulkValidationResultSchema:
+    def bulk_validate_create(self, catalogue_items_data: dict[str, Any]) -> BulkValidationResultSchema:
         """
         Performs validation of bulk catalogue item creation data returning any errors.
 
@@ -420,7 +423,7 @@ class CatalogueItemService:
         """
         return BulkValidationResultSchema(
             results=[
-                self._validate(index, catalogue_item_data)
+                self._validate_create(index, catalogue_item_data)
                 for index, catalogue_item_data in enumerate(catalogue_items_data)
             ]
         )

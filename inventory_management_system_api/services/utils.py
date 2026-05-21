@@ -5,7 +5,7 @@ Collection of some utility functions used by services
 import logging
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, LiteralString, Union
 
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
@@ -14,12 +14,8 @@ from inventory_management_system_api.core.exceptions import (
     InvalidPropertyTypeError,
     MissingMandatoryProperty,
 )
-from inventory_management_system_api.models.catalogue_category import (
-    CatalogueCategoryPropertyOut,
-)
-from inventory_management_system_api.schemas.catalogue_category import (
-    CatalogueCategoryPostPropertySchema,
-)
+from inventory_management_system_api.models.catalogue_category import CatalogueCategoryPropertyOut
+from inventory_management_system_api.schemas.catalogue_category import CatalogueCategoryPostPropertySchema
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
 logger = logging.getLogger()
@@ -250,7 +246,7 @@ def _validate_property_value(
         if defined_property_mandatory:
             errors.append(
                 create_custom_validation_error_details(
-                    "invalid_property_type",
+                    type="invalid_property_type",
                     message=f"Mandatory property with ID '{supplied_property_id}' cannot be None.",
                     location=("properties", index, "value"),
                     input=supplied_property_value,
@@ -401,8 +397,8 @@ def _merge_non_mandatory_properties(
 
 
 def create_custom_validation_error_details(
-    type: str,  # pylint:disable=redefined-builtin
-    message: str,
+    type: LiteralString,  # pylint:disable=redefined-builtin
+    message: LiteralString,
     location: tuple,
     input: Any,  # pylint:disable=redefined-builtin
 ) -> InitErrorDetails:
