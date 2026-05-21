@@ -1680,21 +1680,33 @@ class TestDelete(DeleteDSL):
         self.check_delete_catalogue_item_failed_with_detail(404, "Catalogue item not found")
 
 
-class ValidateDSL(CreateDSL):
+class BulkValidateDSL(CreateDSL):
     """Base class for validate tests."""
 
-    _validate_response_catalogue_item: Response
+    _bulk_validate_response_catalogue_items: Response
 
     def validate_catalogue_item(self, catalogue_item_data: dict) -> None:
         """
-        Validates catalogue item data.
+        Validates a single catalogue item's data.
 
         :param catalogue_item_data: Dictionary containing the data to validate. Does not automatically add IDs so
                                     they can be omitted as required.
         """
 
-        self._validate_response_catalogue_item = self.test_client.post(
-            "/v1/catalogue-items/validate/", json=catalogue_item_data
+        self._bulk_validate_response_catalogue_items = self.test_client.post(
+            "/v1/catalogue-items/bulk-validate/", json=[catalogue_item_data]
+        )
+
+    def bulk_validate_catalogue_items(self, catalogue_items_data: list[dict]) -> None:
+        """
+        Validates bulk catalogue item data.
+
+        :param catalogue_items_data: List of dictionaries containing the data to validate. Does not automatically add
+                                     IDs so they can be omitted as required.
+        """
+
+        self._bulk_validate_response_catalogue_items = self.test_client.post(
+            "/v1/catalogue-items/bulk-validate/", json=catalogue_items_data
         )
 
     def check_validate_catalogue_item_success(self, expected_warnings: list[dict], expected_errors: list[dict]) -> None:
@@ -1706,15 +1718,31 @@ class ValidateDSL(CreateDSL):
         :param expected_errors: List of dictionaries containing the expected validation errors.
         """
 
-        assert self._validate_response_catalogue_item.status_code == 200
-        assert self._validate_response_catalogue_item.json() == {
-            "warnings": expected_warnings,
-            "errors": expected_errors,
+        assert self._bulk_validate_response_catalogue_items.status_code == 200
+        assert self._bulk_validate_response_catalogue_items.json() == {
+            "results": [
+                {
+                    "index": 0,
+                    "warnings": expected_warnings,
+                    "errors": expected_errors,
+                }
+            ]
         }
 
+    def check_bulk_validate_catalogue_items_success(self, expected_result: dict) -> None:
+        """
+        Checks that a prior call to `bulk_validate_catalogue_items` gave a successful response with the expected data
+        returned.
 
-class TestValidate(ValidateDSL):
-    """Tests for updating a catalogue item."""
+        :param expected_result: Dictionary of the expected result.
+        """
+
+        assert self._bulk_validate_response_catalogue_items.status_code == 200
+        assert self._bulk_validate_response_catalogue_items.json() == expected_result
+
+
+class TestBulkValidate(BulkValidateDSL):
+    """Tests for bulk validating catalogue items."""
 
     def test_validate_with_only_required_values_provided(self):
         """Test validating a catalogue item with only required values provided."""
@@ -2535,4 +2563,61 @@ class TestValidate(ValidateDSL):
                     "type": "missing_record",
                 },
             ],
+        )
+
+    def test_bulk_validate(self):
+        """
+        Test bulk validating catalogue items.
+
+        Comprehensive testing is done above on single items, this tests it works more more than one.
+        """
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.bulk_validate_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                },
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                },
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                },
+            ]
+        )
+
+        self.check_bulk_validate_catalogue_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [], "errors": []},
+                    {
+                        "index": 1,
+                        "warnings": [],
+                        "errors": [
+                            {
+                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "location": [
+                                    "catalogue_category_id",
+                                ],
+                                "message": "Field required",
+                                "type": "missing",
+                            },
+                            {
+                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "location": [
+                                    "manufacturer_id",
+                                ],
+                                "message": "Field required",
+                                "type": "missing",
+                            },
+                        ],
+                    },
+                    {"index": 2, "warnings": [], "errors": []},
+                ]
+            }
         )

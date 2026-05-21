@@ -20,8 +20,15 @@ class ValidationErrorSchema(BaseModel):
     input: Any = Field(description="Specific input the error was caused by")
 
 
-class ValidationResponseSchema(BaseModel):
-    """Schema model for a validation response."""
+class ValidationResultSchema(BaseModel):
+    """Schema model for a single result in a bulk validation response."""
 
-    warnings: list[ValidationErrorSchema] = Field(description="List of validation warnings.")
-    errors: list[ValidationErrorSchema] = Field(description="List of validation errors.")
+    index: int = Field(description="Index of the result, corresponding to the inputted list data.")
+    warnings: list[ValidationErrorSchema] = Field(description="List of validation warnings for the specific entity.")
+    errors: list[ValidationErrorSchema] = Field(description="List of validation errors for the specific entity.")
+
+
+class BulkValidationResultSchema(BaseModel):
+    """Schema model for the result of a bulk validation request."""
+
+    results: list[ValidationResultSchema] = Field(description="List of validation results for the entities.")

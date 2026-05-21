@@ -32,7 +32,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     PropertyPostSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationResponseSchema
+from inventory_management_system_api.schemas.validation import BulkValidationResultSchema, ValidationResultSchema
 from inventory_management_system_api.services import utils
 
 
@@ -73,7 +73,7 @@ class CatalogueItemService:
         is. It then processes the properties.
 
         :param catalogue_item: The catalogue item to be created.
-        :param session: PyMongo ClientSession to use for database operations
+        :param session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created catalogue item.
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
@@ -282,14 +282,14 @@ class CatalogueItemService:
         self._catalogue_item_repository.delete(catalogue_item_id)
 
     # pylint:disable=too-many-statements
-    def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationResponseSchema:
+    def _validate(self, index: int, catalogue_item_data: dict[str, Any]) -> ValidationResultSchema:
         """
-        Performs validation of catalogue item creation data returning any errors.
+        Performs validation of a single set of catalogue item creation data returning any errors.
 
+        :param index: Index of the catalogue item being validated.
         :param catalogue_item_data: Catalogue item data to verify.
-        :return: Schema containing the validation warnings/errors that have occurred.
+        :return: Schema containing the validation warnings/errors that been found within the data.
         """
-
         warnings = []
         errors = []
         # This records any errors from basic schema validation including the properties
@@ -407,6 +407,20 @@ class CatalogueItemService:
                 title="Catalogue item validation error",
                 line_errors=errors,
             ).errors()
-        return ValidationResponseSchema(warnings=warnings, errors=errors)
+        return ValidationResultSchema(index=index, warnings=warnings, errors=errors)
 
     # pylint:enable=too-many-statements
+
+    def bulk_validate(self, catalogue_items_data: dict[str, Any]) -> BulkValidationResultSchema:
+        """
+        Performs validation of bulk catalogue item creation data returning any errors.
+
+        :param catalogue_items_data: Catalogue items data to verify.
+        :return: Schema containing the validation warnings/errors that been found within the data.
+        """
+        return BulkValidationResultSchema(
+            results=[
+                self._validate(index, catalogue_item_data)
+                for index, catalogue_item_data in enumerate(catalogue_items_data)
+            ]
+        )

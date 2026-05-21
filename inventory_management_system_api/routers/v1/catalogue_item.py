@@ -11,21 +11,10 @@ service.
 import logging
 from typing import Annotated, Any, List, Optional
 
-from fastapi import (
-    APIRouter,
-    Body,
-    Depends,
-    HTTPException,
-    Path,
-    Query,
-    Request,
-    status,
-)
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
 
 from inventory_management_system_api.core.config import config
-from inventory_management_system_api.core.consts import (
-    HTTP_500_INTERNAL_SERVER_ERROR_DETAIL,
-)
+from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -44,7 +33,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     CatalogueItemSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationResponseSchema
+from inventory_management_system_api.schemas.validation import BulkValidationResultSchema
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 logger = logging.getLogger()
@@ -124,17 +113,17 @@ def bulk_create_catalogue_item(
 
 
 @router.post(
-    path="/validate",
-    summary="Validate a catalogue item",
+    path="/bulk-validate",
+    summary="Bulk validate a catalogue items",
     response_description="Any errors found in the data",
 )
 def validate_catalogue_item(
-    catalogue_item: Annotated[dict[str, Any], Body(description="Catalogue item data to validate")],
+    catalogue_items: Annotated[list[dict[str, Any]], Body(description="List of catalogue items data to validate")],
     catalogue_item_service: CatalogueItemServiceDep,
-) -> ValidationResponseSchema:
-    logger.info("Validating a catalogue item")
+) -> BulkValidationResultSchema:
+    logger.info("Bulk validating catalogue items")
 
-    return catalogue_item_service.validate(catalogue_item)
+    return catalogue_item_service.bulk_validate(catalogue_items)
 
 
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")

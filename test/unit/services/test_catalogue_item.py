@@ -53,7 +53,11 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     PropertyPostSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationErrorSchema, ValidationResponseSchema
+from inventory_management_system_api.schemas.validation import (
+    BulkValidationResultSchema,
+    ValidationErrorSchema,
+    ValidationResultSchema,
+)
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
@@ -68,6 +72,8 @@ class CatalogueItemServiceDSL(BaseCatalogueServiceDSL):
     mock_unit_repository: Mock
     mock_setting_repository: Mock
     catalogue_item_service: CatalogueItemService
+
+    mock_session = MagicMock()
 
     @pytest.fixture(autouse=True)
     def setup(
@@ -225,7 +231,9 @@ class CreateDSL(CatalogueItemServiceDSL):
         """Calls the `CatalogueItemService` `create` method with the appropriate data from a prior call to
         `mock_create`."""
 
-        self._created_catalogue_item = self.catalogue_item_service.create(self._catalogue_item_post)
+        self._created_catalogue_item = self.catalogue_item_service.create(
+            self._catalogue_item_post, session=self.mock_session
+        )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -260,7 +268,9 @@ class CreateDSL(CatalogueItemServiceDSL):
             self._catalogue_category_out.properties, self._catalogue_item_post.properties
         )
 
-        self.mock_catalogue_item_repository.create.assert_called_once_with(self._expected_catalogue_item_in)
+        self.mock_catalogue_item_repository.create.assert_called_once_with(
+            self._expected_catalogue_item_in, session=self.mock_session
+        )
 
         assert self._created_catalogue_item == self._expected_catalogue_item_out
 
@@ -1252,7 +1262,7 @@ class ValidateDSL(CatalogueItemServiceDSL):
 
     _catalogue_category_out: Optional[CatalogueCategoryOut]
     _catalogue_item_data: dict
-    _validation_response: ValidationResponseSchema
+    _validation_result: ValidationResultSchema
 
     def mock_validate(
         self,
@@ -1315,7 +1325,11 @@ class ValidateDSL(CatalogueItemServiceDSL):
         """Calls the `CatalogueItemService` `validate` method with the appropriate data from a prior call to
         `mock_validate`."""
 
-        self._validation_response = self.catalogue_item_service.validate(self._catalogue_item_data)
+        # Easier to mock a single validation than a whole list, so do proper testing with single, then have a test
+        # for multiple
+        self._validation_result = self.catalogue_item_service._validate(  # pylint:disable=protected-access
+            index=0, catalogue_item_data=self._catalogue_item_data
+        )
 
     def check_validate_success(
         self, expected_warnings: list[ValidationErrorSchema], expected_errors: list[ValidationErrorSchema]
@@ -1361,7 +1375,9 @@ class ValidateDSL(CatalogueItemServiceDSL):
                     ANY,
                 )
 
-        assert self._validation_response == ValidationResponseSchema(warnings=expected_warnings, errors=expected_errors)
+        assert self._validation_result == ValidationResultSchema(
+            index=0, warnings=expected_warnings, errors=expected_errors
+        )
 
 
 class TestValidate(ValidateDSL):
@@ -1566,3 +1582,22 @@ class TestValidate(ValidateDSL):
                 )
             ],
         )
+
+
+class TestBulkValidate(CatalogueItemServiceDSL):
+    """Tests for bulk validating catalogue items."""
+
+    def test_bulk_validate(self):
+        """Test bulk validate correctly returns a list of validation results for the individual catalogue items."""
+        mock_catalogue_items = [{"name": "1"}, {"name": "2"}, {"name": "3"}]
+        mock_results = [
+            ValidationResultSchema(index=index, warnings=[], errors=[]) for index in range(0, len(mock_catalogue_items))
+        ]
+        mock_validate = MagicMock(side_effect=mock_results)
+
+        with patch.object(self.catalogue_item_service, "_validate", mock_validate):
+            result = self.catalogue_item_service.bulk_validate(mock_catalogue_items)
+        assert mock_validate.call_args_list == [
+            call(index, mock_catalogue_item) for index, mock_catalogue_item in enumerate(mock_catalogue_items)
+        ]
+        assert result == BulkValidationResultSchema(results=mock_results)
