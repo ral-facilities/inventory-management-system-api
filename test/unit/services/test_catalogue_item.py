@@ -1368,7 +1368,7 @@ class ValidateDSL(CatalogueItemServiceDSL):
                     pass
 
             if self._catalogue_category_out:
-                self.wrapped_utils.validate_properties.assert_called_once_with(
+                self.wrapped_utils.process_properties.assert_called_once_with(
                     # Use ANY for errors as its mutable and changes after running to include the actual errors
                     self._catalogue_category_out.properties,
                     property_schemas,

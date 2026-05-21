@@ -5,7 +5,7 @@ Collection of some utility functions used by services
 import logging
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, LiteralString, Union
+from typing import Any, Callable, Dict, List, LiteralString, Optional, Type, Union
 
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
@@ -19,6 +19,40 @@ from inventory_management_system_api.schemas.catalogue_category import Catalogue
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 
 logger = logging.getLogger()
+
+ProcessErrorFunctionType = Callable[[str, str, tuple, Any], None]
+
+
+ERROR_MAP: dict[str, Type[BaseException]] = {
+    "invalid_property_type": InvalidPropertyTypeError,
+    "missing_mandatory_property": MissingMandatoryProperty,
+}
+
+
+def process_and_raise_error(
+    error_type: LiteralString, error_message: LiteralString, error_location: tuple, error_input: Any
+):
+    """Processes an error by raising it."""
+    raise ERROR_MAP[error_type](error_message)
+
+
+def make_process_and_add_error(errors: list[InitErrorDetails]):
+    """Creates a function that processes errors by adding them to a given list."""
+
+    def process_and_add_error(
+        error_type: LiteralString, error_message: LiteralString, error_location: tuple, error_input: Any
+    ):
+        """Processes an error by adding it to a list."""
+        errors.append(
+            create_custom_validation_error_details(
+                error_type=error_type,
+                error_message=error_message,
+                error_location=error_location,
+                error_input=error_input,
+            )
+        )
+
+    return process_and_add_error
 
 
 def generate_code(name: str, entity_type: str) -> str:
@@ -60,6 +94,7 @@ def check_duplicate_property_names(
 def process_properties(
     defined_properties: List[CatalogueCategoryPropertyOut],
     supplied_properties: List[PropertyPostSchema],
+    errors: Optional[list[InitErrorDetails]] = None,
 ) -> List[Dict]:
     """
     Process and validate supplied properties based on the defined properties.
@@ -69,49 +104,24 @@ def process_properties(
 
     :param defined_properties: The list of defined property objects.
     :param supplied_properties: The list of supplied property objects.
+    :param errors: List to collect errors within. When defined errors are collected within it, when not errors are
+                   raised instead to fail fast.
     :return: A list of processed and validated supplied properties.
     """
+
+    if errors is None:
+        process_error = process_and_raise_error
+    else:
+        process_error = make_process_and_add_error(errors)
+
     # Convert properties to dictionaries for easier lookups
     defined_properties_dict = _create_properties_dict(defined_properties)
     supplied_properties_dict = _create_properties_dict(supplied_properties)
 
     # Some mandatory properties may not have been supplied
-    _check_missing_mandatory_properties(defined_properties_dict, supplied_properties_dict)
-    # Some non-mandatory properties may not have been supplied
-    supplied_properties_dict = _merge_non_mandatory_properties(defined_properties_dict, supplied_properties_dict)
-    # Supplied properties do not have names as we can't trust they would be correct
-    _add_property_names(defined_properties_dict, supplied_properties_dict)
-    # Supplied properties do not have units as we can't trust they would be correct
-    _add_property_units(defined_properties_dict, supplied_properties_dict)
-    # The values of the supplied properties may not be of the expected types
-    _check_property_values(defined_properties_dict, supplied_properties_dict)
-
-    return list(supplied_properties_dict.values())
-
-
-def validate_properties(
-    defined_properties: list[CatalogueCategoryPropertyOut],
-    supplied_properties: list[PropertyPostSchema],
-    errors: list[InitErrorDetails],
-) -> None:
-    """
-    Validate supplied properties based on the defined properties.
-
-    Checks for missing mandatory, filters the matching properties, adds the property units, and finally validates the
-    property values.
-
-    :param defined_properties: The list of defined property objects.
-    :param supplied_properties: The list of supplied property objects.
-    :param errors: List to append any found errors to (its mutable).
-    """
-    # Convert properties to dictionaries for easier lookups
-    defined_properties_dict = _create_properties_dict(defined_properties)
-    supplied_properties_dict = _create_properties_dict(supplied_properties)
-
-    # Some mandatory properties may not have been supplied
-    _validate_missing_mandatory_properties(defined_properties_dict, supplied_properties_dict, errors)
+    _validate_missing_mandatory_properties(defined_properties_dict, supplied_properties_dict, process_error)
     # Some non-mandatory properties may not have been supplied. Deep copy to prevent past errors from containing
-    # anything not added yet.
+    # anything not added yet when collecting errors.
     supplied_properties_dict = deepcopy(
         _merge_non_mandatory_properties(defined_properties_dict, supplied_properties_dict)
     )
@@ -120,7 +130,9 @@ def validate_properties(
     # Supplied properties do not have units as we can't trust they would be correct
     _add_property_units(defined_properties_dict, supplied_properties_dict)
     # The values of the supplied properties may not be of the expected types
-    _validate_property_values(defined_properties_dict, supplied_properties_dict, errors)
+    _validate_property_values(defined_properties_dict, supplied_properties_dict, process_error)
+
+    return list(supplied_properties_dict.values())
 
 
 def _create_properties_dict(
@@ -176,53 +188,8 @@ def _add_property_units(
         supplied_property["unit"] = defined_properties[supplied_property_name]["unit"]
 
 
-def _check_property_value(defined_property: Dict, supplied_property: Dict) -> None:
-    """
-    Checks that a given property value has a valid type and is within the defined allowed_values (if specified).
-
-    Raises errors to fail fast compared to _validate_property_value.
-
-    :param defined_property: Definition of the property from the catalogue category
-    :param supplied_property: Supplied property dictionary
-    :raises InvalidPropertyTypeError: If the supplied property value is found to either be an
-                                      invalid type, or not an allowed value
-    """
-
-    defined_property_type = defined_property["type"]
-    defined_property_allowed_values = defined_property["allowed_values"]
-    defined_property_mandatory = defined_property["mandatory"]
-
-    supplied_property_id = supplied_property["id"]
-    supplied_property_value = supplied_property["value"]
-
-    # Do not type check a value of None
-    if supplied_property_value is None:
-        if defined_property_mandatory:
-            raise InvalidPropertyTypeError(f"Mandatory property with ID '{supplied_property_id}' cannot be None.")
-    else:
-        if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
-            defined_property_type, supplied_property_value
-        ):
-            raise InvalidPropertyTypeError(
-                f"Invalid value type for property with ID '{supplied_property_id}'. Expected type: "
-                f"{defined_property_type}."
-            )
-
-        # Verify the given property is one of the allowed based on the type of allowed_values defined
-        if defined_property_allowed_values is not None and defined_property_allowed_values["type"] == "list":
-            values = defined_property_allowed_values["values"]
-            if supplied_property_value not in values:
-                raise InvalidPropertyTypeError(
-                    f"Invalid value for property with ID '{supplied_property_id}'. Expected one of "
-                    f"{', '.join([str(value) for value in values])}."
-                )
-
-
 def _validate_property_value(
-    defined_property: dict,
-    supplied_property: dict,
-    index: int,
-    errors: list[InitErrorDetails],
+    defined_property: dict, supplied_property: dict, index: int, process_error: ProcessErrorFunctionType
 ) -> None:
     """
     Validates a given property value has a valid type and is within the defined allowed_values (if specified).
@@ -232,7 +199,7 @@ def _validate_property_value(
     :param defined_property: Definition of the property from the catalogue category.
     :param supplied_property: Supplied property dictionary.
     :param index: Index of the supplied property (For the location of any validation errors).
-    :param errors: List to append any found errors to (its mutable).
+    :param process_error: Function to process any errors that occur.
     """
     defined_property_type = defined_property["type"]
     defined_property_allowed_values = defined_property["allowed_values"]
@@ -244,26 +211,22 @@ def _validate_property_value(
     # Do not type check a value of None
     if supplied_property_value is None:
         if defined_property_mandatory:
-            errors.append(
-                create_custom_validation_error_details(
-                    type="invalid_property_type",
-                    message=f"Mandatory property with ID '{supplied_property_id}' cannot be None.",
-                    location=("properties", index, "value"),
-                    input=supplied_property_value,
-                )
+            process_error(
+                error_type="invalid_property_type",
+                error_message=f"Mandatory property with ID '{supplied_property_id}' cannot be None.",
+                error_location=("properties", index, "value"),
+                error_input=supplied_property_value,
             )
     else:
         if not CatalogueCategoryPostPropertySchema.is_valid_property_type(
             defined_property_type, supplied_property_value
         ):
-            errors.append(
-                create_custom_validation_error_details(
-                    type="invalid_property_type",
-                    message=f"Invalid value type for property with ID '{supplied_property_id}'. Expected type: "
-                    f"{defined_property_type}.",
-                    location=("properties", index, "value"),
-                    input=supplied_property_value,
-                )
+            process_error(
+                error_type="invalid_property_type",
+                error_message=f"Invalid value type for property with ID '{supplied_property_id}'. Expected type: "
+                f"{defined_property_type}.",
+                error_location=("properties", index, "value"),
+                error_input=supplied_property_value,
             )
 
     # Verify the given property is one of the allowed based on the type of allowed_values defined
@@ -275,41 +238,17 @@ def _validate_property_value(
         if supplied_property_value not in values and (
             defined_property["mandatory"] or supplied_property_value is not None
         ):
-            errors.append(
-                create_custom_validation_error_details(
-                    type="invalid_property_type",
-                    message=f"Invalid value for property with ID '{supplied_property_id}'. Expected one of "
-                    f"{', '.join([str(value) for value in values])}.",
-                    location=("properties", index, "value"),
-                    input=supplied_property_value,
-                )
+            process_error(
+                error_type="invalid_property_type",
+                error_message=f"Invalid value for property with ID '{supplied_property_id}'. Expected one of "
+                f"{', '.join([str(value) for value in values])}.",
+                error_location=("properties", index, "value"),
+                error_input=supplied_property_value,
             )
 
 
-def _check_property_values(
-    defined_properties: Dict[str, Dict],
-    supplied_properties: Dict[str, Dict],
-) -> None:
-    """
-    Checks the values of the supplied properties against the expected property types.
-
-    Raises an error if the type of any supplied property does not match the expected type.
-
-    :param defined_properties: The defined properties stored as part of the catalogue category in the
-                               database.
-    :param supplied_properties: The supplied properties.
-    :raises InvalidPropertyTypeError: If the any of the types of the supplied values does not match the
-                                      expected type.
-    """
-    logger.info("Checking the values of the supplied properties against the expected property types")
-    for supplied_property_id, supplied_property in supplied_properties.items():
-        _check_property_value(defined_properties[supplied_property_id], supplied_property)
-
-
 def _validate_property_values(
-    defined_properties: dict[str, dict],
-    supplied_properties: dict[str, dict],
-    errors: list[InitErrorDetails],
+    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], process_error: ProcessErrorFunctionType
 ) -> None:
     """
     Validates the values of the supplied properties against the expected property types.
@@ -319,36 +258,15 @@ def _validate_property_values(
     :param defined_properties: The defined properties stored as part of the catalogue category in the
                                database.
     :param supplied_properties: The supplied properties.
-    :param errors: List to append any found errors to (its mutable).
+    :param process_error: Function to process any errors that occur.
     """
     logger.info("Validating the values of the supplied properties against the expected property types")
     for i, (supplied_property_id, supplied_property) in enumerate(supplied_properties.items()):
-        _validate_property_value(defined_properties[supplied_property_id], supplied_property, i, errors)
-
-
-def _check_missing_mandatory_properties(
-    defined_properties: Dict[str, Dict],
-    supplied_properties: Dict[str, Dict],
-) -> None:
-    """
-    Check for mandatory properties that are missing/have not been supplied. Raise an error as soon
-    as a mandatory property is found to be missing.
-
-    :param defined_properties: The defined properties stored as part of the catalogue category in the
-        database.
-    :param supplied_properties: The supplied properties.
-    :raises MissingMandatoryProperty: If a mandatory property is missing/not supplied.
-    """
-    logger.info("Checking for missing mandatory property")
-    for defined_property_id, defined_property in defined_properties.items():
-        if defined_property["mandatory"] and defined_property_id not in supplied_properties:
-            raise MissingMandatoryProperty(f"Missing mandatory property with ID '{defined_property_id}'")
+        _validate_property_value(defined_properties[supplied_property_id], supplied_property, i, process_error)
 
 
 def _validate_missing_mandatory_properties(
-    defined_properties: dict[str, dict],
-    supplied_properties: dict[str, dict],
-    errors: list[InitErrorDetails],
+    defined_properties: dict[str, dict], supplied_properties: dict[str, dict], process_error: ProcessErrorFunctionType
 ) -> None:
     """
     Validate that all mandatory properties have been supplied.
@@ -356,18 +274,16 @@ def _validate_missing_mandatory_properties(
     :param defined_properties: The defined properties stored as part of the catalogue category in the
                                database.
     :param supplied_properties: The supplied properties.
-    :param errors: List to append any found errors to (its mutable).
+    :param process_error: Function to process any errors that occur.
     """
     logger.info("Validating there are no missing mandatory properties")
     for defined_property_id, defined_property in defined_properties.items():
         if defined_property["mandatory"] and defined_property_id not in supplied_properties:
-            errors.append(
-                create_custom_validation_error_details(
-                    type="missing_mandatory_property",
-                    message=f"Missing mandatory property with ID '{defined_property_id}'",
-                    location=("properties",),
-                    input=supplied_properties,
-                )
+            process_error(
+                error_type="missing_mandatory_property",
+                error_message=f"Missing mandatory property with ID '{defined_property_id}'",
+                error_location=("properties",),
+                error_input=supplied_properties,
             )
 
 
@@ -397,18 +313,15 @@ def _merge_non_mandatory_properties(
 
 
 def create_custom_validation_error_details(
-    type: LiteralString,  # pylint:disable=redefined-builtin
-    message: LiteralString,
-    location: tuple,
-    input: Any,  # pylint:disable=redefined-builtin
+    error_type: LiteralString, error_message: LiteralString, error_location: tuple, error_input: Any
 ) -> InitErrorDetails:
     """
     Creates a Pydantic ValidationError with a custom message and returns its details.
 
-    :param type: String type identifier of the custom error.
-    :param message: Message to display in the error.
-    :param location: Location of the error expressed as a tuple.
-    :param input: Input that led to the error.
+    :param error_type: String type identifier of the custom error.
+    :param error_message: Message to display in the error.
+    :param error_location: Location of the error expressed as a tuple.
+    :param error_input: Input that led to the error.
     :return: Created ValidationError.
     """
-    return InitErrorDetails(type=PydanticCustomError(type, message), loc=location, input=input)
+    return InitErrorDetails(type=PydanticCustomError(error_type, error_message), loc=error_location, input=error_input)

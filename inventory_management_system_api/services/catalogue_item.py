@@ -313,20 +313,20 @@ class CatalogueItemService:
             if not catalogue_category:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="missing_record",
-                        message=f"No catalogue category found with ID '{catalogue_category_id}'",
-                        location=("catalogue_category_id",),
-                        input=catalogue_category_id,
+                        error_type="missing_record",
+                        error_message=f"No catalogue category found with ID '{catalogue_category_id}'",
+                        error_location=("catalogue_category_id",),
+                        error_input=catalogue_category_id,
                     )
                 )
             # If exists, ensure the category can take new catalogue items (i.e. is a leaf category)
             elif not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="non_leaf_catalogue_category",
-                        message="Cannot add catalogue item to a non-leaf catalogue category",
-                        location=("catalogue_category_id",),
-                        input=catalogue_category_id,
+                        error_type="non_leaf_catalogue_category",
+                        error_message="Cannot add catalogue item to a non-leaf catalogue category",
+                        error_location=("catalogue_category_id",),
+                        error_input=catalogue_category_id,
                     )
                 )
 
@@ -345,10 +345,10 @@ class CatalogueItemService:
                 if obsolete_replacement_catalogue_item is None:
                     errors.append(
                         utils.create_custom_validation_error_details(
-                            type="missing_record",
-                            message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
-                            location=("obsolete_replacement_catalogue_item_id",),
-                            input=obsolete_replacement_catalogue_item_id,
+                            error_type="missing_record",
+                            error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                            error_location=("obsolete_replacement_catalogue_item_id",),
+                            error_input=obsolete_replacement_catalogue_item_id,
                         )
                     )
 
@@ -364,10 +364,10 @@ class CatalogueItemService:
             if not manufacturer:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="missing_record",
-                        message=f"No manufacturer found with ID '{manufacturer_id}'",
-                        location=("manufacturer_id",),
-                        input=manufacturer_id,
+                        error_type="missing_record",
+                        error_message=f"No manufacturer found with ID '{manufacturer_id}'",
+                        error_location=("manufacturer_id",),
+                        error_input=manufacturer_id,
                     )
                 )
 
@@ -376,10 +376,10 @@ class CatalogueItemService:
             if self._catalogue_item_repository.is_duplicate_name(catalogue_item_data["name"]):
                 warnings.append(
                     utils.create_custom_validation_error_details(
-                        type="duplicate_record",
-                        message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
-                        location=("name",),
-                        input=catalogue_item_data["name"],
+                        error_type="duplicate_record",
+                        error_message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
+                        error_location=("name",),
+                        error_input=catalogue_item_data["name"],
                     )
                 )
 
@@ -399,7 +399,7 @@ class CatalogueItemService:
 
             # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
             if catalogue_category:
-                utils.validate_properties(catalogue_category.properties, property_schemas, errors)
+                utils.process_properties(catalogue_category.properties, property_schemas, errors)
         if warnings:
             warnings = ValidationError.from_exception_data(
                 title="Catalogue item validation error",
