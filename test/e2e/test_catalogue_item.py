@@ -662,6 +662,234 @@ class TestCreate(CreateDSL):
         self.check_post_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
 
 
+class BulkCreateDSL(CreateDSL):
+    """Base class for bulk create tests."""
+
+    _post_bulk_response_catalogue_item: Response
+
+    def post_bulk_catalogue_items(self, catalogue_items_data: list[dict]) -> Optional[list[str]]:
+        """
+        Posts bulk catalogue items with the given data.l.
+
+        :param catalogue_items_data: List of Dictionaries containing the basic catalogue item data as would be required
+                                      for a `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s
+                                      replaced by the `name` value in its properties as the IDs will be added
+                                      automatically.
+        :return: IDs of the created catalogue items (or `None` if not successful).
+        """
+        full_catalogue_items_data = []
+        for catalogue_item_data in catalogue_items_data:
+            # Replace any unit values with unit IDs
+            full_catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(catalogue_item_data)
+
+            # Insert mandatory IDs if they have been created
+            if self.catalogue_category_id:
+                full_catalogue_item_data["catalogue_category_id"] = self.catalogue_category_id
+            if self.manufacturer_id:
+                full_catalogue_item_data["manufacturer_id"] = self.manufacturer_id
+            full_catalogue_items_data.append(full_catalogue_item_data)
+
+        self._post_bulk_response_catalogue_item = self.test_client.post(
+            "/v1/catalogue-items/bulk", json=full_catalogue_items_data
+        )
+
+        return (
+            [catalogue_item["id"] for catalogue_item in self._post_bulk_response_catalogue_item.json()]
+            if self._post_bulk_response_catalogue_item.status_code == 201
+            else None
+        )
+
+    def check_post_bulk_catalogue_items_success(self, expected_catalogue_items_get_data: dict) -> None:
+        """
+        Checks that a prior call to `post_bulk_catalogue_items` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_items_get_data: Dictionary containing the expected catalogue items data returned as
+                                would be required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
+                                `manufacturer_id`) as they will be added automatically to check they are as expected.
+        """
+
+        assert self._post_bulk_response_catalogue_item.status_code == 201
+        assert self._post_bulk_response_catalogue_item.json() == [
+            self.add_ids_to_expected_catalogue_item_get_data(expected_catalogue_item_get_data)
+            for expected_catalogue_item_get_data in expected_catalogue_items_get_data
+        ]
+
+    def check_post_bulk_catalogue_items_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `post_bulk_catalogue_item` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._post_bulk_response_catalogue_item.status_code == status_code
+        assert self._post_bulk_response_catalogue_item.json()["detail"] == detail
+
+    def check_post_bulk_catalogue_items_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `post_bulk_catalogue_item` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._post_bulk_response_catalogue_item.status_code == status_code
+        assert self._post_bulk_response_catalogue_item.json()["detail"][0]["msg"] == message
+
+
+class TestBulkCreate(BulkCreateDSL):
+    """Tests for bulk creating catalogue items (As logic is reused from create, only specific errors caught at the
+    router are tested)."""
+
+    def test_bulk_create(self):
+        """Test bulk creating catalogue items."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items(
+            [CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES]
+        )
+
+        self.check_post_bulk_catalogue_items_success(
+            [CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY, CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES]
+        )
+
+    def test_bulk_create_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test bulk creating an obsolete catalogue item with a non-existent
+        `obsolete_replacement_catalogue_item_id`."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                    "obsolete_replacement_catalogue_item_id": str(ObjectId()),
+                }
+            ]
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
+        """Test bulk creating an obsolete catalogue item an invalid `obsolete_replacement_catalogue_item_id`."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                    "obsolete_replacement_catalogue_item_id": "invalid-id",
+                }
+            ]
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_mandatory_properties_given_none(self):
+        """Test bulk creating a catalogue item when mandatory properties are given a value of `None`."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                    "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}],
+                }
+            ]
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            422,
+            f"Mandatory property with ID '{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}' "
+            "cannot be None.",
+        )
+
+    def test_bulk_create_with_missing_mandatory_properties(self):
+        """Test bulk creating a catalogue item when missing mandatory properties."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+        self.post_bulk_catalogue_items([{**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []}])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            422,
+            "Missing mandatory property with ID "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+        )
+
+    def test_bulk_create_with_property_with_invalid_value_type(self):
+        """Test bulk creating a catalogue item with an invalid value type."""
+
+        self.post_catalogue_item_prerequisites_with_given_properties(
+            [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY]
+        )
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                    "properties": [
+                        {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42},
+                    ],
+                }
+            ],
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY['name']]}'. "
+            "Expected type: string.",
+        )
+
+    def test_bulk_create_in_non_leaf_catalogue_category(self):
+        """Test bulk creating a catalogue item within a non-leaf catalogue category."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            409, "Adding a catalogue item to a non-leaf catalogue category is not allowed"
+        )
+
+    def test_bulk_create_with_non_existent_catalogue_category_id(self):
+        """Test bulk creating a catalogue item with a non-existent catalogue category ID."""
+
+        self.catalogue_category_id = str(ObjectId())
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_catalogue_category_id(self):
+        """Test bulk creating a catalogue item with an invalid catalogue category ID."""
+
+        self.catalogue_category_id = "invalid-id"
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_non_existent_manufacturer_id(self):
+        """Test bulk creating a catalogue item with a non-existent manufacturer ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.manufacturer_id = str(ObjectId())
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_manufacturer_id(self):
+        """Test bulk creating a catalogue item with an invalid manufacturer ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.manufacturer_id = "invalid-id"
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 

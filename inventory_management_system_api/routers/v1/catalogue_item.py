@@ -86,24 +86,15 @@ def create_catalogue_item(
 )
 def bulk_create_catalogue_item(
     catalogue_items: list[CatalogueItemPostSchema], catalogue_item_service: CatalogueItemServiceDep
-):
+) -> list[CatalogueItemSchema]:
     logger.info("Bulk creating catalogue items")
     try:
-        catalogue_item_service.bulk_create(catalogue_items)
+        return catalogue_item_service.bulk_create(catalogue_items)
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except (MissingRecordError, InvalidObjectIdError) as exc:
-        if "catalogue category" in str(exc).lower():
-            message = "A specified catalogue category does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
-        if "manufacturer" in str(exc).lower():
-            message = "A specified manufacturer does not exist"
-            logger.exception(message)
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
-
-        message = "A specified replacement catalogue item does not exist"
+        message = "A specified entity does not exist"
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
     except NonLeafCatalogueCategoryError as exc:
@@ -122,7 +113,7 @@ def bulk_validate_create_catalogue_item(
         list[dict[str, Any]],
         Body(
             description="List of catalogue items data to validate",
-            example=[{"name": "Catalogue Item 1"}, {"name": "Catalogue Item 2"}],
+            examples=[[{"name": "Catalogue Item 1"}, {"name": "Catalogue Item 2"}]],
         ),
     ],
     catalogue_item_service: CatalogueItemServiceDep,

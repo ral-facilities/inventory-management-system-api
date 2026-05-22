@@ -384,6 +384,31 @@ class TestCreate(CreateDSL):
         )
 
 
+class TestBulkCreate(CatalogueItemServiceDSL):
+    """Tests for bulk creating catalogue items."""
+
+    def test_bulk_create(self):
+        """Test bulk create correctly creates a list of catalogue items."""
+        mock_session = MagicMock()
+        context_manager = MagicMock()
+        context_manager.__enter__.return_value = mock_session
+        mock_catalogue_items = [MagicMock(), MagicMock()]
+        mock_created_item_outs = [MagicMock() for _ in range(0, len(mock_catalogue_items))]
+        self.catalogue_item_service.create = MagicMock(side_effect=mock_created_item_outs)
+
+        with patch(
+            "inventory_management_system_api.services.catalogue_item.start_session_transaction",
+            return_value=context_manager,
+        ) as mock_start_session_transaction:
+            created_catalogue_items = self.catalogue_item_service.bulk_create(mock_catalogue_items)
+
+        mock_start_session_transaction.assert_called_once_with("creating bulk catalogue items")
+        assert self.catalogue_item_service.create.call_args_list == [
+            call(catalogue_item, session=mock_session) for catalogue_item in mock_catalogue_items
+        ]
+        assert created_catalogue_items == mock_created_item_outs
+
+
 class GetDSL(CatalogueItemServiceDSL):
     """Base class for `get` tests."""
 

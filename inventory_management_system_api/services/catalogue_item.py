@@ -116,7 +116,7 @@ class CatalogueItemService:
             session=session,
         )
 
-    def bulk_create(self, catalogue_items: list[CatalogueItemPostSchema]) -> None:
+    def bulk_create(self, catalogue_items: list[CatalogueItemPostSchema]) -> list[CatalogueItemOut]:
         """
         Creates catalogue items in bulk.
 
@@ -125,10 +125,13 @@ class CatalogueItemService:
         `verify` should be used instead.
 
         :param catalogue_items: The catalogue items to be created.
+        :return: List of created catalogue items.
         """
+        created_catalogue_items = []
         with start_session_transaction("creating bulk catalogue items") as session:
             for catalogue_item in catalogue_items:
-                self.create(catalogue_item, session)
+                created_catalogue_items.append(self.create(catalogue_item, session=session))
+        return created_catalogue_items
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """
