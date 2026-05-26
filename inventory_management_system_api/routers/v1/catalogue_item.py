@@ -12,6 +12,7 @@ import logging
 from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
+from pydantic import BeforeValidator
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
@@ -79,13 +80,30 @@ def create_catalogue_item(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
 
 
+def check_bulk_max(value):
+    """
+    Before validator used for ensuring bulk endpoints dont take too many entities at once according to the config.
+
+    Use a before validator as opposed to other methods so can be done before attempting to parse anything into a
+    pydantic schema, increasing processing time.
+
+    :param value: Input value (most likely a list).
+    """
+    if isinstance(value, list) and len(value) > config.bulk.max_catalogue_items:
+        raise ValueError(
+            f"Too many entities provided in the list! The maximum possible number is {config.bulk.max_catalogue_items}."
+        )
+    return value
+
+
 @router.post(
     path="/bulk",
     summary="Bulk create new catalogue items",
     status_code=status.HTTP_201_CREATED,
 )
 def bulk_create_catalogue_item(
-    catalogue_items: list[CatalogueItemPostSchema], catalogue_item_service: CatalogueItemServiceDep
+    catalogue_items: Annotated[list[CatalogueItemPostSchema], BeforeValidator(check_bulk_max)],
+    catalogue_item_service: CatalogueItemServiceDep,
 ) -> list[CatalogueItemSchema]:
     logger.info("Bulk creating catalogue items")
     try:
@@ -111,6 +129,7 @@ def bulk_create_catalogue_item(
 def bulk_validate_create_catalogue_item(
     catalogue_items: Annotated[
         list[dict[str, Any]],
+        BeforeValidator(check_bulk_max),
         Body(
             description="List of catalogue items data to validate",
             examples=[[{"name": "Catalogue Item 1"}, {"name": "Catalogue Item 2"}]],
