@@ -98,6 +98,7 @@ class BulkConfig(BaseModel):
 
     max_catalogue_items: int
 
+
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
