@@ -27,11 +27,12 @@ class ManufacturerService:
         """
         self._manufacturer_repository = manufacturer_repository
 
-    def create(self, manufacturer: ManufacturerPostSchema) -> ManufacturerOut:
+    def create(self, manufacturer: ManufacturerPostSchema, username: str) -> ManufacturerOut:
         """
         Create a new manufacturer.
 
         :param manufacturer: The manufacturer to be created.
+        :param username: The user submitting this request.
         :return: The created manufacturer.
         """
         code = utils.generate_code(manufacturer.name, "manufacturer")
@@ -42,6 +43,7 @@ class ManufacturerService:
                 url=manufacturer.url,
                 address=manufacturer.address,
                 telephone=manufacturer.telephone,
+                modified_by=username,
             )
         )
 
@@ -62,11 +64,12 @@ class ManufacturerService:
         """
         return self._manufacturer_repository.list()
 
-    def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema) -> ManufacturerOut:
+    def update(self, manufacturer_id: str, manufacturer: ManufacturerPatchSchema, username: str) -> ManufacturerOut:
         """
         Update a manufacturer by its ID.
 
         :params: manufacturer_id: The ID of the manufacturer to be updated.
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the manufacturer with the given ID does not exist.
         :return: The updated manufacturer.
         """
@@ -80,7 +83,11 @@ class ManufacturerService:
             update_data["code"] = utils.generate_code(manufacturer.name, "manufacturer")
 
         stored_manufacturer = stored_manufacturer.model_copy(
-            update={**update_data, "address": stored_manufacturer.address.model_copy(update=update_data.get("address"))}
+            update={
+                **update_data,
+                "address": stored_manufacturer.address.model_copy(update=update_data.get("address")),
+                "modified_by": username,
+            }
         )
 
         return self._manufacturer_repository.update(manufacturer_id, ManufacturerIn(**stored_manufacturer.model_dump()))

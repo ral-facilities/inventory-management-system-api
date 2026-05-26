@@ -24,15 +24,16 @@ class UnitService:
         """
         self._unit_repository = unit_repository
 
-    def create(self, unit: UnitPostSchema) -> UnitOut:
+    def create(self, unit: UnitPostSchema, username: str) -> UnitOut:
         """
         Create a new Unit.
 
         :param unit: The unit to be created.
+        :param username: The user submitting this request.
         :return: The created unit.
         """
         code = utils.generate_code(unit.value, "unit")
-        return self._unit_repository.create(UnitIn(**unit.model_dump(), code=code))
+        return self._unit_repository.create(UnitIn(**unit.model_dump(), code=code, modified_by=username))
 
     def get(self, unit_id: str) -> Optional[UnitOut]:
         """
