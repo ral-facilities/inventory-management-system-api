@@ -305,15 +305,14 @@ class CatalogueItemService:
             errors.extend(exc.errors())
 
         # Check the catalogue category exists (if defined)
-        catalogue_category = None
-        if "catalogue_category_id" in catalogue_item_data:
-            catalogue_category_id = catalogue_item_data["catalogue_category_id"]
+        catalogue_category_id = catalogue_item_data.get("catalogue_category_id")
+        if catalogue_category_id:
             try:
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             except InvalidObjectIdError:
                 # Ignore invalid object ID, treat as missing
                 pass
-            if not catalogue_category:
+            if catalogue_category is None:
                 errors.append(
                     utils.create_custom_validation_error_details(
                         error_type="missing_record",
@@ -334,30 +333,29 @@ class CatalogueItemService:
                 )
 
         # If defined, check obsolete replacement item exists
-        if "obsolete_replacement_catalogue_item_id" in catalogue_item_data:
-            obsolete_replacement_catalogue_item_id = catalogue_item_data["obsolete_replacement_catalogue_item_id"]
-            if obsolete_replacement_catalogue_item_id is not None:
-                obsolete_replacement_catalogue_item = None
-                try:
-                    obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
-                        obsolete_replacement_catalogue_item_id
+        obsolete_replacement_catalogue_item_id = catalogue_item_data.get("obsolete_replacement_catalogue_item_id")
+        if obsolete_replacement_catalogue_item_id is not None:
+            obsolete_replacement_catalogue_item = None
+            try:
+                obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
+                    obsolete_replacement_catalogue_item_id
+                )
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if obsolete_replacement_catalogue_item is None:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        error_type="missing_record",
+                        error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                        error_location=("obsolete_replacement_catalogue_item_id",),
+                        error_input=obsolete_replacement_catalogue_item_id,
                     )
-                except InvalidObjectIdError:
-                    # Ignore invalid object ID, treat as missing
-                    pass
-                if obsolete_replacement_catalogue_item is None:
-                    errors.append(
-                        utils.create_custom_validation_error_details(
-                            error_type="missing_record",
-                            error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
-                            error_location=("obsolete_replacement_catalogue_item_id",),
-                            error_input=obsolete_replacement_catalogue_item_id,
-                        )
-                    )
+                )
 
         # Check the manufacturer exists (if defined)
-        if "manufacturer_id" in catalogue_item_data:
-            manufacturer_id = catalogue_item_data["manufacturer_id"]
+        manufacturer_id = catalogue_item_data.get("manufacturer_id")
+        if manufacturer_id:
             manufacturer = None
             try:
                 manufacturer = self._manufacturer_repository.get(manufacturer_id)
