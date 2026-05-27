@@ -10,6 +10,11 @@ from pydantic import ValidationError
 from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import (
+    ERROR_TYPE_DUPLICATE_RECORD,
+    ERROR_TYPE_MISSING_RECORD,
+    ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY,
+)
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
@@ -307,6 +312,7 @@ class CatalogueItemService:
         # Check the catalogue category exists (if defined)
         catalogue_category_id = catalogue_item_data.get("catalogue_category_id")
         if catalogue_category_id:
+            catalogue_category = None
             try:
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             except InvalidObjectIdError:
@@ -315,7 +321,7 @@ class CatalogueItemService:
             if catalogue_category is None:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="missing_record",
+                        error_type=ERROR_TYPE_MISSING_RECORD,
                         error_message=f"No catalogue category found with ID '{catalogue_category_id}'",
                         error_location=("catalogue_category_id",),
                         error_input=catalogue_category_id,
@@ -325,7 +331,7 @@ class CatalogueItemService:
             elif not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="non_leaf_catalogue_category",
+                        error_type=ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY,
                         error_message="Cannot add catalogue item to a non-leaf catalogue category",
                         error_location=("catalogue_category_id",),
                         error_input=catalogue_category_id,
@@ -346,7 +352,7 @@ class CatalogueItemService:
             if obsolete_replacement_catalogue_item is None:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="missing_record",
+                        error_type=ERROR_TYPE_MISSING_RECORD,
                         error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
                         error_location=("obsolete_replacement_catalogue_item_id",),
                         error_input=obsolete_replacement_catalogue_item_id,
@@ -365,7 +371,7 @@ class CatalogueItemService:
             if not manufacturer:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="missing_record",
+                        error_type=ERROR_TYPE_MISSING_RECORD,
                         error_message=f"No manufacturer found with ID '{manufacturer_id}'",
                         error_location=("manufacturer_id",),
                         error_input=manufacturer_id,
@@ -377,7 +383,7 @@ class CatalogueItemService:
             if self._catalogue_item_repository.is_duplicate_name(catalogue_item_data["name"]):
                 warnings.append(
                     utils.create_custom_validation_error_details(
-                        error_type="duplicate_record",
+                        error_type=ERROR_TYPE_DUPLICATE_RECORD,
                         error_message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
                         error_location=("name",),
                         error_input=catalogue_item_data["name"],

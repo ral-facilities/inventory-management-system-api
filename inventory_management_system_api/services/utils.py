@@ -9,6 +9,10 @@ from typing import Any, Callable, Dict, List, LiteralString, Optional, Type, Uni
 
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
+from inventory_management_system_api.core.consts import (
+    ERROR_TYPE_INVALID_PROPERTY_TYPE,
+    ERROR_TYPE_MISSING_MANDATORY_PROPERTY,
+)
 from inventory_management_system_api.core.exceptions import (
     DuplicateCatalogueCategoryPropertyNameError,
     InvalidPropertyTypeError,
@@ -22,10 +26,9 @@ logger = logging.getLogger()
 
 ProcessErrorFunctionType = Callable[[str, str, tuple, Any], None]
 
-
 ERROR_MAP: dict[str, Type[BaseException]] = {
-    "invalid_property_type": InvalidPropertyTypeError,
-    "missing_mandatory_property": MissingMandatoryProperty,
+    ERROR_TYPE_INVALID_PROPERTY_TYPE: InvalidPropertyTypeError,
+    ERROR_TYPE_MISSING_MANDATORY_PROPERTY: MissingMandatoryProperty,
 }
 
 
@@ -212,7 +215,7 @@ def _validate_property_value(
     if supplied_property_value is None:
         if defined_property_mandatory:
             process_error(
-                error_type="invalid_property_type",
+                error_type=ERROR_TYPE_INVALID_PROPERTY_TYPE,
                 error_message=f"Mandatory property with ID '{supplied_property_id}' cannot be None.",
                 error_location=("properties", index, "value"),
                 error_input=supplied_property_value,
@@ -222,7 +225,7 @@ def _validate_property_value(
             defined_property_type, supplied_property_value
         ):
             process_error(
-                error_type="invalid_property_type",
+                error_type=ERROR_TYPE_INVALID_PROPERTY_TYPE,
                 error_message=f"Invalid value type for property with ID '{supplied_property_id}'. Expected type: "
                 f"{defined_property_type}.",
                 error_location=("properties", index, "value"),
@@ -239,7 +242,7 @@ def _validate_property_value(
             defined_property["mandatory"] or supplied_property_value is not None
         ):
             process_error(
-                error_type="invalid_property_type",
+                error_type=ERROR_TYPE_INVALID_PROPERTY_TYPE,
                 error_message=f"Invalid value for property with ID '{supplied_property_id}'. Expected one of "
                 f"{', '.join([str(value) for value in values])}.",
                 error_location=("properties", index, "value"),
@@ -280,7 +283,7 @@ def _validate_missing_mandatory_properties(
     for defined_property_id, defined_property in defined_properties.items():
         if defined_property["mandatory"] and defined_property_id not in supplied_properties:
             process_error(
-                error_type="missing_mandatory_property",
+                error_type=ERROR_TYPE_MISSING_MANDATORY_PROPERTY,
                 error_message=f"Missing mandatory property with ID '{defined_property_id}'",
                 error_location=("properties",),
                 error_input=supplied_properties,
