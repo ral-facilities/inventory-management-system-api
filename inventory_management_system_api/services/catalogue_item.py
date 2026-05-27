@@ -10,6 +10,11 @@ from pydantic import ValidationError
 from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import (
+    ERROR_TYPE_DUPLICATE_RECORD,
+    ERROR_TYPE_MISSING_RECORD,
+    ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY,
+)
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
@@ -305,18 +310,18 @@ class CatalogueItemService:
             errors.extend(exc.errors())
 
         # Check the catalogue category exists (if defined)
-        catalogue_category = None
-        if "catalogue_category_id" in catalogue_item_data:
-            catalogue_category_id = catalogue_item_data["catalogue_category_id"]
+        catalogue_category_id = catalogue_item_data.get("catalogue_category_id")
+        if catalogue_category_id:
+            catalogue_category = None
             try:
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             except InvalidObjectIdError:
                 # Ignore invalid object ID, treat as missing
                 pass
-            if not catalogue_category:
+            if catalogue_category is None:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="missing_record",
+                        error_type=ERROR_TYPE_MISSING_RECORD,
                         error_message=f"No catalogue category found with ID '{catalogue_category_id}'",
                         error_location=("catalogue_category_id",),
                         error_input=catalogue_category_id,
@@ -326,7 +331,7 @@ class CatalogueItemService:
             elif not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="non_leaf_catalogue_category",
+                        error_type=ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY,
                         error_message="Cannot add catalogue item to a non-leaf catalogue category",
                         error_location=("catalogue_category_id",),
                         error_input=catalogue_category_id,
@@ -334,30 +339,29 @@ class CatalogueItemService:
                 )
 
         # If defined, check obsolete replacement item exists
-        if "obsolete_replacement_catalogue_item_id" in catalogue_item_data:
-            obsolete_replacement_catalogue_item_id = catalogue_item_data["obsolete_replacement_catalogue_item_id"]
-            if obsolete_replacement_catalogue_item_id is not None:
-                obsolete_replacement_catalogue_item = None
-                try:
-                    obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
-                        obsolete_replacement_catalogue_item_id
+        obsolete_replacement_catalogue_item_id = catalogue_item_data.get("obsolete_replacement_catalogue_item_id")
+        if obsolete_replacement_catalogue_item_id is not None:
+            obsolete_replacement_catalogue_item = None
+            try:
+                obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
+                    obsolete_replacement_catalogue_item_id
+                )
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if obsolete_replacement_catalogue_item is None:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                        error_location=("obsolete_replacement_catalogue_item_id",),
+                        error_input=obsolete_replacement_catalogue_item_id,
                     )
-                except InvalidObjectIdError:
-                    # Ignore invalid object ID, treat as missing
-                    pass
-                if obsolete_replacement_catalogue_item is None:
-                    errors.append(
-                        utils.create_custom_validation_error_details(
-                            error_type="missing_record",
-                            error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
-                            error_location=("obsolete_replacement_catalogue_item_id",),
-                            error_input=obsolete_replacement_catalogue_item_id,
-                        )
-                    )
+                )
 
         # Check the manufacturer exists (if defined)
-        if "manufacturer_id" in catalogue_item_data:
-            manufacturer_id = catalogue_item_data["manufacturer_id"]
+        manufacturer_id = catalogue_item_data.get("manufacturer_id")
+        if manufacturer_id:
             manufacturer = None
             try:
                 manufacturer = self._manufacturer_repository.get(manufacturer_id)
@@ -367,7 +371,7 @@ class CatalogueItemService:
             if not manufacturer:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        error_type="missing_record",
+                        error_type=ERROR_TYPE_MISSING_RECORD,
                         error_message=f"No manufacturer found with ID '{manufacturer_id}'",
                         error_location=("manufacturer_id",),
                         error_input=manufacturer_id,
@@ -379,7 +383,7 @@ class CatalogueItemService:
             if self._catalogue_item_repository.is_duplicate_name(catalogue_item_data["name"]):
                 warnings.append(
                     utils.create_custom_validation_error_details(
-                        error_type="duplicate_record",
+                        error_type=ERROR_TYPE_DUPLICATE_RECORD,
                         error_message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
                         error_location=("name",),
                         error_input=catalogue_item_data["name"],
