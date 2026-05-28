@@ -5,7 +5,7 @@ Collection of some utility functions used by services
 import logging
 import re
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, LiteralString, Optional, Type, Union
+from typing import Any, Callable, Dict, List, LiteralString, Optional, Type, Union, cast
 
 from pydantic_core import InitErrorDetails, PydanticCustomError
 
@@ -24,7 +24,7 @@ from inventory_management_system_api.schemas.catalogue_item import PropertyPostS
 
 logger = logging.getLogger()
 
-ProcessErrorFunctionType = Callable[[str, str, tuple, Any], None]
+ProcessErrorFunctionType = Callable[[LiteralString, str, tuple, Any], None]
 
 ERROR_MAP: dict[str, Type[BaseException]] = {
     ERROR_TYPE_INVALID_PROPERTY_TYPE: InvalidPropertyTypeError,
@@ -33,18 +33,16 @@ ERROR_MAP: dict[str, Type[BaseException]] = {
 
 
 def process_and_raise_error(
-    error_type: LiteralString, error_message: LiteralString, error_location: tuple, error_input: Any
-):
+    error_type: LiteralString, error_message: str, error_location: tuple, error_input: Any
+) -> None:
     """Processes an error by raising it."""
     raise ERROR_MAP[error_type](error_message)
 
 
-def make_process_and_add_error(errors: list[InitErrorDetails]):
+def make_process_and_add_error(errors: list[InitErrorDetails]) -> ProcessErrorFunctionType:
     """Creates a function that processes errors by adding them to a given list."""
 
-    def process_and_add_error(
-        error_type: LiteralString, error_message: LiteralString, error_location: tuple, error_input: Any
-    ):
+    def process_and_add_error(error_type: LiteralString, error_message: str, error_location: tuple, error_input: Any):
         """Processes an error by adding it to a list."""
         errors.append(
             create_custom_validation_error_details(
@@ -316,7 +314,7 @@ def _merge_non_mandatory_properties(
 
 
 def create_custom_validation_error_details(
-    error_type: LiteralString, error_message: LiteralString, error_location: tuple, error_input: Any
+    error_type: LiteralString, error_message: str, error_location: tuple, error_input: Any
 ) -> InitErrorDetails:
     """
     Creates a Pydantic ValidationError with a custom message and returns its details.
@@ -327,4 +325,8 @@ def create_custom_validation_error_details(
     :param error_input: Input that led to the error.
     :return: Created ValidationError.
     """
-    return InitErrorDetails(type=PydanticCustomError(error_type, error_message), loc=error_location, input=error_input)
+    # Cast message to literal string as this avoids type errors and matches pydantic's type, but most error messages
+    # are fstrings which we want to be able to use
+    return InitErrorDetails(
+        type=PydanticCustomError(error_type, cast(LiteralString, error_message)), loc=error_location, input=error_input
+    )

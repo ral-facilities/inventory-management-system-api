@@ -311,8 +311,8 @@ class CatalogueItemService:
 
         # Check the catalogue category exists (if defined)
         catalogue_category_id = catalogue_item_data.get("catalogue_category_id")
+        catalogue_category = None
         if catalogue_category_id:
-            catalogue_category = None
             try:
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             except InvalidObjectIdError:
@@ -421,7 +421,7 @@ class CatalogueItemService:
 
     # pylint:enable=too-many-statements
 
-    def bulk_validate_create(self, catalogue_items_data: dict[str, Any]) -> BulkValidationResultSchema:
+    def bulk_validate_create(self, catalogue_items_data: List[dict[str, Any]]) -> BulkValidationResultSchema:
         """
         Performs validation of bulk catalogue item creation data returning any errors.
 
