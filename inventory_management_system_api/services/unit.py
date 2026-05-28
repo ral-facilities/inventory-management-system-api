@@ -2,12 +2,13 @@
 Module for providing a service for managing Units using the `UnitRepo` repository
 """
 
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
+
 from fastapi import Depends
+
 from inventory_management_system_api.models.unit import UnitIn, UnitOut
 from inventory_management_system_api.repositories.unit import UnitRepo
 from inventory_management_system_api.schemas.unit import UnitPostSchema
-
 from inventory_management_system_api.services import utils
 
 
@@ -43,7 +44,7 @@ class UnitService:
         """
         return self._unit_repository.get(unit_id)
 
-    def list(self) -> list[UnitOut]:
+    def list(self) -> List[UnitOut]:
         """
         Retrieve a list of all Units
 

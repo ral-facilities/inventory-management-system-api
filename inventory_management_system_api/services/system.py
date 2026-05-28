@@ -3,7 +3,7 @@ Module for providing a service for managing systems using the `SystemRepo` repos
 """
 
 from contextlib import contextmanager
-from typing import Annotated, Generator, Optional
+from typing import Annotated, Generator, List, Optional
 
 from fastapi import Depends
 from pymongo.client_session import ClientSession
@@ -92,7 +92,7 @@ class SystemService:
         """
         return self._system_repository.get_breadcrumbs(system_id)
 
-    def list(self, parent_id: Optional[str]) -> list[SystemOut]:
+    def list(self, parent_id: Optional[str]) -> List[SystemOut]:
         """
         Retrieve systems based on the provided filters.
 

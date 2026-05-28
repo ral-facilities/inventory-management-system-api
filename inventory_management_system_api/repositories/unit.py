@@ -3,7 +3,7 @@ Module for providing a repository for managing Units in a MongoDB database
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -52,7 +52,7 @@ class UnitRepo:
 
         return self.get(str(result.inserted_id), session=session)
 
-    def list(self, session: Optional[ClientSession] = None) -> list[UnitOut]:
+    def list(self, session: Optional[ClientSession] = None) -> List[UnitOut]:
         """
         Retrieve Units from a MongoDB database
 

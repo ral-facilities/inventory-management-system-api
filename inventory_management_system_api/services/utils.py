@@ -39,7 +39,7 @@ def process_and_raise_error(
     raise ERROR_MAP[error_type](error_message)
 
 
-def make_process_and_add_error(errors: list[InitErrorDetails]) -> ProcessErrorFunctionType:
+def make_process_and_add_error(errors: List[InitErrorDetails]) -> ProcessErrorFunctionType:
     """Creates a function that processes errors by adding them to a given list."""
 
     def process_and_add_error(error_type: LiteralString, error_message: str, error_location: tuple, error_input: Any):
@@ -74,7 +74,7 @@ def generate_code(name: str, entity_type: str) -> str:
 
 
 def check_duplicate_property_names(
-    properties: list[CatalogueCategoryPostPropertySchema | CatalogueCategoryPropertyOut],
+    properties: List[CatalogueCategoryPostPropertySchema | CatalogueCategoryPropertyOut],
 ) -> None:
     """
     Go through a list of properties to check for any duplicate names during creation of a catalogue
@@ -95,7 +95,7 @@ def check_duplicate_property_names(
 def process_properties(
     defined_properties: List[CatalogueCategoryPropertyOut],
     supplied_properties: List[PropertyPostSchema],
-    errors: Optional[list[InitErrorDetails]] = None,
+    errors: Optional[List[InitErrorDetails]] = None,
 ) -> List[Dict]:
     """
     Process and validate supplied properties based on the defined properties.
