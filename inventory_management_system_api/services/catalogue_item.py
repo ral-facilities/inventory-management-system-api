@@ -121,7 +121,7 @@ class CatalogueItemService:
             session=session,
         )
 
-    def bulk_create(self, catalogue_items: list[CatalogueItemPostSchema]) -> list[CatalogueItemOut]:
+    def bulk_create(self, catalogue_items: List[CatalogueItemPostSchema]) -> List[CatalogueItemOut]:
         """
         Creates catalogue items in bulk.
 

@@ -3,7 +3,7 @@ Module for providing a repository for managing systems in a MongoDB database.
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -94,7 +94,7 @@ class SystemRepo:
             collection_name="systems",
         )
 
-    def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> list[SystemOut]:
+    def list(self, parent_id: Optional[str], session: Optional[ClientSession] = None) -> List[SystemOut]:
         """
         Retrieve systems from a MongoDB database based on the provided filters.
 
