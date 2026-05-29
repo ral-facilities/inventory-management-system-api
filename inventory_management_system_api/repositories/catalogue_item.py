@@ -279,11 +279,7 @@ class CatalogueItemRepo:
             session=session,
         )
 
-    def is_duplicate_name(
-        self,
-        name: str,
-        session: Optional[ClientSession] = None,
-    ) -> bool:
+    def is_duplicate_name(self, name: str, session: Optional[ClientSession] = None) -> bool:
         """
         Check if a catalogue item with the same name already exists.
 
