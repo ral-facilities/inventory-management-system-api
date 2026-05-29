@@ -312,7 +312,7 @@ class CatalogueItemService:
         # Check the catalogue category exists (if defined)
         catalogue_category_id = catalogue_item_data.get("catalogue_category_id")
         catalogue_category = None
-        if catalogue_category_id:
+        if catalogue_category_id is not None:
             try:
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             except InvalidObjectIdError:
@@ -361,7 +361,7 @@ class CatalogueItemService:
 
         # Check the manufacturer exists (if defined)
         manufacturer_id = catalogue_item_data.get("manufacturer_id")
-        if manufacturer_id:
+        if manufacturer_id is not None:
             manufacturer = None
             try:
                 manufacturer = self._manufacturer_repository.get(manufacturer_id)

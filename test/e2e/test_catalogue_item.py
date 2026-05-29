@@ -699,7 +699,7 @@ class BulkCreateDSL(CreateDSL):
             else None
         )
 
-    def check_post_bulk_catalogue_items_success(self, expected_catalogue_items_get_data: dict) -> None:
+    def check_post_bulk_catalogue_items_success(self, expected_catalogue_items_get_data: list[dict]) -> None:
         """
         Checks that a prior call to `post_bulk_catalogue_items` gave a successful response with the expected data
         returned.
