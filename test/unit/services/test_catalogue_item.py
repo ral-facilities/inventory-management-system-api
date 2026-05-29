@@ -25,6 +25,7 @@ from test.mock_data import (
     CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     MANUFACTURER_IN_DATA_A,
     MANUFACTURER_OUT_DATA_A,
+    PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
@@ -1282,8 +1283,8 @@ class TestDelete(DeleteDSL):
         )
 
 
-class ValidateDSL(CatalogueItemServiceDSL):
-    """Base class for `validate` tests."""
+class ValidateCreateDSL(CatalogueItemServiceDSL):
+    """Base class for `validate_create` tests."""
 
     _catalogue_category_out: Optional[CatalogueCategoryOut]
     _catalogue_item_data: dict
@@ -1405,7 +1406,7 @@ class ValidateDSL(CatalogueItemServiceDSL):
         )
 
 
-class TestValidateCreate(ValidateDSL):
+class TestValidateCreate(ValidateCreateDSL):
     """Tests for validating catalogue item data for creation."""
 
     def test_validate_create_with_all_properties(self):
@@ -1457,8 +1458,14 @@ class TestValidateCreate(ValidateDSL):
 
         catalogue_item_data = {
             **{"name": 42, "days_to_replace": False},
-            "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
-            "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            "catalogue_category_id": False,
+            "manufacturer_id": 26,
+            "properties": [
+                # Avoid mandatory property error - not trying to test here
+                PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+                # ID gets added based on name, so use unknown so ID is missing
+                {"name": "unknown"},
+            ],
         }
         self.mock_validate_create(
             catalogue_item_data,
@@ -1469,18 +1476,27 @@ class TestValidateCreate(ValidateDSL):
         self.check_validate_create_success(
             expected_warnings=[],
             expected_errors=[
+                ValidationErrorSchema(
+                    type="string_type",
+                    loc=["catalogue_category_id"],
+                    msg="Input should be a valid string",
+                    input=False,
+                ),
+                ValidationErrorSchema(
+                    type="string_type", loc=["manufacturer_id"], msg="Input should be a valid string", input=26
+                ),
                 ValidationErrorSchema(type="string_type", loc=["name"], msg="Input should be a valid string", input=42),
                 ValidationErrorSchema(
-                    type="missing",
-                    loc=["cost_gbp"],
-                    msg="Field required",
-                    input=catalogue_item_data,
+                    type="missing", loc=["cost_gbp"], msg="Field required", input=self._catalogue_item_data
+                ),
+                ValidationErrorSchema(
+                    type="missing", loc=["is_obsolete"], msg="Field required", input=self._catalogue_item_data
                 ),
                 ValidationErrorSchema(
                     type="missing",
-                    loc=["is_obsolete"],
+                    loc=["properties", 1, "id"],
                     msg="Field required",
-                    input=catalogue_item_data,
+                    input={"name": "unknown"},
                 ),
             ],
         )
