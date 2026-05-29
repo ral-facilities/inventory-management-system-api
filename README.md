@@ -221,7 +221,7 @@ Ensure that Python & uv is installed on your machine before proceeding.
 1. Install the required dependencies and create a virtual environment with
 
    ```bash
-   uv sync --dev
+   uv sync
    ```
 
 2. Start the application
@@ -258,7 +258,7 @@ Ensure that Python & uv is installed on your machine before proceeding.
 To setup a local virtual environment with all the dependencies run the following in a clone of this repo
 
 ```bash
-uv sync --dev
+uv sync
 ```
 
 This will create a virtual environment for the required python version and install all of the dev dependencies into it.
@@ -268,7 +268,7 @@ This will create a virtual environment for the required python version and insta
 Where `uv run` is used below you can also activate the venv e.g. using `source .venv/bin/activate` and then omit it in
 all further commands, it is just a shortcut for when the virtual environment is not active in the current shell.
 
-- Use `uv sync --dev` whenever dependencies change as a result of a pull/merge to update your local environment to use.
+- Use `uv sync` whenever dependencies change as a result of a pull/merge to update your local environment to use.
 - Use `uv run pylint inventory_management_system_api test` to manually run the linter and find any issues.
 - Use `uv run black --line-length 120 inventory_management_system_api test` to manually run the formatter and
   autoformat any changes.

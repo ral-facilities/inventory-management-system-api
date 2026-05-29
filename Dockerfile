@@ -12,8 +12,6 @@ ENV UV_LINK_MODE=copy
 ENV UV_NO_MANAGED_PYTHON=1
 # Disable Python downloads so that the system interpreter is used across images
 ENV UV_PYTHON_DOWNLOADS=0
-# Add timezone configuration - https://github.com/regebro/tzlocal/issues/70
-ENV TZ=UTC
 
 WORKDIR /app
 
