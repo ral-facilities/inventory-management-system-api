@@ -109,7 +109,6 @@ def process_properties(
                    raised instead to fail fast.
     :return: A list of processed and validated supplied properties.
     """
-
     if errors is None:
         process_error = process_and_raise_error
     else:

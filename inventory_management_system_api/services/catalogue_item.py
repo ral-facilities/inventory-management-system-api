@@ -391,22 +391,23 @@ class CatalogueItemService:
                 )
 
         # Now validate any properties
-        if "properties" in catalogue_item_data:
-            # NOTE: Basic schema validation of properties has already occurred at this point from using
-            #       CatalogueItemPostSchema above, we dont want to capture those errors again.
-            #       While we cant validate those properties that dont pass the basic checks, we can
-            #       at least attempt to perform additional validation on those that do.
-            property_schemas = []
+        supplied_properties = catalogue_item_data["properties"] if "properties" in catalogue_item_data else []
+        # NOTE: Basic schema validation of properties has already occurred at this point from using
+        #       CatalogueItemPostSchema above, we dont want to capture those errors again.
+        #       While we cant validate those properties that dont pass the basic checks, we can
+        #       at least attempt to perform additional validation on those that do.
+        property_schemas = []
 
-            for property_data in catalogue_item_data["properties"]:
-                try:
-                    property_schemas.append(PropertyPostSchema(**property_data))
-                except ValidationError:
-                    pass
+        for supplied_property in supplied_properties:
+            try:
+                property_schemas.append(PropertyPostSchema(**supplied_property))
+            except ValidationError:
+                pass
 
-            # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
-            if catalogue_category:
-                utils.process_properties(catalogue_category.properties, property_schemas, errors)
+        # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
+        if catalogue_category:
+            utils.process_properties(catalogue_category.properties, property_schemas, errors)
+
         if warnings:
             warnings = ValidationError.from_exception_data(
                 title="Catalogue item validation error",

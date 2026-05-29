@@ -462,12 +462,26 @@ class TestCreate(CreateDSL):
             "cannot be None.",
         )
 
-    def test_create_with_missing_mandatory_properties(self):
-        """Test creating a catalogue item when missing mandatory properties."""
+    def test_create_with_missing_mandatory_properties_when_properties_field_defined(self):
+        """Test creating a catalogue item with missing mandatory properties when the properties field is defined."""
 
         self.post_catalogue_item_and_prerequisites_with_properties(
             {**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []}
         )
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            "Missing mandatory property with ID "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+        )
+
+    def test_create_with_missing_mandatory_properties_when_properties_field_undefined(self):
+        """Test creating a catalogue item when missing mandatory properties when the properties field
+        is not defined at all."""
+
+        catalogue_item_data = copy.deepcopy(CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
+        del catalogue_item_data["properties"]
+        self.post_catalogue_item_and_prerequisites_with_properties(catalogue_item_data)
 
         self.check_post_catalogue_item_failed_with_detail(
             422,
@@ -2053,6 +2067,8 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
             "cost_gpb": False,
             # Optional property, invalid type
             "notes": 12,
+            # Custom properties
+            "properties": [{}, {"id": 42, "value": "test"}],
         }
         self.validate_create_catalogue_item(catalogue_item_data)
 
@@ -2061,57 +2077,55 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
             expected_errors=[
                 {
                     "input": catalogue_item_data,
-                    "location": [
-                        "catalogue_category_id",
-                    ],
+                    "location": ["catalogue_category_id"],
                     "message": "Field required",
                     "type": "missing",
                 },
                 {
                     "input": catalogue_item_data,
-                    "location": [
-                        "manufacturer_id",
-                    ],
+                    "location": ["manufacturer_id"],
                     "message": "Field required",
                     "type": "missing",
                 },
                 {
                     "input": catalogue_item_data["name"],
-                    "location": [
-                        "name",
-                    ],
+                    "location": ["name"],
                     "message": "Input should be a valid string",
                     "type": "string_type",
                 },
                 {
                     "input": catalogue_item_data,
-                    "location": [
-                        "cost_gbp",
-                    ],
+                    "location": ["cost_gbp"],
                     "message": "Field required",
                     "type": "missing",
                 },
                 {
                     "input": catalogue_item_data,
-                    "location": [
-                        "days_to_replace",
-                    ],
+                    "location": ["days_to_replace"],
                     "message": "Field required",
                     "type": "missing",
                 },
                 {
                     "input": catalogue_item_data,
-                    "location": [
-                        "is_obsolete",
-                    ],
+                    "location": ["is_obsolete"],
                     "message": "Field required",
                     "type": "missing",
                 },
                 {
                     "input": catalogue_item_data["notes"],
-                    "location": [
-                        "notes",
-                    ],
+                    "location": ["notes"],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+                {
+                    "input": {},
+                    "location": ["properties", 0, "id"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": 42,
+                    "location": ["properties", 1, "id"],
                     "message": "Input should be a valid string",
                     "type": "string_type",
                 },
@@ -2347,7 +2361,8 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         )
 
     def test_bulk_validate_create_with_missing_mandatory_properties(self):
-        """Test bulk validating catalogue item data for creation when missing mandatory properties."""
+        """Test bulk validating catalogue item data for creation with missing mandatory properties when the properties
+        field is defined."""
 
         self.post_catalogue_item_prerequisites_with_properties()
 
@@ -2359,6 +2374,38 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                 "properties": [],
             }
         )
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": {},
+                    "location": [
+                        "properties",
+                    ],
+                    "message": f"Missing mandatory property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+                    "type": "missing_mandatory_property",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_missing_mandatory_properties_when_properties_field_undefined(self):
+        """Test bulk validating catalogue item data for creation with missing mandatory properties when the properties
+        field is not defined at all."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+        del catalogue_item_data["properties"]
 
         self.validate_create_catalogue_item(catalogue_item_data)
 
