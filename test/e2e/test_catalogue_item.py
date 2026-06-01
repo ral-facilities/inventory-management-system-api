@@ -777,7 +777,7 @@ class TestBulkCreate(BulkCreateDSL):
         self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY] * 4)
 
         self.check_post_bulk_catalogue_items_failed_with_validation_message(
-            422, "Value error, Too many entities provided in the list! The maximum possible number is 3."
+            422, "List should have at most 3 items after validation, not 4"
         )
 
     def test_bulk_create_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
@@ -2946,5 +2946,5 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         )
 
         self.check_bulk_validate_create_catalogue_items_failed_with_validation_message(
-            422, "Value error, Too many entities provided in the list! The maximum possible number is 3."
+            422, "List should have at most 3 items after validation, not 4"
         )
