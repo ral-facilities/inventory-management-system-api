@@ -8,25 +8,32 @@ Unit tests for the `CatalogueCategoryService` service.
 # pylint:disable=too-many-arguments
 # pylint:disable=too-many-positional-arguments
 
+from copy import deepcopy
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+    BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+    CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_OUT_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     CATALOGUE_CATEGORY_PROPERTY_IN_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT,
     CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+    CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     MANUFACTURER_IN_DATA_A,
+    MANUFACTURER_OUT_DATA_A,
     PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
+from pydantic import ValidationError
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -44,7 +51,9 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CATALOGUE_ITEM_WITH_CHILD_NON_EDITABLE_FIELDS,
     CatalogueItemPatchSchema,
     CatalogueItemPostSchema,
+    PropertyPostSchema,
 )
+from inventory_management_system_api.schemas.validation import ValidationErrorSchema, ValidationResponseSchema
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
@@ -1235,4 +1244,325 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(
             f"Catalogue item with ID '{catalogue_item_id}' is the replacement for at least one obsolete catalogue item "
             "and cannot be deleted"
+        )
+
+
+class ValidateDSL(CatalogueItemServiceDSL):
+    """Base class for `validate` tests."""
+
+    _catalogue_category_out: Optional[CatalogueCategoryOut]
+    _catalogue_item_data: dict
+    _validation_response: ValidationResponseSchema
+
+    def mock_validate(
+        self,
+        catalogue_item_data: dict,
+        catalogue_category_out_data: Optional[dict] = None,
+        manufacturer_out_data: Optional[dict] = None,
+        obsolete_replacement_catalogue_item_out_data: Optional[dict] = None,
+        has_duplicate_name: bool = False,
+    ) -> None:
+        """
+        Mocks repo methods appropriately to test the `create` service method.
+
+        :param catalogue_item_data: Dictionary containing the catalogue item data to validate.
+        :param catalogue_category_out_data: Either `None` or a dictionary containing the catalogue category data as
+                                            would be required for a `CatalogueCategoryOut` database model.
+        :param manufacturer_out_data: Either `None` or a dictionary containing the manufacturer data as would be
+                                      required for a `ManufacturerOut` database model.
+        :param obsolete_replacement_catalogue_item_out_data: Either `None` or a dictionary containing the catalogue
+                                        category data as would be required for a `CatalogueCategoryOut` database model.
+        :param has_duplicate_name: Whether the catalogue item should have a duplicate name as one existing
+        """
+
+        # Catalogue category
+        if catalogue_category_out_data:
+            self._catalogue_category_out = CatalogueCategoryOut(**catalogue_category_out_data)
+        ServiceTestHelpers.mock_get(
+            self.mock_catalogue_category_repository,
+            self._catalogue_category_out if catalogue_category_out_data else None,
+        )
+
+        # Manufacturer
+        ServiceTestHelpers.mock_get(
+            self.mock_manufacturer_repository,
+            (ManufacturerOut(**manufacturer_out_data) if manufacturer_out_data else None),
+        )
+
+        # Obsolete replacement catalogue item
+        ServiceTestHelpers.mock_get(
+            self.mock_catalogue_item_repository,
+            (
+                CatalogueItemOut(**obsolete_replacement_catalogue_item_out_data)
+                if obsolete_replacement_catalogue_item_out_data
+                else None
+            ),
+        )
+
+        # Add any property ids automatically from the category (unit tests here should not retest logic tested in
+        # utils.validate_properties)
+        self._catalogue_item_data = deepcopy(catalogue_item_data)
+        if "properties" in self._catalogue_item_data:
+            property_name_id_map = {prop["name"]: prop["id"] for prop in catalogue_category_out_data["properties"]}
+            for prop in self._catalogue_item_data["properties"]:
+                name = prop["name"]
+                if name in property_name_id_map:
+                    prop["id"] = str(property_name_id_map[name])
+
+        self.mock_catalogue_item_repository.is_duplicate_name.return_value = has_duplicate_name
+
+    def call_validate(self) -> None:
+        """Calls the `CatalogueItemService` `validate` method with the appropriate data from a prior call to
+        `mock_validate`."""
+
+        self._validation_response = self.catalogue_item_service.validate(self._catalogue_item_data)
+
+    def check_validate_success(
+        self, expected_warnings: list[ValidationErrorSchema], expected_errors: list[ValidationErrorSchema]
+    ) -> None:
+        """Checks that a prior call to `call_validate` worked as expected.
+
+        :param expected_warnings: Expected validation warnings.
+        :param expected_errors: Expected validation errors.
+        """
+
+        if "catalogue_category_id" in self._catalogue_item_data:
+            self.mock_catalogue_category_repository.get.assert_called_once_with(
+                self._catalogue_item_data["catalogue_category_id"]
+            )
+
+        if "obsolete_replacement_catalogue_item_id" in self._catalogue_item_data:
+            self.mock_catalogue_item_repository.get.assert_called_once_with(
+                self._catalogue_item_data["obsolete_replacement_catalogue_item_id"]
+            )
+
+        if "manufacturer_id" in self._catalogue_item_data:
+            self.mock_manufacturer_repository.get.assert_called_once_with(self._catalogue_item_data["manufacturer_id"])
+
+        if "name" in self._catalogue_item_data:
+            self.mock_catalogue_item_repository.is_duplicate_name.assert_called_once_with(
+                self._catalogue_item_data["name"]
+            )
+
+        if "properties" in self._catalogue_item_data:
+            property_schemas = []
+
+            for property_data in self._catalogue_item_data["properties"]:
+                try:
+                    property_schemas.append(PropertyPostSchema(**property_data))
+                except ValidationError:
+                    pass
+
+            if self._catalogue_category_out:
+                self.wrapped_utils.validate_properties.assert_called_once_with(
+                    # Use ANY for errors as its mutable and changes after running to include the actual errors
+                    self._catalogue_category_out.properties,
+                    property_schemas,
+                    ANY,
+                )
+
+        assert self._validation_response == ValidationResponseSchema(warnings=expected_warnings, errors=expected_errors)
+
+
+class TestValidate(ValidateDSL):
+    """Tests for validating a catalogue item."""
+
+    def test_validate_with_all_properties(self):
+        """Test validating a catalogue item when all properties present in the catalogue category are defined in the
+        catalogue item."""
+
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            },
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+        )
+        self.call_validate()
+        self.check_validate_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_with_duplicate_name(self):
+        """Test validating a catalogue item when it is using a duplicate name as an already existing catalogue item."""
+
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            },
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+            has_duplicate_name=True,
+        )
+        self.call_validate()
+        self.check_validate_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="duplicate_record",
+                    loc=["name"],
+                    msg="Duplicate record found with the same name "
+                    f"'{CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["name"]}'",
+                    input="Catalogue Item With All Properties",
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_with_invalid_schema(self):
+        """Test validating a catalogue item when the schema itself is invalid."""
+
+        catalogue_item_data = {
+            **{"name": 42, "days_to_replace": False},
+            "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+            "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+        }
+        self.mock_validate(
+            catalogue_item_data,
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+        )
+        self.call_validate()
+        self.check_validate_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(type="string_type", loc=["name"], msg="Input should be a valid string", input=42),
+                ValidationErrorSchema(
+                    type="missing",
+                    loc=["cost_gbp"],
+                    msg="Field required",
+                    input=catalogue_item_data,
+                ),
+                ValidationErrorSchema(
+                    type="missing",
+                    loc=["is_obsolete"],
+                    msg="Field required",
+                    input=catalogue_item_data,
+                ),
+            ],
+        )
+
+    def test_validate_with_non_existent_catalogue_category_id(self):
+        """Test validating a catalogue item with a non-existent catalogue category ID."""
+
+        catalogue_category_id = str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"])
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": catalogue_category_id,
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            },
+            catalogue_category_out_data=None,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+        )
+        self.call_validate()
+        self.check_validate_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="missing_record",
+                    loc=["catalogue_category_id"],
+                    msg=f"No catalogue category found with ID '{catalogue_category_id}'",
+                    input=catalogue_category_id,
+                )
+            ],
+        )
+
+    def test_validate_with_non_leaf_catalogue_category(self):
+        """Test validating a catalogue item with a non-leaf catalogue category."""
+
+        catalogue_category_id = str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"])
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": catalogue_category_id,
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            },
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+        )
+        self.call_validate()
+        self.check_validate_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="non_leaf_catalogue_category",
+                    loc=["catalogue_category_id"],
+                    msg="Cannot add catalogue item to a non-leaf catalogue category",
+                    input=catalogue_category_id,
+                )
+            ],
+        )
+
+    def test_validate_with_non_existent_manufacturer_id(self):
+        """Test validating a catalogue item with a non-existent manufacturer ID."""
+
+        manufacturer_id = str(MANUFACTURER_OUT_DATA_A["_id"])
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": manufacturer_id,
+            },
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_out_data=None,
+        )
+        self.call_validate()
+        self.check_validate_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="missing_record",
+                    loc=["manufacturer_id"],
+                    msg=f"No manufacturer found with ID '{manufacturer_id}'",
+                    input=manufacturer_id,
+                )
+            ],
+        )
+
+    def test_validate_with_obsolete_replacement_catalogue_item(self):
+        """Test validating a catalogue item with an obsolete replacement catalogue item."""
+
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            },
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+            obsolete_replacement_catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+        )
+        self.call_validate()
+        self.check_validate_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test validating a catalogue item with a non-existent obsolete replacement catalogue item ID."""
+
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
+        self.mock_validate(
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            },
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+            obsolete_replacement_catalogue_item_out_data=None,
+        )
+        self.call_validate()
+        self.check_validate_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="missing_record",
+                    loc=["obsolete_replacement_catalogue_item_id"],
+                    msg=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                    input=obsolete_replacement_catalogue_item_id,
+                )
+            ],
         )
