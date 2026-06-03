@@ -4,13 +4,13 @@ Module for defining the API schema models for representing items.
 
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, AwareDatetime
+from pydantic import Field, AwareDatetime
 
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema, PropertySchema
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
-class ItemPostSchema(BaseModel):
+class ItemPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for an item creation request.
     """
@@ -38,7 +38,8 @@ class ItemPatchSchema(ItemPostSchema):
     """
 
     catalogue_item_id: Optional[str] = Field(
-        default=None, description="The ID of the corresponding catalogue item for this item"
+        default=None,
+        description="The ID of the corresponding catalogue item for this item",
     )
     system_id: Optional[str] = Field(default=None, description="The ID of the system that the item belongs to")
     is_defective: Optional[bool] = Field(default=None, description="Whether the item is defective or not")
@@ -53,7 +54,7 @@ class ItemPatchSchema(ItemPostSchema):
     )
 
 
-class ItemSchema(CreatedModifiedSchemaMixin, ItemPostSchema):
+class ItemSchema(BaseFieldsSchemaMixin, ItemPostSchema):
     """
     Schema model for an item response.
     """

@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 
 class PropertyIn(BaseModel):
@@ -82,13 +82,13 @@ class CatalogueItemBase(BaseModel):
     # pylint: enable=duplicate-code
 
 
-class CatalogueItemIn(CreatedModifiedTimeInMixin, CatalogueItemBase):
+class CatalogueItemIn(BaseFieldsInMixin, CatalogueItemBase):
     """
     Input database model for a catalogue item.
     """
 
 
-class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
+class CatalogueItemOut(BaseFieldsOutMixin, CatalogueItemBase):
     """
     Output database model for a catalogue item.
     """

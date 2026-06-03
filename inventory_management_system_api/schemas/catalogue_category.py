@@ -9,7 +9,7 @@ from typing import Annotated, Any, List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin, BaseFieldsPostSchemaMixin
 
 
 class CatalogueCategoryPropertyType(str, Enum):
@@ -164,7 +164,7 @@ class CatalogueCategoryPropertySchema(CatalogueCategoryPostPropertySchema):
     unit: Optional[str] = Field(default=None, description="The unit of the property such as 'nm', 'mm', 'cm' etc")
 
 
-class CatalogueCategoryPostSchema(BaseModel):
+class CatalogueCategoryPostSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a catalogue category creation request.
     """
@@ -197,7 +197,7 @@ class CatalogueCategoryPatchSchema(CatalogueCategoryPostSchema):
     )
 
 
-class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostSchema):
+class CatalogueCategorySchema(BaseFieldsSchemaMixin, CatalogueCategoryPostSchema):
     """
     Schema model for a catalogue category response.
     """
@@ -205,7 +205,8 @@ class CatalogueCategorySchema(CreatedModifiedSchemaMixin, CatalogueCategoryPostS
     id: str = Field(description="The ID of the catalogue category")
     code: str = Field(description="The code of the catalogue category")
     properties: Optional[List[CatalogueCategoryPropertySchema]] = Field(
-        default=None, description="The properties that the catalogue items in this category could/should have"
+        default=None,
+        description="The properties that the catalogue items in this category could/should have",
     )
 
     # Computed
@@ -254,7 +255,7 @@ class CatalogueCategoryPropertyPostSchema(CatalogueCategoryPostPropertySchema):
         return default_value
 
 
-class CatalogueCategoryPropertyPatchSchema(BaseModel):
+class CatalogueCategoryPropertyPatchSchema(BaseFieldsPostSchemaMixin):
     """
     Schema model for a property patch request on a catalogue category
     """

@@ -5,7 +5,7 @@ Module for defining the database models for representing a Unit
 from pydantic import BaseModel, ConfigDict, Field
 
 from inventory_management_system_api.models.custom_object_id_data_types import StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 
 class UnitBase(BaseModel):
@@ -18,7 +18,7 @@ class UnitBase(BaseModel):
     code: str
 
 
-class UnitOut(CreatedModifiedTimeOutMixin, UnitBase):
+class UnitOut(BaseFieldsOutMixin, UnitBase):
     """
     Output database model for a Unit
     """
@@ -28,7 +28,7 @@ class UnitOut(CreatedModifiedTimeOutMixin, UnitBase):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class UnitIn(CreatedModifiedTimeInMixin, UnitBase):
+class UnitIn(BaseFieldsInMixin, UnitBase):
     """
     Input database model for a Unit
     """
