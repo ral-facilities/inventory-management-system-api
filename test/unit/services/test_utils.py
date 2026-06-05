@@ -48,13 +48,11 @@ DEFINED_PROPERTIES = [
 ]
 
 SUPPLIED_PROPERTIES = [
-    PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20, unit_id=DEFINED_PROPERTIES[0].unit_id),
-    PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-    PropertyPostSchema(
-        id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10", unit_id=DEFINED_PROPERTIES[2].unit_id
-    ),
-    PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id),
-    PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+    PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
 ]
 
 EXPECTED_PROCESSED_PROPERTIES = [
@@ -147,7 +145,7 @@ class TestProcessProperties:
         """
         Test `process_properties` works correctly with supplied properties that have not been defined.
         """
-        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostSchema(id=str(ObjectId()), name="Property F", value=1)]
+        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostSchema(id=str(ObjectId()), value=1)]
         result = utils.process_properties(DEFINED_PROPERTIES, supplied_properties)
         assert result == EXPECTED_PROCESSED_PROPERTIES
 
@@ -160,19 +158,16 @@ class TestProcessProperties:
             DEFINED_PROPERTIES,
             [
                 PropertyPostSchema(
-                    id=DEFINED_PROPERTIES[0].id, name="Property A", value=None, unit_id=DEFINED_PROPERTIES[0].unit_id
+                    id=DEFINED_PROPERTIES[0].id,
+                    value=None,
                 ),
-                PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
                 PropertyPostSchema(
                     id=DEFINED_PROPERTIES[2].id,
-                    name="Property C",
                     value="20x15x10",
-                    unit_id=DEFINED_PROPERTIES[2].unit_id,
                 ),
-                PropertyPostSchema(
-                    id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id
-                ),
-                PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value=None),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value=None),
             ],
         )
         assert result == [
@@ -221,11 +216,11 @@ class TestProcessProperties:
         property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=True),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value=True),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -241,11 +236,11 @@ class TestProcessProperties:
         property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value="20"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value="20"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -261,11 +256,11 @@ class TestProcessProperties:
         property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value="False"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value="False"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -280,11 +275,11 @@ class TestProcessProperties:
         Test `process_properties` works correctly with a None value given for a mandatory property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=None),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value=None),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -298,11 +293,11 @@ class TestProcessProperties:
         of allowed values
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=10),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=10),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -318,11 +313,11 @@ class TestProcessProperties:
         list of allowed values
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=4),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="invalid"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=4),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="invalid"),
         ]
 
         with pytest.raises(InvalidPropertyTypeError) as exc:
@@ -333,9 +328,9 @@ class TestProcessProperties:
         )
 
 
-class TestValidateProperties:
+class TestProcessPropertiesWithErrorCollection:
     """
-    Tests for the `validate_properties` method.
+    Tests for the `process_properties` method but while collecting errors.
     """
 
     def assert_errors_equal(self, actual_errors: list[InitErrorDetails], expected_errors: list[dict[str, Any]]) -> None:
@@ -355,20 +350,20 @@ class TestValidateProperties:
         converted_errors = [converted_error.model_dump() for converted_error in converted_errors]
         assert converted_errors == expected_errors
 
-    def test_validate_properties(self):
+    def test_process_properties(self):
         """
-        Test `validate_properties` works correctly.
+        Test `process_properties` works correctly.
         """
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES, errors)
+        utils.process_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES, errors)
         self.assert_errors_equal(errors, [])
 
-    def test_validate_properties_with_missing_mandatory_properties(self):
+    def test_process_properties_with_missing_mandatory_properties(self):
         """
-        Test `validate_properties` works correctly with missing mandatory properties.
+        Test `process_properties` works correctly with missing mandatory properties.
         """
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, [SUPPLIED_PROPERTIES[0]], errors)
+        utils.process_properties(DEFINED_PROPERTIES, [SUPPLIED_PROPERTIES[0]], errors)
 
         self.assert_errors_equal(
             errors,
@@ -385,82 +380,76 @@ class TestValidateProperties:
             ],
         )
 
-    def test_validate_properties_with_missing_non_mandatory_properties(self):
+    def test_process_properties_with_missing_non_mandatory_properties(self):
         """
-        Test `validate_properties` works correctly with missing non-mandatory properties.
+        Test `process_properties` works correctly with missing non-mandatory properties.
         """
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES[1:4], errors)
+        utils.process_properties(DEFINED_PROPERTIES, SUPPLIED_PROPERTIES[1:4], errors)
         self.assert_errors_equal(errors, [])
 
-    def test_validate_properties_with_undefined_properties(self):
+    def test_process_properties_with_undefined_properties(self):
         """
-        Test `validate_properties` works correctly with supplied properties that have not been defined.
+        Test `process_properties` works correctly with supplied properties that have not been defined.
         """
-        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostSchema(id=str(ObjectId()), name="Property F", value=1)]
+        supplied_properties = SUPPLIED_PROPERTIES + [PropertyPostSchema(id=str(ObjectId()), value=1)]
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
         self.assert_errors_equal(errors, [])
 
-    def test_validate_properties_with_none_non_mandatory_properties(self):
+    def test_process_properties_with_none_non_mandatory_properties(self):
         """
-        Test `validate_properties` works correctly when explicitly giving a value of None
+        Test `process_properties` works correctly when explicitly giving a value of None
         for non-mandatory properties.
         """
         errors = []
-        utils.validate_properties(
+        utils.process_properties(
             DEFINED_PROPERTIES,
             [
-                PropertyPostSchema(
-                    id=DEFINED_PROPERTIES[0].id, name="Property A", value=None, unit_id=DEFINED_PROPERTIES[0].unit_id
-                ),
-                PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=None),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
                 PropertyPostSchema(
                     id=DEFINED_PROPERTIES[2].id,
-                    name="Property C",
                     value="20x15x10",
-                    unit_id=DEFINED_PROPERTIES[2].unit_id,
                 ),
-                PropertyPostSchema(
-                    id=DEFINED_PROPERTIES[3].id, name="Property D", value=2, unit_id=DEFINED_PROPERTIES[3].unit_id
-                ),
-                PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value=None),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+                PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value=None),
             ],
             errors,
         )
         self.assert_errors_equal(errors, [])
 
-    def test_validate_properties_with_supplied_properties_and_no_defined_properties(self):
+    def test_process_properties_with_supplied_properties_and_no_defined_properties(self):
         """
-        Test `validate_properties` works correctly with supplied properties but no defined properties.
-        """
-        errors = []
-        utils.validate_properties([], SUPPLIED_PROPERTIES, errors)
-        self.assert_errors_equal(errors, [])
-
-    def test_validate_properties_without_properties(self):
-        """
-        Test `validate_properties` works correctly without defined and supplied properties.
+        Test `process_properties` works correctly with supplied properties but no defined properties.
         """
         errors = []
-        utils.validate_properties([], [], errors)
+        utils.process_properties([], SUPPLIED_PROPERTIES, errors)
         self.assert_errors_equal(errors, [])
 
-    def test_validate_properties_with_invalid_value_type_for_string_property(self):
+    def test_process_properties_without_properties(self):
         """
-        Test `validate_properties` works correctly with invalid value type for a string catalogue item
+        Test `process_properties` works correctly without defined and supplied properties.
+        """
+        errors = []
+        utils.process_properties([], [], errors)
+        self.assert_errors_equal(errors, [])
+
+    def test_process_properties_with_invalid_value_type_for_string_property(self):
+        """
+        Test `process_properties` works correctly with invalid value type for a string catalogue item
         property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=True),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value=True),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
         self.assert_errors_equal(
             errors,
             [
@@ -478,21 +467,21 @@ class TestValidateProperties:
             ],
         )
 
-    def test_validate_properties_with_invalid_value_type_for_number_property(self):
+    def test_process_properties_with_invalid_value_type_for_number_property(self):
         """
-        Test `validate_properties` works correctly with invalid value type for a number catalogue item
+        Test `process_properties` works correctly with invalid value type for a number catalogue item
         property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value="20"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value="20"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
         self.assert_errors_equal(
             errors,
             [
@@ -510,21 +499,21 @@ class TestValidateProperties:
             ],
         )
 
-    def test_validate_properties_with_invalid_value_type_for_boolean_property(self):
+    def test_process_properties_with_invalid_value_type_for_boolean_property(self):
         """
-        Test `validate_properties` works correctly with invalid value type for a boolean catalogue item
+        Test `process_properties` works correctly with invalid value type for a boolean catalogue item
         property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value="False"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value="False"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
         self.assert_errors_equal(
             errors,
             [
@@ -542,20 +531,20 @@ class TestValidateProperties:
             ],
         )
 
-    def test_validate_properties_with_invalid_value_type_for_mandatory_property(self):
+    def test_process_properties_with_invalid_value_type_for_mandatory_property(self):
         """
-        Test `validate_properties` works correctly with a None value given for a mandatory property.
+        Test `process_properties` works correctly with a None value given for a mandatory property.
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value=None),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=2),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value=None),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=2),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
 
         self.assert_errors_equal(
             errors,
@@ -573,21 +562,21 @@ class TestValidateProperties:
             ],
         )
 
-    def test_validate_properties_with_invalid_allowed_value_list_number(self):
+    def test_process_properties_with_invalid_allowed_value_list_number(self):
         """
-        Test `validate_properties` works correctly when given an invalid value for a number property with a specific
+        Test `process_properties` works correctly when given an invalid value for a number property with a specific
         list of allowed values
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=10),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="red"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=10),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="red"),
         ]
 
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
         self.assert_errors_equal(
             errors,
             [
@@ -605,21 +594,21 @@ class TestValidateProperties:
             ],
         )
 
-    def test_validate_properties_with_invalid_allowed_value_list_string(self):
+    def test_process_properties_with_invalid_allowed_value_list_string(self):
         """
-        Test `validate_properties` works correctly when given an invalid value for a string property with a specific
+        Test `process_properties` works correctly when given an invalid value for a string property with a specific
         list of allowed values
         """
         supplied_properties = [
-            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, name="Property A", value=20),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, name="Property B", value=False),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, name="Property C", value="20x15x10"),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, name="Property D", value=4),
-            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, name="Property E", value="invalid"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[0].id, value=20),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[1].id, value=False),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[2].id, value="20x15x10"),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[3].id, value=4),
+            PropertyPostSchema(id=DEFINED_PROPERTIES[4].id, value="invalid"),
         ]
 
         errors = []
-        utils.validate_properties(DEFINED_PROPERTIES, supplied_properties, errors)
+        utils.process_properties(DEFINED_PROPERTIES, supplied_properties, errors)
         self.assert_errors_equal(
             errors,
             [

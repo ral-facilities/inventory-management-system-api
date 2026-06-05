@@ -3,6 +3,7 @@ Contains constants used in multiple places so they are easier to change
 """
 
 import sys
+from typing import LiteralString
 
 from inventory_management_system_api.core.config import config
 
@@ -14,6 +15,13 @@ PUBLIC_KEY = None
 
 # Detail to return in the 500 (Internal Server Error) responses
 HTTP_500_INTERNAL_SERVER_ERROR_DETAIL = "Something went wrong"
+
+# Error types to be used within custom pydantic errors
+ERROR_TYPE_INVALID_PROPERTY_TYPE: LiteralString = "invalid_property_type"
+ERROR_TYPE_MISSING_MANDATORY_PROPERTY: LiteralString = "missing_mandatory_property"
+ERROR_TYPE_MISSING_RECORD: LiteralString = "missing_record"
+ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY: LiteralString = "non_leaf_catalogue_category"
+ERROR_TYPE_DUPLICATE_RECORD: LiteralString = "duplicate_record"
 
 if config.authentication.enabled:
     # Read the content of the public key file into a constant. This is used for decoding of JWT access tokens.

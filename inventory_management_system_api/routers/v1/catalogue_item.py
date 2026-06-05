@@ -33,7 +33,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     CatalogueItemSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationResponseSchema
+from inventory_management_system_api.schemas.validation import BulkValidationResultSchema
 from inventory_management_system_api.services.catalogue_item import CatalogueItemService
 
 logger = logging.getLogger()
@@ -80,17 +80,58 @@ def create_catalogue_item(
 
 
 @router.post(
-    path="/validate",
-    summary="Validate a catalogue item",
+    path="/bulk",
+    summary="Bulk create new catalogue items",
+    status_code=status.HTTP_201_CREATED,
+)
+def bulk_create_catalogue_item(
+    catalogue_items: list[CatalogueItemPostSchema], catalogue_item_service: CatalogueItemServiceDep
+) -> list[CatalogueItemSchema]:
+    logger.info("Bulk creating catalogue items")
+    try:
+        return [
+            CatalogueItemSchema(**catalogue_item.model_dump())
+            for catalogue_item in catalogue_item_service.bulk_create(catalogue_items)
+        ]
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "A specified entity does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+    except NonLeafCatalogueCategoryError as exc:
+        message = "Adding a catalogue item to a non-leaf catalogue category is not allowed"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.post(
+    path="/bulk-validate-create",
+    summary="Bulk validate catalogue items for creation",
     response_description="Any errors found in the data",
 )
-def validate_catalogue_item(
-    catalogue_item: Annotated[dict[str, Any], Body(description="Catalogue item data to validate")],
+def bulk_validate_create_catalogue_item(
+    catalogue_items: Annotated[
+        list[dict[str, Any]],
+        Body(
+            description="List of catalogue items data to validate",
+            examples=[[{"name": "Catalogue Item 1"}, {"name": "Catalogue Item 2"}]],
+        ),
+    ],
     catalogue_item_service: CatalogueItemServiceDep,
-) -> ValidationResponseSchema:
-    logger.info("Validating a catalogue item")
+) -> BulkValidationResultSchema:
+    """
+    Validate a list of catalogue item data to determine whether it is suitable for creating them as catalogue items
+    either via the single `POST /v1/catalogue-items` or the bulk `POST /v1/catalogue-items/bulk` endpoints.
 
-    return catalogue_item_service.validate(catalogue_item)
+    This includes the same validation of schema, field constraints and business rules, as these creation endpoints
+    without creating or modifying any resources. This also collects and returns any validation errors instead of failing
+    fast.
+    """
+    logger.info("Bulk validating catalogue items for creation")
+
+    return catalogue_item_service.bulk_validate_create(catalogue_items)
 
 
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")

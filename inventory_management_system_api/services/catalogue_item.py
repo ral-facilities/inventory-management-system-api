@@ -7,8 +7,15 @@ from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
 from pydantic import ValidationError
+from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import (
+    ERROR_TYPE_DUPLICATE_RECORD,
+    ERROR_TYPE_MISSING_RECORD,
+    ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY,
+)
+from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
     ChildElementsExistError,
     InvalidActionError,
@@ -30,7 +37,7 @@ from inventory_management_system_api.schemas.catalogue_item import (
     CatalogueItemPostSchema,
     PropertyPostSchema,
 )
-from inventory_management_system_api.schemas.validation import ValidationResponseSchema
+from inventory_management_system_api.schemas.validation import BulkValidationResultSchema, ValidationResultSchema
 from inventory_management_system_api.services import utils
 
 
@@ -60,7 +67,9 @@ class CatalogueItemService:
         self._manufacturer_repository = manufacturer_repository
         self._setting_repository = setting_repository
 
-    def create(self, catalogue_item: CatalogueItemPostSchema) -> CatalogueItemOut:
+    def create(
+        self, catalogue_item: CatalogueItemPostSchema, session: Optional[ClientSession] = None
+    ) -> CatalogueItemOut:
         """
         Create a new catalogue item.
 
@@ -69,6 +78,7 @@ class CatalogueItemService:
         is. It then processes the properties.
 
         :param catalogue_item: The catalogue item to be created.
+        :param session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created catalogue item.
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
@@ -107,8 +117,26 @@ class CatalogueItemService:
                     "properties": supplied_properties,
                 },
                 number_of_spares=0 if spares_definition else None,
-            )
+            ),
+            session=session,
         )
+
+    def bulk_create(self, catalogue_items: List[CatalogueItemPostSchema]) -> List[CatalogueItemOut]:
+        """
+        Creates catalogue items in bulk.
+
+        Uses the single create method, but wrapped within a transaction so either all succeed or none do. Will
+        fail fast the moment it encounters an error, so for detailed information on what went wrong and where
+        `verify` should be used instead.
+
+        :param catalogue_items: The catalogue items to be created.
+        :return: List of created catalogue items.
+        """
+        created_catalogue_items = []
+        with start_session_transaction("creating bulk catalogue items") as session:
+            for catalogue_item in catalogue_items:
+                created_catalogue_items.append(self.create(catalogue_item, session=session))
+        return created_catalogue_items
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
         """
@@ -262,14 +290,17 @@ class CatalogueItemService:
         self._catalogue_item_repository.delete(catalogue_item_id)
 
     # pylint:disable=too-many-statements
-    def validate(self, catalogue_item_data: dict[str, Any]) -> ValidationResponseSchema:
+    def _validate_create(self, index: int, catalogue_item_data: dict[str, Any]) -> ValidationResultSchema:
         """
-        Performs validation of catalogue item creation data returning any errors.
+        Performs validation of a single set of catalogue item creation data returning any errors.
 
+        This includes the same validation, as the `create` function without creating or modifying any resources. This
+        also collects and returns any validation errors instead of failing fast.
+
+        :param index: Index of the catalogue item being validated.
         :param catalogue_item_data: Catalogue item data to verify.
-        :return: Schema containing the validation warnings/errors that have occurred.
+        :return: Schema containing the validation warnings/errors that been found within the data.
         """
-
         warnings = []
         errors = []
         # This records any errors from basic schema validation including the properties
@@ -279,59 +310,58 @@ class CatalogueItemService:
             errors.extend(exc.errors())
 
         # Check the catalogue category exists (if defined)
+        catalogue_category_id = catalogue_item_data.get("catalogue_category_id")
         catalogue_category = None
-        if "catalogue_category_id" in catalogue_item_data:
-            catalogue_category_id = catalogue_item_data["catalogue_category_id"]
+        if catalogue_category_id is not None:
             try:
                 catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
             except InvalidObjectIdError:
                 # Ignore invalid object ID, treat as missing
                 pass
-            if not catalogue_category:
+            if catalogue_category is None:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="missing_record",
-                        message=f"No catalogue category found with ID '{catalogue_category_id}'",
-                        location=("catalogue_category_id",),
-                        input=catalogue_category_id,
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No catalogue category found with ID '{catalogue_category_id}'",
+                        error_location=("catalogue_category_id",),
+                        error_input=catalogue_category_id,
                     )
                 )
-            # If defined, ensure the category can take new catalogue items (i.e. is a leaf category)
+            # If exists, ensure the category can take new catalogue items (i.e. is a leaf category)
             elif not catalogue_category.is_leaf:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="non_leaf_catalogue_category",
-                        message="Cannot add catalogue item to a non-leaf catalogue category",
-                        location=("catalogue_category_id",),
-                        input=catalogue_category_id,
+                        error_type=ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY,
+                        error_message="Cannot add catalogue item to a non-leaf catalogue category",
+                        error_location=("catalogue_category_id",),
+                        error_input=catalogue_category_id,
                     )
                 )
 
         # If defined, check obsolete replacement item exists
-        if "obsolete_replacement_catalogue_item_id" in catalogue_item_data:
-            obsolete_replacement_catalogue_item_id = catalogue_item_data["obsolete_replacement_catalogue_item_id"]
-            if obsolete_replacement_catalogue_item_id is not None:
-                obsolete_replacement_catalogue_item = None
-                try:
-                    obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
-                        obsolete_replacement_catalogue_item_id
+        obsolete_replacement_catalogue_item_id = catalogue_item_data.get("obsolete_replacement_catalogue_item_id")
+        if obsolete_replacement_catalogue_item_id is not None:
+            obsolete_replacement_catalogue_item = None
+            try:
+                obsolete_replacement_catalogue_item = self._catalogue_item_repository.get(
+                    obsolete_replacement_catalogue_item_id
+                )
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if obsolete_replacement_catalogue_item is None:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                        error_location=("obsolete_replacement_catalogue_item_id",),
+                        error_input=obsolete_replacement_catalogue_item_id,
                     )
-                except InvalidObjectIdError:
-                    # Ignore invalid object ID, treat as missing
-                    pass
-                if obsolete_replacement_catalogue_item is None:
-                    errors.append(
-                        utils.create_custom_validation_error_details(
-                            type="missing_record",
-                            message=f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
-                            location=("obsolete_replacement_catalogue_item_id",),
-                            input=obsolete_replacement_catalogue_item_id,
-                        )
-                    )
+                )
 
         # Check the manufacturer exists (if defined)
-        if "manufacturer_id" in catalogue_item_data:
-            manufacturer_id = catalogue_item_data["manufacturer_id"]
+        manufacturer_id = catalogue_item_data.get("manufacturer_id")
+        if manufacturer_id is not None:
             manufacturer = None
             try:
                 manufacturer = self._manufacturer_repository.get(manufacturer_id)
@@ -341,10 +371,10 @@ class CatalogueItemService:
             if not manufacturer:
                 errors.append(
                     utils.create_custom_validation_error_details(
-                        type="missing_record",
-                        message=f"No manufacturer found with ID '{manufacturer_id}'",
-                        location=("manufacturer_id",),
-                        input=manufacturer_id,
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No manufacturer found with ID '{manufacturer_id}'",
+                        error_location=("manufacturer_id",),
+                        error_input=manufacturer_id,
                     )
                 )
 
@@ -353,30 +383,31 @@ class CatalogueItemService:
             if self._catalogue_item_repository.is_duplicate_name(catalogue_item_data["name"]):
                 warnings.append(
                     utils.create_custom_validation_error_details(
-                        type="duplicate_record",
-                        message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
-                        location=("name",),
-                        input=catalogue_item_data["name"],
+                        error_type=ERROR_TYPE_DUPLICATE_RECORD,
+                        error_message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
+                        error_location=("name",),
+                        error_input=catalogue_item_data["name"],
                     )
                 )
 
         # Now validate any properties
-        if "properties" in catalogue_item_data:
-            # NOTE: Basic schema validation of properties has already occurred at this point from using
-            #       CatalogueItemPostSchema above, we dont want to capture those errors again.
-            #       While we cant validate those properties that dont pass the basic checks, we can
-            #       at least attempt to perform additional validation on those that do.
-            property_schemas = []
+        supplied_properties = catalogue_item_data["properties"] if "properties" in catalogue_item_data else []
+        # NOTE: Basic schema validation of properties has already occurred at this point from using
+        #       CatalogueItemPostSchema above, we dont want to capture those errors again.
+        #       While we cant validate those properties that dont pass the basic checks, we can
+        #       at least attempt to perform additional validation on those that do.
+        property_schemas = []
 
-            for property_data in catalogue_item_data["properties"]:
-                try:
-                    property_schemas.append(PropertyPostSchema(**property_data))
-                except ValidationError:
-                    pass
+        for supplied_property in supplied_properties:
+            try:
+                property_schemas.append(PropertyPostSchema(**supplied_property))
+            except ValidationError:
+                pass
 
-            # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
-            if catalogue_category:
-                utils.validate_properties(catalogue_category.properties, property_schemas, errors)
+        # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
+        if catalogue_category:
+            utils.process_properties(catalogue_category.properties, property_schemas, errors)
+
         if warnings:
             warnings = ValidationError.from_exception_data(
                 title="Catalogue item validation error",
@@ -387,6 +418,20 @@ class CatalogueItemService:
                 title="Catalogue item validation error",
                 line_errors=errors,
             ).errors()
-        return ValidationResponseSchema(warnings=warnings, errors=errors)
+        return ValidationResultSchema(index=index, warnings=warnings, errors=errors)
 
     # pylint:enable=too-many-statements
+
+    def bulk_validate_create(self, catalogue_items_data: List[dict[str, Any]]) -> BulkValidationResultSchema:
+        """
+        Performs validation of bulk catalogue item creation data returning any errors.
+
+        :param catalogue_items_data: Catalogue items data to verify.
+        :return: Schema containing the validation warnings/errors that been found within the data.
+        """
+        return BulkValidationResultSchema(
+            results=[
+                self._validate_create(index, catalogue_item_data)
+                for index, catalogue_item_data in enumerate(catalogue_items_data)
+            ]
+        )
