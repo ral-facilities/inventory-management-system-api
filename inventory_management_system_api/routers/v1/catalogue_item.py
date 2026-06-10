@@ -12,6 +12,7 @@ import logging
 from typing import Annotated, Any, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
+from pydantic import Field
 
 from inventory_management_system_api.core.config import config
 from inventory_management_system_api.core.consts import HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
@@ -85,7 +86,8 @@ def create_catalogue_item(
     status_code=status.HTTP_201_CREATED,
 )
 def bulk_create_catalogue_item(
-    catalogue_items: list[CatalogueItemPostSchema], catalogue_item_service: CatalogueItemServiceDep
+    catalogue_items: Annotated[list[CatalogueItemPostSchema], Field(max_length=config.bulk.max_catalogue_items)],
+    catalogue_item_service: CatalogueItemServiceDep,
 ) -> list[CatalogueItemSchema]:
     logger.info("Bulk creating catalogue items")
     try:
@@ -114,6 +116,7 @@ def bulk_create_catalogue_item(
 def bulk_validate_create_catalogue_item(
     catalogue_items: Annotated[
         list[dict[str, Any]],
+        Field(max_length=config.bulk.max_catalogue_items),
         Body(
             description="List of catalogue items data to validate",
             examples=[[{"name": "Catalogue Item 1"}, {"name": "Catalogue Item 2"}]],
