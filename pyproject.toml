@@ -17,6 +17,9 @@ dependencies = [
 [project.urls]
 "Repository" = "https://github.com/ral-facilities/inventory-management-system-api"
 
+[tool.uv]
+exclude-newer = "7 days"
+
 [tool.uv.sources]
 inventory-management-system-api = { workspace = true }
 
