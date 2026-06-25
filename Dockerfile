@@ -15,7 +15,7 @@ ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock README.md ./
+COPY pyproject.toml uv.lock .python-version README.md ./
 
 ########################################################################################################################
 # Stage for local development
