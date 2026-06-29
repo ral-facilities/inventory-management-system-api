@@ -7,7 +7,7 @@ version = "4.0.1"
 
 dependencies = [
     "cryptography>=49.0.0",
-    "fastapi[all]>=0.137.1",
+    "fastapi[all]>=0.138.0",
     "PyJWT>=2.12.1",
     "pymongo>=4.17.0",
     "requests>=2.34.2",
@@ -37,7 +37,7 @@ module-root = "."
 code-analysis = [{ include-group = "test" }, "black>=26.5.1", "pylint>=4.0.6"]
 
 test = [
-    "pytest>=9.1.0",
+    "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "pytest-env>=1.6.0",
