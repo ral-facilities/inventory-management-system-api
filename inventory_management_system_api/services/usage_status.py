@@ -2,7 +2,7 @@
 Module for providing a service for managing Usage statuses using the `UsageStatusRepo` repository
 """
 
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
@@ -44,7 +44,7 @@ class UsageStatusService:
         """
         return self._usage_status_repository.get(usage_status_id)
 
-    def list(self) -> list[UsageStatusOut]:
+    def list(self) -> List[UsageStatusOut]:
         """
         Retrieve a list of all Usage statuses
 

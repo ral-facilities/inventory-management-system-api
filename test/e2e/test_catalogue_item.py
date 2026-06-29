@@ -136,6 +136,25 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         self.manufacturer_id = ManufacturerCreateDSL.post_manufacturer(self, manufacturer_post_data)
         return self.manufacturer_id
 
+    def get_catalogue_item_with_ids_in_properties(self, catalogue_item_data: dict) -> dict:
+        """
+        Adds known IDs into the properties of a catalogue item.
+
+        :param catalogue_item_data: Catalogue item data with the properties to add the IDs to.
+        :return: Catalogue item with the known IDs added to the properties.
+        """
+        new_catalogue_item_data = copy.deepcopy(catalogue_item_data)
+
+        # Replace any unit values with unit IDs
+        new_catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
+            new_catalogue_item_data, self.unit_value_id_dict
+        )
+        new_catalogue_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+            new_catalogue_item_data, self.property_name_id_dict
+        )
+
+        return new_catalogue_item_data
+
     def post_catalogue_item(self, catalogue_item_data: dict) -> Optional[str]:
         """
         Posts a catalogue item with the given data and returns the ID of the created catalogue item if successful.
@@ -148,13 +167,7 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         """
 
         # Replace any unit values with unit IDs
-        full_catalogue_item_data = copy.deepcopy(catalogue_item_data)
-        full_catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
-            full_catalogue_item_data, self.unit_value_id_dict
-        )
-        full_catalogue_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
-            full_catalogue_item_data, self.property_name_id_dict
-        )
+        full_catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(catalogue_item_data)
 
         # Insert mandatory IDs if they have been created
         if self.catalogue_category_id:
@@ -170,27 +183,19 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
             else None
         )
 
-    def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
+    def post_catalogue_item_prerequisites_no_properties(self) -> None:
         """
-        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
-        catalogue category and units. Uses `CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES` for the catalogue
-        category.
+        Utility method that posts the prerequisites required for a test that won't involve any properties.
 
-        :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
-                                    `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by
-                                    the `name` value in its properties as the IDs will be added automatically.
-        :return: ID of the created catalogue item (or `None` if not successful).
+        Uses `CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES` for the catalogue category.
         """
-
         self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
 
-        return self.post_catalogue_item(catalogue_item_data)
-
-    def post_catalogue_item_and_prerequisites_with_properties(self, catalogue_item_data: dict) -> Optional[str]:
+    def post_catalogue_item_and_prerequisites_no_properties(self, catalogue_item_data: dict) -> Optional[str]:
         """
-        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
-        catalogue category and units. Uses BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM for the catalogue category.
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer and
+        catalogue category. Assumes no properties will be used.
 
         :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
                                     `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by
@@ -198,11 +203,55 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
         :return: ID of the created catalogue item (or `None` if not successful).
         """
 
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        return self.post_catalogue_item(catalogue_item_data)
+
+    def post_catalogue_item_prerequisites_with_properties(self) -> None:
+        """
+        Utility method that posts the prerequisites required for a test that will involve properties.
+
+        Uses `BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM` for the catalogue category.
+        """
         self.post_unit(UNIT_POST_DATA_MM)
         self.post_catalogue_category(BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM)
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
 
+    def post_catalogue_item_and_prerequisites_with_properties(self, catalogue_item_data: dict) -> Optional[str]:
+        """
+        Utility method that posts a catalogue item with the given data and also its prerequisite manufacturer,
+        catalogue category and units. Assumes properties will be usd.
+
+        :param catalogue_item_data: Dictionary containing the basic catalogue item data as would be required for a
+                                    `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by
+                                    the `name` value in its properties as the IDs will be added automatically.
+        :return: ID of the created catalogue item (or `None` if not successful).
+        """
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
         return self.post_catalogue_item(catalogue_item_data)
+
+    def post_catalogue_item_prerequisites_with_given_properties(
+        self, catalogue_category_properties_data: list[dict]
+    ) -> None:
+        """
+        Utility method that posts the prerequisites required for a test that will involve some given properties.
+
+        Uses `BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM` for the catalogue category as a base.
+
+        :param catalogue_category_properties_data: List of dictionaries containing the basic catalogue category property
+                        data as would be required for a `CatalogueCategoryPostPropertySchema` but with any `unit_id`'s
+                        replaced by the `unit` value in its properties as the IDs will be added automatically.
+        """
+        self.post_unit(UNIT_POST_DATA_MM)
+        self.post_catalogue_category(
+            {
+                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
+                "properties": catalogue_category_properties_data,
+            }
+        )
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
 
     def post_catalogue_item_and_prerequisites_with_given_properties(
         self, catalogue_category_properties_data: list[dict], catalogue_item_properties_data: list[dict]
@@ -220,32 +269,24 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
                         the IDs will be added automatically.
         :return: ID of the created catalogue item (or `None` if not successful).
         """
-
-        self.post_unit(UNIT_POST_DATA_MM)
-        self.post_catalogue_category(
-            {
-                **BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM,
-                "properties": catalogue_category_properties_data,
-            }
-        )
-        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_catalogue_item_prerequisites_with_given_properties(catalogue_category_properties_data)
 
         return self.post_catalogue_item(
             {**CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES, "properties": catalogue_item_properties_data}
         )
 
-    def post_catalogue_item_and_prerequisites_with_allowed_values(
-        self, property_type: str, allowed_values_post_data: dict, property_value: Any
-    ) -> Optional[str]:
+    def post_catalogue_item_prerequisites_with_allowed_values(
+        self, property_type: str, allowed_values_post_data: dict
+    ) -> None:
         """
-        Utility method that posts a catalogue item with a property named 'property' of a given type with a given set of
-        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer).
+        Utility method that posts the prerequisites required for a test that will involve a property named 'property'
+        of a given type with a given set of allowed values.
+
+        Uses `BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM` for the catalogue category as a base.
 
         :param property_type: Type of the property to post.
         :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
                                          `AllowedValuesSchema` to be posted with the catalogue category.
-        :param property_value: Value of the property to post for the item.
-        :return: ID of the created catalogue item (or `None` if not successful).
         """
         self.post_catalogue_category(
             {
@@ -261,6 +302,21 @@ class CreateDSL(CatalogueCategoryCreateDSL, ManufacturerCreateDSL):
             }
         )
         self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+    def post_catalogue_item_and_prerequisites_with_allowed_values(
+        self, property_type: str, allowed_values_post_data: dict, property_value: Any
+    ) -> Optional[str]:
+        """
+        Utility method that posts a catalogue item with a property named 'property' of a given type with a given set of
+        allowed values as well as any prerequisite entities (a catalogue category and a manufacturer).
+
+        :param property_type: Type of the property to post.
+        :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
+                                         `AllowedValuesSchema` to be posted with the catalogue category.
+        :param property_value: Value of the property to post for the item.
+        :return: ID of the created catalogue item (or `None` if not successful).
+        """
+        self.post_catalogue_item_prerequisites_with_allowed_values(property_type, allowed_values_post_data)
         return self.post_catalogue_item(
             {
                 **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
@@ -406,12 +462,26 @@ class TestCreate(CreateDSL):
             "cannot be None.",
         )
 
-    def test_create_with_missing_mandatory_properties(self):
-        """Test creating a catalogue item when missing mandatory properties."""
+    def test_create_with_missing_mandatory_properties_when_properties_field_defined(self):
+        """Test creating a catalogue item with missing mandatory properties when the properties field is defined."""
 
         self.post_catalogue_item_and_prerequisites_with_properties(
             {**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []}
         )
+
+        self.check_post_catalogue_item_failed_with_detail(
+            422,
+            "Missing mandatory property with ID "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+        )
+
+    def test_create_with_missing_mandatory_properties_when_properties_field_undefined(self):
+        """Test creating a catalogue item when missing mandatory properties when the properties field
+        is not defined at all."""
+
+        catalogue_item_data = copy.deepcopy(CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY)
+        del catalogue_item_data["properties"]
+        self.post_catalogue_item_and_prerequisites_with_properties(catalogue_item_data)
 
         self.check_post_catalogue_item_failed_with_detail(
             422,
@@ -604,6 +674,244 @@ class TestCreate(CreateDSL):
         self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
         self.check_post_catalogue_item_failed_with_detail(422, "The specified manufacturer does not exist")
+
+
+class BulkCreateDSL(CreateDSL):
+    """Base class for bulk create tests."""
+
+    _post_bulk_response_catalogue_item: Response
+
+    def post_bulk_catalogue_items(self, catalogue_items_data: list[dict]) -> Optional[list[str]]:
+        """
+        Posts bulk catalogue items with the given data.l.
+
+        :param catalogue_items_data: List of Dictionaries containing the basic catalogue item data as would be required
+                                      for a `CatalogueItemPostSchema` but with mandatory IDs missing and any `id`'s
+                                      replaced by the `name` value in its properties as the IDs will be added
+                                      automatically.
+        :return: IDs of the created catalogue items (or `None` if not successful).
+        """
+        full_catalogue_items_data = []
+        for catalogue_item_data in catalogue_items_data:
+            # Replace any unit values with unit IDs
+            full_catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(catalogue_item_data)
+
+            # Insert mandatory IDs if they have been created
+            if self.catalogue_category_id:
+                full_catalogue_item_data["catalogue_category_id"] = self.catalogue_category_id
+            if self.manufacturer_id:
+                full_catalogue_item_data["manufacturer_id"] = self.manufacturer_id
+            full_catalogue_items_data.append(full_catalogue_item_data)
+
+        self._post_bulk_response_catalogue_item = self.test_client.post(
+            "/v1/catalogue-items/bulk", json=full_catalogue_items_data
+        )
+
+        return (
+            [catalogue_item["id"] for catalogue_item in self._post_bulk_response_catalogue_item.json()]
+            if self._post_bulk_response_catalogue_item.status_code == 201
+            else None
+        )
+
+    def check_post_bulk_catalogue_items_success(self, expected_catalogue_items_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `post_bulk_catalogue_items` gave a successful response with the expected data
+        returned.
+
+        :param expected_catalogue_items_get_data: Dictionary containing the expected catalogue items data returned as
+                                would be required for a `CatalogueItemSchema`. Does not need mandatory IDs (e.g.
+                                `manufacturer_id`) as they will be added automatically to check they are as expected.
+        """
+
+        assert self._post_bulk_response_catalogue_item.status_code == 201
+        assert self._post_bulk_response_catalogue_item.json() == [
+            self.add_ids_to_expected_catalogue_item_get_data(expected_catalogue_item_get_data)
+            for expected_catalogue_item_get_data in expected_catalogue_items_get_data
+        ]
+
+    def check_post_bulk_catalogue_items_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `post_bulk_catalogue_item` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._post_bulk_response_catalogue_item.status_code == status_code
+        assert self._post_bulk_response_catalogue_item.json()["detail"] == detail
+
+    def check_post_bulk_catalogue_items_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `post_bulk_catalogue_item` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._post_bulk_response_catalogue_item.status_code == status_code
+        assert self._post_bulk_response_catalogue_item.json()["detail"][0]["msg"] == message
+
+
+class TestBulkCreate(BulkCreateDSL):
+    """Tests for bulk creating catalogue items (As logic is reused from create, only specific errors caught at the
+    router are tested)."""
+
+    def test_bulk_create(self):
+        """Test bulk creating catalogue items."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items(
+            [CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES]
+        )
+
+        self.check_post_bulk_catalogue_items_success(
+            [CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY, CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES]
+        )
+
+    def test_bulk_create_with_too_many(self):
+        """Test bulk creating catalogue items with too many of them."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY] * 4)
+
+        self.check_post_bulk_catalogue_items_failed_with_validation_message(
+            422, "List should have at most 3 items after validation, not 4"
+        )
+
+    def test_bulk_create_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test bulk creating an obsolete catalogue item with a non-existent
+        `obsolete_replacement_catalogue_item_id`."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                    "obsolete_replacement_catalogue_item_id": str(ObjectId()),
+                }
+            ]
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
+        """Test bulk creating an obsolete catalogue item an invalid `obsolete_replacement_catalogue_item_id`."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                    "obsolete_replacement_catalogue_item_id": "invalid-id",
+                }
+            ]
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_mandatory_properties_given_none(self):
+        """Test bulk creating a catalogue item when mandatory properties are given a value of `None`."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                    "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}],
+                }
+            ]
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            422,
+            f"Mandatory property with ID '{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}' "
+            "cannot be None.",
+        )
+
+    def test_bulk_create_with_missing_mandatory_properties(self):
+        """Test bulk creating a catalogue item when missing mandatory properties."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+        self.post_bulk_catalogue_items([{**CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY, "properties": []}])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            422,
+            "Missing mandatory property with ID "
+            f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+        )
+
+    def test_bulk_create_with_property_with_invalid_value_type(self):
+        """Test bulk creating a catalogue item with an invalid value type."""
+
+        self.post_catalogue_item_prerequisites_with_given_properties(
+            [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY]
+        )
+        self.post_bulk_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                    "properties": [
+                        {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42},
+                    ],
+                }
+            ],
+        )
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY['name']]}'. "
+            "Expected type: string.",
+        )
+
+    def test_bulk_create_in_non_leaf_catalogue_category(self):
+        """Test bulk creating a catalogue item within a non-leaf catalogue category."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(
+            409, "Adding a catalogue item to a non-leaf catalogue category is not allowed"
+        )
+
+    def test_bulk_create_with_non_existent_catalogue_category_id(self):
+        """Test bulk creating a catalogue item with a non-existent catalogue category ID."""
+
+        self.catalogue_category_id = str(ObjectId())
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_catalogue_category_id(self):
+        """Test bulk creating a catalogue item with an invalid catalogue category ID."""
+
+        self.catalogue_category_id = "invalid-id"
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_non_existent_manufacturer_id(self):
+        """Test bulk creating a catalogue item with a non-existent manufacturer ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.manufacturer_id = str(ObjectId())
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_manufacturer_id(self):
+        """Test bulk creating a catalogue item with an invalid manufacturer ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.manufacturer_id = "invalid-id"
+        self.post_bulk_catalogue_items([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_catalogue_items_failed_with_detail(422, "A specified entity does not exist")
 
 
 class GetDSL(CreateDSL):
@@ -1622,3 +1930,1021 @@ class TestDelete(DeleteDSL):
 
         self.delete_catalogue_item("invalid_id")
         self.check_delete_catalogue_item_failed_with_detail(404, "Catalogue item not found")
+
+
+class BulkValidateCreateDSL(CreateDSL):
+    """Base class for validate creation tests."""
+
+    _bulk_validate_create_response_catalogue_items: Response
+
+    def validate_create_catalogue_item(self, catalogue_item_data: dict) -> None:
+        """
+        Validates a single catalogue item's data.
+
+        :param catalogue_item_data: Dictionary containing the data to validate. Does not automatically add IDs so
+                                    they can be omitted as required.
+        """
+
+        self._bulk_validate_create_response_catalogue_items = self.test_client.post(
+            "/v1/catalogue-items/bulk-validate-create/", json=[catalogue_item_data]
+        )
+
+    def bulk_validate_create_catalogue_items(self, catalogue_items_data: list[dict]) -> None:
+        """
+        Validates bulk catalogue item data.
+
+        :param catalogue_items_data: List of dictionaries containing the data to validate. Does not automatically add
+                                     IDs so they can be omitted as required.
+        """
+
+        self._bulk_validate_create_response_catalogue_items = self.test_client.post(
+            "/v1/catalogue-items/bulk-validate-create/", json=catalogue_items_data
+        )
+
+    def check_validate_create_catalogue_item_success(
+        self, expected_warnings: list[dict], expected_errors: list[dict]
+    ) -> None:
+        """
+        Checks that a prior call to `validate_create_catalogue_item` gave a successful response with the expected data
+        returned.
+
+        :param expected_warnings: List of dictionaries containing the expected validation warnings.
+        :param expected_errors: List of dictionaries containing the expected validation errors.
+        """
+
+        assert self._bulk_validate_create_response_catalogue_items.status_code == 200
+        assert self._bulk_validate_create_response_catalogue_items.json() == {
+            "results": [
+                {
+                    "index": 0,
+                    "warnings": expected_warnings,
+                    "errors": expected_errors,
+                }
+            ]
+        }
+
+    def check_bulk_validate_create_catalogue_items_success(self, expected_result: dict) -> None:
+        """
+        Checks that a prior call to `bulk_validate_create_catalogue_items` gave a successful response with the expected
+        data returned.
+
+        :param expected_result: Dictionary of the expected result.
+        """
+
+        assert self._bulk_validate_create_response_catalogue_items.status_code == 200
+        assert self._bulk_validate_create_response_catalogue_items.json() == expected_result
+
+    def check_bulk_validate_create_catalogue_items_failed_with_validation_message(
+        self, status_code: int, message: str
+    ) -> None:
+        """
+        Checks that a prior call to `bulk_validate_create_catalogue_items` gave a failed response with the expected code
+        and pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._bulk_validate_create_response_catalogue_items.status_code == status_code
+        assert self._bulk_validate_create_response_catalogue_items.json()["detail"][0]["msg"] == message
+
+
+class TestBulkValidateCreate(BulkValidateCreateDSL):
+    """Tests for bulk validating catalogue items."""
+
+    def test_bulk_validate_create_with_only_required_values_provided(self):
+        """Test bulk validating catalogue item data for creation with only required values provided."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_duplicate_name(self):
+        """Test bulk validating catalogue item data for creation with only required values provided but the name is a
+        duplicate."""
+
+        self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[
+                {
+                    "input": "Catalogue Item Required Values Only",
+                    "location": [
+                        "name",
+                    ],
+                    "message": "Duplicate record found with the same name "
+                    f"'{CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"]}'",
+                    "type": "duplicate_record",
+                },
+            ],
+            expected_errors=[],
+        )
+
+    def test_bulk_validate_create_with_invalid_schema(self):
+        """Test bulk validating catalogue item data for creation when the schema itself is invalid."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        catalogue_item_data = {
+            # Actual properties, but wrong type
+            "name": 42,
+            "cost_gpb": False,
+            # Optional property, invalid type
+            "notes": 12,
+            # Custom properties
+            "properties": [{}, {"id": 42, "value": "test"}],
+        }
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": catalogue_item_data,
+                    "location": ["catalogue_category_id"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": ["manufacturer_id"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data["name"],
+                    "location": ["name"],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": ["cost_gbp"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": ["days_to_replace"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data,
+                    "location": ["is_obsolete"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": catalogue_item_data["notes"],
+                    "location": ["notes"],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+                {
+                    "input": {},
+                    "location": ["properties", 0, "id"],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": 42,
+                    "location": ["properties", 1, "id"],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_non_obsolete_with_all_values_except_properties(self):
+        """Test bulk validating non obsolete catalogue item data for creation with all values provided except
+        `properties` and those related to being obsolete."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_obsolete_with_all_values_except_properties(self):
+        """Test bulk validating obsolete catalogue item data for creation with all values provided except
+        `properties`."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        obsolete_replacement_catalogue_item_id = self.post_catalogue_item(
+            CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES
+        )
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_obsolete_with_non_existent_obsolete_replacement_catalogue_item_id(self):
+        """Test bulk validating obsolete catalogue item data for creation with a non-existent
+        `obsolete_replacement_catalogue_item_id`."""
+
+        obsolete_replacement_catalogue_item_id = str(ObjectId())
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": obsolete_replacement_catalogue_item_id,
+                    "location": [
+                        "obsolete_replacement_catalogue_item_id",
+                    ],
+                    "message": f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                    "type": "missing_record",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_obsolete_with_invalid_obsolete_replacement_catalogue_item_id(self):
+        """Test bulk validating obsolete catalogue item data for creation with an invalid
+        `obsolete_replacement_catalogue_item_id`."""
+
+        obsolete_replacement_catalogue_item_id = "invalid"
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "obsolete_replacement_catalogue_item_id": obsolete_replacement_catalogue_item_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": obsolete_replacement_catalogue_item_id,
+                    "location": [
+                        "obsolete_replacement_catalogue_item_id",
+                    ],
+                    "message": f"No catalogue item found with ID '{obsolete_replacement_catalogue_item_id}'",
+                    "type": "missing_record",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_all_properties_provided(self):
+        """Test bulk validating catalogue item data for creation with all properties within the catalogue category being
+        defined."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_properties_invalid_schema(self):
+        """
+        Test bulk validating catalogue item data for creation with properties within the catalogue category being
+        defined but with an invalid schema.
+        """
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        # Don't replace names with IDs
+        catalogue_item_data = {
+            **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+            "catalogue_category_id": self.catalogue_category_id,
+            "manufacturer_id": self.manufacturer_id,
+        }
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+                    "location": [
+                        "properties",
+                        0,
+                        "id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_42,
+                    "location": [
+                        "properties",
+                        1,
+                        "id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                    "location": [
+                        "properties",
+                        2,
+                        "id",
+                    ],
+                    "message": "Field required",
+                    "type": "missing",
+                },
+                {
+                    "input": {},
+                    "location": [
+                        "properties",
+                    ],
+                    "message": "Missing mandatory property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE["name"]]}'",
+                    "type": "missing_mandatory_property",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_mandatory_properties_only(self):
+        """Test bulk validating catalogue item data for creation with only mandatory properties defined."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = {
+            **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+            "catalogue_category_id": self.catalogue_category_id,
+            "manufacturer_id": self.manufacturer_id,
+        }
+        catalogue_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
+            catalogue_item_data, self.unit_value_id_dict
+        )
+        catalogue_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+            catalogue_item_data, self.property_name_id_dict
+        )
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_mandatory_properties_given_none(self):
+        """Test bulk validating catalogue item data for creation when mandatory properties are given a value of
+        `None`."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE, "value": None}],
+            }
+        )
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": None,
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": f"Mandatory property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}' cannot be None.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_missing_mandatory_properties(self):
+        """Test bulk validating catalogue item data for creation with missing mandatory properties when the properties
+        field is defined."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [],
+            }
+        )
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": {},
+                    "location": [
+                        "properties",
+                    ],
+                    "message": f"Missing mandatory property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+                    "type": "missing_mandatory_property",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_missing_mandatory_properties_when_properties_field_undefined(self):
+        """Test bulk validating catalogue item data for creation with missing mandatory properties when the properties
+        field is not defined at all."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+        del catalogue_item_data["properties"]
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": {},
+                    "location": [
+                        "properties",
+                    ],
+                    "message": f"Missing mandatory property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE['name']]}'",
+                    "type": "missing_mandatory_property",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_mandatory_properties_given_none(self):
+        """Test bulk validating catalogue item data for creation when non-mandatory properties are given a value of
+        `None`."""
+
+        self.post_catalogue_item_prerequisites_with_properties()
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [
+                    PROPERTY_DATA_BOOLEAN_MANDATORY_TRUE,
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT_NONE,
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_NONE,
+                ],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_string_property_with_invalid_value_type(self):
+        """Test bulk validating catalogue item data for creation with an invalid value type for a string property."""
+
+        self.post_catalogue_item_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY],
+        )
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{"name": CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY["name"], "value": 42}],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": 42,
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": "Invalid value type for property with ID "
+                    f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY['name']]}'"
+                    ". Expected type: string.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_number_property_with_invalid_value_type(self):
+        """Test bulk validating catalogue item data or creation with an invalid value type for a number property."""
+
+        self.post_catalogue_item_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT],
+        )
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [
+                    {"name": CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"], "value": "42"}
+                ],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": "42",
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": "Invalid value type for property with ID '"
+                    + self.property_name_id_dict[
+                        CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_MM_UNIT["name"]
+                    ]
+                    + "'. Expected type: number.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_boolean_property_with_invalid_value_type(self):
+        """Test bulk validating catalogue item data for creation with an invalid value type for a boolean property."""
+
+        self.post_catalogue_item_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY],
+        )
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{"name": CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY["name"], "value": 0}],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": 0,
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": "Invalid value type for property with ID "
+                    f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_BOOLEAN_MANDATORY['name']]}'. "
+                    "Expected type: boolean.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_allowed_values_list(self):
+        """Test bulk validating catalogue item data for creation with properties that have allowed values lists."""
+
+        self.post_catalogue_item_prerequisites_with_given_properties(
+            catalogue_category_properties_data=[
+                CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+                CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST,
+            ],
+        )
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [
+                    PROPERTY_DATA_NUMBER_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_1,
+                    PROPERTY_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LIST_VALUE1,
+                ],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_string_property_with_allowed_values_list_with_invalid_value(self):
+        """Test bulk validating catalogue item data for creation with a string property with an allowed values list
+        while giving it a value not in the list."""
+
+        self.post_catalogue_item_prerequisites_with_allowed_values("string", {"type": "list", "values": ["value1"]})
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{"name": "property", "value": "value2"}],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": "value2",
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+                    "Expected one of value1.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_string_property_with_allowed_values_list_with_invalid_type(self):
+        """Test bulk validating catalogue item data for creation with a string property with an allowed values list
+        while giving it a value with an incorrect type."""
+
+        self.post_catalogue_item_prerequisites_with_allowed_values("string", {"type": "list", "values": ["value1"]})
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{"name": "property", "value": 42}],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": 42,
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": "Invalid value type for property with ID "
+                    f"'{self.property_name_id_dict['property']}'. Expected type: string.",
+                    "type": "invalid_property_type",
+                },
+                {
+                    "input": 42,
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+                    "Expected one of value1.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_number_property_with_allowed_values_list_with_invalid_value(self):
+        """Test bulk validating catalogue item data for creation with a number property with an allowed values list
+        while giving it a value not in the list."""
+
+        self.post_catalogue_item_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]})
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{"name": "property", "value": 2}],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": 2,
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+                    "Expected one of 1.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_number_property_with_allowed_values_list_with_invalid_type(self):
+        """Test bulk validating catalogue item data for creation with a number property with an allowed values list
+        while giving it a value with an incorrect type."""
+
+        self.post_catalogue_item_prerequisites_with_allowed_values("number", {"type": "list", "values": [1]})
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+                "properties": [{"name": "property", "value": "test"}],
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": "test",
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": "Invalid value type for property with ID "
+                    f"'{self.property_name_id_dict['property']}'. Expected type: number.",
+                    "type": "invalid_property_type",
+                },
+                {
+                    "input": "test",
+                    "location": [
+                        "properties",
+                        0,
+                        "value",
+                    ],
+                    "message": f"Invalid value for property with ID '{self.property_name_id_dict['property']}'. "
+                    "Expected one of 1.",
+                    "type": "invalid_property_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_in_non_leaf_catalogue_category(self):
+        """Test bulk validating catalogue item data for creation within a non-leaf catalogue category."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY)
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": self.catalogue_category_id,
+                    "location": [
+                        "catalogue_category_id",
+                    ],
+                    "message": "Cannot add catalogue item to a non-leaf catalogue category",
+                    "type": "non_leaf_catalogue_category",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_existent_catalogue_category_id(self):
+        """Test bulk validating catalogue item data for creation with a non-existent catalogue category ID."""
+
+        self.catalogue_category_id = str(ObjectId())
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": self.catalogue_category_id,
+                    "location": [
+                        "catalogue_category_id",
+                    ],
+                    "message": f"No catalogue category found with ID '{self.catalogue_category_id}'",
+                    "type": "missing_record",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_invalid_catalogue_category_id(self):
+        """Test bulk validating catalogue item data for creation with an invalid catalogue category ID."""
+
+        self.catalogue_category_id = "invalid-id"
+        self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+        self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": "invalid-id",
+                    "location": [
+                        "catalogue_category_id",
+                    ],
+                    "message": f"No catalogue category found with ID '{self.catalogue_category_id}'",
+                    "type": "missing_record",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_existent_manufacturer_id(self):
+        """Test bulk validating catalogue item data for creation with a non-existent manufacturer ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.manufacturer_id = str(ObjectId())
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": f"{self.manufacturer_id}",
+                    "location": [
+                        "manufacturer_id",
+                    ],
+                    "message": f"No manufacturer found with ID '{self.manufacturer_id}'",
+                    "type": "missing_record",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_invalid_manufacturer_id(self):
+        """Test bulk validating catalogue item data for creation with an invalid manufacturer ID."""
+
+        self.post_catalogue_category(CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES)
+        self.manufacturer_id = "invalid-id"
+
+        catalogue_item_data = self.get_catalogue_item_with_ids_in_properties(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+        self.validate_create_catalogue_item(catalogue_item_data)
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": f"{self.manufacturer_id}",
+                    "location": [
+                        "manufacturer_id",
+                    ],
+                    "message": f"No manufacturer found with ID '{self.manufacturer_id}'",
+                    "type": "missing_record",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create(self):
+        """
+        Test bulk validating catalogue items for creation.
+
+        Comprehensive testing is done above on single items, this tests it works more more than one.
+        """
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.bulk_validate_create_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                },
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                },
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                },
+            ]
+        )
+
+        self.check_bulk_validate_create_catalogue_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [], "errors": []},
+                    {
+                        "index": 1,
+                        "warnings": [],
+                        "errors": [
+                            {
+                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "location": [
+                                    "catalogue_category_id",
+                                ],
+                                "message": "Field required",
+                                "type": "missing",
+                            },
+                            {
+                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "location": [
+                                    "manufacturer_id",
+                                ],
+                                "message": "Field required",
+                                "type": "missing",
+                            },
+                        ],
+                    },
+                    {"index": 2, "warnings": [], "errors": []},
+                ]
+            }
+        )
+
+    def test_bulk_validate_create_with_too_many(self):
+        """Test bulk validating catalogue items for creation with too many of them."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        self.bulk_validate_create_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                }
+            ]
+            * 4
+        )
+
+        self.check_bulk_validate_create_catalogue_items_failed_with_validation_message(
+            422, "List should have at most 3 items after validation, not 4"
+        )
