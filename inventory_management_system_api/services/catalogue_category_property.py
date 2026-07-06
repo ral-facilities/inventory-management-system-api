@@ -71,7 +71,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_property: Property to add (with additional info on how to perform the migration if
                                         necessary)
         :raises InvalidActionError: If attempting to add a mandatory property without a default_value being specified
-        :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf
+        :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
         :raises MissingRecordError: If the catalogue category doesn't exist
         :return: The created property as defined at the catalogue category level
         """
