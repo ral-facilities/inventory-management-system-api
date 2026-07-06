@@ -26,7 +26,11 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError, NonLeafCatalogueCategoryError
+from inventory_management_system_api.core.exceptions import (
+    InvalidActionError,
+    MissingRecordError,
+    NonLeafCatalogueCategoryError,
+)
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,

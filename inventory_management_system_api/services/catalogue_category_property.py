@@ -8,7 +8,11 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.database import start_session_transaction
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError, NonLeafCatalogueCategoryError
+from inventory_management_system_api.core.exceptions import (
+    InvalidActionError,
+    MissingRecordError,
+    NonLeafCatalogueCategoryError,
+)
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
     CatalogueCategoryPropertyIn,
