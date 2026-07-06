@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 from fastapi import Depends
 
 from inventory_management_system_api.core.database import start_session_transaction
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
+from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError, NonLeafCatalogueCategoryError
 from inventory_management_system_api.models.catalogue_category import (
     AllowedValues,
     CatalogueCategoryPropertyIn,
@@ -67,7 +67,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_property: Property to add (with additional info on how to perform the migration if
                                         necessary)
         :raises InvalidActionError: If attempting to add a mandatory property without a default_value being specified
-                                    or if the catalogue category is not a leaf
+        :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf
         :raises MissingRecordError: If the catalogue category doesn't exist
         :return: The created property as defined at the catalogue category level
         """
@@ -84,7 +84,7 @@ class CatalogueCategoryPropertyService:
 
         # Must be a leaf catalogue category in order to have properties
         if not stored_catalogue_category.is_leaf:
-            raise InvalidActionError("Cannot add a property to a non-leaf catalogue category")
+            raise NonLeafCatalogueCategoryError("Cannot add a property to a non-leaf catalogue category")
 
         # Ensure the property is actually valid
         utils.check_duplicate_property_names(stored_catalogue_category.properties + [catalogue_category_property])
