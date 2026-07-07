@@ -25,6 +25,7 @@ from inventory_management_system_api.core.exceptions import (
     LeafCatalogueCategoryError,
     MissingRecordError,
     WriteConflictError,
+    NonLeafCatalogueCategoryError,
 )
 from inventory_management_system_api.schemas.breadcrumbs import BreadcrumbsGetSchema
 from inventory_management_system_api.schemas.catalogue_category import (
@@ -275,6 +276,10 @@ def create_property(
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+    except NonLeafCatalogueCategoryError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
 
 
 @router.patch(
