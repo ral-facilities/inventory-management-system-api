@@ -412,7 +412,7 @@ class CreateDSL(ItemServiceDSL):
     def call_create(self) -> None:
         """Calls the `ItemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
-        self._created_item = self.item_service.create(self._item_post, self._user_authorised)
+        self._created_item = self.item_service.create(self._item_post, self._user_authorised, username="username")
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -423,7 +423,7 @@ class CreateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.create(self._item_post, self._user_authorised)
+            self.item_service.create(self._item_post, self._user_authorised, username="username")
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -920,7 +920,9 @@ class UpdateDSL(ItemServiceDSL):
         """
 
         self._updated_item_id = item_id
-        self._updated_item = self.item_service.update(item_id, self._item_patch, self._user_authorised)
+        self._updated_item = self.item_service.update(
+            item_id, self._item_patch, self._user_authorised, username="username"
+        )
 
     def call_update_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
         """
@@ -932,7 +934,7 @@ class UpdateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.update(item_id, self._item_patch, self._user_authorised)
+            self.item_service.update(item_id, self._item_patch, self._user_authorised, username="username")
         self._update_exception = exc
 
     def check_update_success(self) -> None:

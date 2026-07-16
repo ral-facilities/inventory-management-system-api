@@ -62,6 +62,7 @@ class CatalogueCategoryPropertyService:
         self,
         catalogue_category_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPostSchema,
+        username: str,
     ) -> CatalogueCategoryPropertyOut:
         """Create a new property at the catalogue category level
 
@@ -70,6 +71,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_id: ID of the catalogue category to add the property to
         :param catalogue_category_property: Property to add (with additional info on how to perform the migration if
                                         necessary)
+        :param username: The user submitting this request.
         :raises InvalidActionError: If attempting to add a mandatory property without a default_value being specified
         :raises NonLeafCatalogueCategoryError: If the catalogue category is not a leaf category.
         :raises MissingRecordError: If the catalogue category doesn't exist
@@ -109,7 +111,7 @@ class CatalogueCategoryPropertyService:
         with start_session_transaction("adding property") as session:
             # Firstly update the catalogue category
             catalogue_category_property_out = self._catalogue_category_repository.create_property(
-                catalogue_category_id, catalogue_category_property_in, session=session
+                catalogue_category_id, catalogue_category_property_in, username, session=session
             )
 
             property_in = PropertyIn(
@@ -122,7 +124,7 @@ class CatalogueCategoryPropertyService:
 
             # Add property to all catalogue items of the catalogue category
             self._catalogue_item_repository.insert_property_to_all_matching(
-                catalogue_category_id, property_in, session=session
+                catalogue_category_id, property_in, username, session=session
             )
 
             # Add property to all items of the catalogue items
@@ -130,7 +132,7 @@ class CatalogueCategoryPropertyService:
             # would be memory to store these ids and the network bandwidth it takes to send the request to the
             # database but for 10000 items being updated this only takes 4.92 KB
             catalogue_item_ids = self._catalogue_item_repository.list_ids(catalogue_category_id, session=session)
-            self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, session=session)
+            self._item_repository.insert_property_to_all_in(catalogue_item_ids, property_in, username, session=session)
 
         return catalogue_category_property_out
 
@@ -176,12 +178,15 @@ class CatalogueCategoryPropertyService:
 
     # pylint:disable=too-many-locals
     # pylint:disable=too-many-branches
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def update(
         self,
         catalogue_category_id: str,
         catalogue_category_property_id: str,
         catalogue_category_property: CatalogueCategoryPropertyPatchSchema,
         is_authorised: bool,
+        username: str,
     ) -> CatalogueCategoryPropertyOut:
         """
         Update a property at the catalogue category level by its id
@@ -193,6 +198,7 @@ class CatalogueCategoryPropertyService:
         :param catalogue_category_property_id: The ID of the property within the category to update
         :param catalogue_category_property: The property values to update
         :param is_authorised: Whether or not the user is authorised to update a property's unit
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the catalogue category doesn't exist, or the property doesn't
                                     exist within the specified catalogue category
         """
@@ -252,7 +258,12 @@ class CatalogueCategoryPropertyService:
         with start_session_transaction("updating property") as session:
             # Firstly update the catalogue category
             property_out = self._catalogue_category_repository.update_property(
-                catalogue_category_id, catalogue_category_property_id, property_in, session=session
+                catalogue_category_id,
+                catalogue_category_property_id,
+                property_in,
+                username,
+                catalogue_category_property.modified_comment,
+                session=session,
             )
 
             # Avoid propagating changes unless absolutely necessary
@@ -269,22 +280,25 @@ class CatalogueCategoryPropertyService:
                 self._catalogue_item_repository.update_all_properties_with_id(
                     catalogue_category_property_id,
                     update_body,
+                    username,
                     session=session,
                 )
                 self._item_repository.update_all_properties_with_id(
                     catalogue_category_property_id,
                     update_body,
+                    username,
                     session=session,
                 )
 
         return property_out
 
-    def delete(self, catalogue_category_id: str, catalogue_category_property_id: str) -> None:
+    def delete(self, catalogue_category_id: str, catalogue_category_property_id: str, username: str) -> None:
         """
         Delete a catalogue category property by its ID
 
         :param catalogue_category_id: The ID of the catalogue category to delete from
         :param catalogue_category_property_id: The ID of the property to delete
+        :param username: The user deleting the property
         """
 
         stored_catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
@@ -307,7 +321,9 @@ class CatalogueCategoryPropertyService:
             )
 
             self._catalogue_item_repository.delete_properties(
-                property_id=catalogue_category_property_id, session=session
+                property_id=catalogue_category_property_id, username=username, session=session
             )
 
-            self._item_repository.delete_properties(property_id=catalogue_category_property_id, session=session)
+            self._item_repository.delete_properties(
+                property_id=catalogue_category_property_id, username=username, session=session
+            )

@@ -68,7 +68,7 @@ class CatalogueItemService:
         self._setting_repository = setting_repository
 
     def create(
-        self, catalogue_item: CatalogueItemPostSchema, session: Optional[ClientSession] = None
+        self, catalogue_item: CatalogueItemPostSchema, username: str, session: Optional[ClientSession] = None
     ) -> CatalogueItemOut:
         """
         Create a new catalogue item.
@@ -78,6 +78,7 @@ class CatalogueItemService:
         is. It then processes the properties.
 
         :param catalogue_item: The catalogue item to be created.
+        :param username: The user submitting this request.
         :param session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created catalogue item.
         :raises MissingRecordError: If the catalogue category does not exist, and/or the manufacturer does not exist
@@ -112,16 +113,13 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.create(
             CatalogueItemIn(
-                **{
-                    **catalogue_item.model_dump(),
-                    "properties": supplied_properties,
-                },
+                **{**catalogue_item.model_dump(), "properties": supplied_properties, "modified_by": username},
                 number_of_spares=0 if spares_definition else None,
             ),
             session=session,
         )
 
-    def bulk_create(self, catalogue_items: List[CatalogueItemPostSchema]) -> List[CatalogueItemOut]:
+    def bulk_create(self, catalogue_items: List[CatalogueItemPostSchema], username: str) -> List[CatalogueItemOut]:
         """
         Creates catalogue items in bulk.
 
@@ -130,12 +128,13 @@ class CatalogueItemService:
         `verify` should be used instead.
 
         :param catalogue_items: The catalogue items to be created.
+        :param username: The user submitting this request.
         :return: List of created catalogue items.
         """
         created_catalogue_items = []
         with start_session_transaction("creating bulk catalogue items") as session:
             for catalogue_item in catalogue_items:
-                created_catalogue_items.append(self.create(catalogue_item, session=session))
+                created_catalogue_items.append(self.create(catalogue_item, username, session=session))
         return created_catalogue_items
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
@@ -158,7 +157,9 @@ class CatalogueItemService:
 
     # pylint:disable=too-many-branches
     # pylint:disable=too-many-locals
-    def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
+    def update(
+        self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema, username: str
+    ) -> CatalogueItemOut:
         """
         Update a catalogue item by its ID.
 
@@ -166,6 +167,7 @@ class CatalogueItemService:
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the fields that need to be updated.
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the catalogue item doesn't exist.
         :raises ChildElementsExistError: If updating a property that is not allowed to be edited when there are child
                                          entities, and there are child entities currently.
@@ -258,7 +260,7 @@ class CatalogueItemService:
 
         return self._catalogue_item_repository.update(
             catalogue_item_id,
-            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data}),
+            CatalogueItemIn(**{**stored_catalogue_item.model_dump(), **update_data, "modified_by": username}),
         )
 
     def delete(self, catalogue_item_id: str, access_token: Optional[str] = None) -> None:

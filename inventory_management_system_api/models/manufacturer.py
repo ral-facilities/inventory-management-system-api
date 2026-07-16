@@ -7,7 +7,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_serializer
 
 from inventory_management_system_api.models.catalogue_category import StringObjectIdField
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 from inventory_management_system_api.schemas.manufacturer import AddressSchema
 
 
@@ -32,13 +32,13 @@ class ManufacturerBase(BaseModel):
         return url if url is None else str(url)
 
 
-class ManufacturerIn(CreatedModifiedTimeInMixin, ManufacturerBase):
+class ManufacturerIn(BaseFieldsInMixin, ManufacturerBase):
     """
     Input database model for a manufacturer
     """
 
 
-class ManufacturerOut(CreatedModifiedTimeOutMixin, ManufacturerBase):
+class ManufacturerOut(BaseFieldsOutMixin, ManufacturerBase):
     """
     Output database model for a manufacturer
     """

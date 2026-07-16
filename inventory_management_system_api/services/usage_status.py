@@ -25,15 +25,18 @@ class UsageStatusService:
         """
         self._usage_status_repository = usage_status_repository
 
-    def create(self, usage_status: UsageStatusPostSchema) -> UsageStatusOut:
+    def create(self, usage_status: UsageStatusPostSchema, username: str) -> UsageStatusOut:
         """
         Create a new usage status.
 
         :param usage_status: The usage status to be created.
+        :param username: The user submitting this request.
         :return: The created usage status.
         """
         code = utils.generate_code(usage_status.value, "usage status")
-        return self._usage_status_repository.create(UsageStatusIn(**usage_status.model_dump(), code=code))
+        return self._usage_status_repository.create(
+            UsageStatusIn(**usage_status.model_dump(), code=code, modified_by=username)
+        )
 
     def get(self, usage_status_id: str) -> Optional[UsageStatusOut]:
         """
