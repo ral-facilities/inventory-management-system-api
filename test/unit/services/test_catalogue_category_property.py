@@ -26,7 +26,11 @@ import pytest
 from bson import ObjectId
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
-from inventory_management_system_api.core.exceptions import InvalidActionError, MissingRecordError
+from inventory_management_system_api.core.exceptions import (
+    InvalidActionError,
+    MissingRecordError,
+    NonLeafCatalogueCategoryError,
+)
 from inventory_management_system_api.models.catalogue_category import (
     CatalogueCategoryIn,
     CatalogueCategoryOut,
@@ -341,7 +345,7 @@ class TestCreate(CreateDSL):
             CATALOGUE_CATEGORY_PROPERTY_DATA_NUMBER_NON_MANDATORY,
             catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
         )
-        self.call_create_expecting_error(InvalidActionError)
+        self.call_create_expecting_error(NonLeafCatalogueCategoryError)
         self.check_create_failed_with_exception("Cannot add a property to a non-leaf catalogue category")
 
 

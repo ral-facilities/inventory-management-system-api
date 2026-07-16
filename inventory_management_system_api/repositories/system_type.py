@@ -3,7 +3,7 @@ Module for providing a repository for managing system types in a MongoDB databas
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -47,7 +47,7 @@ class SystemTypeRepo:
             return SystemTypeOut(**system_type)
         return None
 
-    def list(self, session: Optional[ClientSession] = None) -> list[SystemTypeOut]:
+    def list(self, session: Optional[ClientSession] = None) -> List[SystemTypeOut]:
         """
         Retrieve system types from a MongoDB database.
 

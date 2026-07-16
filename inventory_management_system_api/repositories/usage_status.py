@@ -3,7 +3,7 @@ Module for providing a repository for managing Usage statuses in a MongoDB datab
 """
 
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -55,7 +55,7 @@ class UsageStatusRepo:
 
         return self.get(str(result.inserted_id), session=session)
 
-    def list(self, session: Optional[ClientSession] = None) -> list[UsageStatusOut]:
+    def list(self, session: Optional[ClientSession] = None) -> List[UsageStatusOut]:
         """
         Retrieve Usage statuses from a MongoDB database
 

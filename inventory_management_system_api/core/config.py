@@ -91,6 +91,14 @@ class ObjectStorageConfig(BaseModel):
         return field_value
 
 
+class BulkConfig(BaseModel):
+    """
+    Configuration model for bulk processing endpoints.
+    """
+
+    max_catalogue_items: int
+
+
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
@@ -104,6 +112,7 @@ class Config(BaseSettings):
     authentication: AuthenticationConfig
     ims_database: DatabaseConfig
     object_storage: ObjectStorageConfig
+    bulk: BulkConfig
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -2,7 +2,7 @@
 Module for providing a service for managing systems using the `SystemRepo` repository.
 """
 
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 
 from fastapi import Depends
 
@@ -23,7 +23,7 @@ class SystemTypeService:
         """
         self._system_type_repository = system_type_repository
 
-    def list(self) -> list[SystemTypeOut]:
+    def list(self) -> List[SystemTypeOut]:
         """
         Retrieve system types.
 

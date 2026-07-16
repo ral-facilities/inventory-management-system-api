@@ -2,7 +2,7 @@
 Module for providing a repository for managing rules in a MongoDB database.
 """
 
-from typing import Optional
+from typing import List, Optional
 
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
@@ -66,7 +66,7 @@ class RuleRepo:
         src_system_type_id: Optional[str],
         dst_system_type_id: Optional[str],
         session: Optional[ClientSession] = None,
-    ) -> list[RuleOut]:
+    ) -> List[RuleOut]:
         """
         Retrieve rules from a MongoDB database based on the provided filters.
 
