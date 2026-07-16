@@ -2073,6 +2073,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
             "notes": 12,
             # Custom properties
             "properties": [{}, {"id": 42, "value": "test"}],
+            "modified_comment": None,
         }
         self.validate_create_catalogue_item(catalogue_item_data)
 
@@ -2885,18 +2886,19 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         """
 
         self.post_catalogue_item_prerequisites_no_properties()
+        catalogue_item_data = {**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "modified_comment": None}
         self.bulk_validate_create_catalogue_items(
             [
                 {
-                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    **catalogue_item_data,
                     "catalogue_category_id": self.catalogue_category_id,
                     "manufacturer_id": self.manufacturer_id,
                 },
                 {
-                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    **catalogue_item_data,
                 },
                 {
-                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    **catalogue_item_data,
                     "catalogue_category_id": self.catalogue_category_id,
                     "manufacturer_id": self.manufacturer_id,
                 },
@@ -2912,7 +2914,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                         "warnings": [],
                         "errors": [
                             {
-                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "input": catalogue_item_data,
                                 "location": [
                                     "catalogue_category_id",
                                 ],
@@ -2920,7 +2922,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                                 "type": "missing",
                             },
                             {
-                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "input": catalogue_item_data,
                                 "location": [
                                     "manufacturer_id",
                                 ],
