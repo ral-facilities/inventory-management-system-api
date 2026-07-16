@@ -86,6 +86,7 @@ def create_catalogue_item(
     status_code=status.HTTP_201_CREATED,
 )
 def bulk_create_catalogue_item(
+    request: Request,
     catalogue_items: Annotated[list[CatalogueItemPostSchema], Field(max_length=config.bulk.max_catalogue_items)],
     catalogue_item_service: CatalogueItemServiceDep,
 ) -> list[CatalogueItemSchema]:
@@ -93,7 +94,7 @@ def bulk_create_catalogue_item(
     try:
         return [
             CatalogueItemSchema(**catalogue_item.model_dump())
-            for catalogue_item in catalogue_item_service.bulk_create(catalogue_items)
+            for catalogue_item in catalogue_item_service.bulk_create(catalogue_items, request.state.username)
         ]
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))

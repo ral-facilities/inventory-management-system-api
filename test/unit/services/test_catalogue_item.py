@@ -401,11 +401,11 @@ class TestBulkCreate(CatalogueItemServiceDSL):
             "inventory_management_system_api.services.catalogue_item.start_session_transaction",
             return_value=context_manager,
         ) as mock_start_session_transaction:
-            created_catalogue_items = self.catalogue_item_service.bulk_create(mock_catalogue_items)
+            created_catalogue_items = self.catalogue_item_service.bulk_create(mock_catalogue_items, "username")
 
         mock_start_session_transaction.assert_called_once_with("creating bulk catalogue items")
         assert self.catalogue_item_service.create.call_args_list == [
-            call(catalogue_item, session=mock_session) for catalogue_item in mock_catalogue_items
+            call(catalogue_item, "username", session=mock_session) for catalogue_item in mock_catalogue_items
         ]
         assert created_catalogue_items == mock_created_item_outs
 

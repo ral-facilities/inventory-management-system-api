@@ -119,7 +119,7 @@ class CatalogueItemService:
             session=session,
         )
 
-    def bulk_create(self, catalogue_items: List[CatalogueItemPostSchema]) -> List[CatalogueItemOut]:
+    def bulk_create(self, catalogue_items: List[CatalogueItemPostSchema], username: str) -> List[CatalogueItemOut]:
         """
         Creates catalogue items in bulk.
 
@@ -128,12 +128,13 @@ class CatalogueItemService:
         `verify` should be used instead.
 
         :param catalogue_items: The catalogue items to be created.
+        :param username: The user submitting this request.
         :return: List of created catalogue items.
         """
         created_catalogue_items = []
         with start_session_transaction("creating bulk catalogue items") as session:
             for catalogue_item in catalogue_items:
-                created_catalogue_items.append(self.create(catalogue_item, session=session))
+                created_catalogue_items.append(self.create(catalogue_item, username, session=session))
         return created_catalogue_items
 
     def get(self, catalogue_item_id: str) -> Optional[CatalogueItemOut]:
@@ -166,6 +167,7 @@ class CatalogueItemService:
 
         :param catalogue_item_id: The ID of the catalogue item to update.
         :param catalogue_item: The catalogue item containing the fields that need to be updated.
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the catalogue item doesn't exist.
         :raises ChildElementsExistError: If updating a property that is not allowed to be edited when there are child
                                          entities, and there are child entities currently.
