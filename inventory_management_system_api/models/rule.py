@@ -23,4 +23,4 @@ class RuleOut(BaseModel):
     dst_system_type: Optional[SystemTypeOut] = None
     dst_usage_status: Optional[UsageStatusOut] = None
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)

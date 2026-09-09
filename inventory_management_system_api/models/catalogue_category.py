@@ -55,7 +55,7 @@ class CatalogueCategoryPropertyOut(CatalogueCategoryPropertyBase):
     id: StringObjectIdField = Field(alias="_id")
     unit_id: Optional[StringObjectIdField] = None
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
     def is_equal_without_id(self, other: Any) -> bool:
         """
@@ -126,4 +126,4 @@ class CatalogueCategoryOut(CreatedModifiedTimeOutMixin, CatalogueCategoryBase):
     parent_id: Optional[StringObjectIdField] = None
     properties: List[CatalogueCategoryPropertyOut] = []
 
-    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True, arbitrary_types_allowed=True)
