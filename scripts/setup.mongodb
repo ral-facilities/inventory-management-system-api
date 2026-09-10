@@ -189,4 +189,30 @@ console.log("Replica set initialised successfully");
     { code: 1 },
     { name: "usage_statuses_name_uniqueness_index", unique: true },
   );
+
+  // Enable pre and post images (for history change streams)
+  db.runCommand({
+    collMod: "catalogue_categories",
+    changeStreamPreAndPostImages: { enabled: true }
+  });
+
+  db.runCommand({
+    collMod: "manufacturers",
+    changeStreamPreAndPostImages: { enabled: true }
+  });
+
+  db.runCommand({
+    collMod: "systems",
+    changeStreamPreAndPostImages: { enabled: true }
+  });
+
+  db.runCommand({
+    collMod: "catalogue_items",
+    changeStreamPreAndPostImages: { enabled: true }
+  });
+
+  db.runCommand({
+    collMod: "items",
+    changeStreamPreAndPostImages: { enabled: true }
+  });
 });
