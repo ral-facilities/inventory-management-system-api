@@ -33,7 +33,7 @@ class PropertyOut(BaseModel):
     unit_id: Optional[StringObjectIdField] = None
     unit: Optional[str] = None
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
 
 class CatalogueItemBase(BaseModel):
@@ -99,4 +99,4 @@ class CatalogueItemOut(CreatedModifiedTimeOutMixin, CatalogueItemBase):
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     properties: List[PropertyOut] = []
 
-    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True, arbitrary_types_allowed=True)

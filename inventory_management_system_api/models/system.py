@@ -45,4 +45,4 @@ class SystemOut(CreatedModifiedTimeOutMixin, SystemBase):
     parent_id: Optional[StringObjectIdField] = None
     type_id: StringObjectIdField
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
