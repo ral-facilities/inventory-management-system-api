@@ -9,7 +9,7 @@ This microservice requires a MongoDB instance to run against.
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.14 and and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
+- Python 3.14 and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
 - MongoDB 8.0 installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorisation is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
