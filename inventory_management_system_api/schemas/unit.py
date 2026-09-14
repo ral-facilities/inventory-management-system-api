@@ -4,7 +4,7 @@ Module for defining the API schema models for representing Units
 
 from pydantic import BaseModel, Field
 
-from inventory_management_system_api.schemas.mixins import CreatedModifiedSchemaMixin
+from inventory_management_system_api.schemas.mixins import BaseFieldsSchemaMixin
 
 
 class UnitPostSchema(BaseModel):
@@ -15,7 +15,7 @@ class UnitPostSchema(BaseModel):
     value: str = Field(description="Value of the Unit")
 
 
-class UnitSchema(CreatedModifiedSchemaMixin, UnitPostSchema):
+class UnitSchema(BaseFieldsSchemaMixin, UnitPostSchema):
     """
     Schema model for a Unit get request response
     """

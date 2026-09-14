@@ -886,8 +886,8 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
-        self.check_patch_item_success(ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+        self.patch_item(item_id, {**ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "modified_comment": "An update"})
+        self.check_patch_item_success({**ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "modified_comment": "An update"})
 
     def test_partial_update_catalogue_item_id(self):
         """Test updating the `catalogue_item_id` of an item."""

@@ -10,7 +10,7 @@ from inventory_management_system_api.models.catalogue_item import PropertyIn, Pr
 
 from inventory_management_system_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
 
-from inventory_management_system_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
+from inventory_management_system_api.models.mixins import BaseFieldsInMixin, BaseFieldsOutMixin
 
 
 class ItemBase(BaseModel):
@@ -49,13 +49,13 @@ class ItemBase(BaseModel):
     # pylint: enable=duplicate-code
 
 
-class ItemIn(CreatedModifiedTimeInMixin, ItemBase):
+class ItemIn(BaseFieldsInMixin, ItemBase):
     """
     Input database model for an item.
     """
 
 
-class ItemOut(CreatedModifiedTimeOutMixin, ItemBase):
+class ItemOut(BaseFieldsOutMixin, ItemBase):
     """
     Output database model for an item.
     """
