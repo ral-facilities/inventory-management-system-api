@@ -9,7 +9,7 @@ This microservice requires a MongoDB instance to run against.
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.13 and and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
+- Python 3.14 and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
 - MongoDB 8.0 installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorisation is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
@@ -323,7 +323,7 @@ to populate the database with mock data.
 If you wish to do this manually the full command is
 
 ```bash
-docker exec -i ims-api-mongodb mongorestore --username "root" --password "example" --authenticationDatabase=admin --db ims --archive --drop < ./data/mock_data.dump
+docker exec -i ims-api-mongodb mongorestore --username "root" --password "example" --authenticationDatabase=admin --nsInclude ims.* --archive --drop < ./data/mock_data.dump
 ```
 
 Otherwise, there is a script to generate mock data for testing purposes given in `./scripts/generate_mock_data.py`. To
