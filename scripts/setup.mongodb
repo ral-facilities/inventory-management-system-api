@@ -191,6 +191,10 @@ console.log("Replica set initialised successfully");
   );
 
   // Enable pre and post images (for history change streams)
+  console.log(
+    `Enable pre and post images for catalogue_categories, manufacturers, systems, catalogue_items and items collections (${databaseName})...`,
+  );
+
   db.runCommand({
     collMod: "catalogue_categories",
     changeStreamPreAndPostImages: { enabled: true }
@@ -215,4 +219,5 @@ console.log("Replica set initialised successfully");
     collMod: "items",
     changeStreamPreAndPostImages: { enabled: true }
   });
+
 });
