@@ -150,7 +150,7 @@ def restore_database(
                 "mongorestore",
             ]
             + mongodb_auth_args
-            + ["--db", "ims", "--archive", "--drop"],
+            + ["--nsInclude", "ims.*", "--archive", "--drop"],
             stdin=file,
         )
 
