@@ -18,4 +18,4 @@ class SystemTypeOut(BaseModel):
     value: str
     description: Optional[str] = None
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
