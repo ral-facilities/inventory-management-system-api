@@ -191,6 +191,7 @@ class CatalogueItemRepo:
         catalogue_category_id: str,
         property_in: PropertyIn,
         username: str,
+        comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ):
         """
@@ -199,6 +200,7 @@ class CatalogueItemRepo:
         :param catalogue_category_id: The ID of the catalogue category who's catalogue items to update
         :param property_in: The property to insert into the catalogue items' properties list
         :param username: The user who created the property
+        :param comment: The justification given for creating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -214,7 +216,7 @@ class CatalogueItemRepo:
                 "$set": {
                     "modified_time": datetime.now(timezone.utc),
                     "modified_by": username,
-                    "modified_comment": f"Property '{property_in.name}' created",
+                    "modified_comment": comment,
                 },
             },
             session=session,
@@ -225,6 +227,7 @@ class CatalogueItemRepo:
         property_id: str,
         update_body: dict,
         username: str,
+        comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> None:
         """
@@ -235,6 +238,7 @@ class CatalogueItemRepo:
         :param property_id: The ID of the property to update
         :param update_body: The body of data to be used in the update
         :param username: The user updating the property
+        :param comment: The justification given for updating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -243,7 +247,7 @@ class CatalogueItemRepo:
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
         set_body["modified_by"] = username
-        set_body["modified_comment"] = "Property updated"
+        set_body["modified_comment"] = comment
 
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
