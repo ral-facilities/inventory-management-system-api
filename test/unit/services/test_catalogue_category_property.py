@@ -243,7 +243,7 @@ class CreateDSL(CatalogueCategoryPropertyServiceDSL):
             self.mock_catalogue_item_repository.list_ids.return_value,
             self._expected_property_in,
             "username",
-            None, # modified_comment
+            None,  # modified_comment
             session=expected_session,
         )
 
@@ -564,7 +564,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
                 self._updated_catalogue_category_property_id,
                 update_body,
                 "username",
-                None, # modified_comment
+                None,  # modified_comment
                 session=expected_session,
             )
 
@@ -573,7 +573,7 @@ class UpdateDSL(CatalogueCategoryPropertyServiceDSL):
                 self._updated_catalogue_category_property_id,
                 update_body,
                 "username",
-                None, # modified_comment
+                None,  # modified_comment
                 session=expected_session,
             )
         else:
