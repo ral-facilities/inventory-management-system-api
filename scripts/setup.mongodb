@@ -192,10 +192,10 @@ console.log("Replica set initialised successfully");
 
   // Enable pre and post images (for history change streams)
   console.log(
-    `Enable pre and post images for catalogue_categories, manufacturers, systems, catalogue_items and items collections (${databaseName})...`,
+    `Enable pre and post images for catalogue_categories, manufacturers, systems, catalogue_items, items and jobs collections (${databaseName})...`,
   );
 
-  ["catalogue_categories", "manufacturers", "systems", "catalogue_items", "items"].forEach((collectionName) => {
+  ["catalogue_categories", "manufacturers", "systems", "catalogue_items", "items", "jobs"].forEach((collectionName) => {
     if (!db.getCollectionNames().includes(collectionName)) {
       db.createCollection(collectionName);
     }
