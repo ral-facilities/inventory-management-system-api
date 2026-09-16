@@ -68,7 +68,7 @@ class OldSystemOut(CreatedModifiedTimeOutMixin, OldSystemBase):
     id: StringObjectIdField = Field(alias="_id")
     parent_id: Optional[StringObjectIdField] = None
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
 
 class Migration(BaseMigration):
