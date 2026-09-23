@@ -756,6 +756,65 @@ class TestListIDs(ListIDsDSL):
         self.check_list_ids_success()
 
 
+class ListIDsByNamesDSL(CatalogueItemRepoDSL):
+    """Base class for `list_ids_by_names` tests."""
+
+    _names_filter: list[str]
+    _expected_list_ids_by_names_result: list[dict]
+    _list_ids_by_names_result: list[dict]
+
+    def mock_list_ids_by_names(self, catalogue_items_data: list[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `list_ids_by_names` repo method.
+
+        :param catalogue_items_data: List of dictionaries each containing the `_id` and `name` of a matching catalogue
+            item as would be returned by the database.
+        """
+
+        self._expected_list_ids_by_names_result = catalogue_items_data
+        RepositoryTestHelpers.mock_find(self.catalogue_items_collection, catalogue_items_data)
+
+    def call_list_ids_by_names(self, names: list[str]) -> None:
+        """Calls the `CatalogueItemRepo` `list_ids_by_names` method.
+
+        :param names: Names of the catalogue items to look up.
+        """
+
+        self._names_filter = names
+        self._list_ids_by_names_result = self.catalogue_item_repository.list_ids_by_names(
+            names, session=self.mock_session
+        )
+
+    def check_list_ids_by_names_success(self) -> None:
+        """Checks that a prior call to `call_list_ids_by_names` worked as expected."""
+
+        self.catalogue_items_collection.find.assert_called_once_with(
+            {"name": {"$in": self._names_filter}}, {"_id": 1, "name": 1}, session=self.mock_session
+        )
+
+        assert self._list_ids_by_names_result == self._expected_list_ids_by_names_result
+
+
+class TestListIDsByNames(ListIDsByNamesDSL):
+    """Tests for `list_ids_by_names`."""
+
+    def test_list_ids_by_names(self):
+        """Test `list_ids_by_names`."""
+
+        self.mock_list_ids_by_names(
+            [{"_id": ObjectId(), "name": "Catalogue Item A"}, {"_id": ObjectId(), "name": "Catalogue Item B"}]
+        )
+        self.call_list_ids_by_names(["Catalogue Item A", "Catalogue Item B"])
+        self.check_list_ids_by_names_success()
+
+    def test_list_ids_by_names_with_no_matches(self):
+        """Test `list_ids_by_names` when no catalogue items match the provided names."""
+
+        self.mock_list_ids_by_names([])
+        self.call_list_ids_by_names(["Non Existent Name"])
+        self.check_list_ids_by_names_success()
+
+
 class InsertPropertyToAllMatchingDSL(CatalogueItemRepoDSL):
     """Base class for `insert_property_to_all_matching` tests"""
 
