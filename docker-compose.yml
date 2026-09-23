@@ -26,6 +26,8 @@ services:
       - ./scripts/setup.mongodb:/usr/local/bin/setup.mongodb:ro
       - ./scripts/mongodb_entrypoint.sh:/usr/local/bin/mongodb_entrypoint.sh:ro
     restart: always
+    env_file:
+      - path: ./.env
     ports:
       - 27017:27017
     environment:

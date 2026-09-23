@@ -97,6 +97,13 @@ class BulkConfig(BaseModel):
     """
 
     max_catalogue_items: int
+    
+class HistoryConfig(BaseModel):
+    """
+    Configuration model for the IMS History API.
+    """
+    enabled: bool
+    watched_collections: list[str]
 
 
 class Config(BaseSettings):
@@ -113,6 +120,7 @@ class Config(BaseSettings):
     ims_database: DatabaseConfig
     object_storage: ObjectStorageConfig
     bulk: BulkConfig
+    history_api: HistoryConfig
 
     model_config = SettingsConfigDict(
         env_file=".env",
