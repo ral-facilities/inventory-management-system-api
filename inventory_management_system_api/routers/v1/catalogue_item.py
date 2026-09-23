@@ -137,6 +137,30 @@ def bulk_validate_create_catalogue_item(
     return catalogue_item_service.bulk_validate_create(catalogue_items)
 
 
+@router.post(
+    path="/name-lookup",
+    summary="Look up catalogue item IDs by name",
+    response_description="Mapping of each requested name to the IDs of the matching catalogue items",
+)
+def name_lookup_catalogue_items(
+    names: Annotated[
+        list[str],
+        Body(
+            description="List of catalogue item names to look up",
+            examples=[["Catalogue Item 1", "Catalogue Item 2"]],
+        ),
+    ],
+    catalogue_item_service: CatalogueItemServiceDep,
+) -> dict[str, list[str]]:
+    logger.info("Looking up catalogue item IDs by name")
+
+    # Short-circuit an empty request to avoid an unnecessary database query
+    if not names:
+        return {}
+
+    return catalogue_item_service.name_lookup(names)
+
+
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
 def get_catalogue_items(
     catalogue_item_service: CatalogueItemServiceDep,
