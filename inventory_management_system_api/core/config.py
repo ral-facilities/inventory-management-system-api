@@ -97,11 +97,13 @@ class BulkConfig(BaseModel):
     """
 
     max_catalogue_items: int
-    
+
+
 class HistoryConfig(BaseModel):
     """
     Configuration model for the IMS History API.
     """
+
     enabled: bool
     watched_collections: list[str]
 

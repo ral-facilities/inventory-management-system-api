@@ -206,6 +206,8 @@ mongosh DATABASE_NAME --username USERNAME --password PASSWORD --authenticationDa
    --eval 'db.systems.createIndex({ "parent_id": 1, "code": 1 }, { name: "systems_name_uniqueness_index", unique: true })' \
    --eval 'db.units.createIndex({ "code": 1 }, { name: "units_name_uniqueness_index", unique: true })' \
    --eval 'db.usage_statuses.createIndex({ "code": 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true })' \
+
+   # The following are specific to enabling history, there are not required to run the API
    --eval 'db.runCommand({ collMod: "catalogue_categories", changeStreamPreAndPostImages: { enabled: true } })' \
    --eval 'db.runCommand({ collMod: "manufacturers", changeStreamPreAndPostImages: { enabled: true } })' \
    --eval 'db.runCommand({ collMod: "systems", changeStreamPreAndPostImages: { enabled: true } })' \
