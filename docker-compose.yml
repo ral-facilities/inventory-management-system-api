@@ -31,4 +31,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
+      HISTORY_API_ENABLED: ${HISTORY_API__ENABLED:-false}
+      HISTORY_API_WATCHED_COLLECTIONS: ${HISTORY_API__WATCHED_COLLECTIONS:-}
     network_mode: "host"
