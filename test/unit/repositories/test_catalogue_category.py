@@ -1183,7 +1183,7 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
                 "$push": {"properties": self._property_in.model_dump(by_alias=True)},
                 "$set": {
                     "modified_time": self._mock_datetime.now.return_value,
-                    "modified_comment": f"Property '{self._property_in.name}' created",
+                    "modified_comment": None,
                     "modified_by": "username",
                 },
             },
@@ -1254,7 +1254,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
         self._catalogue_category_id = catalogue_category_id
         self._property_id = property_id
         self._updated_property = self.catalogue_category_repository.update_property(
-            catalogue_category_id, property_id, self._property_in, "username", "A comment", session=self.mock_session
+            catalogue_category_id, property_id, self._property_in, "username", "test", session=self.mock_session
         )
 
     def call_update_property_expecting_error(
@@ -1277,7 +1277,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
                 property_id,
                 self._property_in,
                 "username",
-                "A comment",
+                "test",
                 session=self.mock_session,
             )
         self._update_exception = exc
@@ -1295,7 +1295,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
                     "properties.$[elem]": self._property_in.model_dump(by_alias=True),
                     "modified_time": self._mock_datetime.now.return_value,
                     "modified_by": "username",
-                    "modified_comment": "A comment",
+                    "modified_comment": "test",
                 },
             },
             array_filters=[{"elem._id": CustomObjectId(self._property_id)}],

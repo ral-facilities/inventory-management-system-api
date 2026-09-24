@@ -518,7 +518,7 @@ class InsertPropertyToAllInDSL(ItemRepoDSL):
 
         self._insert_property_to_all_in_catalogue_item_ids = catalogue_item_ids
         self.item_repository.insert_property_to_all_in(
-            catalogue_item_ids, self._property_in, "username", session=self.mock_session
+            catalogue_item_ids, self._property_in, "username", "test", session=self.mock_session
         )
 
     def check_insert_property_to_all_in_success(self) -> None:
@@ -531,7 +531,7 @@ class InsertPropertyToAllInDSL(ItemRepoDSL):
                 "$set": {
                     "modified_time": self._mock_datetime.now.return_value,
                     "modified_by": "username",
-                    "modified_comment": f"Property '{self._property_in.name}' created",
+                    "modified_comment": "test",
                 },
             },
             session=self.mock_session,
@@ -572,6 +572,7 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
             property_id,
             update_body,
             "username",
+            "test",
             session=self.mock_session,
         )
 
@@ -587,7 +588,7 @@ class UpdateAllPropertiesWithIDDSL(InsertPropertyToAllInDSL):
                     "properties.$[elem].unit": self._update_all_properties_with_id_update_body["unit"],
                     "modified_time": self._mock_datetime.now.return_value,
                     "modified_by": "username",
-                    "modified_comment": "Property updated",
+                    "modified_comment": "test",
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(self._update_all_properties_with_id_property_id)}],

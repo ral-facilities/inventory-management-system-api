@@ -243,6 +243,7 @@ class CatalogueCategoryRepo:
         catalogue_category_id: str,
         property_in: CatalogueCategoryPropertyIn,
         modified_by: str,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryPropertyOut:
         """
@@ -253,7 +254,8 @@ class CatalogueCategoryRepo:
 
         :param catalogue_category_id: The ID of the catalogue category to add the property to
         :param property_in: The property containing the property data
-        :param modified_by: The user creating this property, to be shown for the catalogue category
+        :param modified_by: The user creating this property
+        :param modified_comment: The justification given for creating the property
         :param session: PyMongo ClientSession to use for database operations
         :return: The added property
         """
@@ -269,7 +271,7 @@ class CatalogueCategoryRepo:
                 "$push": {"properties": property_data},
                 "$set": {
                     "modified_time": datetime.now(timezone.utc),
-                    "modified_comment": f"Property '{property_in.name}' created",
+                    "modified_comment": modified_comment,
                     "modified_by": modified_by,
                 },
             },
