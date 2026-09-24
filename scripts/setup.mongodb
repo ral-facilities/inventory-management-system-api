@@ -190,11 +190,11 @@ console.log("Replica set initialised successfully");
     { name: "usage_statuses_name_uniqueness_index", unique: true },
   );
 
-  const historyEnabled = process.env.HISTORY_API__ENABLED === "true";
+  const historyEnabled = process.env.HISTORY_API_ENABLED === "true";
 
   if (historyEnabled) {
 
-    const watchedCollections = JSON.parse(process.env.HISTORY_API__WATCHED_COLLECTIONS || "[]")
+    const watchedCollections = JSON.parse(process.env.HISTORY_API_WATCHED_COLLECTIONS || "[]")
 
     // Enable pre and post images (for history change streams)
     console.log(
