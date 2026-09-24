@@ -129,7 +129,7 @@ class ItemRepo:
         catalogue_item_ids: List[ObjectId],
         property_in: PropertyIn,
         username: str,
-        comment: Optional[str] = None,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ):
         """
@@ -139,7 +139,7 @@ class ItemRepo:
                                    added to
         :param property_in: The property to insert into the items' properties list
         :param username: The user creating the property
-        :param comment: The justification given for creating the property
+        :param modified_comment: The justification given for creating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -155,7 +155,7 @@ class ItemRepo:
                 "$set": {
                     "modified_time": datetime.now(timezone.utc),
                     "modified_by": username,
-                    "modified_comment": comment,
+                    "modified_comment": modified_comment,
                 },
             },
             session=session,
@@ -167,7 +167,7 @@ class ItemRepo:
         property_id: str,
         update_body: dict,
         username: str,
-        comment: Optional[str] = None,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> None:
         """
@@ -178,7 +178,7 @@ class ItemRepo:
         :param property_id: The ID of the property to update
         :param update_body: The body of data to be used in the update
         :param username: The user updating the property
-        :param comment: The justification given for updating the property
+        :param modified_comment: The justification given for updating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -187,7 +187,7 @@ class ItemRepo:
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
         set_body["modified_by"] = username
-        set_body["modified_comment"] = comment
+        set_body["modified_comment"] = modified_comment
 
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
