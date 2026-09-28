@@ -105,8 +105,8 @@ class HistoryConfig(BaseModel):
     """
 
     enabled: bool
-    watched_collections: List[str] = Field(default=None, validate_default=True)
-    
+    watched_collections: List[str] = Field(default=[], validate_default=True)
+
     @field_validator("watched_collections")
     @classmethod
     def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
