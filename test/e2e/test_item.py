@@ -243,9 +243,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         return self.post_item(item_data)
 
     def post_item_prerequisites_with_given_properties(
-        self,
-        catalogue_category_properties_data: list[dict],
-        catalogue_item_properties_data: list[dict]
+        self, catalogue_category_properties_data: list[dict], catalogue_item_properties_data: list[dict]
     ) -> None:
         """
         Utility method that posts prerequisites for an item including system, usage status,
@@ -295,10 +293,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data})
 
     def post_item_prerequisites_with_allowed_values(
-        self,
-        property_type: str,
-        allowed_values_post_data: dict,
-        catalogue_item_property_value: Any
+        self, property_type: str, allowed_values_post_data: dict, catalogue_item_property_value: Any
     ) -> None:
         """
         Utility method that posts prerequisites for an item (a catalogue item, system and usage status)
