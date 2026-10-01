@@ -99,32 +99,6 @@ class BulkConfig(BaseModel):
     max_catalogue_items: int
 
 
-class HistoryConfig(BaseModel):
-    """
-    Configuration model for the IMS History API.
-    """
-
-    enabled: bool
-    watched_collections: List[str] = Field(default=[], validate_default=True)
-
-    @field_validator("watched_collections")
-    @classmethod
-    def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
-        """
-        Validator for the `watched_collections` field to make it mandatory if the value of the
-        `enabled` field is `True`. It raises a `ValueError` if no value is provided for the field when the `enabled`
-        field has been set to `True`.
-
-        :param field_value: The value of the field.
-        :param info: Validation info from pydantic.
-        :raises ValueError: If no value is provided for the field when the `enabled` field is set to `True`.
-        :return: The value of the field.
-        """
-        if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
-            raise ValueError("Field required")
-        return field_value
-
-
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
@@ -139,7 +113,6 @@ class Config(BaseSettings):
     ims_database: DatabaseConfig
     object_storage: ObjectStorageConfig
     bulk: BulkConfig
-    history_api: HistoryConfig
 
     model_config = SettingsConfigDict(
         env_file=".env",
