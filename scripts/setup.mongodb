@@ -189,4 +189,30 @@ console.log("Replica set initialised successfully");
     { code: 1 },
     { name: "usage_statuses_name_uniqueness_index", unique: true },
   );
+
+  const historyEnabled = process.env.HISTORY_API_ENABLED === "true";
+
+  if (historyEnabled) {
+
+    const watchedCollections = JSON.parse(process.env.HISTORY_API_WATCHED_COLLECTIONS || "[]")
+
+    // Enable pre and post images (for history change streams)
+    console.log(
+      `Enable pre and post images for ${watchedCollections.join(", ")} collections (${databaseName})...`,
+    );
+
+    watchedCollections.forEach((collectionName) => {
+      if (!db.getCollectionNames().includes(collectionName)) {
+        db.createCollection(collectionName);
+      }
+
+      db.runCommand({
+        collMod: collectionName,
+        changeStreamPreAndPostImages: { enabled: true },
+      });
+    });
+  } else {
+    console.log("History API disabled, skip setting up pre and post images");
+  }
+
 });

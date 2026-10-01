@@ -196,8 +196,8 @@ and one can be started using the `docker-compose.yml` file.
 
 ##### MongoDB
 
-You must have access to a MongoDB instance with at least one replica set and be able to create the following indexes
-using either MongoDB Compass or a CLI e.g.
+You must have access to a MongoDB instance with at least one replica set and be able to run the following commands,
+either using MongoDB Compass or a CLI, to create the required indexes and enable pre/post images e.g.
 
 ```bash
 mongosh DATABASE_NAME --username USERNAME --password PASSWORD --authenticationDatabase=admin \
@@ -205,10 +205,19 @@ mongosh DATABASE_NAME --username USERNAME --password PASSWORD --authenticationDa
    --eval 'db.manufacturers.createIndex({ "code": 1 }, { name: "manufacturers_name_uniqueness_index", unique: true })' \
    --eval 'db.systems.createIndex({ "parent_id": 1, "code": 1 }, { name: "systems_name_uniqueness_index", unique: true })' \
    --eval 'db.units.createIndex({ "code": 1 }, { name: "units_name_uniqueness_index", unique: true })' \
-   --eval 'db.usage_statuses.createIndex({ "code": 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true })'
+   --eval 'db.usage_statuses.createIndex({ "code": 1 }, { name: "usage_statuses_name_uniqueness_index", unique: true })' \
+
+   # The following are specific to enabling history, there are not required to run the API
+   --eval 'db.runCommand({ collMod: "catalogue_categories", changeStreamPreAndPostImages: { enabled: true } })' \
+   --eval 'db.runCommand({ collMod: "manufacturers", changeStreamPreAndPostImages: { enabled: true } })' \
+   --eval 'db.runCommand({ collMod: "systems", changeStreamPreAndPostImages: { enabled: true } })' \
+   --eval 'db.runCommand({ collMod: "catalogue_items", changeStreamPreAndPostImages: { enabled: true } })' \
+   --eval 'db.runCommand({ collMod: "items", changeStreamPreAndPostImages: { enabled: true } })' \
+   --eval 'db.runCommand({ collMod: "jobs", changeStreamPreAndPostImages: { enabled: true } })'
 ```
 
-These compound indexes ensure names cannot be repeated within the same entity.
+The compound indexes ensure names cannot be repeated within the same entity.
+The commands enable the history service to track `modified_*` fields even if they do not change.
 
 This needs to be done for both the development and testing databases.
 By default, the `.env.example` and `pytest.ini` use `ims` and `test-ims` as their names, ensure they are
@@ -405,6 +414,8 @@ Listed below are the environment variables supported by the application.
 | `OBJECT_STORAGE__API_REQUEST_TIMEOUT_SECONDS` | The maximum number of seconds that the request should wait for a response from the Object Storage API before timing out.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | If Object Storage enabled |                                                       |
 | `OBJECT_STORAGE__API_URL`                     | The URL of the Object Storage API.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | If Object Storage enabled |                                                       |
 | `BULK_MAX_CATALOGUE_ITEMS`                    | The maximum number of catalogue items that can be processed at a bulk validate or creation endpoint.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Yes                       |                                                       |
+| `HISTORY_API__ENABLED`                        | Whether the api is configuring its database collections to include the setup required for the [IMS History API](https://github.com/ral-facilities/ims-history-api).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Yes                       |                                                       |
+| `HISTORY_API__WATCHED_COLLECTIONS`            | The collections to run history specific setup commands on for MongoDB.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | If History enabled        |                                                       |
 
 ### JWT Authentication/Authorisation
 
