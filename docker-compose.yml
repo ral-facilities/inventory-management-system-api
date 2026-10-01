@@ -31,6 +31,6 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=example
-      - HISTORY_API_ENABLED=true
+      - HISTORY_API_ENABLED=false
       - HISTORY_API_WATCHED_COLLECTIONS=["catalogue_categories", "manufacturers", "systems", "catalogue_items", "items", "jobs"]
     network_mode: "host"
