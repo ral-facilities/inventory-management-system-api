@@ -104,6 +104,7 @@ class CatalogueCategoryPropertyService:
             unit_value = unit.value
 
         catalogue_category_property_in = CatalogueCategoryPropertyIn(
+            # Exclude modified comment as we do not want this field appearing in the individual property body
             **{**catalogue_category_property.model_dump(exclude={"modified_comment"}), "unit": unit_value}
         )
 
