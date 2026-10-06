@@ -271,7 +271,7 @@ class CatalogueCategoryRepo:
                 "$push": {"properties": property_data},
                 "$set": {
                     "modified_time": datetime.now(timezone.utc),
-                    "modified_comment": modified_comment,
+                    "modified_comment": f"Property created: {modified_comment or "No comment"}",
                     "modified_by": modified_by,
                 },
             },
@@ -319,7 +319,7 @@ class CatalogueCategoryRepo:
                     "properties.$[elem]": property_data,
                     "modified_time": datetime.now(timezone.utc),
                     "modified_by": username,
-                    "modified_comment": modified_comment,
+                    "modified_comment": f"Property updated: {modified_comment or "No comment"}",
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(property_id)}],

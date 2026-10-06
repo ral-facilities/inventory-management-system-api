@@ -155,7 +155,7 @@ class ItemRepo:
                 "$set": {
                     "modified_time": datetime.now(timezone.utc),
                     "modified_by": username,
-                    "modified_comment": modified_comment,
+                    "modified_comment": f"Property created: {modified_comment or "No comment"}",
                 },
             },
             session=session,
@@ -187,7 +187,7 @@ class ItemRepo:
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
         set_body["modified_by"] = username
-        set_body["modified_comment"] = modified_comment
+        set_body["modified_comment"] = f"Property updated: {modified_comment or "No comment"}"
 
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},

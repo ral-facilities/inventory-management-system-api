@@ -1183,7 +1183,7 @@ class CreatePropertyDSL(CatalogueCategoryRepoDSL):
                 "$push": {"properties": self._property_in.model_dump(by_alias=True)},
                 "$set": {
                     "modified_time": self._mock_datetime.now.return_value,
-                    "modified_comment": None,
+                    "modified_comment": "Property created: No comment",
                     "modified_by": "username",
                 },
             },
@@ -1277,7 +1277,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
                 property_id,
                 self._property_in,
                 "username",
-                "test",
+                "Property updated: test",
                 session=self.mock_session,
             )
         self._update_exception = exc
@@ -1295,7 +1295,7 @@ class UpdatePropertyDSL(CreatePropertyDSL):
                     "properties.$[elem]": self._property_in.model_dump(by_alias=True),
                     "modified_time": self._mock_datetime.now.return_value,
                     "modified_by": "username",
-                    "modified_comment": "test",
+                    "modified_comment": "Property updated: test",
                 },
             },
             array_filters=[{"elem._id": CustomObjectId(self._property_id)}],
