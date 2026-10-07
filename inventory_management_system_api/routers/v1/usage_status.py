@@ -11,7 +11,7 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.exceptions import (
@@ -38,7 +38,10 @@ UsageStatusServiceDep = Annotated[UsageStatusService, Depends(UsageStatusService
     status_code=status.HTTP_201_CREATED,
 )
 def create_usage_status(
-    usage_status: UsageStatusPostSchema, usage_status_service: UsageStatusServiceDep, authorised: AuthorisedDep
+    request: Request,
+    usage_status: UsageStatusPostSchema,
+    usage_status_service: UsageStatusServiceDep,
+    authorised: AuthorisedDep,
 ) -> UsageStatusSchema:
     logger.info("Creating a new usage status")
     logger.debug("Usage status data: %s", usage_status)
@@ -48,7 +51,7 @@ def create_usage_status(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorised to perform this operation")
 
     try:
-        usage_status = usage_status_service.create(usage_status)
+        usage_status = usage_status_service.create(usage_status, request.state.username)
         return UsageStatusSchema(**usage_status.model_dump())
 
     except DuplicateRecordError as exc:

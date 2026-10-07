@@ -46,7 +46,7 @@ class CatalogueCategoryService:
         self._catalogue_category_repository = catalogue_category_repository
         self._unit_repository = unit_repository
 
-    def create(self, catalogue_category: CatalogueCategoryPostSchema) -> CatalogueCategoryOut:
+    def create(self, catalogue_category: CatalogueCategoryPostSchema, username: str) -> CatalogueCategoryOut:
         """
         Create a new catalogue category.
 
@@ -54,6 +54,7 @@ class CatalogueCategoryService:
         `LeafCatalogueCategoryError` if it is.
 
         :param catalogue_category: The catalogue category to be created.
+        :param username: The user submitting this request.
         :return: The created catalogue category.
         :raises LeafCatalogueCategoryError: If the parent catalogue category is a leaf catalogue category.
         """
@@ -73,11 +74,7 @@ class CatalogueCategoryService:
 
         return self._catalogue_category_repository.create(
             CatalogueCategoryIn(
-                **{
-                    **catalogue_category.model_dump(),
-                    "properties": properties,
-                    "code": code,
-                }
+                **{**catalogue_category.model_dump(), "properties": properties, "code": code, "modified_by": username}
             )
         )
 
@@ -109,7 +106,7 @@ class CatalogueCategoryService:
         return self._catalogue_category_repository.list(parent_id)
 
     def update(
-        self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchSchema
+        self, catalogue_category_id: str, catalogue_category: CatalogueCategoryPatchSchema, username: str
     ) -> CatalogueCategoryOut:
         """
         Update a catalogue category by its ID.
@@ -120,6 +117,7 @@ class CatalogueCategoryService:
 
         :param catalogue_category_id: The ID of the catalogue category to update.
         :param catalogue_category: The catalogue category containing the fields that need to be updated.
+        :param username: The user submitting this request.
         :return: The updated catalogue category.
         :raises ChildElementsExistError: If the catalogue category has child elements and attempting to update
                                     either any of the disallowed properties (is_leaf or properties)
@@ -156,7 +154,8 @@ class CatalogueCategoryService:
             update_data["properties"] = properties
 
         return self._catalogue_category_repository.update(
-            catalogue_category_id, CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data})
+            catalogue_category_id,
+            CatalogueCategoryIn(**{**stored_catalogue_category.model_dump(), **update_data, "modified_by": username}),
         )
 
     def delete(self, catalogue_category_id: str) -> None:

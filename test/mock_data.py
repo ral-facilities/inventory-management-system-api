@@ -40,7 +40,11 @@ from inventory_management_system_api.models.usage_status import (
 CREATED_MODIFIED_OUT_DATA = {"created_time": datetime.now(timezone.utc), "modified_time": datetime.now(timezone.utc)}
 
 # Used for _GET_DATA's as when comparing these will not be possible to know at runtime
-CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
+BASE_FIELDS_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY, "modified_comment": ANY, "modified_by": ANY}
+
+# Used for _IN_DATA's as field is calculated via request state not body
+
+BASE_FIELDS_IN_DATA = {"modified_by": "username"}
 
 # ---------------------------- AUTHENTICATION -----------------------------
 
@@ -87,7 +91,7 @@ PREDEFINED_USAGE_STATUS_IDS = [
 ]
 
 # New
-USAGE_STATUS_POST_DATA_NEW = {"value": "New"}
+USAGE_STATUS_POST_DATA_NEW = {**BASE_FIELDS_IN_DATA, "value": "New"}
 
 USAGE_STATUS_IN_DATA_NEW = {
     **USAGE_STATUS_POST_DATA_NEW,
@@ -101,11 +105,11 @@ USAGE_STATUS_OUT_DATA_NEW = {
 
 USAGE_STATUS_GET_DATA_NEW = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_NEW).model_dump(),
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
 }
 
 # In Use
-USAGE_STATUS_POST_DATA_IN_USE = {"value": "In Use"}
+USAGE_STATUS_POST_DATA_IN_USE = {**BASE_FIELDS_IN_DATA, "value": "In Use"}
 
 USAGE_STATUS_IN_DATA_IN_USE = {**USAGE_STATUS_POST_DATA_IN_USE, "code": "in-use"}
 
@@ -116,11 +120,11 @@ USAGE_STATUS_OUT_DATA_IN_USE = {
 
 USAGE_STATUS_GET_DATA_IN_USE = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_IN_USE).model_dump(),
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
 }
 
 # Used
-USAGE_STATUS_POST_DATA_USED = {"value": "Used"}
+USAGE_STATUS_POST_DATA_USED = {**BASE_FIELDS_IN_DATA, "value": "Used"}
 
 USAGE_STATUS_IN_DATA_USED = {
     **USAGE_STATUS_POST_DATA_USED,
@@ -134,11 +138,11 @@ USAGE_STATUS_OUT_DATA_USED = {
 
 USAGE_STATUS_GET_DATA_USED = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_USED).model_dump(),
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
 }
 
 # Scrapped
-USAGE_STATUS_POST_DATA_SCRAPPED = {"value": "Scrapped"}
+USAGE_STATUS_POST_DATA_SCRAPPED = {**BASE_FIELDS_IN_DATA, "value": "Scrapped"}
 
 USAGE_STATUS_IN_DATA_SCRAPPED = {
     **USAGE_STATUS_POST_DATA_SCRAPPED,
@@ -152,7 +156,7 @@ USAGE_STATUS_OUT_DATA_SCRAPPED = {
 
 USAGE_STATUS_GET_DATA_SCRAPPED = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_SCRAPPED).model_dump(),
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
 }
 
 USAGE_STATUSES_OUT_DATA = [
@@ -163,7 +167,7 @@ USAGE_STATUSES_OUT_DATA = [
 ]
 
 # Custom
-USAGE_STATUS_POST_DATA_CUSTOM = {"value": "Custom"}
+USAGE_STATUS_POST_DATA_CUSTOM = {**BASE_FIELDS_IN_DATA, "value": "Custom"}
 
 USAGE_STATUS_IN_DATA_CUSTOM = {
     **USAGE_STATUS_POST_DATA_CUSTOM,
@@ -174,25 +178,25 @@ USAGE_STATUS_OUT_DATA_CUSTOM = {**UsageStatusIn(**USAGE_STATUS_IN_DATA_CUSTOM).m
 
 USAGE_STATUS_GET_DATA_CUSTOM = {
     **UsageStatusOut(**USAGE_STATUS_OUT_DATA_CUSTOM).model_dump(),
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
 }
 
 # --------------------------------- UNITS ---------------------------------
 
 # mm
-UNIT_POST_DATA_MM = {"value": "mm"}
+UNIT_POST_DATA_MM = {**BASE_FIELDS_IN_DATA, "value": "mm"}
 
 UNIT_IN_DATA_MM = {**UNIT_POST_DATA_MM, "code": "mm"}
 
-UNIT_GET_DATA_MM = {**UNIT_IN_DATA_MM, **CREATED_MODIFIED_GET_DATA_EXPECTED, "id": ANY}
+UNIT_GET_DATA_MM = {**UNIT_IN_DATA_MM, **BASE_FIELDS_GET_DATA_EXPECTED, "id": ANY}
 
 # cm
-UNIT_POST_DATA_CM = {"value": "cm"}
+UNIT_POST_DATA_CM = {**BASE_FIELDS_IN_DATA, "value": "cm"}
 
 UNIT_IN_DATA_CM = {**UNIT_POST_DATA_CM, "code": "cm"}
 
-UNIT_GET_DATA_CM = {**UNIT_POST_DATA_CM, **CREATED_MODIFIED_GET_DATA_EXPECTED, "id": ANY, "code": "cm"}
+UNIT_GET_DATA_CM = {**UNIT_POST_DATA_CM, **BASE_FIELDS_GET_DATA_EXPECTED, "id": ANY, "code": "cm"}
 
 
 # --------------------------------- CATALOGUE CATEGORY PROPERTIES ---------------------------------
@@ -333,13 +337,14 @@ CATALOGUE_CATEGORY_PROPERTY_GET_DATA_STRING_NON_MANDATORY_WITH_ALLOWED_VALUES_LI
 # Non leaf, Required values only
 
 CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Non Leaf Catalogue Category Required Values Only",
     "is_leaf": False,
 }
 
 CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "code": "non-leaf-catalogue-category-required-values-only",
@@ -350,12 +355,14 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_REQUIRED_VALUES_ONLY = {
 # Non leaf, No parent, No properties
 
 CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Category A",
     "is_leaf": False,
     "parent_id": None,
 }
 
 CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
+    **BASE_FIELDS_IN_DATA,
     **CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
     "code": "category-a",
 }
@@ -368,7 +375,7 @@ CATALOGUE_CATEGORY_OUT_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
 
 CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
     **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
     "is_flagged": None,
@@ -376,6 +383,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_A = {
 
 
 CATALOGUE_CATEGORY_POST_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Category B",
     "is_leaf": False,
     "parent_id": None,
@@ -387,8 +395,8 @@ CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
 }
 
 CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     **CATALOGUE_CATEGORY_IN_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
     "is_flagged": None,
@@ -397,6 +405,7 @@ CATALOGUE_CATEGORY_GET_DATA_NON_LEAF_NO_PARENT_NO_PROPERTIES_B = {
 # Leaf, No parent, No properties
 
 CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Leaf Category No Parent No Properties",
     "is_leaf": True,
     "parent_id": None,
@@ -417,7 +426,7 @@ CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
 
 CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
     **CATALOGUE_CATEGORY_POST_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "code": "leaf-category-no-parent-no-properties",
     "properties": [],
@@ -427,13 +436,14 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_NO_PROPERTIES = {
 # Leaf, Required values only
 
 CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Leaf Catalogue Category Required Values Only",
     "is_leaf": True,
 }
 
 CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     **CATALOGUE_CATEGORY_POST_DATA_LEAF_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "code": "leaf-catalogue-category-required-values-only",
@@ -445,6 +455,7 @@ CATALOGUE_CATEGORY_GET_DATA_LEAF_REQUIRED_VALUES_ONLY = {
 
 # Put _MM at end to signify what units this data would require
 CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Leaf Category No Parent With Properties",
     "is_leaf": True,
     "parent_id": None,
@@ -456,6 +467,7 @@ CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
 }
 
 CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
+    **BASE_FIELDS_IN_DATA,
     **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
     "code": "leaf-category-no-parent-with-properties",
     "properties": [
@@ -478,8 +490,8 @@ CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
 
 
 CATALOGUE_CATEGORY_GET_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM = {
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     **CATALOGUE_CATEGORY_DATA_LEAF_NO_PARENT_WITH_PROPERTIES_MM,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "code": "leaf-category-no-parent-with-properties",
@@ -625,6 +637,7 @@ BASE_CATALOGUE_CATEGORY_GET_DATA_WITH_PROPERTIES_MM = CATALOGUE_CATEGORY_GET_DAT
 # No properties
 
 CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Catalogue Item Required Values Only",
     "cost_gbp": 42,
     "days_to_replace": 7,
@@ -640,7 +653,7 @@ CATALOGUE_ITEM_IN_DATA_REQUIRED_VALUES_ONLY = {
 
 CATALOGUE_ITEM_GET_DATA_REQUIRED_VALUES_ONLY = {
     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "description": None,
     "cost_to_rework_gbp": None,
@@ -688,7 +701,7 @@ CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
 
 CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
     **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "obsolete_reason": None,
     "obsolete_replacement_catalogue_item_id": None,
@@ -701,6 +714,7 @@ CATALOGUE_ITEM_GET_DATA_NOT_OBSOLETE_NO_PROPERTIES = {
 
 # Obsolete, No properties
 CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES = {
+    **BASE_FIELDS_IN_DATA,
     **CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     "name": "Catalogue Item Obsolete No Properties",
     "is_obsolete": True,
@@ -709,7 +723,7 @@ CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES = {
 
 CATALOGUE_ITEM_GET_DATA_OBSOLETE_NO_PROPERTIES = {
     **CATALOGUE_ITEM_DATA_OBSOLETE_NO_PROPERTIES,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "properties": [],
     "number_of_spares": None,
@@ -775,6 +789,7 @@ BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTI
 # New, Required values only
 
 ITEM_DATA_NEW_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "is_defective": False,
     "usage_status_id": USAGE_STATUS_GET_DATA_NEW["id"],
 }
@@ -788,7 +803,7 @@ ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY = {
 
 ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY = {
     **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "usage_status": USAGE_STATUS_GET_DATA_NEW["value"],
     "purchase_order_number": None,
@@ -821,7 +836,7 @@ ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
 
 ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES = {
     **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "usage_status": USAGE_STATUS_OUT_DATA_NEW["value"],
     "properties": [],
@@ -861,6 +876,7 @@ ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES = {
 # Required values only
 
 MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Manufacturer Test Required Values Only",
     "address": {
         "address_line": "1 Example Street",
@@ -871,7 +887,7 @@ MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY = {
 
 MANUFACTURER_GET_DATA_REQUIRED_VALUES_ONLY = {
     **MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "address": {**MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY["address"], "town": None, "county": None},
     "id": ANY,
     "code": "manufacturer-test-required-values-only",
@@ -891,7 +907,7 @@ MANUFACTURER_POST_DATA_ALL_VALUES = {
 
 MANUFACTURER_GET_DATA_ALL_VALUES = {
     **MANUFACTURER_POST_DATA_ALL_VALUES,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "code": "manufacturer-test-all-values",
 }
@@ -955,14 +971,15 @@ SYSTEM_TYPE_GET_DATA_SCRAPPED = SYSTEM_TYPES_GET_DATA[2]
 # Storage, No parent, Required values only
 
 SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Storage System Required Values Only",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
     "importance": "low",
 }
 
 SYSTEM_GET_DATA_STORAGE_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     **SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "description": None,
@@ -985,7 +1002,7 @@ SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
 
 SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
     **SYSTEM_POST_DATA_STORAGE_ALL_VALUES_NO_PARENT,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **BASE_FIELDS_GET_DATA_EXPECTED,
     "id": ANY,
     "parent_id": None,
     "code": "storage-system-all-values",
@@ -995,6 +1012,7 @@ SYSTEM_GET_DATA_STORAGE_ALL_VALUES_NO_PARENT = {
 # Storage, No parent
 
 SYSTEM_POST_DATA_STORAGE_NO_PARENT_A = {
+    **BASE_FIELDS_IN_DATA,
     "parent_id": None,
     "name": "Test name A",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
@@ -1010,6 +1028,7 @@ SYSTEM_IN_DATA_STORAGE_NO_PARENT_A = {
 }
 
 SYSTEM_POST_DATA_STORAGE_NO_PARENT_B = {
+    **BASE_FIELDS_IN_DATA,
     "parent_id": None,
     "name": "Test name B",
     "type_id": SYSTEM_TYPE_GET_DATA_STORAGE["id"],
@@ -1027,6 +1046,7 @@ SYSTEM_IN_DATA_STORAGE_NO_PARENT_B = {
 # Operational, No parent, Required values only
 
 SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Operational System Required Values Only",
     "type_id": SYSTEM_TYPE_GET_DATA_OPERATIONAL["id"],
     "importance": "low",
@@ -1035,6 +1055,7 @@ SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY = {
 # Scrapped, No parent, Required values only
 
 SYSTEM_POST_DATA_SCRAPPED_REQUIRED_VALUES_ONLY = {
+    **BASE_FIELDS_IN_DATA,
     "name": "Scrapped System Required Values Only",
     "type_id": SYSTEM_TYPE_GET_DATA_SCRAPPED["id"],
     "importance": "low",

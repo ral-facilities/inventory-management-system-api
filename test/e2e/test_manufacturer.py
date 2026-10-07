@@ -221,7 +221,7 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_all_fields(self):
         """Test updating every field of a manufacturer."""
         manufacturer_id = self.post_manufacturer(MANUFACTURER_POST_DATA_REQUIRED_VALUES_ONLY)
-        self.patch_manufacturer(manufacturer_id, MANUFACTURER_POST_DATA_ALL_VALUES)
+        self.patch_manufacturer(manufacturer_id, {**MANUFACTURER_POST_DATA_ALL_VALUES, "modified_comment": "An update"})
         self.check_patch_manufacturer_success(MANUFACTURER_GET_DATA_ALL_VALUES)
 
     def test_partial_update_name_to_duplicate(self):

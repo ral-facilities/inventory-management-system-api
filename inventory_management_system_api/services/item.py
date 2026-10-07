@@ -78,7 +78,7 @@ class ItemService:
         self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
-    def create(self, item: ItemPostSchema, is_authorised: bool) -> ItemOut:
+    def create(self, item: ItemPostSchema, is_authorised: bool, username: str) -> ItemOut:
         """
         Create a new item.
 
@@ -86,6 +86,7 @@ class ItemService:
 
         :param item: The item to be created.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :param username: The user submitting this request.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         :raises MissingRecordError: If the system does not exist.
@@ -140,7 +141,14 @@ class ItemService:
             "creating item", catalogue_item_id, item.system_id
         ) as session:
             return self._item_repository.create(
-                ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
+                ItemIn(
+                    **{
+                        **item.model_dump(),
+                        "properties": properties,
+                        "usage_status": usage_status.value,
+                        "modified_by": username,
+                    }
+                ),
                 session=session,
             )
 
@@ -163,7 +171,7 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
-    def update(self, item_id: str, item: ItemPatchSchema, is_authorised: bool) -> ItemOut:
+    def update(self, item_id: str, item: ItemPatchSchema, is_authorised: bool, username: str) -> ItemOut:
         """
         Update an item by its ID.
 
@@ -173,6 +181,7 @@ class ItemService:
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
         :param is_authorised: Whether or not the user is authorised to bypass any patch rule checks.
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the item doesn't exist.
         :raises InvalidActionError: If attempting to change the catalogue item of the item.
         :return: The updated item.
@@ -201,7 +210,9 @@ class ItemService:
                 "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
             ) as session:
                 return self._item_repository.update(
-                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
+                    item_id,
+                    ItemIn(**{**stored_item.model_dump(), **update_data, "modified_by": username}),
+                    session=session,
                 )
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))

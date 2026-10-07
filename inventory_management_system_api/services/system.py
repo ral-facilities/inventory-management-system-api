@@ -47,11 +47,12 @@ class SystemService:
         self._system_type_repository = system_type_repository
         self._setting_repository = setting_repository
 
-    def create(self, system: SystemPostSchema) -> SystemOut:
+    def create(self, system: SystemPostSchema, username: str) -> SystemOut:
         """
         Create a new system.
 
         :param system: System to be created.
+        :param username: The user submitting this request.
         :return: Created system.
         :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
         """
@@ -71,6 +72,7 @@ class SystemService:
                 owner=system.owner,
                 importance=system.importance,
                 code=code,
+                modified_by=username,
             )
         )
 
@@ -101,12 +103,13 @@ class SystemService:
         """
         return self._system_repository.list(parent_id)
 
-    def update(self, system_id: str, system: SystemPatchSchema) -> SystemOut:
+    def update(self, system_id: str, system: SystemPatchSchema, username: str) -> SystemOut:
         """
         Update a system by its ID.
 
         :param system_id: ID of the system to updated.
         :param system: System containing the fields to be updated.
+        :param username: The user submitting this request.
         :raises MissingRecordError: When the system with the given ID doesn't exist.
         :return: The updated system.
         :raises MissingRecordError: If the system type specified by `type_id` doesn't exist.
@@ -134,7 +137,9 @@ class SystemService:
                     raise MissingRecordError(f"No system type found with ID '{system.type_id}'")
 
             return self._system_repository.update(
-                system_id, SystemIn(**{**stored_system.model_dump(), **update_data}), session=session
+                system_id,
+                SystemIn(**{**stored_system.model_dump(), **update_data, "modified_by": username}),
+                session=session,
             )
 
     def delete(self, system_id: str, access_token: Optional[str] = None) -> None:
