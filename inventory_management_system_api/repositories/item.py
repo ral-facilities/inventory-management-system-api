@@ -3,6 +3,7 @@ Module for providing a repository for managing items in a MongoDB database.
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -123,6 +124,24 @@ class ItemRepo:
         result = self._items_collection.delete_one({"_id": item_id}, session=session)
         if result.deleted_count == 0:
             raise MissingRecordError(f"No item found with ID '{item_id}'")
+
+    def is_duplicate_serial_number(self, serial_number: str, session: Optional[ClientSession] = None) -> bool:
+        """
+        Check if an item with the same serial number already exists.
+
+        The comparison is case-insensitive and ignores any leading/trailing whitespace on both the given serial number
+        and any already stored in the database.
+
+        :param serial_number: Serial number of the item to check for duplicates.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: `True` if a duplicate serial number is found.
+        """
+        logger.info("Checking if item with serial number '%s' already exists", serial_number)
+        # re.escape stops any regex characters in the serial number being treated as part of the pattern, and the
+        # surrounding \s* allows the stored value to have extra leading/trailing whitespace
+        pattern = rf"^\s*{re.escape(serial_number.strip())}\s*$"
+        item = self._items_collection.find_one({"serial_number": {"$regex": pattern, "$options": "i"}}, session=session)
+        return item is not None
 
     def insert_property_to_all_in(
         self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
