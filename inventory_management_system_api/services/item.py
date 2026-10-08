@@ -429,8 +429,8 @@ class ItemService:
             # parent session or None
             yield session
         else:
-            # When given an existing session the caller already owns a transaction, so it must be reused rather than
-            # starting a nested one.
+            # If a session is provided, this method does not own the transaction and should reuse it rather than
+            # creating a nested one
             owns_transaction = session is None
 
             # Particularly when creating multiple items within the same catalogue item in quick succession, multiple
