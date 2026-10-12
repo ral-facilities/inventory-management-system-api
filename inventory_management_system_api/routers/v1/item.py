@@ -8,9 +8,10 @@ Module for providing an API router which defines routes for managing items using
 # pylint: disable=duplicate-code
 
 import logging
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request, status
+from pydantic import Field
 
 from inventory_management_system_api.auth.authorisation import AuthorisedDep
 from inventory_management_system_api.core.config import config
@@ -27,6 +28,7 @@ from inventory_management_system_api.core.exceptions import (
     WriteConflictError,
 )
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema, ItemSchema
+from inventory_management_system_api.schemas.validation import BulkValidationResultSchema
 from inventory_management_system_api.services.item import ItemService
 
 logger = logging.getLogger()
@@ -77,6 +79,43 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: 
         message = str(exc)
         logger.exception(message)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.post(
+    path="/bulk-validate-create",
+    summary="Bulk validate items for creation",
+    response_description="Any errors found in the data",
+)
+def bulk_validate_create_item(
+    items: Annotated[
+        list[dict[str, Any]],
+        Field(max_length=config.bulk.max_items),
+        Body(
+            description="List of items data to validate",
+            examples=[[{"serial_number": "item-1"}, {"serial_number": "item-2"}]],
+        ),
+    ],
+    item_service: ItemServiceDep,
+) -> BulkValidationResultSchema:
+    """
+    Validate a list of item data to determine whether it is suitable for creating them as items via the
+    `POST /v1/items` or the bulk `POST /v1/items/bulk` endpoints.
+
+    This includes the same validation of schema, field constraints and business rules, as the creation endpoint without
+    creating or modifying any resources. This also collects and returns any validation errors instead of failing fast.
+
+    Any creation rule that would be violated is reported as a warning as privileged users are allowed to bypass such
+    rules when creating items. Any duplicate serial numbers are also reported, whether within the provided data or
+    already present in the database.
+    """
+    logger.info("Bulk validating items for creation")
+    try:
+        return item_service.bulk_validate_create(items)
+    except DatabaseIntegrityError as exc:
+        logger.exception("Unable to bulk validate items")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc
 
 
 @router.get(path="", summary="Get items", response_description="List of items")
