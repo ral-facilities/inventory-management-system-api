@@ -901,7 +901,7 @@ class UpdateNumberOfSparesDSL(CatalogueItemRepoDSL):
                 "$set": {
                     "number_of_spares": self._update_number_of_spares_number_of_spares,
                     "modified_by": "IMS Automation",
-                    "modified_comment": "Property deleted",
+                    "modified_comment": "Update number of spares",
                 }
             },
             session=self.mock_session,
