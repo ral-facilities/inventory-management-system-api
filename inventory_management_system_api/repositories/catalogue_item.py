@@ -304,7 +304,7 @@ class CatalogueItemRepo:
                 "$set": {
                     "number_of_spares": number_of_spares,
                     "modified_by": "IMS Automation",
-                    "modified_comment": "Property deleted",
+                    "modified_comment": "Update number of spares",
                 }
             },
             session=session,
