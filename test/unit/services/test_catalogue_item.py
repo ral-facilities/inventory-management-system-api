@@ -495,6 +495,84 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
+class NameLookupDSL(CatalogueItemServiceDSL):
+    """Base class for `name_lookup` tests."""
+
+    _names: list[str]
+    _obtained_name_lookup: dict[str, list[str]]
+
+    def mock_name_lookup(self, catalogue_items_data: list[dict]) -> None:
+        """
+        Mocks repo methods appropriately to test the `name_lookup` service method.
+
+        :param catalogue_items_data: List of dictionaries each containing the `_id` and `name` of a matching catalogue
+            item as would be returned by the repository.
+        """
+
+        self.mock_catalogue_item_repository.list_ids_by_names.return_value = catalogue_items_data
+
+    def call_name_lookup(self, names: list[str]) -> None:
+        """
+        Calls the `CatalogueItemService` `name_lookup` method.
+
+        :param names: Names of the catalogue items to look up.
+        """
+
+        self._names = names
+        self._obtained_name_lookup = self.catalogue_item_service.name_lookup(names)
+
+    def check_name_lookup_success(self, expected_name_lookup: dict[str, list[str]]) -> None:
+        """
+        Checks that a prior call to `call_name_lookup` worked as expected.
+
+        :param expected_name_lookup: Expected dictionary mapping each requested name to a list of matching IDs.
+        """
+
+        self.mock_catalogue_item_repository.list_ids_by_names.assert_called_once_with(self._names)
+
+        assert self._obtained_name_lookup == expected_name_lookup
+
+
+class TestNameLookup(NameLookupDSL):
+    """Tests for looking up catalogue item IDs by name."""
+
+    def test_name_lookup(self):
+        """Test looking up catalogue item IDs by name (including duplicate and non-existent names)."""
+
+        object_id_a1 = ObjectId()
+        object_id_a2 = ObjectId()
+        object_id_b = ObjectId()
+        self.mock_name_lookup(
+            [
+                {"_id": object_id_a1, "name": "Catalogue Item A"},
+                {"_id": object_id_a2, "name": "Catalogue Item A"},
+                {"_id": object_id_b, "name": "Catalogue Item B"},
+            ]
+        )
+        self.call_name_lookup(["Catalogue Item A", "Catalogue Item B", "Non Existent Name"])
+        self.check_name_lookup_success(
+            {
+                "Catalogue Item A": [str(object_id_a1), str(object_id_a2)],
+                "Catalogue Item B": [str(object_id_b)],
+                "Non Existent Name": [],
+            }
+        )
+
+    def test_name_lookup_with_all_non_existent_names(self):
+        """Test looking up catalogue item IDs when none of the supplied names exist."""
+
+        self.mock_name_lookup([])
+        self.call_name_lookup(["Non Existent Name A", "Non Existent Name B"])
+        self.check_name_lookup_success({"Non Existent Name A": [], "Non Existent Name B": []})
+
+    def test_name_lookup_with_no_names(self):
+        """Test looking up catalogue item IDs with an empty list of names."""
+
+        self.mock_name_lookup([])
+        self.call_name_lookup([])
+        self.check_name_lookup_success({})
+
+
 # pylint:disable=too-many-instance-attributes
 class UpdateDSL(CatalogueItemServiceDSL):
     """Base class for `update` tests."""

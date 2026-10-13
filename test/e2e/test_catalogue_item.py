@@ -2948,3 +2948,80 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         self.check_bulk_validate_create_catalogue_items_failed_with_validation_message(
             422, "List should have at most 3 items after validation, not 4"
         )
+
+
+class NameLookupDSL(CreateDSL):
+    """Base class for name lookup tests."""
+
+    _name_lookup_response: Response
+
+    def post_name_lookup(self, names: list[str]) -> None:
+        """
+        Looks up the IDs of catalogue items for the given names.
+
+        :param names: List of catalogue item names to look up.
+        """
+
+        self._name_lookup_response = self.test_client.post("/v1/catalogue-items/name-lookup", json=names)
+
+    def check_post_name_lookup_success(self, expected_name_lookup: dict[str, list[str]]) -> None:
+        """
+        Checks that a prior call to `post_name_lookup` gave a successful response with the expected data returned.
+
+        :param expected_name_lookup: Expected dictionary mapping each requested name to a list of the matching
+            catalogue item IDs.
+        """
+
+        assert self._name_lookup_response.status_code == 200
+
+        actual_name_lookup = self._name_lookup_response.json()
+
+        # The response keys should be the requested names, de-duplicated and including any with no matches
+        assert actual_name_lookup.keys() == expected_name_lookup.keys()
+
+        # As names are not unique, the order of the IDs returned for a given name is not guaranteed, so sort before
+        # comparing
+        for name, expected_ids in expected_name_lookup.items():
+            assert sorted(actual_name_lookup[name]) == sorted(expected_ids)
+
+
+class TestNameLookup(NameLookupDSL):
+    """Tests for looking up catalogue item IDs by name."""
+
+    def test_name_lookup(self):
+        """Test looking up catalogue item IDs by name including duplicate and non-existent names."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        # Two catalogue items share the same name as catalogue item names are not unique
+        duplicate_name_id_1 = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        duplicate_name_id_2 = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        other_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES)
+
+        self.post_name_lookup(
+            [
+                CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"],
+                CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES["name"],
+                "Non Existent Name",
+            ]
+        )
+
+        self.check_post_name_lookup_success(
+            {
+                CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"]: [duplicate_name_id_1, duplicate_name_id_2],
+                CATALOGUE_ITEM_DATA_NOT_OBSOLETE_NO_PROPERTIES["name"]: [other_id],
+                "Non Existent Name": [],
+            }
+        )
+
+    def test_name_lookup_with_all_non_existent_names(self):
+        """Test looking up catalogue item IDs when none of the supplied names exist."""
+
+        self.post_name_lookup(["Non Existent Name A", "Non Existent Name B"])
+        self.check_post_name_lookup_success({"Non Existent Name A": [], "Non Existent Name B": []})
+
+    def test_name_lookup_with_no_names(self):
+        """Test looking up catalogue item IDs with an empty list of names."""
+
+        self.post_name_lookup([])
+        self.check_post_name_lookup_success({})
