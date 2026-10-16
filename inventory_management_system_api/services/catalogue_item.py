@@ -406,8 +406,11 @@ class CatalogueItemService:
                     )
                 )
 
-        # Now validate any properties
-        supplied_properties = catalogue_item_data["properties"] if "properties" in catalogue_item_data else []
+        # Now validate any properties. Anything other than a list is ignored here as it will already have been
+        # reported as a schema error above, and there is nothing further that can be done with it.
+        supplied_properties = catalogue_item_data.get("properties")
+        if not isinstance(supplied_properties, list):
+            supplied_properties = []
         # NOTE: Basic schema validation of properties has already occurred at this point from using
         #       CatalogueItemPostSchema above, we dont want to capture those errors again.
         #       While we cant validate those properties that dont pass the basic checks, we can
@@ -416,7 +419,7 @@ class CatalogueItemService:
 
         for supplied_property in supplied_properties:
             try:
-                property_schemas.append(PropertyPostSchema(**supplied_property))
+                property_schemas.append(PropertyPostSchema.model_validate(supplied_property))
             except ValidationError:
                 pass
 
