@@ -105,7 +105,10 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                 yield
 
     def _mock_start_transaction_impacting_number_of_spares(
-        self, spares_definition_out_data: Optional[dict], raise_write_conflict_once: bool
+        self,
+        spares_definition_out_data: Optional[dict],
+        raise_write_conflict_once: bool,
+        supplied_session: Optional[Mock] = None,
     ) -> None:
         """
         Mocks methods appropriately for when the `_start_transaction_impacting_number_of_spares` repo method will be
@@ -115,11 +118,15 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                                            be required for a `SparesDefinitionOut` database model.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
+        :param supplied_session: Either `None` or an existing session given by the caller, which should be reused
+                                 rather than a new transaction being started.
         """
 
         # Mock the transaction session itself - this will be the value ultimately returned by
-        # _start_transaction_impacting_number_of_spares
-        self.mock_transaction_session = MagicMock() if spares_definition_out_data else None
+        # _start_transaction_impacting_number_of_spares. An existing session is passed straight through.
+        self.mock_transaction_session = (
+            supplied_session if supplied_session else (MagicMock() if spares_definition_out_data else None)
+        )
         self.mock_start_session_transaction.return_value.__enter__.return_value = self.mock_transaction_session
 
         # Mock the spares definition get
@@ -145,6 +152,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         expected_action_description: str,
         expected_catalogue_item_id: str,
         expected_dest_system_id: Optional[str] = None,
+        expected_session_supplied: bool = False,
     ) -> None:
         """
         Checks that a call to `_start_transaction_impacting_number_of_spares` performed the expected function calls.
@@ -152,6 +160,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         :param expected_action_description: Expected `action_description` the function should have been called with.
         :param expected_catalogue_item_id: Expected `catalogue_item_id` the function should have been called with.
         :param expected_dest_system_id: Expected `dest_system_id` the function should have been called with.
+        :param expected_session_supplied: Whether the function was expected to have been given an existing session.
         """
 
         expected_catalogue_item_id = CustomObjectId(expected_catalogue_item_id)
@@ -160,69 +169,44 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
 
         # The rest of the calls only occur if there is a spares definition
         if self._expected_spares_definition_out:
-            if self._raise_write_conflict_once:
+            if expected_session_supplied:
+                # The existing session should be reused rather than nesting another transaction inside it
+                self.mock_start_session_transaction.assert_not_called()
+            elif self._raise_write_conflict_once:
                 assert self.mock_start_session_transaction.call_args_list == [
                     call(expected_action_description),
                     call(expected_action_description),
                 ]
                 self.mock_start_session_transaction.return_value.__enter__.assert_has_calls([call(), call()])
-
-                if expected_dest_system_id:
-                    self.mock_system_repository.write_lock.assert_called_once_with(
-                        expected_dest_system_id, self.mock_transaction_session
-                    )
-                else:
-                    self.mock_system_repository.write_lock.assert_not_called()
-
-                self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
-                    expected_catalogue_item_id,
-                    [
-                        CustomObjectId(system_type.id)
-                        for system_type in self._expected_spares_definition_out.system_types
-                    ],
-                    session=self.mock_transaction_session,
-                )
-
-                self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
-                    [
-                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                        call(
-                            expected_catalogue_item_id,
-                            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
-                            session=self.mock_transaction_session,
-                        ),
-                    ]
-                )
             else:
                 self.mock_start_session_transaction.assert_called_once_with(expected_action_description)
                 self.mock_start_session_transaction.return_value.__enter__.assert_called_once()
 
-                if expected_dest_system_id:
-                    self.mock_system_repository.write_lock.assert_called_once_with(
-                        expected_dest_system_id, self.mock_transaction_session
-                    )
-                else:
-                    self.mock_system_repository.write_lock.assert_not_called()
+            if expected_dest_system_id:
+                self.mock_system_repository.write_lock.assert_called_once_with(
+                    expected_dest_system_id, self.mock_transaction_session
+                )
+            else:
+                self.mock_system_repository.write_lock.assert_not_called()
 
-                self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
-                    expected_catalogue_item_id,
-                    [
-                        CustomObjectId(system_type.id)
-                        for system_type in self._expected_spares_definition_out.system_types
-                    ],
-                    session=self.mock_transaction_session,
-                )
-                self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
-                    [
-                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                        call(
-                            expected_catalogue_item_id,
-                            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
-                            session=self.mock_transaction_session,
-                        ),
-                    ]
-                )
+            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
+                expected_catalogue_item_id,
+                [CustomObjectId(system_type.id) for system_type in self._expected_spares_definition_out.system_types],
+                session=self.mock_transaction_session,
+            )
+
+            # The catalogue item is write locked once per attempt, before the recounted number of spares is written
+            self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
+                [call(expected_catalogue_item_id, None, session=self.mock_transaction_session)]
+                * (2 if self._raise_write_conflict_once else 1)
+                + [
+                    call(
+                        expected_catalogue_item_id,
+                        self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
+                        session=self.mock_transaction_session,
+                    )
+                ]
+            )
 
 
 class CreateDSL(ItemServiceDSL):
@@ -239,6 +223,7 @@ class CreateDSL(ItemServiceDSL):
     _created_item: ItemOut
     _create_exception: pytest.ExceptionInfo
     _user_authorised: bool
+    _supplied_session: Optional[Mock]
 
     _expected_merged_properties: List[PropertyPostSchema]
 
@@ -256,6 +241,7 @@ class CreateDSL(ItemServiceDSL):
         stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
         user_is_authorised=False,
+        supplied_session: Optional[Mock] = None,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
@@ -277,9 +263,12 @@ class CreateDSL(ItemServiceDSL):
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
         :param user_is_authorised: Whether the request is authorised to bypass functionality such as checking rules.
+        :param supplied_session: Either `None` or an existing session to create the item within, as `bulk_create`
+                                 does.
         """
 
         self._user_authorised = user_is_authorised
+        self._supplied_session = supplied_session
 
         # Generate mandatory IDs to be inserted where needed
         catalogue_item_id = str(ObjectId())
@@ -394,7 +383,7 @@ class CreateDSL(ItemServiceDSL):
             )
 
         self._mock_start_transaction_impacting_number_of_spares(
-            stored_spares_definition_out_data, raise_write_conflict_once
+            stored_spares_definition_out_data, raise_write_conflict_once, supplied_session
         )
 
         self._expected_item_in = ItemIn(
@@ -412,7 +401,9 @@ class CreateDSL(ItemServiceDSL):
     def call_create(self) -> None:
         """Calls the `ItemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
-        self._created_item = self.item_service.create(self._item_post, self._user_authorised)
+        self._created_item = self.item_service.create(
+            self._item_post, self._user_authorised, session=self._supplied_session
+        )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -423,7 +414,7 @@ class CreateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.create(self._item_post, self._user_authorised)
+            self.item_service.create(self._item_post, self._user_authorised, session=self._supplied_session)
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -457,7 +448,10 @@ class CreateDSL(ItemServiceDSL):
         )
 
         self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
-            "creating item", str(self._expected_item_in.catalogue_item_id), str(self._expected_item_in.system_id)
+            "creating item",
+            str(self._expected_item_in.catalogue_item_id),
+            str(self._expected_item_in.system_id),
+            expected_session_supplied=self._supplied_session is not None,
         )
 
         self.mock_item_repository.create.assert_called_once_with(
@@ -530,6 +524,36 @@ class TestCreate(CreateDSL):
             system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_existing_session(self):
+        """Test creating an item within an existing session, as `bulk_create` does."""
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            supplied_session=MagicMock(),
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_existing_session_and_spares_definition_defined(self):
+        """Test creating an item within an existing session when there is a spares definition defined. The existing
+        session should be reused rather than starting a nested transaction."""
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            supplied_session=MagicMock(),
         )
         self.call_create()
         self.check_create_success()
@@ -639,6 +663,29 @@ class TestCreate(CreateDSL):
         )
         self.call_create()
         self.check_create_success()
+
+
+class TestBulkCreate(ItemServiceDSL):
+    """Tests for bulk creating items."""
+
+    def test_bulk_create(self):
+        """Test bulk create correctly creates a list of items within a single session."""
+
+        mock_session = MagicMock()
+        context_manager = MagicMock()
+        context_manager.__enter__.return_value = mock_session
+        mock_items = [MagicMock(), MagicMock()]
+        mock_created_item_outs = [MagicMock() for _ in range(0, len(mock_items))]
+        self.item_service.create = MagicMock(side_effect=mock_created_item_outs)
+        self.mock_start_session_transaction.return_value = context_manager
+
+        created_items = self.item_service.bulk_create(mock_items, is_authorised=False)
+
+        self.mock_start_session_transaction.assert_called_once_with("creating bulk items")
+        assert self.item_service.create.call_args_list == [
+            call(item, False, session=mock_session) for item in mock_items
+        ]
+        assert created_items == mock_created_item_outs
 
 
 class GetDSL(ItemServiceDSL):
