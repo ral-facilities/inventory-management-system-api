@@ -185,6 +185,22 @@ class CatalogueItemRepo:
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
         return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
+    def list_ids_by_names(self, names: list[str], session: Optional[ClientSession] = None) -> list[dict]:
+        """
+        Retrieve the IDs of all catalogue items matching a list of names from a MongoDB database.
+
+        Performs a projection to only include the `_id` and `name` fields.
+
+        :param names: List of catalogue item names to look up.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: A list of documents each containing the `_id` and `name` of a matching catalogue item, or an empty
+            list if no catalogue items match.
+        """
+        logger.info("Retrieving IDs of catalogue items matching the provided names from the database")
+        return list(
+            self._catalogue_items_collection.find({"name": {"$in": names}}, {"_id": 1, "name": 1}, session=session)
+        )
+
     def insert_property_to_all_matching(
         self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
     ):

@@ -2,6 +2,7 @@
 Unit tests for the `ItemRepo` repository.
 """
 
+import re
 from test.mock_data import (
     ITEM_IN_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
     ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -705,3 +706,79 @@ class TestCountInCatalogueItemWithSystemTypeOneOf(CountInCatalogueItemWithSystem
         self.mock_count_in_catalogue_item_with_system_type_one_of(None)
         self.call_count_in_catalogue_item_with_system_type_one_of(ObjectId(), [ObjectId(), ObjectId()])
         self.check_count_in_catalogue_item_with_system_type_one_of()
+
+
+class IsDuplicateSerialNumberDSL(ItemRepoDSL):
+    """Base class for `is_duplicate_serial_number` tests."""
+
+    _mock_duplicate_item_data: Optional[dict]
+    _is_duplicate_serial_number_serial_number: str
+    _is_duplicate_serial_number_result: bool
+
+    def mock_is_duplicate_serial_number(self, duplicate_item_data: Optional[dict] = None) -> None:
+        """
+        Mocks database methods appropriately for when the `is_duplicate_serial_number` repo method will be called.
+
+        :param duplicate_item_data: Dictionary containing a duplicate item's data (or `None`).
+        """
+
+        self._mock_duplicate_item_data = duplicate_item_data
+
+        RepositoryTestHelpers.mock_find_one(self.items_collection, duplicate_item_data)
+
+    def call_is_duplicate_serial_number(self, serial_number: str) -> None:
+        """Calls the `ItemRepo` `is_duplicate_serial_number` method.
+
+        :param serial_number: Serial number of the item to check.
+        """
+
+        self._is_duplicate_serial_number_serial_number = serial_number
+        self._is_duplicate_serial_number_result = self.item_repository.is_duplicate_serial_number(
+            serial_number, session=self.mock_session
+        )
+
+    def check_is_duplicate_serial_number_success(self, expected_result: bool) -> None:
+        """Checks that a prior call to `call_is_duplicate_serial_number` worked as expected.
+
+        :param expected_result: The expected result returned by `is_duplicate_serial_number`.
+        """
+
+        expected_pattern = rf"^\s*{re.escape(self._is_duplicate_serial_number_serial_number.strip())}\s*$"
+        self.items_collection.find_one.assert_called_once_with(
+            {"serial_number": {"$regex": expected_pattern, "$options": "i"}}, session=self.mock_session
+        )
+
+        assert self._is_duplicate_serial_number_result == expected_result
+
+
+class TestIsDuplicateSerialNumber(IsDuplicateSerialNumberDSL):
+    """Tests for `is_duplicate_serial_number`."""
+
+    def test_is_duplicate_serial_number_with_no_duplicates(self):
+        """Test `is_duplicate_serial_number` when there are no duplicate items."""
+
+        self.mock_is_duplicate_serial_number(duplicate_item_data=None)
+        self.call_is_duplicate_serial_number("test-serial-number")
+        self.check_is_duplicate_serial_number_success(expected_result=False)
+
+    def test_is_duplicate_serial_number_with_duplicate(self):
+        """Test `is_duplicate_serial_number` when there is a duplicate item."""
+
+        self.mock_is_duplicate_serial_number(duplicate_item_data=ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.call_is_duplicate_serial_number("test-serial-number")
+        self.check_is_duplicate_serial_number_success(expected_result=True)
+
+    def test_is_duplicate_serial_number_queries_case_insensitively_ignoring_whitespace(self):
+        """Test `is_duplicate_serial_number` builds a query that is case-insensitive and ignores leading/trailing
+        whitespace."""
+
+        self.mock_is_duplicate_serial_number(duplicate_item_data=ITEM_IN_DATA_NEW_REQUIRED_VALUES_ONLY)
+        self.call_is_duplicate_serial_number("  Test-Serial-Number  ")
+        self.check_is_duplicate_serial_number_success(expected_result=True)
+
+    def test_is_duplicate_serial_number_escapes_regex_special_characters(self):
+        """Test `is_duplicate_serial_number` escapes any regex special characters in the given serial number."""
+
+        self.mock_is_duplicate_serial_number(duplicate_item_data=None)
+        self.call_is_duplicate_serial_number("test.serial*number")
+        self.check_is_duplicate_serial_number_success(expected_result=False)

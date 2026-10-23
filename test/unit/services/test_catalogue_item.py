@@ -495,6 +495,84 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
+class NameLookupDSL(CatalogueItemServiceDSL):
+    """Base class for `name_lookup` tests."""
+
+    _names: list[str]
+    _obtained_name_lookup: dict[str, list[str]]
+
+    def mock_name_lookup(self, catalogue_items_data: list[dict]) -> None:
+        """
+        Mocks repo methods appropriately to test the `name_lookup` service method.
+
+        :param catalogue_items_data: List of dictionaries each containing the `_id` and `name` of a matching catalogue
+            item as would be returned by the repository.
+        """
+
+        self.mock_catalogue_item_repository.list_ids_by_names.return_value = catalogue_items_data
+
+    def call_name_lookup(self, names: list[str]) -> None:
+        """
+        Calls the `CatalogueItemService` `name_lookup` method.
+
+        :param names: Names of the catalogue items to look up.
+        """
+
+        self._names = names
+        self._obtained_name_lookup = self.catalogue_item_service.name_lookup(names)
+
+    def check_name_lookup_success(self, expected_name_lookup: dict[str, list[str]]) -> None:
+        """
+        Checks that a prior call to `call_name_lookup` worked as expected.
+
+        :param expected_name_lookup: Expected dictionary mapping each requested name to a list of matching IDs.
+        """
+
+        self.mock_catalogue_item_repository.list_ids_by_names.assert_called_once_with(self._names)
+
+        assert self._obtained_name_lookup == expected_name_lookup
+
+
+class TestNameLookup(NameLookupDSL):
+    """Tests for looking up catalogue item IDs by name."""
+
+    def test_name_lookup(self):
+        """Test looking up catalogue item IDs by name (including duplicate and non-existent names)."""
+
+        object_id_a1 = ObjectId()
+        object_id_a2 = ObjectId()
+        object_id_b = ObjectId()
+        self.mock_name_lookup(
+            [
+                {"_id": object_id_a1, "name": "Catalogue Item A"},
+                {"_id": object_id_a2, "name": "Catalogue Item A"},
+                {"_id": object_id_b, "name": "Catalogue Item B"},
+            ]
+        )
+        self.call_name_lookup(["Catalogue Item A", "Catalogue Item B", "Non Existent Name"])
+        self.check_name_lookup_success(
+            {
+                "Catalogue Item A": [str(object_id_a1), str(object_id_a2)],
+                "Catalogue Item B": [str(object_id_b)],
+                "Non Existent Name": [],
+            }
+        )
+
+    def test_name_lookup_with_all_non_existent_names(self):
+        """Test looking up catalogue item IDs when none of the supplied names exist."""
+
+        self.mock_name_lookup([])
+        self.call_name_lookup(["Non Existent Name A", "Non Existent Name B"])
+        self.check_name_lookup_success({"Non Existent Name A": [], "Non Existent Name B": []})
+
+    def test_name_lookup_with_no_names(self):
+        """Test looking up catalogue item IDs with an empty list of names."""
+
+        self.mock_name_lookup([])
+        self.call_name_lookup([])
+        self.check_name_lookup_success({})
+
+
 # pylint:disable=too-many-instance-attributes
 class UpdateDSL(CatalogueItemServiceDSL):
     """Base class for `update` tests."""
@@ -1338,12 +1416,13 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
         # Add any property ids automatically from the category (unit tests here should not retest logic tested in
         # utils.validate_properties)
         self._catalogue_item_data = deepcopy(catalogue_item_data)
-        if "properties" in self._catalogue_item_data:
+        if "properties" in self._catalogue_item_data and isinstance(self._catalogue_item_data["properties"], list):
             property_name_id_map = {prop["name"]: prop["id"] for prop in catalogue_category_out_data["properties"]}
             for prop in self._catalogue_item_data["properties"]:
-                name = prop["name"]
-                if name in property_name_id_map:
-                    prop["id"] = str(property_name_id_map[name])
+                if isinstance(prop, dict):
+                    name = prop["name"]
+                    if name in property_name_id_map:
+                        prop["id"] = str(property_name_id_map[name])
 
         self.mock_catalogue_item_repository.is_duplicate_name.return_value = has_duplicate_name
 
@@ -1385,13 +1464,15 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
             )
 
         if "properties" in self._catalogue_item_data:
+            supplied_properties = self._catalogue_item_data["properties"]
             property_schemas = []
 
-            for property_data in self._catalogue_item_data["properties"]:
-                try:
-                    property_schemas.append(PropertyPostSchema(**property_data))
-                except ValidationError:
-                    pass
+            if isinstance(supplied_properties, list):
+                for property_data in supplied_properties:
+                    try:
+                        property_schemas.append(PropertyPostSchema.model_validate(property_data))
+                    except ValidationError:
+                        pass
 
             if self._catalogue_category_out:
                 self.wrapped_utils.process_properties.assert_called_once_with(
@@ -1498,6 +1579,59 @@ class TestValidateCreate(ValidateCreateDSL):
                     msg="Field required",
                     input={"name": "unknown"},
                 ),
+            ],
+        )
+
+    def test_validate_create_with_non_list_properties(self):
+        """Test validating catalogue item data for creation when `properties` is not a list (see issue #856)."""
+
+        self.mock_validate_create(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+                "properties": 5,
+            },
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="list_type",
+                    loc=["properties"],
+                    msg="Input should be a valid list",
+                    input=5,
+                )
+            ],
+        )
+
+    def test_validate_create_with_non_dict_property(self):
+        """Test validating catalogue item data for creation when an entry within `properties` is not a dictionary
+        (see issue #856)."""
+
+        self.mock_validate_create(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+                "properties": [5],
+            },
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="model_type",
+                    loc=["properties", 0],
+                    msg="Input should be a valid dictionary or instance of PropertyPostSchema",
+                    input=5,
+                )
             ],
         )
 

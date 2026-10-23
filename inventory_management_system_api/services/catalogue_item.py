@@ -156,6 +156,22 @@ class CatalogueItemService:
         """
         return self._catalogue_item_repository.list(catalogue_category_id)
 
+    def name_lookup(self, names: list[str]) -> dict[str, list[str]]:
+        """
+        Look up the IDs of catalogue items by their names.
+
+        As catalogue item names are not unique, each name maps to a list of the IDs of all matching catalogue items.
+        Any name with no matching catalogue items maps to an empty list. Any duplicate names in the input only appear
+        once in the result.
+
+        :param names: List of catalogue item names to look up.
+        :return: Dictionary mapping each requested name to a list of the IDs of the matching catalogue items.
+        """
+        name_to_ids: dict[str, list[str]] = {name: [] for name in names}
+        for catalogue_item in self._catalogue_item_repository.list_ids_by_names(names):
+            name_to_ids[catalogue_item["name"]].append(str(catalogue_item["_id"]))
+        return name_to_ids
+
     # pylint:disable=too-many-branches
     # pylint:disable=too-many-locals
     def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
@@ -390,8 +406,12 @@ class CatalogueItemService:
                     )
                 )
 
-        # Now validate any properties
-        supplied_properties = catalogue_item_data["properties"] if "properties" in catalogue_item_data else []
+        # pylint: disable=duplicate-code
+        # Now validate any properties. Anything other than a list is ignored here as it will already have been
+        # reported as a schema error above, and there is nothing further that can be done with it.
+        supplied_properties = catalogue_item_data.get("properties")
+        if not isinstance(supplied_properties, list):
+            supplied_properties = []
         # NOTE: Basic schema validation of properties has already occurred at this point from using
         #       CatalogueItemPostSchema above, we dont want to capture those errors again.
         #       While we cant validate those properties that dont pass the basic checks, we can
@@ -400,9 +420,10 @@ class CatalogueItemService:
 
         for supplied_property in supplied_properties:
             try:
-                property_schemas.append(PropertyPostSchema(**supplied_property))
+                property_schemas.append(PropertyPostSchema.model_validate(supplied_property))
             except ValidationError:
                 pass
+        # pylint: enable=duplicate-code
 
         # Perform validation of the properties - can only be done assuming a valid catalogue category has been found
         if catalogue_category:
