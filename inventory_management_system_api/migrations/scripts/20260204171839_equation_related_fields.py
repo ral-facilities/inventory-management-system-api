@@ -103,7 +103,7 @@ class OldCatalogueCategoryOut(CreatedModifiedTimeOutMixin, OldCatalogueCategoryB
     parent_id: Optional[StringObjectIdField] = None
     properties: List[CatalogueCategoryPropertyOut] = []
 
-    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True, arbitrary_types_allowed=True)
 
 
 class NewCatalogueItemBase(BaseModel):
@@ -206,7 +206,7 @@ class OldCatalogueItemOut(CreatedModifiedTimeOutMixin, OldCatalogueItemBase):
     obsolete_replacement_catalogue_item_id: Optional[StringObjectIdField] = None
     properties: List[PropertyOut] = []
 
-    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True, arbitrary_types_allowed=True)
 
 
 class NewSystemBase(BaseModel):
@@ -261,7 +261,7 @@ class OldSystemOut(CreatedModifiedTimeOutMixin, OldSystemBase):
     parent_id: Optional[StringObjectIdField] = None
     type_id: StringObjectIdField
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(validate_by_name=True, validate_by_alias=True)
 
 
 class Migration(BaseMigration):
