@@ -297,6 +297,7 @@ class ItemService:
                     )
                 )
 
+        # pylint: disable=duplicate-code
         # Now validate any properties. Anything other than a list is ignored here as it will already have been reported
         # as a schema error above, and there is nothing further that can be done with it.
         supplied_properties = item_data.get("properties")
@@ -311,6 +312,7 @@ class ItemService:
                 property_schemas.append(PropertyPostSchema.model_validate(supplied_property))
             except ValidationError:
                 pass
+        # pylint: enable=duplicate-code
 
         # Perform validation of the properties - can only be done assuming a valid catalogue item (and therefore its
         # catalogue category) has been found. Any properties not supplied are inherited from the catalogue item.
