@@ -6,7 +6,7 @@ repositories.
 import logging
 import random
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Annotated, Generator, List, Optional
 
 from fastapi import Depends
@@ -78,7 +78,7 @@ class ItemService:
         self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
-    def create(self, item: ItemPostSchema, is_authorised: bool) -> ItemOut:
+    def create(self, item: ItemPostSchema, is_authorised: bool, session: Optional[ClientSession] = None) -> ItemOut:
         """
         Create a new item.
 
@@ -86,6 +86,7 @@ class ItemService:
 
         :param item: The item to be created.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :param session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         :raises MissingRecordError: If the system does not exist.
@@ -137,12 +138,34 @@ class ItemService:
 
         # Update number of spares when creating
         with self._start_transaction_impacting_number_of_spares(
-            "creating item", catalogue_item_id, item.system_id
-        ) as session:
+            "creating item", catalogue_item_id, item.system_id, session=session
+        ) as transaction_session:
             return self._item_repository.create(
                 ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
-                session=session,
+                session=transaction_session,
             )
+
+    def bulk_create(self, items: List[ItemPostSchema], is_authorised: bool) -> List[ItemOut]:
+        """
+        Creates items in bulk.
+
+        Uses the single create method, but wrapped within a transaction so either all succeed or none do. Will
+        fail fast the moment it encounters an error, so for detailed information on what went wrong and where
+        `bulk_validate_create` should be used instead.
+
+        Unlike the single create, a write conflict is not retried here as it aborts the whole transaction, so it is
+        left to the client to retry the request.
+
+        :param items: The items to be created.
+        :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :return: List of created items.
+        :raises WriteConflictError: If there is a write conflict during the transaction.
+        """
+        created_items = []
+        with start_session_transaction("creating bulk items") as session:
+            for item in items:
+                created_items.append(self.create(item, is_authorised, session=session))
+        return created_items
 
     def get(self, item_id: str) -> Optional[ItemOut]:
         """
@@ -366,7 +389,11 @@ class ItemService:
 
     @contextmanager
     def _start_transaction_impacting_number_of_spares(
-        self, action_description: str, catalogue_item_id: str, dest_system_id: Optional[str] = None
+        self,
+        action_description: str,
+        catalogue_item_id: str,
+        dest_system_id: Optional[str] = None,
+        session: Optional[ClientSession] = None,
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles recalculation of the `number_of_spares` field of a catalogue item for updates that will impact it but
@@ -386,6 +413,9 @@ class ItemService:
                                   updating.
         :param dest_system_id: ID of the system being put in/moved to (if applicable). Will be write locked to prevent
                                editing of system type after counting spares to avoid miscounts.
+        :param session: Existing PyMongo ClientSession with a transaction already started on it. When given it is
+                        reused rather than starting a new one, as transactions cannot be nested. Handling any write
+                        conflicts then becomes the caller's responsibility as one aborts their whole transaction.
         """
 
         # Use ObjectIDs from here on to avoid unnecessary conversions particularly for when we set the spares definition
@@ -395,9 +425,14 @@ class ItemService:
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
 
         if spares_definition is None:
-            # No session/transaction is needed as there is no spares update to perform
-            yield None
+            # No session/transaction is needed as there is no spares update to perform, so just pass back either the
+            # parent session or None
+            yield session
         else:
+            # If a session is provided, this method does not own the transaction and should reuse it rather than
+            # creating a nested one
+            owns_transaction = session is None
+
             # Particularly when creating multiple items within the same catalogue item in quick succession, multiple
             # conflicting requests can occur. To reduce the chances we retry such requests so that the default 5ms
             # transaction timeout is less of an issue.
@@ -406,13 +441,15 @@ class ItemService:
             num_attempts = 0
             while retry:
                 try:
-                    with start_session_transaction(action_description) as session:
+                    with (
+                        start_session_transaction(action_description) if owns_transaction else nullcontext(session)
+                    ) as transaction_session:
                         num_attempts += 1
 
                         # Write lock the catalogue item to prevent any other updates from occurring during the rest of
                         # the transaction
                         self._catalogue_item_repository.update_number_of_spares(
-                            catalogue_item_id, None, session=session
+                            catalogue_item_id, None, session=transaction_session
                         )
 
                         # Write lock the destination system
@@ -420,10 +457,10 @@ class ItemService:
                         # be modified after the count but before the update finishes and instead force conflicts with
                         # system type modifications.
                         if dest_system_id:
-                            self._system_repository.write_lock(dest_system_id, session)
+                            self._system_repository.write_lock(dest_system_id, transaction_session)
 
                         # Allow any other updates to occur using the same session
-                        yield session
+                        yield transaction_session
 
                         # Obtain and update the number of spares
                         logger.info(
@@ -432,10 +469,10 @@ class ItemService:
                         number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
                             catalogue_item_id,
                             [CustomObjectId(system_type.id) for system_type in spares_definition.system_types],
-                            session=session,
+                            session=transaction_session,
                         )
                         self._catalogue_item_repository.update_number_of_spares(
-                            catalogue_item_id, number_of_spares, session=session
+                            catalogue_item_id, number_of_spares, session=transaction_session
                         )
 
                     # Successful completion, log time take and number of attempts for debugging if we get reports of
@@ -444,9 +481,11 @@ class ItemService:
                     logger.info("Transaction time taken: %s", time.perf_counter() - start_time)
                     logger.info("Transaction number of attempts: %s", num_attempts)
                 except WriteConflictError as exc:
-                    # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
-                    # request take too long and leave potential for it to block other requests if the threadpool is full
-                    if time.perf_counter() - start_time > 30:
+                    # Cannot retry a transaction we do not own as it has already been aborted. Otherwise keep
+                    # retrying, but only if we have been retrying for less than 5 seconds so we dont let the
+                    # request take too long and leave potential for it to block other requests if the threadpool
+                    # is full
+                    if not owns_transaction or time.perf_counter() - start_time > 30:
                         raise exc
                     # Wait some random time as there is no point in retrying immediately if we are already write
                     # locked. Between 100ms and 500ms.
