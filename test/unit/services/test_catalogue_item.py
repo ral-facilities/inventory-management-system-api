@@ -572,6 +572,15 @@ class TestNameLookup(NameLookupDSL):
         self.call_name_lookup([])
         self.check_name_lookup_success({})
 
+    def test_name_lookup_matches_case_insensitively_ignoring_whitespace(self):
+        """Test looking up catalogue item IDs by name attributes a match back to the requested name even when the
+        stored name differs in case or surrounding whitespace."""
+
+        object_id = ObjectId()
+        self.mock_name_lookup([{"_id": object_id, "name": "  Catalogue Item A  "}])
+        self.call_name_lookup(["catalogue item a"])
+        self.check_name_lookup_success({"catalogue item a": [str(object_id)]})
+
 
 # pylint:disable=too-many-instance-attributes
 class UpdateDSL(CatalogueItemServiceDSL):
