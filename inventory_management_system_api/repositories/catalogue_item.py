@@ -3,6 +3,7 @@ Module for providing a repository for managing catalogue items in a MongoDB data
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -189,6 +190,9 @@ class CatalogueItemRepo:
         """
         Retrieve the IDs of all catalogue items matching a list of names from a MongoDB database.
 
+        The comparison is case-insensitive and ignores any leading/trailing whitespace on both the given names and
+        any already stored in the database.
+
         Performs a projection to only include the `_id` and `name` fields.
 
         :param names: List of catalogue item names to look up.
@@ -197,8 +201,11 @@ class CatalogueItemRepo:
             list if no catalogue items match.
         """
         logger.info("Retrieving IDs of catalogue items matching the provided names from the database")
+        # re.escape stops any regex characters in a name being treated as part of the pattern, and the surrounding
+        # \s* allows the stored value to have extra leading/trailing whitespace
+        patterns = [re.compile(rf"^\s*{re.escape(name.strip())}\s*$", re.IGNORECASE) for name in names]
         return list(
-            self._catalogue_items_collection.find({"name": {"$in": names}}, {"_id": 1, "name": 1}, session=session)
+            self._catalogue_items_collection.find({"name": {"$in": patterns}}, {"_id": 1, "name": 1}, session=session)
         )
 
     def insert_property_to_all_matching(
