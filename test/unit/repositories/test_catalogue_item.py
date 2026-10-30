@@ -6,6 +6,7 @@ Unit tests for the `CatalogueItemRepo` repository.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-lines
 
+import re
 from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
@@ -754,6 +755,90 @@ class TestListIDs(ListIDsDSL):
 
         self.call_list_ids(catalogue_category_id=str(ObjectId()))
         self.check_list_ids_success()
+
+
+class ListIDsByNamesDSL(CatalogueItemRepoDSL):
+    """Base class for `list_ids_by_names` tests."""
+
+    _names_filter: list[str]
+    _expected_list_ids_by_names_result: list[dict]
+    _list_ids_by_names_result: list[dict]
+
+    def mock_list_ids_by_names(self, catalogue_items_data: list[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `list_ids_by_names` repo method.
+
+        :param catalogue_items_data: List of dictionaries each containing the `_id` and `name` of a matching catalogue
+            item as would be returned by the database.
+        """
+
+        self._expected_list_ids_by_names_result = catalogue_items_data
+        RepositoryTestHelpers.mock_find(self.catalogue_items_collection, catalogue_items_data)
+
+    def call_list_ids_by_names(self, names: list[str]) -> None:
+        """Calls the `CatalogueItemRepo` `list_ids_by_names` method.
+
+        :param names: Names of the catalogue items to look up.
+        """
+
+        self._names_filter = names
+        self._list_ids_by_names_result = self.catalogue_item_repository.list_ids_by_names(
+            names, session=self.mock_session
+        )
+
+    def check_list_ids_by_names_success(self) -> None:
+        """Checks that a prior call to `call_list_ids_by_names` worked as expected."""
+
+        self.catalogue_items_collection.find.assert_called_once()
+        call_args = self.catalogue_items_collection.find.call_args
+        query, projection = call_args.args
+
+        assert projection == {"_id": 1, "name": 1}
+        assert call_args.kwargs == {"session": self.mock_session}
+
+        # Each pattern should be case-insensitive and tolerate leading/trailing whitespace around the (escaped)
+        # given name
+        expected_patterns = [rf"^\s*{re.escape(name.strip())}\s*$" for name in self._names_filter]
+        actual_patterns = query["name"]["$in"]
+        assert [pattern.pattern for pattern in actual_patterns] == expected_patterns
+        assert all(pattern.flags & re.IGNORECASE for pattern in actual_patterns)
+
+        assert self._list_ids_by_names_result == self._expected_list_ids_by_names_result
+
+
+class TestListIDsByNames(ListIDsByNamesDSL):
+    """Tests for `list_ids_by_names`."""
+
+    def test_list_ids_by_names(self):
+        """Test `list_ids_by_names`."""
+
+        self.mock_list_ids_by_names(
+            [{"_id": ObjectId(), "name": "Catalogue Item A"}, {"_id": ObjectId(), "name": "Catalogue Item B"}]
+        )
+        self.call_list_ids_by_names(["Catalogue Item A", "Catalogue Item B"])
+        self.check_list_ids_by_names_success()
+
+    def test_list_ids_by_names_with_no_matches(self):
+        """Test `list_ids_by_names` when no catalogue items match the provided names."""
+
+        self.mock_list_ids_by_names([])
+        self.call_list_ids_by_names(["Non Existent Name"])
+        self.check_list_ids_by_names_success()
+
+    def test_list_ids_by_names_queries_case_insensitively_ignoring_whitespace(self):
+        """Test `list_ids_by_names` builds a query that is case-insensitive and ignores leading/trailing
+        whitespace."""
+
+        self.mock_list_ids_by_names([{"_id": ObjectId(), "name": "Catalogue Item A"}])
+        self.call_list_ids_by_names(["  Catalogue Item A  "])
+        self.check_list_ids_by_names_success()
+
+    def test_list_ids_by_names_escapes_regex_special_characters(self):
+        """Test `list_ids_by_names` escapes any regex special characters in the given names."""
+
+        self.mock_list_ids_by_names([])
+        self.call_list_ids_by_names(["catalogue.item*a"])
+        self.check_list_ids_by_names_success()
 
 
 class InsertPropertyToAllMatchingDSL(CatalogueItemRepoDSL):

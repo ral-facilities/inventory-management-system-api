@@ -156,6 +156,37 @@ class CatalogueItemService:
         """
         return self._catalogue_item_repository.list(catalogue_category_id)
 
+    def name_lookup(self, names: list[str]) -> dict[str, list[str]]:
+        """
+        Look up the IDs of catalogue items by their names.
+
+        The comparison is case-insensitive and ignores any leading/trailing whitespace on both the requested names
+        and any already stored in the database.
+
+        As catalogue item names are not unique, each name maps to a list of the IDs of all matching catalogue items.
+        Any name with no matching catalogue items maps to an empty list. Any duplicate names in the input only appear
+        once in the result.
+
+        :param names: List of catalogue item names to look up.
+        :return: Dictionary mapping each requested name to a list of the IDs of the matching catalogue items.
+        """
+        name_to_ids: dict[str, list[str]] = {name: [] for name in names}
+
+        # Maps each normalised (case-insensitive, trimmed) name to the requested name(s) that produced it, so that a
+        # matching catalogue item - whose stored name may differ in case/whitespace from what was requested - can be
+        # attributed back to every requested name it satisfies
+        normalised_to_requested: dict[str, list[str]] = {}
+        for name in names:
+            # Gets the list already stored for this normalised name, creating an empty one first if needed, then
+            # adds the original (non-normalised) name onto it
+            normalised_to_requested.setdefault(name.strip().lower(), []).append(name)
+
+        for catalogue_item in self._catalogue_item_repository.list_ids_by_names(names):
+            normalised_name = catalogue_item["name"].strip().lower()
+            for requested_name in normalised_to_requested[normalised_name]:
+                name_to_ids[requested_name].append(str(catalogue_item["_id"]))
+        return name_to_ids
+
     # pylint:disable=too-many-branches
     # pylint:disable=too-many-locals
     def update(self, catalogue_item_id: str, catalogue_item: CatalogueItemPatchSchema) -> CatalogueItemOut:
