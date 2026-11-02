@@ -8,6 +8,7 @@ Unit tests for the `ItemService` service.
 
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+    BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
@@ -26,11 +27,13 @@ from test.mock_data import (
     USAGE_STATUS_IN_DATA_NEW,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
+from copy import deepcopy
 from typing import List, Optional
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
+from pydantic import ValidationError
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -1688,6 +1691,7 @@ class ValidateCreateDSL(ItemServiceDSL):
     """Base class for `_validate_create` tests."""
 
     _catalogue_item_out: Optional[CatalogueItemOut]
+    _catalogue_category_out: Optional[CatalogueCategoryOut]
     _item_data: dict
     _is_duplicate_serial_number_in_data: bool
     _is_duplicate_serial_number_in_db: bool
@@ -1728,19 +1732,39 @@ class ValidateCreateDSL(ItemServiceDSL):
                                                  database.
         """
 
-        self._item_data = {**item_data}
+        self._item_data = deepcopy(item_data)
         self._is_duplicate_serial_number_in_data = is_duplicate_serial_number_in_data
         self._is_duplicate_serial_number_in_db = is_duplicate_serial_number_in_db
+
+        # Catalogue category (looked up via the catalogue item)
+        self._catalogue_category_out = (
+            CatalogueCategoryOut(**catalogue_category_out_data) if catalogue_category_out_data else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._catalogue_category_out)
+
+        # Add any property ids automatically from the category (unit tests here should not retest logic tested in
+        # utils.validate_properties) - needed for both the item's own supplied properties, and the catalogue item's
+        # properties (from which any not supplied by the item are inherited)
+        property_name_id_map = (
+            {prop["name"]: prop["id"] for prop in catalogue_category_out_data["properties"]}
+            if catalogue_category_out_data
+            else {}
+        )
+
+        catalogue_item_out_data = deepcopy(catalogue_item_out_data) if catalogue_item_out_data else None
+        if catalogue_item_out_data and "properties" in catalogue_item_out_data:
+            for prop in catalogue_item_out_data["properties"]:
+                if prop["name"] in property_name_id_map:
+                    prop["id"] = str(property_name_id_map[prop["name"]])
+
+        if isinstance(self._item_data.get("properties"), list):
+            for prop in self._item_data["properties"]:
+                if isinstance(prop, dict) and prop.get("name") in property_name_id_map:
+                    prop["id"] = str(property_name_id_map[prop["name"]])
 
         # Catalogue item
         self._catalogue_item_out = CatalogueItemOut(**catalogue_item_out_data) if catalogue_item_out_data else None
         ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._catalogue_item_out)
-
-        # Catalogue category (looked up via the catalogue item)
-        ServiceTestHelpers.mock_get(
-            self.mock_catalogue_category_repository,
-            CatalogueCategoryOut(**catalogue_category_out_data) if catalogue_category_out_data else None,
-        )
 
         # System
         system_in = SystemIn(**system_in_data) if system_in_data else None
@@ -1807,6 +1831,29 @@ class ValidateCreateDSL(ItemServiceDSL):
         if "usage_status_id" in self._item_data:
             self.mock_usage_status_repository.get.assert_called_once_with(self._item_data["usage_status_id"])
 
+        if "properties" in self._item_data:
+            supplied_properties = self._item_data["properties"]
+            if not isinstance(supplied_properties, list):
+                supplied_properties = []
+
+            property_schemas = []
+            for property_data in supplied_properties:
+                try:
+                    property_schemas.append(PropertyPostSchema.model_validate(property_data))
+                except ValidationError:
+                    pass
+
+            if self._catalogue_item_out is not None:
+                merged_properties = self.item_service._merge_missing_properties(  # pylint:disable=protected-access
+                    self._catalogue_item_out.properties, property_schemas
+                )
+                self.wrapped_utils.process_properties.assert_called_once_with(
+                    # Use ANY for errors as its mutable and changes after running to include the actual errors
+                    self._catalogue_category_out.properties,
+                    merged_properties,
+                    ANY,
+                )
+
         assert self._validate_create_result == ValidationResultSchema(
             index=0, warnings=expected_warnings, errors=expected_errors
         )
@@ -1835,6 +1882,26 @@ class TestValidateCreate(ValidateCreateDSL):
             },
             catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
             catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_create_with_properties(self):
+        """Test validating item data for creation when properties are supplied, ensuring they are passed through for
+        processing rather than being ignored, and that any not supplied are inherited from the catalogue item."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data={
+                **CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+                "properties": BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES["properties"],
+            },
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
             system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
         )

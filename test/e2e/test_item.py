@@ -1467,6 +1467,35 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
 
         self.check_validate_create_item_success(expected_warnings=[], expected_errors=[])
 
+    def test_bulk_validate_create_with_properties(self):
+        """Test bulk validating item data for creation with an invalid property value, to ensure properties are
+        processed rather than ignored."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        item_data = {
+            **ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+            "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": "not-a-boolean"}],
+        }
+        self.validate_create_item(item_data)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": "not-a-boolean",
+                    "location": ["properties", 0, "value"],
+                    "message": "Invalid value type for property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE['name']]}'. "
+                    "Expected type: boolean.",
+                    "type": "invalid_property_type",
+                }
+            ],
+        )
+
     def test_bulk_validate_create_with_invalid_schema(self):
         """Test bulk validating item data for creation when the schema itself is invalid."""
 
@@ -1795,8 +1824,8 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         )
         self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
-        self.bulk_validate_create_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY] * 4)
+        self.bulk_validate_create_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY] * 5)
 
         self.check_bulk_validate_create_items_failed_with_validation_message(
-            422, "List should have at most 3 items after validation, not 4"
+            422, "List should have at most 4 items after validation, not 5"
         )
