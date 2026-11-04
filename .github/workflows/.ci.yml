@@ -67,9 +67,7 @@ jobs:
   e2e-tests:
     needs: [unit-tests]
     name: End-to-End Tests
-    # TODO: Remove this workaround once an upstream MongoDB fix is available. Ubuntu 22.04 is used temporarily as
-    # MongoDB 8.0 fails to start on newer Linux kernels, causing E2E test failures.
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
