@@ -233,7 +233,7 @@ class CreateDSL(CatalogueItemServiceDSL):
         `mock_create`."""
 
         self._created_catalogue_item = self.catalogue_item_service.create(
-            self._catalogue_item_post, session=self.mock_session
+            self._catalogue_item_post, "username", session=self.mock_session
         )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
@@ -245,7 +245,7 @@ class CreateDSL(CatalogueItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_item_service.create(self._catalogue_item_post)
+            self.catalogue_item_service.create(self._catalogue_item_post, "username")
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -401,11 +401,11 @@ class TestBulkCreate(CatalogueItemServiceDSL):
             "inventory_management_system_api.services.catalogue_item.start_session_transaction",
             return_value=context_manager,
         ) as mock_start_session_transaction:
-            created_catalogue_items = self.catalogue_item_service.bulk_create(mock_catalogue_items)
+            created_catalogue_items = self.catalogue_item_service.bulk_create(mock_catalogue_items, "username")
 
         mock_start_session_transaction.assert_called_once_with("creating bulk catalogue items")
         assert self.catalogue_item_service.create.call_args_list == [
-            call(catalogue_item, session=mock_session) for catalogue_item in mock_catalogue_items
+            call(catalogue_item, "username", session=mock_session) for catalogue_item in mock_catalogue_items
         ]
         assert created_catalogue_items == mock_created_item_outs
 
@@ -745,7 +745,9 @@ class UpdateDSL(CatalogueItemServiceDSL):
         """
 
         self._updated_catalogue_item_id = catalogue_item_id
-        self._updated_catalogue_item = self.catalogue_item_service.update(catalogue_item_id, self._catalogue_item_patch)
+        self._updated_catalogue_item = self.catalogue_item_service.update(
+            catalogue_item_id, self._catalogue_item_patch, username="username"
+        )
 
     def call_update_expecting_error(self, catalogue_item_id: str, error_type: type[BaseException]) -> None:
         """
@@ -757,7 +759,7 @@ class UpdateDSL(CatalogueItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.catalogue_item_service.update(catalogue_item_id, self._catalogue_item_patch)
+            self.catalogue_item_service.update(catalogue_item_id, self._catalogue_item_patch, username="username")
         self._update_exception = exc
 
     def check_update_success(self) -> None:
@@ -1313,7 +1315,9 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
 
         # Catalogue category
         if catalogue_category_out_data:
-            self._catalogue_category_out = CatalogueCategoryOut(**catalogue_category_out_data)
+            self._catalogue_category_out = CatalogueCategoryOut(
+                **{**catalogue_category_out_data, "modified_comment": None}
+            )
         ServiceTestHelpers.mock_get(
             self.mock_catalogue_category_repository,
             self._catalogue_category_out if catalogue_category_out_data else None,
@@ -1322,14 +1326,14 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
         # Manufacturer
         ServiceTestHelpers.mock_get(
             self.mock_manufacturer_repository,
-            (ManufacturerOut(**manufacturer_out_data) if manufacturer_out_data else None),
+            (ManufacturerOut(**{**manufacturer_out_data, "modified_comment": None}) if manufacturer_out_data else None),
         )
 
         # Obsolete replacement catalogue item
         ServiceTestHelpers.mock_get(
             self.mock_catalogue_item_repository,
             (
-                CatalogueItemOut(**obsolete_replacement_catalogue_item_out_data)
+                CatalogueItemOut(**{**obsolete_replacement_catalogue_item_out_data, "modified_comment": None})
                 if obsolete_replacement_catalogue_item_out_data
                 else None
             ),
@@ -1487,10 +1491,16 @@ class TestValidateCreate(ValidateCreateDSL):
                 ),
                 ValidationErrorSchema(type="string_type", loc=["name"], msg="Input should be a valid string", input=42),
                 ValidationErrorSchema(
-                    type="missing", loc=["cost_gbp"], msg="Field required", input=self._catalogue_item_data
+                    type="missing",
+                    loc=["cost_gbp"],
+                    msg="Field required",
+                    input={**self._catalogue_item_data, "modified_comment": None},
                 ),
                 ValidationErrorSchema(
-                    type="missing", loc=["is_obsolete"], msg="Field required", input=self._catalogue_item_data
+                    type="missing",
+                    loc=["is_obsolete"],
+                    msg="Field required",
+                    input={**self._catalogue_item_data, "modified_comment": None},
                 ),
                 ValidationErrorSchema(
                     type="missing",

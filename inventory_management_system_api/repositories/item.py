@@ -125,7 +125,12 @@ class ItemRepo:
             raise MissingRecordError(f"No item found with ID '{item_id}'")
 
     def insert_property_to_all_in(
-        self, catalogue_item_ids: List[ObjectId], property_in: PropertyIn, session: Optional[ClientSession] = None
+        self,
+        catalogue_item_ids: List[ObjectId],
+        property_in: PropertyIn,
+        username: str,
+        modified_comment: Optional[str] = None,
+        session: Optional[ClientSession] = None,
     ):
         """
         Inserts a property into every item with one of the given catalogue_item_id's using an update_many query
@@ -133,6 +138,8 @@ class ItemRepo:
         :param catalogue_item_ids: List of catalogue_item_id's to look for in the items that the property should be
                                    added to
         :param property_in: The property to insert into the items' properties list
+        :param username: The user creating the property
+        :param modified_comment: The justification given for creating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -145,7 +152,11 @@ class ItemRepo:
             {"catalogue_item_id": {"$in": catalogue_item_ids}},
             {
                 "$push": {"properties": property_in.model_dump(by_alias=True)},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": f"Property created: {modified_comment or "No comment"}",
+                },
             },
             session=session,
         )
@@ -155,6 +166,8 @@ class ItemRepo:
         self,
         property_id: str,
         update_body: dict,
+        username: str,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> None:
         """
@@ -164,6 +177,8 @@ class ItemRepo:
 
         :param property_id: The ID of the property to update
         :param update_body: The body of data to be used in the update
+        :param username: The user updating the property
+        :param modified_comment: The justification given for updating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -171,6 +186,8 @@ class ItemRepo:
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
+        set_body["modified_by"] = username
+        set_body["modified_comment"] = f"Property updated: {modified_comment or "No comment"}"
 
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
@@ -181,11 +198,12 @@ class ItemRepo:
 
     # pylint:enable=duplicate-code
 
-    def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
+    def delete_properties(self, property_id: str, username: str, session: Optional[ClientSession] = None) -> None:
         """
         Deletes the property in every item it is present in
 
         :param property_id: The ID of the property to delete
+        :param username: The user deleting the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -195,7 +213,11 @@ class ItemRepo:
             {"properties._id": CustomObjectId(property_id)},
             {
                 "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": "Property deleted",
+                },
             },
             session=session,
         )
