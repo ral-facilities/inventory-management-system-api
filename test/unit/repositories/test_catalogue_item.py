@@ -6,6 +6,7 @@ Unit tests for the `CatalogueItemRepo` repository.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-lines
 
+import re
 from test.mock_data import (
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
     CATALOGUE_ITEM_IN_DATA_NOT_OBSOLETE_NO_PROPERTIES,
@@ -788,9 +789,19 @@ class ListIDsByNamesDSL(CatalogueItemRepoDSL):
     def check_list_ids_by_names_success(self) -> None:
         """Checks that a prior call to `call_list_ids_by_names` worked as expected."""
 
-        self.catalogue_items_collection.find.assert_called_once_with(
-            {"name": {"$in": self._names_filter}}, {"_id": 1, "name": 1}, session=self.mock_session
-        )
+        self.catalogue_items_collection.find.assert_called_once()
+        call_args = self.catalogue_items_collection.find.call_args
+        query, projection = call_args.args
+
+        assert projection == {"_id": 1, "name": 1}
+        assert call_args.kwargs == {"session": self.mock_session}
+
+        # Each pattern should be case-insensitive and tolerate leading/trailing whitespace around the (escaped)
+        # given name
+        expected_patterns = [rf"^\s*{re.escape(name.strip())}\s*$" for name in self._names_filter]
+        actual_patterns = query["name"]["$in"]
+        assert [pattern.pattern for pattern in actual_patterns] == expected_patterns
+        assert all(pattern.flags & re.IGNORECASE for pattern in actual_patterns)
 
         assert self._list_ids_by_names_result == self._expected_list_ids_by_names_result
 
@@ -812,6 +823,21 @@ class TestListIDsByNames(ListIDsByNamesDSL):
 
         self.mock_list_ids_by_names([])
         self.call_list_ids_by_names(["Non Existent Name"])
+        self.check_list_ids_by_names_success()
+
+    def test_list_ids_by_names_queries_case_insensitively_ignoring_whitespace(self):
+        """Test `list_ids_by_names` builds a query that is case-insensitive and ignores leading/trailing
+        whitespace."""
+
+        self.mock_list_ids_by_names([{"_id": ObjectId(), "name": "Catalogue Item A"}])
+        self.call_list_ids_by_names(["  Catalogue Item A  "])
+        self.check_list_ids_by_names_success()
+
+    def test_list_ids_by_names_escapes_regex_special_characters(self):
+        """Test `list_ids_by_names` escapes any regex special characters in the given names."""
+
+        self.mock_list_ids_by_names([])
+        self.call_list_ids_by_names(["catalogue.item*a"])
         self.check_list_ids_by_names_success()
 
 

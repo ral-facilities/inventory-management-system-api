@@ -154,11 +154,14 @@ def name_lookup_catalogue_items(
 ) -> dict[str, list[str]]:
     logger.info("Looking up catalogue item IDs by name")
 
-    # Short-circuit an empty request to avoid an unnecessary database query
-    if not names:
+    # Filter out blank/whitespace-only names
+    names_to_query = [name for name in names if name.strip()]
+
+    # Short-circuit when there are no meaningful names to look up, to avoid an unnecessary database query
+    if not names_to_query:
         return {}
 
-    return catalogue_item_service.name_lookup(names)
+    return catalogue_item_service.name_lookup(names_to_query)
 
 
 @router.get(path="", summary="Get catalogue items", response_description="List of catalogue items")
