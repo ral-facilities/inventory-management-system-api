@@ -402,7 +402,7 @@ class CreateDSL(ItemServiceDSL):
         """Calls the `ItemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
         self._created_item = self.item_service.create(
-            self._item_post, self._user_authorised, session=self._supplied_session
+            self._item_post, self._user_authorised, existing_session=self._supplied_session
         )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
@@ -414,7 +414,9 @@ class CreateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.create(self._item_post, self._user_authorised, session=self._supplied_session)
+            self.item_service.create(
+                self._item_post, self._user_authorised, existing_session=self._supplied_session
+            )
         self._create_exception = exc
 
     def check_create_success(self) -> None:

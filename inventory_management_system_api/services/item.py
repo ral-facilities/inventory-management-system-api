@@ -78,7 +78,9 @@ class ItemService:
         self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
-    def create(self, item: ItemPostSchema, is_authorised: bool, session: Optional[ClientSession] = None) -> ItemOut:
+    def create(
+        self, item: ItemPostSchema, is_authorised: bool, existing_session: Optional[ClientSession] = None
+    ) -> ItemOut:
         """
         Create a new item.
 
@@ -86,7 +88,7 @@ class ItemService:
 
         :param item: The item to be created.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
-        :param session: PyMongo ClientSession to use for the creation operation itself.
+        :param existing_session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         :raises MissingRecordError: If the system does not exist.
@@ -138,7 +140,7 @@ class ItemService:
 
         # Update number of spares when creating
         with self._start_transaction_impacting_number_of_spares(
-            "creating item", catalogue_item_id, item.system_id, session=session
+            "creating item", catalogue_item_id, item.system_id, existing_session=existing_session
         ) as transaction_session:
             return self._item_repository.create(
                 ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
@@ -164,7 +166,7 @@ class ItemService:
         created_items = []
         with start_session_transaction("creating bulk items") as session:
             for item in items:
-                created_items.append(self.create(item, is_authorised, session=session))
+                created_items.append(self.create(item, is_authorised, existing_session=session))
         return created_items
 
     def get(self, item_id: str) -> Optional[ItemOut]:
@@ -393,7 +395,7 @@ class ItemService:
         action_description: str,
         catalogue_item_id: str,
         dest_system_id: Optional[str] = None,
-        session: Optional[ClientSession] = None,
+        existing_session: Optional[ClientSession] = None,
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles recalculation of the `number_of_spares` field of a catalogue item for updates that will impact it but
@@ -413,9 +415,10 @@ class ItemService:
                                   updating.
         :param dest_system_id: ID of the system being put in/moved to (if applicable). Will be write locked to prevent
                                editing of system type after counting spares to avoid miscounts.
-        :param session: Existing PyMongo ClientSession with a transaction already started on it. When given it is
-                        reused rather than starting a new one, as transactions cannot be nested. Handling any write
-                        conflicts then becomes the caller's responsibility as one aborts their whole transaction.
+        :param existing_session: Existing PyMongo ClientSession with a transaction already started on it. When given
+                                 it is reused rather than starting a new one, as transactions cannot be nested.
+                                 Handling any write conflicts then becomes the caller's responsibility as one aborts
+                                 their whole transaction.
         """
 
         # Use ObjectIDs from here on to avoid unnecessary conversions particularly for when we set the spares definition
@@ -427,11 +430,11 @@ class ItemService:
         if spares_definition is None:
             # No session/transaction is needed as there is no spares update to perform, so just pass back either the
             # parent session or None
-            yield session
+            yield existing_session
         else:
             # If a session is provided, this method does not own the transaction and should reuse it rather than
             # creating a nested one
-            owns_transaction = session is None
+            owns_transaction = existing_session is None
 
             # Particularly when creating multiple items within the same catalogue item in quick succession, multiple
             # conflicting requests can occur. To reduce the chances we retry such requests so that the default 5ms
@@ -442,7 +445,9 @@ class ItemService:
             while retry:
                 try:
                     with (
-                        start_session_transaction(action_description) if owns_transaction else nullcontext(session)
+                        start_session_transaction(action_description)
+                        if owns_transaction
+                        else nullcontext(existing_session)
                     ) as transaction_session:
                         num_attempts += 1
 
