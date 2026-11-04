@@ -3025,3 +3025,25 @@ class TestNameLookup(NameLookupDSL):
 
         self.post_name_lookup([])
         self.check_post_name_lookup_success({})
+
+    def test_name_lookup_with_blank_names(self):
+        """Test looking up catalogue item IDs when some of the supplied names are blank/whitespace-only."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.post_name_lookup([CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"], "", "   "])
+
+        # The blank/whitespace-only names should be filtered out and not appear in the response at all
+        self.check_post_name_lookup_success({CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"]: [catalogue_item_id]})
+
+    def test_name_lookup_matches_case_insensitively_ignoring_whitespace(self):
+        """Test looking up catalogue item IDs by name matches regardless of case or surrounding whitespace."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+        catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        requested_name = f"  {CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY['name'].upper()}  "
+        self.post_name_lookup([requested_name])
+
+        self.check_post_name_lookup_success({requested_name: [catalogue_item_id]})
