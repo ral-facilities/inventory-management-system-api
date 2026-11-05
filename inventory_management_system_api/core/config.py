@@ -97,6 +97,7 @@ class BulkConfig(BaseModel):
     """
 
     max_catalogue_items: int
+    max_items: int
 
 
 class Config(BaseSettings):
