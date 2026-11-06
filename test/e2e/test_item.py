@@ -782,10 +782,10 @@ class TestBulkCreate(BulkCreateDSL):
         """Test bulk creating items with too many of them."""
 
         self.post_item_prerequisites_no_properties()
-        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY] * 4)
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY] * 5)
 
         self.check_post_bulk_items_failed_with_validation_message(
-            422, "List should have at most 3 items after validation, not 4"
+            422, "List should have at most 4 items after validation, not 5"
         )
 
     def test_bulk_create_with_mandatory_property_given_none(self):
