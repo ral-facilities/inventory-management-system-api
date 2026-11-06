@@ -82,6 +82,42 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: 
 
 
 @router.post(
+    path="/bulk",
+    summary="Bulk create new items",
+    response_description="The created items",
+    status_code=status.HTTP_201_CREATED,
+)
+def bulk_create_item(
+    items: Annotated[list[ItemPostSchema], Field(max_length=config.bulk.max_items)],
+    item_service: ItemServiceDep,
+    authorised: AuthorisedDep,
+) -> list[ItemSchema]:
+    logger.info("Bulk creating items")
+    try:
+        return [ItemSchema(**item.model_dump()) for item in item_service.bulk_create(items, authorised)]
+    except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
+        logger.exception(str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    except (MissingRecordError, InvalidObjectIdError) as exc:
+        message = "A specified entity does not exist"
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+    except DatabaseIntegrityError as exc:
+        logger.exception("Unable to bulk create items")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=HTTP_500_INTERNAL_SERVER_ERROR_DETAIL
+        ) from exc
+    except InvalidActionError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=message) from exc
+    except WriteConflictError as exc:
+        message = str(exc)
+        logger.exception(message)
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=message) from exc
+
+
+@router.post(
     path="/bulk-validate-create",
     summary="Bulk validate items for creation",
     response_description="Any errors found in the data",
