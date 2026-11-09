@@ -89,13 +89,14 @@ def create_item(
     status_code=status.HTTP_201_CREATED,
 )
 def bulk_create_item(
+    request: Request,
     items: Annotated[list[ItemPostSchema], Field(max_length=config.bulk.max_items)],
     item_service: ItemServiceDep,
     authorised: AuthorisedDep,
 ) -> list[ItemSchema]:
     logger.info("Bulk creating items")
     try:
-        return [ItemSchema(**item.model_dump()) for item in item_service.bulk_create(items, authorised)]
+        return [ItemSchema(**item.model_dump()) for item in item_service.bulk_create(items, request.state.username, authorised)]
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc

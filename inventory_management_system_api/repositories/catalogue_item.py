@@ -230,7 +230,7 @@ class CatalogueItemRepo:
             "Inserting property into catalogue item's with a catalogue category ID '%s' in the database",
             catalogue_category_id,
         )
-
+        # pylint: disable=duplicate-code
         self._catalogue_items_collection.update_many(
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
             {
@@ -302,8 +302,6 @@ class CatalogueItemRepo:
             session=session,
         )
 
-    # pylint: enable=duplicate-code
-
     def update_number_of_spares(
         self,
         catalogue_item_id: ObjectId,
@@ -331,6 +329,8 @@ class CatalogueItemRepo:
             },
             session=session,
         )
+
+    # pylint: enable=duplicate-code
 
     def is_duplicate_name(self, name: str, session: Optional[ClientSession] = None) -> bool:
         """

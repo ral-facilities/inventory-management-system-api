@@ -209,6 +209,8 @@ class ItemRepo:
 
         logger.info("Deleting all properties with ID '%s' inside items in the database", property_id)
 
+        # pylint: disable=duplicate-code
+
         self._items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
             {
@@ -237,6 +239,7 @@ class ItemRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :return: Number of items counted.
         """
+        # pylint: enable=duplicate-code
         result = self._items_collection.aggregate(
             [
                 # Obtain a list of items with the same catalogue item ID

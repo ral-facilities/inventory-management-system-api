@@ -152,10 +152,10 @@ class ItemService:
                         "modified_by": username,
                     }
                 ),
-                session=session,
+                session=transaction_session,
             )
 
-    def bulk_create(self, items: List[ItemPostSchema], is_authorised: bool) -> List[ItemOut]:
+    def bulk_create(self, items: List[ItemPostSchema], username: str, is_authorised: bool) -> List[ItemOut]:
         """
         Creates items in bulk.
 
@@ -167,6 +167,7 @@ class ItemService:
         left to the client to retry the request.
 
         :param items: The items to be created.
+        :param username: The user submitting this request.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
         :return: List of created items.
         :raises WriteConflictError: If there is a write conflict during the transaction.
@@ -174,7 +175,7 @@ class ItemService:
         created_items = []
         with start_session_transaction("creating bulk items") as session:
             for item in items:
-                created_items.append(self.create(item, is_authorised, existing_session=session))
+                created_items.append(self.create(item, is_authorised, username, existing_session=session))
         return created_items
 
     def get(self, item_id: str) -> Optional[ItemOut]:

@@ -681,11 +681,11 @@ class TestBulkCreate(ItemServiceDSL):
         self.item_service.create = MagicMock(side_effect=mock_created_item_outs)
         self.mock_start_session_transaction.return_value = context_manager
 
-        created_items = self.item_service.bulk_create(mock_items, is_authorised=False)
+        created_items = self.item_service.bulk_create(mock_items, is_authorised=False, username="username")
 
         self.mock_start_session_transaction.assert_called_once_with("creating bulk items")
         assert self.item_service.create.call_args_list == [
-            call(item, False, existing_session=mock_session) for item in mock_items
+            call(item, False, 'username', existing_session=mock_session) for item in mock_items
         ]
         assert created_items == mock_created_item_outs
 
