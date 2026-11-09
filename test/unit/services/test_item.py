@@ -685,7 +685,7 @@ class TestBulkCreate(ItemServiceDSL):
 
         self.mock_start_session_transaction.assert_called_once_with("creating bulk items")
         assert self.item_service.create.call_args_list == [
-            call(item, False, 'username', existing_session=mock_session) for item in mock_items
+            call(item, False, "username", existing_session=mock_session) for item in mock_items
         ]
         assert created_items == mock_created_item_outs
 

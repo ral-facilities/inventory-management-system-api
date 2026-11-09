@@ -96,7 +96,10 @@ def bulk_create_item(
 ) -> list[ItemSchema]:
     logger.info("Bulk creating items")
     try:
-        return [ItemSchema(**item.model_dump()) for item in item_service.bulk_create(items, request.state.username, authorised)]
+        return [
+            ItemSchema(**item.model_dump())
+            for item in item_service.bulk_create(items, request.state.username, authorised)
+        ]
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
