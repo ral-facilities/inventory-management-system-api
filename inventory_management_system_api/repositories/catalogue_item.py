@@ -306,10 +306,18 @@ class CatalogueItemRepo:
         """
         Check if a catalogue item with the same name already exists.
 
+        The comparison is case-insensitive and ignores any leading/trailing whitespace on both the given name and any
+        already stored in the database.
+
         :param name: Name of the catalogue item to check for duplicates.
         :param session: PyMongo ClientSession to use for database operations.
         :return: `True` if a duplicate name is found.
         """
         logger.info("Checking if catalogue item with name '%s' already exists", name)
-        catalogue_item = self._catalogue_items_collection.find_one({"name": name}, session=session)
+        # re.escape stops any regex characters in the name being treated as part of the pattern, and the surrounding
+        # \s* allows the stored value to have extra leading/trailing whitespace
+        pattern = rf"^\s*{re.escape(name.strip())}\s*$"
+        catalogue_item = self._catalogue_items_collection.find_one(
+            {"name": {"$regex": pattern, "$options": "i"}}, session=session
+        )
         return catalogue_item is not None
