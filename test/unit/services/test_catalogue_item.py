@@ -1375,6 +1375,8 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
 
     _catalogue_category_out: Optional[CatalogueCategoryOut]
     _catalogue_item_data: dict
+    _is_duplicate_name_in_data: bool
+    _is_duplicate_name_in_db: bool
     _validate_create_result: ValidationResultSchema
 
     def mock_validate_create(
@@ -1383,7 +1385,8 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
         catalogue_category_out_data: Optional[dict] = None,
         manufacturer_out_data: Optional[dict] = None,
         obsolete_replacement_catalogue_item_out_data: Optional[dict] = None,
-        has_duplicate_name: bool = False,
+        is_duplicate_name_in_data: bool = False,
+        is_duplicate_name_in_db: bool = False,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `validate_create` service method.
@@ -1395,8 +1398,13 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
                                       required for a `ManufacturerOut` database model.
         :param obsolete_replacement_catalogue_item_out_data: Either `None` or a dictionary containing the catalogue
                                         category data as would be required for a `CatalogueCategoryOut` database model.
-        :param has_duplicate_name: Whether the catalogue item should have a duplicate name as one existing
+        :param is_duplicate_name_in_data: Whether another catalogue item within the provided bulk data shares this
+                                          catalogue item's name.
+        :param is_duplicate_name_in_db: Whether a catalogue item with the same name already exists in the database.
         """
+
+        self._is_duplicate_name_in_data = is_duplicate_name_in_data
+        self._is_duplicate_name_in_db = is_duplicate_name_in_db
 
         # Catalogue category
         if catalogue_category_out_data:
@@ -1433,8 +1441,6 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
                     if name in property_name_id_map:
                         prop["id"] = str(property_name_id_map[name])
 
-        self.mock_catalogue_item_repository.is_duplicate_name.return_value = has_duplicate_name
-
     def call_validate_create(self) -> None:
         """Calls the `CatalogueItemService` `validate_create` method with the appropriate data from a prior call to
         `mock_validate_create`."""
@@ -1442,7 +1448,10 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
         # Easier to mock a single validation than a whole list, so do proper testing with single, then have a test
         # for multiple
         self._validate_create_result = self.catalogue_item_service._validate_create(  # pylint:disable=protected-access
-            index=0, catalogue_item_data=self._catalogue_item_data
+            index=0,
+            catalogue_item_data=self._catalogue_item_data,
+            is_duplicate_name_in_data=self._is_duplicate_name_in_data,
+            is_duplicate_name_in_db=self._is_duplicate_name_in_db,
         )
 
     def check_validate_create_success(
@@ -1466,11 +1475,6 @@ class ValidateCreateDSL(CatalogueItemServiceDSL):
 
         if "manufacturer_id" in self._catalogue_item_data:
             self.mock_manufacturer_repository.get.assert_called_once_with(self._catalogue_item_data["manufacturer_id"])
-
-        if "name" in self._catalogue_item_data:
-            self.mock_catalogue_item_repository.is_duplicate_name.assert_called_once_with(
-                self._catalogue_item_data["name"]
-            )
 
         if "properties" in self._catalogue_item_data:
             supplied_properties = self._catalogue_item_data["properties"]
@@ -1515,10 +1519,11 @@ class TestValidateCreate(ValidateCreateDSL):
         self.call_validate_create()
         self.check_validate_create_success(expected_warnings=[], expected_errors=[])
 
-    def test_validate_create_with_duplicate_name(self):
-        """Test validating catalogue item data for creation when it is using a duplicate name as an already existing
-        catalogue item."""
+    def test_validate_create_with_duplicate_name_in_database(self):
+        """Test validating catalogue item data for creation with a name that is a duplicate of one in the
+        database."""
 
+        name = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["name"]
         self.mock_validate_create(
             {
                 **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
@@ -1527,7 +1532,7 @@ class TestValidateCreate(ValidateCreateDSL):
             },
             catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
             manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
-            has_duplicate_name=True,
+            is_duplicate_name_in_db=True,
         )
         self.call_validate_create()
         self.check_validate_create_success(
@@ -1535,9 +1540,65 @@ class TestValidateCreate(ValidateCreateDSL):
                 ValidationErrorSchema(
                     type="duplicate_record",
                     loc=["name"],
-                    msg="Duplicate record found with the same name "
-                    f"'{CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["name"]}'",
-                    input="Catalogue Item With All Properties",
+                    msg=f"Duplicate record found with the same name '{name}'",
+                    input=name,
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_create_with_duplicate_name_in_data(self):
+        """Test validating catalogue item data for creation with a name that is a duplicate of another provided
+        catalogue item."""
+
+        name = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["name"]
+        self.mock_validate_create(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            },
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+            is_duplicate_name_in_data=True,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="duplicate_record",
+                    loc=["name"],
+                    msg=f"Duplicate name '{name}' found within the provided catalogue items",
+                    input=name,
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_create_with_duplicate_name_in_data_and_database(self):
+        """Test validating catalogue item data for creation with a name that is a duplicate both within the provided
+        data and in the database only returns the "duplicate in data" warning, as it takes precedence."""
+
+        name = CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES["name"]
+        self.mock_validate_create(
+            {
+                **CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES,
+                "catalogue_category_id": str(CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES["_id"]),
+                "manufacturer_id": str(MANUFACTURER_OUT_DATA_A["_id"]),
+            },
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
+            manufacturer_out_data=MANUFACTURER_OUT_DATA_A,
+            is_duplicate_name_in_data=True,
+            is_duplicate_name_in_db=True,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="duplicate_record",
+                    loc=["name"],
+                    msg=f"Duplicate name '{name}' found within the provided catalogue items",
+                    input=name,
                 )
             ],
             expected_errors=[],
@@ -1770,20 +1831,173 @@ class TestValidateCreate(ValidateCreateDSL):
         )
 
 
-class TestBulkValidateCreate(CatalogueItemServiceDSL):
+class BulkValidateCreateDSL(CatalogueItemServiceDSL):
+    """Base class for `bulk_validate_create` tests."""
+
+    _mock_results: list[ValidationResultSchema]
+    _mock_validate_create: MagicMock
+    _result: BulkValidationResultSchema
+
+    def mock_bulk_validate_create(self, mock_catalogue_items: list[dict], is_duplicate_name_side_effect=None) -> None:
+        """
+        Mocks `_validate_create` and the catalogue item repository's `is_duplicate_name` appropriately to test the
+        `bulk_validate_create` service method.
+
+        :param mock_catalogue_items: List of mock catalogue item data dictionaries to validate.
+        :param is_duplicate_name_side_effect: Callable to use as the `is_duplicate_name` mock's side effect, or `None`
+                                              to have it always return `False`.
+        """
+
+        self._mock_results = [
+            ValidationResultSchema(index=index, warnings=[], errors=[]) for index in range(len(mock_catalogue_items))
+        ]
+        self._mock_validate_create = MagicMock(side_effect=self._mock_results)
+
+        if is_duplicate_name_side_effect is not None:
+            self.mock_catalogue_item_repository.is_duplicate_name.side_effect = is_duplicate_name_side_effect
+        else:
+            self.mock_catalogue_item_repository.is_duplicate_name.return_value = False
+
+    def call_bulk_validate_create(self, mock_catalogue_items: list[dict]) -> None:
+        """
+        Calls the `CatalogueItemService` `bulk_validate_create` method with the appropriate data from a prior call to
+        `mock_bulk_validate_create`.
+
+        :param mock_catalogue_items: List of mock catalogue item data dictionaries to validate.
+        """
+
+        with patch.object(self.catalogue_item_service, "_validate_create", self._mock_validate_create):
+            self._result = self.catalogue_item_service.bulk_validate_create(mock_catalogue_items)
+
+    def check_bulk_validate_create_success(self, expected_validate_create_calls: list) -> None:
+        """
+        Checks that a prior call to `call_bulk_validate_create` worked as expected.
+
+        :param expected_validate_create_calls: Expected calls that should have been made to `_validate_create`.
+        """
+
+        assert self._mock_validate_create.call_args_list == expected_validate_create_calls
+        assert self._result == BulkValidationResultSchema(results=self._mock_results)
+
+
+class TestBulkValidateCreate(BulkValidateCreateDSL):
     """Tests for bulk validating catalogue items data for creation."""
 
     def test_bulk_validate_create(self):
         """Test bulk validate correctly returns a list of validation results for the individual catalogue items."""
-        mock_catalogue_items = [{"name": "1"}, {"name": "2"}, {"name": "3"}]
-        mock_results = [
-            ValidationResultSchema(index=index, warnings=[], errors=[]) for index in range(0, len(mock_catalogue_items))
-        ]
-        mock_validate_create = MagicMock(side_effect=mock_results)
 
-        with patch.object(self.catalogue_item_service, "_validate_create", mock_validate_create):
-            result = self.catalogue_item_service.bulk_validate_create(mock_catalogue_items)
-        assert mock_validate_create.call_args_list == [
-            call(index, mock_catalogue_item) for index, mock_catalogue_item in enumerate(mock_catalogue_items)
+        mock_catalogue_items = [{"name": "1"}, {"name": "2"}, {"name": "3"}]
+        self.mock_bulk_validate_create(mock_catalogue_items)
+
+        self.call_bulk_validate_create(mock_catalogue_items)
+
+        # No catalogue item shares a name with another, so none are flagged as duplicates in the data
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(index, mock_catalogue_item, is_duplicate_name_in_data=False, is_duplicate_name_in_db=False)
+                for index, mock_catalogue_item in enumerate(mock_catalogue_items)
+            ]
+        )
+
+    def test_bulk_validate_create_detects_duplicate_names_in_data(self):
+        """Test bulk validate flags catalogue items sharing a name as duplicates."""
+
+        mock_catalogue_items = [
+            # Duplicate pair sharing a name
+            {"name": "duplicate"},
+            {"name": "duplicate"},
+            # Different name, so not a duplicate
+            {"name": "unique"},
+            # No name, so not a duplicate
+            {},
         ]
-        assert result == BulkValidationResultSchema(results=mock_results)
+        self.mock_bulk_validate_create(mock_catalogue_items)
+
+        self.call_bulk_validate_create(mock_catalogue_items)
+
+        # "duplicate" is never queried, as it is already known to be a duplicate within the data (see the dedicated
+        # precedence test below); only "unique" is queried
+        assert self.mock_catalogue_item_repository.is_duplicate_name.call_args_list == [call("unique")]
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_catalogue_items[0], is_duplicate_name_in_data=True, is_duplicate_name_in_db=False),
+                call(1, mock_catalogue_items[1], is_duplicate_name_in_data=True, is_duplicate_name_in_db=False),
+                call(2, mock_catalogue_items[2], is_duplicate_name_in_data=False, is_duplicate_name_in_db=False),
+                call(3, mock_catalogue_items[3], is_duplicate_name_in_data=False, is_duplicate_name_in_db=False),
+            ]
+        )
+
+    def test_bulk_validate_create_detects_duplicate_names_in_data_ignoring_case_and_whitespace(self):
+        """Test bulk validate flags catalogue items sharing a name as duplicates even when they differ in case or
+        leading/trailing whitespace."""
+
+        mock_catalogue_items = [
+            {"name": "Duplicate"},
+            {"name": "  duplicate  "},
+            # Different name even once normalised, so not a duplicate
+            {"name": "unique"},
+            # Not a string, so should be ignored rather than causing an error
+            {"name": 123},
+        ]
+        self.mock_bulk_validate_create(mock_catalogue_items)
+
+        self.call_bulk_validate_create(mock_catalogue_items)
+
+        # Both differently-cased/spaced variants normalise to "duplicate", which is never queried as it is already
+        # known to be a duplicate within the data; only "unique" is queried
+        assert self.mock_catalogue_item_repository.is_duplicate_name.call_args_list == [call("unique")]
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_catalogue_items[0], is_duplicate_name_in_data=True, is_duplicate_name_in_db=False),
+                call(1, mock_catalogue_items[1], is_duplicate_name_in_data=True, is_duplicate_name_in_db=False),
+                call(2, mock_catalogue_items[2], is_duplicate_name_in_data=False, is_duplicate_name_in_db=False),
+                call(3, mock_catalogue_items[3], is_duplicate_name_in_data=False, is_duplicate_name_in_db=False),
+            ]
+        )
+
+    def test_bulk_validate_create_detects_duplicate_names_in_database(self):
+        """Test bulk validate flags a catalogue item with a name that already exists in the database, checking each
+        distinct, non-duplicated name against the database independently."""
+
+        mock_catalogue_items = [{"name": "existing"}, {"name": "new"}]
+        self.mock_bulk_validate_create(
+            mock_catalogue_items, is_duplicate_name_side_effect=lambda name: name == "existing"
+        )
+
+        self.call_bulk_validate_create(mock_catalogue_items)
+
+        # Order is not guaranteed as the set of names to check is derived from a set difference
+        assert sorted(self.mock_catalogue_item_repository.is_duplicate_name.call_args_list, key=str) == sorted(
+            [call("existing"), call("new")], key=str
+        )
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_catalogue_items[0], is_duplicate_name_in_data=False, is_duplicate_name_in_db=True),
+                call(1, mock_catalogue_items[1], is_duplicate_name_in_data=False, is_duplicate_name_in_db=False),
+            ]
+        )
+
+    def test_bulk_validate_create_duplicate_in_data_takes_precedence_and_skips_database_check(self):
+        """Test bulk validate does not query the database at all for a name that is already a duplicate within the
+        provided data, as the "duplicate in data" warning always takes precedence over the database one."""
+
+        mock_catalogue_items = [
+            # Duplicate pair - should never be checked against the database
+            {"name": "duplicate"},
+            {"name": "duplicate"},
+            # Unique within the data, so still checked against the database
+            {"name": "existing"},
+        ]
+        self.mock_bulk_validate_create(mock_catalogue_items, is_duplicate_name_side_effect=lambda _: True)
+
+        self.call_bulk_validate_create(mock_catalogue_items)
+
+        # "duplicate" is never queried, even though it would also have matched in the database
+        assert self.mock_catalogue_item_repository.is_duplicate_name.call_args_list == [call("existing")]
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_catalogue_items[0], is_duplicate_name_in_data=True, is_duplicate_name_in_db=False),
+                call(1, mock_catalogue_items[1], is_duplicate_name_in_data=True, is_duplicate_name_in_db=False),
+                call(2, mock_catalogue_items[2], is_duplicate_name_in_data=False, is_duplicate_name_in_db=True),
+            ]
+        )
