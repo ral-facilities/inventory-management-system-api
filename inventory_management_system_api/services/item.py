@@ -87,7 +87,7 @@ class ItemService:
         self._setting_repository = setting_repository
 
     def create(
-        self, item: ItemPostSchema, is_authorised: bool, existing_session: Optional[ClientSession] = None
+        self, item: ItemPostSchema, is_authorised: bool, username: str, existing_session: Optional[ClientSession] = None
     ) -> ItemOut:
         """
         Create a new item.
@@ -96,6 +96,7 @@ class ItemService:
 
         :param item: The item to be created.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :param username: The user submitting this request.
         :param existing_session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
@@ -151,11 +152,18 @@ class ItemService:
             "creating item", catalogue_item_id, item.system_id, existing_session=existing_session
         ) as transaction_session:
             return self._item_repository.create(
-                ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
+                ItemIn(
+                    **{
+                        **item.model_dump(),
+                        "properties": properties,
+                        "usage_status": usage_status.value,
+                        "modified_by": username,
+                    }
+                ),
                 session=transaction_session,
             )
 
-    def bulk_create(self, items: List[ItemPostSchema], is_authorised: bool) -> List[ItemOut]:
+    def bulk_create(self, items: List[ItemPostSchema], username: str, is_authorised: bool) -> List[ItemOut]:
         """
         Creates items in bulk.
 
@@ -167,6 +175,7 @@ class ItemService:
         left to the client to retry the request.
 
         :param items: The items to be created.
+        :param username: The user submitting this request.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
         :return: List of created items.
         :raises WriteConflictError: If there is a write conflict during the transaction.
@@ -174,7 +183,7 @@ class ItemService:
         created_items = []
         with start_session_transaction("creating bulk items") as session:
             for item in items:
-                created_items.append(self.create(item, is_authorised, existing_session=session))
+                created_items.append(self.create(item, is_authorised, username, existing_session=session))
         return created_items
 
     # pylint:disable=too-many-branches
@@ -424,7 +433,7 @@ class ItemService:
         """
         return self._item_repository.list(system_id, catalogue_item_id)
 
-    def update(self, item_id: str, item: ItemPatchSchema, is_authorised: bool) -> ItemOut:
+    def update(self, item_id: str, item: ItemPatchSchema, is_authorised: bool, username: str) -> ItemOut:
         """
         Update an item by its ID.
 
@@ -434,6 +443,7 @@ class ItemService:
         :param item_id: The ID of the item to update.
         :param item: The item containing the fields that need to be updated.
         :param is_authorised: Whether or not the user is authorised to bypass any patch rule checks.
+        :param username: The user submitting this request.
         :raises MissingRecordError: If the item doesn't exist.
         :raises InvalidActionError: If attempting to change the catalogue item of the item.
         :return: The updated item.
@@ -462,7 +472,9 @@ class ItemService:
                 "updating item", stored_item.catalogue_item_id, dest_system_id=item.system_id
             ) as session:
                 return self._item_repository.update(
-                    item_id, ItemIn(**{**stored_item.model_dump(), **update_data}), session=session
+                    item_id,
+                    ItemIn(**{**stored_item.model_dump(), **update_data, "modified_by": username}),
+                    session=session,
                 )
 
         return self._item_repository.update(item_id, ItemIn(**{**stored_item.model_dump(), **update_data}))

@@ -6,6 +6,8 @@ End-to-End tests involving settings.
 # pylint: disable=duplicate-code
 # pylint: disable=too-many-ancestors
 
+from unittest.mock import ANY
+
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_item import GetDSL as CatalogueItemGetDSL
 from test.e2e.test_item import DeleteDSL as ItemDeleteDSL
@@ -179,7 +181,11 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
         ):
             self.get_catalogue_item(catalogue_item_id)
             self.check_get_catalogue_item_success(
-                {**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "number_of_spares": expected_number_of_spares}
+                {
+                    **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
+                    "number_of_spares": expected_number_of_spares,
+                    "modified_by": ANY,
+                }
             )
 
             # Also ensure the created and modified times are not changed
