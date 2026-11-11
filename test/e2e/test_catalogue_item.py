@@ -2027,9 +2027,9 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
 
         self.check_validate_create_catalogue_item_success(expected_warnings=[], expected_errors=[])
 
-    def test_bulk_validate_create_with_duplicate_name(self):
-        """Test bulk validating catalogue item data for creation with only required values provided but the name is a
-        duplicate."""
+    def test_bulk_validate_create_with_duplicate_name_in_database(self):
+        """Test bulk validating catalogue item data for creation with a name that is a duplicate of one in the
+        database."""
 
         self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
 
@@ -2044,7 +2044,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         self.check_validate_create_catalogue_item_success(
             expected_warnings=[
                 {
-                    "input": "Catalogue Item Required Values Only",
+                    "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"],
                     "location": [
                         "name",
                     ],
@@ -2054,6 +2054,150 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                 },
             ],
             expected_errors=[],
+        )
+
+    def test_bulk_validate_create_with_duplicate_name_in_data(self):
+        """Test bulk validating catalogue item data for creation with a name that is duplicated within the provided
+        data."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        catalogue_item_data = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": self.catalogue_category_id,
+            "manufacturer_id": self.manufacturer_id,
+        }
+        self.bulk_validate_create_catalogue_items([catalogue_item_data, catalogue_item_data])
+
+        expected_warning = {
+            "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"],
+            "location": ["name"],
+            "message": "Duplicate name "
+            f"'{CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"]}' found within the provided catalogue items",
+            "type": "duplicate_record",
+        }
+        self.check_bulk_validate_create_catalogue_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [expected_warning], "errors": []},
+                    {"index": 1, "warnings": [expected_warning], "errors": []},
+                ]
+            }
+        )
+
+    def test_bulk_validate_create_with_duplicate_name_in_data_and_database(self):
+        """Test bulk validating catalogue item data for creation with a name that is duplicated both within the
+        provided data and in the database only reports the "duplicate in data" warning, as it takes precedence."""
+
+        self.post_catalogue_item_and_prerequisites_no_properties(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        catalogue_item_data = {
+            **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            "catalogue_category_id": self.catalogue_category_id,
+            "manufacturer_id": self.manufacturer_id,
+        }
+        self.bulk_validate_create_catalogue_items([catalogue_item_data, catalogue_item_data])
+
+        expected_warning = {
+            "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"],
+            "location": ["name"],
+            "message": "Duplicate name "
+            f"'{CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY["name"]}' found within the provided catalogue items",
+            "type": "duplicate_record",
+        }
+        self.check_bulk_validate_create_catalogue_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [expected_warning], "errors": []},
+                    {"index": 1, "warnings": [expected_warning], "errors": []},
+                ]
+            }
+        )
+
+    def test_bulk_validate_create_with_duplicate_name_in_database_ignoring_case_and_whitespace(self):
+        """Test bulk validating catalogue item data for creation with a name that already exists in the database once
+        differences in case and leading/trailing whitespace are ignored."""
+
+        self.post_catalogue_item_and_prerequisites_no_properties(
+            {**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "catalogue item"}
+        )
+
+        queried_name = "  Catalogue Item  "
+        self.validate_create_catalogue_item(
+            {
+                **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                "name": queried_name,
+                "catalogue_category_id": self.catalogue_category_id,
+                "manufacturer_id": self.manufacturer_id,
+            }
+        )
+
+        self.check_validate_create_catalogue_item_success(
+            expected_warnings=[
+                {
+                    "input": queried_name,
+                    "location": ["name"],
+                    "message": f"Duplicate record found with the same name '{queried_name}'",
+                    "type": "duplicate_record",
+                },
+            ],
+            expected_errors=[],
+        )
+
+    def test_bulk_validate_create_with_duplicate_name_in_data_ignoring_case_and_whitespace(self):
+        """Test bulk validating catalogue item data for creation with a name that is duplicated within the provided
+        data once differences in case and leading/trailing whitespace are ignored."""
+
+        self.post_catalogue_item_prerequisites_no_properties()
+
+        first_name = "catalogue item"
+        second_name = "  Catalogue Item  "
+        self.bulk_validate_create_catalogue_items(
+            [
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "name": first_name,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                },
+                {
+                    **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "name": second_name,
+                    "catalogue_category_id": self.catalogue_category_id,
+                    "manufacturer_id": self.manufacturer_id,
+                },
+            ]
+        )
+
+        self.check_bulk_validate_create_catalogue_items_success(
+            expected_result={
+                "results": [
+                    {
+                        "index": 0,
+                        "warnings": [
+                            {
+                                "input": first_name,
+                                "location": ["name"],
+                                "message": f"Duplicate name '{first_name}' found within the provided catalogue items",
+                                "type": "duplicate_record",
+                            }
+                        ],
+                        "errors": [],
+                    },
+                    {
+                        "index": 1,
+                        "warnings": [
+                            {
+                                "input": second_name,
+                                "location": ["name"],
+                                "message": f"Duplicate name '{second_name}' found within the provided catalogue items",
+                                "type": "duplicate_record",
+                            }
+                        ],
+                        "errors": [],
+                    },
+                ]
+            }
         )
 
     def test_bulk_validate_create_with_invalid_schema(self):
@@ -2881,18 +3025,23 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
         """
 
         self.post_catalogue_item_prerequisites_no_properties()
+        # Each item is given a distinct name so this remains a test of multi-item validation in general rather than
+        # also incidentally testing duplicate name detection, which has its own dedicated tests
         self.bulk_validate_create_catalogue_items(
             [
                 {
                     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "name": "Catalogue Item 1",
                     "catalogue_category_id": self.catalogue_category_id,
                     "manufacturer_id": self.manufacturer_id,
                 },
                 {
                     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "name": "Catalogue Item 2",
                 },
                 {
                     **CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                    "name": "Catalogue Item 3",
                     "catalogue_category_id": self.catalogue_category_id,
                     "manufacturer_id": self.manufacturer_id,
                 },
@@ -2908,7 +3057,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                         "warnings": [],
                         "errors": [
                             {
-                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "input": {**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "Catalogue Item 2"},
                                 "location": [
                                     "catalogue_category_id",
                                 ],
@@ -2916,7 +3065,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                                 "type": "missing",
                             },
                             {
-                                "input": CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+                                "input": {**CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY, "name": "Catalogue Item 2"},
                                 "location": [
                                     "manufacturer_id",
                                 ],

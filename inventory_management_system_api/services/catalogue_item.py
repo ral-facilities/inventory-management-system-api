@@ -3,6 +3,7 @@ Module for providing a service for managing catalogue items using the `Catalogue
 repositories.
 """
 
+from collections import Counter
 from typing import Annotated, Any, List, Optional
 
 from fastapi import Depends
@@ -321,7 +322,13 @@ class CatalogueItemService:
         self._catalogue_item_repository.delete(catalogue_item_id)
 
     # pylint:disable=too-many-statements
-    def _validate_create(self, index: int, catalogue_item_data: dict[str, Any]) -> ValidationResultSchema:
+    def _validate_create(
+        self,
+        index: int,
+        catalogue_item_data: dict[str, Any],
+        is_duplicate_name_in_data: bool,
+        is_duplicate_name_in_db: bool,
+    ) -> ValidationResultSchema:
         """
         Performs validation of a single set of catalogue item creation data returning any errors.
 
@@ -330,6 +337,9 @@ class CatalogueItemService:
 
         :param index: Index of the catalogue item being validated.
         :param catalogue_item_data: Catalogue item data to verify.
+        :param is_duplicate_name_in_data: Whether another catalogue item within the same set of bulk data shares this
+            catalogue item's name.
+        :param is_duplicate_name_in_db: Whether a catalogue item with the same name already exists in the database.
         :return: Schema containing the validation warnings/errors that been found within the data.
         """
         warnings = []
@@ -409,15 +419,28 @@ class CatalogueItemService:
                     )
                 )
 
-        # Check if the catalogue item is a duplicate
-        if "name" in catalogue_item_data and catalogue_item_data["name"]:
-            if self._catalogue_item_repository.is_duplicate_name(catalogue_item_data["name"]):
+        # Check for any duplicate names, both within the provided data and within the database. Only string names are
+        # checked here - anything else indicates a schema error that is already reported above. A duplicate within
+        # the provided data takes precedence over one in the database, as the two are not mutually exclusive and only
+        # one warning is wanted per item.
+        name = catalogue_item_data.get("name")
+        if isinstance(name, str):
+            if is_duplicate_name_in_data:
                 warnings.append(
                     utils.create_custom_validation_error_details(
                         error_type=ERROR_TYPE_DUPLICATE_RECORD,
-                        error_message=f"Duplicate record found with the same name '{catalogue_item_data["name"]}'",
+                        error_message=f"Duplicate name '{name}' found within the provided catalogue items",
                         error_location=("name",),
-                        error_input=catalogue_item_data["name"],
+                        error_input=name,
+                    )
+                )
+            elif is_duplicate_name_in_db:
+                warnings.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_DUPLICATE_RECORD,
+                        error_message=f"Duplicate record found with the same name '{name}'",
+                        error_location=("name",),
+                        error_input=name,
                     )
                 )
 
@@ -465,9 +488,43 @@ class CatalogueItemService:
         :param catalogue_items_data: Catalogue items data to verify.
         :return: Schema containing the validation warnings/errors that been found within the data.
         """
-        return BulkValidationResultSchema(
-            results=[
-                self._validate_create(index, catalogue_item_data)
-                for index, catalogue_item_data in enumerate(catalogue_items_data)
-            ]
+        # Count occurrences of each name (case-insensitive, trimmed) across the request so that effectively identical
+        # values are treated as duplicates. Non-string/missing names are skipped - they have nothing valid to compare
+        # and are reported as schema errors instead.
+        name_counts = Counter(
+            catalogue_item_data["name"].strip().lower()
+            for catalogue_item_data in catalogue_items_data
+            if isinstance(catalogue_item_data.get("name"), str)
         )
+
+        # A normalised name used by more than one catalogue item is a duplicate within the request itself. This needs
+        # checking separately from the database, as the database check only catches duplicates that already exist
+        # there.
+        duplicate_names_in_data = {name for name, count in name_counts.items() if count > 1}
+
+        # Query the database once per distinct normalised name in the request rather than once per catalogue item, as
+        # multiple catalogue items may share the same name. Names already duplicated within the provided data are
+        # skipped, as that warning takes precedence and the database result would never be used.
+        duplicate_names_in_db = {
+            name
+            for name in name_counts.keys() - duplicate_names_in_data
+            if self._catalogue_item_repository.is_duplicate_name(name)
+        }
+
+        results = []
+        for index, catalogue_item_data in enumerate(catalogue_items_data):
+            name = catalogue_item_data.get("name")
+            normalised_name = name.strip().lower() if isinstance(name, str) else None
+
+            # A catalogue item is flagged as a duplicate (in the data/database) if its own normalised name is one of
+            # the ones found above
+            results.append(
+                self._validate_create(
+                    index,
+                    catalogue_item_data,
+                    is_duplicate_name_in_data=normalised_name in duplicate_names_in_data,
+                    is_duplicate_name_in_db=normalised_name in duplicate_names_in_db,
+                )
+            )
+
+        return BulkValidationResultSchema(results=results)

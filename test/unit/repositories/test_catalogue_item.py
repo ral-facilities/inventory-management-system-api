@@ -1064,8 +1064,9 @@ class IsDuplicateNameDSL(CatalogueItemRepoDSL):
         :param expected_result: The expected result returned by `is_duplicate_name`.
         """
 
+        expected_pattern = rf"^\s*{re.escape(self._is_duplicate_name_catalogue_item_name.strip())}\s*$"
         self.catalogue_items_collection.find_one.assert_called_once_with(
-            {"name": self._is_duplicate_name_catalogue_item_name}, session=self.mock_session
+            {"name": {"$regex": expected_pattern, "$options": "i"}}, session=self.mock_session
         )
 
         assert self._is_duplicate_name_result == expected_result
@@ -1087,3 +1088,18 @@ class TestIsDuplicateName(IsDuplicateNameDSL):
         self.mock_is_duplicate_name(duplicate_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
         self.call_is_duplicate_name("Test")
         self.check_is_duplicate_name_success(expected_result=True)
+
+    def test_is_duplicate_name_queries_case_insensitively_ignoring_whitespace(self):
+        """Test `is_duplicate_name` builds a query that is case-insensitive and ignores leading/trailing
+        whitespace."""
+
+        self.mock_is_duplicate_name(duplicate_catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+        self.call_is_duplicate_name("  Test  ")
+        self.check_is_duplicate_name_success(expected_result=True)
+
+    def test_is_duplicate_name_escapes_regex_special_characters(self):
+        """Test `is_duplicate_name` escapes any regex special characters in the given name."""
+
+        self.mock_is_duplicate_name(duplicate_catalogue_item_data=None)
+        self.call_is_duplicate_name("test.name*")
+        self.check_is_duplicate_name_success(expected_result=False)
