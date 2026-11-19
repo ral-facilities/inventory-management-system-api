@@ -8,6 +8,8 @@ End-to-End tests for the properties endpoint of the catalogue category router
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-ancestors
 
+from unittest.mock import ANY
+
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_category import GetDSL as CatalogueCategoryGetDSL
 from test.e2e.test_catalogue_item import GetDSL as CatalogueItemGetDSL
@@ -172,7 +174,7 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
 
         self.get_catalogue_category(self.catalogue_category_id)
         self.check_get_catalogue_category_success(
-            {**BASE_CATALOGUE_CATEGORY_GET_DATA_WITH_PROPERTIES_MM, "properties": properties}
+            {**BASE_CATALOGUE_CATEGORY_GET_DATA_WITH_PROPERTIES_MM, "properties": properties, "modified_comment": ANY}
         )
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_catalogue_category, self._get_response_catalogue_category
@@ -192,7 +194,7 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
             properties.append(expected_property_get_data)
 
         self.get_catalogue_item(self.catalogue_item_id)
-        self.check_get_catalogue_item_success({**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": properties})
+        self.check_get_catalogue_item_success({**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": properties, "modified_comment": ANY})
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_catalogue_item, self._get_response_catalogue_item
         )
@@ -211,7 +213,7 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
             properties.append(expected_property_get_data)
 
         self.get_item(self.item_id)
-        self.check_get_item_success({**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": properties})
+        self.check_get_item_success({**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": properties, "modified_comment": ANY})
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_item, self._get_response_item
         )

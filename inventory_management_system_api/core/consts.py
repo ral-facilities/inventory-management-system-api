@@ -22,6 +22,7 @@ ERROR_TYPE_MISSING_MANDATORY_PROPERTY: LiteralString = "missing_mandatory_proper
 ERROR_TYPE_MISSING_RECORD: LiteralString = "missing_record"
 ERROR_TYPE_NON_LEAF_CATALOGUE_CATEGORY: LiteralString = "non_leaf_catalogue_category"
 ERROR_TYPE_DUPLICATE_RECORD: LiteralString = "duplicate_record"
+ERROR_TYPE_MISSING_RULE: LiteralString = "missing_rule"
 
 if config.authentication.enabled:
     # Read the content of the public key file into a constant. This is used for decoding of JWT access tokens.

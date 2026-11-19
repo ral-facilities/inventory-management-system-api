@@ -44,7 +44,7 @@ BASE_FIELDS_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY, "mod
 
 # Used for _IN_DATA's as field is calculated via request state not body
 
-BASE_FIELDS_IN_DATA = {"modified_by": "username"}
+BASE_FIELDS_IN_DATA = {"modified_by": "username", "modified_comment": None}
 
 # ---------------------------- AUTHENTICATION -----------------------------
 
