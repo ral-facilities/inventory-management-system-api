@@ -114,6 +114,25 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
             "system_id": self.system_id,
         }
 
+    def get_item_with_ids_in_properties(self, item_data: dict) -> dict:
+        """
+        Adds known IDs into the properties of an item.
+
+        :param item_data: Item data with the properties to add the IDs to.
+        :return: Item with the known IDs added to the properties.
+        """
+        new_item_data = item_data.copy()
+
+        # Replace any unit values with unit IDs
+        new_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
+            new_item_data, self.unit_value_id_dict
+        )
+        new_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+            new_item_data, self.property_name_id_dict
+        )
+
+        return new_item_data
+
     def post_catalogue_item(self, catalogue_item_data: dict) -> Optional[str]:
         """
         Posts a catalogue item with the given data and returns the ID of the created catalogue item if successful.
@@ -153,13 +172,7 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         """
 
         # Replace any unit values with unit IDs
-        full_item_data = item_data.copy()
-        full_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
-            full_item_data, self.unit_value_id_dict
-        )
-        full_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
-            full_item_data, self.property_name_id_dict
-        )
+        full_item_data = self.get_item_with_ids_in_properties(item_data)
 
         # Insert mandatory IDs if they have been created
         if self.catalogue_item_id:
@@ -175,6 +188,17 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
 
         return self._post_response_item.json()["id"] if self._post_response_item.status_code == 201 else None
 
+    def post_item_prerequisites_no_properties(self) -> None:
+        """
+        Utility method that posts prerequisites for an item with the system (with a storage type), catalogue item and
+        catalogue category. Uses CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY for the catalogue item.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
     def post_item_and_prerequisites_no_properties(self, item_data: dict) -> Optional[str]:
         """
         Utility method that posts an item with the given data and also its prerequisite system (with a storage type),
@@ -186,12 +210,21 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         :return: ID of the created item (or `None` if not successful).
         """
 
-        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
-            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
-        )
-        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_item_prerequisites_no_properties()
 
         return self.post_item(item_data)
+
+    def post_item_prerequisites_with_properties(self) -> None:
+        """
+        Utility method that posts prerequisites for an item with the system, usage status, catalogue item and catalogue
+        category. Uses CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES for the catalogue item and USAGE_STATUS_DATA_IN_USE for
+        the usage status.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
     def post_item_and_prerequisites_with_properties(self, item_data: dict) -> Optional[str]:
         """
@@ -205,12 +238,30 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         :return: ID of the created item (or `None` if not successful).
         """
 
-        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
-            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
-        )
-        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_item_prerequisites_with_properties()
 
         return self.post_item(item_data)
+
+    def post_item_prerequisites_with_given_properties(
+        self, catalogue_category_properties_data: list[dict], catalogue_item_properties_data: list[dict]
+    ) -> None:
+        """
+        Utility method that posts prerequisites for an item including system, usage status,
+        catalogue item and catalogue category. Uses BASE_CATALOGUE_CATEGORY_DATA_WITH_PROPERTIES_MM and
+        ITEM_DATA_NEW_WITH_ALL_PROPERTIES as a base.
+
+        :param catalogue_category_properties_data: List of dictionaries containing the basic catalogue category property
+                        data as would be required for a `CatalogueCategoryPostPropertySchema` but with any `unit_id`'s
+                        replaced by the `unit` value in its properties as the IDs will be added automatically.
+        :param catalogue_item_properties_data: List of dictionaries containing the basic catalogue item property data as
+                        would be required for a `PropertyPostSchema` but with any `id`'s replaced by the `name` value as
+                        the IDs will be added automatically.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
+            catalogue_category_properties_data, catalogue_item_properties_data
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
     def post_item_and_prerequisites_with_given_properties(
         self,
@@ -235,12 +286,28 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         :return: ID of the created item (or `None` if not successful).
         """
 
-        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_given_properties(
+        self.post_item_prerequisites_with_given_properties(
             catalogue_category_properties_data, catalogue_item_properties_data
         )
-        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
         return self.post_item({**ITEM_DATA_NEW_WITH_ALL_PROPERTIES, "properties": item_properties_data})
+
+    def post_item_prerequisites_with_allowed_values(
+        self, property_type: str, allowed_values_post_data: dict, catalogue_item_property_value: Any
+    ) -> None:
+        """
+        Utility method that posts prerequisites for an item (a catalogue item, system and usage status)
+
+        :param property_type: Type of the property to post.
+        :param allowed_values_post_data: Dictionary containing the allowed values data as would be required for an
+                                         `AllowedValuesSchema` to be posted with the catalogue category.
+        :param catalogue_item_property_value: Value of the property to post for the catalogue item.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+            property_type, allowed_values_post_data, catalogue_item_property_value
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
 
     def post_item_and_prerequisites_with_allowed_values(
         self,
@@ -261,10 +328,10 @@ class CreateDSL(CatalogueItemCreateDSL, SystemCreateDSL, UsageStatusCreateDSL):
         :return: ID of the created item (or `None` if not successful).
         """
 
-        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_allowed_values(
+        self.post_item_prerequisites_with_allowed_values(
             property_type, allowed_values_post_data, catalogue_item_property_value
         )
-        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
         return self.post_item(
             {
                 **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
@@ -600,6 +667,266 @@ class TestCreate(CreateDSL):
         self.post_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, use_admin_token=True)
 
         self.check_post_item_success(ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+
+class BulkCreateDSL(CreateDSL):
+    """Base class for bulk create tests."""
+
+    _post_bulk_response_item: Response
+
+    def post_bulk_items(self, items_data: list[dict], use_admin_token: bool = False) -> Optional[list[str]]:
+        """
+        Posts items in bulk with the given data.
+
+        :param items_data: List of dictionaries containing the basic item data as would be required for an
+                           `ItemPostSchema` but with mandatory IDs missing and any `id`'s replaced by the `name` value
+                           in its properties as the IDs will be added automatically.
+        :param use_admin_token: Boolean value stating whether to use a token with an admin role, or default role in the
+                                request.
+        :return: IDs of the created items (or `None` if not successful).
+        """
+        full_items_data = []
+        for item_data in items_data:
+            # Replace any unit values with unit IDs
+            full_item_data = self.get_item_with_ids_in_properties(item_data)
+
+            # Insert mandatory IDs if they have been created
+            if self.catalogue_item_id:
+                full_item_data["catalogue_item_id"] = self.catalogue_item_id
+            if self.system_id:
+                full_item_data["system_id"] = self.system_id
+            full_items_data.append(full_item_data)
+
+        self._post_bulk_response_item = self.test_client.post(
+            "/v1/items/bulk",
+            json=full_items_data,
+            headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN_ADMIN_ROLE}"} if use_admin_token else None,
+        )
+
+        return (
+            [item["id"] for item in self._post_bulk_response_item.json()]
+            if self._post_bulk_response_item.status_code == 201
+            else None
+        )
+
+    def check_post_bulk_items_success(self, expected_items_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `post_bulk_items` gave a successful response with the expected data
+        returned.
+
+        Also merges in any properties that were defined in the catalogue item but are not given in the expected data.
+
+        :param expected_items_get_data: List of dictionaries containing the expected items data returned as
+                                would be required for an `ItemSchema`. Does not need mandatory IDs (e.g.
+                                `system_id`) as they will be added automatically to check they are as expected.
+        """
+
+        assert self._post_bulk_response_item.status_code == 201
+        assert self._post_bulk_response_item.json() == [
+            self.add_ids_to_expected_item_get_data(
+                self.merge_properties_in_expected_item_get_data(expected_item_get_data)
+            )
+            for expected_item_get_data in expected_items_get_data
+        ]
+
+    def check_post_bulk_items_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `post_bulk_items` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._post_bulk_response_item.status_code == status_code
+        assert self._post_bulk_response_item.json()["detail"] == detail
+
+    def check_post_bulk_items_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `post_bulk_items` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._post_bulk_response_item.status_code == status_code
+        assert self._post_bulk_response_item.json()["detail"][0]["msg"] == message
+
+
+class TestBulkCreate(BulkCreateDSL):
+    """Tests for bulk creating items (As logic is reused from create, only specific errors caught at the router are
+    tested)."""
+
+    def test_bulk_create(self):
+        """Test bulk creating items."""
+
+        self.post_item_prerequisites_no_properties()
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES])
+
+        self.check_post_bulk_items_success(
+            [ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY, ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES]
+        )
+
+    def test_bulk_create_with_properties(self):
+        """Test bulk creating items with properties, including one that inherits them from the catalogue item."""
+
+        self.post_item_prerequisites_with_properties()
+        self.post_bulk_items([ITEM_DATA_NEW_WITH_ALL_PROPERTIES, ITEM_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_items_success(
+            [ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY]
+        )
+
+    def test_bulk_create_with_too_many(self):
+        """Test bulk creating items with too many of them."""
+
+        self.post_item_prerequisites_no_properties()
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY] * 5)
+
+        self.check_post_bulk_items_failed_with_validation_message(
+            422, "List should have at most 4 items after validation, not 5"
+        )
+
+    def test_bulk_create_with_mandatory_property_given_none(self):
+        """Test bulk creating an item when a mandatory property is given a value of `None`."""
+
+        self.post_item_prerequisites_with_properties()
+        self.post_bulk_items(
+            [
+                {
+                    **ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+                    "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": None}],
+                }
+            ]
+        )
+
+        self.check_post_bulk_items_failed_with_detail(
+            422,
+            f"Mandatory property with ID '{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE['name']]}' "
+            "cannot be None.",
+        )
+
+    def test_bulk_create_with_property_with_invalid_value_type(self):
+        """Test bulk creating an item with an invalid value type."""
+
+        self.post_item_prerequisites_with_given_properties(
+            [CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY], [PROPERTY_DATA_STRING_MANDATORY_TEXT]
+        )
+        self.post_bulk_items(
+            [
+                {
+                    **ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+                    "properties": [{**PROPERTY_DATA_STRING_MANDATORY_TEXT, "value": 42}],
+                }
+            ],
+        )
+
+        self.check_post_bulk_items_failed_with_detail(
+            422,
+            "Invalid value type for property with ID "
+            f"'{self.property_name_id_dict[CATALOGUE_CATEGORY_PROPERTY_DATA_STRING_MANDATORY['name']]}'. "
+            "Expected type: string.",
+        )
+
+    def test_bulk_create_with_non_existent_catalogue_item_id(self):
+        """Test bulk creating an item with a non-existent catalogue item ID."""
+
+        self.catalogue_item_id = str(ObjectId())
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_catalogue_item_id(self):
+        """Test bulk creating an item with an invalid catalogue item ID."""
+
+        self.catalogue_item_id = "invalid-id"
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_non_existent_system_id(self):
+        """Test bulk creating an item with a non-existent system ID."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.system_id = str(ObjectId())
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_system_id(self):
+        """Test bulk creating an item with an invalid system ID."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.system_id = "invalid-id"
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_non_existent_usage_status_id(self):
+        """Test bulk creating an item with a non-existent usage status ID."""
+
+        self.post_item_prerequisites_no_properties()
+        self.post_bulk_items([{**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": str(ObjectId())}])
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_invalid_usage_status_id(self):
+        """Test bulk creating an item with an invalid usage status ID."""
+
+        self.post_item_prerequisites_no_properties()
+        self.post_bulk_items([{**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"}])
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+    def test_bulk_create_with_non_existent_rule(self):
+        """
+        Test bulk creating items when there isn't a creation rule defined that allows items to be created in the
+        specified system with the specified usage status.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+        self.check_post_bulk_items_failed_with_detail(
+            422, "No rule found for creating items in the specified system with the specified usage status"
+        )
+
+    def test_bulk_create_with_non_existent_rule_when_authorised(self):
+        """Test bulk creating items when there isn't a creation rule defined but the user is authorised."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+        self.post_bulk_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY], use_admin_token=True)
+
+        self.check_post_bulk_items_success([ITEM_GET_DATA_NEW_REQUIRED_VALUES_ONLY])
+
+    def test_bulk_create_with_one_item_failing(self):
+        """Test bulk creating items where a later item fails, so none of them should be created."""
+
+        self.post_item_prerequisites_no_properties()
+        self.post_bulk_items(
+            [
+                ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                {**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": "invalid-id"},
+            ]
+        )
+
+        self.check_post_bulk_items_failed_with_detail(422, "A specified entity does not exist")
+
+        # The whole request should have been rolled back, so the first item should not exist either
+        assert self.test_client.get("/v1/items").json() == []
 
 
 class GetDSL(CreateDSL):
@@ -1342,3 +1669,490 @@ class TestDelete(DeleteDSL):
 
         self.get_item(item_id)
         self.check_get_item_failed_with_detail(404, "Item not found")
+
+
+class BulkValidateCreateDSL(CreateDSL):
+    """Base class for validate creation tests."""
+
+    _bulk_validate_create_response_items: Response
+
+    def add_ids_to_item_data(self, item_data: dict) -> dict:
+        """
+        Adds the prerequisite catalogue item and system IDs (if they have been created) and replaces any property names
+        and unit values with their IDs in the given item data.
+
+        :param item_data: Dictionary containing the item data as would be required for an `ItemPostSchema` but with any
+            mandatory IDs missing and any `id`'s replaced by the `name` value in its properties.
+        :return: Dictionary containing the same item data but with the IDs added/replaced.
+        """
+
+        full_item_data = item_data.copy()
+        # Only attempt to replace property names/unit values with IDs when the properties are well-formed (i.e. they
+        # contain a `name`). This allows deliberately malformed properties to be passed through for schema validation.
+        if all(isinstance(prop, dict) and "name" in prop for prop in full_item_data.get("properties") or []):
+            full_item_data = E2ETestHelpers.replace_unit_values_with_ids_in_properties(
+                full_item_data, self.unit_value_id_dict
+            )
+            full_item_data = E2ETestHelpers.replace_property_names_with_ids_in_properties(
+                full_item_data, self.property_name_id_dict
+            )
+
+        if self.catalogue_item_id:
+            full_item_data["catalogue_item_id"] = self.catalogue_item_id
+        if self.system_id:
+            full_item_data["system_id"] = self.system_id
+
+        return full_item_data
+
+    def validate_create_item(self, item_data: dict) -> None:
+        """
+        Validates a single item's data.
+
+        :param item_data: Dictionary containing the data to validate. Does not automatically add IDs so they can be
+            omitted as required (though the prerequisite catalogue item and system IDs are added if they have been
+            created).
+        """
+
+        self._bulk_validate_create_response_items = self.test_client.post(
+            "/v1/items/bulk-validate-create/", json=[self.add_ids_to_item_data(item_data)]
+        )
+
+    def bulk_validate_create_items(self, items_data: list[dict]) -> None:
+        """
+        Validates bulk item data.
+
+        :param items_data: List of dictionaries containing the data to validate. Does not automatically add IDs so they
+            can be omitted as required (though the prerequisite catalogue item and system IDs are added if they have
+            been created).
+        """
+
+        self._bulk_validate_create_response_items = self.test_client.post(
+            "/v1/items/bulk-validate-create/", json=[self.add_ids_to_item_data(item_data) for item_data in items_data]
+        )
+
+    def check_validate_create_item_success(self, expected_warnings: list[dict], expected_errors: list[dict]) -> None:
+        """
+        Checks that a prior call to `validate_create_item` gave a successful response with the expected data returned.
+
+        :param expected_warnings: List of dictionaries containing the expected validation warnings.
+        :param expected_errors: List of dictionaries containing the expected validation errors.
+        """
+
+        assert self._bulk_validate_create_response_items.status_code == 200
+        assert self._bulk_validate_create_response_items.json() == {
+            "results": [{"index": 0, "warnings": expected_warnings, "errors": expected_errors}]
+        }
+
+    def check_bulk_validate_create_items_success(self, expected_result: dict) -> None:
+        """
+        Checks that a prior call to `bulk_validate_create_items` gave a successful response with the expected data
+        returned.
+
+        :param expected_result: Dictionary of the expected result.
+        """
+
+        assert self._bulk_validate_create_response_items.status_code == 200
+        assert self._bulk_validate_create_response_items.json() == expected_result
+
+    def check_bulk_validate_create_items_failed_with_validation_message(self, status_code: int, message: str) -> None:
+        """
+        Checks that a prior call to `bulk_validate_create_items` gave a failed response with the expected code and
+        pydantic validation error message.
+
+        :param status_code: Expected status code of the response.
+        :param message: Expected validation error message given in the response.
+        """
+
+        assert self._bulk_validate_create_response_items.status_code == status_code
+        assert self._bulk_validate_create_response_items.json()["detail"][0]["msg"] == message
+
+
+class TestBulkValidateCreate(BulkValidateCreateDSL):
+    """Tests for bulk validating items."""
+
+    def test_bulk_validate_create_with_only_required_values_provided(self):
+        """Test bulk validating item data for creation with only required values provided."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        self.validate_create_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+        self.check_validate_create_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_all_values_except_properties(self):
+        """Test bulk validating item data for creation with all values provided except `properties`."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        self.validate_create_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+
+        self.check_validate_create_item_success(expected_warnings=[], expected_errors=[])
+
+    def test_bulk_validate_create_with_properties(self):
+        """Test bulk validating item data for creation with an invalid property value, to ensure properties are
+        processed rather than ignored."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_with_properties(
+            CATALOGUE_ITEM_DATA_WITH_ALL_PROPERTIES
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        item_data = {
+            **ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
+            "properties": [{**PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE, "value": "not-a-boolean"}],
+        }
+        self.validate_create_item(item_data)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": "not-a-boolean",
+                    "location": ["properties", 0, "value"],
+                    "message": "Invalid value type for property with ID "
+                    f"'{self.property_name_id_dict[PROPERTY_DATA_BOOLEAN_MANDATORY_FALSE['name']]}'. "
+                    "Expected type: boolean.",
+                    "type": "invalid_property_type",
+                }
+            ],
+        )
+
+    def test_bulk_validate_create_with_invalid_schema(self):
+        """Test bulk validating item data for creation when the schema itself is invalid."""
+
+        item_data = {
+            # Optional property, invalid type
+            "serial_number": 42,
+            # Custom properties
+            "properties": [{}, {"id": 42, "value": "test"}],
+        }
+        self.validate_create_item(item_data)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {"input": item_data, "location": ["catalogue_item_id"], "message": "Field required", "type": "missing"},
+                {"input": item_data, "location": ["system_id"], "message": "Field required", "type": "missing"},
+                {"input": item_data, "location": ["is_defective"], "message": "Field required", "type": "missing"},
+                {"input": item_data, "location": ["usage_status_id"], "message": "Field required", "type": "missing"},
+                {
+                    "input": item_data["serial_number"],
+                    "location": ["serial_number"],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+                {"input": {}, "location": ["properties", 0, "id"], "message": "Field required", "type": "missing"},
+                {
+                    "input": 42,
+                    "location": ["properties", 1, "id"],
+                    "message": "Input should be a valid string",
+                    "type": "string_type",
+                },
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_existent_catalogue_item_id(self):
+        """Test bulk validating item data for creation with a non-existent catalogue item ID."""
+
+        self.catalogue_item_id = str(ObjectId())
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        self.validate_create_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": self.catalogue_item_id,
+                    "location": ["catalogue_item_id"],
+                    "message": f"No catalogue item found with ID '{self.catalogue_item_id}'",
+                    "type": "missing_record",
+                }
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_existent_system_id(self):
+        """Test bulk validating item data for creation with a non-existent system ID."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.system_id = str(ObjectId())
+
+        self.validate_create_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": self.system_id,
+                    "location": ["system_id"],
+                    "message": f"No system found with ID '{self.system_id}'",
+                    "type": "missing_record",
+                }
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_existent_usage_status_id(self):
+        """Test bulk validating item data for creation with a non-existent usage status ID."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+        usage_status_id = str(ObjectId())
+
+        self.validate_create_item({**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "usage_status_id": usage_status_id})
+
+        self.check_validate_create_item_success(
+            expected_warnings=[],
+            expected_errors=[
+                {
+                    "input": usage_status_id,
+                    "location": ["usage_status_id"],
+                    "message": f"No usage status found with ID '{usage_status_id}'",
+                    "type": "missing_record",
+                }
+            ],
+        )
+
+    def test_bulk_validate_create_with_non_existent_rule(self):
+        """
+        Test bulk validating item data for creation when there isn't a creation rule defined that allows items to be
+        created in the specified system with the specified usage status.
+
+        This is expected to be reported as a warning rather than an error as privileged users can bypass the rule.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_OPERATIONAL_REQUIRED_VALUES_ONLY)
+
+        self.validate_create_item(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[
+                {
+                    "input": ITEM_DATA_NEW_REQUIRED_VALUES_ONLY["usage_status_id"],
+                    "location": ["usage_status_id"],
+                    "message": "No rule found for creating items in the specified system with the specified usage "
+                    "status",
+                    "type": "missing_rule",
+                }
+            ],
+            expected_errors=[],
+        )
+
+    def test_bulk_validate_create_with_duplicate_serial_number_in_database(self):
+        """Test bulk validating item data for creation with a serial number that already exists in the database."""
+
+        self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+
+        # Post a second, different catalogue item sharing the same prerequisites
+        self.catalogue_item_id = self.post_catalogue_item(CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY)
+
+        self.validate_create_item(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+
+        self.check_validate_create_item_success(
+            expected_warnings=[
+                {
+                    "input": ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES["serial_number"],
+                    "location": ["serial_number"],
+                    "message": "Duplicate record found with the same serial number "
+                    f"'{ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES['serial_number']}'",
+                    "type": "duplicate_record",
+                }
+            ],
+            expected_errors=[],
+        )
+
+    def test_bulk_validate_create_with_duplicate_serial_number_in_data(self):
+        """Test bulk validating item data for creation with a serial number that is duplicated within the provided
+        data."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        self.bulk_validate_create_items(
+            [ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES]
+        )
+
+        expected_warning = {
+            "input": ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES["serial_number"],
+            "location": ["serial_number"],
+            "message": "Duplicate serial number "
+            f"'{ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES['serial_number']}' found within the provided items",
+            "type": "duplicate_record",
+        }
+        self.check_bulk_validate_create_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [expected_warning], "errors": []},
+                    {"index": 1, "warnings": [expected_warning], "errors": []},
+                ]
+            }
+        )
+
+    def test_bulk_validate_create_with_duplicate_serial_number_in_data_and_database(self):
+        """Test bulk validating item data for creation with a serial number that is duplicated both within the
+        provided data and in the database only reports the "duplicate in data" warning, as it takes precedence."""
+
+        self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+
+        self.bulk_validate_create_items(
+            [ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES]
+        )
+
+        expected_warning = {
+            "input": ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES["serial_number"],
+            "location": ["serial_number"],
+            "message": "Duplicate serial number "
+            f"'{ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES['serial_number']}' found within the provided items",
+            "type": "duplicate_record",
+        }
+        self.check_bulk_validate_create_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [expected_warning], "errors": []},
+                    {"index": 1, "warnings": [expected_warning], "errors": []},
+                ]
+            }
+        )
+
+    def test_bulk_validate_create_with_duplicate_serial_number_in_database_ignoring_case_and_whitespace(self):
+        """Test bulk validating item data for creation with a serial number that already exists in the database once
+        differences in case and leading/trailing whitespace are ignored."""
+
+        self.post_item_and_prerequisites_no_properties(
+            {**ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "serial_number": "abc-123"}
+        )
+
+        queried_serial_number = "  ABC-123  "
+        self.validate_create_item({**ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "serial_number": queried_serial_number})
+
+        self.check_validate_create_item_success(
+            expected_warnings=[
+                {
+                    "input": queried_serial_number,
+                    "location": ["serial_number"],
+                    "message": f"Duplicate record found with the same serial number '{queried_serial_number}'",
+                    "type": "duplicate_record",
+                }
+            ],
+            expected_errors=[],
+        )
+
+    def test_bulk_validate_create_with_duplicate_serial_number_in_data_ignoring_case_and_whitespace(self):
+        """Test bulk validating item data for creation with a serial number that is duplicated within the provided
+        data once differences in case and leading/trailing whitespace are ignored."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        first_serial_number = "abc-123"
+        second_serial_number = "  ABC-123  "
+        self.bulk_validate_create_items(
+            [
+                {**ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "serial_number": first_serial_number},
+                {**ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "serial_number": second_serial_number},
+            ]
+        )
+
+        self.check_bulk_validate_create_items_success(
+            expected_result={
+                "results": [
+                    {
+                        "index": 0,
+                        "warnings": [
+                            {
+                                "input": first_serial_number,
+                                "location": ["serial_number"],
+                                "message": "Duplicate serial number "
+                                f"'{first_serial_number}' found within the provided items",
+                                "type": "duplicate_record",
+                            }
+                        ],
+                        "errors": [],
+                    },
+                    {
+                        "index": 1,
+                        "warnings": [
+                            {
+                                "input": second_serial_number,
+                                "location": ["serial_number"],
+                                "message": "Duplicate serial number "
+                                f"'{second_serial_number}' found within the provided items",
+                                "type": "duplicate_record",
+                            }
+                        ],
+                        "errors": [],
+                    },
+                ]
+            }
+        )
+
+    def test_bulk_validate_create(self):
+        """
+        Test bulk validating items for creation.
+
+        Comprehensive testing is done above on single items, this tests it works for more than one.
+        """
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        self.bulk_validate_create_items(
+            [ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, {"is_defective": False}, ITEM_DATA_NEW_REQUIRED_VALUES_ONLY]
+        )
+
+        self.check_bulk_validate_create_items_success(
+            expected_result={
+                "results": [
+                    {"index": 0, "warnings": [], "errors": []},
+                    {
+                        "index": 1,
+                        "warnings": [],
+                        "errors": [
+                            {
+                                "input": {
+                                    "is_defective": False,
+                                    "catalogue_item_id": self.catalogue_item_id,
+                                    "system_id": self.system_id,
+                                },
+                                "location": ["usage_status_id"],
+                                "message": "Field required",
+                                "type": "missing",
+                            }
+                        ],
+                    },
+                    {"index": 2, "warnings": [], "errors": []},
+                ]
+            }
+        )
+
+    def test_bulk_validate_create_with_too_many(self):
+        """Test bulk validating items for creation with too many of them."""
+
+        self.catalogue_item_id = self.post_catalogue_item_and_prerequisites_no_properties(
+            CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY
+        )
+        self.post_system(SYSTEM_POST_DATA_STORAGE_REQUIRED_VALUES_ONLY)
+
+        self.bulk_validate_create_items([ITEM_DATA_NEW_REQUIRED_VALUES_ONLY] * 5)
+
+        self.check_bulk_validate_create_items_failed_with_validation_message(
+            422, "List should have at most 4 items after validation, not 5"
+        )

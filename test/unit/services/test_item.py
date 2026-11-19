@@ -8,9 +8,12 @@ Unit tests for the `ItemService` service.
 
 from test.mock_data import (
     BASE_CATALOGUE_CATEGORY_IN_DATA_WITH_PROPERTIES_MM,
+    BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
     BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES,
     CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+    CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
     CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+    CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
     ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
     ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
     ITEM_DATA_NEW_WITH_ALL_PROPERTIES,
@@ -24,11 +27,13 @@ from test.mock_data import (
     USAGE_STATUS_IN_DATA_NEW,
 )
 from test.unit.services.conftest import BaseCatalogueServiceDSL, ServiceTestHelpers
+from copy import deepcopy
 from typing import List, Optional
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 from bson import ObjectId
+from pydantic import ValidationError
 
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.exceptions import (
@@ -45,6 +50,11 @@ from inventory_management_system_api.models.system import SystemIn, SystemOut
 from inventory_management_system_api.models.usage_status import UsageStatusIn, UsageStatusOut
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
+from inventory_management_system_api.schemas.validation import (
+    BulkValidationResultSchema,
+    ValidationErrorSchema,
+    ValidationResultSchema,
+)
 from inventory_management_system_api.services import utils
 from inventory_management_system_api.services.item import ItemService
 
@@ -105,7 +115,10 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                 yield
 
     def _mock_start_transaction_impacting_number_of_spares(
-        self, spares_definition_out_data: Optional[dict], raise_write_conflict_once: bool
+        self,
+        spares_definition_out_data: Optional[dict],
+        raise_write_conflict_once: bool,
+        supplied_session: Optional[Mock] = None,
     ) -> None:
         """
         Mocks methods appropriately for when the `_start_transaction_impacting_number_of_spares` repo method will be
@@ -115,11 +128,15 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
                                            be required for a `SparesDefinitionOut` database model.
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
+        :param supplied_session: Either `None` or an existing session given by the caller, which should be reused
+                                 rather than a new transaction being started.
         """
 
         # Mock the transaction session itself - this will be the value ultimately returned by
-        # _start_transaction_impacting_number_of_spares
-        self.mock_transaction_session = MagicMock() if spares_definition_out_data else None
+        # _start_transaction_impacting_number_of_spares. An existing session is passed straight through.
+        self.mock_transaction_session = (
+            supplied_session if supplied_session else (MagicMock() if spares_definition_out_data else None)
+        )
         self.mock_start_session_transaction.return_value.__enter__.return_value = self.mock_transaction_session
 
         # Mock the spares definition get
@@ -145,6 +162,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         expected_action_description: str,
         expected_catalogue_item_id: str,
         expected_dest_system_id: Optional[str] = None,
+        expected_session_supplied: bool = False,
     ) -> None:
         """
         Checks that a call to `_start_transaction_impacting_number_of_spares` performed the expected function calls.
@@ -152,6 +170,7 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
         :param expected_action_description: Expected `action_description` the function should have been called with.
         :param expected_catalogue_item_id: Expected `catalogue_item_id` the function should have been called with.
         :param expected_dest_system_id: Expected `dest_system_id` the function should have been called with.
+        :param expected_session_supplied: Whether the function was expected to have been given an existing session.
         """
 
         expected_catalogue_item_id = CustomObjectId(expected_catalogue_item_id)
@@ -160,69 +179,44 @@ class ItemServiceDSL(BaseCatalogueServiceDSL):
 
         # The rest of the calls only occur if there is a spares definition
         if self._expected_spares_definition_out:
-            if self._raise_write_conflict_once:
+            if expected_session_supplied:
+                # The existing session should be reused rather than nesting another transaction inside it
+                self.mock_start_session_transaction.assert_not_called()
+            elif self._raise_write_conflict_once:
                 assert self.mock_start_session_transaction.call_args_list == [
                     call(expected_action_description),
                     call(expected_action_description),
                 ]
                 self.mock_start_session_transaction.return_value.__enter__.assert_has_calls([call(), call()])
-
-                if expected_dest_system_id:
-                    self.mock_system_repository.write_lock.assert_called_once_with(
-                        expected_dest_system_id, self.mock_transaction_session
-                    )
-                else:
-                    self.mock_system_repository.write_lock.assert_not_called()
-
-                self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
-                    expected_catalogue_item_id,
-                    [
-                        CustomObjectId(system_type.id)
-                        for system_type in self._expected_spares_definition_out.system_types
-                    ],
-                    session=self.mock_transaction_session,
-                )
-
-                self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
-                    [
-                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                        call(
-                            expected_catalogue_item_id,
-                            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
-                            session=self.mock_transaction_session,
-                        ),
-                    ]
-                )
             else:
                 self.mock_start_session_transaction.assert_called_once_with(expected_action_description)
                 self.mock_start_session_transaction.return_value.__enter__.assert_called_once()
 
-                if expected_dest_system_id:
-                    self.mock_system_repository.write_lock.assert_called_once_with(
-                        expected_dest_system_id, self.mock_transaction_session
-                    )
-                else:
-                    self.mock_system_repository.write_lock.assert_not_called()
+            if expected_dest_system_id:
+                self.mock_system_repository.write_lock.assert_called_once_with(
+                    expected_dest_system_id, self.mock_transaction_session
+                )
+            else:
+                self.mock_system_repository.write_lock.assert_not_called()
 
-                self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
-                    expected_catalogue_item_id,
-                    [
-                        CustomObjectId(system_type.id)
-                        for system_type in self._expected_spares_definition_out.system_types
-                    ],
-                    session=self.mock_transaction_session,
-                )
-                self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
-                    [
-                        call(expected_catalogue_item_id, None, session=self.mock_transaction_session),
-                        call(
-                            expected_catalogue_item_id,
-                            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
-                            session=self.mock_transaction_session,
-                        ),
-                    ]
-                )
+            self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.assert_called_once_with(
+                expected_catalogue_item_id,
+                [CustomObjectId(system_type.id) for system_type in self._expected_spares_definition_out.system_types],
+                session=self.mock_transaction_session,
+            )
+
+            # The catalogue item is write locked once per attempt, before the recounted number of spares is written
+            self.mock_catalogue_item_repository.update_number_of_spares.assert_has_calls(
+                [call(expected_catalogue_item_id, None, session=self.mock_transaction_session)]
+                * (2 if self._raise_write_conflict_once else 1)
+                + [
+                    call(
+                        expected_catalogue_item_id,
+                        self.mock_item_repository.count_in_catalogue_item_with_system_type_one_of.return_value,
+                        session=self.mock_transaction_session,
+                    )
+                ]
+            )
 
 
 class CreateDSL(ItemServiceDSL):
@@ -239,6 +233,7 @@ class CreateDSL(ItemServiceDSL):
     _created_item: ItemOut
     _create_exception: pytest.ExceptionInfo
     _user_authorised: bool
+    _supplied_session: Optional[Mock]
 
     _expected_merged_properties: List[PropertyPostSchema]
 
@@ -256,6 +251,7 @@ class CreateDSL(ItemServiceDSL):
         stored_rule_exists: bool = True,
         raise_write_conflict_once: bool = False,
         user_is_authorised=False,
+        supplied_session: Optional[Mock] = None,
     ) -> None:
         """
         Mocks repo methods appropriately to test the `create` service method.
@@ -277,9 +273,12 @@ class CreateDSL(ItemServiceDSL):
         :param raise_write_conflict_once: Whether to raise a write conflict during the number of spares update to
                                           test the retrying functionality.
         :param user_is_authorised: Whether the request is authorised to bypass functionality such as checking rules.
+        :param supplied_session: Either `None` or an existing session to create the item within, as `bulk_create`
+                                 does.
         """
 
         self._user_authorised = user_is_authorised
+        self._supplied_session = supplied_session
 
         # Generate mandatory IDs to be inserted where needed
         catalogue_item_id = str(ObjectId())
@@ -394,7 +393,7 @@ class CreateDSL(ItemServiceDSL):
             )
 
         self._mock_start_transaction_impacting_number_of_spares(
-            stored_spares_definition_out_data, raise_write_conflict_once
+            stored_spares_definition_out_data, raise_write_conflict_once, supplied_session
         )
 
         self._expected_item_in = ItemIn(
@@ -412,7 +411,9 @@ class CreateDSL(ItemServiceDSL):
     def call_create(self) -> None:
         """Calls the `ItemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
-        self._created_item = self.item_service.create(self._item_post, self._user_authorised)
+        self._created_item = self.item_service.create(
+            self._item_post, self._user_authorised, existing_session=self._supplied_session
+        )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -423,7 +424,7 @@ class CreateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.create(self._item_post, self._user_authorised)
+            self.item_service.create(self._item_post, self._user_authorised, existing_session=self._supplied_session)
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -457,7 +458,10 @@ class CreateDSL(ItemServiceDSL):
         )
 
         self._check_start_transition_impacting_number_of_spares_performed_expected_calls(
-            "creating item", str(self._expected_item_in.catalogue_item_id), str(self._expected_item_in.system_id)
+            "creating item",
+            str(self._expected_item_in.catalogue_item_id),
+            str(self._expected_item_in.system_id),
+            expected_session_supplied=self._supplied_session is not None,
         )
 
         self.mock_item_repository.create.assert_called_once_with(
@@ -530,6 +534,36 @@ class TestCreate(CreateDSL):
             system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
             usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
             stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_existing_session(self):
+        """Test creating an item within an existing session, as `bulk_create` does."""
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            supplied_session=MagicMock(),
+        )
+        self.call_create()
+        self.check_create_success()
+
+    def test_create_with_existing_session_and_spares_definition_defined(self):
+        """Test creating an item within an existing session when there is a spares definition defined. The existing
+        session should be reused rather than starting a nested transaction."""
+
+        self.mock_create(
+            ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+            catalogue_item_data=CATALOGUE_ITEM_DATA_REQUIRED_VALUES_ONLY,
+            catalogue_category_in_data=CATALOGUE_CATEGORY_IN_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_IN_USE,
+            stored_spares_definition_out_data=SETTING_SPARES_DEFINITION_OUT_DATA_STORAGE,
+            supplied_session=MagicMock(),
         )
         self.call_create()
         self.check_create_success()
@@ -639,6 +673,29 @@ class TestCreate(CreateDSL):
         )
         self.call_create()
         self.check_create_success()
+
+
+class TestBulkCreate(ItemServiceDSL):
+    """Tests for bulk creating items."""
+
+    def test_bulk_create(self):
+        """Test bulk create correctly creates a list of items within a single session."""
+
+        mock_session = MagicMock()
+        context_manager = MagicMock()
+        context_manager.__enter__.return_value = mock_session
+        mock_items = [MagicMock(), MagicMock()]
+        mock_created_item_outs = [MagicMock() for _ in range(0, len(mock_items))]
+        self.item_service.create = MagicMock(side_effect=mock_created_item_outs)
+        self.mock_start_session_transaction.return_value = context_manager
+
+        created_items = self.item_service.bulk_create(mock_items, is_authorised=False)
+
+        self.mock_start_session_transaction.assert_called_once_with("creating bulk items")
+        assert self.item_service.create.call_args_list == [
+            call(item, False, existing_session=mock_session) for item in mock_items
+        ]
+        assert created_items == mock_created_item_outs
 
 
 class GetDSL(ItemServiceDSL):
@@ -1675,3 +1732,752 @@ class TestDelete(DeleteDSL):
         )
         self.call_delete(str(ObjectId()))
         self.check_delete_success()
+
+
+class ValidateCreateDSL(ItemServiceDSL):
+    """Base class for `_validate_create` tests."""
+
+    _catalogue_item_out: Optional[CatalogueItemOut]
+    _catalogue_category_out: Optional[CatalogueCategoryOut]
+    _item_data: dict
+    _is_duplicate_serial_number_in_data: bool
+    _is_duplicate_serial_number_in_db: bool
+    _validate_create_result: ValidationResultSchema
+    _validate_create_exception: pytest.ExceptionInfo
+
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
+    def mock_validate_create(
+        self,
+        item_data: dict,
+        catalogue_item_out_data: Optional[dict] = None,
+        catalogue_category_out_data: Optional[dict] = None,
+        system_in_data: Optional[dict] = None,
+        usage_status_in_data: Optional[dict] = None,
+        stored_rule_exists: bool = True,
+        is_duplicate_serial_number_in_data: bool = False,
+        is_duplicate_serial_number_in_db: bool = False,
+    ) -> None:
+        """
+        Mocks repo methods appropriately to test the `_validate_create` service method.
+
+        :param item_data: Dictionary containing the item data to validate. The `system_id` is added automatically if
+                          `system_in_data` is given, but any other mandatory IDs (e.g. `catalogue_item_id`) must be
+                          included already, referencing the relevant `_id` of the corresponding `*_out_data` given.
+        :param catalogue_item_out_data: Either `None` or a dictionary containing the catalogue item data as would be
+                                        required for a `CatalogueItemOut` database model.
+        :param catalogue_category_out_data: Either `None` or a dictionary containing the catalogue category data as
+                                            would be required for a `CatalogueCategoryOut` database model.
+        :param system_in_data: Either `None` or a dictionary containing the system data as would be required for a
+                               `SystemIn` database model.
+        :param usage_status_in_data: Either `None` or a dictionary containing the usage status data as would be required
+                                     for a `UsageStatusIn` database model.
+        :param stored_rule_exists: Whether a stored rule exists for the create operation.
+        :param is_duplicate_serial_number_in_data: Whether another item within the provided bulk data shares this item's
+                                                   serial number.
+        :param is_duplicate_serial_number_in_db: Whether an item with the same serial number already exists in the
+                                                 database.
+        """
+
+        self._item_data = deepcopy(item_data)
+        self._is_duplicate_serial_number_in_data = is_duplicate_serial_number_in_data
+        self._is_duplicate_serial_number_in_db = is_duplicate_serial_number_in_db
+
+        # Catalogue category (looked up via the catalogue item)
+        self._catalogue_category_out = (
+            CatalogueCategoryOut(**catalogue_category_out_data) if catalogue_category_out_data else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_catalogue_category_repository, self._catalogue_category_out)
+
+        # Add any property ids automatically from the category (unit tests here should not retest logic tested in
+        # utils.validate_properties) - needed for both the item's own supplied properties, and the catalogue item's
+        # properties (from which any not supplied by the item are inherited)
+        property_name_id_map = (
+            {prop["name"]: prop["id"] for prop in catalogue_category_out_data["properties"]}
+            if catalogue_category_out_data
+            else {}
+        )
+
+        catalogue_item_out_data = deepcopy(catalogue_item_out_data) if catalogue_item_out_data else None
+        if catalogue_item_out_data and "properties" in catalogue_item_out_data:
+            for prop in catalogue_item_out_data["properties"]:
+                if prop["name"] in property_name_id_map:
+                    prop["id"] = str(property_name_id_map[prop["name"]])
+
+        if isinstance(self._item_data.get("properties"), list):
+            for prop in self._item_data["properties"]:
+                if isinstance(prop, dict) and prop.get("name") in property_name_id_map:
+                    prop["id"] = str(property_name_id_map[prop["name"]])
+
+        # Catalogue item
+        self._catalogue_item_out = CatalogueItemOut(**catalogue_item_out_data) if catalogue_item_out_data else None
+        ServiceTestHelpers.mock_get(self.mock_catalogue_item_repository, self._catalogue_item_out)
+
+        # System
+        system_in = SystemIn(**system_in_data) if system_in_data else None
+        system_out = SystemOut(**system_in.model_dump(), id=ObjectId()) if system_in else None
+        ServiceTestHelpers.mock_get(self.mock_system_repository, system_out)
+        if system_out:
+            self._item_data["system_id"] = system_out.id
+
+        # Usage status
+        usage_status_in = UsageStatusIn(**usage_status_in_data) if usage_status_in_data else None
+        usage_status_out = (
+            UsageStatusOut(**{**usage_status_in.model_dump(), "_id": self._item_data["usage_status_id"]})
+            if usage_status_in and "usage_status_id" in self._item_data
+            else None
+        )
+        ServiceTestHelpers.mock_get(self.mock_usage_status_repository, usage_status_out)
+
+        # Rule
+        self.mock_rule_repository.check_exists.return_value = stored_rule_exists
+
+    def call_validate_create(self) -> None:
+        """Calls the `ItemService` `_validate_create` method with the appropriate data from a prior call to
+        `mock_validate_create`."""
+
+        self._validate_create_result = self.item_service._validate_create(  # pylint:disable=protected-access
+            index=0,
+            item_data=self._item_data,
+            is_duplicate_serial_number_in_data=self._is_duplicate_serial_number_in_data,
+            is_duplicate_serial_number_in_db=self._is_duplicate_serial_number_in_db,
+        )
+
+    def call_validate_create_expecting_error(self, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ItemService` `_validate_create` method with the appropriate data from a prior call to
+        `mock_validate_create` while expecting an error to be raised.
+
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.item_service._validate_create(  # pylint:disable=protected-access
+                index=0,
+                item_data=self._item_data,
+                is_duplicate_serial_number_in_data=self._is_duplicate_serial_number_in_data,
+                is_duplicate_serial_number_in_db=self._is_duplicate_serial_number_in_db,
+            )
+        self._validate_create_exception = exc
+
+    def check_validate_create_success(
+        self, expected_warnings: list[ValidationErrorSchema], expected_errors: list[ValidationErrorSchema]
+    ) -> None:
+        """Checks that a prior call to `call_validate_create` worked as expected.
+
+        :param expected_warnings: Expected validation warnings.
+        :param expected_errors: Expected validation errors.
+        """
+
+        if "catalogue_item_id" in self._item_data:
+            self.mock_catalogue_item_repository.get.assert_called_once_with(self._item_data["catalogue_item_id"])
+
+        if "system_id" in self._item_data:
+            self.mock_system_repository.get.assert_called_once_with(self._item_data["system_id"])
+
+        if "usage_status_id" in self._item_data:
+            self.mock_usage_status_repository.get.assert_called_once_with(self._item_data["usage_status_id"])
+
+        if "properties" in self._item_data:
+            supplied_properties = self._item_data["properties"]
+            if not isinstance(supplied_properties, list):
+                supplied_properties = []
+
+            property_schemas = []
+            for property_data in supplied_properties:
+                try:
+                    property_schemas.append(PropertyPostSchema.model_validate(property_data))
+                except ValidationError:
+                    pass
+
+            if self._catalogue_item_out is not None:
+                merged_properties = self.item_service._merge_missing_properties(  # pylint:disable=protected-access
+                    self._catalogue_item_out.properties, property_schemas
+                )
+                self.wrapped_utils.process_properties.assert_called_once_with(
+                    # Use ANY for errors as its mutable and changes after running to include the actual errors
+                    self._catalogue_category_out.properties,
+                    merged_properties,
+                    ANY,
+                )
+
+        assert self._validate_create_result == ValidationResultSchema(
+            index=0, warnings=expected_warnings, errors=expected_errors
+        )
+
+    def check_validate_create_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_validate_create_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        assert str(self._validate_create_exception.value) == message
+
+
+class TestValidateCreate(ValidateCreateDSL):
+    """Tests for validating item data for creation."""
+
+    def test_validate_create_with_valid_data(self):
+        """Test validating item data for creation with valid data."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_create_with_properties(self):
+        """Test validating item data for creation when properties are supplied, ensuring they are passed through for
+        processing rather than being ignored, and that any not supplied are inherited from the catalogue item."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_WITH_MANDATORY_PROPERTIES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data={
+                **CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+                "properties": BASE_CATALOGUE_ITEM_DATA_WITH_PROPERTIES["properties"],
+            },
+            catalogue_category_out_data=BASE_CATALOGUE_CATEGORY_OUT_DATA_WITH_PROPERTIES_MM,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(expected_warnings=[], expected_errors=[])
+
+    def test_validate_create_with_invalid_schema(self):
+        """Test validating item data for creation when the schema itself is invalid."""
+
+        item_data = {
+            "is_defective": "not-a-boolean",
+            "usage_status_id": str(ObjectId()),
+            "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+        }
+        self.mock_validate_create(
+            item_data,
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="bool_parsing",
+                    loc=["is_defective"],
+                    msg="Input should be a valid boolean, unable to interpret input",
+                    input="not-a-boolean",
+                )
+            ],
+        )
+
+    def test_validate_create_with_non_existent_catalogue_item_id(self):
+        """Test validating item data for creation with a non-existent catalogue item ID."""
+
+        catalogue_item_id = str(ObjectId())
+        self.mock_validate_create(
+            {**ITEM_DATA_NEW_REQUIRED_VALUES_ONLY, "catalogue_item_id": catalogue_item_id},
+            catalogue_item_out_data=None,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="missing_record",
+                    loc=["catalogue_item_id"],
+                    msg=f"No catalogue item found with ID '{catalogue_item_id}'",
+                    input=catalogue_item_id,
+                )
+            ],
+        )
+
+    def test_validate_create_with_catalogue_item_with_non_existent_catalogue_category_id(self):
+        """Test validating item data for creation with a catalogue item that has a non-existent catalogue category
+        ID. This indicates a database integrity issue so is expected to raise rather than be reported as a
+        warning/error."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=None,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create_expecting_error(DatabaseIntegrityError)
+        self.check_validate_create_failed_with_exception(
+            f"No catalogue category found with ID '{self._catalogue_item_out.catalogue_category_id}'"
+        )
+
+    def test_validate_create_with_non_existent_system_id(self):
+        """Test validating item data for creation with a non-existent system ID."""
+
+        system_id = str(ObjectId())
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+                "system_id": system_id,
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=None,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="missing_record",
+                    loc=["system_id"],
+                    msg=f"No system found with ID '{system_id}'",
+                    input=system_id,
+                )
+            ],
+        )
+
+    def test_validate_create_with_non_existent_usage_status_id(self):
+        """Test validating item data for creation with a non-existent usage status ID."""
+
+        usage_status_id = ITEM_DATA_NEW_REQUIRED_VALUES_ONLY["usage_status_id"]
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=None,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="missing_record",
+                    loc=["usage_status_id"],
+                    msg=f"No usage status found with ID '{usage_status_id}'",
+                    input=usage_status_id,
+                )
+            ],
+        )
+
+    def test_validate_create_with_non_existent_rule(self):
+        """Test validating item data for creation when there isn't a creation rule defined. This should be reported as a
+        warning as privileged users are allowed to bypass the rule."""
+
+        usage_status_id = ITEM_DATA_NEW_REQUIRED_VALUES_ONLY["usage_status_id"]
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            stored_rule_exists=False,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="missing_rule",
+                    loc=["usage_status_id"],
+                    msg="No rule found for creating items in the specified system with the specified usage status",
+                    input=usage_status_id,
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_create_with_duplicate_serial_number_in_database(self):
+        """Test validating item data for creation with a serial number that is a duplicate of one in the database."""
+
+        serial_number = ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES["serial_number"]
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            is_duplicate_serial_number_in_db=True,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="duplicate_record",
+                    loc=["serial_number"],
+                    msg=f"Duplicate record found with the same serial number '{serial_number}'",
+                    input=serial_number,
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_create_with_duplicate_serial_number_in_data(self):
+        """Test validating item data for creation with a serial number that is a duplicate of another provided item."""
+
+        serial_number = ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES["serial_number"]
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            is_duplicate_serial_number_in_data=True,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="duplicate_record",
+                    loc=["serial_number"],
+                    msg=f"Duplicate serial number '{serial_number}' found within the provided items",
+                    input=serial_number,
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_create_with_duplicate_serial_number_in_data_and_database(self):
+        """Test validating item data for creation with a serial number that is a duplicate both within the provided
+        data and in the database only returns the "duplicate in data" warning, as it takes precedence."""
+
+        serial_number = ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES["serial_number"]
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+            is_duplicate_serial_number_in_data=True,
+            is_duplicate_serial_number_in_db=True,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[
+                ValidationErrorSchema(
+                    type="duplicate_record",
+                    loc=["serial_number"],
+                    msg=f"Duplicate serial number '{serial_number}' found within the provided items",
+                    input=serial_number,
+                )
+            ],
+            expected_errors=[],
+        )
+
+    def test_validate_create_with_non_string_serial_number(self):
+        """Test validating item data for creation with a non-string serial number is reported as a schema error
+        rather than crashing or participating in duplicate detection."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+                "serial_number": 12345,
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="string_type",
+                    loc=["serial_number"],
+                    msg="Input should be a valid string",
+                    input=12345,
+                ),
+            ],
+        )
+
+    def test_validate_create_with_non_list_properties(self):
+        """Test validating item data for creation with a non-list `properties` value does not crash and is reported
+        as a schema error."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+                "properties": 5,
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="list_type",
+                    loc=["properties"],
+                    msg="Input should be a valid list",
+                    input=5,
+                ),
+            ],
+        )
+
+    def test_validate_create_with_non_dict_property(self):
+        """Test validating item data for creation with a non-dictionary entry in `properties` does not crash and is
+        reported as a schema error."""
+
+        self.mock_validate_create(
+            {
+                **ITEM_DATA_NEW_REQUIRED_VALUES_ONLY,
+                "catalogue_item_id": str(CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES["_id"]),
+                "properties": [5],
+            },
+            catalogue_item_out_data=CATALOGUE_ITEM_OUT_DATA_NOT_OBSOLETE_NO_PROPERTIES,
+            catalogue_category_out_data=CATALOGUE_CATEGORY_OUT_DATA_LEAF_NO_PARENT_NO_PROPERTIES,
+            system_in_data=SYSTEM_IN_DATA_STORAGE_NO_PARENT_A,
+            usage_status_in_data=USAGE_STATUS_IN_DATA_NEW,
+        )
+        self.call_validate_create()
+        self.check_validate_create_success(
+            expected_warnings=[],
+            expected_errors=[
+                ValidationErrorSchema(
+                    type="model_type",
+                    loc=["properties", 0],
+                    msg="Input should be a valid dictionary or instance of PropertyPostSchema",
+                    input=5,
+                ),
+            ],
+        )
+
+
+class BulkValidateCreateDSL(ItemServiceDSL):
+    """Base class for `bulk_validate_create` tests."""
+
+    _mock_results: List[ValidationResultSchema]
+    _mock_validate_create: MagicMock
+    _result: BulkValidationResultSchema
+
+    def mock_bulk_validate_create(self, mock_items: list[dict], is_duplicate_serial_number_side_effect=None) -> None:
+        """
+        Mocks `_validate_create` and the item repository's `is_duplicate_serial_number` appropriately to test the
+        `bulk_validate_create` service method.
+
+        :param mock_items: List of mock item data dictionaries to validate.
+        :param is_duplicate_serial_number_side_effect: Callable to use as the `is_duplicate_serial_number` mock's
+                                                        side effect, or `None` to have it always return `False`.
+        """
+
+        self._mock_results = [
+            ValidationResultSchema(index=index, warnings=[], errors=[]) for index in range(len(mock_items))
+        ]
+        self._mock_validate_create = MagicMock(side_effect=self._mock_results)
+
+        if is_duplicate_serial_number_side_effect is not None:
+            self.mock_item_repository.is_duplicate_serial_number.side_effect = is_duplicate_serial_number_side_effect
+        else:
+            self.mock_item_repository.is_duplicate_serial_number.return_value = False
+
+    def call_bulk_validate_create(self, mock_items: list[dict]) -> None:
+        """
+        Calls the `ItemService` `bulk_validate_create` method with the appropriate data from a prior call to
+        `mock_bulk_validate_create`.
+
+        :param mock_items: List of mock item data dictionaries to validate.
+        """
+
+        with patch.object(self.item_service, "_validate_create", self._mock_validate_create):
+            self._result = self.item_service.bulk_validate_create(mock_items)
+
+    def check_bulk_validate_create_success(self, expected_validate_create_calls: list) -> None:
+        """
+        Checks that a prior call to `call_bulk_validate_create` worked as expected.
+
+        :param expected_validate_create_calls: Expected calls that should have been made to `_validate_create`.
+        """
+
+        assert self._mock_validate_create.call_args_list == expected_validate_create_calls
+        assert self._result == BulkValidationResultSchema(results=self._mock_results)
+
+
+class TestBulkValidateCreate(BulkValidateCreateDSL):
+    """Tests for bulk validating items data for creation."""
+
+    def test_bulk_validate_create(self):
+        """Test bulk validate correctly returns a list of validation results for the individual items."""
+
+        mock_items = [{"serial_number": "1"}, {"serial_number": "2"}, {"serial_number": "3"}]
+        self.mock_bulk_validate_create(mock_items)
+
+        self.call_bulk_validate_create(mock_items)
+
+        # No item shares a serial number with another, so none are flagged as duplicates in the data
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(index, mock_item, is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=False)
+                for index, mock_item in enumerate(mock_items)
+            ]
+        )
+
+    def test_bulk_validate_create_detects_duplicate_serial_numbers_in_data(self):
+        """Test bulk validate flags items sharing a serial number as duplicates."""
+
+        mock_items = [
+            # Duplicate pair sharing a serial number (serial numbers are unique regardless of catalogue item)
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "duplicate"},
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "duplicate"},
+            # Different serial number, so not a duplicate
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "unique"},
+            # No serial number, so not a duplicate
+            {"catalogue_item_id": str(ObjectId())},
+        ]
+        self.mock_bulk_validate_create(mock_items)
+
+        self.call_bulk_validate_create(mock_items)
+
+        # "duplicate" is never queried, as it is already known to be a duplicate within the data (see the dedicated
+        # precedence test below); only "unique" is queried
+        assert self.mock_item_repository.is_duplicate_serial_number.call_args_list == [call("unique")]
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_items[0], is_duplicate_serial_number_in_data=True, is_duplicate_serial_number_in_db=False),
+                call(1, mock_items[1], is_duplicate_serial_number_in_data=True, is_duplicate_serial_number_in_db=False),
+                call(
+                    2, mock_items[2], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=False
+                ),
+                call(
+                    3, mock_items[3], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=False
+                ),
+            ]
+        )
+
+    def test_bulk_validate_create_detects_duplicate_serial_numbers_in_data_ignoring_case_and_whitespace(self):
+        """Test bulk validate flags items sharing a serial number as duplicates even when they differ in case or
+        leading/trailing whitespace."""
+
+        mock_items = [
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "Duplicate"},
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "  duplicate  "},
+            # Different serial number even once normalised, so not a duplicate
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "unique"},
+            # Not a string, so should be ignored rather than causing an error
+            {"catalogue_item_id": str(ObjectId()), "serial_number": 123},
+        ]
+        self.mock_bulk_validate_create(mock_items)
+
+        self.call_bulk_validate_create(mock_items)
+
+        # Both differently-cased/spaced variants normalise to "duplicate", which is never queried as it is already
+        # known to be a duplicate within the data; only "unique" is queried
+        assert self.mock_item_repository.is_duplicate_serial_number.call_args_list == [call("unique")]
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_items[0], is_duplicate_serial_number_in_data=True, is_duplicate_serial_number_in_db=False),
+                call(1, mock_items[1], is_duplicate_serial_number_in_data=True, is_duplicate_serial_number_in_db=False),
+                call(
+                    2, mock_items[2], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=False
+                ),
+                call(
+                    3, mock_items[3], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=False
+                ),
+            ]
+        )
+
+    def test_bulk_validate_create_detects_duplicate_serial_numbers_in_database(self):
+        """Test bulk validate flags an item with a serial number that already exists in the database, checking each
+        distinct, non-duplicated serial number against the database independently."""
+
+        mock_items = [
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "existing"},
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "new"},
+        ]
+        self.mock_bulk_validate_create(
+            mock_items, is_duplicate_serial_number_side_effect=lambda serial_number: serial_number == "existing"
+        )
+
+        self.call_bulk_validate_create(mock_items)
+
+        # Order is not guaranteed as the set of serial numbers to check is derived from a set difference
+        assert sorted(self.mock_item_repository.is_duplicate_serial_number.call_args_list, key=str) == sorted(
+            [call("existing"), call("new")], key=str
+        )
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_items[0], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=True),
+                call(
+                    1, mock_items[1], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=False
+                ),
+            ]
+        )
+
+    def test_bulk_validate_create_duplicate_in_data_takes_precedence_and_skips_database_check(self):
+        """Test bulk validate does not query the database at all for a serial number that is already a duplicate
+        within the provided data, as the "duplicate in data" warning always takes precedence over the database one."""
+
+        mock_items = [
+            # Duplicate pair - should never be checked against the database
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "duplicate"},
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "duplicate"},
+            # Unique within the data, so still checked against the database
+            {"catalogue_item_id": str(ObjectId()), "serial_number": "existing"},
+        ]
+        self.mock_bulk_validate_create(mock_items, is_duplicate_serial_number_side_effect=lambda _: True)
+
+        self.call_bulk_validate_create(mock_items)
+
+        # "duplicate" is never queried, even though it would also have matched in the database
+        assert self.mock_item_repository.is_duplicate_serial_number.call_args_list == [call("existing")]
+        self.check_bulk_validate_create_success(
+            expected_validate_create_calls=[
+                call(0, mock_items[0], is_duplicate_serial_number_in_data=True, is_duplicate_serial_number_in_db=False),
+                call(1, mock_items[1], is_duplicate_serial_number_in_data=True, is_duplicate_serial_number_in_db=False),
+                call(2, mock_items[2], is_duplicate_serial_number_in_data=False, is_duplicate_serial_number_in_db=True),
+            ]
+        )
+
+    def test_bulk_validate_create_propagates_database_integrity_error(self):
+        """Test bulk validate does not swallow a `DatabaseIntegrityError` raised by `_validate_create`."""
+
+        mock_items = [{"serial_number": "1"}, {"serial_number": "2"}]
+        mock_validate_create = MagicMock(
+            side_effect=[
+                ValidationResultSchema(index=0, warnings=[], errors=[]),
+                DatabaseIntegrityError("No catalogue category found with ID 'test-id'"),
+            ]
+        )
+
+        with patch.object(self.item_service, "_validate_create", mock_validate_create):
+            with pytest.raises(DatabaseIntegrityError) as exc:
+                self.item_service.bulk_validate_create(mock_items)
+
+        assert str(exc.value) == "No catalogue category found with ID 'test-id'"

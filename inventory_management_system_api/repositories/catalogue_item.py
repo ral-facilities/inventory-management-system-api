@@ -3,6 +3,7 @@ Module for providing a repository for managing catalogue items in a MongoDB data
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -185,6 +186,28 @@ class CatalogueItemRepo:
         # For 100000 documents, using list comprehension takes about 0.85 seconds vs 0.50 seconds for distinct
         return self._catalogue_items_collection.find(query, {"_id": 1}, session=session).distinct("_id")
 
+    def list_ids_by_names(self, names: list[str], session: Optional[ClientSession] = None) -> list[dict]:
+        """
+        Retrieve the IDs of all catalogue items matching a list of names from a MongoDB database.
+
+        The comparison is case-insensitive and ignores any leading/trailing whitespace on both the given names and
+        any already stored in the database.
+
+        Performs a projection to only include the `_id` and `name` fields.
+
+        :param names: List of catalogue item names to look up.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: A list of documents each containing the `_id` and `name` of a matching catalogue item, or an empty
+            list if no catalogue items match.
+        """
+        logger.info("Retrieving IDs of catalogue items matching the provided names from the database")
+        # re.escape stops any regex characters in a name being treated as part of the pattern, and the surrounding
+        # \s* allows the stored value to have extra leading/trailing whitespace
+        patterns = [re.compile(rf"^\s*{re.escape(name.strip())}\s*$", re.IGNORECASE) for name in names]
+        return list(
+            self._catalogue_items_collection.find({"name": {"$in": patterns}}, {"_id": 1, "name": 1}, session=session)
+        )
+
     def insert_property_to_all_matching(
         self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
     ):
@@ -283,10 +306,18 @@ class CatalogueItemRepo:
         """
         Check if a catalogue item with the same name already exists.
 
+        The comparison is case-insensitive and ignores any leading/trailing whitespace on both the given name and any
+        already stored in the database.
+
         :param name: Name of the catalogue item to check for duplicates.
         :param session: PyMongo ClientSession to use for database operations.
         :return: `True` if a duplicate name is found.
         """
         logger.info("Checking if catalogue item with name '%s' already exists", name)
-        catalogue_item = self._catalogue_items_collection.find_one({"name": name}, session=session)
+        # re.escape stops any regex characters in the name being treated as part of the pattern, and the surrounding
+        # \s* allows the stored value to have extra leading/trailing whitespace
+        pattern = rf"^\s*{re.escape(name.strip())}\s*$"
+        catalogue_item = self._catalogue_items_collection.find_one(
+            {"name": {"$regex": pattern, "$options": "i"}}, session=session
+        )
         return catalogue_item is not None

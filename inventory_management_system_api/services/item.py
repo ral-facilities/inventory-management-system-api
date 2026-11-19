@@ -6,13 +6,20 @@ repositories.
 import logging
 import random
 import time
-from contextlib import contextmanager
-from typing import Annotated, Generator, List, Optional
+from collections import Counter
+from contextlib import contextmanager, nullcontext
+from typing import Annotated, Any, Generator, List, Optional
 
 from fastapi import Depends
+from pydantic import ValidationError
 from pymongo.client_session import ClientSession
 
 from inventory_management_system_api.core.config import config
+from inventory_management_system_api.core.consts import (
+    ERROR_TYPE_DUPLICATE_RECORD,
+    ERROR_TYPE_MISSING_RECORD,
+    ERROR_TYPE_MISSING_RULE,
+)
 from inventory_management_system_api.core.custom_object_id import CustomObjectId
 from inventory_management_system_api.core.database import start_session_transaction
 from inventory_management_system_api.core.exceptions import (
@@ -35,6 +42,7 @@ from inventory_management_system_api.repositories.system import SystemRepo
 from inventory_management_system_api.repositories.usage_status import UsageStatusRepo
 from inventory_management_system_api.schemas.catalogue_item import PropertyPostSchema
 from inventory_management_system_api.schemas.item import ItemPatchSchema, ItemPostSchema
+from inventory_management_system_api.schemas.validation import BulkValidationResultSchema, ValidationResultSchema
 from inventory_management_system_api.services import utils
 
 logger = logging.getLogger()
@@ -78,7 +86,9 @@ class ItemService:
         self._rule_repository = rule_repository
         self._setting_repository = setting_repository
 
-    def create(self, item: ItemPostSchema, is_authorised: bool) -> ItemOut:
+    def create(
+        self, item: ItemPostSchema, is_authorised: bool, existing_session: Optional[ClientSession] = None
+    ) -> ItemOut:
         """
         Create a new item.
 
@@ -86,6 +96,7 @@ class ItemService:
 
         :param item: The item to be created.
         :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :param existing_session: PyMongo ClientSession to use for the creation operation itself.
         :return: The created item.
         :raises MissingRecordError: If the catalogue item does not exist.
         :raises MissingRecordError: If the system does not exist.
@@ -137,12 +148,262 @@ class ItemService:
 
         # Update number of spares when creating
         with self._start_transaction_impacting_number_of_spares(
-            "creating item", catalogue_item_id, item.system_id
-        ) as session:
+            "creating item", catalogue_item_id, item.system_id, existing_session=existing_session
+        ) as transaction_session:
             return self._item_repository.create(
                 ItemIn(**{**item.model_dump(), "properties": properties, "usage_status": usage_status.value}),
-                session=session,
+                session=transaction_session,
             )
+
+    def bulk_create(self, items: List[ItemPostSchema], is_authorised: bool) -> List[ItemOut]:
+        """
+        Creates items in bulk.
+
+        Uses the single create method, but wrapped within a transaction so either all succeed or none do. Will
+        fail fast the moment it encounters an error, so for detailed information on what went wrong and where
+        `bulk_validate_create` should be used instead.
+
+        Unlike the single create, a write conflict is not retried here as it aborts the whole transaction, so it is
+        left to the client to retry the request.
+
+        :param items: The items to be created.
+        :param is_authorised: Whether or not the user is authorised to bypass any creation rule checks.
+        :return: List of created items.
+        :raises WriteConflictError: If there is a write conflict during the transaction.
+        """
+        created_items = []
+        with start_session_transaction("creating bulk items") as session:
+            for item in items:
+                created_items.append(self.create(item, is_authorised, existing_session=session))
+        return created_items
+
+    # pylint:disable=too-many-branches
+    # pylint:disable=too-many-statements
+    def _validate_create(
+        self,
+        index: int,
+        item_data: dict[str, Any],
+        is_duplicate_serial_number_in_data: bool,
+        is_duplicate_serial_number_in_db: bool,
+    ) -> ValidationResultSchema:
+        """
+        Performs validation of a single set of item creation data returning any warnings/errors.
+
+        This includes the same validation, as the `create` function without creating or modifying any resources. This
+        also collects and returns any validation errors instead of failing fast.
+
+        :param index: Index of the item being validated.
+        :param item_data: Item data to verify.
+        :param is_duplicate_serial_number_in_data: Whether another item within the same set of bulk data shares this
+            item's serial number.
+        :param is_duplicate_serial_number_in_db: Whether an item with the same serial number already exists in the
+            database.
+        :return: Schema containing the validation warnings/errors that been found within the data.
+        :raises DatabaseIntegrityError: If the catalogue item is found but the catalogue category it references doesn't
+            exist.
+        """
+        warnings = []
+        errors = []
+
+        # This records any errors from basic schema validation including the properties
+        try:
+            ItemPostSchema(**item_data)
+        except ValidationError as exc:
+            errors.extend(exc.errors())
+
+        # Check the catalogue item exists (if defined)
+        catalogue_item_id = item_data.get("catalogue_item_id")
+        catalogue_item = None
+        catalogue_category = None
+        if catalogue_item_id is not None:
+            try:
+                catalogue_item = self._catalogue_item_repository.get(catalogue_item_id)
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+
+            if catalogue_item is None:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No catalogue item found with ID '{catalogue_item_id}'",
+                        error_location=("catalogue_item_id",),
+                        error_input=catalogue_item_id,
+                    )
+                )
+            else:
+                # The catalogue item's catalogue category is expected to always exist, so a missing one indicates a
+                # database integrity issue rather than something caused by the submitted data, consistent with how
+                # `create` handles the same scenario.
+                catalogue_category_id = catalogue_item.catalogue_category_id
+                try:
+                    catalogue_category = self._catalogue_category_repository.get(catalogue_category_id)
+                    if not catalogue_category:
+                        raise DatabaseIntegrityError(f"No catalogue category found with ID '{catalogue_category_id}'")
+                except InvalidObjectIdError as exc:
+                    raise DatabaseIntegrityError(str(exc)) from exc
+
+        # Check the system exists (if defined)
+        system_id = item_data.get("system_id")
+        system = None
+        if system_id is not None:
+            try:
+                system = self._system_repository.get(system_id)
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if system is None:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No system found with ID '{system_id}'",
+                        error_location=("system_id",),
+                        error_input=system_id,
+                    )
+                )
+
+        # Check the usage status exists (if defined)
+        usage_status_id = item_data.get("usage_status_id")
+        usage_status = None
+        if usage_status_id is not None:
+            try:
+                usage_status = self._usage_status_repository.get(usage_status_id)
+            except InvalidObjectIdError:
+                # Ignore invalid object ID, treat as missing
+                pass
+            if usage_status is None:
+                errors.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_MISSING_RECORD,
+                        error_message=f"No usage status found with ID '{usage_status_id}'",
+                        error_location=("usage_status_id",),
+                        error_input=usage_status_id,
+                    )
+                )
+
+        # Ensure a rule exists for creating the item in the given system with the given usage status. This is reported
+        # as a warning rather than an error as privileged users are allowed to bypass this rule check when creating.
+        if system is not None and usage_status is not None:
+            if not self._rule_repository.check_exists(
+                src_system_type_id=None, dst_system_type_id=system.type_id, dst_usage_status_id=usage_status_id
+            ):
+                warnings.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_MISSING_RULE,
+                        error_message="No rule found for creating items in the specified system with the specified "
+                        "usage status",
+                        error_location=("usage_status_id",),
+                        error_input=usage_status_id,
+                    )
+                )
+
+        # Check for any duplicate serial numbers, both within the provided data and within the database. Only string
+        # serial numbers are checked here - anything else indicates a schema error that is already reported above. A
+        # duplicate within the provided data takes precedence over one in the database, as the two are not mutually
+        # exclusive and only one warning is wanted per item.
+        serial_number = item_data.get("serial_number")
+        if isinstance(serial_number, str):
+            if is_duplicate_serial_number_in_data:
+                warnings.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_DUPLICATE_RECORD,
+                        error_message=f"Duplicate serial number '{serial_number}' found within the provided items",
+                        error_location=("serial_number",),
+                        error_input=serial_number,
+                    )
+                )
+            elif is_duplicate_serial_number_in_db:
+                warnings.append(
+                    utils.create_custom_validation_error_details(
+                        error_type=ERROR_TYPE_DUPLICATE_RECORD,
+                        error_message=f"Duplicate record found with the same serial number '{serial_number}'",
+                        error_location=("serial_number",),
+                        error_input=serial_number,
+                    )
+                )
+
+        # pylint: disable=duplicate-code
+        # Now validate any properties. Anything other than a list is ignored here as it will already have been reported
+        # as a schema error above, and there is nothing further that can be done with it.
+        supplied_properties = item_data.get("properties")
+        if not isinstance(supplied_properties, list):
+            supplied_properties = []
+        # NOTE: Basic schema validation of properties has already occurred at this point from using ItemPostSchema above
+        #       we don't want to capture those errors again. While we can't validate those properties that don't pass
+        #       the basic checks, we can at least attempt to perform additional validation on those that do.
+        property_schemas = []
+        for supplied_property in supplied_properties:
+            try:
+                property_schemas.append(PropertyPostSchema.model_validate(supplied_property))
+            except ValidationError:
+                pass
+        # pylint: enable=duplicate-code
+
+        # Perform validation of the properties - can only be done assuming a valid catalogue item (and therefore its
+        # catalogue category) has been found. Any properties not supplied are inherited from the catalogue item.
+        if catalogue_item is not None:
+            merged_properties = self._merge_missing_properties(catalogue_item.properties, property_schemas)
+            utils.process_properties(catalogue_category.properties, merged_properties, errors)
+
+        if warnings:
+            warnings = ValidationError.from_exception_data(title="Item validation error", line_errors=warnings).errors()
+        if errors:
+            errors = ValidationError.from_exception_data(title="Item validation error", line_errors=errors).errors()
+        return ValidationResultSchema(index=index, warnings=warnings, errors=errors)
+
+    # pylint:enable=too-many-branches
+    # pylint:enable=too-many-statements
+
+    def bulk_validate_create(self, items_data: List[dict[str, Any]]) -> BulkValidationResultSchema:
+        """
+        Performs validation of bulk item creation data returning any warnings/errors.
+
+        :param items_data: Items data to verify.
+        :return: Schema containing the validation warnings/errors that been found within the data.
+        :raises DatabaseIntegrityError: If a catalogue item is found but the catalogue category it references
+            doesn't exist.
+        """
+        # Count occurrences of each serial number (case-insensitive, trimmed) across the request so that effectively
+        # identical values are treated as duplicates. Non-string/missing serial numbers are skipped - they have nothing
+        # valid to compare and are reported as schema errors instead.
+        serial_number_counts = Counter(
+            item_data["serial_number"].strip().lower()
+            for item_data in items_data
+            if isinstance(item_data.get("serial_number"), str)
+        )
+
+        # A normalised serial number used by more than one item is a duplicate within the request itself. This needs
+        # checking separately from the database, as the database check only catches duplicates that already exist there.
+        duplicate_serial_numbers_in_data = {
+            serial_number for serial_number, count in serial_number_counts.items() if count > 1
+        }
+
+        # Query the database once per distinct normalised serial number in the request rather than once per item, as
+        # multiple items may share the same serial number. Serial numbers already duplicated within the provided data
+        # are skipped, as that warning takes precedence and the database result would never be used.
+        duplicate_serial_numbers_in_db = {
+            serial_number
+            for serial_number in serial_number_counts.keys() - duplicate_serial_numbers_in_data
+            if self._item_repository.is_duplicate_serial_number(serial_number)
+        }
+
+        results = []
+        for index, item_data in enumerate(items_data):
+            serial_number = item_data.get("serial_number")
+            normalised_serial_number = serial_number.strip().lower() if isinstance(serial_number, str) else None
+
+            # An item is flagged as a duplicate (in the data/database) if its own normalised serial number is one of the
+            # ones found above
+            results.append(
+                self._validate_create(
+                    index,
+                    item_data,
+                    is_duplicate_serial_number_in_data=normalised_serial_number in duplicate_serial_numbers_in_data,
+                    is_duplicate_serial_number_in_db=normalised_serial_number in duplicate_serial_numbers_in_db,
+                )
+            )
+
+        return BulkValidationResultSchema(results=results)
 
     def get(self, item_id: str) -> Optional[ItemOut]:
         """
@@ -366,7 +627,11 @@ class ItemService:
 
     @contextmanager
     def _start_transaction_impacting_number_of_spares(
-        self, action_description: str, catalogue_item_id: str, dest_system_id: Optional[str] = None
+        self,
+        action_description: str,
+        catalogue_item_id: str,
+        dest_system_id: Optional[str] = None,
+        existing_session: Optional[ClientSession] = None,
     ) -> Generator[Optional[ClientSession], None, None]:
         """
         Handles recalculation of the `number_of_spares` field of a catalogue item for updates that will impact it but
@@ -386,6 +651,10 @@ class ItemService:
                                   updating.
         :param dest_system_id: ID of the system being put in/moved to (if applicable). Will be write locked to prevent
                                editing of system type after counting spares to avoid miscounts.
+        :param existing_session: Existing PyMongo ClientSession with a transaction already started on it. When given
+                                 it is reused rather than starting a new one, as transactions cannot be nested.
+                                 Handling any write conflicts then becomes the caller's responsibility as one aborts
+                                 their whole transaction.
         """
 
         # Use ObjectIDs from here on to avoid unnecessary conversions particularly for when we set the spares definition
@@ -395,9 +664,14 @@ class ItemService:
         spares_definition = self._setting_repository.get(SparesDefinitionOut)
 
         if spares_definition is None:
-            # No session/transaction is needed as there is no spares update to perform
-            yield None
+            # No session/transaction is needed as there is no spares update to perform, so just pass back either the
+            # parent session or None
+            yield existing_session
         else:
+            # If a session is provided, this method does not own the transaction and should reuse it rather than
+            # creating a nested one
+            owns_transaction = existing_session is None
+
             # Particularly when creating multiple items within the same catalogue item in quick succession, multiple
             # conflicting requests can occur. To reduce the chances we retry such requests so that the default 5ms
             # transaction timeout is less of an issue.
@@ -406,13 +680,17 @@ class ItemService:
             num_attempts = 0
             while retry:
                 try:
-                    with start_session_transaction(action_description) as session:
+                    with (
+                        start_session_transaction(action_description)
+                        if owns_transaction
+                        else nullcontext(existing_session)
+                    ) as transaction_session:
                         num_attempts += 1
 
                         # Write lock the catalogue item to prevent any other updates from occurring during the rest of
                         # the transaction
                         self._catalogue_item_repository.update_number_of_spares(
-                            catalogue_item_id, None, session=session
+                            catalogue_item_id, None, session=transaction_session
                         )
 
                         # Write lock the destination system
@@ -420,10 +698,10 @@ class ItemService:
                         # be modified after the count but before the update finishes and instead force conflicts with
                         # system type modifications.
                         if dest_system_id:
-                            self._system_repository.write_lock(dest_system_id, session)
+                            self._system_repository.write_lock(dest_system_id, transaction_session)
 
                         # Allow any other updates to occur using the same session
-                        yield session
+                        yield transaction_session
 
                         # Obtain and update the number of spares
                         logger.info(
@@ -432,10 +710,10 @@ class ItemService:
                         number_of_spares = self._item_repository.count_in_catalogue_item_with_system_type_one_of(
                             catalogue_item_id,
                             [CustomObjectId(system_type.id) for system_type in spares_definition.system_types],
-                            session=session,
+                            session=transaction_session,
                         )
                         self._catalogue_item_repository.update_number_of_spares(
-                            catalogue_item_id, number_of_spares, session=session
+                            catalogue_item_id, number_of_spares, session=transaction_session
                         )
 
                     # Successful completion, log time take and number of attempts for debugging if we get reports of
@@ -444,9 +722,11 @@ class ItemService:
                     logger.info("Transaction time taken: %s", time.perf_counter() - start_time)
                     logger.info("Transaction number of attempts: %s", num_attempts)
                 except WriteConflictError as exc:
-                    # Keep retrying, but only if we have been retrying for less than 5 seconds so we dont let the
-                    # request take too long and leave potential for it to block other requests if the threadpool is full
-                    if time.perf_counter() - start_time > 30:
+                    # Cannot retry a transaction we do not own as it has already been aborted. Otherwise keep
+                    # retrying, but only if we have been retrying for less than 5 seconds so we dont let the
+                    # request take too long and leave potential for it to block other requests if the threadpool
+                    # is full
+                    if not owns_transaction or time.perf_counter() - start_time > 30:
                         raise exc
                     # Wait some random time as there is no point in retrying immediately if we are already write
                     # locked. Between 100ms and 500ms.
