@@ -1833,7 +1833,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
             "serial_number": 42,
             # Custom properties
             "properties": [{}, {"id": 42, "value": "test"}],
-            "modified_comment": None
+            "modified_comment": None,
         }
         self.validate_create_item(item_data)
 
@@ -2134,7 +2134,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                                     "is_defective": False,
                                     "catalogue_item_id": self.catalogue_item_id,
                                     "system_id": self.system_id,
-                                    "modified_comment": ANY
+                                    "modified_comment": ANY,
                                 },
                                 "location": ["usage_status_id"],
                                 "message": "Field required",

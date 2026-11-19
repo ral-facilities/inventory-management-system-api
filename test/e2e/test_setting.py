@@ -185,7 +185,7 @@ class SparesDefinitionDSL(ItemDeleteDSL, CatalogueItemGetDSL):
                     **CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES,
                     "number_of_spares": expected_number_of_spares,
                     "modified_by": ANY,
-                    "modified_comment": ANY
+                    "modified_comment": ANY,
                 }
             )
 

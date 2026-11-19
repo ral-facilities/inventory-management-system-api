@@ -194,7 +194,9 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
             properties.append(expected_property_get_data)
 
         self.get_catalogue_item(self.catalogue_item_id)
-        self.check_get_catalogue_item_success({**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": properties, "modified_comment": ANY})
+        self.check_get_catalogue_item_success(
+            {**CATALOGUE_ITEM_GET_DATA_WITH_ALL_PROPERTIES, "properties": properties, "modified_comment": ANY}
+        )
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_catalogue_item, self._get_response_catalogue_item
         )
@@ -213,7 +215,9 @@ class CreateDSL(ItemGetDSL, CatalogueCategoryGetDSL, CatalogueItemGetDSL):
             properties.append(expected_property_get_data)
 
         self.get_item(self.item_id)
-        self.check_get_item_success({**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": properties, "modified_comment": ANY})
+        self.check_get_item_success(
+            {**ITEM_GET_DATA_NEW_WITH_ALL_PROPERTIES, "properties": properties, "modified_comment": ANY}
+        )
         E2ETestHelpers.check_created_and_modified_times_updated_correctly(
             self._post_response_item, self._get_response_item
         )
