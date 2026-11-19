@@ -44,11 +44,13 @@ ItemServiceDep = Annotated[ItemService, Depends(ItemService)]
     response_description="The created item",
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: AuthorisedDep) -> ItemSchema:
+def create_item(
+    request: Request, item: ItemPostSchema, item_service: ItemServiceDep, authorised: AuthorisedDep
+) -> ItemSchema:
     logger.info("Creating a new item")
     logger.debug("Item data: %s", item)
     try:
-        item = item_service.create(item, authorised)
+        item = item_service.create(item, authorised, request.state.username)
         return ItemSchema(**item.model_dump())
     except InvalidPropertyTypeError as exc:
         logger.exception(str(exc))
@@ -88,13 +90,17 @@ def create_item(item: ItemPostSchema, item_service: ItemServiceDep, authorised: 
     status_code=status.HTTP_201_CREATED,
 )
 def bulk_create_item(
+    request: Request,
     items: Annotated[list[ItemPostSchema], Field(max_length=config.bulk.max_items)],
     item_service: ItemServiceDep,
     authorised: AuthorisedDep,
 ) -> list[ItemSchema]:
     logger.info("Bulk creating items")
     try:
-        return [ItemSchema(**item.model_dump()) for item in item_service.bulk_create(items, authorised)]
+        return [
+            ItemSchema(**item.model_dump())
+            for item in item_service.bulk_create(items, request.state.username, authorised)
+        ]
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
@@ -202,6 +208,7 @@ def get_item(
     response_description="Item updated successfully",
 )
 def partial_update_item(
+    request: Request,
     item: ItemPatchSchema,
     item_id: Annotated[str, Path(description="The ID of the item to update")],
     item_service: ItemServiceDep,
@@ -211,7 +218,7 @@ def partial_update_item(
     logger.debug("Item data: %s", item)
 
     try:
-        updated_item = item_service.update(item_id, item, authorised)
+        updated_item = item_service.update(item_id, item, authorised, request.state.username)
         return ItemSchema(**updated_item.model_dump())
     except (InvalidPropertyTypeError, MissingMandatoryProperty) as exc:
         logger.exception(str(exc))

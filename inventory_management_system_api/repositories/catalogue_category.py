@@ -242,6 +242,8 @@ class CatalogueCategoryRepo:
         self,
         catalogue_category_id: str,
         property_in: CatalogueCategoryPropertyIn,
+        modified_by: str,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryPropertyOut:
         """
@@ -252,6 +254,8 @@ class CatalogueCategoryRepo:
 
         :param catalogue_category_id: The ID of the catalogue category to add the property to
         :param property_in: The property containing the property data
+        :param modified_by: The user creating this property
+        :param modified_comment: The justification given for creating the property
         :param session: PyMongo ClientSession to use for database operations
         :return: The added property
         """
@@ -265,17 +269,25 @@ class CatalogueCategoryRepo:
             {"_id": CustomObjectId(catalogue_category_id)},
             {
                 "$push": {"properties": property_data},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_comment": f"Property created: {modified_comment or "No comment"}",
+                    "modified_by": modified_by,
+                },
             },
             session=session,
         )
         return CatalogueCategoryPropertyOut(**property_data)
 
+    # pylint:disable=too-many-arguments
+    # pylint:disable=too-many-positional-arguments
     def update_property(
         self,
         catalogue_category_id: str,
         property_id: str,
         property_in: CatalogueCategoryPropertyIn,
+        username: str,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> CatalogueCategoryPropertyOut:
         """
@@ -284,6 +296,8 @@ class CatalogueCategoryRepo:
         :param catalogue_category_id: The ID of the catalogue category to update
         :param property_id: The ID of the property to update
         :param property_in: The property containing the update data
+        :param username: The user updating the property
+        :param modified_comment: A comment justifying the update
         :param session: PyMongo ClientSession to use for database operations
         :return: The updated property
         """
@@ -304,6 +318,8 @@ class CatalogueCategoryRepo:
                 "$set": {
                     "properties.$[elem]": property_data,
                     "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": f"Property updated: {modified_comment or "No comment"}",
                 }
             },
             array_filters=[{"elem._id": CustomObjectId(property_id)}],

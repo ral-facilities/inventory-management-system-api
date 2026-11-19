@@ -412,7 +412,7 @@ class CreateDSL(ItemServiceDSL):
         """Calls the `ItemService` `create` method with the appropriate data from a prior call to `mock_create`."""
 
         self._created_item = self.item_service.create(
-            self._item_post, self._user_authorised, existing_session=self._supplied_session
+            self._item_post, self._user_authorised, username="username", existing_session=self._supplied_session
         )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
@@ -424,7 +424,9 @@ class CreateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.create(self._item_post, self._user_authorised, existing_session=self._supplied_session)
+            self.item_service.create(
+                self._item_post, self._user_authorised, username="username", existing_session=self._supplied_session
+            )
         self._create_exception = exc
 
     def check_create_success(self) -> None:
@@ -689,11 +691,11 @@ class TestBulkCreate(ItemServiceDSL):
         self.item_service.create = MagicMock(side_effect=mock_created_item_outs)
         self.mock_start_session_transaction.return_value = context_manager
 
-        created_items = self.item_service.bulk_create(mock_items, is_authorised=False)
+        created_items = self.item_service.bulk_create(mock_items, is_authorised=False, username="username")
 
         self.mock_start_session_transaction.assert_called_once_with("creating bulk items")
         assert self.item_service.create.call_args_list == [
-            call(item, False, existing_session=mock_session) for item in mock_items
+            call(item, False, "username", existing_session=mock_session) for item in mock_items
         ]
         assert created_items == mock_created_item_outs
 
@@ -977,7 +979,9 @@ class UpdateDSL(ItemServiceDSL):
         """
 
         self._updated_item_id = item_id
-        self._updated_item = self.item_service.update(item_id, self._item_patch, self._user_authorised)
+        self._updated_item = self.item_service.update(
+            item_id, self._item_patch, self._user_authorised, username="username"
+        )
 
     def call_update_expecting_error(self, item_id: str, error_type: type[BaseException]) -> None:
         """
@@ -989,7 +993,7 @@ class UpdateDSL(ItemServiceDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.item_service.update(item_id, self._item_patch, self._user_authorised)
+            self.item_service.update(item_id, self._item_patch, self._user_authorised, username="username")
         self._update_exception = exc
 
     def check_update_success(self) -> None:

@@ -8,6 +8,8 @@ End-to-End tests for the item router.
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-ancestors
 
+from unittest.mock import ANY
+
 from test.e2e.conftest import E2ETestHelpers
 from test.e2e.test_catalogue_item import CreateDSL as CatalogueItemCreateDSL
 from test.e2e.test_system import CreateDSL as SystemCreateDSL
@@ -1213,8 +1215,8 @@ class TestUpdate(UpdateDSL):
 
         item_id = self.post_item_and_prerequisites_no_properties(ITEM_DATA_NEW_REQUIRED_VALUES_ONLY)
 
-        self.patch_item(item_id, ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
-        self.check_patch_item_success(ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES)
+        self.patch_item(item_id, {**ITEM_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "modified_comment": "An update"})
+        self.check_patch_item_success({**ITEM_GET_DATA_NEW_ALL_VALUES_NO_PROPERTIES, "modified_comment": "An update"})
 
     def test_partial_update_catalogue_item_id(self):
         """Test updating the `catalogue_item_id` of an item."""
@@ -1831,6 +1833,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
             "serial_number": 42,
             # Custom properties
             "properties": [{}, {"id": 42, "value": "test"}],
+            "modified_comment": None,
         }
         self.validate_create_item(item_data)
 
@@ -2131,6 +2134,7 @@ class TestBulkValidateCreate(BulkValidateCreateDSL):
                                     "is_defective": False,
                                     "catalogue_item_id": self.catalogue_item_id,
                                     "system_id": self.system_id,
+                                    "modified_comment": ANY,
                                 },
                                 "location": ["usage_status_id"],
                                 "message": "Field required",

@@ -78,6 +78,12 @@ def get_router_dependencies() -> list:
         from inventory_management_system_api.auth.jwt_bearer import JWTBearer
 
         dependencies.append(Depends(JWTBearer()))
+    else:
+
+        def add_unknown_user(request: Request):
+            request.state.username = "Unknown"
+
+        dependencies.append(Depends(add_unknown_user))
     return dependencies
 
 

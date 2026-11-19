@@ -209,13 +209,20 @@ class CatalogueItemRepo:
         )
 
     def insert_property_to_all_matching(
-        self, catalogue_category_id: str, property_in: PropertyIn, session: Optional[ClientSession] = None
+        self,
+        catalogue_category_id: str,
+        property_in: PropertyIn,
+        username: str,
+        modified_comment: Optional[str] = None,
+        session: Optional[ClientSession] = None,
     ):
         """
         Inserts a property into every catalogue item with a given catalogue_category_id via an update_many query
 
         :param catalogue_category_id: The ID of the catalogue category who's catalogue items to update
         :param property_in: The property to insert into the catalogue items' properties list
+        :param username: The user who created the property
+        :param modified_comment: The justification given for creating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -223,12 +230,16 @@ class CatalogueItemRepo:
             "Inserting property into catalogue item's with a catalogue category ID '%s' in the database",
             catalogue_category_id,
         )
-
+        # pylint: disable=duplicate-code
         self._catalogue_items_collection.update_many(
             {"catalogue_category_id": CustomObjectId(catalogue_category_id)},
             {
                 "$push": {"properties": property_in.model_dump(by_alias=True)},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": f"Property created: {modified_comment or "No comment"}",
+                },
             },
             session=session,
         )
@@ -237,6 +248,8 @@ class CatalogueItemRepo:
         self,
         property_id: str,
         update_body: dict,
+        username: str,
+        modified_comment: Optional[str] = None,
         session: Optional[ClientSession] = None,
     ) -> None:
         """
@@ -246,6 +259,8 @@ class CatalogueItemRepo:
 
         :param property_id: The ID of the property to update
         :param update_body: The body of data to be used in the update
+        :param username: The user updating the property
+        :param modified_comment: The justification given for updating the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -253,6 +268,8 @@ class CatalogueItemRepo:
 
         set_body = {f"properties.$[elem].{k}": v for k, v in update_body.items()}
         set_body["modified_time"] = datetime.now(timezone.utc)
+        set_body["modified_by"] = username
+        set_body["modified_comment"] = f"Property updated: {modified_comment or "No comment"}"
 
         self._catalogue_items_collection.update_many(
             {"properties._id": CustomObjectId(property_id)},
@@ -261,11 +278,12 @@ class CatalogueItemRepo:
             session=session,
         )
 
-    def delete_properties(self, property_id: str, session: Optional[ClientSession] = None) -> None:
+    def delete_properties(self, property_id: str, username: str, session: Optional[ClientSession] = None) -> None:
         """
-        Deletes the property in every cataloge item it is present in
+        Deletes the property in every catalogue item it is present in
 
         :param property_id: The ID of the property to delete
+        :param username: The user deleting the property
         :param session: PyMongo ClientSession to use for database operations
         """
 
@@ -275,7 +293,11 @@ class CatalogueItemRepo:
             {"properties._id": CustomObjectId(property_id)},
             {
                 "$pull": {"properties": {"_id": CustomObjectId(property_id)}},
-                "$set": {"modified_time": datetime.now(timezone.utc)},
+                "$set": {
+                    "modified_time": datetime.now(timezone.utc),
+                    "modified_by": username,
+                    "modified_comment": "Property deleted",
+                },
             },
             session=session,
         )
@@ -298,9 +320,17 @@ class CatalogueItemRepo:
 
         self._catalogue_items_collection.update_one(
             {"_id": catalogue_item_id},
-            {"$set": {"number_of_spares": number_of_spares}},
+            {
+                "$set": {
+                    "number_of_spares": number_of_spares,
+                    "modified_by": "IMS Automation",
+                    "modified_comment": "Update number of spares",
+                }
+            },
             session=session,
         )
+
+    # pylint: enable=duplicate-code
 
     def is_duplicate_name(self, name: str, session: Optional[ClientSession] = None) -> bool:
         """
